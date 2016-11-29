@@ -76,14 +76,18 @@ TEST_P(HlslCompileAndFlattenTest, FromFile)
                                            Target::BothASTAndSpv, GetParam().entryPoint);
 }
 
+#ifdef TOTO
+#endif
+
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
     ToSpirv, HlslCompileTest,
     ::testing::ValuesIn(std::vector<FileNameEntryPointPair>{
+		//{"hlsl.amend.xksl.frag", ""},
         {"hlsl.amend.frag", "f1"},
-        {"hlsl.array.frag", "PixelShaderFunction"},
-        {"hlsl.array.implicit-size.frag", "PixelShaderFunction"},
-        {"hlsl.array.multidim.frag", "main"},
+        //{"hlsl.array.frag", "PixelShaderFunction"},
+        //{"hlsl.array.implicit-size.frag", "PixelShaderFunction"},
+        /*{"hlsl.array.multidim.frag", "main"},
         {"hlsl.assoc.frag", "PixelShaderFunction"},
         {"hlsl.attribute.frag", "PixelShaderFunction"},
         {"hlsl.attribute.expression.comp", "main"},
@@ -211,7 +215,7 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.tx.bracket.frag", "main"},
         {"hlsl.typedef.frag", "PixelShaderFunction"},
         {"hlsl.whileLoop.frag", "PixelShaderFunction"},
-        {"hlsl.void.frag", "PixelShaderFunction"},
+        {"hlsl.void.frag", "PixelShaderFunction"},*/
     }),
     FileNameAsCustomTestSuffix
 );

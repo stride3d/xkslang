@@ -47,6 +47,7 @@ struct TestCaseSpec {
 
 using ConfigTest = GlslangTest<::testing::TestWithParam<TestCaseSpec>>;
 
+#ifdef TOTO
 TEST_P(ConfigTest, FromFile)
 {
     TestCaseSpec testCase = GetParam();
@@ -102,6 +103,7 @@ INSTANTIATE_TEST_CASE_P(
     })),
 );
 // clang-format on
+#endif
 
 }  // anonymous namespace
 }  // namespace glslangtest
