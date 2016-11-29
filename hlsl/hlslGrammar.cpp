@@ -85,6 +85,19 @@ bool HlslGrammar::acceptIdentifier(HlslToken& idToken)
         return true;
     }
 
+    // Even though "sample" is a keyword (for interpolation modifiers), it IS still accepted as
+    // an identifier.  This appears to be a solitary exception: other interp modifier keywords such
+    // as "linear" or "centroid" NOT valid identifiers.  This code special cases "sample",
+    // so e.g, "int sample;" is accepted.
+    if (peekTokenClass(EHTokSample)) {
+        idToken.string     = NewPoolTString("sample");
+        idToken.tokenClass = EHTokIdentifier;
+        idToken.symbol     = nullptr;
+        idToken.loc        = token.loc;
+        advanceToken();
+        return true;
+    }
+
     return false;
 }
 
@@ -469,9 +482,14 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type)
         // Some qualifiers are set when parsing the type.  Merge those with
         // whatever comes from acceptQualifier.
         assert(qualifier.layoutFormat == ElfNone);
+
         qualifier.layoutFormat = type.getQualifier().layoutFormat;
         qualifier.precision    = type.getQualifier().precision;
-        type.getQualifier() = qualifier;
+
+        if (type.getQualifier().storage == EvqVaryingOut)
+            qualifier.storage      = type.getQualifier().storage;
+
+        type.getQualifier()    = qualifier;
     }
 
     return true;
@@ -544,6 +562,35 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
             if (! acceptLayoutQualifierList(qualifier))
                 return false;
             continue;
+
+        // GS geometries: these are specified on stage input variables, and are an error (not verified here)
+        // for output variables.
+        case EHTokPoint:
+            qualifier.storage = EvqIn;
+            if (!parseContext.handleInputGeometry(token.loc, ElgPoints))
+                return false;
+            break;
+        case EHTokLine:
+            qualifier.storage = EvqIn;
+            if (!parseContext.handleInputGeometry(token.loc, ElgLines))
+                return false;
+            break;
+        case EHTokTriangle:
+            qualifier.storage = EvqIn;
+            if (!parseContext.handleInputGeometry(token.loc, ElgTriangles))
+                return false;
+            break;
+        case EHTokLineAdj:
+            qualifier.storage = EvqIn;
+            if (!parseContext.handleInputGeometry(token.loc, ElgLinesAdjacency))
+                return false;
+            break; 
+        case EHTokTriangleAdj:
+            qualifier.storage = EvqIn;
+            if (!parseContext.handleInputGeometry(token.loc, ElgTrianglesAdjacency))
+                return false;
+            break; 
+            
         default:
             return true;
         }
@@ -608,7 +655,7 @@ bool HlslGrammar::acceptLayoutQualifierList(TQualifier& qualifier)
 //      | UINT
 //      | BOOL
 //
-bool HlslGrammar::acceptTemplateType(TBasicType& basicType)
+bool HlslGrammar::acceptTemplateVecMatBasicType(TBasicType& basicType)
 {
     switch (peek()) {
     case EHTokFloat:
@@ -652,7 +699,7 @@ bool HlslGrammar::acceptVectorTemplateType(TType& type)
     }
 
     TBasicType basicType;
-    if (! acceptTemplateType(basicType)) {
+    if (! acceptTemplateVecMatBasicType(basicType)) {
         expected("scalar type");
         return false;
     }
@@ -704,7 +751,7 @@ bool HlslGrammar::acceptMatrixTemplateType(TType& type)
     }
 
     TBasicType basicType;
-    if (! acceptTemplateType(basicType)) {
+    if (! acceptTemplateVecMatBasicType(basicType)) {
         expected("scalar type");
         return false;
     }
@@ -753,6 +800,56 @@ bool HlslGrammar::acceptMatrixTemplateType(TType& type)
     return true;
 }
 
+// layout_geometry
+//      : LINESTREAM
+//      | POINTSTREAM
+//      | TRIANGLESTREAM
+//
+bool HlslGrammar::acceptOutputPrimitiveGeometry(TLayoutGeometry& geometry)
+{
+    // read geometry type
+    const EHlslTokenClass geometryType = peek();
+
+    switch (geometryType) {
+    case EHTokPointStream:    geometry = ElgPoints;        break;
+    case EHTokLineStream:     geometry = ElgLineStrip;     break;
+    case EHTokTriangleStream: geometry = ElgTriangleStrip; break;
+    default:
+        return false;  // not a layout geometry
+    }
+
+    advanceToken();  // consume the layout keyword
+    return true;
+}
+
+// stream_out_template_type
+//      : output_primitive_geometry_type LEFT_ANGLE type RIGHT_ANGLE
+//
+bool HlslGrammar::acceptStreamOutTemplateType(TType& type, TLayoutGeometry& geometry)
+{
+    geometry = ElgNone;
+
+    if (! acceptOutputPrimitiveGeometry(geometry))
+        return false;
+
+    if (! acceptTokenClass(EHTokLeftAngle))
+        return false;
+    
+    if (! acceptType(type)) {
+        expected("stream output type");
+        return false;
+    }
+
+    type.getQualifier().storage = EvqVaryingOut;
+
+    if (! acceptTokenClass(EHTokRightAngle)) {
+        expected("right angle bracket");
+        return false;
+    }
+
+    return true;
+}
+    
 // annotations
 //      : LEFT_ANGLE declaration SEMI_COLON ... declaration SEMICOLON RIGHT_ANGLE
 //
@@ -988,6 +1085,20 @@ bool HlslGrammar::acceptType(TType& type)
     case EHTokMatrix:
         return acceptMatrixTemplateType(type);
         break;
+
+    case EHTokPointStream:            // fall through
+    case EHTokLineStream:             // ...
+    case EHTokTriangleStream:         // ...
+        {
+            TLayoutGeometry geometry;
+            if (! acceptStreamOutTemplateType(type, geometry))
+                return false;
+
+            if (! parseContext.handleOutputGeometry(token.loc, geometry))
+                return false;
+            
+            return true;
+        }
 
     case EHTokSampler:                // fall through
     case EHTokSampler1d:              // ...
@@ -1785,7 +1896,8 @@ bool HlslGrammar::acceptExpression(TIntermTyped*& node)
 }
 
 // initializer
-//      : LEFT_BRACE initializer_list RIGHT_BRACE
+//      : LEFT_BRACE RIGHT_BRACE
+//      | LEFT_BRACE initializer_list RIGHT_BRACE
 //
 // initializer_list
 //      : assignment_expression COMMA assignment_expression COMMA ...
@@ -1796,8 +1908,15 @@ bool HlslGrammar::acceptInitializer(TIntermTyped*& node)
     if (! acceptTokenClass(EHTokLeftBrace))
         return false;
 
-    // initializer_list
+    // RIGHT_BRACE
     TSourceLoc loc = token.loc;
+    if (acceptTokenClass(EHTokRightBrace)) {
+        // a zero-length initializer list
+        node = intermediate.makeAggregate(loc);
+        return true;
+    }
+
+    // initializer_list
     node = nullptr;
     do {
         // assignment_expression
