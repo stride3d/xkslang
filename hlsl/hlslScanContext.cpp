@@ -312,11 +312,12 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["RWTexture3D"] =             EHTokRWTexture3d;
     (*KeywordMap)["RWBuffer"] =                EHTokRWBuffer;
 
-
     (*KeywordMap)["struct"] =                  EHTokStruct;
     (*KeywordMap)["cbuffer"] =                 EHTokCBuffer;
     (*KeywordMap)["tbuffer"] =                 EHTokTBuffer;
     (*KeywordMap)["typedef"] =                 EHTokTypedef;
+
+	(*KeywordMap)["shader"]  =                 EHTokShaderClass;
 
     (*KeywordMap)["true"] =                    EHTokBoolConstant;
     (*KeywordMap)["false"] =                   EHTokBoolConstant;
@@ -340,7 +341,7 @@ void HlslScanContext::fillInKeywordMap()
     ReservedSet->insert("auto");
     ReservedSet->insert("catch");
     ReservedSet->insert("char");
-    ReservedSet->insert("class");
+    //ReservedSet->insert("class");
     ReservedSet->insert("const_cast");
     ReservedSet->insert("enum");
     ReservedSet->insert("explicit");
@@ -350,9 +351,9 @@ void HlslScanContext::fillInKeywordMap()
     ReservedSet->insert("mutable");
     ReservedSet->insert("new");
     ReservedSet->insert("operator");
-    ReservedSet->insert("private");
-    ReservedSet->insert("protected");
-    ReservedSet->insert("public");
+    //ReservedSet->insert("private");
+    //ReservedSet->insert("protected");
+    //ReservedSet->insert("public");
     ReservedSet->insert("reinterpret_cast");
     ReservedSet->insert("short");
     ReservedSet->insert("signed");
@@ -714,6 +715,9 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokCBuffer:
     case EHTokTBuffer:
         return keyword;
+
+	case EHTokShaderClass:
+		return keyword;
 
     case EHTokBoolConstant:
         if (strcmp("true", tokenText) == 0)

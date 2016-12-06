@@ -165,10 +165,11 @@ public:
     bool handleOutputGeometry(const TSourceLoc&, const TLayoutGeometry& geometry);
     bool handleInputGeometry(const TSourceLoc&, const TLayoutGeometry& geometry);
 
+	TVariable* declareNonArray(const TSourceLoc&, TString& identifier, TType&);
+
 protected:
     void inheritGlobalDefaults(TQualifier& dst) const;
     TVariable* makeInternalVariable(const char* name, const TType&) const;
-    TVariable* declareNonArray(const TSourceLoc&, TString& identifier, TType&);
     void declareArray(const TSourceLoc&, TString& identifier, const TType&, TSymbol*&, bool track);
     TIntermNode* executeInitializer(const TSourceLoc&, TIntermTyped* initializer, TVariable* variable);
     TIntermTyped* convertInitializerList(const TSourceLoc&, const TType&, TIntermTyped* initializer);

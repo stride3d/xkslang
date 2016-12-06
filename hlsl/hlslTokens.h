@@ -256,6 +256,9 @@ enum EHlslTokenClass {
     EHTokCBuffer,
     EHTokTBuffer,
     EHTokTypedef,
+	
+	// XKSL new Token
+	EHTokShaderClass,
 
     // constant
     EHTokFloatConstant,

@@ -390,6 +390,13 @@ public:
         std::ostringstream stream;
         outputResultToStream(&stream, result, controls);
 
+		// Write the stream output on the disk
+		if (source == Source::HLSL)
+		{
+			const std::string newOutputFname = testDir + "/" + testName + ".latest.out";
+			WriteFile(newOutputFname, stream.str());
+		}
+
         checkEqAndUpdateIfRequested(expectedOutput, stream.str(),
                                     expectedOutputFname);
     }

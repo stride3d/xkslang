@@ -301,9 +301,16 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
    // if (acceptSamplerDeclarationDX9(declaredType))
    //     return true;
 
+	HlslToken initialToken = this->token;
+
     // fully_specified_type
     if (! acceptFullySpecifiedType(declaredType))
         return false;
+
+	/*if (declaredType.getBasicType() == EbtStruct)
+	{
+		int klgjdsg = 546;
+	}*/
 
     // identifier
     HlslToken idToken;
@@ -406,6 +413,13 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
         }
     };
 
+	if (declaredType.getBasicType() == EbtShaderClass)
+	{
+		//for newly defined class: we create an unused variable using the type
+		TString unusedVariableName = "__var_" + declaredType.getTypeName() + "_unused";
+		parseContext.declareVariable(initialToken.loc, unusedVariableName, declaredType, nullptr);
+	}
+
     // The top-level node is a sequence.
     if (node != nullptr)
         node->getAsAggregate()->setOperator(EOpSequence);
@@ -472,6 +486,7 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type)
     // type_specifier
     if (! acceptType(type))
         return false;
+
     if (type.getBasicType() == EbtBlock) {
         // the type was a block, which set some parts of the qualifier
         parseContext.mergeQualifiers(type.getQualifier(), qualifier);
@@ -1135,6 +1150,10 @@ bool HlslGrammar::acceptType(TType& type)
         return acceptStruct(type);
         break;
 
+	case EHTokShaderClass:
+		return acceptShaderClass(type);
+		break;
+
     case EHTokIdentifier:
         // An identifier could be for a user-defined type.
         // Note we cache the symbol table lookup, to save for a later rule
@@ -1579,6 +1598,179 @@ bool HlslGrammar::acceptType(TType& type)
     advanceToken();
 
     return true;
+}
+
+// XKSL language extension
+// shader
+//      : shader IDENTIFIER post_decls LEFT_BRACE class_declaration_list RIGHT_BRACE
+//
+// class_type
+//      : SHADER
+//
+bool HlslGrammar::acceptShaderClass(TType& type)
+{
+	TStorageQualifier storageQualifier = EvqTemporary;
+
+	if (!acceptTokenClass(EHTokShaderClass))
+		return false;
+
+	// IDENTIFIER
+	TString shaderName = "";
+	if (!acceptTokenClass(EHTokIdentifier)) {
+		expected("shader class name");
+		return false;
+	}
+	shaderName = *token.string;
+
+	// post_decls
+	TQualifier postDeclQualifier;
+	postDeclQualifier.clear();
+	acceptPostDecls(postDeclQualifier);
+
+	// LEFT_BRACE
+	if (!acceptTokenClass(EHTokLeftBrace)) {
+		expected("{");
+		return false;
+	}
+
+	TTypeList* shaderTypeList;                            //list of types declared by the shader
+	TShaderClassFunctionList* shaderFunctionsList;        //list of functions declared by the shader
+	if (!acceptShaderClassDeclaration(shaderName, shaderTypeList, shaderFunctionsList)) {
+		expected("class member declarations");
+		return false;
+	}
+
+	// hook up the function node (TODO: should be better done at the end)?
+	//node = intermediate.growAggregate(node, declarationNode);
+
+	// RIGHT_BRACE
+	if (!acceptTokenClass(EHTokRightBrace)) {
+		expected("}");
+		return false;
+	}
+
+	// create the user-defined type
+	new(&type) TType(shaderTypeList, (void*)0, shaderName, postDeclQualifier);
+
+	if (type.getBasicType() != EbtShaderClass || shaderName.size() == 0) {
+		parseContext.error(token.loc, "Shader class error", "Invalid type or class name", "");
+		return false;
+	}
+
+	TVariable* userTypeDef = new TVariable(&shaderName, type, true);
+	if (!parseContext.symbolTable.insert(*userTypeDef))
+		parseContext.error(token.loc, "redefinition", shaderName.c_str(), "class");
+
+	//TSymbol *symbol = parseContext.declareNonArray(loc, identifier, type);
+	//parseContext.trackLinkageDeferred(*userTypeDef);
+
+	return true;
+}
+
+// Similar to acceptDeclaration function: we parse a class and accept all types or functions declaration
+bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeList*& typeList, TShaderClassFunctionList*& functionList)
+{
+	typeList = new TTypeList();
+	functionList = new TShaderClassFunctionList();
+
+	do {
+		// success on seeing the RIGHT_BRACE coming up
+		if (peekTokenClass(EHTokRightBrace))
+			return true;
+
+		//TODO: member or function type can have properties! (public, protected, ...)
+
+		// fully_specified_type
+		TType declaredType;
+		if (!acceptFullySpecifiedType(declaredType)) {
+			expected("shader: member or function type");
+			return false;
+		}
+
+		//Identifier
+		HlslToken idToken = token;
+		if (!acceptIdentifier(idToken))
+		{
+			expected("shader: member or function name");
+			return false;
+		}
+
+		TFunction& function = *new TFunction(idToken.string, declaredType);
+		if (acceptFunctionParameters(function)) {
+			//// post_decls
+			//acceptPostDecls(function.getWritableType().getQualifier());
+
+			// compound_statement (function body definition) or just a prototype?
+			if (peekTokenClass(EHTokLeftBrace))
+			{
+				TIntermNode* unitNode = nullptr;
+				TAttributeMap attributes;  // attributes ?
+				//acceptAttributes(attributes);
+
+				if (!acceptFunctionDefinition(function, unitNode, attributes))
+				{
+					expected("shader: invalid function definition");
+					return false;
+				}
+
+				TShaderClassFunction shaderFunction;
+				shaderFunction.function = &function;
+				shaderFunction.node = unitNode;
+				functionList->push_back(shaderFunction);
+			}
+			else
+			{
+				parseContext.handleFunctionDeclarator(idToken.loc, function, true);
+			}
+
+			// SEMI_COLON
+			if (peek());
+		}
+		else {
+			// type identifiers and properties
+			do {
+				// add the member to the list of members
+				TTypeLoc member = { new TType(EbtVoid), token.loc };
+				member.type->shallowCopy(declaredType);
+				member.type->setFieldName(*token.string);
+				typeList->push_back(member);
+
+				// array_specifier
+				TArraySizes* arraySizes = nullptr;
+				acceptArraySpecifier(arraySizes);
+				if (arraySizes)
+					typeList->back().type->newArraySizes(*arraySizes);
+
+				acceptPostDecls(member.type->getQualifier());
+
+				// success on seeing the SEMICOLON coming up
+				if (peekTokenClass(EHTokSemicolon))
+					break;
+
+				// declare another variable of the same type
+				// COMMA
+				if (!acceptTokenClass(EHTokComma)) {
+					expected(",");
+					return false;
+				}
+
+				if (!acceptIdentifier(idToken))
+				{
+					expected("shader: member name");
+					return false;
+				}
+
+			} while (true);
+
+			// SEMI_COLON
+			if (!acceptTokenClass(EHTokSemicolon)) {
+				expected(";");
+				return false;
+			}
+		}
+
+	} while (true);
+
 }
 
 // struct

@@ -43,6 +43,12 @@
 
 namespace glslang {
 
+	struct TShaderClassFunction {
+		TFunction* function;
+		TIntermNode* node;
+	};
+	typedef TVector<TShaderClassFunction> TShaderClassFunctionList;
+
     class TAttributeMap; // forward declare
     
     // Should just be the grammar aspect of HLSL.
@@ -81,6 +87,8 @@ namespace glslang {
         bool acceptSamplerType(TType&);
         bool acceptTextureType(TType&);
         bool acceptStruct(TType&);
+		bool acceptShaderClass(TType&);
+		bool acceptShaderClassDeclaration(const TString& shaderName, TTypeList*& typeList, TShaderClassFunctionList*& functionList);
         bool acceptStructDeclarationList(TTypeList*&);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);

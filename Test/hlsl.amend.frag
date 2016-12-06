@@ -1,3 +1,14 @@
+struct Toto
+{
+	int a;
+	
+	struct TotoBis
+	{
+		int b;
+		int c;
+	}
+};
+
 float4 a;
 float b;
 

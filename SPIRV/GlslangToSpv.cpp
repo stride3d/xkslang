@@ -2058,6 +2058,7 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
         break;
     case glslang::EbtStruct:
     case glslang::EbtBlock:
+	case glslang::EbtShaderClass:
         {
             // If we've seen this struct type, return it
             const glslang::TTypeList* glslangMembers = type.getStruct();

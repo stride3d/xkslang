@@ -181,7 +181,7 @@ protected:
                                const char* szExtraInfoFormat, TPrefixType prefix,
                                va_list args);
     virtual void trackLinkage(TSymbol& symbol);
-    virtual void trackLinkageDeferred(TSymbol& symbol);
+	virtual void trackLinkageDeferred(TSymbol& symbol);
     virtual void makeEditable(TSymbol*&);
     virtual TVariable* getEditableVariable(const char* name);
     virtual void finish();

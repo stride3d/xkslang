@@ -1159,6 +1159,16 @@ public:
                                 sampler.clear();
                                 typeName = NewPoolTString(n.c_str());
                             }
+
+	// For shader class (xksl language extension)
+	TType(TTypeList* userDef, void* functions, const TString& n, const TQualifier& q) :
+		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
+		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr)
+	{
+		sampler.clear();
+		typeName = NewPoolTString(n.c_str());
+	}
+
     virtual ~TType() {}
 
     // Not for use across pool pops; it will cause multiple instances of TType to point to the same information.
@@ -1472,6 +1482,7 @@ public:
         case EbtSampler:           return "sampler/image";
         case EbtStruct:            return "structure";
         case EbtBlock:             return "block";
+		case EbtShaderClass:       return "shader";
         default:                   return "unknown type";
         }
     }
