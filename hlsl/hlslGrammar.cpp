@@ -119,8 +119,34 @@ bool HlslGrammar::acceptCompilationUnit()
         if (! acceptDeclaration(declarationNode))
             return false;
 
-        // hook it up
-        unitNode = intermediate.growAggregate(unitNode, declarationNode);
+		if (declarationNode != nullptr)
+		{
+			// hook it up
+			///unitNode = intermediate.growAggregate(unitNode, declarationNode);
+
+			//addition for xksl shaders
+			//all functions operand must be put at the root of the AST
+			//however when a shader Type create or declare some functions, it will put them as aggregate of declarationNode
+			//so we need to move them at the root of the AST
+			bool isSetOfFunctions = false;
+			if (declarationNode->getAsAggregate() && declarationNode->getAsAggregate()->getOp() == EOpNull)
+			{
+				isSetOfFunctions = true;
+			}
+
+			if (isSetOfFunctions)
+			{
+				const TIntermSequence& functions = declarationNode->getAsAggregate()->getSequence();
+				for (int f = 0; f < (int)functions.size(); ++f) {
+					TIntermNode* functionNode = functions[f];
+					unitNode = intermediate.growAggregate(unitNode, functionNode);
+				}
+			}
+			else
+			{
+				unitNode = intermediate.growAggregate(unitNode, declarationNode);
+			}
+		}
     }
 
     // set root of AST
@@ -304,13 +330,19 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
 	HlslToken initialToken = this->token;
 
     // fully_specified_type
-    if (! acceptFullySpecifiedType(declaredType))
+    if (! acceptFullySpecifiedType(&node, declaredType))
         return false;
 
-	/*if (declaredType.getBasicType() == EbtStruct)
+	if (declaredType.getBasicType() == EbtShaderClass)
 	{
-		int klgjdsg = 546;
-	}*/
+		//for newly defined shader class: we create an unused variable using the type
+		//otherwise the class would not be defined in the AST as long as nobody else is using it
+		TString unusedVariableName = "__var_" + declaredType.getTypeName() + "_unused";
+		TString* pName = NewPoolTString(unusedVariableName.c_str());
+		parseContext.declareVariable(initialToken.loc, *pName, declaredType, nullptr);
+
+		return true;
+	}
 
     // identifier
     HlslToken idToken;
@@ -413,16 +445,9 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
         }
     };
 
-	if (declaredType.getBasicType() == EbtShaderClass)
-	{
-		//for newly defined class: we create an unused variable using the type
-		TString unusedVariableName = "__var_" + declaredType.getTypeName() + "_unused";
-		parseContext.declareVariable(initialToken.loc, unusedVariableName, declaredType, nullptr);
-	}
-
-    // The top-level node is a sequence.
-    if (node != nullptr)
-        node->getAsAggregate()->setOperator(EOpSequence);
+	// The top-level node is a sequence.
+	if (node != nullptr)
+		node->getAsAggregate()->setOperator(EOpSequence);
 
     // SEMICOLON
     if (! acceptTokenClass(EHTokSemicolon)) {
@@ -442,7 +467,7 @@ bool HlslGrammar::acceptControlDeclaration(TIntermNode*& node)
 
     // fully_specified_type
     TType type;
-    if (! acceptFullySpecifiedType(type))
+    if (! acceptFullySpecifiedType(&node, type))
         return false;
 
     // identifier
@@ -474,7 +499,7 @@ bool HlslGrammar::acceptControlDeclaration(TIntermNode*& node)
 //      : type_specifier
 //      | type_qualifier type_specifier
 //
-bool HlslGrammar::acceptFullySpecifiedType(TType& type)
+bool HlslGrammar::acceptFullySpecifiedType(TIntermNode** node, TType& type)
 {
     // type_qualifier
     TQualifier qualifier;
@@ -484,7 +509,7 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type)
     TSourceLoc loc = token.loc;
 
     // type_specifier
-    if (! acceptType(type))
+    if (! acceptType(node, type))
         return false;
 
     if (type.getBasicType() == EbtBlock) {
@@ -850,7 +875,7 @@ bool HlslGrammar::acceptStreamOutTemplateType(TType& type, TLayoutGeometry& geom
     if (! acceptTokenClass(EHTokLeftAngle))
         return false;
     
-    if (! acceptType(type)) {
+    if (! acceptType(nullptr, type)) {
         expected("stream output type");
         return false;
     }
@@ -995,7 +1020,7 @@ bool HlslGrammar::acceptTextureType(TType& type)
 
     // texture type: required for multisample types and RWBuffer/RWTextures!
     if (acceptTokenClass(EHTokLeftAngle)) {
-        if (! acceptType(txType)) {
+        if (! acceptType(nullptr, txType)) {
             expected("scalar or vector type");
             return false;
         }
@@ -1082,7 +1107,7 @@ bool HlslGrammar::acceptTextureType(TType& type)
 // If token is for a type, update 'type' with the type information,
 // and return true and advance.
 // Otherwise, return false, and don't advance
-bool HlslGrammar::acceptType(TType& type)
+bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
 {
     // Basic types for min* types, broken out here in case of future
     // changes, e.g, to use native halfs.
@@ -1151,7 +1176,7 @@ bool HlslGrammar::acceptType(TType& type)
         break;
 
 	case EHTokShaderClass:
-		return acceptShaderClass(type);
+		return acceptShaderClass(node, type);
 		break;
 
     case EHTokIdentifier:
@@ -1607,7 +1632,7 @@ bool HlslGrammar::acceptType(TType& type)
 // class_type
 //      : SHADER
 //
-bool HlslGrammar::acceptShaderClass(TType& type)
+bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 {
 	TStorageQualifier storageQualifier = EvqTemporary;
 
@@ -1633,15 +1658,25 @@ bool HlslGrammar::acceptShaderClass(TType& type)
 		return false;
 	}
 
-	TTypeList* shaderTypeList;                            //list of types declared by the shader
-	TShaderClassFunctionList* shaderFunctionsList;        //list of functions declared by the shader
+	TTypeList* shaderTypeList = nullptr;                            //list of types declared by the shader
+	TShaderClassFunctionList* shaderFunctionsList = nullptr;        //list of functions declared by the shader
 	if (!acceptShaderClassDeclaration(shaderName, shaderTypeList, shaderFunctionsList)) {
 		expected("class member declarations");
 		return false;
 	}
 
-	// hook up the function node (TODO: should be better done at the end)?
-	//node = intermediate.growAggregate(node, declarationNode);
+	//Add all functions nodes as aggregator
+	if (shaderFunctionsList != nullptr)
+	{
+		int countFunctionNodes = shaderFunctionsList->size();
+		for (int i = 0; i< countFunctionNodes; i++)
+		{
+			TIntermNode* functionNode = shaderFunctionsList->at(i).node;
+			*node = intermediate.growAggregate(*node, functionNode);
+		}
+
+		if (*node != nullptr) (*node)->getAsAggregate()->setOperator(EOpNull);  // Will tell that the node needs to be move back to the top level (maybe can find a cleaner way?)
+	}
 
 	// RIGHT_BRACE
 	if (!acceptTokenClass(EHTokRightBrace)) {
@@ -1674,6 +1709,9 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 	functionList = new TShaderClassFunctionList();
 
 	do {
+		// some extra SEMI_COLON?
+		while (acceptTokenClass(EHTokSemicolon)) {}
+
 		// success on seeing the RIGHT_BRACE coming up
 		if (peekTokenClass(EHTokRightBrace))
 			return true;
@@ -1682,7 +1720,7 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 
 		// fully_specified_type
 		TType declaredType;
-		if (!acceptFullySpecifiedType(declaredType)) {
+		if (!acceptFullySpecifiedType(nullptr, declaredType)) {
 			expected("shader: member or function type");
 			return false;
 		}
@@ -1703,11 +1741,11 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 			// compound_statement (function body definition) or just a prototype?
 			if (peekTokenClass(EHTokLeftBrace))
 			{
-				TIntermNode* unitNode = nullptr;
+				TIntermNode* functionNode = nullptr;
 				TAttributeMap attributes;  // attributes ?
 				//acceptAttributes(attributes);
 
-				if (!acceptFunctionDefinition(function, unitNode, attributes))
+				if (!acceptFunctionDefinition(function, functionNode, attributes))
 				{
 					expected("shader: invalid function definition");
 					return false;
@@ -1715,16 +1753,15 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 
 				TShaderClassFunction shaderFunction;
 				shaderFunction.function = &function;
-				shaderFunction.node = unitNode;
+				shaderFunction.node = functionNode;
 				functionList->push_back(shaderFunction);
 			}
 			else
 			{
-				parseContext.handleFunctionDeclarator(idToken.loc, function, true);
+				expected("To be treated");
+				return false;
+				//parseContext.handleFunctionDeclarator(idToken.loc, function, true);
 			}
-
-			// SEMI_COLON
-			if (peek());
 		}
 		else {
 			// type identifiers and properties
@@ -1764,7 +1801,7 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 
 			// SEMI_COLON
 			if (!acceptTokenClass(EHTokSemicolon)) {
-				expected(";");
+				expected("; expected at the end of type declaration");
 				return false;
 			}
 		}
@@ -1872,7 +1909,7 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList)
 
         // fully_specified_type
         TType memberType;
-        if (! acceptFullySpecifiedType(memberType)) {
+        if (! acceptFullySpecifiedType(nullptr, memberType)) {
             expected("member type");
             return false;
         }
@@ -1963,7 +2000,7 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
 {
     // fully_specified_type
     TType* type = new TType;
-    if (! acceptFullySpecifiedType(*type))
+    if (! acceptFullySpecifiedType(nullptr, *type))
         return false;
 
     // identifier
@@ -2293,7 +2330,7 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
     // postfix_expression instead, since that also starts with at "(".
     if (acceptTokenClass(EHTokLeftParen)) {
         TType castType;
-        if (acceptType(castType)) {
+        if (acceptType(nullptr, castType)) {
             if (acceptTokenClass(EHTokRightParen)) {
                 // We've matched "(type)" now, get the expression to cast
                 TSourceLoc loc = token.loc;
@@ -2479,7 +2516,7 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
 {
     // type
     TType type;
-    if (acceptType(type)) {
+    if (acceptType(nullptr, type)) {
         TFunction* constructorFunction = parseContext.handleConstructorCall(token.loc, type);
         if (constructorFunction == nullptr)
             return false;

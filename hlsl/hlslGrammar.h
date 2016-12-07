@@ -48,6 +48,7 @@ namespace glslang {
 		TIntermNode* node;
 	};
 	typedef TVector<TShaderClassFunction> TShaderClassFunctionList;
+	//typedef TVector<TIntermNode> TIntermNodeList;
 
     class TAttributeMap; // forward declare
     
@@ -74,10 +75,10 @@ namespace glslang {
         bool acceptControlDeclaration(TIntermNode*& node);
         bool acceptSamplerDeclarationDX9(TType&);
         bool acceptSamplerState();
-        bool acceptFullySpecifiedType(TType&);
+        bool acceptFullySpecifiedType(TIntermNode** node, TType&);
         bool acceptQualifier(TQualifier&);
         bool acceptLayoutQualifierList(TQualifier&);
-        bool acceptType(TType&);
+        bool acceptType(TIntermNode** node, TType&);
         bool acceptTemplateVecMatBasicType(TBasicType&);
         bool acceptVectorTemplateType(TType&);
         bool acceptMatrixTemplateType(TType&);
@@ -87,7 +88,7 @@ namespace glslang {
         bool acceptSamplerType(TType&);
         bool acceptTextureType(TType&);
         bool acceptStruct(TType&);
-		bool acceptShaderClass(TType&);
+		bool acceptShaderClass(TIntermNode** node, TType&);
 		bool acceptShaderClassDeclaration(const TString& shaderName, TTypeList*& typeList, TShaderClassFunctionList*& functionList);
         bool acceptStructDeclarationList(TTypeList*&);
         bool acceptFunctionParameters(TFunction&);
