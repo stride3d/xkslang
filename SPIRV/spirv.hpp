@@ -375,6 +375,19 @@ enum Decoration {
     DecorationNoContraction = 42,
     DecorationInputAttachmentIndex = 43,
     DecorationAlignment = 44,
+
+	//**********************************************************************
+	//New decoration for xksl extensions
+	//We use these decorations to add specific properties to our types or functions
+	//The IDs randomly start at 1000
+
+	//Specify that a defined structure (OpTypeStruct) is actually a shader class
+	//Since we need to keep the class name, we will define it in this decoration
+	//syntax: OpDecorate <id> DecorationShaderClassType <Literal String: shader name>
+	DecorationShaderClassName = 1000,
+	DecorationShaderInheritFromParent = 1001,
+	//**********************************************************************
+
     DecorationMax = 0x7fffffff,
 };
 

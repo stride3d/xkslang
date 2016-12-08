@@ -199,7 +199,7 @@ const char* StorageClassString(int StorageClass)
     }
 }
 
-const int DecorationCeiling = 45;
+const int DecorationCeiling = 1010;  //Warning: Bad code (legacy)!
 
 const char* DecorationString(int decoration)
 {
@@ -249,6 +249,10 @@ const char* DecorationString(int decoration)
     case 42: return "NoContraction";
     case 43: return "InputAttachmentIndex";
     case 44: return "Alignment";
+	
+	//xksl extensions
+	case (DecorationShaderClassName): return "ShaderClassName";
+	case (DecorationShaderInheritFromParent): return "InheritFromShaderClass";
 
     case DecorationCeiling:
     default:  return "Bad";
@@ -1320,6 +1324,8 @@ void Parameterize()
     DecorationOperands[DecorationSpecId].push(OperandLiteralNumber, "'Specialization Constant ID'");
     DecorationOperands[DecorationInputAttachmentIndex].push(OperandLiteralNumber, "'Attachment Index'");
     DecorationOperands[DecorationAlignment].push(OperandLiteralNumber, "'Alignment'");
+
+	//DecorationOperands[DecorationShaderClassName].push(OperandLiteralString, "'Name'");
 
     OperandClassParams[OperandSource].set(SourceLanguageCeiling, SourceString, 0);
     OperandClassParams[OperandExecutionModel].set(ExecutionModelCeiling, ExecutionModelString, ExecutionModelParams);

@@ -121,6 +121,9 @@ namespace glslang {
         void acceptArraySpecifier(TArraySizes*&);
         void acceptPostDecls(TQualifier&);
 
+		//xksl extensions
+		void acceptShaderClassPostDecls(TIdentifierList*& parents);
+
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
     };

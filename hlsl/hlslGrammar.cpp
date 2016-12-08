@@ -1655,7 +1655,10 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 	// post_decls
 	TQualifier postDeclQualifier;
 	postDeclQualifier.clear();
-	acceptPostDecls(postDeclQualifier);
+	//acceptPostDecls(postDeclQualifier);
+
+	TIdentifierList* parentsName = nullptr;
+	acceptShaderClassPostDecls(parentsName);
 
 	// LEFT_BRACE
 	if (!acceptTokenClass(EHTokLeftBrace)) {
@@ -1690,7 +1693,7 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 	}
 
 	// create the user-defined type
-	new(&type) TType(shaderTypeList, (void*)0, shaderName, postDeclQualifier);
+	new(&type) TType(shaderTypeList, (void*)0, shaderName, postDeclQualifier, parentsName);
 
 	if (type.getBasicType() != EbtShaderClass || shaderName.size() == 0) {
 		parseContext.error(token.loc, "Shader class error", "Invalid type or class name", "");
@@ -1739,7 +1742,16 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 		}
 
 		TFunction& function = *new TFunction(idToken.string, declaredType);
-		if (acceptFunctionParameters(function)) {
+		/****************************************************************************************************
+		A same attribute name defined in different shader is not a problem: attributes belongs to the shader namespace.
+		However all functions are defined in the global namespace and so we need to differentiate them.
+		A shader function will be named: ShaderClass.functionName(params) --> "functionName(ShaderClass;params"
+		(to be consistent with SPIRV name structure)
+		****************************************************************************************************/
+		function.appendMangleName(shaderName + ';');
+
+		if (acceptFunctionParameters(function))
+		{
 			//// post_decls
 			//acceptPostDecls(function.getWritableType().getQualifier());
 
@@ -3185,6 +3197,41 @@ void HlslGrammar::acceptArraySpecifier(TArraySizes*& arraySizes)
             arraySizes->addInnerSize(0);  // sized by initializers.
         }
     }
+}
+
+//xksl extensions
+//Parse the post declaration following a shader declaration
+// post_decls
+//		: parent1, parent2, ...
+void HlslGrammar::acceptShaderClassPostDecls(TIdentifierList*& parents)
+{
+	do {
+		// COLON 
+		if (acceptTokenClass(EHTokColon))
+		{
+			do
+			{
+				//We accept either identifier (unknown class name), or a known class name
+				HlslToken idToken;
+				if (!acceptIdentifier(idToken))
+				{
+					expected("shader parent name");
+					return;
+				}
+
+				//add name
+				if (parents == nullptr) parents = new TIdentifierList;
+				parents->push_back(idToken.string);
+
+				if (acceptTokenClass(EHTokComma)) continue;
+				else break;
+
+			} while (true);
+		}
+
+		break;
+
+	} while (true);
 }
 
 // post_decls

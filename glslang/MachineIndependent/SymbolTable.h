@@ -221,6 +221,12 @@ public:
     virtual TFunction* getAsFunction() { return this; }
     virtual const TFunction* getAsFunction() const { return this; }
 
+	virtual void appendMangleName(const TString& s)
+	{
+		assert(writable);
+		mangledName.append(s);
+	}
+
     virtual void addParameter(TParameter& p)
     {
         assert(writable);

@@ -2289,6 +2289,21 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
         if (type.getQualifier().hasXfbBuffer())
             builder.addDecoration(spvType, spv::DecorationXfbBuffer, type.getQualifier().layoutXfbBuffer);
     }
+
+	//xksl extensions
+	if (type.getBasicType() == glslang::EbtShaderClass)
+	{
+		builder.addDecoration(spvType, spv::DecorationShaderClassName, type.getTypeName().c_str());
+
+		const glslang::TIdentifierList* parentsName = type.getParentsName();
+		if (parentsName != nullptr)
+		{
+			for (int i=0; i<parentsName->size(); ++i)
+			{
+				builder.addDecoration(spvType, spv::DecorationShaderInheritFromParent, parentsName->at(i)->c_str());
+			}
+		}
+	}
 }
 
 // Turn the expression forming the array size into an id.
