@@ -1,6 +1,8 @@
-/*******************************************************
-Test parsing a shader inheriting from another shaders
-*******************************************************/
+/****************************************************************
+Test parsing shader inheriting from other shaders
+We'll simply keep the inheritance information in the bytecode
+Also test using declaration keywords before the shader
+****************************************************************/
 
 shader toto
 {};
@@ -14,8 +16,16 @@ shader Parent01: Parent02
 {
 };
 
-//decorate function and class?
-//TODO: check function prototype
-//TODO: what if members is declared after function body?
-//generics?
+internal shader TestInternalShader
+{
+};
 
+/**************
+//Some invalid shader declaration
+stage stream shader TestWrongShader
+{
+};
+
+typedef shader typedefShader
+{};
+**************/

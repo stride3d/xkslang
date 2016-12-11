@@ -423,7 +423,7 @@ void SpirvStream::disassembleInstruction(Id resultId, Id /*typeId*/, Op opCode, 
         case OperandVariableLiterals:
 			if (opCode == OpDecorate && (stream[word - 1] == DecorationShaderClassName || stream[word - 1] == DecorationShaderInheritFromParent))
 			{
-				//xkls extensions. Did not find how to define a different operand class per decorationId (their system don't feature this)
+				//XKSL extensions. Did not find how to define a different operand class per decorationId (their system don't feature this)
 				numOperands -= disassembleString();
 				break;
 			}

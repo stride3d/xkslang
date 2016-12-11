@@ -335,6 +335,17 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["case"] =                    EHTokCase;
     (*KeywordMap)["default"] =                 EHTokDefault;
 
+	//XKSL extensions: map keywords
+	(*KeywordMap)["public"]    =                 EHTokPublic;
+	(*KeywordMap)["private"]   =                 EHTokPrivate;
+	(*KeywordMap)["protected"] =                 EHTokProtected;
+	(*KeywordMap)["internal"]  =                 EHTokInternal;
+	(*KeywordMap)["stage"]     =                 EHTokStage;
+	(*KeywordMap)["stream"]    =                 EHTokStream;
+	(*KeywordMap)["override"]  =                 EHTokOverride;
+	(*KeywordMap)["abstract"]  =                 EHTokAbstract;
+	(*KeywordMap)["clone"]     =                 EHTokClone;
+
     // TODO: get correct set here
     ReservedSet = new std::unordered_set<const char*, str_hash, str_eq>;
     
@@ -522,6 +533,18 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokPrecise:
     case EHTokLayout:
         return keyword;
+
+	//XKSL keyword extensions
+	case EHTokPublic:
+	case EHTokPrivate:
+	case EHTokProtected:
+	case EHTokInternal:
+	case EHTokStage:
+	case EHTokStream:
+	case EHTokOverride:
+	case EHTokAbstract:
+	case EHTokClone:
+		return keyword;
 
     // primitive types
     case EHTokPoint:

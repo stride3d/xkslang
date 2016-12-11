@@ -250,9 +250,14 @@ const char* DecorationString(int decoration)
     case 43: return "InputAttachmentIndex";
     case 44: return "Alignment";
 	
-	//xksl extensions
-	case (DecorationShaderClassName): return "ShaderClassName";
+	//XKSL extensions
+	case (DecorationShaderClassName):         return "ShaderClassName";
 	case (DecorationShaderInheritFromParent): return "InheritFromShaderClass";
+	case (DecorationMemberStage):			  return "MemberStage";
+	case (DecorationMemberStream):            return "MemberStream";
+	case (DecorationMemberStatic):			  return "MemberStatic";
+	case (DecorationMemberConst):             return "MemberConst";
+		
 
     case DecorationCeiling:
     default:  return "Bad";

@@ -66,6 +66,17 @@ enum EHlslTokenClass {
     EHTokInOut,
     EHTokLayout,
 
+	//XKSL extensions: new qualifiers
+	EHTokPublic,
+	EHTokPrivate,
+	EHTokProtected,
+	EHTokInternal,
+	EHTokStage,
+	EHTokStream,
+	EHTokOverride,
+	EHTokAbstract,
+	EHTokClone,
+
     // primitive types
     EHTokPoint,
     EHTokLine,
@@ -257,7 +268,7 @@ enum EHlslTokenClass {
     EHTokTBuffer,
     EHTokTypedef,
 	
-	// XKSL new Token
+	// XKSL new type Token
 	EHTokShaderClass,
 
     // constant

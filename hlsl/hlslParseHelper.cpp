@@ -3593,6 +3593,8 @@ void HlslParseContext::mergeQualifiers(TQualifier& dst, const TQualifier& src)
     MERGE_SINGLETON(readonly);
     MERGE_SINGLETON(writeonly);
     MERGE_SINGLETON(specConstant);
+	MERGE_SINGLETON(isStage);
+	MERGE_SINGLETON(isStream);
 }
 
 // used to flatten the sampler type space into a single dimension
@@ -3879,6 +3881,8 @@ void HlslParseContext::redeclareBuiltinBlock(const TSourceLoc& loc, TTypeList& n
             oldType.getQualifier().smooth = newType.getQualifier().smooth;
             oldType.getQualifier().flat = newType.getQualifier().flat;
             oldType.getQualifier().nopersp = newType.getQualifier().nopersp;
+			oldType.getQualifier().isStage = newType.getQualifier().isStage;
+			oldType.getQualifier().isStream = newType.getQualifier().isStream;
 
             // go to next member
             ++member;

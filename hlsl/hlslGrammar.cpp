@@ -124,7 +124,7 @@ bool HlslGrammar::acceptCompilationUnit()
 			// hook it up
 			///unitNode = intermediate.growAggregate(unitNode, declarationNode);
 
-			//addition for xksl shaders
+			//addition for XKSL shaders
 			//all functions operand must be put at the root of the AST
 			//however when a shader Type create or declare some functions, it will put them as aggregate of declarationNode
 			//so we need to move them at the root of the AST
@@ -335,6 +335,21 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
 
 	if (declaredType.getBasicType() == EbtShaderClass)
 	{
+		if (typedefDecl)
+		{
+			parseContext.error(token.loc, "Error", "Cannot have \"typedef\" with a Shader class", "");
+			return false;
+		}
+
+		//check the shader class qualifier
+		TQualifier shaderQualifier = declaredType.getQualifier();
+		if (shaderQualifier.isStage || shaderQualifier.isStream)
+		{
+			if (shaderQualifier.isStage) parseContext.error(token.loc, "Error", "Shader class invalid qualifiers: stage", "");
+			if (shaderQualifier.isStream) parseContext.error(token.loc, "Error", "Shader class invalid qualifiers: stream", "");
+			return false;
+		}
+
 		//for newly defined shader class: we create an unused variable using the type
 		//otherwise the class would not be defined in the AST as long as nobody else is using it
 		TString unusedVariableName = "__var_" + declaredType.getTypeName() + "_unused";
@@ -550,7 +565,10 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
     do {
         switch (peek()) {
         case EHTokStatic:
-            qualifier.storage = parseContext.symbolTable.atGlobalLevel() ? EvqGlobal : EvqTemporary;
+			if (qualifier.storage != EvqConst)  //to avoid a "const static" declaration to move back the storage from const to global
+			{
+				qualifier.storage = parseContext.symbolTable.atGlobalLevel() ? EvqGlobal : EvqTemporary;
+			}
             break;
         case EHTokExtern:
             // TODO: no meaning in glslang?
@@ -635,7 +653,24 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
             if (!parseContext.handleInputGeometry(token.loc, ElgTrianglesAdjacency))
                 return false;
             break; 
-            
+
+		/*****************************************************************************************************/
+		//XKSL qualifiers extensions
+		case EHTokPublic:
+		case EHTokPrivate:
+		case EHTokProtected:
+		case EHTokInternal:
+			break;  //we simply ignore accessibility qualifiers for now
+
+		case EHTokStage:
+			qualifier.isStage = true;
+			break;
+
+		case EHTokStream:
+			qualifier.isStream = true;
+			break;
+		/*****************************************************************************************************/
+
         default:
             return true;
         }
@@ -1720,20 +1755,27 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 		// some extra SEMI_COLON?
 		while (acceptTokenClass(EHTokSemicolon)) {}
 
-		// success on seeing the RIGHT_BRACE coming up
-		if (peekTokenClass(EHTokRightBrace))
-			return true;
+		// success on seeing the RIGHT_BRACE '}'
+		if (peekTokenClass(EHTokRightBrace)) return true;
 
-		//TODO: member or function type can have properties! (public, protected, ...)
+		//=================================================
+		//New member or method
+		// check if there is a typedef
+		bool typedefDecl = acceptTokenClass(EHTokTypedef);
+		if (typedefDecl)
+		{
+			parseContext.error(token.loc, "Error", "Cannot have \"typedef\" before a Shader class member of method", "");
+			return false;
+		}
 
-		// fully_specified_type
+		// check the type (plus any post-declaration qualifiers)
 		TType declaredType;
 		if (!acceptFullySpecifiedType(nullptr, declaredType)) {
 			expected("shader: member or function type");
 			return false;
 		}
 
-		//Identifier
+		// get the Identifier
 		HlslToken idToken = token;
 		if (!acceptIdentifier(idToken))
 		{
@@ -1783,19 +1825,34 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 		else {
 			// type identifiers and properties
 			do {
-				// add the member to the list of members
-				TTypeLoc member = { new TType(EbtVoid), token.loc };
-				member.type->shallowCopy(declaredType);
-				member.type->setFieldName(*token.string);
-				typeList->push_back(member);
+				// add the new member into the list of class members
+				{
+					TTypeLoc member = { new TType(EbtVoid), token.loc };
+					member.type->shallowCopy(declaredType);
+					member.type->setFieldName(*token.string);
+					typeList->push_back(member);
+				
+				}
+				TTypeLoc& member = typeList->back();
 
 				// array_specifier
 				TArraySizes* arraySizes = nullptr;
 				acceptArraySpecifier(arraySizes);
 				if (arraySizes)
-					typeList->back().type->newArraySizes(*arraySizes);
+					member.type->newArraySizes(*arraySizes);
 
 				acceptPostDecls(member.type->getQualifier());
+
+				// EQUAL assignment_expression
+				TIntermTyped* expressionNode = nullptr;
+				if (acceptTokenClass(EHTokAssign)) {
+					if (typedefDecl)
+						parseContext.error(idToken.loc, "can't have an initializer", "typedef", "");
+					if (!acceptAssignmentExpression(expressionNode)) {
+						expected("initializer");
+						return false;
+					}
+				}
 
 				// success on seeing the SEMICOLON coming up
 				if (peekTokenClass(EHTokSemicolon))
@@ -3199,7 +3256,7 @@ void HlslGrammar::acceptArraySpecifier(TArraySizes*& arraySizes)
     }
 }
 
-//xksl extensions
+//XKSL extensions
 //Parse the post declaration following a shader declaration
 // post_decls
 //		: parent1, parent2, ...

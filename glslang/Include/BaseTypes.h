@@ -59,7 +59,7 @@ enum TBasicType {
     EbtStruct,
     EbtBlock,
 
-	EbtShaderClass,  //shader class type (xksl language extension)
+	EbtShaderClass,  //shader class type (XKSL language extension)
 
     // HLSL types that live only temporarily.
     EbtString,

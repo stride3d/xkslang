@@ -418,6 +418,8 @@ public:
         readonly     = false;
         writeonly    = false;
         specConstant = false;
+		isStage      = false;
+		isStream     = false;
         clearLayout();
     }
 
@@ -454,6 +456,10 @@ public:
     bool readonly     : 1;
     bool writeonly    : 1;
     bool specConstant : 1;  // having a constant_id is not sufficient: expressions have no id, but are still specConstant
+
+	//XKSL qualifiers extensions
+	bool isStage      : 1;
+	bool isStream     : 1;
 
     bool isMemory() const
     {
@@ -1160,7 +1166,7 @@ public:
                                 typeName = NewPoolTString(n.c_str());
                             }
 
-	// For shader class (xksl language extension)
+	// For shader class (XKSL language extension)
 	TType(TTypeList* userDef, void* functions, const TString& n, const TQualifier& q, TIdentifierList* parentsName) :
 		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
 		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr), parentsName(parentsName)
@@ -1578,6 +1584,10 @@ public:
             p += snprintf(p, end - p, "readonly ");
         if (qualifier.writeonly)
             p += snprintf(p, end - p, "writeonly ");
+		if (qualifier.isStage)
+			p += snprintf(p, end - p, "stage ");
+		if (qualifier.isStream)
+			p += snprintf(p, end - p, "stream ");
         if (qualifier.specConstant)
             p += snprintf(p, end - p, "specialization-constant ");
         p += snprintf(p, end - p, "%s ", getStorageQualifierString());
@@ -1772,7 +1782,7 @@ protected:
     TString *fieldName;              // for structure field names
     TString *typeName;               // for structure type name
     TSampler sampler;
-	TIdentifierList* parentsName;    // for shader class type name (xksl extension)
+	TIdentifierList* parentsName;    // for shader class type name (XKSL extension)
 };
 
 } // end namespace glslang

@@ -1,16 +1,15 @@
-struct SSSS1 {
-    float a;
-};
+static const int s1 = 5;
 
-struct SSSS2 {
-    float a;
-};
-
-void main()
+static struct S1
 {
-	SSSS1 s1;
-	s1.a=1;
-	SSSS2 s2;
-	s2.a=2;
-	int i = 5;
+	static int s1;
+} ss1;
+
+
+
+int main()
+{
+	int i = s1;
+	int j = ss1.s1;
+	return i + j;
 }

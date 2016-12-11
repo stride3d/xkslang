@@ -2272,6 +2272,29 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             spv::BuiltIn builtIn = TranslateBuiltInDecoration(glslangMember.getQualifier().builtIn, true);
             if (builtIn != spv::BuiltInMax)
                 addMemberDecoration(spvType, member, spv::DecorationBuiltIn, (int)builtIn);
+
+			/**********************************************************************************************/
+			//XKSL extensions
+			if (type.getBasicType() == glslang::EbtShaderClass)
+			{
+				//Decorate if the member is a stage attribute
+				if (glslangMember.getQualifier().isStage) addMemberDecoration(spvType, member, spv::DecorationMemberStage, 1);
+				//Decorate if the member is a stream attribute
+				if (glslangMember.getQualifier().isStream) addMemberDecoration(spvType, member, spv::DecorationMemberStream, 1);
+
+				if (glslangMember.getQualifier().storage == glslang::EvqConst)  //const or "static const" or "const static"
+				{
+					//We decorate the member if it's a const (we consider const or static const to be equivalent to static const)
+					//and we attribute it an ID refering to the resolution of its default value (we have some cases where we can't resolve a const until final compilation stage)
+					addMemberDecoration(spvType, member, spv::DecorationMemberConst, 9999);
+				}
+				else if (glslangMember.getQualifier().storage == glslang::EvqGlobal) //static
+				{
+					//We decorate the member if it's a static member
+					addMemberDecoration(spvType, member, spv::DecorationMemberStatic, 8888);
+				}
+			}
+			/**********************************************************************************************/
         }
     }
 
@@ -2290,7 +2313,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             builder.addDecoration(spvType, spv::DecorationXfbBuffer, type.getQualifier().layoutXfbBuffer);
     }
 
-	//xksl extensions
+	//XKSL extensions: decorate the shader class
 	if (type.getBasicType() == glslang::EbtShaderClass)
 	{
 		builder.addDecoration(spvType, spv::DecorationShaderClassName, type.getTypeName().c_str());
@@ -2651,7 +2674,10 @@ void TGlslangToSpvTraverser::visitFunctions(const glslang::TIntermSequence& glsl
     for (int f = 0; f < (int)glslFunctions.size(); ++f) {
         glslang::TIntermAggregate* node = glslFunctions[f]->getAsAggregate();
         if (node && (node->getOp() == glslang::EOpFunction || node->getOp() == glslang ::EOpLinkerObjects))
+		{
+			builder.addDecoration(0, spv::DecorationShaderInheritFromParent, 1);
             node->traverse(this);
+		}
     }
 }
 
