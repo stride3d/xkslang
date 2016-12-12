@@ -661,13 +661,20 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
 		case EHTokProtected:
 		case EHTokInternal:
 			break;  //we simply ignore accessibility qualifiers for now
-
 		case EHTokStage:
 			qualifier.isStage = true;
 			break;
-
 		case EHTokStream:
 			qualifier.isStream = true;
+			break;
+		case EHTokOverride:
+			qualifier.isOverride = true;
+			break;
+		case EHTokAbstract:
+			qualifier.isAbstract = true;
+			break;
+		case EHTokClone:
+			qualifier.isClone = true;
 			break;
 		/*****************************************************************************************************/
 

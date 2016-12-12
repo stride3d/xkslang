@@ -420,6 +420,9 @@ public:
         specConstant = false;
 		isStage      = false;
 		isStream     = false;
+		isOverride   = false;
+		isAbstract   = false;
+		isClone      = false;
         clearLayout();
     }
 
@@ -460,6 +463,9 @@ public:
 	//XKSL qualifiers extensions
 	bool isStage      : 1;
 	bool isStream     : 1;
+	bool isOverride   : 1;
+	bool isAbstract   : 1;
+	bool isClone      : 1;
 
     bool isMemory() const
     {
@@ -1588,6 +1594,12 @@ public:
 			p += snprintf(p, end - p, "stage ");
 		if (qualifier.isStream)
 			p += snprintf(p, end - p, "stream ");
+		if (qualifier.isOverride)
+			p += snprintf(p, end - p, "override ");
+		if (qualifier.isAbstract)
+			p += snprintf(p, end - p, "abstract ");
+		if (qualifier.isClone)
+			p += snprintf(p, end - p, "clone ");
         if (qualifier.specConstant)
             p += snprintf(p, end - p, "specialization-constant ");
         p += snprintf(p, end - p, "%s ", getStorageQualifierString());

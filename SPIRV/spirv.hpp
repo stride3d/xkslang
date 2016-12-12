@@ -389,11 +389,14 @@ enum Decoration {
 	DecorationShaderInheritFromParent = 1001,
 
 	//Member Qualifiers
-	DecorationMemberStage  = 1002,  //member is a stage
-	DecorationMemberStream = 1003,  //member is a stream
+	DecorationAttributeStage  = 1002,  //member or method is a stage
+	DecorationAttributeStream = 1003,  //member or method is a stream
+	DecorationAttributeStatic = 1004,  //member or method is static
 
-	DecorationMemberStatic = 1004,  //member is static
-	DecorationMemberConst  = 1005,  //member is const
+	DecorationMemberConst  = 1005,     //const member
+	DecorationMethodAbstract = 1006,   //abstract method
+	DecorationMethodOverride = 1007,   //override method
+	DecorationMethodClone    = 1008,   //clone method
 	//**********************************************************************
 
     DecorationMax = 0x7fffffff,

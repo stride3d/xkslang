@@ -2278,9 +2278,9 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 			if (type.getBasicType() == glslang::EbtShaderClass)
 			{
 				//Decorate if the member is a stage attribute
-				if (glslangMember.getQualifier().isStage) addMemberDecoration(spvType, member, spv::DecorationMemberStage, 1);
+				if (glslangMember.getQualifier().isStage) addMemberDecoration(spvType, member, spv::DecorationAttributeStage, 1);
 				//Decorate if the member is a stream attribute
-				if (glslangMember.getQualifier().isStream) addMemberDecoration(spvType, member, spv::DecorationMemberStream, 1);
+				if (glslangMember.getQualifier().isStream) addMemberDecoration(spvType, member, spv::DecorationAttributeStream, 1);
 
 				if (glslangMember.getQualifier().storage == glslang::EvqConst)  //const or "static const" or "const static"
 				{
@@ -2291,7 +2291,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 				else if (glslangMember.getQualifier().storage == glslang::EvqGlobal) //static
 				{
 					//We decorate the member if it's a static member
-					addMemberDecoration(spvType, member, spv::DecorationMemberStatic, 8888);
+					addMemberDecoration(spvType, member, spv::DecorationAttributeStatic, 8888);
 				}
 			}
 			/**********************************************************************************************/
@@ -2650,6 +2650,27 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
             // give a name too
             builder.addName(function->getParamId(p), parameters[p]->getAsSymbolNode()->getName().c_str());
         }
+
+		//XKSL extensions: add functions attributes (through decorate)
+		{
+			const glslang::TType &functionType = glslFunction->getType();
+			if (functionType.getQualifier().isStage)
+			{
+				builder.addDecoration(function->getId(), spv::DecorationAttributeStage, 1);
+			}
+			if (functionType.getQualifier().isOverride)
+			{
+				builder.addDecoration(function->getId(), spv::DecorationMethodOverride, 1);
+			}
+			if (functionType.getQualifier().isAbstract)
+			{
+				builder.addDecoration(function->getId(), spv::DecorationMethodAbstract, 1);
+			}
+			if (functionType.getQualifier().isClone)
+			{
+				builder.addDecoration(function->getId(), spv::DecorationMethodClone, 1);
+			}
+		}
     }
 }
 
@@ -2675,7 +2696,6 @@ void TGlslangToSpvTraverser::visitFunctions(const glslang::TIntermSequence& glsl
         glslang::TIntermAggregate* node = glslFunctions[f]->getAsAggregate();
         if (node && (node->getOp() == glslang::EOpFunction || node->getOp() == glslang ::EOpLinkerObjects))
 		{
-			builder.addDecoration(0, spv::DecorationShaderInheritFromParent, 1);
             node->traverse(this);
 		}
     }

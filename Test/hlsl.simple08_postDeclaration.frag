@@ -10,7 +10,7 @@ TODO: staging
 TODO: Input, Output, Input2, Constants (for geometry and tessellation shaders)
 TODO streams: but not for variable declaration
 ***************************************************************************************/
-/*
+
 shader ShaderTestAccessor
 {
 	public int i0;
@@ -23,9 +23,8 @@ shader ShaderTestAccessor
 
 public shader ShaderPublic
 {};
-*/
 
-/*
+
 shader ShaderTestMember
 {
 	stage stream float4 ShadingPosition : SV_Position;
@@ -41,7 +40,6 @@ shader ShaderTestMember
 	//That one probably don't make any sense
 	private static const stage stream float mixWithEverything;
 }
-*/
 
 shader TestShaderMethod
 {
@@ -49,9 +47,13 @@ shader TestShaderMethod
     stage void VSMain() {}
 
     // Declare Pixel shader main method
-    //stage void PSMain() {}
+    stage void PSMain(double d) {}
 	
-	//virtual float aVirtualMethod();
+	abstract void abstractMethod() {}
+	
+	override void overrideMethod() {}
+	
+	clone void cloneMethod() {}
 }
 
 

@@ -199,7 +199,7 @@ const char* StorageClassString(int StorageClass)
     }
 }
 
-const int DecorationCeiling = 1010;  //Warning: Bad code (legacy)!
+const int DecorationCeiling = 1020;  //Warning: Bad code (legacy)!
 
 const char* DecorationString(int decoration)
 {
@@ -253,11 +253,13 @@ const char* DecorationString(int decoration)
 	//XKSL extensions
 	case (DecorationShaderClassName):         return "ShaderClassName";
 	case (DecorationShaderInheritFromParent): return "InheritFromShaderClass";
-	case (DecorationMemberStage):			  return "MemberStage";
-	case (DecorationMemberStream):            return "MemberStream";
-	case (DecorationMemberStatic):			  return "MemberStatic";
-	case (DecorationMemberConst):             return "MemberConst";
-		
+	case (DecorationAttributeStage):	      return "Stage";
+	case (DecorationAttributeStream):         return "Stream";
+	case (DecorationAttributeStatic):		  return "Static";
+	case (DecorationMemberConst):             return "Const";
+	case (DecorationMethodOverride):          return "Override";
+	case (DecorationMethodAbstract):          return "Abstract";
+	case (DecorationMethodClone):             return "Clone";
 
     case DecorationCeiling:
     default:  return "Bad";
