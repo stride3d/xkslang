@@ -64,7 +64,10 @@ enum TBasicType {
     // HLSL types that live only temporarily.
     EbtString,
 
-    EbtNumTypes
+	//XKSL extensions: when an expressions or statements make reference to an unknown variable, instead of returning an error we will use this unresolved type.
+	EbtXKSLUnresolvedType,
+
+    EbtNumTypes,
 };
 
 //

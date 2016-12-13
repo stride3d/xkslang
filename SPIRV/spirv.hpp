@@ -649,6 +649,11 @@ enum Op {
     OpEntryPoint = 15,
     OpExecutionMode = 16,
     OpCapability = 17,
+
+	//New OpType for XKSL extensions (to define unresolved types)
+	//set at 18 because with current code all types must appear before OpConstant = 43
+	OpTypeUnresolved = 18,
+
     OpTypeVoid = 19,
     OpTypeBool = 20,
     OpTypeInt = 21,
@@ -929,6 +934,7 @@ enum Op {
     OpImageSparseRead = 320,
     OpSubgroupBallotKHR = 4421,
     OpSubgroupFirstInvocationKHR = 4422,
+
     OpMax = 0x7fffffff,
 };
 

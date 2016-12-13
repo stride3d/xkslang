@@ -84,6 +84,21 @@ Id Builder::import(const char* name)
     return import->getResultId();
 }
 
+Id Builder::makeUnresolvedType()
+{
+	Instruction* type;
+	if (groupedTypes[OpTypeUnresolved].size() == 0) {
+		type = new Instruction(getUniqueId(), NoType, OpTypeUnresolved);
+		groupedTypes[OpTypeUnresolved].push_back(type);
+		constantsTypesGlobals.push_back(std::unique_ptr<Instruction>(type));
+		module.mapInstruction(type);
+	}
+	else
+		type = groupedTypes[OpTypeUnresolved].back();
+
+	return type->getResultId();
+}
+
 // For creating new groupedTypes (will return old type if the requested one was already made).
 Id Builder::makeVoidType()
 {
@@ -488,6 +503,7 @@ Op Builder::getMostBasicTypeClass(Id typeId) const
     Op typeClass = instr->getOpCode();
     switch (typeClass)
     {
+	case OpTypeUnresolved:
     case OpTypeVoid:
     case OpTypeBool:
     case OpTypeInt:
@@ -513,6 +529,7 @@ int Builder::getNumTypeConstituents(Id typeId) const
 
     switch (instr->getOpCode())
     {
+	case OpTypeUnresolved:
     case OpTypeBool:
     case OpTypeInt:
     case OpTypeFloat:
@@ -543,6 +560,7 @@ Id Builder::getScalarTypeId(Id typeId) const
     Op typeClass = instr->getOpCode();
     switch (typeClass)
     {
+	case OpTypeUnresolved:
     case OpTypeVoid:
     case OpTypeBool:
     case OpTypeInt:

@@ -1,24 +1,27 @@
 /****************************************************************************************
-Parse Methods and members' post declaration keyword
-Accessibility: public, private, internal, protected: those will be ignored when parsed
+Parse variables assignment expression during declaration
 
-Member: stage, stream, static, staging
-Method: stage, override, abstract, clone
-==> We just parse and add the qualifier attributes in the SPIR-X files (as decorate), to resolve things at compilation time
+//HLSL --> SPIRV: assignment test
+int TOTO_01 = 6 + 10;   //uniform variable: ignore the assignment
+static int TOTO_02 = 1 + 5 * 10;  //global variable: assignment to variable done through a function call
+static const int TOTO_03 = 5 / 9 + 1;  //const variable: variable replaced by the const value
 
-TODO: Input, Output, Input2, Constants (for geometry and tessellation shaders)
-TODO streams: not for declaration (global structure)
+static const int TOTO_02 = sqrt(9);  //const value will be set at 0
+
+static const int A0 = 5;
+static const int A1 = A0 + 5;  //A1 const value = 10
+
+static const int A2 = A3 + 5;  //A3 undefined yet: Error
+static const int A3 = 5;
+
 *****************************************************************************************/
 
-//initialisations test
-int TOTOTO_03 = 6 + 10;   //uniform: ignore initialization
-static int TOTOTO_02 = 5 + 10;
-static const int TOTOTO_01 = 5 + 9;
+static int TOTO_02 = 1 + 5 * 10;
 
-/*shader ShaderTestMember
+shader ShaderTestMember
 {
-	static const int constValue = 5 + 9;
-};*/
+	static const int constValue;// = 5 + 9;
+};
 
 /*int main(int i, int j, int k, float f)
 {

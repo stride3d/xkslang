@@ -541,6 +541,17 @@ TIntermTyped* HlslParseContext::handleVariable(const TSourceLoc& loc, TSymbol* s
         return nullptr;
     }
 
+	////XKSL extensions: if a variable is not found, we create it with an unresolved type
+	//if (symbol == nullptr)
+	//{
+	//	TString name(*string);
+	//	TSourceLoc l = loc;
+	//	TType unresolvedVariableType(EbtXKSLUnresolvedType);
+	//	growGlobalUniformBlock(l, unresolvedVariableType, name);
+
+	//	symbol = symbolTable.find(*string);
+	//}
+
     // Error check for requiring specific extensions present.
     if (symbol && symbol->getNumExtensions())
         requireExtensions(loc, symbol->getNumExtensions(), symbol->getExtensions(), symbol->getName().c_str());
@@ -578,8 +589,17 @@ TIntermTyped* HlslParseContext::handleVariable(const TSourceLoc& loc, TSymbol* s
         }
 
         // Recovery, if it wasn't found or was not a variable.
+		/// Comment from Jo: This instruction will lead to some HLSL shaders be compile even though there are some undeclared variables
+		/// for example: float f = g_array[undeclaredIndex];
+		/// I asked glslang devs and they replied:
+		/// "The recovery code was inherited from GLSL, where it is used to continue parsing to catch additional errors when compilation is not stopping after the first error.
+		/// For HLSL, we are far from writing a validator, or anything that correctly rejects shaders.
+		/// There are, however, three errors checked for and given around the area you are discussing."
+		/// (https://github.com/KhronosGroup/glslang/issues/626#issuecomment-266575324)
         if (! variable)
+		{
             variable = new TVariable(string, TType(EbtVoid));
+		}
 
         if (variable->getType().getQualifier().isFrontEndConstant())
             node = intermediate.addConstantUnion(variable->getConstArray(), variable->getType(), loc);
@@ -4575,6 +4595,34 @@ void HlslParseContext::declareTypedef(const TSourceLoc& loc, TString& identifier
         error(loc, "name already defined", "typedef", identifier.c_str());
 }
 
+//For XKSL extensions: when we parse an unknown identifier, we need to create variable at global level, with type: EbtXKSLUnresolvedType
+bool HlslParseContext::declareGlobalVariable(const TSourceLoc& loc, const TString& identifier, TType& type)
+{
+	if (voidErrorCheck(loc, identifier, type.getBasicType()))
+		return false;
+
+	// Check for redeclaration of built-ins and/or attempting to declare a reserved name
+	TSymbol* symbol = nullptr;
+
+	inheritGlobalDefaults(type.getQualifier());
+
+	// Declare the variable
+	if (type.isArray()) {
+		//// array case
+		//flattenVar = shouldFlatten(type);
+		//declareArrayAtGlobalLevel(loc, identifier, type, symbol, !flattenVar);
+		//if (flattenVar)
+		//	flatten(loc, *symbol->getAsVariable());
+		return false;
+	}
+	else {
+		// non-array case
+		symbol = declareNonArrayAtGlobalLevel(loc, identifier, type);
+	}
+
+	return true;
+}
+
 //
 // Do everything necessary to handle a variable (non-block) declaration.
 // Either redeclaring a variable, or making a new one, updating the symbol
@@ -4679,6 +4727,21 @@ TVariable* HlslParseContext::declareNonArray(const TSourceLoc& loc, TString& ide
 
     error(loc, "redefinition", variable->getName().c_str(), "");
     return nullptr;
+}
+
+TVariable* HlslParseContext::declareNonArrayAtGlobalLevel(const TSourceLoc& loc, const TString& identifier, TType& type)
+{
+	// make a new variable
+	TVariable* variable = new TVariable(&identifier, type);
+
+	// add variable to symbol table
+	if (symbolTable.insertAtGlobalLevel(*variable)) {
+		trackLinkageDeferred(*variable);
+		return variable;
+	}
+
+	error(loc, "redefinition", variable->getName().c_str(), "");
+	return nullptr;
 }
 
 //

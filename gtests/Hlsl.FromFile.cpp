@@ -91,12 +91,16 @@ INSTANTIATE_TEST_CASE_P(
 		//{"hlsl.simple05.frag", ""},
 		//{"hlsl.simple06.frag", ""},
 		//{"hlsl.simple07.frag", ""},
-		{"hlsl.simple08_postDeclaration.frag", ""},
+		//{"hlsl.simple08_postDeclaration.frag", ""},
+		//{"hlsl.simple09_constAssignment.frag", ""},
+		{"hlsl.simple10_unresolvedVariable.frag", ""},
 		//{"hlsl.test.frag", "" },
 		//{"hlsl.struct.test.frag", "PixelShaderFunction"},
 		//{"hlsl.struct.frag", "PixelShaderFunction"},
         //{"hlsl.amend.frag", "f1"},
-        /*{"hlsl.array.frag", "PixelShaderFunction"},
+
+		/*
+        {"hlsl.array.frag", "PixelShaderFunction"},
         {"hlsl.array.implicit-size.frag", "PixelShaderFunction"},
         {"hlsl.array.multidim.frag", "main"},
         {"hlsl.assoc.frag", "PixelShaderFunction"},
@@ -234,7 +238,8 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.tx.bracket.frag", "main"},
         {"hlsl.typedef.frag", "PixelShaderFunction"},
         {"hlsl.whileLoop.frag", "PixelShaderFunction"},
-        {"hlsl.void.frag", "PixelShaderFunction"},*/
+        {"hlsl.void.frag", "PixelShaderFunction"},
+		*/
     }),
     FileNameAsCustomTestSuffix
 );

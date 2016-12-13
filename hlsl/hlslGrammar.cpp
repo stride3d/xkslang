@@ -2507,9 +2507,39 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
         // constructor (nothing else to do yet)
     } else if (acceptIdentifier(idToken)) {
         // identifier or function_call name
-        if (! peekTokenClass(EHTokLeftParen)) {
+        if (! peekTokenClass(EHTokLeftParen))
+		{
             node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
-        } else if (acceptFunctionCall(idToken, node)) {
+
+			//=======================================================================================================================
+			//=======================================================================================================================
+			//XKSL extensions: if it's an unknown symbol node (symbol not refering to any known variable), we create an unresolved variable at global level and replace the node
+			{
+				TIntermTyped*& aNode = node;
+
+				if (aNode != nullptr && aNode->getAsSymbolNode() && aNode->getAsSymbolNode()->getType().getBasicType() == EbtVoid)
+				{
+					TSourceLoc loc = aNode->getLoc();
+					const TString& variableName = aNode->getAsSymbolNode()->getName();
+					TSymbol* variableSymbol = parseContext.symbolTable.find(variableName);
+
+					if (variableSymbol == nullptr)
+					{
+						//the symbol does not exist		
+						TType unresolvedVariableType(EbtXKSLUnresolvedType, EvqGlobal);  //  EbtXKSLUnresolvedType;  EbtInt;
+						parseContext.declareGlobalVariable(loc, variableName, unresolvedVariableType);
+						variableSymbol = parseContext.symbolTable.find(variableName);
+
+						aNode = parseContext.handleVariable(loc, variableSymbol, &variableName);
+					}
+				}
+			}
+			//=======================================================================================================================
+			//=======================================================================================================================
+
+        }
+		else if (acceptFunctionCall(idToken, node))
+		{
             // function_call (nothing else to do yet)
         } else {
             expected("function call arguments");

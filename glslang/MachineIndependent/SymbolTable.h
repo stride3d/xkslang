@@ -566,6 +566,27 @@ public:
         return table[currentLevel()]->insert(symbol, separateNameSpaces);
     }
 
+	bool insertAtGlobalLevel(TSymbol& symbol)
+	{
+		symbol.setUniqueId(++uniqueId);
+
+		// make sure there isn't a function of this variable name
+		if (!separateNameSpaces && !symbol.getAsFunction() && table[currentLevel()]->hasFunctionName(symbol.getName()))
+			return false;
+
+		// check for not overloading or redefining a built-in function
+		if (noBuiltInRedeclarations) {
+			if (atGlobalLevel() && currentLevel() > 0) {
+				if (table[0]->hasFunctionName(symbol.getName()))
+					return false;
+				if (currentLevel() > 1 && table[1]->hasFunctionName(symbol.getName()))
+					return false;
+			}
+		}
+
+		return table[globalLevel]->insert(symbol, separateNameSpaces);
+	}
+
     // Add more members to an already inserted aggregate object
     bool amend(TSymbol& symbol, int firstNewMember)
     {

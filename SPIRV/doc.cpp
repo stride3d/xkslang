@@ -847,7 +847,7 @@ const char* OpcodeString(int op)
     case 15:  return "OpEntryPoint";
     case 16:  return "OpExecutionMode";
     case 17:  return "OpCapability";
-    case 18:  return "Bad";
+	case OpTypeUnresolved:  return "OpTypeUnresolved";
     case 19:  return "OpTypeVoid";
     case 20:  return "OpTypeBool";
     case 21:  return "OpTypeInt";
@@ -1230,6 +1230,7 @@ void Parameterize()
     InstructionDesc[OpMemoryModel].setResultAndType(false, false);
     InstructionDesc[OpEntryPoint].setResultAndType(false, false);
     InstructionDesc[OpExecutionMode].setResultAndType(false, false);
+	InstructionDesc[OpTypeUnresolved].setResultAndType(true, false);
     InstructionDesc[OpTypeVoid].setResultAndType(true, false);
     InstructionDesc[OpTypeBool].setResultAndType(true, false);
     InstructionDesc[OpTypeInt].setResultAndType(true, false);

@@ -1487,23 +1487,24 @@ public:
     static const char* getBasicString(TBasicType t)
     {
         switch (t) {
-        case EbtVoid:              return "void";
-        case EbtFloat:             return "float";
-        case EbtDouble:            return "double";
+        case EbtVoid:               return "void";
+        case EbtFloat:              return "float";
+        case EbtDouble:             return "double";
 #ifdef AMD_EXTENSIONS
-        case EbtFloat16:           return "float16_t";
+        case EbtFloat16:            return "float16_t";
 #endif
-        case EbtInt:               return "int";
-        case EbtUint:              return "uint";
-        case EbtInt64:             return "int64_t";
-        case EbtUint64:            return "uint64_t";
-        case EbtBool:              return "bool";
-        case EbtAtomicUint:        return "atomic_uint";
-        case EbtSampler:           return "sampler/image";
-        case EbtStruct:            return "structure";
-        case EbtBlock:             return "block";
-		case EbtShaderClass:       return "shader";
-        default:                   return "unknown type";
+        case EbtInt:                return "int";
+        case EbtUint:               return "uint";
+        case EbtInt64:              return "int64_t";
+        case EbtUint64:             return "uint64_t";
+        case EbtBool:               return "bool";
+        case EbtAtomicUint:         return "atomic_uint";
+        case EbtSampler:            return "sampler/image";
+        case EbtStruct:             return "structure";
+        case EbtBlock:              return "block";
+		case EbtShaderClass:        return "shader";
+		case EbtXKSLUnresolvedType: return "unresolved";
+        default:                    return "unknown type";
         }
     }
 

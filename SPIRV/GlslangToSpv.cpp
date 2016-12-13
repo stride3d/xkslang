@@ -2076,6 +2076,12 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
             spvType = convertGlslangStructToSpvType(type, glslangMembers, explicitLayout, qualifier);
         }
         break;
+
+	//XKSL extensions: add a Spv unresolved type
+	case glslang::EbtXKSLUnresolvedType:
+		spvType = builder.makeUnresolvedType();
+		break;
+
     default:
         assert(0);
         break;
