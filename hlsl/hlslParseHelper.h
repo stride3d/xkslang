@@ -170,10 +170,23 @@ public:
     // Potentially rename shader entry point function
     void renameShaderFunction(TString*& name) const;
 
+    // Reset data for incrementally built referencing of flattened composite structures
+    void initFlattening() { flattenLevel.push_back(0); flattenOffset.push_back(0); }
+    void finalizeFlattening() { flattenLevel.pop_back(); flattenOffset.pop_back(); }
+
 protected:
+    struct TFlattenData {
+        TFlattenData() : nextBinding(TQualifier::layoutBindingEnd) { }
+        TFlattenData(int nb) : nextBinding(nb) { }
+
+        TVector<TVariable*> members;     // individual flattened variables
+        TVector<int>        offsets;     // offset to next tree level
+        int                 nextBinding; // next binding to use.
+    };
+
     void inheritGlobalDefaults(TQualifier& dst) const;
     TVariable* makeInternalVariable(const char* name, const TType&) const;
-    TVariable* declareNonArray(const TSourceLoc&, TString& identifier, TType&);
+    TVariable* declareNonArray(const TSourceLoc&, TString& identifier, TType&, bool track);
 	TVariable* declareNonArrayAtGlobalLevel(const TSourceLoc&, const TString& identifier, TType&);
     void declareArray(const TSourceLoc&, TString& identifier, const TType&, TSymbol*&, bool track);
     TIntermNode* executeInitializer(const TSourceLoc&, TIntermTyped* initializer, TVariable* variable);
@@ -185,13 +198,19 @@ protected:
     bool shouldConvertLValue(const TIntermNode*) const;
 
     // Array and struct flattening
-    bool shouldFlatten(const TType& type) const { return shouldFlattenIO(type) || shouldFlattenUniform(type); }
-    TIntermTyped* flattenAccess(TIntermTyped* base, int member);
+    bool shouldFlatten(const TType& type) const;
+    TIntermTyped* flattenAccess(const TSourceLoc&, TIntermTyped* base, int member);
     bool shouldFlattenIO(const TType&) const;
     bool shouldFlattenUniform(const TType&) const;
+    bool wasFlattened(const TIntermTyped* node) const;
+    bool wasFlattened(int id) const { return flattenMap.find(id) != flattenMap.end(); }
+    int  addFlattenedMember(const TSourceLoc& loc, const TVariable&, const TType&, TFlattenData&, const TString& name, bool track);
+    bool isFinalFlattening(const TType& type) const { return !(type.isStruct() || type.isArray()); }
+
     void flatten(const TSourceLoc& loc, const TVariable& variable);
-    void flattenStruct(const TVariable& variable);
-    void flattenArray(const TSourceLoc& loc, const TVariable& variable);
+    int flatten(const TSourceLoc& loc, const TVariable& variable, const TType&, TFlattenData&, TString name);
+    int flattenStruct(const TSourceLoc& loc, const TVariable& variable, const TType&, TFlattenData&, TString name);
+    int flattenArray(const TSourceLoc& loc, const TVariable& variable, const TType&, TFlattenData&, TString name);
 
     // Current state of parsing
     struct TPragma contextPragma;
@@ -254,7 +273,10 @@ protected:
     //
     TVector<TSymbol*> ioArraySymbolResizeList;
 
-    TMap<int, TVector<TVariable*>> flattenMap;
+    TMap<int, TFlattenData> flattenMap;
+    TVector<int> flattenLevel;  // nested postfix operator level for flattening
+    TVector<int> flattenOffset; // cumulative offset for flattening
+
     unsigned int nextInLocation;
     unsigned int nextOutLocation;
 
