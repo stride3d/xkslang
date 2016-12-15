@@ -1072,7 +1072,7 @@ public:
     explicit TType(TBasicType t = EbtVoid, TStorageQualifier q = EvqTemporary, int vs = 1, int mc = 0, int mr = 0,
                    bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
-                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr), parentsName(nullptr)
+                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1082,7 +1082,7 @@ public:
     TType(TBasicType t, TStorageQualifier q, TPrecisionQualifier p, int vs = 1, int mc = 0, int mr = 0, 
           bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
-                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr), parentsName(nullptr)
+                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1094,7 +1094,7 @@ public:
     explicit TType(const TPublicType& p) :
                             basicType(p.basicType),
                             vectorSize(p.vectorSize), matrixCols(p.matrixCols), matrixRows(p.matrixRows), vector1(false),
-                            arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr), parentsName(nullptr)
+                            arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
                             {
                                 if (basicType == EbtSampler)
                                     sampler = p.sampler;
@@ -1110,7 +1110,7 @@ public:
     TType(const TSampler& sampler, TStorageQualifier q = EvqUniform, TArraySizes* as = nullptr) :
         basicType(EbtSampler), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
         arraySizes(as), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-        sampler(sampler), parentsName(nullptr)
+        sampler(sampler), ownerClassName(nullptr), parentsName(nullptr)
     {
         qualifier.clear();
         qualifier.storage = q;
@@ -1157,7 +1157,7 @@ public:
     // for making structures, ...
     TType(TTypeList* userDef, const TString& n) :
                             basicType(EbtStruct), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-                            arraySizes(nullptr), structure(userDef), fieldName(nullptr), parentsName(nullptr)
+                            arraySizes(nullptr), structure(userDef), fieldName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1166,7 +1166,7 @@ public:
     // For interface blocks
     TType(TTypeList* userDef, const TString& n, const TQualifier& q) :
                             basicType(EbtBlock), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-                            qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr), parentsName(nullptr)
+                            qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
                             {
                                 sampler.clear();
                                 typeName = NewPoolTString(n.c_str());
@@ -1175,7 +1175,7 @@ public:
 	// For shader class (XKSL language extension)
 	TType(TTypeList* userDef, void* functions, const TString& n, const TQualifier& q, TIdentifierList* parentsName) :
 		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr), parentsName(parentsName)
+		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr), ownerClassName(nullptr), parentsName(parentsName)
 	{
 		sampler.clear();
 		typeName = NewPoolTString(n.c_str());
@@ -1199,6 +1199,7 @@ public:
         structure = copyOf.structure;
         fieldName = copyOf.fieldName;
         typeName = copyOf.typeName;
+		ownerClassName = copyOf.ownerClassName;
 		parentsName = copyOf.parentsName;
     }
 
@@ -1221,6 +1222,10 @@ public:
                 structure->push_back(typeLoc);
             }
         }
+
+		if (copyOf.ownerClassName) {
+			ownerClassName = NewPoolTString(copyOf.ownerClassName->c_str());
+		}
 
 		if (copyOf.parentsName) {
 			parentsName = new TIdentifierList;
@@ -1515,6 +1520,12 @@ public:
         char* p = &buf[0];
         char* end = &buf[maxSize];
 
+		//XKSL: add owner properties for the type
+		if (getOwnerClassName() != nullptr)
+		{
+			p += snprintf(p, end - p, "OwnerClassName=\"%s\" ", getOwnerClassName()->c_str());
+		}
+
         if (qualifier.hasLayout()) {
             // To reduce noise, skip this if the only layout is an xfb_buffer
             // with no triggering xfb_offset.
@@ -1624,6 +1635,31 @@ public:
         TString s(buf);
         s.append(getBasicTypeString());
 
+		//XKSL: add type properties from shader/class
+		if (basicType == EbtShaderClass)
+		{
+			char buf2[maxSize];
+			p = &buf2[0];
+			end = &buf2[maxSize];
+
+			p += snprintf(p, end - p, "(");
+			p += snprintf(p, end - p, "ClassName=\"%s\"", getTypeName().c_str());
+			if (parentsName != nullptr)
+			{
+				p += snprintf(p, end - p, " Parents={");
+				for (int i = 0; i<parentsName->size(); ++i)
+				{
+					if (i > 0) p += snprintf(p, end - p, ", ");
+					p += snprintf(p, end - p, "\"%s\"", parentsName->at(i)->c_str());
+				}
+				p += snprintf(p, end - p, "}");
+			}
+			p += snprintf(p, end - p, ")");
+			
+			*p = 0;
+			s.append(TString(buf2));
+		}
+
         if (qualifier.builtIn != EbvNone) {
             s.append(" ");
             s.append(getBuiltInVariableString());
@@ -1667,7 +1703,14 @@ public:
     const char* getPrecisionQualifierString() const { return GetPrecisionQualifierString(qualifier.precision); }
     const TTypeList* getStruct() const { return structure; }
     TTypeList* getWritableStruct() const { return structure; }  // This should only be used when known to not be sharing with other threads
+
 	const TIdentifierList* getParentsName() const { return parentsName; }
+	const TString* getOwnerClassName() const { return ownerClassName; }
+	void setOwnerClassName(const char* name)
+	{
+		if (name != nullptr) ownerClassName = NewPoolTString(name);
+		else ownerClassName = nullptr;
+	}
 
     int computeNumComponents() const
     {
@@ -1795,7 +1838,10 @@ protected:
     TString *fieldName;              // for structure field names
     TString *typeName;               // for structure type name
     TSampler sampler;
-	TIdentifierList* parentsName;    // for shader class type name (XKSL extension)
+
+	//XKSL type extensions
+	TIdentifierList* parentsName;  // list of parents name for shader class type
+	TString*         ownerClassName;  // class to which the type or function belongs to
 };
 
 } // end namespace glslang

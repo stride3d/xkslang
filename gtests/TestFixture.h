@@ -393,7 +393,7 @@ public:
 		// Write the stream output on the disk
 		if (source == Source::HLSL)
 		{
-			const std::string newOutputFname = testDir + "/" + testName + ".latest.out";
+			const std::string newOutputFname = testDir + "/" + testName + ".latest.spv";
 			WriteFile(newOutputFname, stream.str());
 		}
 

@@ -2324,6 +2324,8 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 	{
 		builder.addDecoration(spvType, spv::DecorationShaderClassName, type.getTypeName().c_str());
 
+		//const glslang::TString* ownerClassName = type.getOwnerClassName();
+
 		const glslang::TIdentifierList* parentsName = type.getParentsName();
 		if (parentsName != nullptr)
 		{

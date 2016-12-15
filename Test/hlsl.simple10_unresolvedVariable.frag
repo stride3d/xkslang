@@ -1,5 +1,5 @@
 /****************************************************************************************
-Parse unresolved variable
+Parse unresolved variable: check basic situations
 
 *****************************************************************************************/
 
@@ -24,13 +24,16 @@ shader Test
 		i -= unres15;
 	}
 	
-	//TODO: keep class info
-	void f02()
+	void f02(int ind)
 	{
-		//Base.k = 6;
-		//i = 5 + Base.k;
-		//int i = Base.F(2);
-		//float4 f = float4(unres04, 0, 0, 1);
+		int i = 5;
+		float4 f1 = float4(unres16, i, ind, 1);
+		
+		float4 f2 = unres17;
+		
+		unres19 = float4(1, 1, 1, 1) + unres18;
+		
+		int unres02 = 5 + 4;  //check name collision with unresolved unres02
 	}
 	
 }

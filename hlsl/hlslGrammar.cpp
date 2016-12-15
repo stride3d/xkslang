@@ -75,6 +75,64 @@ void HlslGrammar::unimplemented(const char* error)
     parseContext.error(token.loc, "Unimplemented", error, "");
 }
 
+void HlslGrammar::error(const char* error)
+{
+	parseContext.error(token.loc, "Error", error, "");
+}
+
+//Process class accessor: this, base, Knwon ClassName, ...
+bool HlslGrammar::acceptClassReferenceAccessor(TString*& className)
+{
+	if (getCurrentShaderName() == nullptr) return false;
+
+	switch (peek())
+	{
+		case EHTokThis:
+		{
+			className = nullptr;  //null == this
+			advanceToken();
+			break;
+		}
+
+		case EHTokBase:
+		{
+			//Base refers to the first parent
+			int countParent = getCurrentShaderCountParents();
+			if (countParent == 0)
+			{
+				error("Invalid \"base\" accessor: the current shader has no inheritance");
+				return false;
+			}
+			className = NewPoolTString(getCurrentShaderParentName(0));
+			advanceToken();
+			break;
+		}
+
+		case EHTokIdentifier:
+		{
+			//The token can be a known shader class
+			if (isRecordedAsAShaderName(token.string->c_str()))
+			{
+				className = NewPoolTString(token.string->c_str());
+				advanceToken();
+				break;
+			}
+			else return false;
+		}
+
+		default:
+			return false;
+	}
+
+	if (!acceptTokenClass(EHTokDot))
+	{
+		expected("dot");
+		return false;
+	}
+
+	return true;
+}
+
 // Only process the next token if it is an identifier.
 // Return true if it was an identifier.
 bool HlslGrammar::acceptIdentifier(HlslToken& idToken)
@@ -337,7 +395,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
 	{
 		if (typedefDecl)
 		{
-			parseContext.error(token.loc, "Error", "Cannot have \"typedef\" with a Shader class", "");
+			error("Cannot have \"typedef\" with a Shader class");
 			return false;
 		}
 
@@ -345,12 +403,15 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
 		TQualifier shaderQualifier = declaredType.getQualifier();
 		if (shaderQualifier.isStage || shaderQualifier.isStream)
 		{
-			if (shaderQualifier.isStage) parseContext.error(token.loc, "Error", "Shader class invalid qualifiers: stage", "");
-			if (shaderQualifier.isStream) parseContext.error(token.loc, "Error", "Shader class invalid qualifiers: stream", "");
+			if (shaderQualifier.isStage) error("Shader class invalid qualifiers: stage");
+			if (shaderQualifier.isStream) error("Shader class invalid qualifiers: stream");
 			return false;
 		}
 
-		//for newly defined shader class: we create an unused variable using the type
+		//TString newTypeName = "_" + declaredType.getTypeName() + "_shaderType_";
+		//declaredType.setTypeName(newTypeName);
+
+		//for newly defined shader class: we create an unused variable
 		//otherwise the class would not be defined in the AST as long as nobody else is using it
 		TString unusedVariableName = "__var_" + declaredType.getTypeName() + "_unused";
 		TString* pName = NewPoolTString(unusedVariableName.c_str());
@@ -1232,8 +1293,20 @@ bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
         // when this is not a type.
         token.symbol = parseContext.symbolTable.find(*token.string);
         if (token.symbol && token.symbol->getAsVariable() && token.symbol->getAsVariable()->isUserType()) {
-            type.shallowCopy(token.symbol->getType());
-            advanceToken();
+
+			type.shallowCopy(token.symbol->getType());
+			advanceToken();
+
+			//XKSL extensions: if the type is EbtShaderClass: we make sure that it's a valid type declaration, and not an expression of the kind: TypeName.Something
+			if (token.symbol->getAsVariable()->getType().getBasicType() == EbtShaderClass)
+			{
+				if (peekTokenClass(EHTokDot))
+				{
+					recedeToken();
+					return false;
+				}
+			}
+			
             return true;
         } else
             return false;
@@ -1687,31 +1760,48 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 		return false;
 
 	// IDENTIFIER
-	TString shaderName = "";
 	if (!acceptTokenClass(EHTokIdentifier)) {
 		expected("shader class name");
 		return false;
 	}
-	shaderName = *token.string;
+	TString* shaderName = NewPoolTString(token.string->c_str());
+
+	if (shaderName->size() == 0) {
+		error("Invalid shader name");
+		return false;
+	}
 
 	// post_decls
 	TQualifier postDeclQualifier;
 	postDeclQualifier.clear();
 	//acceptPostDecls(postDeclQualifier);
 
+	//Get parents
 	TIdentifierList* parentsName = nullptr;
 	acceptShaderClassPostDecls(parentsName);
+
+	//Create and record shader definition
+	TShaderDefinition* shaderDefinition = new TShaderDefinition();
+	shaderDefinition->name = shaderName->c_str();
+	int countParents = parentsName == nullptr? 0: parentsName->size();
+	for (int i = 0; i < countParents; ++i)
+		shaderDefinition->parents.push_back(parentsName->at(i)->c_str());
+
+	listAllParsedShaders.push_back(shaderDefinition);
+	listShaderCurrentlyParsed.push_back(shaderDefinition);
 
 	// LEFT_BRACE
 	if (!acceptTokenClass(EHTokLeftBrace)) {
 		expected("{");
+		listShaderCurrentlyParsed.pop_back();
 		return false;
 	}
 
 	TTypeList* shaderTypeList = nullptr;                            //list of types declared by the shader
 	TShaderClassFunctionList* shaderFunctionsList = nullptr;        //list of functions declared by the shader
-	if (!acceptShaderClassDeclaration(shaderName, shaderTypeList, shaderFunctionsList)) {
+	if (!acceptShaderClassDeclaration(*shaderName, shaderTypeList, shaderFunctionsList)) {
 		expected("class member declarations");
+		listShaderCurrentlyParsed.pop_back();
 		return false;
 	}
 
@@ -1722,33 +1812,43 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 		for (int i = 0; i< countFunctionNodes; i++)
 		{
 			TIntermNode* functionNode = shaderFunctionsList->at(i).node;
+
+			TType& functionType = functionNode->getAsAggregate()->getWritableType();
+			functionType.setOwnerClassName(shaderName->c_str());
+
 			*node = intermediate.growAggregate(*node, functionNode);
+
+			/*TQualifier& functionQualifier = functionNode->getAsAggregate()->getQualifier();
+			functionQualifier.isAbstract = true;
+			functionQualifier.isStage = true;
+			functionQualifier.isStream = true;*/
 		}
 
-		if (*node != nullptr) (*node)->getAsAggregate()->setOperator(EOpNull);  // Will tell that the node needs to be move back to the top level (maybe can find a cleaner way?)
+		// Will tell that the node needs to be move back to the top level (maybe can find a cleaner way?)
+		if (*node != nullptr) (*node)->getAsAggregate()->setOperator(EOpNull);
 	}
 
 	// RIGHT_BRACE
 	if (!acceptTokenClass(EHTokRightBrace)) {
 		expected("}");
+		listShaderCurrentlyParsed.pop_back();
 		return false;
 	}
 
-	// create the user-defined type
-	new(&type) TType(shaderTypeList, (void*)0, shaderName, postDeclQualifier, parentsName);
-
-	if (type.getBasicType() != EbtShaderClass || shaderName.size() == 0) {
-		parseContext.error(token.loc, "Shader class error", "Invalid type or class name", "");
-		return false;
-	}
-
-	TVariable* userTypeDef = new TVariable(&shaderName, type, true);
+	// create and add the user-defined type
+	new(&type) TType(shaderTypeList, (void*)0, *shaderName, postDeclQualifier, parentsName);
+	TVariable* userTypeDef = new TVariable(shaderName, type, true);
 	if (!parseContext.symbolTable.insert(*userTypeDef))
-		parseContext.error(token.loc, "redefinition", shaderName.c_str(), "class");
+	{
+		parseContext.error(token.loc, "redefinition", shaderName->c_str(), "class");
+		listShaderCurrentlyParsed.pop_back();
+		return false;
+	}
 
 	//TSymbol *symbol = parseContext.declareNonArray(loc, identifier, type);
 	//parseContext.trackLinkageDeferred(*userTypeDef);
 
+	listShaderCurrentlyParsed.pop_back();
 	return true;
 }
 
@@ -1771,7 +1871,7 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 		bool typedefDecl = acceptTokenClass(EHTokTypedef);
 		if (typedefDecl)
 		{
-			parseContext.error(token.loc, "Error", "Cannot have \"typedef\" before a Shader class member of method", "");
+			error("Cannot have \"typedef\" before a Shader class member of method");
 			return false;
 		}
 
@@ -1854,7 +1954,7 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 				TIntermTyped* expressionNode = nullptr;
 				if (acceptTokenClass(EHTokAssign)) {
 					if (typedefDecl)
-						parseContext.error(idToken.loc, "can't have an initializer", "typedef", "");
+						error("can't have an typedef initializer");
 					if (!acceptAssignmentExpression(expressionNode)) {
 						expected("initializer");
 						return false;
@@ -2470,6 +2570,41 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
     return node != nullptr;
 }
 
+const char* HlslGrammar::getCurrentShaderName()
+{
+	if (listShaderCurrentlyParsed.size() == 0) return nullptr;
+	return listShaderCurrentlyParsed.back()->name;
+}
+
+int HlslGrammar::getCurrentShaderCountParents()
+{
+	if (listShaderCurrentlyParsed.size() == 0) return 0;
+	return listShaderCurrentlyParsed.back()->parents.size();
+}
+
+const char* HlslGrammar::getCurrentShaderParentName(int ind)
+{
+	if (listShaderCurrentlyParsed.size() == 0) return nullptr;
+	return listShaderCurrentlyParsed.back()->parents.at(ind);
+}
+
+bool HlslGrammar::isRecordedAsAShaderName(const char* name)
+{
+	int count = listAllParsedShaders.size();
+	for (int i = 0; i < count; ++i)
+	{
+		if (strcmp(listAllParsedShaders[i]->name, name) == 0) return true;
+
+		int countParents = listAllParsedShaders[i]->parents.size();
+		for (int k = 0; k < countParents; ++k)
+		{
+			if (strcmp(listAllParsedShaders[i]->parents[k], name) == 0) return true;
+		}
+	}
+
+	return false;
+}
+
 // postfix_expression
 //      : LEFT_PAREN expression RIGHT_PAREN
 //      | literal
@@ -2481,10 +2616,12 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
 //      | postfix_expression INC_OP
 //      | postfix_expression DEC_OP
 //
-bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
+bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, const char* classAccessorName)
 {
     // Not implemented as self-recursive:
     // The logical "right recursion" is done with an loop at the end
+
+	TString* className = nullptr;
 
     // idToken will pick up either a variable or a function name in a function call
     HlslToken idToken;
@@ -2505,37 +2642,85 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
         // literal (nothing else to do yet), go on to the 
     } else if (acceptConstructor(node)) {
         // constructor (nothing else to do yet)
-    } else if (acceptIdentifier(idToken)) {
+	}
+	else if (acceptClassReferenceAccessor(className))
+	{
+		const char* classAccessor = className == nullptr? nullptr: className->c_str();
+		return acceptPostfixExpression(node, classAccessor);
+    }
+	else if (acceptIdentifier(idToken))
+	{
         // identifier or function_call name
         if (! peekTokenClass(EHTokLeftParen))
 		{
-            node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
-
-			//=======================================================================================================================
-			//=======================================================================================================================
-			//XKSL extensions: if it's an unknown symbol node (symbol not refering to any known variable), we create an unresolved variable at global level and replace the node
+			const char* referenceShaderName = getCurrentShaderName();
+			if (referenceShaderName == nullptr)
 			{
-				TIntermTyped*& aNode = node;
-
-				if (aNode != nullptr && aNode->getAsSymbolNode() && aNode->getAsSymbolNode()->getType().getBasicType() == EbtVoid)
+				//normal procedure
+				node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
+			}
+			else
+			{
+				//we're currently parsing a shader class
+				if (idToken.symbol && idToken.symbol->getAsVariable() && idToken.symbol->getAsVariable()->isUserType())
 				{
-					TSourceLoc loc = aNode->getLoc();
-					const TString& variableName = aNode->getAsSymbolNode()->getName();
-					TSymbol* variableSymbol = parseContext.symbolTable.find(variableName);
+					//We parsed a type symbol in a PostFixExpression. Could be: TypeName.Something
+					//Normally we should have detected this case above, in acceptClassAccessor function
+					node = nullptr;
+					parseContext.error(token.loc, "Parser logic Error", "Case should have been detected", "");
+					return false;
+				}
+				else
+				{
+					node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
+				}
+
+				//=======================================================================================================================
+				//=======================================================================================================================
+				//XKSL extensions: if it's an unknown symbol node (symbol not refering to any known variable), we create an unresolved variable at global level and recreate the node
+				if (classAccessorName != nullptr)
+				{
+					//We parsed a class accessor on the way (this, base, className, ...). So record it instead.
+					referenceShaderName = classAccessorName;
+				}
+
+				if (node != nullptr && node->getAsSymbolNode() && node->getAsSymbolNode()->getType().getBasicType() == EbtVoid)
+				{
+					TSourceLoc loc = node->getLoc();
+					const TString& parsedName = node->getAsSymbolNode()->getName();
+					TSymbol* variableSymbol = parseContext.symbolTable.find(parsedName);
 
 					if (variableSymbol == nullptr)
 					{
-						//the symbol does not exist		
-						TType unresolvedVariableType(EbtXKSLUnresolvedType, EvqGlobal);  //  EbtXKSLUnresolvedType;  EbtInt;
-						parseContext.declareGlobalVariable(loc, variableName, unresolvedVariableType);
-						variableSymbol = parseContext.symbolTable.find(variableName);
+						//TODO: can ask hlsk parser if we already know a variable named currentShaderName.parsedName !
+						TType unresolvedVariableType(EbtXKSLUnresolvedType, EvqGlobal);
+						unresolvedVariableType.setOwnerClassName(referenceShaderName);
 
-						aNode = parseContext.handleVariable(loc, variableSymbol, &variableName);
+						node->getAsSymbolNode()->setType(unresolvedVariableType);
+
+						//TString unresolvedVariableName = TString(currentShaderName) + "." + parsedName;  //unresolved variable name is concatenated with the class name
+
+						////check if this unresolved variable has already been created
+						//variableSymbol = parseContext.symbolTable.find(unresolvedVariableName);
+
+						//if (variableSymbol == nullptr)
+						//{
+						//	const TString& name = *NewPoolTString(unresolvedVariableName.c_str());
+
+						//	//the symbol does not exist		
+						//	TType unresolvedVariableType(EbtXKSLUnresolvedType, EvqGlobal);  //  EbtXKSLUnresolvedType;  EbtInt;
+						//	parseContext.declareGlobalVariable(loc, name, unresolvedVariableType);
+						//	variableSymbol = parseContext.symbolTable.find(name);
+
+						//	aNode = parseContext.handleVariable(loc, variableSymbol, &name);
+						//}
+						//else
+						//{
+						//	aNode = parseContext.handleVariable(loc, variableSymbol, &variableSymbol->getName());
+						//}
 					}
 				}
 			}
-			//=======================================================================================================================
-			//=======================================================================================================================
 
         }
 		else if (acceptFunctionCall(idToken, node))
@@ -3329,7 +3514,7 @@ void HlslGrammar::acceptShaderClassPostDecls(TIdentifierList*& parents)
 
 				//add name
 				if (parents == nullptr) parents = new TIdentifierList;
-				parents->push_back(idToken.string);
+				parents->push_back( NewPoolTString(idToken.string->c_str()) );
 
 				if (acceptTokenClass(EHTokComma)) continue;
 				else break;

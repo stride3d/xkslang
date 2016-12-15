@@ -10,11 +10,11 @@ shader Shader01
 {
 	int toto;
 	
-	int Compute()
+	int Compute(double d)
 	{
 		return 1;
 	}
-	
+
 	int Compute(int i, float f)
 	{
 		return i;

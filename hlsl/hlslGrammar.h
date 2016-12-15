@@ -43,6 +43,11 @@
 
 namespace glslang {
 
+	struct TShaderDefinition {
+		const char* name;
+		TVector<const char*> parents;
+	};
+
 	struct TShaderClassFunction {
 		TFunction* function;
 		TIntermNode* node;
@@ -69,7 +74,9 @@ namespace glslang {
 
         void expected(const char*);
         void unimplemented(const char*);
+		void error(const char*);
         bool acceptIdentifier(HlslToken&);
+		bool acceptClassReferenceAccessor(TString*& className);
         bool acceptCompilationUnit();
         bool acceptDeclaration(TIntermNode*& node);
         bool acceptControlDeclaration(TIntermNode*& node);
@@ -101,7 +108,7 @@ namespace glslang {
         bool acceptConditionalExpression(TIntermTyped*&);
         bool acceptBinaryExpression(TIntermTyped*&, PrecedenceLevel);
         bool acceptUnaryExpression(TIntermTyped*&);
-        bool acceptPostfixExpression(TIntermTyped*&);
+        bool acceptPostfixExpression(TIntermTyped*&, const char* classAccessor = nullptr);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
         bool acceptArguments(TFunction*, TIntermTyped*&);
@@ -123,9 +130,17 @@ namespace glslang {
 
 		//XKSL extensions
 		void acceptShaderClassPostDecls(TIdentifierList*& parents);
+		const char* getCurrentShaderName();
+		int getCurrentShaderCountParents();
+		const char* getCurrentShaderParentName(int ind);
+		bool isRecordedAsAShaderName(const char* name);
 
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
+
+		//List of shader parsed
+		TVector<TShaderDefinition*> listAllParsedShaders;
+		TVector<TShaderDefinition*> listShaderCurrentlyParsed;
     };
 
 } // end namespace glslang

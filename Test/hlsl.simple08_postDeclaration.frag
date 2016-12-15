@@ -24,7 +24,6 @@ shader ShaderTestAccessor
 public shader ShaderPublic
 {};
 
-
 shader ShaderTestMember
 {
 	stage stream float4 ShadingPosition : SV_Position;

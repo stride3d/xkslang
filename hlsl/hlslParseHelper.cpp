@@ -542,17 +542,6 @@ TIntermTyped* HlslParseContext::handleVariable(const TSourceLoc& loc, TSymbol* s
         return nullptr;
     }
 
-	////XKSL extensions: if a variable is not found, we create it with an unresolved type
-	//if (symbol == nullptr)
-	//{
-	//	TString name(*string);
-	//	TSourceLoc l = loc;
-	//	TType unresolvedVariableType(EbtXKSLUnresolvedType);
-	//	growGlobalUniformBlock(l, unresolvedVariableType, name);
-
-	//	symbol = symbolTable.find(*string);
-	//}
-
     // Error check for requiring specific extensions present.
     if (symbol && symbol->getNumExtensions())
         requireExtensions(loc, symbol->getNumExtensions(), symbol->getExtensions(), symbol->getName().c_str());
@@ -4766,7 +4755,7 @@ bool HlslParseContext::declareGlobalVariable(const TSourceLoc& loc, const TStrin
 		symbol = declareNonArrayAtGlobalLevel(loc, identifier, type);
 	}
 
-	return true;
+	return symbol != nullptr;
 }
 
 //

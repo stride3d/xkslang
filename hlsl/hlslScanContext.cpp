@@ -345,6 +345,8 @@ void HlslScanContext::fillInKeywordMap()
 	(*KeywordMap)["override"]  =                 EHTokOverride;
 	(*KeywordMap)["abstract"]  =                 EHTokAbstract;
 	(*KeywordMap)["clone"]     =                 EHTokClone;
+	(*KeywordMap)["this"]      =                 EHTokThis;
+	(*KeywordMap)["base"]      =                 EHTokBase;
 
     // TODO: get correct set here
     ReservedSet = new std::unordered_set<const char*, str_hash, str_eq>;
@@ -362,16 +364,16 @@ void HlslScanContext::fillInKeywordMap()
     ReservedSet->insert("mutable");
     ReservedSet->insert("new");
     ReservedSet->insert("operator");
-    //ReservedSet->insert("private");
-    //ReservedSet->insert("protected");
-    //ReservedSet->insert("public");
+    //ReservedSet->insert("private");   //XKSL extension
+    //ReservedSet->insert("protected"); //XKSL extension
+    //ReservedSet->insert("public");    //XKSL extension
     ReservedSet->insert("reinterpret_cast");
     ReservedSet->insert("short");
     ReservedSet->insert("signed");
     ReservedSet->insert("sizeof");
     ReservedSet->insert("static_cast");
     ReservedSet->insert("template");
-    ReservedSet->insert("this");
+    //ReservedSet->insert("this");  //XKSL extension
     ReservedSet->insert("throw");
     ReservedSet->insert("try");
     ReservedSet->insert("typename");
@@ -544,6 +546,8 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
 	case EHTokOverride:
 	case EHTokAbstract:
 	case EHTokClone:
+	case EHTokThis:
+	case EHTokBase:
 		return keyword;
 
     // primitive types

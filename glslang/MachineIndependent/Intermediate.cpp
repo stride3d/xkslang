@@ -1856,6 +1856,7 @@ bool TIntermediate::promoteUnary(TIntermUnary& node)
 
     node.setType(operand->getType());
     node.getWritableType().getQualifier().makeTemporary();
+	node.getWritableType().setOwnerClassName(0);
 
     return true;
 }
@@ -1914,12 +1915,14 @@ bool TIntermediate::promoteBinary(TIntermBinary& node)
 	{
 		node.setType(left->getType());
 		node.getWritableType().getQualifier().clear();
+		node.getWritableType().setOwnerClassName(0);
 		return true;
 	}
 	if (right->getType().getBasicType() == EbtXKSLUnresolvedType)
 	{
 		node.setType(right->getType());
 		node.getWritableType().getQualifier().clear();
+		node.getWritableType().setOwnerClassName(0);
 		return true;
 	}
 

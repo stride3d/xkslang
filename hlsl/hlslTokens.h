@@ -76,6 +76,8 @@ enum EHlslTokenClass {
 	EHTokOverride,
 	EHTokAbstract,
 	EHTokClone,
+	EHTokThis,
+	EHTokBase,
 
     // primitive types
     EHTokPoint,

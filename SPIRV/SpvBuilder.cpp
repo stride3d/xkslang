@@ -529,7 +529,9 @@ int Builder::getNumTypeConstituents(Id typeId) const
 
     switch (instr->getOpCode())
     {
-	case OpTypeUnresolved:
+	case OpTypeUnresolved:  //The type is unresolved, we can't know the number of constituents. (for now it will make SPIRV builder to fail)
+		return 0;
+
     case OpTypeBool:
     case OpTypeInt:
     case OpTypeFloat:

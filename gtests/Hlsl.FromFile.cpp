@@ -66,14 +66,18 @@ TEST_P(HlslCompileTest, FromFile)
 {
     loadFileCompileAndCheck(GlobalTestSettings.testRoot, GetParam().fileName,
                             Source::HLSL, Semantics::Vulkan,
-                            Target::BothASTAndSpv, GetParam().entryPoint);
+							Target::AST,
+							//Target::BothASTAndSpv,
+							GetParam().entryPoint);
 }
 
 TEST_P(HlslCompileAndFlattenTest, FromFile)
 {
     loadFileCompileFlattenUniformsAndCheck(GlobalTestSettings.testRoot, GetParam().fileName,
                                            Source::HLSL, Semantics::Vulkan,
-                                           Target::BothASTAndSpv, GetParam().entryPoint);
+                                           Target::AST,
+										   //Target::BothASTAndSpv,
+										   GetParam().entryPoint);
 }
 
 #ifdef TOTO
@@ -89,10 +93,11 @@ INSTANTIATE_TEST_CASE_P(
 		//{"hlsl.simple03.frag", ""},
 		//{"hlsl.simple04.frag", ""},
 		//{"hlsl.simple05.frag", ""},
-		//{"hlsl.simple06.frag", ""},
-		//{"hlsl.simple07.frag", ""},
+		//{"hlsl.simple06_shaderFunctions.frag", ""},
+		//{"hlsl.simple07_shaderInheritance.frag", ""},
 		//{"hlsl.simple08_postDeclaration.frag", ""},
 		//{"hlsl.simple09_constAssignment.frag", ""},
+		{"hlsl.simple11_classAccessor.frag", ""},
 		{"hlsl.simple10_unresolvedVariable.frag", ""},
 		//{"hlsl.test.frag", "" },
 		//{"hlsl.struct.test.frag", "PixelShaderFunction"},
