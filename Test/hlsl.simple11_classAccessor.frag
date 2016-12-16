@@ -4,6 +4,17 @@ ClassName has to be known, otherwise the expression will be set as unresolved.
 
 *****************************************************************************************/
 
+static struct
+{
+	float4 prout;
+} toto;
+
+void main()
+{
+	float4 f = toto.prout.wxyz;
+}
+
+/*
 shader S03
 {
 };
@@ -22,7 +33,9 @@ shader Shader01: S01, S02
 		//S03.aInt;
 		
 		unknownParent.unres03;
-		//unknownParent.unres03.xyz;
+		unknownParent.unres03.xyz;
+		
+		int i = unres.asd + toto.prout * base.xyz.gloup.abc - 1;
 		
 		//streams.aInt;
 		//base.toto;
@@ -37,4 +50,4 @@ shader Shader01: S01, S02
 
 shader S02
 {
-};
+};*/

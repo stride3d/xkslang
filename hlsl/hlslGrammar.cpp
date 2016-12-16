@@ -2661,13 +2661,17 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, const char* class
 			}
 			else
 			{
-				//we're currently parsing a shader class
+				//=======================================================================================================================
+				//=======================================================================================================================
+				//XKSL extensions:  we're currently parsing a shader class identifier
+				//if we are parsing an unknown symbol node (symbol not refering to any known variable or class names): we create an unresolved variable at global level and recreate the node
+				
 				if (idToken.symbol && idToken.symbol->getAsVariable() && idToken.symbol->getAsVariable()->isUserType())
 				{
 					//We parsed a type symbol in a PostFixExpression. Could be: TypeName.Something
-					//Normally we should have detected this case above, in acceptClassAccessor function
+					//Normally we should have detected this case above, in acceptClassReferenceAccessor function
 					node = nullptr;
-					parseContext.error(token.loc, "Parser logic Error", "Case should have been detected", "");
+					error("Parser logic Error: case should have been detected");
 					return false;
 				}
 				else
@@ -2675,9 +2679,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, const char* class
 					node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
 				}
 
-				//=======================================================================================================================
-				//=======================================================================================================================
-				//XKSL extensions: if it's an unknown symbol node (symbol not refering to any known variable), we create an unresolved variable at global level and recreate the node
+				//Did we parse any class name accessor? (this., base., ClassName.)
 				if (classAccessorName != nullptr)
 				{
 					//We parsed a class accessor on the way (this, base, className, ...). So record it instead.
@@ -2686,17 +2688,41 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, const char* class
 
 				if (node != nullptr && node->getAsSymbolNode() && node->getAsSymbolNode()->getType().getBasicType() == EbtVoid)
 				{
+					//check if the variable is unresolved (unknown symbol)
 					TSourceLoc loc = node->getLoc();
 					const TString& parsedName = node->getAsSymbolNode()->getName();
 					TSymbol* variableSymbol = parseContext.symbolTable.find(parsedName);
 
 					if (variableSymbol == nullptr)
 					{
-						//TODO: can ask hlsk parser if we already know a variable named currentShaderName.parsedName !
+						//We will define the variable as unresolved
+						
+						//First check if there are any other expressions following the unresolved symbol (for example UnknownName.XXX.YYY)
+						//If we find any, we concatenate them to the unresolve variable
+						
+						TString unresolvedVariableName = parsedName;
+						while (acceptTokenClass(EHTokDot))
+						{
+							unresolvedVariableName = unresolvedVariableName + "." + *token.string;
+
+							switch (token.tokenClass)
+							{
+								case EHTokIdentifier:
+									break;
+
+								default:
+									error((TString("Invalid unresolved expression: ") + unresolvedVariableName).c_str());
+									return false;
+							}
+
+							advanceToken();
+						}
+						
 						TType unresolvedVariableType(EbtXKSLUnresolvedType, EvqGlobal);
 						unresolvedVariableType.setOwnerClassName(referenceShaderName);
 
-						node->getAsSymbolNode()->setType(unresolvedVariableType);
+						const TVariable* variable = new TVariable(&unresolvedVariableName, unresolvedVariableType);
+						node = intermediate.addSymbol(*variable, loc);
 
 						//TString unresolvedVariableName = TString(currentShaderName) + "." + parsedName;  //unresolved variable name is concatenated with the class name
 
