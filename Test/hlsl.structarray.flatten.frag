@@ -3,7 +3,6 @@ Texture1D    g_tex;
 
 struct tex_t {
     SamplerState samp;
-	SamplerState samp;
     Texture1D tex;
     int nonopaque_thing;
 };

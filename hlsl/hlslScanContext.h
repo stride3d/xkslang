@@ -65,6 +65,11 @@ struct HlslToken {
         double d;
     };
     glslang::TSymbol* symbol;      // if a symbol-table lookup was done already, this is the result
+
+	bool IsEqualsToToken(const HlslToken& tok)
+	{
+		return loc.isLocatedAt(tok.loc) && tokenClass == tok.tokenClass;
+	}
 };
 
 //

@@ -233,6 +233,9 @@ struct TSourceLoc {
     int string;
     int line;
     int column;
+
+	bool isLocatedAt(const TSourceLoc& loc) {return line == loc.line && column == loc.column;}
+	bool isLocatedAt(int l, int c) { return line == l && column == c; }
 };
 
 typedef TMap<TString, TString> TPragmaTable;

@@ -96,7 +96,7 @@ namespace glslang {
         bool acceptTextureType(TType&);
         bool acceptStruct(TType&);
 		bool acceptShaderClass(TIntermNode** node, TType&);
-		bool acceptShaderClassDeclaration(const TString& shaderName, TTypeList*& typeList, TShaderClassFunctionList*& functionList);
+		bool acceptShaderClassDeclaration(const TString& shaderName, TTypeList* typeList, TShaderClassFunctionList*& functionList, int step);
         bool acceptStructDeclarationList(TTypeList*&);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);
@@ -127,6 +127,8 @@ namespace glslang {
         bool acceptDefaultLabel(TIntermNode*&);
         void acceptArraySpecifier(TArraySizes*&);
         void acceptPostDecls(TQualifier&);
+		bool advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken);
+		bool advanceUntilToken(EHlslTokenClass tok);
 
 		//XKSL extensions
 		void acceptShaderClassPostDecls(TIdentifierList*& parents);

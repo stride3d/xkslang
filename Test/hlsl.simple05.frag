@@ -1,4 +1,4 @@
-//Test parsing a shader "class", defining a bunch of methods and attributes
+//Test parsing a shader defining a bunch of methods and attributes
 
 shader ShaderSimple
 {

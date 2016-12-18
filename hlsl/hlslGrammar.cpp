@@ -411,11 +411,11 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
 		//TString newTypeName = "_" + declaredType.getTypeName() + "_shaderType_";
 		//declaredType.setTypeName(newTypeName);
 
-		//for newly defined shader class: we create an unused variable
-		//otherwise the class would not be defined in the AST as long as nobody else is using it
-		TString unusedVariableName = "__var_" + declaredType.getTypeName() + "_unused";
-		TString* pName = NewPoolTString(unusedVariableName.c_str());
-		parseContext.declareVariable(initialToken.loc, *pName, declaredType, nullptr);
+		////for newly defined shader class: we create an unused variable
+		////otherwise the class would not be defined in the AST as long as nobody else is using it
+		//TString unusedVariableName = "__var_" + declaredType.getTypeName() + "_unused";
+		//TString* pName = NewPoolTString(unusedVariableName.c_str());
+		//parseContext.declareVariable(initialToken.loc, *pName, declaredType, nullptr);
 
 		return true;
 	}
@@ -1776,7 +1776,7 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 	postDeclQualifier.clear();
 	//acceptPostDecls(postDeclQualifier);
 
-	//Get parents
+	//Get shader parents
 	TIdentifierList* parentsName = nullptr;
 	acceptShaderClassPostDecls(parentsName);
 
@@ -1797,9 +1797,37 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 		return false;
 	}
 
-	TTypeList* shaderTypeList = nullptr;                            //list of types declared by the shader
+	TTypeList* shaderTypeList = new TTypeList();                    //list of types declared by the shader
 	TShaderClassFunctionList* shaderFunctionsList = nullptr;        //list of functions declared by the shader
-	if (!acceptShaderClassDeclaration(*shaderName, shaderTypeList, shaderFunctionsList)) {
+	HlslToken shaderStartingToken = token;
+
+	//======================================================================================
+	//parse the shader members
+	if (!acceptShaderClassDeclaration(*shaderName, shaderTypeList, shaderFunctionsList, 1)) {
+		expected("class member declarations");
+		listShaderCurrentlyParsed.pop_back();
+		return false;
+	}
+
+	// create the new shader type
+	new(&type) TType(shaderTypeList, *shaderName, postDeclQualifier, parentsName);
+
+	// Declare a variable on the global level so that we retrieve all shader symbols
+	// "shader ShaderSimple {float4 BaseColor; };"
+	// will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
+	type.getQualifier().storage = EvqGlobal;
+	parseContext.declareVariable(token.loc, *shaderName, type, nullptr);
+	//======================================================================================
+
+	//======================================================================================
+	//parse the shader functions
+	if (!recedeToToken(shaderStartingToken))
+	{
+		error("Failed to recede to a specific token");
+		return false;
+	}
+
+	if (!acceptShaderClassDeclaration(*shaderName, shaderTypeList, shaderFunctionsList, 2)) {
 		expected("class member declarations");
 		listShaderCurrentlyParsed.pop_back();
 		return false;
@@ -1817,16 +1845,12 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 			functionType.setOwnerClassName(shaderName->c_str());
 
 			*node = intermediate.growAggregate(*node, functionNode);
-
-			/*TQualifier& functionQualifier = functionNode->getAsAggregate()->getQualifier();
-			functionQualifier.isAbstract = true;
-			functionQualifier.isStage = true;
-			functionQualifier.isStream = true;*/
 		}
 
 		// Will tell that the node needs to be move back to the top level (maybe can find a cleaner way?)
 		if (*node != nullptr) (*node)->getAsAggregate()->setOperator(EOpNull);
 	}
+	//======================================================================================
 
 	// RIGHT_BRACE
 	if (!acceptTokenClass(EHTokRightBrace)) {
@@ -1835,29 +1859,17 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 		return false;
 	}
 
-	// create and add the user-defined type
-	new(&type) TType(shaderTypeList, (void*)0, *shaderName, postDeclQualifier, parentsName);
-	TVariable* userTypeDef = new TVariable(shaderName, type, true);
-	if (!parseContext.symbolTable.insert(*userTypeDef))
-	{
-		parseContext.error(token.loc, "redefinition", shaderName->c_str(), "class");
-		listShaderCurrentlyParsed.pop_back();
-		return false;
-	}
-
-	//TSymbol *symbol = parseContext.declareNonArray(loc, identifier, type);
-	//parseContext.trackLinkageDeferred(*userTypeDef);
-
 	listShaderCurrentlyParsed.pop_back();
 	return true;
 }
 
-// Similar to acceptDeclaration function: we parse a class and accept all types or functions declaration
-bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeList*& typeList, TShaderClassFunctionList*& functionList)
+// Parse a shader class
+// step defines what expressions or declarations we accept
+// step == 0: both members and functions
+// step == 1: only member declaration
+// step == 2: only function declaration
+bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeList* typeList, TShaderClassFunctionList*& functionList, int step)
 {
-	typeList = new TTypeList();
-	functionList = new TShaderClassFunctionList();
-
 	do {
 		// some extra SEMI_COLON?
 		while (acceptTokenClass(EHTokSemicolon)) {}
@@ -1882,7 +1894,7 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 			return false;
 		}
 
-		// get the Identifier
+		// get the Identifier (variable name)
 		HlslToken idToken = token;
 		if (!acceptIdentifier(idToken))
 		{
@@ -1907,78 +1919,101 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 			// compound_statement (function body definition) or just a prototype?
 			if (peekTokenClass(EHTokLeftBrace))
 			{
-				TIntermNode* functionNode = nullptr;
-				TAttributeMap attributes;  // attributes ?
-				//acceptAttributes(attributes);
-
-				if (!acceptFunctionDefinition(function, functionNode, attributes))
+				if (step == 0 || step == 2)
 				{
-					expected("shader: invalid function definition");
-					return false;
-				}
+					TIntermNode* functionNode = nullptr;
+					TAttributeMap attributes;  // attributes ?
+					//acceptAttributes(attributes);
 
-				TShaderClassFunction shaderFunction;
-				shaderFunction.function = &function;
-				shaderFunction.node = functionNode;
-				functionList->push_back(shaderFunction);
+					if (!acceptFunctionDefinition(function, functionNode, attributes))
+					{
+						expected("shader: invalid function definition");
+						return false;
+					}
+
+					TShaderClassFunction shaderFunction;
+					shaderFunction.function = &function;
+					shaderFunction.node = functionNode;
+
+					if (functionList == nullptr) functionList = new TShaderClassFunctionList();
+					functionList->push_back(shaderFunction);
+				}
+				else
+				{
+					advanceToken();
+					if (!advanceUntilEndOfBlock(EHTokRightBrace))
+					{
+						error("Error parsing until end of function block");
+						return false;
+					}
+				}
 			}
 			else
 			{
-				expected("To be treated");
+				error("Not implemented yet");
 				return false;
 				//parseContext.handleFunctionDeclarator(idToken.loc, function, true);
 			}
 		}
-		else {
-			// type identifiers and properties
-			do {
-				// add the new member into the list of class members
+		else 
+		{
+			if (step == 1)
+			{
+				// accept one of severel type identifiers and properties
+				do
 				{
-					TTypeLoc member = { new TType(EbtVoid), token.loc };
-					member.type->shallowCopy(declaredType);
-					member.type->setFieldName(*token.string);
-					typeList->push_back(member);
+					// add the new member into the list of class members
+					{
+						TTypeLoc member = { new TType(EbtVoid), token.loc };
+						member.type->shallowCopy(declaredType);
+						member.type->setFieldName(*token.string);
+						typeList->push_back(member);
 				
-				}
-				TTypeLoc& member = typeList->back();
+					}
+					TTypeLoc& member = typeList->back();
 
-				// array_specifier
-				TArraySizes* arraySizes = nullptr;
-				acceptArraySpecifier(arraySizes);
-				if (arraySizes)
-					member.type->newArraySizes(*arraySizes);
+					// array_specifier
+					TArraySizes* arraySizes = nullptr;
+					acceptArraySpecifier(arraySizes);
+					if (arraySizes)
+						member.type->newArraySizes(*arraySizes);
 
-				acceptPostDecls(member.type->getQualifier());
+					acceptPostDecls(member.type->getQualifier());
 
-				// EQUAL assignment_expression
-				TIntermTyped* expressionNode = nullptr;
-				if (acceptTokenClass(EHTokAssign)) {
-					if (typedefDecl)
-						error("can't have an typedef initializer");
-					if (!acceptAssignmentExpression(expressionNode)) {
-						expected("initializer");
+					// EQUAL assignment_expression
+					TIntermTyped* expressionNode = nullptr;
+					if (acceptTokenClass(EHTokAssign)) {
+						if (typedefDecl)
+							error("can't have an typedef initializer");
+						if (!acceptAssignmentExpression(expressionNode)) {
+							expected("initializer");
+							return false;
+						}
+					}
+
+					// success on seeing the SEMICOLON coming up
+					if (peekTokenClass(EHTokSemicolon))
+						break;
+
+					// declare another variable of the same type
+					// COMMA
+					if (!acceptTokenClass(EHTokComma)) {
+						expected(",");
 						return false;
 					}
-				}
 
-				// success on seeing the SEMICOLON coming up
-				if (peekTokenClass(EHTokSemicolon))
-					break;
+					if (!acceptIdentifier(idToken))
+					{
+						expected("shader: member name");
+						return false;
+					}
 
-				// declare another variable of the same type
-				// COMMA
-				if (!acceptTokenClass(EHTokComma)) {
-					expected(",");
-					return false;
-				}
-
-				if (!acceptIdentifier(idToken))
-				{
-					expected("shader: member name");
-					return false;
-				}
-
-			} while (true);
+				} while (true);
+			}
+			else
+			{
+				advanceUntilToken(EHTokSemicolon);
+			}
 
 			// SEMI_COLON
 			if (!acceptTokenClass(EHTokSemicolon)) {
@@ -1988,7 +2023,57 @@ bool HlslGrammar::acceptShaderClassDeclaration(const TString& shaderName, TTypeL
 		}
 
 	} while (true);
+}
 
+bool HlslGrammar::advanceUntilToken(EHlslTokenClass tok)
+{
+	while (true)
+	{
+		if (token.tokenClass == tok) return true;
+
+		advanceToken();
+		if (token.tokenClass == EHTokNone) return false;
+	}
+}
+
+//Advance the token until we reach the end of the block
+bool HlslGrammar::advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken)
+{
+	while (true)
+	{
+		if (token.tokenClass == endOfBlockToken)
+		{
+			advanceToken();
+			return true;
+		}
+
+		switch (token.tokenClass)
+		{
+			case EHTokNone:
+				return false;
+
+			case EHTokLeftBracket:
+				advanceToken();
+				if (!advanceUntilEndOfBlock(EHTokRightBracket)) return false;
+				break;
+
+			case EHTokLeftBrace:
+				advanceToken();
+				if (!advanceUntilEndOfBlock(EHTokRightBrace)) return false;
+				break;
+
+			case EHTokLeftParen:
+				advanceToken();
+				if (!advanceUntilEndOfBlock(EHTokRightParen)) return false;
+				break;
+
+			default:
+				advanceToken();
+				break;
+		}
+	}
+
+	return false;
 }
 
 // struct

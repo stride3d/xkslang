@@ -37,72 +37,112 @@
 
 namespace glslang {
 
-void HlslTokenStream::pushPreToken(const HlslToken& tok)
-{
-    assert(preTokenStackSize < tokenBufferSize);
-    preTokenStack[preTokenStackSize++] = tok;
-}
+	void HlslTokenStream::pushTokenBuffer(const HlslToken& tok)
+	{
+		assert(tokenBufferPos == tokenBuffer.size());  //we cannot push if we're tracking back to a previous position
 
-HlslToken HlslTokenStream::popPreToken()
-{
-    assert(preTokenStackSize > 0);
+		tokenBuffer.push_back(tok);
+		tokenBufferPos++;
+	}
 
-    return preTokenStack[--preTokenStackSize];
-}
+	HlslToken HlslTokenStream::popTokenBuffer()
+	{
+		// Back up
+		assert(tokenBufferPos > 0);
 
-void HlslTokenStream::pushTokenBuffer(const HlslToken& tok)
-{
-    tokenBuffer[tokenBufferPos] = tok;
-    tokenBufferPos = (tokenBufferPos+1) % tokenBufferSize;
-}
+		tokenBufferPos--;
+		return tokenBuffer[tokenBufferPos];
+	}
 
-HlslToken HlslTokenStream::popTokenBuffer()
-{
-    // Back up
-    tokenBufferPos = (tokenBufferPos+tokenBufferSize-1) % tokenBufferSize;
+	bool HlslTokenStream::recedeToToken(HlslToken tok)
+	{
+		if (token.IsEqualsToToken(tok)) return false;
 
-    return tokenBuffer[tokenBufferPos];
-}
+		//find the token in our list of accepted token
+		int tokenIndex = -1;
+		for (int i = 0; i < tokenBufferPos; ++i)
+		{
+			if (tokenBuffer[i].IsEqualsToToken(tok))
+			{
+				tokenIndex = i;
+				break;
+			}
+		}
+		if (tokenIndex == -1) return false;
 
-// Load 'token' with the next token in the stream of tokens.
-void HlslTokenStream::advanceToken()
-{
-    pushTokenBuffer(token);
-    if (preTokenStackSize > 0)
-        token = popPreToken();
-    else
-        scanner.tokenize(token);
-}
+		if (tokenBufferPos == tokenBuffer.size())
+		{
+			//save current token at the end of buffer, so that we can push it back
+			pushTokenBuffer(token);
+		}
+		tokenBufferPos = tokenIndex;
+		token = tokenBuffer[tokenBufferPos];
+		return true;
+	}
 
-void HlslTokenStream::recedeToken()
-{
-    pushPreToken(token);
-    token = popTokenBuffer();
-}
+	// Load 'token' with the next token in the stream of tokens.
+	void HlslTokenStream::advanceToken()
+	{
+		//Save the current token if need, or increase the buffer position
+		if (tokenBufferPos == tokenBuffer.size())
+		{
+			pushTokenBuffer(token);	
+		}
+		else
+		{
+			tokenBufferPos++;
+		}
 
-// Return the current token class.
-EHlslTokenClass HlslTokenStream::peek() const
-{
-    return token.tokenClass;
-}
+		//Get the next token
+		if (tokenBufferPos == tokenBuffer.size())
+		{
+			scanner.tokenize(token);
+		}
+		else
+		{
+			token = tokenBuffer[tokenBufferPos];
+		}
+	}
 
-// Return true, without advancing to the next token, if the current token is
-// the expected (passed in) token class.
-bool HlslTokenStream::peekTokenClass(EHlslTokenClass tokenClass) const
-{
-    return peek() == tokenClass;
-}
+	bool HlslTokenStream::recedeToken()
+	{
+		if (tokenBufferPos == 0) return false;
 
-// Return true and advance to the next token if the current token is the
-// expected (passed in) token class.
-bool HlslTokenStream::acceptTokenClass(EHlslTokenClass tokenClass)
-{
-    if (peekTokenClass(tokenClass)) {
-        advanceToken();
-        return true;
-    }
+		if (tokenBufferPos == tokenBuffer.size())
+		{
+			//save current token at the end of buffer, so that we can push it back
+			pushTokenBuffer(token);
+			tokenBufferPos--;
+		}
 
-    return false;
-}
+		token = popTokenBuffer();
+
+		return true;
+	}
+
+	// Return the current token class.
+	EHlslTokenClass HlslTokenStream::peek() const
+	{
+		return token.tokenClass;
+	}
+
+	// Return true, without advancing to the next token, if the current token is
+	// the expected (passed in) token class.
+	bool HlslTokenStream::peekTokenClass(EHlslTokenClass tokenClass) const
+	{
+		return peek() == tokenClass;
+	}
+
+	// Return true and advance to the next token if the current token is the
+	// expected (passed in) token class.
+	bool HlslTokenStream::acceptTokenClass(EHlslTokenClass tokenClass)
+	{
+		if (peekTokenClass(tokenClass)) {
+			advanceToken();
+			return true;
+		}
+
+		return false;
+	}
 
 } // end namespace glslang

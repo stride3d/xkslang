@@ -1,4 +1,4 @@
-//Test parsing a very simple shader "class", only defining methods
+//Test parsing a very simple shader defining a method
 
 shader ShaderSimple
 {
@@ -7,5 +7,3 @@ shader ShaderSimple
 		return 1;
 	}
 };
-
-

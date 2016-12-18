@@ -1173,7 +1173,7 @@ public:
                             }
 
 	// For shader class (XKSL language extension)
-	TType(TTypeList* userDef, void* functions, const TString& n, const TQualifier& q, TIdentifierList* parentsName) :
+	TType(TTypeList* userDef, const TString& n, const TQualifier& q, TIdentifierList* parentsName) :
 		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
 		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr), ownerClassName(nullptr), parentsName(parentsName)
 	{
