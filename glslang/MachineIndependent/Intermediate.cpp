@@ -2265,7 +2265,7 @@ bool TIntermediate::promoteAggregate(TIntermAggregate& node)
 {
     TOperator op = node.getOp();
     TIntermSequence& args = node.getSequence();
-    const int numArgs = args.size();
+    const int numArgs = static_cast<int>(args.size());
 
     // Presently, only hlsl does intrinsic promotions.
     if (getSource() != EShSourceHlsl)
