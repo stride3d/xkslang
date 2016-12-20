@@ -87,26 +87,13 @@ TEST_P(HlslCompileAndFlattenTest, FromFile)
 INSTANTIATE_TEST_CASE_P(
     ToSpirv, HlslCompileTest,
     ::testing::ValuesIn(std::vector<FileNameEntryPointPair>{
-		//{"hlsl.amend.xksl.frag", ""},
-		//{"hlsl.simple01_shaderWithVariable.frag", ""},
-		//{"hlsl.simple02_shaderWithManyVariables.frag", ""},
-		//{"hlsl.simple03_manySimpleShaders.frag", ""},
-		//{"hlsl.simple04_simpleShaderWithFunction.frag", ""},
-		//{"hlsl.simple05_shaderWithMixOfFunctionsAndVariables.frag", ""},
-		//{"hlsl.simple06_2ShaderWithSameFunctionNames.frag", ""},
-		//{"hlsl.simple07_shaderInheritance.frag", ""},
-		//{"hlsl.simple08_postDeclaration.frag", ""},
-		//{"hlsl.simple09_constAssignment.frag", ""},
-		//{"hlsl.simple10_unresolvedVariable.frag", ""},
-		{"hlsl.simple11_classAccessor.frag", ""},
-		//{"hlsl.simple12_functionDeclaration.frag", ""},
-
-		//{"hlsl.test.frag", "" },
-		//{"hlsl.struct.test.frag", "PixelShaderFunction"},
-		//{"hlsl.struct.frag", "PixelShaderFunction"},
-        //{"hlsl.amend.frag", "f1"},
+		
+		{"hlsl.test.frag", "" },
 
 		/*
+		{"hlsl.struct.test.frag", "PixelShaderFunction"},
+		{"hlsl.struct.frag", "PixelShaderFunction"},
+        {"hlsl.amend.frag", "f1"},
         {"hlsl.array.frag", "PixelShaderFunction"},
         {"hlsl.array.implicit-size.frag", "PixelShaderFunction"},
         {"hlsl.array.multidim.frag", "main"},
