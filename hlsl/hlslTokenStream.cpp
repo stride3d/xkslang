@@ -56,7 +56,7 @@ namespace glslang {
 
 	bool HlslTokenStream::recedeToToken(HlslToken tok)
 	{
-		if (token.IsEqualsToToken(tok)) return false;
+		if (token.IsEqualsToToken(tok)) return true;
 
 		//find the token in our list of accepted token
 		int tokenIndex = -1;

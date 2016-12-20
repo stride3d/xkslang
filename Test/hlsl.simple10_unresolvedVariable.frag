@@ -1,6 +1,8 @@
 /****************************************************************************************
-Parse unresolved variable: check basic situations
-
+Parse unresolved variable
+This shader is not valid anymore: we changed our initial plan and don't accept unresolved symbols anymore
+Every symbol must be known when parsing a shader, either from the shader itself, or from its inherited parents
+Parsing this shader will simply fail then...  :(
 *****************************************************************************************/
 
 shader Test

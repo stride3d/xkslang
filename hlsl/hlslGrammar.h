@@ -50,7 +50,8 @@ namespace glslang {
 
 	struct TShaderClassFunction {
 		TFunction* function;
-		TIntermNode* node;
+		HlslToken token;
+		TIntermNode* bodyNode;
 	};
 	typedef TVector<TShaderClassFunction> TShaderClassFunctionList;
 	//typedef TVector<TIntermNode> TIntermNodeList;
@@ -96,7 +97,9 @@ namespace glslang {
         bool acceptTextureType(TType&);
         bool acceptStruct(TType&);
 		bool acceptShaderClass(TIntermNode** node, TType&);
-		bool acceptShaderClassDeclaration(const TString& shaderName, TTypeList* typeList, TShaderClassFunctionList*& functionList, int step);
+		bool acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName, TTypeList* typeList, TShaderClassFunctionList* functionList);
+		bool acceptShaderClassFunctionsDefinition(const TString& shaderName, TTypeList* typeList, TShaderClassFunctionList* functionList);
+		bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TShaderClassFunctionList* functionList);
         bool acceptStructDeclarationList(TTypeList*&);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);

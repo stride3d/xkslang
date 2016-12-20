@@ -18,6 +18,7 @@ static const int A3 = 5;
 
 static int TOTO_02 = 1 + 5 * 10;
 
+//TODO: accept const assignment expression!
 shader ShaderTestMember
 {
 	static const int constValue;// = 5 + 9;

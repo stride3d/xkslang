@@ -579,7 +579,7 @@ TIntermTyped* HlslParseContext::handleVariable(const TSourceLoc& loc, TSymbol* s
         }
 
         // Recovery, if it wasn't found or was not a variable.
-		/// Comment from Jo: This instruction will lead to some HLSL shaders be compile even though there are some undeclared variables
+		/// Comment from Jo: This instruction will lead to some HLSL shaders get compiled even though there are some undeclared variables
 		/// for example: float f = g_array[undeclaredIndex];
 		/// I asked glslang devs and they replied:
 		/// "The recovery code was inherited from GLSL, where it is used to continue parsing to catch additional errors when compilation is not stopping after the first error.
@@ -590,7 +590,6 @@ TIntermTyped* HlslParseContext::handleVariable(const TSourceLoc& loc, TSymbol* s
             error(loc, "unknown variable", string->c_str(), "");
             variable = new TVariable(string, TType(EbtVoid));
         }
-
 
         if (variable->getType().getQualifier().isFrontEndConstant())
             node = intermediate.addConstantUnion(variable->getConstArray(), variable->getType(), loc);

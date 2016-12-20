@@ -1,5 +1,4 @@
 //Test parsing a shader defining a bunch of methods and attributes
-
 shader ShaderSimple
 {
 	float2 aFloat2;
