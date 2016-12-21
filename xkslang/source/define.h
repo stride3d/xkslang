@@ -1,0 +1,8 @@
+//
+// Copyright (C) 
+
+#ifndef XKSLANG_XKSLPARSER_DEFINE_H
+#define XKSLANG_XKSLPARSER_DEFINE_H
+
+
+#endif  // XKSLANG_XKSLPARSER_DEFINE_H
