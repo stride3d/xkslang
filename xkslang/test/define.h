@@ -4,6 +4,46 @@
 #ifndef XKSLANG_TESTS_DEFINE_H
 #define XKSLANG_TESTS_DEFINE_H
 
+#include <string>
+#include <vector>
+
+namespace xkslangtest
+{
+	enum class Source {
+		GLSL,
+		HLSL,
+	};
+
+	// Enum for shader compilation semantics.
+	enum class Semantics {
+		OpenGL,
+		Vulkan,
+	};
+
+	// Enum for compilation target.
+	enum class Target {
+		AST,
+		Spv,
+		BothASTAndSpv,
+	};
+
+	struct ShaderResult {
+		std::string shaderName;
+		std::string output;
+		std::string error;
+	};
+
+	// A struct for holding all the information returned by glslang compilation and linking.
+	struct XkslangResult {
+		std::vector<ShaderResult> shaderResults;
+		std::string linkingOutput;
+		std::string linkingError;
+		std::string spirvWarningsErrors;
+		std::string spirv;  // Optional SPIR-V disassembly text.
+		bool success;
+	};
+}
+
 #define EXPECT_THROW(statement, expected_exception) \
   GTEST_TEST_THROW_(statement, expected_exception, GTEST_NONFATAL_FAILURE_)
 #define EXPECT_NO_THROW(statement) \

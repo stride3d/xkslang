@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xkslangtests", "xkslangtests\xkslangtests.vcxproj", "{6B9C4A9C-542D-4E01-B825-38D2402B701F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{227A8054-E16B-48DA-A361-9316B8752E4E} = {227A8054-E16B-48DA-A361-9316B8752E4E}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XkslParser", "XkslParser\XkslParser.vcxproj", "{227A8054-E16B-48DA-A361-9316B8752E4E}"
 EndProject

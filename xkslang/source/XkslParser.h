@@ -17,8 +17,6 @@
 
 #include "define.h"
 
-using namespace std;
-
 namespace xkslparser
 {
 
@@ -31,6 +29,9 @@ public:
 	~XkslParser();
 
 	bool InitialiseXkslang();
+	void Finalize();
+
+	bool ParseXkslShader(const std::string& shaderString);
 };
 
 }  // namespace xkslparser

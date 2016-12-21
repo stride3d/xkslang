@@ -5,10 +5,13 @@
 #include <memory>
 #include <string>
 
+#include "Utils.h"
 #include "XkslangTest.h"
+#include "../source/XkslParser.h"
 
 using namespace std;
 using namespace xkslangtest;
+using namespace xkslparser;
 
 struct FileNameEntryPointPair {
 	const char* fileName;
@@ -36,30 +39,76 @@ vector<FileNameEntryPointPair> testFiles = {
 	//{"xksl_functionDeclaration.frag", ""},
 };
 
+#define PARSE_USING_XKSLPARSER 1
+#define PARSE_USING_GLSLANG 0
+
 void main(int argc, char** argv)
 {
-	glslang::InitializeProcess();
 
-	XkslangTest xkslangTest;
-
-	for (int i = 0; i < testFiles.size(); ++i)
+#if PARSE_USING_XKSLPARSER == 1
+	//Parse the shaders using XkslParser library
 	{
-		std::string testName = testFiles[i].fileName;
-		std::string entryPointName = testFiles[i].entryPoint;
-
-		bool success = xkslangTest.loadFileCompileAndCheck(
-			testDir, testName, source, semantics, target, entryPointName
-		);
-
-		if (!success)
+		XkslParser parser;
+		if (!parser.InitialiseXkslang())
 		{
-			cout << testName << ": Error\n";
+			cout << "Failed to initialize the parser\n";
+			return;
 		}
-		else
+
+		for (int i = 0; i < testFiles.size(); ++i)
 		{
-			cout << testName << ": OK\n";
+			//load shader file into a string
+			std::string shaderFileName = testFiles[i].fileName;
+			const string inputFname = testDir + "/" + shaderFileName;
+			string xkslInput;
+
+			if (!Utils::ReadFile(inputFname, xkslInput))
+			{
+				cout << "Failed to read the file: " << inputFname << "\n";
+				continue;
+			}
+
+			if (!parser.ParseXkslShader(xkslInput))
+			{
+				cout << "Failed to parse the shader: " << shaderFileName << "\n";
+				continue;
+			}
+
+			cout << "Shader " << shaderFileName << ": Successfully parsed\n";
 		}
+
+		parser.Finalize();
 	}
+#endif
 
-	glslang::FinalizeProcess();
+#if PARSE_USING_GLSLANG == 1
+	//Parse the shaders by calling glslang functions
+	{
+		glslang::InitializeProcess();
+
+		XkslangTest xkslangTest;
+
+		for (int i = 0; i < testFiles.size(); ++i)
+		{
+			std::string testName = testFiles[i].fileName;
+			std::string entryPointName = testFiles[i].entryPoint;
+
+			bool success = xkslangTest.loadFileCompileAndCheck(
+				testDir, testName, source, semantics, target, entryPointName
+			);
+
+			if (!success)
+			{
+				cout << testName << ": Error\n";
+			}
+			else
+			{
+				cout << testName << ": OK\n";
+			}
+		}
+
+		glslang::FinalizeProcess();
+	}
+#endif
+
 }
