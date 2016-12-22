@@ -9,7 +9,16 @@
 #include "glslang/Public/ShaderLang.h"
 #include "StandAlone/ResourceLimits.h"
 
+#include "SPIRV/GlslangToSpv.h"
+#include "SPIRV/disassemble.h"
+#include "SPIRV/doc.h"
+#include "SPIRV/SPVRemapper.h"
+
 #include "XkslParser.h"
+
+//TMP
+#include "../test/Utils.h"
+#include "../test/define.h"
 
 using namespace std;
 using namespace xkslparser;
@@ -36,7 +45,7 @@ void XkslParser::Finalize()
 	glslang::FinalizeProcess();
 }
 
-bool XkslParser::ParseXkslShader(const std::string& shaderString)
+bool XkslParser::ParseXkslShader(const std::string& shaderName, const std::string& shaderString)
 {
 	const char* shaderStrings = shaderString.data();
 	const int shaderLengths = static_cast<int>(shaderString.size());
@@ -49,7 +58,8 @@ bool XkslParser::ParseXkslShader(const std::string& shaderString)
 	TBuiltInResource* resources = nullptr;
 	bool buildSPRV = false;
 
-	EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST | EShMsgVulkanRules);
+	EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST);
+	controls = static_cast<EShMessages>(controls | EShMsgVulkanRules | EShMsgSpvRules);
 	if (buildSPRV) controls = static_cast<EShMessages>(controls | EShMsgSpvRules | EShMsgKeepUncalled);
 
 	glslang::TShader shader(kind);
@@ -58,9 +68,48 @@ bool XkslParser::ParseXkslShader(const std::string& shaderString)
 	shader.setStringsWithLengths(&shaderStrings, &shaderLengths, 1);
 	//shader.setEntryPoint(entryPointName.c_str());
 
-	shader.parse(
+	bool success = shader.parse(
 		(resources ? resources : &glslang::DefaultTBuiltInResource),
 		defaultVersion, isForwardCompatible, controls);
 
-	return true;
+	//======================================================================
+	//TEMPORARY: link, build SPRV and save to file
+	{
+		glslang::TProgram program;
+		program.addShader(&shader);
+		success &= program.link(controls);
+
+		spv::SpvBuildLogger logger;
+
+		xkslangtest::GlslangResult glslangRes;
+		if (success && (controls & EShMsgSpvRules)) {
+			vector<uint32_t> spirv_binary;
+			glslang::GlslangToSpv(*program.getIntermediate(kind),
+				spirv_binary, &logger);
+
+			ostringstream disassembly_stream;
+			spv::Parameterize();
+			spv::Disassemble(disassembly_stream, spirv_binary);
+			glslangRes = xkslangtest::GlslangResult{ { { shaderName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
+				program.getInfoLog(), program.getInfoDebugLog(),
+				logger.getAllMessages(), disassembly_stream.str(), true };
+		}
+		else {
+			glslangRes = xkslangtest::GlslangResult{ { { shaderName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
+				program.getInfoLog(), program.getInfoDebugLog(), "", "", false };
+		}
+
+		//Write result to file
+		// Generate the hybrid output in the way of glslangValidator.
+		ostringstream stream;
+		xkslangtest::Utils::OutputResultToStream(&stream, glslangRes, controls);
+
+		std::string testDir = "D:/Prgms/glslang/source/Test/xksl";
+
+		// Write the stream output on the disk
+		const string newOutputFname = testDir + "/" + shaderName + ".latest.spv";
+		xkslangtest::Utils::WriteFile(newOutputFname, stream.str());
+	}
+
+	return success;
 }

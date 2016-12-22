@@ -31,7 +31,7 @@ bool XkslangTest::loadFileCompileAndCheck(const string& testDir,
 	}
 
 	const EShMessages controls = Utils::DeriveOptions(source, semantics, target);
-	XkslangResult result = compileAndLink(testName, xkslInput, entryPointName, controls);
+	GlslangResult result = compileAndLink(testName, xkslInput, entryPointName, controls);
 
 	// Generate the hybrid output in the way of glslangValidator.
 	ostringstream stream;
@@ -49,7 +49,7 @@ bool XkslangTest::loadFileCompileAndCheck(const string& testDir,
 	return result.success;
 }
 
-XkslangResult XkslangTest::compileAndLink(
+GlslangResult XkslangTest::compileAndLink(
 	const string shaderName, const string& code,
 	const string& entryPointName, EShMessages controls,
 	bool flattenUniformArrays)

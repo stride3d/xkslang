@@ -68,7 +68,7 @@ void main(int argc, char** argv)
 				continue;
 			}
 
-			if (!parser.ParseXkslShader(xkslInput))
+			if (!parser.ParseXkslShader(shaderFileName, xkslInput))
 			{
 				cout << "Failed to parse the shader: " << shaderFileName << "\n";
 				continue;

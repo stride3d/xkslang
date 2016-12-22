@@ -46,7 +46,7 @@ public:
 	// Returns a GlslangResult instance containing all the information generated
 	// during the process. If the target includes SPIR-V, also disassembles
 	// the result and returns disassembly text.
-	XkslangResult compileAndLink(
+	GlslangResult compileAndLink(
 		const std::string shaderName, const std::string& code,
 		const std::string& entryPointName, EShMessages controls,
 		bool flattenUniformArrays = false);

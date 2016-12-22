@@ -16,7 +16,7 @@ using namespace std;
 //=======================================================================================================
 //=======================================================================================================
 //utils
-void Utils::OutputResultToStream(ostringstream* stream, const XkslangResult& result, EShMessages controls)
+void Utils::OutputResultToStream(ostringstream* stream, const GlslangResult& result, EShMessages controls)
 {
 	const auto outputIfNotEmpty = [&stream](const string& str) {
 		if (!str.empty()) *stream << str << "\n";

@@ -24,7 +24,7 @@ class Utils
 {
 public:
 	//Utils
-	static void OutputResultToStream(std::ostringstream* stream, const XkslangResult& result, EShMessages controls);
+	static void OutputResultToStream(std::ostringstream* stream, const GlslangResult& result, EShMessages controls);
 	static EShMessages DeriveOptions(Source source, Semantics semantics, Target target);
 	static EShLanguage GetShaderStage(const std::string& stage);
 

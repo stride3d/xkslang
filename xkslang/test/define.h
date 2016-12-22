@@ -34,7 +34,7 @@ namespace xkslangtest
 	};
 
 	// A struct for holding all the information returned by glslang compilation and linking.
-	struct XkslangResult {
+	struct GlslangResult {
 		std::vector<ShaderResult> shaderResults;
 		std::string linkingOutput;
 		std::string linkingError;

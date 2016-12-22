@@ -31,7 +31,7 @@ public:
 	bool InitialiseXkslang();
 	void Finalize();
 
-	bool ParseXkslShader(const std::string& shaderString);
+	bool ParseXkslShader(const std::string& shaderName, const std::string& shaderString);
 };
 
 }  // namespace xkslparser
