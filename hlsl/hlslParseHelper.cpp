@@ -108,6 +108,42 @@ void HlslParseContext::setLimits(const TBuiltInResource& r)
     intermediate.setLimits(resources);
 }
 
+bool HlslParseContext::parseXkslShaderString(TPpContext& ppContext, TInputScanner& input, bool versionWillBeError, bool parseXkslShaderDeclarationOnly,
+	TVector<XkslShaderDefinition*>& listShaderParsed)
+{
+	currentScanner = &input;
+	ppContext.setInput(input, versionWillBeError);
+
+	HlslScanContext scanContext(*this, ppContext);
+	HlslGrammar grammar(scanContext, *this);
+
+	bool res = false;
+	if (parseXkslShaderDeclarationOnly)
+	{
+		res = grammar.parseXKslShaderDeclaration(listShaderParsed);
+	}
+	else
+	{
+		res = grammar.parseXKslShaderDefinition(listShaderParsed);
+	}
+
+	if (!res) {
+		// Print a message formated such that if you click on the message it will take you right to
+		// the line through most UIs.
+		const glslang::TSourceLoc& sourceLoc = input.getSourceLoc();
+		infoSink.info << sourceLoc.name << "(" << sourceLoc.line << "): error at column " << sourceLoc.column << ", HLSL parsing failed.\n";
+		++numErrors;
+		return false;
+	}
+
+	return numErrors == 0;
+}
+
+void HlslParseContext::parseXkslShaderFinalize()
+{
+	finish();
+}
+
 //
 // Parse an array of strings using the parser in HlslRules.
 //

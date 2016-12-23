@@ -65,6 +65,54 @@ bool HlslGrammar::parse()
     return acceptCompilationUnit();
 }
 
+bool HlslGrammar::parseXKslShaderDefinition(TVector<XkslShaderDefinition*>& listShaderParsed)
+{
+	//root entry point for parsing xksl shader definition
+
+	if (xkslShaderCurrentlyParsed != nullptr || listXkslShaderParsed.size() > 0)
+	{
+		error("an xksl shader have already being parsed");
+		return false;
+	}
+
+	//Tell the parser to parse shader method definition
+	xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslDefinitions;
+
+	//Reinject shaders definition into the grammar
+	for (int i = 0; i < listShaderParsed.size(); ++i)
+	{
+		listXkslShaderParsed.push_back(listShaderParsed[i]);
+	}
+
+	advanceToken();
+	bool res = acceptCompilationUnit();
+	return res;
+}
+
+bool HlslGrammar::parseXKslShaderDeclaration(TVector<XkslShaderDefinition*>& listShaderParsed)
+{
+	//root entry point for parsing xksl shader declaration
+
+	//Tell the parser to only parse shader members and methods declaration
+	
+	xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslDeclarations;
+	if (xkslShaderCurrentlyParsed != nullptr || listXkslShaderParsed.size() > 0)
+	{
+		error("an xksl shader have already being parsed");
+		return false;
+	}
+
+	advanceToken();
+	bool res = acceptCompilationUnit();
+	if (!res) return false;
+
+	for (int i = 0; i < listXkslShaderParsed.size(); ++i)
+	{
+		listShaderParsed.push_back(listXkslShaderParsed[i]);
+	}
+	return true;
+}
+
 void HlslGrammar::expected(const char* syntax)
 {
     parseContext.error(token.loc, "Expected", syntax, "");
@@ -1759,6 +1807,12 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 	if (!acceptTokenClass(EHTokShaderClass))
 		return false;
 
+	if (this->xkslShaderCurrentlyParsed != nullptr)
+	{
+		unimplemented("Cannot accept nested shader class");
+		return false;
+	}
+
 	// IDENTIFIER
 	if (!acceptTokenClass(EHTokIdentifier)) {
 		expected("shader class name");
@@ -1780,111 +1834,173 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 	TIdentifierList* parentsName = nullptr;
 	acceptShaderClassPostDecls(parentsName);
 
-	//Create and record shader definition
-	TShaderDefinition* shaderDefinition = new TShaderDefinition();
-	shaderDefinition->name = shaderName->c_str();
-	int countParents = parentsName == nullptr? 0: parentsName->size();
-	for (int i = 0; i < countParents; ++i)
-		shaderDefinition->parents.push_back(parentsName->at(i)->c_str());
-	listAllParsedShaders.push_back(shaderDefinition);
-	listShaderCurrentlyParsed.push_back(shaderDefinition);
-
 	// LEFT_BRACE
 	if (!acceptTokenClass(EHTokLeftBrace)) {
 		expected("{");
-		listShaderCurrentlyParsed.pop_back();
+		//listShaderCurrentlyParsed.pop_back();
 		return false;
 	}
 
-	TTypeList* shaderTypeList = new TTypeList();  //list of types declared by the shader
-	TShaderClassFunctionList* shaderFunctionsList = new TShaderClassFunctionList();  //list of functions declared by the shader
-	HlslToken shaderStartingToken = token;
-
-	//======================================================================================
-	//parse the shader members and variables declaration
-	if (!acceptShaderAllVariablesAndFunctionsDeclaration(*shaderName, shaderTypeList, shaderFunctionsList)) {
-		error("failed to parse class variables and functions declarations");
-		listShaderCurrentlyParsed.pop_back();
-		return false;
-	}
-
-	//Add all function definition in the table of symbol
-	for (int i = 0; i < shaderFunctionsList->size(); ++i)
+	switch (xkslShaderParsingOperation)
 	{
-		TShaderClassFunction& shaderFunction = shaderFunctionsList->at(i);
-		parseContext.handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
-	}
-
-	//======================================================================================
-	//parse the shader functions definition
-	if (!recedeToToken(shaderStartingToken))  //move back the token
-	{
-		error("Failed to recede to a specific token");
-		return false;
-	}
-
-	if (!acceptShaderClassFunctionsDefinition(*shaderName, shaderTypeList, shaderFunctionsList)) {
-		error("failed to parse class functions definition");
-		listShaderCurrentlyParsed.pop_back();
-		return false;
-	}
-
-	//======================================================================================
-	// create the new shader type
-	new(&type) TType(shaderTypeList, *shaderName, postDeclQualifier, parentsName);
-
-	// Declare a variable on the global level so that we retrieve all shader symbols
-	// "shader ShaderSimple {float4 BaseColor; };"
-	// will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
-	type.getQualifier().storage = EvqGlobal;
-	parseContext.declareVariable(token.loc, *shaderName, type, nullptr);
-	//======================================================================================
-
-	//Add all functions nodes as aggregator
-	if (shaderFunctionsList != nullptr)
-	{
-		int countFunctionNodes = shaderFunctionsList->size();
-		for (int i = 0; i< countFunctionNodes; i++)
+		case XkslShaderParsingOperationEnum::ParseXkslDeclarations:
 		{
-			TIntermNode* functionNode = shaderFunctionsList->at(i).bodyNode;
-			if (functionNode != nullptr)
-			{
-				TType& functionType = functionNode->getAsAggregate()->getWritableType();
-				functionType.setOwnerClassName(shaderName->c_str());
+			//=================================================================================
+			// We're declaring a shader class: retrieving the list of all members and methods
 
-				*node = intermediate.growAggregate(*node, functionNode);
-			}
-			else
+			//make sure the shader has not already been declared
+			for (int i = 0; i < this->listXkslShaderParsed.size(); ++i)
 			{
-				//we have a prototype function only
+				if (this->listXkslShaderParsed.at(i)->shaderName == *shaderName)
+				{
+					error( TString("Shader is already declared: " + *shaderName).c_str() );
+					return false;
+				}
 			}
+
+			//Create the new shader declaration
+			XkslShaderDefinition* shaderDefinition = new XkslShaderDefinition();
+			shaderDefinition->shaderName = *shaderName;
+			int countParents = parentsName == nullptr ? 0 : parentsName->size();
+			for (int i = 0; i < countParents; ++i)
+				shaderDefinition->shaderparentsName.push_back( *(parentsName->at(i)) );
+			this->xkslShaderCurrentlyParsed = shaderDefinition;
+
+			TTypeList shaderTypeList;							//list of types declared by the shader
+			TVector<TShaderClassFunction> shaderFunctionsList;  //list of functions declared by the shader
+			HlslToken shaderStartingToken = token;
+
+			//======================================================================================
+			//parse the shader members and variables declaration
+			if (!acceptShaderAllVariablesAndFunctionsDeclaration(*shaderName, shaderTypeList, shaderFunctionsList)) {
+				error("failed to parse class variables and functions declarations");
+				//listShaderCurrentlyParsed.pop_back();
+				return false;
+			}
+
+			//Add all defined members
+			for (int i = 0; i < shaderTypeList.size(); ++i)
+			{
+				TTypeLoc& typeloc = shaderTypeList.at(i);
+				shaderDefinition->listMembers.push_back(typeloc);
+			}
+
+			//Add all defined methods
+			for (int i = 0; i < shaderFunctionsList.size(); ++i)
+			{
+				TShaderClassFunction& shaderFunction = shaderFunctionsList.at(i);
+				shaderDefinition->listMethods.push_back(shaderFunction);
+			}
+
+			//Add the shader definition in the list of parsed shader
+			this->listXkslShaderParsed.push_back(this->xkslShaderCurrentlyParsed);
+			this->xkslShaderCurrentlyParsed = nullptr;
 		}
+		break;
 
-		// Will tell that the node needs to be move back to the top level (maybe can find a cleaner way?)
-		if (*node != nullptr) (*node)->getAsAggregate()->setOperator(EOpNull);
+		case XkslShaderParsingOperationEnum::ParseXkslDefinitions:
+		{
+			//=================================================================================
+			// We're defining a shader previously declared (must be in listXkslShaderParsed)
+
+			//retrieve the shader's declaration in the list of parsed shader
+			XkslShaderDefinition* shaderDefinition = nullptr;
+			for (int i = 0; i < this->listXkslShaderParsed.size(); ++i)
+			{
+				XkslShaderDefinition* aShader = this->listXkslShaderParsed.at(i);
+				if (aShader->shaderName == *shaderName)
+				{
+					shaderDefinition = aShader;
+					break;
+				}
+			}
+
+			if (shaderDefinition == nullptr)
+			{
+				error( TString("missing shader declaration for: " + *shaderName).c_str());
+				return false;
+			}
+
+			//======================================================================================
+			// create and add the new shader type
+			TTypeList* shaderTypeList = new TTypeList();
+			for (int i = 0; i < shaderDefinition->listMembers.size(); ++i)
+			{
+				shaderTypeList->push_back(shaderDefinition->listMembers.at(i));
+			}
+			new(&type) TType(shaderTypeList, *shaderName, postDeclQualifier, parentsName);
+
+			// Declare a variable on the global level so that we retrieve all shader symbols
+			// "shader ShaderSimple {float4 BaseColor; };"
+			// will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
+			type.getQualifier().storage = EvqGlobal;
+			parseContext.declareVariable(token.loc, *shaderName, type, nullptr);
+			//======================================================================================
+
+			//Add all the shader method prototype in the table of symbol
+			for (int i = 0; i < shaderDefinition->listMethods.size(); ++i)
+			{
+				TShaderClassFunction& shaderFunction = shaderDefinition->listMethods.at(i);
+				parseContext.handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
+			}
+
+			//Parse the shader method definition
+			if (!acceptShaderClassFunctionsDefinition(*shaderName, shaderTypeList, shaderDefinition->listMethods)) {
+				error("failed to parse class functions definition");
+				//listShaderCurrentlyParsed.pop_back();
+				return false;
+			}
+
+			//Add all functions nodes as aggregator
+			{
+				int countFunctionNodes = shaderDefinition->listMethods.size();
+				for (int i = 0; i< countFunctionNodes; i++)
+				{
+					TIntermNode* functionNode = shaderDefinition->listMethods.at(i).bodyNode;
+					if (functionNode != nullptr)
+					{
+						TType& functionType = functionNode->getAsAggregate()->getWritableType();
+						functionType.setOwnerClassName(shaderName->c_str());
+			
+						*node = intermediate.growAggregate(*node, functionNode);
+					}
+					else
+					{
+						//we have a prototype function only
+					}
+				}
+			
+				// Will tell that the node needs to be move back to the top level (maybe can find a cleaner way?)
+				if (*node != nullptr) (*node)->getAsAggregate()->setOperator(EOpNull);
+			}
+			//======================================================================================
+		}
+		break;
+
+		default:
+			error("Undefined Xksl Shader Parsing Operation");
+			return false;
 	}
-	//======================================================================================
 
 	// RIGHT_BRACE
 	if (!acceptTokenClass(EHTokRightBrace)) {
 		expected("}");
-		listShaderCurrentlyParsed.pop_back();
+		//listShaderCurrentlyParsed.pop_back();
 		return false;
 	}
 
-	listShaderCurrentlyParsed.pop_back();
 	return true;
 }
 
-bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TShaderClassFunctionList* functionList)
+bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList)
 {
 	const TString& newFunctionMangledName = function.getMangledName();
 
 	//check if the function name already exists in the list
 	int index = -1;
-	for (int i = 0; i < functionList->size(); i++)
+	for (int i = 0; i < functionList.size(); i++)
 	{
-		if (functionList->at(i).function->getMangledName() == newFunctionMangledName)
+		if (functionList.at(i).function->getMangledName() == newFunctionMangledName)
 		{
 			index = i;
 			break;
@@ -1901,14 +2017,14 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, T
 		shaderFunction.token = token;
 		shaderFunction.bodyNode = nullptr;
 
-		functionList->push_back(shaderFunction);
+		functionList.push_back(shaderFunction);
 	}
 
 	return true;
 }
 
 //Parse a shader class: check for all variables and functions declaration (don't parse into function definition)
-bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName, TTypeList* typeList, TShaderClassFunctionList* functionList)
+bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName, TTypeList& typeList, TVector<TShaderClassFunction>& functionList)
 {
 	do {
 		// some extra SEMI_COLON?
@@ -1992,10 +2108,9 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString&
 					TTypeLoc member = { new TType(EbtVoid), token.loc };
 					member.type->shallowCopy(declaredType);
 					member.type->setFieldName(*token.string);
-					typeList->push_back(member);
-
+					typeList.push_back(member);
 				}
-				TTypeLoc& member = typeList->back();
+				TTypeLoc& member = typeList.back();
 
 				// array_specifier
 				TArraySizes* arraySizes = nullptr;
@@ -2047,7 +2162,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString&
 
 // Parse a shader class: only accepts function definition
 // function must already have been declared previously using method: acceptShaderAllVariablesAndFunctionsDeclaration
-bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName, TTypeList* typeList, TShaderClassFunctionList* functionList)
+bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName, TTypeList* typeList, TVector<TShaderClassFunction>& functionList)
 {
 	do {
 		// some extra SEMI_COLON?
@@ -2096,12 +2211,12 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
 				const TString& newFunctionMangledName = tmpFunction.getMangledName();
 				TFunction* function = nullptr;
 				TShaderClassFunction* shaderClassFunction;
-				for (int i = 0; i < functionList->size(); ++i)
+				for (int i = 0; i < functionList.size(); ++i)
 				{
-					shaderClassFunction = &(functionList->at(i));
+					shaderClassFunction = &(functionList.at(i));
 					if (shaderClassFunction->function->getMangledName() == newFunctionMangledName)
 					{
-						function = functionList->at(i).function;
+						function = functionList.at(i).function;
 						break;
 					}
 				}
@@ -2775,35 +2890,41 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
 
 const char* HlslGrammar::getCurrentShaderName()
 {
-	if (listShaderCurrentlyParsed.size() == 0) return nullptr;
-	return listShaderCurrentlyParsed.back()->name;
+	return nullptr;
+
+	//if (listShaderCurrentlyParsed.size() == 0) return nullptr;
+	//return listShaderCurrentlyParsed.back()->name;
 }
 
 int HlslGrammar::getCurrentShaderCountParents()
 {
-	if (listShaderCurrentlyParsed.size() == 0) return 0;
-	return listShaderCurrentlyParsed.back()->parents.size();
+	return 0;
+
+	//if (listShaderCurrentlyParsed.size() == 0) return 0;
+	//return listShaderCurrentlyParsed.back()->parents.size();
 }
 
 const char* HlslGrammar::getCurrentShaderParentName(int ind)
 {
-	if (listShaderCurrentlyParsed.size() == 0) return nullptr;
-	return listShaderCurrentlyParsed.back()->parents.at(ind);
+	return nullptr;
+
+	//if (listShaderCurrentlyParsed.size() == 0) return nullptr;
+	//return listShaderCurrentlyParsed.back()->parents.at(ind);
 }
 
 bool HlslGrammar::isRecordedAsAShaderName(const char* name)
 {
-	int count = listAllParsedShaders.size();
-	for (int i = 0; i < count; ++i)
-	{
-		if (strcmp(listAllParsedShaders[i]->name, name) == 0) return true;
-
-		int countParents = listAllParsedShaders[i]->parents.size();
-		for (int k = 0; k < countParents; ++k)
-		{
-			if (strcmp(listAllParsedShaders[i]->parents[k], name) == 0) return true;
-		}
-	}
+	//int count = listAllParsedShaders.size();
+	//for (int i = 0; i < count; ++i)
+	//{
+	//	if (strcmp(listAllParsedShaders[i]->name, name) == 0) return true;
+	//
+	//	int countParents = listAllParsedShaders[i]->parents.size();
+	//	for (int k = 0; k < countParents; ++k)
+	//	{
+	//		if (strcmp(listAllParsedShaders[i]->parents[k], name) == 0) return true;
+	//	}
+	//}
 
 	return false;
 }

@@ -403,6 +403,9 @@ public:
     bool parse(const TBuiltInResource*, int defaultVersion, EProfile defaultProfile, bool forceDefaultVersionAndProfile,
                bool forwardCompatible, EShMessages, Includer&);
 
+	//XKSL extensions
+	bool parseXkslShaderFile(const TBuiltInResource* builtInResources, int defaultVersion, bool forwardCompatible, EShMessages messages);
+
     // Equivalent to parse() without a default profile and without forcing defaults.
     // Provided for backwards compatibility.
     bool parse(const TBuiltInResource*, int defaultVersion, bool forwardCompatible, EShMessages);

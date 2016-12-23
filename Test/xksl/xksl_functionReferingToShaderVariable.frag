@@ -9,7 +9,7 @@ shader ShaderSimple
 		//float res = aFloat + 1;
 		//return res;
 		
-		aFloat;
+		//aFloat;
 		return 1.0;
 	}
 };

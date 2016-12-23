@@ -45,7 +45,7 @@ void XkslParser::Finalize()
 	glslang::FinalizeProcess();
 }
 
-bool XkslParser::ParseXkslShader(const std::string& shaderName, const std::string& shaderString)
+bool XkslParser::ParseXkslShader(const std::string& shaderFileName, const std::string& shaderString)
 {
 	const char* shaderStrings = shaderString.data();
 	const int shaderLengths = static_cast<int>(shaderString.size());
@@ -68,7 +68,7 @@ bool XkslParser::ParseXkslShader(const std::string& shaderName, const std::strin
 	shader.setStringsWithLengths(&shaderStrings, &shaderLengths, 1);
 	//shader.setEntryPoint(entryPointName.c_str());
 
-	bool success = shader.parse(
+	bool success = shader.parseXkslShaderFile(
 		(resources ? resources : &glslang::DefaultTBuiltInResource),
 		defaultVersion, isForwardCompatible, controls);
 
@@ -84,18 +84,17 @@ bool XkslParser::ParseXkslShader(const std::string& shaderName, const std::strin
 		xkslangtest::GlslangResult glslangRes;
 		if (success && (controls & EShMsgSpvRules)) {
 			vector<uint32_t> spirv_binary;
-			glslang::GlslangToSpv(*program.getIntermediate(kind),
-				spirv_binary, &logger);
+			glslang::GlslangToSpv(*program.getIntermediate(kind), spirv_binary, &logger);
 
 			ostringstream disassembly_stream;
 			spv::Parameterize();
 			spv::Disassemble(disassembly_stream, spirv_binary);
-			glslangRes = xkslangtest::GlslangResult{ { { shaderName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
+			glslangRes = xkslangtest::GlslangResult{ { { shaderFileName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
 				program.getInfoLog(), program.getInfoDebugLog(),
 				logger.getAllMessages(), disassembly_stream.str(), true };
 		}
 		else {
-			glslangRes = xkslangtest::GlslangResult{ { { shaderName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
+			glslangRes = xkslangtest::GlslangResult{ { { shaderFileName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
 				program.getInfoLog(), program.getInfoDebugLog(), "", "", false };
 		}
 
@@ -107,7 +106,7 @@ bool XkslParser::ParseXkslShader(const std::string& shaderName, const std::strin
 		std::string testDir = "D:/Prgms/glslang/source/Test/xksl";
 
 		// Write the stream output on the disk
-		const string newOutputFname = testDir + "/" + shaderName + ".latest.spv";
+		const string newOutputFname = testDir + "/" + shaderFileName + ".latest.spv";
 		xkslangtest::Utils::WriteFile(newOutputFname, stream.str());
 	}
 

@@ -39,13 +39,8 @@ vector<FileNameEntryPointPair> testFiles = {
 	//{"xksl_functionDeclaration.frag", ""},
 };
 
-#define PARSE_USING_XKSLPARSER 1
-#define PARSE_USING_GLSLANG 0
-
 void main(int argc, char** argv)
 {
-
-#if PARSE_USING_XKSLPARSER == 1
 	//Parse the shaders using XkslParser library
 	{
 		XkslParser parser;
@@ -79,9 +74,8 @@ void main(int argc, char** argv)
 
 		parser.Finalize();
 	}
-#endif
 
-#if PARSE_USING_GLSLANG == 1
+#if 0
 	//Parse the shaders by calling glslang functions
 	{
 		glslang::InitializeProcess();

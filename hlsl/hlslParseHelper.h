@@ -42,6 +42,7 @@
 namespace glslang {
 
 class TAttributeMap; // forward declare
+class XkslShaderDefinition;
 
 class HlslParseContext : public TParseContextBase {
 public:
@@ -51,6 +52,11 @@ public:
                      bool forwardCompatible = false, EShMessages messages = EShMsgDefault);
     virtual ~HlslParseContext();
     void initializeExtensionBehavior();
+
+	//XKSL extensions
+	bool parseXkslShaderString(TPpContext&, TInputScanner& input, bool versionWillBeError, bool parseXkslShaderDeclarationOnly,
+		TVector<XkslShaderDefinition*>& listShaderParsed);
+	void parseXkslShaderFinalize();
 
     void setLimits(const TBuiltInResource&);
     bool parseShaderStrings(TPpContext&, TInputScanner& input, bool versionWillBeError = false);

@@ -43,9 +43,10 @@
 
 namespace glslang {
 
-	struct TShaderDefinition {
-		const char* name;
-		TVector<const char*> parents;
+	enum class XkslShaderParsingOperationEnum {
+		Undefined,
+		ParseXkslDeclarations,
+		ParseXkslDefinitions
 	};
 
 	struct TShaderClassFunction {
@@ -53,8 +54,16 @@ namespace glslang {
 		HlslToken token;
 		TIntermNode* bodyNode;
 	};
-	typedef TVector<TShaderClassFunction> TShaderClassFunctionList;
-	//typedef TVector<TIntermNode> TIntermNodeList;
+
+	class XkslShaderDefinition
+	{
+	public:
+		TString shaderName;
+		TVector<TString> shaderparentsName;
+
+		TVector<TTypeLoc> listMembers;
+		TVector<TShaderClassFunction> listMethods;
+	};
 
     class TAttributeMap; // forward declare
     
@@ -64,10 +73,14 @@ namespace glslang {
     class HlslGrammar : public HlslTokenStream {
     public:
         HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
-            : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate) { }
+            : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
+			xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined), xkslShaderCurrentlyParsed(nullptr){ }
         virtual ~HlslGrammar() { }
 
         bool parse();
+
+		bool parseXKslShaderDeclaration(TVector<XkslShaderDefinition*>& listShaderParsed);
+		bool parseXKslShaderDefinition(TVector<XkslShaderDefinition*>& listShaderParsed);
 
     protected:
         HlslGrammar();
@@ -97,9 +110,9 @@ namespace glslang {
         bool acceptTextureType(TType&);
         bool acceptStruct(TType&);
 		bool acceptShaderClass(TIntermNode** node, TType&);
-		bool acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName, TTypeList* typeList, TShaderClassFunctionList* functionList);
-		bool acceptShaderClassFunctionsDefinition(const TString& shaderName, TTypeList* typeList, TShaderClassFunctionList* functionList);
-		bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TShaderClassFunctionList* functionList);
+		bool acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName, TTypeList& typeList, TVector<TShaderClassFunction>& functionList);
+		bool acceptShaderClassFunctionsDefinition(const TString& shaderName, TTypeList* typeList, TVector<TShaderClassFunction>& functionList);
+		bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
         bool acceptStructDeclarationList(TTypeList*&);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);
@@ -143,9 +156,10 @@ namespace glslang {
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
 
-		//List of shader parsed
-		TVector<TShaderDefinition*> listAllParsedShaders;
-		TVector<TShaderDefinition*> listShaderCurrentlyParsed;
+		//XKSL extensions
+		XkslShaderParsingOperationEnum xkslShaderParsingOperation;
+		XkslShaderDefinition* xkslShaderCurrentlyParsed;
+		std::vector<XkslShaderDefinition*> listXkslShaderParsed;
     };
 
 } // end namespace glslang
