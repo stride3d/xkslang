@@ -9,22 +9,27 @@ shader S01
 	int a;
 };
 
-shader Shader01: S01, S02
+shader S03: S01, S02
 {
 	int c;
 	
-	void f()
+	int f()
 	{
-		S01.a;
-		S02.b;
+		int res = 0;
+		res += S01.a;
+		res += S02.b;
+		res += S03.c;
 		
-		base.a;
-		base.b;
+		res += this.a;
+		res += this.b;
+		res += this.c;
 		
-		this.a;
-		this.c;
+		res += base.a;
+		//res += base.b;  //Error, b dos not exists in S01
+		
+		return res;
 	}
-}
+};
 
 shader S02
 {

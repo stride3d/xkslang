@@ -33,8 +33,8 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"xksl_shaderInheritance.frag", ""},
     //{"xksl_postDeclaration.frag", "" },
 
-    {"xksl_functionReferingToShaderVariable.frag", ""},
-    //{ "xksl_classAccessor.frag", "" },
+    //{"xksl_functionReferingToShaderVariable.frag", ""},
+    { "xksl_classAccessor.frag", "" },
 
     //{"xksl_constAssignment.frag", ""},
     //{"xksl_unresolvedVariable.frag", ""},

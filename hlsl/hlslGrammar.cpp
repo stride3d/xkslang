@@ -2817,7 +2817,11 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
         }
     }
 
-    if (shader == nullptr) return identifierLocation;
+    if (shader == nullptr)
+    {
+        error( (TString("undeclared class:\"") + shaderClassName + TString("\"")).c_str() );
+        return identifierLocation;
+    }
 
     //look if the shader declared the identifier
     int countMembers = shader->cbufferMembers.size();
@@ -2828,6 +2832,17 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
             TString* structName = shader->GetStructSymbolName(XkslShaderDefinition::MemberStructTypeEnum::CBuffer);
             identifierLocation.SetMemberLocation(shader, structName, i);
             break;
+        }
+    }
+
+    if (identifierLocation.isUnknown())
+    {
+        //member not found: we look in the parent classes
+        int countParents = shader->shaderparentsName.size();
+        for (int p = 0; p < countParents; p++)
+        {
+            identifierLocation = findShaderClassMember(*(shader->shaderparentsName[p]), memberName);
+            if (identifierLocation.isMember()) return identifierLocation;
         }
     }
 
@@ -2936,7 +2951,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, const char* class
 
                     if (!identifierLocation.isMember())
                     {
-                        error( (TString("Member: \"") + *idToken.string + TString("\" not found in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
+                        error( (TString("Member:\"") + *idToken.string + TString("\" not found in the class (or its parents):\"") + accessorClassName + TString("\"")).c_str() );
                         return false;
                     }
 
