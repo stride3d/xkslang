@@ -2,14 +2,10 @@
 
 shader ShaderSimple
 {
-	float aFloat;
+	float4 aFloat;
 	
 	float Compute01()
 	{
-		//float res = aFloat + 1;
-		//return res;
-		
-		//aFloat;
-		return 1.0;
+		return aFloat.y;
 	}
 };

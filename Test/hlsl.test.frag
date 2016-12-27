@@ -1,9 +1,9 @@
 static struct
 {
-	float aFloat;
+	float4 aFloat;
 } ShaderSimple;
 	
-float Compute01()
+float Compute01() //ShaderSimple
 {
-	return 1.0;
+	return ShaderSimple.aFloat.y;
 }

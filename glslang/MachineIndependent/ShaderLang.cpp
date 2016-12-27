@@ -634,10 +634,6 @@ bool ParseXkslShaderFile(
 	const char* shaderStrings,
 	const int inputLengths)
 {
-	if (!InitThread()) return false;
-
-	GetThreadPoolAllocator().push();
-
 	const char* t_strings[] = { shaderStrings };
 	size_t t_length[] = { inputLengths };
 	glslang::TInputScanner userInput(1, t_strings, t_length);
@@ -747,6 +743,8 @@ bool ParseXkslShaderFile(
 
 	//delete infoSink;
 	//delete intermediate;
+
+	//GetThreadPoolAllocator().pop();
 
 	return success;
 }
@@ -1734,6 +1732,12 @@ bool TShader::parse(const TBuiltInResource* builtInResources, int defaultVersion
 bool TShader::parseXkslShaderFile(const TBuiltInResource* builtInResources, int defaultVersion, bool forwardCompatible, EShMessages messages)
 {
 	if (numStrings != 1) return false;
+
+	if (!InitThread()) return false;
+
+	pool = new TPoolAllocator();
+	SetThreadPoolAllocator(*pool);
+
 	return ParseXkslShaderFile(compiler, intermediate, builtInResources, messages, strings[0], lengths[0]);
 }
 
@@ -1781,14 +1785,14 @@ TProgram::TProgram() : pool(0), reflection(0), ioMapper(nullptr), linked(false)
 
 TProgram::~TProgram()
 {
-    delete infoSink;
-    delete reflection;
+	if (infoSink) delete infoSink;
+    if (reflection) delete reflection;
 
     for (int s = 0; s < EShLangCount; ++s)
         if (newedIntermediate[s])
             delete intermediate[s];
 
-    delete pool;
+	if (pool) delete pool;
 }
 
 //

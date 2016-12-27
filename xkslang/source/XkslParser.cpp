@@ -56,11 +56,13 @@ bool XkslParser::ParseXkslShader(const std::string& shaderFileName, const std::s
 	bool isForwardCompatible = false;
 	int defaultVersion = 100;
 	TBuiltInResource* resources = nullptr;
-	bool buildSPRV = false;
+	bool buildSPRV = true;
+	bool keepUncalledFuntionsInAST = true;
 
 	EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST);
-	controls = static_cast<EShMessages>(controls | EShMsgVulkanRules | EShMsgSpvRules);
-	if (buildSPRV) controls = static_cast<EShMessages>(controls | EShMsgSpvRules | EShMsgKeepUncalled);
+	controls = static_cast<EShMessages>(controls | EShMsgVulkanRules | EShMsgKeepUncalled);
+	if (keepUncalledFuntionsInAST) controls = static_cast<EShMessages>(controls | EShMsgKeepUncalled);
+	if (buildSPRV) controls = static_cast<EShMessages>(controls | EShMsgSpvRules);
 
 	glslang::TShader shader(kind);
 	shader.setFlattenUniformArrays(flattenUniformArrays);
@@ -68,7 +70,9 @@ bool XkslParser::ParseXkslShader(const std::string& shaderFileName, const std::s
 	shader.setStringsWithLengths(&shaderStrings, &shaderLengths, 1);
 	//shader.setEntryPoint(entryPointName.c_str());
 
-	bool success = shader.parseXkslShaderFile(
+	bool success = false;
+
+	success = shader.parseXkslShaderFile(
 		(resources ? resources : &glslang::DefaultTBuiltInResource),
 		defaultVersion, isForwardCompatible, controls);
 
@@ -78,14 +82,14 @@ bool XkslParser::ParseXkslShader(const std::string& shaderFileName, const std::s
 		glslang::TProgram program;
 		program.addShader(&shader);
 		success &= program.link(controls);
-
+	
 		spv::SpvBuildLogger logger;
-
+	
 		xkslangtest::GlslangResult glslangRes;
 		if (success && (controls & EShMsgSpvRules)) {
 			vector<uint32_t> spirv_binary;
 			glslang::GlslangToSpv(*program.getIntermediate(kind), spirv_binary, &logger);
-
+	
 			ostringstream disassembly_stream;
 			spv::Parameterize();
 			spv::Disassemble(disassembly_stream, spirv_binary);
@@ -97,14 +101,14 @@ bool XkslParser::ParseXkslShader(const std::string& shaderFileName, const std::s
 			glslangRes = xkslangtest::GlslangResult{ { { shaderFileName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
 				program.getInfoLog(), program.getInfoDebugLog(), "", "", false };
 		}
-
+	
 		//Write result to file
 		// Generate the hybrid output in the way of glslangValidator.
 		ostringstream stream;
 		xkslangtest::Utils::OutputResultToStream(&stream, glslangRes, controls);
-
+	
 		std::string testDir = "D:/Prgms/glslang/source/Test/xksl";
-
+	
 		// Write the stream output on the disk
 		const string newOutputFname = testDir + "/" + shaderFileName + ".latest.spv";
 		xkslangtest::Utils::WriteFile(newOutputFname, stream.str());

@@ -30,9 +30,10 @@ vector<FileNameEntryPointPair> testFiles = {
 	//{"xksl_simpleShaderWithFunction.frag", ""},
 	//{"xksl_declarationMixOfFunctionsAndVariables.frag", ""},
 	//{"xksl_2ShaderWithSameFunctionNames.frag", ""},
-	{"xksl_functionReferingToShaderVariable.frag", ""},
 	//{"xksl_shaderInheritance.frag", ""},
-	//{"xksl_postDeclaration.frag", ""},
+	{"xksl_functionReferingToShaderVariable.frag", ""},
+	
+	//{ "xksl_postDeclaration.frag", "" },
 	//{"xksl_constAssignment.frag", ""},
 	//{"xksl_unresolvedVariable.frag", ""},
 	//{"xksl_classAccessor.frag", "" },
@@ -41,15 +42,15 @@ vector<FileNameEntryPointPair> testFiles = {
 
 void main(int argc, char** argv)
 {
+	XkslParser parser;
+	if (!parser.InitialiseXkslang())
+	{
+		cout << "Failed to initialize the parser\n";
+		return;
+	}
+
 	//Parse the shaders using XkslParser library
 	{
-		XkslParser parser;
-		if (!parser.InitialiseXkslang())
-		{
-			cout << "Failed to initialize the parser\n";
-			return;
-		}
-
 		for (int i = 0; i < testFiles.size(); ++i)
 		{
 			//load shader file into a string
@@ -71,9 +72,9 @@ void main(int argc, char** argv)
 
 			cout << "Shader " << shaderFileName << ": Successfully parsed\n";
 		}
-
-		parser.Finalize();
 	}
+
+	parser.Finalize();
 
 #if 0
 	//Parse the shaders by calling glslang functions

@@ -69,9 +69,9 @@ bool HlslGrammar::parseXKslShaderDefinition(TVector<XkslShaderDefinition*>& list
 {
 	//root entry point for parsing xksl shader definition
 
-	if (xkslShaderCurrentlyParsed != nullptr || listXkslShaderParsed.size() > 0)
+	if (xkslShaderCurrentlyParsed != nullptr || listDeclaredXkslShader.size() > 0)
 	{
-		error("an xksl shader have already being parsed");
+		error("an xksl shader is or have already being parsed");
 		return false;
 	}
 
@@ -81,7 +81,7 @@ bool HlslGrammar::parseXKslShaderDefinition(TVector<XkslShaderDefinition*>& list
 	//Reinject shaders definition into the grammar
 	for (int i = 0; i < listShaderParsed.size(); ++i)
 	{
-		listXkslShaderParsed.push_back(listShaderParsed[i]);
+		listDeclaredXkslShader.push_back(listShaderParsed[i]);
 	}
 
 	advanceToken();
@@ -93,22 +93,22 @@ bool HlslGrammar::parseXKslShaderDeclaration(TVector<XkslShaderDefinition*>& lis
 {
 	//root entry point for parsing xksl shader declaration
 
-	//Tell the parser to only parse shader members and methods declaration
-	
-	xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslDeclarations;
-	if (xkslShaderCurrentlyParsed != nullptr || listXkslShaderParsed.size() > 0)
+	if (xkslShaderCurrentlyParsed != nullptr || listDeclaredXkslShader.size() > 0)
 	{
-		error("an xksl shader have already being parsed");
+		error("an xksl shader is or have already being parsed");
 		return false;
 	}
+
+	//Tell the parser to only parse shader members and methods declaration
+	xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslDeclarations;
 
 	advanceToken();
 	bool res = acceptCompilationUnit();
 	if (!res) return false;
 
-	for (int i = 0; i < listXkslShaderParsed.size(); ++i)
+	for (int i = 0; i < listDeclaredXkslShader.size(); ++i)
 	{
-		listShaderParsed.push_back(listXkslShaderParsed[i]);
+		listShaderParsed.push_back(listDeclaredXkslShader[i]);
 	}
 	return true;
 }
@@ -146,12 +146,12 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className)
 		{
 			//Base refers to the first parent
 			int countParent = getCurrentShaderCountParents();
-			if (countParent == 0)
+			if (countParent <= 0)
 			{
-				error("Invalid \"base\" accessor: the current shader has no inheritance");
+				error("Invalid \"base\" accessor: the current shader has no inherited parents");
 				return false;
 			}
-			className = NewPoolTString(getCurrentShaderParentName(0));
+			className = NewPoolTString(getCurrentShaderParentName(0)->c_str());
 			advanceToken();
 			break;
 		}
@@ -159,7 +159,7 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className)
 		case EHTokIdentifier:
 		{
 			//The token can be a known shader class
-			if (isRecordedAsAShaderName(token.string->c_str()))
+			if (isRecordedAsAShaderName(*token.string))
 			{
 				className = NewPoolTString(token.string->c_str());
 				advanceToken();
@@ -1849,9 +1849,9 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 			// We're declaring a shader class: retrieving the list of all members and methods
 
 			//make sure the shader has not already been declared
-			for (int i = 0; i < this->listXkslShaderParsed.size(); ++i)
+			for (int i = 0; i < this->listDeclaredXkslShader.size(); ++i)
 			{
-				if (this->listXkslShaderParsed.at(i)->shaderName == *shaderName)
+				if (this->listDeclaredXkslShader.at(i)->shaderName == *shaderName)
 				{
 					error( TString("Shader is already declared: " + *shaderName).c_str() );
 					return false;
@@ -1882,7 +1882,7 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 			for (int i = 0; i < shaderTypeList.size(); ++i)
 			{
 				TTypeLoc& typeloc = shaderTypeList.at(i);
-				shaderDefinition->listMembers.push_back(typeloc);
+				shaderDefinition->cbufferMembers.push_back(typeloc);
 			}
 
 			//Add all defined methods
@@ -1893,7 +1893,7 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 			}
 
 			//Add the shader definition in the list of parsed shader
-			this->listXkslShaderParsed.push_back(this->xkslShaderCurrentlyParsed);
+			this->listDeclaredXkslShader.push_back(this->xkslShaderCurrentlyParsed);
 			this->xkslShaderCurrentlyParsed = nullptr;
 		}
 		break;
@@ -1901,19 +1901,20 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 		case XkslShaderParsingOperationEnum::ParseXkslDefinitions:
 		{
 			//=================================================================================
-			// We're defining a shader previously declared (must be in listXkslShaderParsed)
+			// We're defining a shader previously declared (must be in listDeclaredXkslShader)
 
-			//retrieve the shader's declaration in the list of parsed shader
+			//retrieve the shader's declaration in the list of declared shader
 			XkslShaderDefinition* shaderDefinition = nullptr;
-			for (int i = 0; i < this->listXkslShaderParsed.size(); ++i)
+			for (int i = 0; i < this->listDeclaredXkslShader.size(); ++i)
 			{
-				XkslShaderDefinition* aShader = this->listXkslShaderParsed.at(i);
+				XkslShaderDefinition* aShader = this->listDeclaredXkslShader.at(i);
 				if (aShader->shaderName == *shaderName)
 				{
 					shaderDefinition = aShader;
 					break;
 				}
 			}
+			this->xkslShaderCurrentlyParsed = shaderDefinition;
 
 			if (shaderDefinition == nullptr)
 			{
@@ -1922,19 +1923,22 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 			}
 
 			//======================================================================================
-			// create and add the new shader type
+			// create and add the new shader structs
+			TString* cbufferStructName = NewPoolTString( (TString("cbuffer_") + *shaderName).c_str() );
 			TTypeList* shaderTypeList = new TTypeList();
-			for (int i = 0; i < shaderDefinition->listMembers.size(); ++i)
+			for (int i = 0; i < shaderDefinition->cbufferMembers.size(); ++i)
 			{
-				shaderTypeList->push_back(shaderDefinition->listMembers.at(i));
+				shaderTypeList->push_back(shaderDefinition->cbufferMembers.at(i));
 			}
-			new(&type) TType(shaderTypeList, *shaderName, postDeclQualifier, parentsName);
+			new(&type) TType(shaderTypeList, *cbufferStructName, postDeclQualifier, parentsName);
 
 			// Declare a variable on the global level so that we retrieve all shader symbols
 			// "shader ShaderSimple {float4 BaseColor; };"
 			// will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
 			type.getQualifier().storage = EvqGlobal;
-			parseContext.declareVariable(token.loc, *shaderName, type, nullptr);
+			parseContext.declareVariable(token.loc, *cbufferStructName, type, nullptr);
+
+			shaderDefinition->SetStructSymbolName(XkslShaderDefinition::MemberStructTypeEnum::CBuffer, cbufferStructName);
 			//======================================================================================
 
 			//Add all the shader method prototype in the table of symbol
@@ -1974,6 +1978,8 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 				if (*node != nullptr) (*node)->getAsAggregate()->setOperator(EOpNull);
 			}
 			//======================================================================================
+
+			this->xkslShaderCurrentlyParsed = nullptr;
 		}
 		break;
 
@@ -2888,44 +2894,72 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
     return node != nullptr;
 }
 
-const char* HlslGrammar::getCurrentShaderName()
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, const TString& memberName)
 {
-	return nullptr;
+	XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
+	XkslShaderDefinition* shader = nullptr;
 
-	//if (listShaderCurrentlyParsed.size() == 0) return nullptr;
-	//return listShaderCurrentlyParsed.back()->name;
+	//find the shader declaration
+	int count = listDeclaredXkslShader.size();
+	for (int i = 0; i < count; ++i)
+	{
+		if (listDeclaredXkslShader[i]->shaderName.compare(shaderClassName) == 0)
+		{
+			shader = listDeclaredXkslShader[i];
+			break;
+		}
+	}
+
+	if (shader == nullptr) return identifierLocation;
+
+	//look if the shader declared the identifier
+	int countMembers = shader->cbufferMembers.size();
+	for (int i = 0; i < countMembers; ++i)
+	{
+		if (shader->cbufferMembers[i].type->getFieldName().compare(memberName) == 0)
+		{
+			TString* structName = shader->GetStructSymbolName(XkslShaderDefinition::MemberStructTypeEnum::CBuffer);
+			identifierLocation.SetMemberLocation(shader, structName, i);
+			break;
+		}
+	}
+
+	return identifierLocation;
+}
+
+TString* HlslGrammar::getCurrentShaderName()
+{
+	if (xkslShaderCurrentlyParsed == nullptr) return nullptr;
+	return &(xkslShaderCurrentlyParsed->shaderName);
 }
 
 int HlslGrammar::getCurrentShaderCountParents()
 {
-	return 0;
-
-	//if (listShaderCurrentlyParsed.size() == 0) return 0;
-	//return listShaderCurrentlyParsed.back()->parents.size();
+	if (xkslShaderCurrentlyParsed == nullptr) return 0;
+	return xkslShaderCurrentlyParsed->shaderparentsName.size();
 }
 
-const char* HlslGrammar::getCurrentShaderParentName(int ind)
+TString* HlslGrammar::getCurrentShaderParentName(int index)
 {
-	return nullptr;
-
-	//if (listShaderCurrentlyParsed.size() == 0) return nullptr;
-	//return listShaderCurrentlyParsed.back()->parents.at(ind);
+	if (xkslShaderCurrentlyParsed == nullptr) return nullptr;
+	assert(index >= 0 && index < xkslShaderCurrentlyParsed->shaderparentsName.size());
+	return &(xkslShaderCurrentlyParsed->shaderparentsName[index]);
 }
 
-bool HlslGrammar::isRecordedAsAShaderName(const char* name)
+bool HlslGrammar::isRecordedAsAShaderName(const TString& name)
 {
-	//int count = listAllParsedShaders.size();
-	//for (int i = 0; i < count; ++i)
-	//{
-	//	if (strcmp(listAllParsedShaders[i]->name, name) == 0) return true;
-	//
-	//	int countParents = listAllParsedShaders[i]->parents.size();
-	//	for (int k = 0; k < countParents; ++k)
-	//	{
-	//		if (strcmp(listAllParsedShaders[i]->parents[k], name) == 0) return true;
-	//	}
-	//}
-
+	int count = listDeclaredXkslShader.size();
+	for (int i = 0; i < count; ++i)
+	{
+		if (listDeclaredXkslShader[i]->shaderName.compare(name) == 0) return true;
+	
+		// Obsolete: if we have the parents, we have to know their declaration
+		/*int countParents = listDeclaredXkslShader[i]->shaderparentsName.size();
+		for (int k = 0; k < countParents; ++k)
+		{
+			if (strcmp(listDeclaredXkslShader[i]->shaderparentsName[k].c_str(), name) == 0) return true;
+		}*/
+	}
 	return false;
 }
 
@@ -2977,73 +3011,44 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, const char* class
         // identifier or function_call name
         if (! peekTokenClass(EHTokLeftParen))
 		{
-			const char* referenceShaderName = getCurrentShaderName();
+			TString* referenceShaderName = getCurrentShaderName();
 			if (referenceShaderName == nullptr)
 			{
-				//hlsl procedure (we're not parsing a shader)
+				//we're not parsing a shader: normal hlsl procedure
 				node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
 			}
 			else
 			{
-				//We're inside a shader class
-				node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
-
-				/*
-				//=======================================================================================================================
-				//=======================================================================================================================
-				//XKSL extensions:  we're currently parsing a shader class identifier
-				//if we are parsing an unknown symbol node (symbol not refering to any known variable or class names): we create an unresolved variable at global level and recreate the node
-				
-				if (idToken.symbol && idToken.symbol->getAsVariable() && idToken.symbol->getAsVariable()->isUserType())
+				if (idToken.symbol == nullptr)
 				{
-					//We parsed a type symbol in a PostFixExpression. Could be: TypeName.Something
-					//Normally we should have detected this case above, in acceptClassReferenceAccessor function
-					node = nullptr;
-					error("Parser logic Error: case should have been detected");
-					return false;
+					TString* memberName = idToken.string;
+
+					//the symbol is unknwon, we look if it is a shader's member
+					TString accessorClassName = classAccessorName == nullptr? *referenceShaderName : classAccessorName;
+					XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, *memberName);
+
+					if (!identifierLocation.isMember())
+					{
+						error( (TString("Member: \"") + *idToken.string + TString("\" not found in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
+						return false;
+					}
+
+					//Add accessor to the member struct
+					glslang::TSymbol* structSymbol = parseContext.symbolTable.find(*identifierLocation.structSymbolName);
+					if (structSymbol == nullptr || (structSymbol->getAsVariable() && structSymbol->getAsVariable()->isUserType())) {
+						error((TString("Cannot find valid struct symbol for Member: \"") + *idToken.string + TString("\" not found in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
+						return false;
+					}
+
+					//handle variable to the struct
+					node = parseContext.handleVariable(idToken.loc, structSymbol, identifierLocation.structSymbolName);
+
+					node = parseContext.handleDotDereference(idToken.loc, node, *memberName);
 				}
 				else
 				{
 					node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
 				}
-
-				//here we can parse full unknown expression as unresolved (for example unres.toto.prout)				
-				if (node != nullptr && node->getAsSymbolNode() && node->getAsSymbolNode()->getType().getBasicType() == EbtVoid)  //identifier from unknown symbol?
-				{
-					TSourceLoc loc = node->getLoc();
-					const TString& parsedName = node->getAsSymbolNode()->getName();
-					TSymbol* variableSymbol = parseContext.symbolTable.find(parsedName);
-
-					if (variableSymbol == nullptr)
-					{
-						//First check if there are any other expressions following the unresolved symbol (for example UnknownName.XXX.YYY)
-						//If we find any, we concatenate them to the unresolve variable
-						TString unresolvedVariableName = parsedName;
-						while (acceptTokenClass(EHTokDot))
-						{
-							unresolvedVariableName = unresolvedVariableName + "." + *token.string;
-
-							switch (token.tokenClass)
-							{
-								case EHTokIdentifier:
-									break;
-
-								default:
-									error((TString("Invalid unresolved expression: ") + unresolvedVariableName).c_str());
-									return false;
-							}
-
-							advanceToken();
-						}
-						
-						TType unresolvedVariableType(EbtXKSLUnresolvedType, EvqGlobal);
-						unresolvedVariableType.setOwnerClassName(referenceShaderName);
-
-						const TVariable* variable = new TVariable(&unresolvedVariableName, unresolvedVariableType);
-						node = intermediate.addSymbol(*variable, loc);
-					}
-				}
-				*/
 			}
 
         }

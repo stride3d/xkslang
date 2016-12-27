@@ -866,7 +866,7 @@ TIntermTyped* HlslParseContext::handleDotDereference(const TSourceLoc& loc, TInt
                 result->setType(TType(base->getBasicType(), EvqTemporary, base->getType().getQualifier().precision, (int)vectorString.size()));
             }
         }
-    } else if (base->getBasicType() == EbtStruct || base->getBasicType() == EbtBlock) {
+    } else if (base->getBasicType() == EbtStruct || base->getBasicType() == EbtBlock || base->getBasicType() == EbtShaderClass) {
         const TTypeList* fields = base->getType().getStruct();
         bool fieldFound = false;
         int member;

@@ -16,10 +16,6 @@ shader Parent01: Parent02
 {
 };
 
-internal shader TestInternalShader
-{
-};
-
 /**************
 //Some invalid shader declaration
 stage stream shader TestWrongShader

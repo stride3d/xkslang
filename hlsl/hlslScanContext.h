@@ -72,6 +72,74 @@ struct HlslToken {
 	}
 };
 
+struct TShaderClassFunction {
+	TFunction* function;
+	HlslToken token;
+	TIntermNode* bodyNode;
+};
+
+class XkslShaderDefinition
+{
+public:
+	enum class MemberStructTypeEnum
+	{
+		CBuffer,
+	};
+
+	enum class ShaderIdentifierTypeEnum
+	{
+		Unknown,
+		Member,
+		Method
+	};
+
+public:
+	TString shaderName;
+	TVector<TString> shaderparentsName;
+
+	TVector<TTypeLoc> cbufferMembers;
+	TString* cbufferStructSymbolName;
+	TVector<TShaderClassFunction> listMethods;
+
+	void SetStructSymbolName(MemberStructTypeEnum structType, TString* name){
+		switch (structType) {
+			case MemberStructTypeEnum::CBuffer: cbufferStructSymbolName = name;
+		}
+	}
+
+	TString* GetStructSymbolName(MemberStructTypeEnum structType){
+		switch (structType){
+			case MemberStructTypeEnum::CBuffer: return cbufferStructSymbolName;
+		}
+		return nullptr;
+	}
+
+	//Define the location of an identidier (member or method)
+	class ShaderIdentifierLocation
+	{
+	public:
+		XkslShaderDefinition* shader;
+		ShaderIdentifierTypeEnum identifierType;
+
+		int memberIndex;
+		TString* structSymbolName;
+
+		ShaderIdentifierLocation() : shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1){}
+
+		bool isUnknown(){return identifierType == ShaderIdentifierTypeEnum::Unknown;}
+		bool isMember(){return identifierType == ShaderIdentifierTypeEnum::Member;}
+		bool isMethod(){return identifierType == ShaderIdentifierTypeEnum::Method;}
+
+		void SetMemberLocation(XkslShaderDefinition* shader, TString* structName, int index)
+		{
+			this->identifierType = ShaderIdentifierTypeEnum::Member;
+			this->shader = shader;
+			this->structSymbolName = structName;
+			this->memberIndex = index;
+		}
+	};
+};
+
 //
 // The state of scanning and translating raw tokens to slightly richer
 // semantics, like knowing if an identifier is an existing symbol, or

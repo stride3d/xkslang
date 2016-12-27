@@ -49,22 +49,6 @@ namespace glslang {
 		ParseXkslDefinitions
 	};
 
-	struct TShaderClassFunction {
-		TFunction* function;
-		HlslToken token;
-		TIntermNode* bodyNode;
-	};
-
-	class XkslShaderDefinition
-	{
-	public:
-		TString shaderName;
-		TVector<TString> shaderparentsName;
-
-		TVector<TTypeLoc> listMembers;
-		TVector<TShaderClassFunction> listMethods;
-	};
-
     class TAttributeMap; // forward declare
     
     // Should just be the grammar aspect of HLSL.
@@ -148,10 +132,11 @@ namespace glslang {
 
 		//XKSL extensions
 		void acceptShaderClassPostDecls(TIdentifierList*& parents);
-		const char* getCurrentShaderName();
+		TString* getCurrentShaderName();
 		int getCurrentShaderCountParents();
-		const char* getCurrentShaderParentName(int ind);
-		bool isRecordedAsAShaderName(const char* name);
+		TString* getCurrentShaderParentName(int index);
+		XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, const TString& memberName);
+		bool isRecordedAsAShaderName(const TString& name);
 
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
@@ -159,7 +144,7 @@ namespace glslang {
 		//XKSL extensions
 		XkslShaderParsingOperationEnum xkslShaderParsingOperation;
 		XkslShaderDefinition* xkslShaderCurrentlyParsed;
-		std::vector<XkslShaderDefinition*> listXkslShaderParsed;
+		std::vector<XkslShaderDefinition*> listDeclaredXkslShader; //list of declared shaders
     };
 
 } // end namespace glslang
