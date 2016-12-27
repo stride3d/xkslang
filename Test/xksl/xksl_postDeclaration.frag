@@ -38,7 +38,7 @@ shader ShaderTestMember
 	
 	//That one probably don't make any sense (just to test the parser)
 	private static const stage stream float mixWithEverything;
-}
+};
 
 shader TestShaderMethod
 {
@@ -53,7 +53,7 @@ shader TestShaderMethod
 	override void overrideMethod() {}
 	
 	clone void cloneMethod() {}
-}
+};
 
 
 

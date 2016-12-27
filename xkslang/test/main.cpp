@@ -31,12 +31,13 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"xksl_declarationMixOfFunctionsAndVariables.frag", ""},
     //{"xksl_2ShaderWithSameFunctionNames.frag", ""},
     //{"xksl_shaderInheritance.frag", ""},
+    //{"xksl_postDeclaration.frag", "" },
+
     {"xksl_functionReferingToShaderVariable.frag", ""},
-    
-    //{ "xksl_postDeclaration.frag", "" },
+    //{ "xksl_classAccessor.frag", "" },
+
     //{"xksl_constAssignment.frag", ""},
     //{"xksl_unresolvedVariable.frag", ""},
-    //{"xksl_classAccessor.frag", "" },
     //{"xksl_functionDeclaration.frag", ""},
 };
 

@@ -229,30 +229,7 @@ bool HlslGrammar::acceptCompilationUnit()
         if (declarationNode != nullptr)
         {
             // hook it up
-            ///unitNode = intermediate.growAggregate(unitNode, declarationNode);
-
-            //addition for XKSL shaders
-            //all functions operand must be put at the root of the AST
-            //however when a shader Type create or declare some functions, it will put them as aggregate of declarationNode
-            //so we need to move them at the root of the AST
-            bool isSetOfFunctions = false;
-            if (declarationNode->getAsAggregate() && declarationNode->getAsAggregate()->getOp() == EOpNull)
-            {
-                isSetOfFunctions = true;
-            }
-
-            if (isSetOfFunctions)
-            {
-                const TIntermSequence& functions = declarationNode->getAsAggregate()->getSequence();
-                for (int f = 0; f < (int)functions.size(); ++f) {
-                    TIntermNode* functionNode = functions[f];
-                    unitNode = intermediate.growAggregate(unitNode, functionNode);
-                }
-            }
-            else
-            {
-                unitNode = intermediate.growAggregate(unitNode, declarationNode);
-            }
+            unitNode = intermediate.growAggregate(unitNode, declarationNode);
         }
     }
 
@@ -439,35 +416,6 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
     // fully_specified_type
     if (! acceptFullySpecifiedType(&node, declaredType))
         return false;
-
-    if (declaredType.getBasicType() == EbtShaderClass)
-    {
-        if (typedefDecl)
-        {
-            error("Cannot have \"typedef\" with a Shader class");
-            return false;
-        }
-
-        //check the shader class qualifier
-        TQualifier shaderQualifier = declaredType.getQualifier();
-        if (shaderQualifier.isStage || shaderQualifier.isStream)
-        {
-            if (shaderQualifier.isStage) error("Shader class invalid qualifiers: stage");
-            if (shaderQualifier.isStream) error("Shader class invalid qualifiers: stream");
-            return false;
-        }
-
-        //TString newTypeName = "_" + declaredType.getTypeName() + "_shaderType_";
-        //declaredType.setTypeName(newTypeName);
-
-        ////for newly defined shader class: we create an unused variable
-        ////otherwise the class would not be defined in the AST as long as nobody else is using it
-        //TString unusedVariableName = "__var_" + declaredType.getTypeName() + "_unused";
-        //TString* pName = NewPoolTString(unusedVariableName.c_str());
-        //parseContext.declareVariable(initialToken.loc, *pName, declaredType, nullptr);
-
-        return true;
-    }
 
     // identifier
     HlslToken idToken;
@@ -1867,10 +1815,11 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
 
             //Create the new shader declaration
             XkslShaderDefinition* shaderDefinition = new XkslShaderDefinition();
+            shaderDefinition->location = token.loc;
             shaderDefinition->shaderName = *shaderName;
             int countParents = parentsName == nullptr ? 0 : parentsName->size();
             for (int i = 0; i < countParents; ++i)
-                shaderDefinition->shaderparentsName.push_back( *(parentsName->at(i)) );
+                shaderDefinition->shaderparentsName.push_back( parentsName->at(i) );
             this->xkslShaderCurrentlyParsed = shaderDefinition;
 
             TTypeList shaderTypeList;							//list of types declared by the shader
@@ -1929,62 +1878,12 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
                 return false;
             }
 
-            //======================================================================================
-            // create and add the new shader structs
-            TString* cbufferStructName = NewPoolTString( (TString("cbuffer_") + *shaderName).c_str() );
-            TTypeList* shaderTypeList = new TTypeList();
-            for (int i = 0; i < shaderDefinition->cbufferMembers.size(); ++i)
-            {
-                shaderTypeList->push_back(shaderDefinition->cbufferMembers.at(i));
-            }
-            new(&type) TType(shaderTypeList, *cbufferStructName, postDeclQualifier, parentsName);
-
-            // Declare a variable on the global level so that we retrieve all shader symbols
-            // "shader ShaderSimple {float4 BaseColor; };"
-            // will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
-            type.getQualifier().storage = EvqGlobal;
-            parseContext.declareVariable(token.loc, *cbufferStructName, type, nullptr);
-
-            shaderDefinition->SetStructSymbolName(XkslShaderDefinition::MemberStructTypeEnum::CBuffer, cbufferStructName);
-            //======================================================================================
-
-            //Add all the shader method prototype in the table of symbol
-            for (int i = 0; i < shaderDefinition->listMethods.size(); ++i)
-            {
-                TShaderClassFunction& shaderFunction = shaderDefinition->listMethods.at(i);
-                parseContext.handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
-            }
-
             //Parse the shader method definition
-            if (!acceptShaderClassFunctionsDefinition(*shaderName, shaderTypeList, shaderDefinition->listMethods)) {
+            if (!acceptShaderClassFunctionsDefinition(*shaderName, shaderDefinition)) {
                 error("failed to parse class functions definition");
                 //listShaderCurrentlyParsed.pop_back();
                 return false;
             }
-
-            //Add all functions nodes as aggregator
-            {
-                int countFunctionNodes = shaderDefinition->listMethods.size();
-                for (int i = 0; i< countFunctionNodes; i++)
-                {
-                    TIntermNode* functionNode = shaderDefinition->listMethods.at(i).bodyNode;
-                    if (functionNode != nullptr)
-                    {
-                        TType& functionType = functionNode->getAsAggregate()->getWritableType();
-                        functionType.setOwnerClassName(shaderName->c_str());
-            
-                        *node = intermediate.growAggregate(*node, functionNode);
-                    }
-                    else
-                    {
-                        //we have a prototype function only
-                    }
-                }
-            
-                // Will tell that the node needs to be move back to the top level (maybe can find a cleaner way?)
-                if (*node != nullptr) (*node)->getAsAggregate()->setOperator(EOpNull);
-            }
-            //======================================================================================
 
             this->xkslShaderCurrentlyParsed = nullptr;
         }
@@ -2175,7 +2074,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString&
 
 // Parse a shader class: only accepts function definition
 // function must already have been declared previously using method: acceptShaderAllVariablesAndFunctionsDeclaration
-bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName, TTypeList* typeList, TVector<TShaderClassFunction>& functionList)
+bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName, XkslShaderDefinition* shader)
 {
     do {
         // some extra SEMI_COLON?
@@ -2221,6 +2120,7 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
             if (peekTokenClass(EHTokLeftBrace))
             {
                 //Find the function from list of all declared function
+                TVector<TShaderClassFunction>& functionList = shader->listMethods;
                 const TString& newFunctionMangledName = tmpFunction.getMangledName();
                 TFunction* function = nullptr;
                 TShaderClassFunction* shaderClassFunction;
@@ -2950,7 +2850,7 @@ TString* HlslGrammar::getCurrentShaderParentName(int index)
 {
     if (xkslShaderCurrentlyParsed == nullptr) return nullptr;
     assert(index >= 0 && index < xkslShaderCurrentlyParsed->shaderparentsName.size());
-    return &(xkslShaderCurrentlyParsed->shaderparentsName[index]);
+    return xkslShaderCurrentlyParsed->shaderparentsName[index];
 }
 
 bool HlslGrammar::isRecordedAsAShaderName(const TString& name)

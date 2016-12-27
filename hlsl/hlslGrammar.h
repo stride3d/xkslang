@@ -95,7 +95,7 @@ namespace glslang {
         bool acceptStruct(TType&);
         bool acceptShaderClass(TIntermNode** node, TType&);
         bool acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName, TTypeList& typeList, TVector<TShaderClassFunction>& functionList);
-        bool acceptShaderClassFunctionsDefinition(const TString& shaderName, TTypeList* typeList, TVector<TShaderClassFunction>& functionList);
+        bool acceptShaderClassFunctionsDefinition(const TString& shaderName, XkslShaderDefinition* shader);
         bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
         bool acceptStructDeclarationList(TTypeList*&);
         bool acceptFunctionParameters(TFunction&);

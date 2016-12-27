@@ -94,8 +94,10 @@ public:
     };
 
 public:
+    TSourceLoc location;  //location where the shader is declared (for logs)
+
     TString shaderName;
-    TVector<TString> shaderparentsName;
+    TIdentifierList shaderparentsName;
 
     TVector<TTypeLoc> cbufferMembers;
     TString* cbufferStructSymbolName;

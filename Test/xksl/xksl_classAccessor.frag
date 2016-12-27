@@ -4,40 +4,29 @@ ClassName has to be known, otherwise the expression will be set as unresolved.
 
 *****************************************************************************************/
 
-
-shader S03
+shader S01
 {
+	int a;
 };
 
 shader Shader01: S01, S02
 {
+	int c;
+	
 	void f()
 	{
-		this.aa;		
-		this.aInt = 5;
-		base.aInt = this.aInt;
-		base.aInt;
+		S01.a;
+		S02.b;
 		
-		//S01.aInt;
-		//S02.aInt;
-		//S03.aInt;
+		base.a;
+		base.b;
 		
-		//unknownParent.unres03;
-		//unknownParent.unres03.xyz;
-		
-		//int i = unres.asd + toto.prout * base.xyz.gloup.abc - 1;
-		
-		//streams.aInt;
-		//base.toto;
-		//base.unres02;		
-		//Parent.toto;
-		
-		//unknownParent.unres03.xyz;
-		
-		//float4 color = base.Shading();
+		this.a;
+		this.c;
 	}
 }
 
 shader S02
 {
+	int b;
 };

@@ -695,12 +695,14 @@ bool ParseXkslShaderFile(
     // Push a new symbol allocation scope that will get used for the shader's globals.
     symbolTable.push();
 
+    //List of all declared shader
     TVector<XkslShaderDefinition*> listShaderParsed;
 
-    //=====================================================================================
+    //==================================================================================================================
     //YEAH, can finally parse !!!!
     bool success = false;
     {
+        //==================================================================================================================
         //Parse shader declaration only!
         {
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
@@ -708,7 +710,47 @@ bool ParseXkslShaderFile(
                 *parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
         }
 
-        //Now can parse shader methods' definition!
+        //==================================================================================================================
+        //We parsed the shader declaration: we can now add all function prototypes in the list of symbols, and create all members structs
+        if (success)
+        {
+            for (int s = 0; s < listShaderParsed.size(); s++)
+            {
+                XkslShaderDefinition* shader = listShaderParsed[s];
+
+                //======================================================================================
+                // create and add the new shader structs
+                TString* cbufferStructName = NewPoolTString((TString("cbuffer_") + shader->shaderName).c_str());
+                TTypeList* shaderTypeList = new TTypeList();
+                for (int i = 0; i < shader->cbufferMembers.size(); ++i)
+                {
+                    shaderTypeList->push_back(shader->cbufferMembers.at(i));
+                }
+                
+                TQualifier postDeclQualifier;
+                postDeclQualifier.clear();
+                TType* type = new TType(shaderTypeList, *cbufferStructName, postDeclQualifier, &shader->shaderparentsName);
+                
+                // Declare a variable on the global level so that we retrieve all shader symbols
+                // "shader ShaderSimple {float4 BaseColor; };"
+                // will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
+                type->getQualifier().storage = EvqGlobal;
+                parseContext->declareVariable(shader->location, *cbufferStructName, *type, nullptr);
+                
+                shader->SetStructSymbolName(XkslShaderDefinition::MemberStructTypeEnum::CBuffer, cbufferStructName);
+                //======================================================================================
+
+                //Add all the shader method prototype in the table of symbol
+                for (int i = 0; i < shader->listMethods.size(); ++i)
+                {
+                    TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
+                    parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
+                }
+                //======================================================================================
+            }
+        }
+
+        //Now we can parse the shader methods' definition!
         if (success)
         {
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
@@ -716,6 +758,39 @@ bool ParseXkslShaderFile(
                 *parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
         }
 
+        //Add all methods in the global tree root
+        if (success)
+        {
+            TIntermNode* treeRootNode = intermediate->getTreeRoot();
+
+            //Add all shader functions nodes as node aggregator
+            for (int s = 0; s < listShaderParsed.size(); s++)
+            {
+                XkslShaderDefinition* shader = listShaderParsed[s];
+            
+                int countFunctionNodes = shader->listMethods.size();
+                for (int i = 0; i< countFunctionNodes; i++)
+                {
+                    TIntermNode* functionNode = shader->listMethods.at(i).bodyNode;
+                    if (functionNode != nullptr)
+                    {
+                        TType& functionType = functionNode->getAsAggregate()->getWritableType();
+                        functionType.setOwnerClassName(shader->shaderName.c_str());
+                
+                        treeRootNode = intermediate->growAggregate(treeRootNode, functionNode);
+                    }
+                    else
+                    {
+                        //no body: we have the prototype function only
+                    }
+                }
+            }
+
+            // set root of AST
+            intermediate->setTreeRoot(treeRootNode);
+        }
+
+        //End of parsing
         parseContext->parseXkslShaderFinalize();
     }
 
