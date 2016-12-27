@@ -593,160 +593,160 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 // TODO: switch from HlslParser to XkslParser ?
 //==========================================================================================
 bool ProcessXkslShaderDefinition(
-	TVector<XkslShaderDefinition*>& listShaderParsed,
-	HlslParseContext& parseContext, TPpContext& ppContext,
-	TInputScanner& fullInput, bool versionWillBeError,
-	TSymbolTable&, TIntermediate& intermediate,
-	EShOptimizationLevel optLevel, EShMessages messages)
+    TVector<XkslShaderDefinition*>& listShaderParsed,
+    HlslParseContext& parseContext, TPpContext& ppContext,
+    TInputScanner& fullInput, bool versionWillBeError,
+    TSymbolTable&, TIntermediate& intermediate,
+    EShOptimizationLevel optLevel, EShMessages messages)
 {
-	bool success = true;
-	bool parseXkslShaderDeclarationOnly = false;
+    bool success = true;
+    bool parseXkslShaderDeclarationOnly = false;
 
-	// Parse the full shader.
-	if (!parseContext.parseXkslShaderString(ppContext, fullInput, versionWillBeError, parseXkslShaderDeclarationOnly, listShaderParsed))
-		success = false;
+    // Parse the full shader.
+    if (!parseContext.parseXkslShaderString(ppContext, fullInput, versionWillBeError, parseXkslShaderDeclarationOnly, listShaderParsed))
+        success = false;
 
-	return success;
+    return success;
 }
 
 bool ProcessXkslShaderDeclaration(
-	TVector<XkslShaderDefinition*>& listShaderParsed,
-	HlslParseContext& parseContext, TPpContext& ppContext,
-	TInputScanner& fullInput, bool versionWillBeError,
-	TSymbolTable&, TIntermediate& intermediate,
-	EShOptimizationLevel optLevel, EShMessages messages)
+    TVector<XkslShaderDefinition*>& listShaderParsed,
+    HlslParseContext& parseContext, TPpContext& ppContext,
+    TInputScanner& fullInput, bool versionWillBeError,
+    TSymbolTable&, TIntermediate& intermediate,
+    EShOptimizationLevel optLevel, EShMessages messages)
 {
-	bool success = true;
-	bool parseXkslShaderDeclarationOnly = true;
+    bool success = true;
+    bool parseXkslShaderDeclarationOnly = true;
 
-	// Parse the full shader.
-	if (!parseContext.parseXkslShaderString(ppContext, fullInput, versionWillBeError, parseXkslShaderDeclarationOnly, listShaderParsed))
-		success = false;
+    // Parse the full shader.
+    if (!parseContext.parseXkslShaderString(ppContext, fullInput, versionWillBeError, parseXkslShaderDeclarationOnly, listShaderParsed))
+        success = false;
 
-	return success;
+    return success;
 }
 
 bool ParseXkslShaderFile(
-	TCompiler* compiler,
-	TIntermediate* intermediate,  //will contains the AST
-	const TBuiltInResource* resources,
-	EShMessages messages,
-	const char* shaderStrings,
-	const int inputLengths)
+    TCompiler* compiler,
+    TIntermediate* intermediate,  //will contains the AST
+    const TBuiltInResource* resources,
+    EShMessages messages,
+    const char* shaderStrings,
+    const int inputLengths)
 {
-	const char* t_strings[] = { shaderStrings };
-	size_t t_length[] = { inputLengths };
-	glslang::TInputScanner userInput(1, t_strings, t_length);
+    const char* t_strings[] = { shaderStrings };
+    size_t t_length[] = { inputLengths };
+    glslang::TInputScanner userInput(1, t_strings, t_length);
 
-	// TODO: eventually have this come from the outside
-	EShLanguage stage = EShLangFragment;
-	SpvVersion spvVersion;
-	spvVersion.spv = 0x00010000;
-	spvVersion.vulkan = 100;
-	EShSource source = EShSourceHlsl;
-	EProfile profile = ECoreProfile;
-	int version = 450;
-	bool forwardCompatible = false;
-	bool versionWillBeError = true;
-	bool parsingBuiltIns = false;
-	EShOptimizationLevel optLevel = EShOptNone;
-	std::string sourceEntryPointName = "";
+    // TODO: eventually have this come from the outside
+    EShLanguage stage = EShLangFragment;
+    SpvVersion spvVersion;
+    spvVersion.spv = 0x00010000;
+    spvVersion.vulkan = 100;
+    EShSource source = EShSourceHlsl;
+    EProfile profile = ECoreProfile;
+    int version = 450;
+    bool forwardCompatible = false;
+    bool versionWillBeError = true;
+    bool parsingBuiltIns = false;
+    EShOptimizationLevel optLevel = EShOptNone;
+    std::string sourceEntryPointName = "";
 
-	//TInfoSink* infoSink = new TInfoSink;
-	//TIntermediate* intermediate = new TIntermediate(stage);
+    //TInfoSink* infoSink = new TInfoSink;
+    //TIntermediate* intermediate = new TIntermediate(stage);
 
-	intermediate->setSource(source);
-	intermediate->setVersion(version);
-	intermediate->setProfile(profile);
-	intermediate->setSpv(spvVersion);
-	if (spvVersion.vulkan >= 100) intermediate->setOriginUpperLeft();
+    intermediate->setSource(source);
+    intermediate->setVersion(version);
+    intermediate->setProfile(profile);
+    intermediate->setSpv(spvVersion);
+    if (spvVersion.vulkan >= 100) intermediate->setOriginUpperLeft();
 
-	//=====================================================================================
-	// Setup symbol tables
-	SetupBuiltinSymbolTable(version, profile, spvVersion, source);
+    //=====================================================================================
+    // Setup symbol tables
+    SetupBuiltinSymbolTable(version, profile, spvVersion, source);
 
-	TSymbolTable* cachedTable = SharedSymbolTables[MapVersionToIndex(version)]
-		[MapSpvVersionToIndex(spvVersion)]
-		[MapProfileToIndex(profile)]
-		[MapSourceToIndex(source)]
-		[stage];
+    TSymbolTable* cachedTable = SharedSymbolTables[MapVersionToIndex(version)]
+        [MapSpvVersionToIndex(spvVersion)]
+        [MapProfileToIndex(profile)]
+        [MapSourceToIndex(source)]
+        [stage];
 
-	// Dynamically allocate the symbol table so we can control when it is deallocated WRT the pool.
-	TSymbolTable* symbolTableMemory = new TSymbolTable;
-	TSymbolTable& symbolTable = *symbolTableMemory;
-	if (cachedTable) symbolTable.adoptLevels(*cachedTable);
+    // Dynamically allocate the symbol table so we can control when it is deallocated WRT the pool.
+    TSymbolTable* symbolTableMemory = new TSymbolTable;
+    TSymbolTable& symbolTable = *symbolTableMemory;
+    if (cachedTable) symbolTable.adoptLevels(*cachedTable);
 
-	// Add built-in symbols that are potentially context dependent; they get popped again further down.
-	AddContextSpecificSymbols(resources, compiler->infoSink, symbolTable, version, profile, spvVersion, stage, source);
+    // Add built-in symbols that are potentially context dependent; they get popped again further down.
+    AddContextSpecificSymbols(resources, compiler->infoSink, symbolTable, version, profile, spvVersion, stage, source);
 
-	//=====================================================================================
-	// Create ParseContext and ppContext
-	HlslParseContext* parseContext = new HlslParseContext(symbolTable, *intermediate, parsingBuiltIns, version, profile, spvVersion,
-		stage, compiler->infoSink, sourceEntryPointName.c_str(), forwardCompatible, messages);
+    //=====================================================================================
+    // Create ParseContext and ppContext
+    HlslParseContext* parseContext = new HlslParseContext(symbolTable, *intermediate, parsingBuiltIns, version, profile, spvVersion,
+        stage, compiler->infoSink, sourceEntryPointName.c_str(), forwardCompatible, messages);
 
-	TShader::ForbidInclude includer;
-	TPpContext ppContext(*parseContext, "", includer);
+    TShader::ForbidInclude includer;
+    TPpContext ppContext(*parseContext, "", includer);
 
-	//glslang::TScanContext scanContext(*parseContext);
-	parseContext->setPpContext(&ppContext);
-	parseContext->setLimits(*resources);
-	parseContext->initializeExtensionBehavior();
+    //glslang::TScanContext scanContext(*parseContext);
+    parseContext->setPpContext(&ppContext);
+    parseContext->setLimits(*resources);
+    parseContext->initializeExtensionBehavior();
 
-	// Push a new symbol allocation scope that will get used for the shader's globals.
-	symbolTable.push();
+    // Push a new symbol allocation scope that will get used for the shader's globals.
+    symbolTable.push();
 
-	TVector<XkslShaderDefinition*> listShaderParsed;
+    TVector<XkslShaderDefinition*> listShaderParsed;
 
-	//=====================================================================================
-	//YEAH, can finally parse !!!!
-	bool success = false;
-	{
-		//Parse shader declaration only!
-		{
-			TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-			success = ProcessXkslShaderDeclaration(listShaderParsed,
-				*parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
-		}
+    //=====================================================================================
+    //YEAH, can finally parse !!!!
+    bool success = false;
+    {
+        //Parse shader declaration only!
+        {
+            TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
+            success = ProcessXkslShaderDeclaration(listShaderParsed,
+                *parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
+        }
 
-		//Now can parse shader methods' definition!
-		if (success)
-		{
-			TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-			success = ProcessXkslShaderDefinition(listShaderParsed,
-				*parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
-		}
+        //Now can parse shader methods' definition!
+        if (success)
+        {
+            TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
+            success = ProcessXkslShaderDefinition(listShaderParsed,
+                *parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
+        }
 
-		parseContext->parseXkslShaderFinalize();
-	}
+        parseContext->parseXkslShaderFinalize();
+    }
 
-	//finalize some stuff to start building the AST
-	{
-		if (success && intermediate->getTreeRoot()) {
-			if (optLevel == EShOptNoGeneration)
-				parseContext->infoSink.info.message(EPrefixNone, "No errors.  No code generation or linking was requested.");
-			else
-				success = intermediate->postProcess(intermediate->getTreeRoot(), parseContext->getLanguage());
-		}
-		else if (!success) {
-			parseContext->infoSink.info.prefix(EPrefixError);
-			parseContext->infoSink.info << parseContext->getNumErrors() << " compilation errors.  No code generated.\n\n";
-		}
+    //finalize some stuff to start building the AST
+    {
+        if (success && intermediate->getTreeRoot()) {
+            if (optLevel == EShOptNoGeneration)
+                parseContext->infoSink.info.message(EPrefixNone, "No errors.  No code generation or linking was requested.");
+            else
+                success = intermediate->postProcess(intermediate->getTreeRoot(), parseContext->getLanguage());
+        }
+        else if (!success) {
+            parseContext->infoSink.info.prefix(EPrefixError);
+            parseContext->infoSink.info << parseContext->getNumErrors() << " compilation errors.  No code generated.\n\n";
+        }
 
-		if (messages & EShMsgAST)
-			intermediate->output(parseContext->infoSink, true);
-	}
+        if (messages & EShMsgAST)
+            intermediate->output(parseContext->infoSink, true);
+    }
 
-	//=====================================================================================
-	// Clean up the symbol table. The AST is self-sufficient now.
-	delete symbolTableMemory;
-	delete parseContext;
+    //=====================================================================================
+    // Clean up the symbol table. The AST is self-sufficient now.
+    delete symbolTableMemory;
+    delete parseContext;
 
-	//delete infoSink;
-	//delete intermediate;
+    //delete infoSink;
+    //delete intermediate;
 
-	//GetThreadPoolAllocator().pop();
+    //GetThreadPoolAllocator().pop();
 
-	return success;
+    return success;
 }
 //==========================================================================================
 //==========================================================================================
@@ -1735,14 +1735,14 @@ bool TShader::parse(const TBuiltInResource* builtInResources, int defaultVersion
 
 bool TShader::parseXkslShaderFile(const TBuiltInResource* builtInResources, int defaultVersion, bool forwardCompatible, EShMessages messages)
 {
-	if (numStrings != 1) return false;
+    if (numStrings != 1) return false;
 
-	if (!InitThread()) return false;
+    if (!InitThread()) return false;
 
-	pool = new TPoolAllocator();
-	SetThreadPoolAllocator(*pool);
+    pool = new TPoolAllocator();
+    SetThreadPoolAllocator(*pool);
 
-	return ParseXkslShaderFile(compiler, intermediate, builtInResources, messages, strings[0], lengths[0]);
+    return ParseXkslShaderFile(compiler, intermediate, builtInResources, messages, strings[0], lengths[0]);
 }
 
 // Fill in a string with the result of preprocessing ShaderStrings
@@ -1789,14 +1789,14 @@ TProgram::TProgram() : pool(0), reflection(0), ioMapper(nullptr), linked(false)
 
 TProgram::~TProgram()
 {
-	if (infoSink) delete infoSink;
+    if (infoSink) delete infoSink;
     if (reflection) delete reflection;
 
     for (int s = 0; s < EShLangCount; ++s)
         if (newedIntermediate[s])
             delete intermediate[s];
 
-	if (pool) delete pool;
+    if (pool) delete pool;
 }
 
 //

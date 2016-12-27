@@ -252,17 +252,17 @@ const char* DecorationString(int decoration)
     case 42: return "NoContraction";
     case 43: return "InputAttachmentIndex";
     case 44: return "Alignment";
-	
-	//XKSL extensions
-	case (DecorationShaderClassName):         return "ShaderClassName";
-	case (DecorationShaderInheritFromParent): return "InheritFromShaderClass";
-	case (DecorationAttributeStage):	      return "Stage";
-	case (DecorationAttributeStream):         return "Stream";
-	case (DecorationAttributeStatic):		  return "Static";
-	case (DecorationMemberConst):             return "Const";
-	case (DecorationMethodOverride):          return "Override";
-	case (DecorationMethodAbstract):          return "Abstract";
-	case (DecorationMethodClone):             return "Clone";
+    
+    //XKSL extensions
+    case (DecorationShaderClassName):         return "ShaderClassName";
+    case (DecorationShaderInheritFromParent): return "InheritFromShaderClass";
+    case (DecorationAttributeStage):	      return "Stage";
+    case (DecorationAttributeStream):         return "Stream";
+    case (DecorationAttributeStatic):		  return "Static";
+    case (DecorationMemberConst):             return "Const";
+    case (DecorationMethodOverride):          return "Override";
+    case (DecorationMethodAbstract):          return "Abstract";
+    case (DecorationMethodClone):             return "Clone";
 
     case DecorationCeiling:
     default:  return "Bad";
@@ -859,7 +859,7 @@ const char* OpcodeString(int op)
     case 15:  return "OpEntryPoint";
     case 16:  return "OpExecutionMode";
     case 17:  return "OpCapability";
-	case OpTypeUnresolved:  return "OpTypeUnresolved";
+    case OpTypeUnresolved:  return "OpTypeUnresolved";
     case 19:  return "OpTypeVoid";
     case 20:  return "OpTypeBool";
     case 21:  return "OpTypeInt";
@@ -1243,7 +1243,7 @@ void Parameterize()
     InstructionDesc[OpMemoryModel].setResultAndType(false, false);
     InstructionDesc[OpEntryPoint].setResultAndType(false, false);
     InstructionDesc[OpExecutionMode].setResultAndType(false, false);
-	InstructionDesc[OpTypeUnresolved].setResultAndType(true, false);
+    InstructionDesc[OpTypeUnresolved].setResultAndType(true, false);
     InstructionDesc[OpTypeVoid].setResultAndType(true, false);
     InstructionDesc[OpTypeBool].setResultAndType(true, false);
     InstructionDesc[OpTypeInt].setResultAndType(true, false);
@@ -1346,7 +1346,7 @@ void Parameterize()
     DecorationOperands[DecorationInputAttachmentIndex].push(OperandLiteralNumber, "'Attachment Index'");
     DecorationOperands[DecorationAlignment].push(OperandLiteralNumber, "'Alignment'");
 
-	//DecorationOperands[DecorationShaderClassName].push(OperandLiteralString, "'Name'");
+    //DecorationOperands[DecorationShaderClassName].push(OperandLiteralString, "'Name'");
 
     OperandClassParams[OperandSource].set(SourceLanguageCeiling, SourceString, 0);
     OperandClassParams[OperandExecutionModel].set(ExecutionModelCeiling, ExecutionModelString, ExecutionModelParams);

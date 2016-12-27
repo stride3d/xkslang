@@ -317,7 +317,7 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["tbuffer"] =                 EHTokTBuffer;
     (*KeywordMap)["typedef"] =                 EHTokTypedef;
 
-	(*KeywordMap)["shader"]  =                 EHTokShaderClass;
+    (*KeywordMap)["shader"]  =                 EHTokShaderClass;
 
     (*KeywordMap)["true"] =                    EHTokBoolConstant;
     (*KeywordMap)["false"] =                   EHTokBoolConstant;
@@ -335,18 +335,18 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["case"] =                    EHTokCase;
     (*KeywordMap)["default"] =                 EHTokDefault;
 
-	//XKSL extensions: map keywords
-	(*KeywordMap)["public"]    =                 EHTokPublic;
-	(*KeywordMap)["private"]   =                 EHTokPrivate;
-	(*KeywordMap)["protected"] =                 EHTokProtected;
-	(*KeywordMap)["internal"]  =                 EHTokInternal;
-	(*KeywordMap)["stage"]     =                 EHTokStage;
-	(*KeywordMap)["stream"]    =                 EHTokStream;
-	(*KeywordMap)["override"]  =                 EHTokOverride;
-	(*KeywordMap)["abstract"]  =                 EHTokAbstract;
-	(*KeywordMap)["clone"]     =                 EHTokClone;
-	(*KeywordMap)["this"]      =                 EHTokThis;
-	(*KeywordMap)["base"]      =                 EHTokBase;
+    //XKSL extensions: map keywords
+    (*KeywordMap)["public"]    =                 EHTokPublic;
+    (*KeywordMap)["private"]   =                 EHTokPrivate;
+    (*KeywordMap)["protected"] =                 EHTokProtected;
+    (*KeywordMap)["internal"]  =                 EHTokInternal;
+    (*KeywordMap)["stage"]     =                 EHTokStage;
+    (*KeywordMap)["stream"]    =                 EHTokStream;
+    (*KeywordMap)["override"]  =                 EHTokOverride;
+    (*KeywordMap)["abstract"]  =                 EHTokAbstract;
+    (*KeywordMap)["clone"]     =                 EHTokClone;
+    (*KeywordMap)["this"]      =                 EHTokThis;
+    (*KeywordMap)["base"]      =                 EHTokBase;
 
     // TODO: get correct set here
     ReservedSet = new std::unordered_set<const char*, str_hash, str_eq>;
@@ -537,19 +537,19 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokLayout:
         return keyword;
 
-	//XKSL keyword extensions
-	case EHTokPublic:
-	case EHTokPrivate:
-	case EHTokProtected:
-	case EHTokInternal:
-	case EHTokStage:
-	case EHTokStream:
-	case EHTokOverride:
-	case EHTokAbstract:
-	case EHTokClone:
-	case EHTokThis:
-	case EHTokBase:
-		return keyword;
+    //XKSL keyword extensions
+    case EHTokPublic:
+    case EHTokPrivate:
+    case EHTokProtected:
+    case EHTokInternal:
+    case EHTokStage:
+    case EHTokStream:
+    case EHTokOverride:
+    case EHTokAbstract:
+    case EHTokClone:
+    case EHTokThis:
+    case EHTokBase:
+        return keyword;
 
     // primitive types
     case EHTokPoint:
@@ -744,8 +744,8 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokTBuffer:
         return keyword;
 
-	case EHTokShaderClass:
-		return keyword;
+    case EHTokShaderClass:
+        return keyword;
 
     case EHTokBoolConstant:
         if (strcmp("true", tokenText) == 0)

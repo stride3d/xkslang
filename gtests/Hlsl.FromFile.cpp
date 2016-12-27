@@ -66,9 +66,9 @@ TEST_P(HlslCompileTest, FromFile)
 {
     loadFileCompileAndCheck(GlobalTestSettings.testRoot, GetParam().fileName,
                             Source::HLSL, Semantics::Vulkan,
-							//Target::AST,
-							Target::BothASTAndSpv,
-							GetParam().entryPoint);
+                            //Target::AST,
+                            Target::BothASTAndSpv,
+                            GetParam().entryPoint);
 }
 
 TEST_P(HlslCompileAndFlattenTest, FromFile)
@@ -76,8 +76,8 @@ TEST_P(HlslCompileAndFlattenTest, FromFile)
     loadFileCompileFlattenUniformsAndCheck(GlobalTestSettings.testRoot, GetParam().fileName,
                                            Source::HLSL, Semantics::Vulkan,
                                            //Target::AST,
-										   Target::BothASTAndSpv,
-										   GetParam().entryPoint);
+                                           Target::BothASTAndSpv,
+                                           GetParam().entryPoint);
 }
 
 #ifdef TOTO
@@ -87,12 +87,12 @@ TEST_P(HlslCompileAndFlattenTest, FromFile)
 INSTANTIATE_TEST_CASE_P(
     ToSpirv, HlslCompileTest,
     ::testing::ValuesIn(std::vector<FileNameEntryPointPair>{
-		
-		{"hlsl.test.frag", "" },
+        
+        {"hlsl.test.frag", "" },
 
-		/*
-		{"hlsl.struct.test.frag", "PixelShaderFunction"},
-		{"hlsl.struct.frag", "PixelShaderFunction"},
+        /*
+        {"hlsl.struct.test.frag", "PixelShaderFunction"},
+        {"hlsl.struct.frag", "PixelShaderFunction"},
         {"hlsl.amend.frag", "f1"},
         {"hlsl.array.frag", "PixelShaderFunction"},
         {"hlsl.array.implicit-size.frag", "PixelShaderFunction"},
@@ -236,7 +236,7 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.typedef.frag", "PixelShaderFunction"},
         {"hlsl.whileLoop.frag", "PixelShaderFunction"},
         {"hlsl.void.frag", "PixelShaderFunction"},
-		*/
+        */
     }),
     FileNameAsCustomTestSuffix
 );

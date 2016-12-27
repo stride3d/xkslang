@@ -109,39 +109,39 @@ void HlslParseContext::setLimits(const TBuiltInResource& r)
 }
 
 bool HlslParseContext::parseXkslShaderString(TPpContext& ppContext, TInputScanner& input, bool versionWillBeError, bool parseXkslShaderDeclarationOnly,
-	TVector<XkslShaderDefinition*>& listShaderParsed)
+    TVector<XkslShaderDefinition*>& listShaderParsed)
 {
-	currentScanner = &input;
-	ppContext.setInput(input, versionWillBeError);
+    currentScanner = &input;
+    ppContext.setInput(input, versionWillBeError);
 
-	HlslScanContext scanContext(*this, ppContext);
-	HlslGrammar grammar(scanContext, *this);
+    HlslScanContext scanContext(*this, ppContext);
+    HlslGrammar grammar(scanContext, *this);
 
-	bool res = false;
-	if (parseXkslShaderDeclarationOnly)
-	{
-		res = grammar.parseXKslShaderDeclaration(listShaderParsed);
-	}
-	else
-	{
-		res = grammar.parseXKslShaderDefinition(listShaderParsed);
-	}
+    bool res = false;
+    if (parseXkslShaderDeclarationOnly)
+    {
+        res = grammar.parseXKslShaderDeclaration(listShaderParsed);
+    }
+    else
+    {
+        res = grammar.parseXKslShaderDefinition(listShaderParsed);
+    }
 
-	if (!res) {
-		// Print a message formated such that if you click on the message it will take you right to
-		// the line through most UIs.
-		const glslang::TSourceLoc& sourceLoc = input.getSourceLoc();
-		infoSink.info << sourceLoc.name << "(" << sourceLoc.line << "): error at column " << sourceLoc.column << ", HLSL parsing failed.\n";
-		++numErrors;
-		return false;
-	}
+    if (!res) {
+        // Print a message formated such that if you click on the message it will take you right to
+        // the line through most UIs.
+        const glslang::TSourceLoc& sourceLoc = input.getSourceLoc();
+        infoSink.info << sourceLoc.name << "(" << sourceLoc.line << "): error at column " << sourceLoc.column << ", HLSL parsing failed.\n";
+        ++numErrors;
+        return false;
+    }
 
-	return numErrors == 0;
+    return numErrors == 0;
 }
 
 void HlslParseContext::parseXkslShaderFinalize()
 {
-	finish();
+    finish();
 }
 
 //
@@ -615,13 +615,13 @@ TIntermTyped* HlslParseContext::handleVariable(const TSourceLoc& loc, TSymbol* s
         }
 
         // Recovery, if it wasn't found or was not a variable.
-		/// Comment from Jo: This instruction will lead to some HLSL shaders get compiled even though there are some undeclared variables
-		/// for example: float f = g_array[undeclaredIndex];
-		/// I asked glslang devs and they replied:
-		/// "The recovery code was inherited from GLSL, where it is used to continue parsing to catch additional errors when compilation is not stopping after the first error.
-		/// For HLSL, we are far from writing a validator, or anything that correctly rejects shaders.
-		/// There are, however, three errors checked for and given around the area you are discussing."
-		/// (https://github.com/KhronosGroup/glslang/issues/626#issuecomment-266575324)
+        /// Comment from Jo: This instruction will lead to some HLSL shaders get compiled even though there are some undeclared variables
+        /// for example: float f = g_array[undeclaredIndex];
+        /// I asked glslang devs and they replied:
+        /// "The recovery code was inherited from GLSL, where it is used to continue parsing to catch additional errors when compilation is not stopping after the first error.
+        /// For HLSL, we are far from writing a validator, or anything that correctly rejects shaders.
+        /// There are, however, three errors checked for and given around the area you are discussing."
+        /// (https://github.com/KhronosGroup/glslang/issues/626#issuecomment-266575324)
         if (! variable) {
             error(loc, "unknown variable", string->c_str(), "");
             variable = new TVariable(string, TType(EbtVoid));
@@ -3754,11 +3754,11 @@ void HlslParseContext::mergeQualifiers(TQualifier& dst, const TQualifier& src)
     MERGE_SINGLETON(readonly);
     MERGE_SINGLETON(writeonly);
     MERGE_SINGLETON(specConstant);
-	MERGE_SINGLETON(isStage);
-	MERGE_SINGLETON(isStream);
-	MERGE_SINGLETON(isOverride);
-	MERGE_SINGLETON(isAbstract);
-	MERGE_SINGLETON(isClone);
+    MERGE_SINGLETON(isStage);
+    MERGE_SINGLETON(isStream);
+    MERGE_SINGLETON(isOverride);
+    MERGE_SINGLETON(isAbstract);
+    MERGE_SINGLETON(isClone);
 }
 
 // used to flatten the sampler type space into a single dimension
@@ -4045,8 +4045,8 @@ void HlslParseContext::redeclareBuiltinBlock(const TSourceLoc& loc, TTypeList& n
             oldType.getQualifier().smooth = newType.getQualifier().smooth;
             oldType.getQualifier().flat = newType.getQualifier().flat;
             oldType.getQualifier().nopersp = newType.getQualifier().nopersp;
-			oldType.getQualifier().isStage = newType.getQualifier().isStage;
-			oldType.getQualifier().isStream = newType.getQualifier().isStream;
+            oldType.getQualifier().isStage = newType.getQualifier().isStage;
+            oldType.getQualifier().isStream = newType.getQualifier().isStream;
 
             // go to next member
             ++member;
@@ -4773,29 +4773,29 @@ void HlslParseContext::declareTypedef(const TSourceLoc& loc, TString& identifier
 //For XKSL extensions: when we parse an unknown identifier, we need to create variable at global level, with type: EbtXKSLUnresolvedType
 bool HlslParseContext::declareGlobalVariable(const TSourceLoc& loc, const TString& identifier, TType& type)
 {
-	if (voidErrorCheck(loc, identifier, type.getBasicType()))
-		return false;
+    if (voidErrorCheck(loc, identifier, type.getBasicType()))
+        return false;
 
-	// Check for redeclaration of built-ins and/or attempting to declare a reserved name
-	TSymbol* symbol = nullptr;
+    // Check for redeclaration of built-ins and/or attempting to declare a reserved name
+    TSymbol* symbol = nullptr;
 
-	inheritGlobalDefaults(type.getQualifier());
+    inheritGlobalDefaults(type.getQualifier());
 
-	// Declare the variable
-	if (type.isArray()) {
-		//// array case
-		//flattenVar = shouldFlatten(type);
-		//declareArrayAtGlobalLevel(loc, identifier, type, symbol, !flattenVar);
-		//if (flattenVar)
-		//	flatten(loc, *symbol->getAsVariable());
-		return false;
-	}
-	else {
-		// non-array case
-		symbol = declareNonArrayAtGlobalLevel(loc, identifier, type);
-	}
+    // Declare the variable
+    if (type.isArray()) {
+        //// array case
+        //flattenVar = shouldFlatten(type);
+        //declareArrayAtGlobalLevel(loc, identifier, type, symbol, !flattenVar);
+        //if (flattenVar)
+        //	flatten(loc, *symbol->getAsVariable());
+        return false;
+    }
+    else {
+        // non-array case
+        symbol = declareNonArrayAtGlobalLevel(loc, identifier, type);
+    }
 
-	return symbol != nullptr;
+    return symbol != nullptr;
 }
 
 //
@@ -4906,17 +4906,17 @@ TVariable* HlslParseContext::declareNonArray(const TSourceLoc& loc, TString& ide
 
 TVariable* HlslParseContext::declareNonArrayAtGlobalLevel(const TSourceLoc& loc, const TString& identifier, TType& type)
 {
-	// make a new variable
-	TVariable* variable = new TVariable(&identifier, type);
+    // make a new variable
+    TVariable* variable = new TVariable(&identifier, type);
 
-	// add variable to symbol table
-	if (symbolTable.insertAtGlobalLevel(*variable)) {
-		trackLinkageDeferred(*variable);
-		return variable;
-	}
+    // add variable to symbol table
+    if (symbolTable.insertAtGlobalLevel(*variable)) {
+        trackLinkageDeferred(*variable);
+        return variable;
+    }
 
-	error(loc, "redefinition", variable->getName().c_str(), "");
-	return nullptr;
+    error(loc, "redefinition", variable->getName().c_str(), "");
+    return nullptr;
 }
 
 //

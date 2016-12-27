@@ -9,39 +9,39 @@
 
 namespace xkslangtest
 {
-	enum class Source {
-		GLSL,
-		HLSL,
-	};
+    enum class Source {
+        GLSL,
+        HLSL,
+    };
 
-	// Enum for shader compilation semantics.
-	enum class Semantics {
-		OpenGL,
-		Vulkan,
-	};
+    // Enum for shader compilation semantics.
+    enum class Semantics {
+        OpenGL,
+        Vulkan,
+    };
 
-	// Enum for compilation target.
-	enum class Target {
-		AST,
-		Spv,
-		BothASTAndSpv,
-	};
+    // Enum for compilation target.
+    enum class Target {
+        AST,
+        Spv,
+        BothASTAndSpv,
+    };
 
-	struct ShaderResult {
-		std::string shaderName;
-		std::string output;
-		std::string error;
-	};
+    struct ShaderResult {
+        std::string shaderName;
+        std::string output;
+        std::string error;
+    };
 
-	// A struct for holding all the information returned by glslang compilation and linking.
-	struct GlslangResult {
-		std::vector<ShaderResult> shaderResults;
-		std::string linkingOutput;
-		std::string linkingError;
-		std::string spirvWarningsErrors;
-		std::string spirv;  // Optional SPIR-V disassembly text.
-		bool success;
-	};
+    // A struct for holding all the information returned by glslang compilation and linking.
+    struct GlslangResult {
+        std::vector<ShaderResult> shaderResults;
+        std::string linkingOutput;
+        std::string linkingError;
+        std::string spirvWarningsErrors;
+        std::string spirv;  // Optional SPIR-V disassembly text.
+        bool success;
+    };
 }
 
 #define EXPECT_THROW(statement, expected_exception) \

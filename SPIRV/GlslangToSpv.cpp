@@ -2062,7 +2062,7 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
         break;
     case glslang::EbtStruct:
     case glslang::EbtBlock:
-	case glslang::EbtShaderClass:
+    case glslang::EbtShaderClass:
         {
             // If we've seen this struct type, return it
             const glslang::TTypeList* glslangMembers = type.getStruct();
@@ -2081,10 +2081,10 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
         }
         break;
 
-	//XKSL extensions: add a Spv unresolved type
-	case glslang::EbtXKSLUnresolvedType:
-		spvType = builder.makeUnresolvedType();
-		break;
+    //XKSL extensions: add a Spv unresolved type
+    case glslang::EbtXKSLUnresolvedType:
+        spvType = builder.makeUnresolvedType();
+        break;
 
     default:
         assert(0);
@@ -2283,28 +2283,28 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             if (builtIn != spv::BuiltInMax)
                 addMemberDecoration(spvType, member, spv::DecorationBuiltIn, (int)builtIn);
 
-			/**********************************************************************************************/
-			//XKSL extensions
-			if (type.getBasicType() == glslang::EbtShaderClass)
-			{
-				//Decorate if the member is a stage attribute
-				if (glslangMember.getQualifier().isStage) addMemberDecoration(spvType, member, spv::DecorationAttributeStage, 1);
-				//Decorate if the member is a stream attribute
-				if (glslangMember.getQualifier().isStream) addMemberDecoration(spvType, member, spv::DecorationAttributeStream, 1);
+            /**********************************************************************************************/
+            //XKSL extensions
+            if (type.getBasicType() == glslang::EbtShaderClass)
+            {
+                //Decorate if the member is a stage attribute
+                if (glslangMember.getQualifier().isStage) addMemberDecoration(spvType, member, spv::DecorationAttributeStage, 1);
+                //Decorate if the member is a stream attribute
+                if (glslangMember.getQualifier().isStream) addMemberDecoration(spvType, member, spv::DecorationAttributeStream, 1);
 
-				if (glslangMember.getQualifier().storage == glslang::EvqConst)  //const or "static const" or "const static"
-				{
-					//We decorate the member if it's a const (we consider const or static const to be equivalent to static const)
-					//and we attribute it an ID refering to the resolution of its default value (we have some cases where we can't resolve a const until final compilation stage)
-					addMemberDecoration(spvType, member, spv::DecorationMemberConst, 9999);
-				}
-				else if (glslangMember.getQualifier().storage == glslang::EvqGlobal) //static
-				{
-					//We decorate the member if it's a static member
-					addMemberDecoration(spvType, member, spv::DecorationAttributeStatic, 8888);
-				}
-			}
-			/**********************************************************************************************/
+                if (glslangMember.getQualifier().storage == glslang::EvqConst)  //const or "static const" or "const static"
+                {
+                    //We decorate the member if it's a const (we consider const or static const to be equivalent to static const)
+                    //and we attribute it an ID refering to the resolution of its default value (we have some cases where we can't resolve a const until final compilation stage)
+                    addMemberDecoration(spvType, member, spv::DecorationMemberConst, 9999);
+                }
+                else if (glslangMember.getQualifier().storage == glslang::EvqGlobal) //static
+                {
+                    //We decorate the member if it's a static member
+                    addMemberDecoration(spvType, member, spv::DecorationAttributeStatic, 8888);
+                }
+            }
+            /**********************************************************************************************/
         }
     }
 
@@ -2323,22 +2323,22 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             builder.addDecoration(spvType, spv::DecorationXfbBuffer, type.getQualifier().layoutXfbBuffer);
     }
 
-	//XKSL extensions: decorate the shader class
-	if (type.getBasicType() == glslang::EbtShaderClass)
-	{
-		builder.addDecoration(spvType, spv::DecorationShaderClassName, type.getTypeName().c_str());
+    //XKSL extensions: decorate the shader class
+    if (type.getBasicType() == glslang::EbtShaderClass)
+    {
+        builder.addDecoration(spvType, spv::DecorationShaderClassName, type.getTypeName().c_str());
 
-		//const glslang::TString* ownerClassName = type.getOwnerClassName();
+        //const glslang::TString* ownerClassName = type.getOwnerClassName();
 
-		const glslang::TIdentifierList* parentsName = type.getParentsName();
-		if (parentsName != nullptr)
-		{
-			for (int i=0; i<parentsName->size(); ++i)
-			{
-				builder.addDecoration(spvType, spv::DecorationShaderInheritFromParent, parentsName->at(i)->c_str());
-			}
-		}
-	}
+        const glslang::TIdentifierList* parentsName = type.getParentsName();
+        if (parentsName != nullptr)
+        {
+            for (int i=0; i<parentsName->size(); ++i)
+            {
+                builder.addDecoration(spvType, spv::DecorationShaderInheritFromParent, parentsName->at(i)->c_str());
+            }
+        }
+    }
 }
 
 // Turn the expression forming the array size into an id.
@@ -2663,26 +2663,26 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
             builder.addName(function->getParamId(p), parameters[p]->getAsSymbolNode()->getName().c_str());
         }
 
-		//XKSL extensions: add functions attributes (through decorate)
-		{
-			const glslang::TType &functionType = glslFunction->getType();
-			if (functionType.getQualifier().isStage)
-			{
-				builder.addDecoration(function->getId(), spv::DecorationAttributeStage, 1);
-			}
-			if (functionType.getQualifier().isOverride)
-			{
-				builder.addDecoration(function->getId(), spv::DecorationMethodOverride, 1);
-			}
-			if (functionType.getQualifier().isAbstract)
-			{
-				builder.addDecoration(function->getId(), spv::DecorationMethodAbstract, 1);
-			}
-			if (functionType.getQualifier().isClone)
-			{
-				builder.addDecoration(function->getId(), spv::DecorationMethodClone, 1);
-			}
-		}
+        //XKSL extensions: add functions attributes (through decorate)
+        {
+            const glslang::TType &functionType = glslFunction->getType();
+            if (functionType.getQualifier().isStage)
+            {
+                builder.addDecoration(function->getId(), spv::DecorationAttributeStage, 1);
+            }
+            if (functionType.getQualifier().isOverride)
+            {
+                builder.addDecoration(function->getId(), spv::DecorationMethodOverride, 1);
+            }
+            if (functionType.getQualifier().isAbstract)
+            {
+                builder.addDecoration(function->getId(), spv::DecorationMethodAbstract, 1);
+            }
+            if (functionType.getQualifier().isClone)
+            {
+                builder.addDecoration(function->getId(), spv::DecorationMethodClone, 1);
+            }
+        }
     }
 }
 
@@ -2707,9 +2707,9 @@ void TGlslangToSpvTraverser::visitFunctions(const glslang::TIntermSequence& glsl
     for (int f = 0; f < (int)glslFunctions.size(); ++f) {
         glslang::TIntermAggregate* node = glslFunctions[f]->getAsAggregate();
         if (node && (node->getOp() == glslang::EOpFunction || node->getOp() == glslang::EOpLinkerObjects))
-		{
+        {
             node->traverse(this);
-		}
+        }
     }
 }
 

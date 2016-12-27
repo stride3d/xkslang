@@ -66,78 +66,78 @@ struct HlslToken {
     };
     glslang::TSymbol* symbol;      // if a symbol-table lookup was done already, this is the result
 
-	bool IsEqualsToToken(const HlslToken& tok)
-	{
-		return loc.isLocatedAt(tok.loc) && tokenClass == tok.tokenClass;
-	}
+    bool IsEqualsToToken(const HlslToken& tok)
+    {
+        return loc.isLocatedAt(tok.loc) && tokenClass == tok.tokenClass;
+    }
 };
 
 struct TShaderClassFunction {
-	TFunction* function;
-	HlslToken token;
-	TIntermNode* bodyNode;
+    TFunction* function;
+    HlslToken token;
+    TIntermNode* bodyNode;
 };
 
 class XkslShaderDefinition
 {
 public:
-	enum class MemberStructTypeEnum
-	{
-		CBuffer,
-	};
+    enum class MemberStructTypeEnum
+    {
+        CBuffer,
+    };
 
-	enum class ShaderIdentifierTypeEnum
-	{
-		Unknown,
-		Member,
-		Method
-	};
+    enum class ShaderIdentifierTypeEnum
+    {
+        Unknown,
+        Member,
+        Method
+    };
 
 public:
-	TString shaderName;
-	TVector<TString> shaderparentsName;
+    TString shaderName;
+    TVector<TString> shaderparentsName;
 
-	TVector<TTypeLoc> cbufferMembers;
-	TString* cbufferStructSymbolName;
-	TVector<TShaderClassFunction> listMethods;
+    TVector<TTypeLoc> cbufferMembers;
+    TString* cbufferStructSymbolName;
+    TVector<TShaderClassFunction> listMethods;
 
-	void SetStructSymbolName(MemberStructTypeEnum structType, TString* name){
-		switch (structType) {
-			case MemberStructTypeEnum::CBuffer: cbufferStructSymbolName = name;
-		}
-	}
+    void SetStructSymbolName(MemberStructTypeEnum structType, TString* name){
+        switch (structType) {
+            case MemberStructTypeEnum::CBuffer: cbufferStructSymbolName = name;
+        }
+    }
 
-	TString* GetStructSymbolName(MemberStructTypeEnum structType){
-		switch (structType){
-			case MemberStructTypeEnum::CBuffer: return cbufferStructSymbolName;
-		}
-		return nullptr;
-	}
+    TString* GetStructSymbolName(MemberStructTypeEnum structType){
+        switch (structType){
+            case MemberStructTypeEnum::CBuffer: return cbufferStructSymbolName;
+        }
+        return nullptr;
+    }
 
-	//Define the location of an identidier (member or method)
-	class ShaderIdentifierLocation
-	{
-	public:
-		XkslShaderDefinition* shader;
-		ShaderIdentifierTypeEnum identifierType;
+    //Define the location of an identidier (member or method)
+    class ShaderIdentifierLocation
+    {
+    public:
+        XkslShaderDefinition* shader;
+        ShaderIdentifierTypeEnum identifierType;
 
-		int memberIndex;
-		TString* structSymbolName;
+        int memberIndex;
+        TString* structSymbolName;
 
-		ShaderIdentifierLocation() : shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1){}
+        ShaderIdentifierLocation() : shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1){}
 
-		bool isUnknown(){return identifierType == ShaderIdentifierTypeEnum::Unknown;}
-		bool isMember(){return identifierType == ShaderIdentifierTypeEnum::Member;}
-		bool isMethod(){return identifierType == ShaderIdentifierTypeEnum::Method;}
+        bool isUnknown(){return identifierType == ShaderIdentifierTypeEnum::Unknown;}
+        bool isMember(){return identifierType == ShaderIdentifierTypeEnum::Member;}
+        bool isMethod(){return identifierType == ShaderIdentifierTypeEnum::Method;}
 
-		void SetMemberLocation(XkslShaderDefinition* shader, TString* structName, int index)
-		{
-			this->identifierType = ShaderIdentifierTypeEnum::Member;
-			this->shader = shader;
-			this->structSymbolName = structName;
-			this->memberIndex = index;
-		}
-	};
+        void SetMemberLocation(XkslShaderDefinition* shader, TString* structName, int index)
+        {
+            this->identifierType = ShaderIdentifierTypeEnum::Member;
+            this->shader = shader;
+            this->structSymbolName = structName;
+            this->memberIndex = index;
+        }
+    };
 };
 
 //

@@ -43,11 +43,11 @@
 
 namespace glslang {
 
-	enum class XkslShaderParsingOperationEnum {
-		Undefined,
-		ParseXkslDeclarations,
-		ParseXkslDefinitions
-	};
+    enum class XkslShaderParsingOperationEnum {
+        Undefined,
+        ParseXkslDeclarations,
+        ParseXkslDefinitions
+    };
 
     class TAttributeMap; // forward declare
     
@@ -58,13 +58,13 @@ namespace glslang {
     public:
         HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
-			xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined), xkslShaderCurrentlyParsed(nullptr){ }
+            xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined), xkslShaderCurrentlyParsed(nullptr){ }
         virtual ~HlslGrammar() { }
 
         bool parse();
 
-		bool parseXKslShaderDeclaration(TVector<XkslShaderDefinition*>& listShaderParsed);
-		bool parseXKslShaderDefinition(TVector<XkslShaderDefinition*>& listShaderParsed);
+        bool parseXKslShaderDeclaration(TVector<XkslShaderDefinition*>& listShaderParsed);
+        bool parseXKslShaderDefinition(TVector<XkslShaderDefinition*>& listShaderParsed);
 
     protected:
         HlslGrammar();
@@ -72,9 +72,9 @@ namespace glslang {
 
         void expected(const char*);
         void unimplemented(const char*);
-		void error(const char*);
+        void error(const char*);
         bool acceptIdentifier(HlslToken&);
-		bool acceptClassReferenceAccessor(TString*& className);
+        bool acceptClassReferenceAccessor(TString*& className);
         bool acceptCompilationUnit();
         bool acceptDeclaration(TIntermNode*& node);
         bool acceptControlDeclaration(TIntermNode*& node);
@@ -93,10 +93,10 @@ namespace glslang {
         bool acceptSamplerType(TType&);
         bool acceptTextureType(TType&);
         bool acceptStruct(TType&);
-		bool acceptShaderClass(TIntermNode** node, TType&);
-		bool acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName, TTypeList& typeList, TVector<TShaderClassFunction>& functionList);
-		bool acceptShaderClassFunctionsDefinition(const TString& shaderName, TTypeList* typeList, TVector<TShaderClassFunction>& functionList);
-		bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
+        bool acceptShaderClass(TIntermNode** node, TType&);
+        bool acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName, TTypeList& typeList, TVector<TShaderClassFunction>& functionList);
+        bool acceptShaderClassFunctionsDefinition(const TString& shaderName, TTypeList* typeList, TVector<TShaderClassFunction>& functionList);
+        bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
         bool acceptStructDeclarationList(TTypeList*&);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);
@@ -127,24 +127,24 @@ namespace glslang {
         bool acceptDefaultLabel(TIntermNode*&);
         void acceptArraySpecifier(TArraySizes*&);
         void acceptPostDecls(TQualifier&);
-		bool advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken);
-		bool advanceUntilToken(EHlslTokenClass tok);
+        bool advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken);
+        bool advanceUntilToken(EHlslTokenClass tok);
 
-		//XKSL extensions
-		void acceptShaderClassPostDecls(TIdentifierList*& parents);
-		TString* getCurrentShaderName();
-		int getCurrentShaderCountParents();
-		TString* getCurrentShaderParentName(int index);
-		XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, const TString& memberName);
-		bool isRecordedAsAShaderName(const TString& name);
+        //XKSL extensions
+        void acceptShaderClassPostDecls(TIdentifierList*& parents);
+        TString* getCurrentShaderName();
+        int getCurrentShaderCountParents();
+        TString* getCurrentShaderParentName(int index);
+        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, const TString& memberName);
+        bool isRecordedAsAShaderName(const TString& name);
 
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
 
-		//XKSL extensions
-		XkslShaderParsingOperationEnum xkslShaderParsingOperation;
-		XkslShaderDefinition* xkslShaderCurrentlyParsed;
-		std::vector<XkslShaderDefinition*> listDeclaredXkslShader; //list of declared shaders
+        //XKSL extensions
+        XkslShaderParsingOperationEnum xkslShaderParsingOperation;
+        XkslShaderDefinition* xkslShaderCurrentlyParsed;
+        std::vector<XkslShaderDefinition*> listDeclaredXkslShader; //list of declared shaders
     };
 
 } // end namespace glslang

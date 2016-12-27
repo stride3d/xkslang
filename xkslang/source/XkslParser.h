@@ -25,13 +25,13 @@ class XkslParser
 private:
 
 public:
-	XkslParser();
-	~XkslParser();
+    XkslParser();
+    ~XkslParser();
 
-	bool InitialiseXkslang();
-	void Finalize();
+    bool InitialiseXkslang();
+    void Finalize();
 
-	bool ParseXkslShader(const std::string& shaderFileName, const std::string& shaderString);
+    bool ParseXkslShader(const std::string& shaderFileName, const std::string& shaderString);
 };
 
 }  // namespace xkslparser

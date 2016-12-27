@@ -59,13 +59,13 @@ enum TBasicType {
     EbtStruct,
     EbtBlock,
 
-	EbtShaderClass,  //shader class type (XKSL language extension)
+    EbtShaderClass,  //shader class type (XKSL language extension)
 
     // HLSL types that live only temporarily.
     EbtString,
 
-	//XKSL extensions: when an expressions or statements make reference to an unknown variable, instead of returning an error we will use this unresolved type.
-	EbtXKSLUnresolvedType,
+    //XKSL extensions: when an expressions or statements make reference to an unknown variable, instead of returning an error we will use this unresolved type.
+    EbtXKSLUnresolvedType,
 
     EbtNumTypes,
 };
