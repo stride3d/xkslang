@@ -24,21 +24,24 @@ Semantics semantics = Semantics::Vulkan;
 Target target = Target::BothASTAndSpv;
 
 vector<FileNameEntryPointPair> testFiles = {
-    //{"xksl_shaderWithVariable.frag", ""},
-    //{"xksl_shaderWithManyVariables.frag", ""},
-    //{"xksl_manySimpleShaders.frag", ""},
-    //{"xksl_simpleShaderWithFunction.frag", ""},
-    //{"xksl_declarationMixOfFunctionsAndVariables.frag", ""},
-    //{"xksl_2ShaderWithSameFunctionNames.frag", ""},
-    //{"xksl_shaderInheritance.frag", ""},
-    //{"xksl_postDeclaration.frag", "" },
+    //{"shaderWithVariable.xksl", ""},
+    //{"shaderWithManyVariables.xksl", ""},
+    //{"manySimpleShaders.xksl", ""},
+    //{"simpleShaderWithFunction.xksl", ""},
+    //{"declarationMixOfFunctionsAndVariables.xksl", ""},
+    //{"2ShaderWithSameFunctionNames.xksl", ""},
+    //{"shaderInheritance.xksl", ""},
+    //{"postDeclaration.xksl", "" },
+    //{"functionReferingToShaderVariable.xksl", ""},
+    //{"classAccessor.xksl", "" },
 
-    //{"xksl_functionReferingToShaderVariable.frag", ""},
-    { "xksl_classAccessor.frag", "" },
+    //{"streamsSimple.xksl", "" },
+    {"streamsWithClassAccessor.xksl", "" },
 
-    //{"xksl_constAssignment.frag", ""},
-    //{"xksl_unresolvedVariable.frag", ""},
-    //{"xksl_functionDeclaration.frag", ""},
+    //{"ShaderSimple01.xksl", "" },
+    //{"constAssignment.xksl", ""},
+    //{"unresolvedVariable.xksl", ""},
+    //{"functionDeclaration.xksl", ""},
 };
 
 void main(int argc, char** argv)

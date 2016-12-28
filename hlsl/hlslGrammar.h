@@ -58,13 +58,13 @@ namespace glslang {
     public:
         HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
-            xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined), xkslShaderCurrentlyParsed(nullptr){ }
+            xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr){ }
         virtual ~HlslGrammar() { }
 
         bool parse();
 
-        bool parseXKslShaderDeclaration(TVector<XkslShaderDefinition*>& listShaderParsed);
-        bool parseXKslShaderDefinition(TVector<XkslShaderDefinition*>& listShaderParsed);
+        bool parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary);
+        bool parseXKslShaderDefinition(XkslShaderLibrary* shaderLibrary);
 
     protected:
         HlslGrammar();
@@ -74,7 +74,7 @@ namespace glslang {
         void unimplemented(const char*);
         void error(const char*);
         bool acceptIdentifier(HlslToken&);
-        bool acceptClassReferenceAccessor(TString*& className);
+        bool acceptClassReferenceAccessor(TString*& className, bool& isStreams);
         bool acceptCompilationUnit();
         bool acceptDeclaration(TIntermNode*& node);
         bool acceptControlDeclaration(TIntermNode*& node);
@@ -108,7 +108,7 @@ namespace glslang {
         bool acceptConditionalExpression(TIntermTyped*&);
         bool acceptBinaryExpression(TIntermTyped*&, PrecedenceLevel);
         bool acceptUnaryExpression(TIntermTyped*&);
-        bool acceptPostfixExpression(TIntermTyped*&, const char* classAccessor = nullptr);
+        bool acceptPostfixExpression(TIntermTyped*&, bool hasStreamAccessor = false, const char* classAccessor = nullptr);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
         bool acceptArguments(TFunction*, TIntermTyped*&);
@@ -144,7 +144,7 @@ namespace glslang {
         //XKSL extensions
         XkslShaderParsingOperationEnum xkslShaderParsingOperation;
         XkslShaderDefinition* xkslShaderCurrentlyParsed;
-        std::vector<XkslShaderDefinition*> listDeclaredXkslShader; //list of declared shaders
+        XkslShaderLibrary* xkslShaderLibrary;
     };
 
 } // end namespace glslang

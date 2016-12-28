@@ -593,7 +593,7 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 // TODO: switch from HlslParser to XkslParser ?
 //==========================================================================================
 bool ProcessXkslShaderDefinition(
-    TVector<XkslShaderDefinition*>& listShaderParsed,
+    XkslShaderLibrary& shaderLibrary,
     HlslParseContext& parseContext, TPpContext& ppContext,
     TInputScanner& fullInput, bool versionWillBeError,
     TSymbolTable&, TIntermediate& intermediate,
@@ -603,14 +603,14 @@ bool ProcessXkslShaderDefinition(
     bool parseXkslShaderDeclarationOnly = false;
 
     // Parse the full shader.
-    if (!parseContext.parseXkslShaderString(ppContext, fullInput, versionWillBeError, parseXkslShaderDeclarationOnly, listShaderParsed))
+    if (!parseContext.parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput, versionWillBeError))
         success = false;
 
     return success;
 }
 
 bool ProcessXkslShaderDeclaration(
-    TVector<XkslShaderDefinition*>& listShaderParsed,
+    XkslShaderLibrary& shaderLibrary,
     HlslParseContext& parseContext, TPpContext& ppContext,
     TInputScanner& fullInput, bool versionWillBeError,
     TSymbolTable&, TIntermediate& intermediate,
@@ -620,13 +620,14 @@ bool ProcessXkslShaderDeclaration(
     bool parseXkslShaderDeclarationOnly = true;
 
     // Parse the full shader.
-    if (!parseContext.parseXkslShaderString(ppContext, fullInput, versionWillBeError, parseXkslShaderDeclarationOnly, listShaderParsed))
+    if (!parseContext.parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput, versionWillBeError))
         success = false;
 
     return success;
 }
 
 bool ParseXkslShaderFile(
+    const std::string& fileName,
     TCompiler* compiler,
     TIntermediate* intermediate,  //will contains the AST
     const TBuiltInResource* resources,
@@ -696,7 +697,8 @@ bool ParseXkslShaderFile(
     symbolTable.push();
 
     //List of all declared shader
-    TVector<XkslShaderDefinition*> listShaderParsed;
+
+    XkslShaderLibrary shaderLibrary;
 
     //==================================================================================================================
     //YEAH, can finally parse !!!!
@@ -706,7 +708,7 @@ bool ParseXkslShaderFile(
         //Parse shader declaration only!
         {
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-            success = ProcessXkslShaderDeclaration(listShaderParsed,
+            success = ProcessXkslShaderDeclaration(shaderLibrary,
                 *parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
         }
 
@@ -714,6 +716,11 @@ bool ParseXkslShaderFile(
         //We parsed the shader declaration: we can now add all function prototypes in the list of symbols, and create all members structs
         if (success)
         {
+            //TString* streamBufferStructName = NewPoolTString((TString("StreamBuffer_") + TString(fileName.c_str())).c_str());
+            TString* streamBufferStructName = NewPoolTString((TString("StreamBuffer")).c_str());
+            TTypeList* streambufferStructTypeList = new TTypeList();
+
+            TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
             for (int s = 0; s < listShaderParsed.size(); s++)
             {
                 XkslShaderDefinition* shader = listShaderParsed[s];
@@ -721,24 +728,48 @@ bool ParseXkslShaderFile(
                 //======================================================================================
                 // create and add the new shader structs
                 TString* cbufferStructName = NewPoolTString((TString("cbuffer_") + shader->shaderName).c_str());
-                TTypeList* shaderTypeList = new TTypeList();
-                for (int i = 0; i < shader->cbufferMembers.size(); ++i)
+                TTypeList* cbufferStructTypeList = new TTypeList();
+                for (int i = 0; i < shader->listAllDeclaredMembers.size(); ++i)
                 {
-                    shaderTypeList->push_back(shader->cbufferMembers.at(i));
+                    TTypeLoc type = shader->listAllDeclaredMembers[i];
+                    bool isStream = type.type->getQualifier().isStream;
+                    bool isConst = type.type->getQualifier().storage == EvqConst;
+
+                    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
+
+                    if (isConst)
+                    {
+                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::Const, nullptr, -1);
+                    }
+                    else if (isStream)
+                    {
+                        //Add the member in the global stream buffer
+                        streambufferStructTypeList->push_back(shader->listAllDeclaredMembers.at(i));
+                        int indexInStruct = streambufferStructTypeList->size() - 1;
+                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer, streamBufferStructName, indexInStruct);
+                    }
+                    else
+                    {
+                        //Add the member in the shader cbuffer
+                        cbufferStructTypeList->push_back(shader->listAllDeclaredMembers.at(i));
+                        int indexInStruct = cbufferStructTypeList->size() - 1;
+                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferStructName, indexInStruct);
+                    }
+
+                    shader->listAllMembersLocation.push_back(identifierLocation);
                 }
                 
-                TQualifier postDeclQualifier;
-                postDeclQualifier.clear();
-                TType* type = new TType(shaderTypeList, *cbufferStructName, postDeclQualifier, &shader->shaderparentsName);
-                
-                // Declare a variable on the global level so that we retrieve all shader symbols
-                // "shader ShaderSimple {float4 BaseColor; };"
-                // will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
-                type->getQualifier().storage = EvqGlobal;
-                parseContext->declareVariable(shader->location, *cbufferStructName, *type, nullptr);
-                
-                shader->SetStructSymbolName(XkslShaderDefinition::MemberStructTypeEnum::CBuffer, cbufferStructName);
-                //======================================================================================
+                //Add the shader cbuffer struct
+                {
+                    // Declare a variable on the global level so that we retrieve all shader symbols
+                    // "shader ShaderSimple {float4 BaseColor; };"
+                    // will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
+                    TQualifier postDeclQualifier;
+                    postDeclQualifier.clear();
+                    TType* type = new TType(cbufferStructTypeList, *cbufferStructName, postDeclQualifier, &shader->shaderparentsName);
+                    type->getQualifier().storage = EvqGlobal;
+                    parseContext->declareVariable(shader->location, *cbufferStructName, *type, nullptr);
+                }
 
                 //Add all the shader method prototype in the table of symbol
                 for (int i = 0; i < shader->listMethods.size(); ++i)
@@ -746,7 +777,15 @@ bool ParseXkslShaderFile(
                     TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
                     parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
                 }
-                //======================================================================================
+            }
+
+            // ======== Add the common stream buffer
+            if (streambufferStructTypeList->size() > 0)
+            {
+                TSourceLoc loc;
+                TType* type = new TType(streambufferStructTypeList, *streamBufferStructName);   //struct type
+                type->getQualifier().storage = EvqGlobal;
+                parseContext->declareVariable(loc, *streamBufferStructName, *type, nullptr);
             }
         }
 
@@ -754,13 +793,14 @@ bool ParseXkslShaderFile(
         if (success)
         {
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-            success = ProcessXkslShaderDefinition(listShaderParsed,
+            success = ProcessXkslShaderDefinition(shaderLibrary,
                 *parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
         }
 
         //Add all methods in the global tree root
         if (success)
         {
+            TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
             TIntermNode* treeRootNode = intermediate->getTreeRoot();
 
             //Add all shader functions nodes as node aggregator
@@ -1808,7 +1848,7 @@ bool TShader::parse(const TBuiltInResource* builtInResources, int defaultVersion
     return parse(builtInResources, defaultVersion, ENoProfile, false, forwardCompatible, messages);
 }
 
-bool TShader::parseXkslShaderFile(const TBuiltInResource* builtInResources, int defaultVersion, bool forwardCompatible, EShMessages messages)
+bool TShader::parseXkslShaderFile(const std::string& fileName, const TBuiltInResource* builtInResources, int defaultVersion, bool forwardCompatible, EShMessages messages)
 {
     if (numStrings != 1) return false;
 
@@ -1817,7 +1857,7 @@ bool TShader::parseXkslShaderFile(const TBuiltInResource* builtInResources, int 
     pool = new TPoolAllocator();
     SetThreadPoolAllocator(*pool);
 
-    return ParseXkslShaderFile(compiler, intermediate, builtInResources, messages, strings[0], lengths[0]);
+    return ParseXkslShaderFile(fileName, compiler, intermediate, builtInResources, messages, strings[0], lengths[0]);
 }
 
 // Fill in a string with the result of preprocessing ShaderStrings

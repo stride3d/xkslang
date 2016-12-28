@@ -1,0 +1,19 @@
+shader ShaderSimple01
+{
+    stream float2 Position : POSITION;
+    stream float4 ColorTarget;
+
+	float4 BaseColor;    
+	
+	static const float colorZ = 0.5;
+	
+    stage void VSMain() 
+    {
+        streams.Position = float2(0.0f, 1.0f);
+    }
+
+    stage void PSMain() 
+    {
+        streams.ColorTarget = float4(streams.Position.xy, colorZ, 1) + BaseColor;
+    }
+};

@@ -1,0 +1,16 @@
+//Parse a simple shader defining and using stream variables
+
+shader BaseShader
+{
+	float f3;
+    stream float sf3;
+
+    float Compute()
+    {
+		float f;
+        //f = this.f3 + this.sf3;  //compilation error (sf3 must be accessed using streams)
+		f = this.f3 + streams.sf3;
+		
+		return f;
+    }
+};

@@ -108,8 +108,8 @@ void HlslParseContext::setLimits(const TBuiltInResource& r)
     intermediate.setLimits(resources);
 }
 
-bool HlslParseContext::parseXkslShaderString(TPpContext& ppContext, TInputScanner& input, bool versionWillBeError, bool parseXkslShaderDeclarationOnly,
-    TVector<XkslShaderDefinition*>& listShaderParsed)
+bool HlslParseContext::parseXkslShaderString(XkslShaderLibrary* shaderLibrary, bool parseXkslShaderDeclarationOnly,
+    TPpContext& ppContext, TInputScanner& input, bool versionWillBeError)
 {
     currentScanner = &input;
     ppContext.setInput(input, versionWillBeError);
@@ -120,11 +120,11 @@ bool HlslParseContext::parseXkslShaderString(TPpContext& ppContext, TInputScanne
     bool res = false;
     if (parseXkslShaderDeclarationOnly)
     {
-        res = grammar.parseXKslShaderDeclaration(listShaderParsed);
+        res = grammar.parseXKslShaderDeclaration(shaderLibrary);
     }
     else
     {
-        res = grammar.parseXKslShaderDefinition(listShaderParsed);
+        res = grammar.parseXKslShaderDefinition(shaderLibrary);
     }
 
     if (!res) {

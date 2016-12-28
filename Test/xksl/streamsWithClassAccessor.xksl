@@ -1,0 +1,21 @@
+shader SA
+{
+	stream int aVar;
+};
+
+shader SB
+{
+	stream int aVar;
+};
+
+shader Shader01 : SB, SA
+{
+	stream int aVar;
+	
+	stage void VSMain()
+	{
+		streams.aVar = streams.base.aVar + streams.Shader01.aVar + streams.SA.aVar + streams.SB.aVar;
+	}
+	
+	stage void PSMain() {}
+};

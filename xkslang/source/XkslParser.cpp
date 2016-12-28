@@ -72,7 +72,7 @@ bool XkslParser::ParseXkslShader(const std::string& shaderFileName, const std::s
 
     bool success = false;
 
-    success = shader.parseXkslShaderFile(
+    success = shader.parseXkslShaderFile(shaderFileName,
         (resources ? resources : &glslang::DefaultTBuiltInResource),
         defaultVersion, isForwardCompatible, controls);
 

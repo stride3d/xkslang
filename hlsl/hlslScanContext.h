@@ -81,9 +81,11 @@ struct TShaderClassFunction {
 class XkslShaderDefinition
 {
 public:
-    enum class MemberStructTypeEnum
+    enum class MemberLocationTypeEnum
     {
         CBuffer,
+        StreamBuffer,
+        Const,
     };
 
     enum class ShaderIdentifierTypeEnum
@@ -93,17 +95,49 @@ public:
         Method
     };
 
+    //Define the location of an identidier (member or method)
+    class ShaderIdentifierLocation
+    {
+    public:
+        XkslShaderDefinition* shader;
+        ShaderIdentifierTypeEnum identifierType;
+
+        int memberIndex;
+        MemberLocationTypeEnum memberLocationType;
+        TString* structSymbolName;
+
+        ShaderIdentifierLocation() : shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1) {}
+
+        bool isUnknown() { return identifierType == ShaderIdentifierTypeEnum::Unknown; }
+        bool isMember() { return identifierType == ShaderIdentifierTypeEnum::Member; }
+        bool isMethod() { return identifierType == ShaderIdentifierTypeEnum::Method; }
+
+        void SetMemberLocation(XkslShaderDefinition* shader, MemberLocationTypeEnum locationType, TString* structName, int index)
+        {
+            this->identifierType = ShaderIdentifierTypeEnum::Member;
+            this->memberLocationType = locationType;
+            this->shader = shader;
+            this->structSymbolName = structName;
+            this->memberIndex = index;
+        }
+    };
+
 public:
     TSourceLoc location;  //location where the shader is declared (for logs)
 
     TString shaderName;
     TIdentifierList shaderparentsName;
 
-    TVector<TTypeLoc> cbufferMembers;
-    TString* cbufferStructSymbolName;
+    //list of all members created in the shader cbuffer (all non-stream, non-const variables)
+    //TVector<TTypeLoc> cbufferMembers;
+    //TString* cbufferStructSymbolName;
+
+    TVector<TTypeLoc> listAllDeclaredMembers;
+    TVector<ShaderIdentifierLocation> listAllMembersLocation;  //will tell us how we can access to the member
+
     TVector<TShaderClassFunction> listMethods;
 
-    void SetStructSymbolName(MemberStructTypeEnum structType, TString* name){
+    /*void SetStructSymbolName(MemberStructTypeEnum structType, TString* name){
         switch (structType) {
             case MemberStructTypeEnum::CBuffer: cbufferStructSymbolName = name;
         }
@@ -114,32 +148,15 @@ public:
             case MemberStructTypeEnum::CBuffer: return cbufferStructSymbolName;
         }
         return nullptr;
-    }
+    }*/
+};
 
-    //Define the location of an identidier (member or method)
-    class ShaderIdentifierLocation
-    {
-    public:
-        XkslShaderDefinition* shader;
-        ShaderIdentifierTypeEnum identifierType;
+class XkslShaderLibrary
+{
+public:
+    TVector<XkslShaderDefinition*> listShaders;  //list of all shader parsed
 
-        int memberIndex;
-        TString* structSymbolName;
-
-        ShaderIdentifierLocation() : shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1){}
-
-        bool isUnknown(){return identifierType == ShaderIdentifierTypeEnum::Unknown;}
-        bool isMember(){return identifierType == ShaderIdentifierTypeEnum::Member;}
-        bool isMethod(){return identifierType == ShaderIdentifierTypeEnum::Method;}
-
-        void SetMemberLocation(XkslShaderDefinition* shader, TString* structName, int index)
-        {
-            this->identifierType = ShaderIdentifierTypeEnum::Member;
-            this->shader = shader;
-            this->structSymbolName = structName;
-            this->memberIndex = index;
-        }
-    };
+    TVector<TTypeLoc> streamBuffer;  //global buffer containing all the stream variables declared by the list of parsed shader
 };
 
 //
