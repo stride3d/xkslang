@@ -51,6 +51,8 @@ namespace glslang {
 
         bool recedeToken();
         bool recedeToToken(HlslToken tok);
+        bool getListPreviouslyParsedToken(HlslToken tokenStart, HlslToken tokenEnd, TVector<HlslToken>& listTokens);
+        void importListParsedToken(HlslToken* expressionTokensList, int countTokens);
 
         bool acceptTokenClass(EHlslTokenClass);
         EHlslTokenClass peek() const;

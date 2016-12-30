@@ -2,7 +2,7 @@
 
 //static const int toto = 55;
 
-static const float3 colors[5] = { float3(0,1,0), float3(0,0,1), float3(1,0,1), float3(1,0,0), float3(1,1,1)};
+static const float3 colors[5];// = { float3(0,1,0), float3(0,0,1), float3(1,0,1), float3(1,0,0), float3(1,1,1)};
 
 float3 compute()
 {

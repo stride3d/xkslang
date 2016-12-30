@@ -106,7 +106,7 @@ public:
         MemberLocationTypeEnum memberLocationType;
         TString* symbolName;
 
-        ShaderIdentifierLocation() : shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1) {}
+        ShaderIdentifierLocation(): shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1) {}
 
         bool isUnknown() { return identifierType == ShaderIdentifierTypeEnum::Unknown; }
         bool isMember() { return identifierType == ShaderIdentifierTypeEnum::Member; }
@@ -122,16 +122,32 @@ public:
         }
     };
 
+    class ShaderMember
+    {
+    public:
+        ShaderMember(): type(nullptr), shader(nullptr), resolvedDeclaredExpression(nullptr), expressionTokensList(nullptr){}
+
+        TType* type;
+        TSourceLoc loc;
+
+        XkslShaderDefinition* shader;   //reference to the shader that declared the variable
+
+        //For const variables
+        TIntermTyped* resolvedDeclaredExpression;  //assignment expression, immediatly resolved when parsing the member declaration
+        TVector<HlslToken>* expressionTokensList;  //assignment token list, unresolvable (due to unknown identifier) when parsing the member declaration
+
+        ShaderIdentifierLocation memberLocation;   //How can we access to the member after we parsed its declaration
+    };
+
 public:
     TSourceLoc location;  //location where the shader is declared (for logs)
 
     TString shaderName;
     TIdentifierList shaderparentsName;
 
-    TVector<TTypeLoc> listAllDeclaredMembers;
-    //TVector<TConstUnionArray> listConstUnionArray; //initial const values for the members
-    TVector<TIntermTyped*> listConstExpressionNode;  //initial const values for the members
-    TVector<ShaderIdentifierLocation> listAllMembersLocation;  //define how we can access the members
+    //TVector<TTypeLoc> listAllDeclaredMembers;
+    TVector<ShaderMember> listAllDeclaredMembers;
+    //TVector<ShaderIdentifierLocation> listAllMembersLocation;  //define how we can access the members
 
     TVector<TShaderClassFunction> listMethods;
 };

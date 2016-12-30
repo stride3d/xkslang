@@ -1,0 +1,46 @@
+/****************************************************************************************
+Parse defined assignment expression to const values during declaration
+
+//HLSL --> SPIRV: assignment test
+int TOTO_01 = 6 + 10;   //uniform variable: ignore the assignment
+static int TOTO_02 = 1 + 5 * 10;  //global variable: assignment to variable done through a function call
+static const int TOTO_03 = 5 / 9 + 1;  //const variable: variable replaced by the const value
+
+static const int TOTO_02 = sqrt(9);  //const value will be set at 0
+
+static const int A0 = 5;
+static const int A1 = A0 + 5;  //A1 const value = 10
+
+static const int A2 = A3 + 5;  //A3 undefined yet: Error
+static const int A3 = 5;
+
+Remark: HLSL parser crashes when parsing uninitialized arrays:
+static const float3 colors[5];
+float3 compute() {
+    return colors[1];
+}
+
+*****************************************************************************************/
+
+shader ShaderA
+{
+	static const float3 colors[5] = { float3(0,1,0), float3(0,0,1), float3(1,0,1), float3(1,0,0), float3(1,1,1)};
+	
+	static const int toto = 55;
+	
+	static const float SQRT_PI  = 1.77245385090551602729;
+	
+	static const float A4 = -1.0/24.0;
+};
+
+shader ShaderB : ShaderA
+{
+	static const int toto = 10;
+	
+	int Compute()
+	{
+		return colors[1].z + base.toto;
+	}
+};
+
+

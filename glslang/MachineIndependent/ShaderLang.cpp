@@ -592,40 +592,6 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 // XKSL shader extensions
 // TODO: switch from HlslParser to XkslParser ?
 //==========================================================================================
-bool ProcessXkslShaderDefinition(
-    XkslShaderLibrary& shaderLibrary,
-    HlslParseContext& parseContext, TPpContext& ppContext,
-    TInputScanner& fullInput, bool versionWillBeError,
-    TSymbolTable&, TIntermediate& intermediate,
-    EShOptimizationLevel optLevel, EShMessages messages)
-{
-    bool success = true;
-    bool parseXkslShaderDeclarationOnly = false;
-
-    // Parse the full shader.
-    if (!parseContext.parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput, versionWillBeError))
-        success = false;
-
-    return success;
-}
-
-bool ProcessXkslShaderDeclaration(
-    XkslShaderLibrary& shaderLibrary,
-    HlslParseContext& parseContext, TPpContext& ppContext,
-    TInputScanner& fullInput, bool versionWillBeError,
-    TSymbolTable&, TIntermediate& intermediate,
-    EShOptimizationLevel optLevel, EShMessages messages)
-{
-    bool success = true;
-    bool parseXkslShaderDeclarationOnly = true;
-
-    // Parse the full shader.
-    if (!parseContext.parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput, versionWillBeError))
-        success = false;
-
-    return success;
-}
-
 bool ParseXkslShaderFile(
     const std::string& fileName,
     TCompiler* compiler,
@@ -703,17 +669,21 @@ bool ParseXkslShaderFile(
     //==================================================================================================================
     //YEAH, can finally parse !!!!
     bool success = false;
+    bool needToResolveConstsStatement = false;
+    XkslShaderDefinition::ShaderMember* tmpPROTOPROUTPROUT = nullptr;
+
     {
         //==================================================================================================================
         //Parse shader declaration only!
         {
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-            success = ProcessXkslShaderDeclaration(shaderLibrary,
-                *parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
+
+            bool parseXkslShaderDeclarationOnly = true;
+            success = parseContext->parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput, versionWillBeError);
         }
 
         //==================================================================================================================
-        //We parsed the shader declaration: we can now add all function prototypes in the list of symbols, and create all members structs
+        //We finished parsing the shader declaration: we can now add all function prototypes in the list of symbols, and create all members structs
         if (success)
         {
             //TString* streamBufferStructName = NewPoolTString((TString("StreamBuffer_") + TString(fileName.c_str())).c_str());
@@ -731,21 +701,28 @@ bool ParseXkslShaderFile(
                 TTypeList* cbufferStructTypeList = new TTypeList();
                 for (int i = 0; i < shader->listAllDeclaredMembers.size(); ++i)
                 {
-                    TTypeLoc& type = shader->listAllDeclaredMembers[i];
-                    type.type->setDeclarationName(type.type->getFieldName()); //declaration name is the field name
-                    TIntermTyped* expressionNode = shader->listConstExpressionNode[i];
+                    XkslShaderDefinition::ShaderMember& member = shader->listAllDeclaredMembers[i];
+                    member.type->setDeclarationName(member.type->getFieldName()); //declaration name is the field name
 
-                    bool isStream = type.type->getQualifier().isStream;
-                    bool isConst = type.type->getQualifier().storage == EvqConst;
+                    bool isStream = member.type->getQualifier().isStream;
+                    bool isConst = member.type->getQualifier().storage == EvqConst;
 
                     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
 
                     if (isConst)
                     {
-                        TString* variableName = NewPoolTString((TString("const_") + shader->shaderName + "." + type.type->getFieldName()).c_str());
-                        type.type->setFieldName(*variableName);
+                        if (member.resolvedDeclaredExpression == nullptr && member.expressionTokensList != nullptr)
+                        {
+                            needToResolveConstsStatement = true;
 
-                        TIntermNode* unusedNode = parseContext->declareVariable(type.loc, *variableName, *(type.type), expressionNode);
+                            tmpPROTOPROUTPROUT = &member;
+                        }
+
+                        //Create the const variable on global space
+                        TString* variableName = NewPoolTString((TString("const_") + shader->shaderName + "." + member.type->getFieldName()).c_str());
+                        member.type->setFieldName(*variableName);
+
+                        TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression);
                         
                         TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
                         TVariable* constVariable = constVariableSymbol->getAsVariable();
@@ -755,6 +732,8 @@ bool ParseXkslShaderFile(
                             parseContext->infoSink.info.message(EPrefixError, (TString("Failed to create const variable:") + *variableName).c_str());
                             return false;
                         }
+
+                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
 
                         /*if (expressionNode != nullptr)
                         {
@@ -778,30 +757,29 @@ bool ParseXkslShaderFile(
                         {
                             constVariable->setConstArray(constUnionArray);
                         }*/
-
-                        //for const variables: simply create them on global space (their values will be used, then they will be removed)
-                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
                     }
                     else if (isStream)
                     {
                         //for stream variables: concatenate the shader class name in front of the variable field name
-                        TString* variableName = NewPoolTString((shader->shaderName + "." + type.type->getFieldName()).c_str());
-                        type.type->setFieldName(*variableName);
+                        TString* variableName = NewPoolTString((shader->shaderName + "." + member.type->getFieldName()).c_str());
+                        member.type->setFieldName(*variableName);
 
                         //Add the member in the global stream buffer
-                        streambufferStructTypeList->push_back(shader->listAllDeclaredMembers.at(i));
+                        TTypeLoc typeLoc = {member.type, member.loc};
+                        streambufferStructTypeList->push_back(typeLoc);
                         int indexInStruct = streambufferStructTypeList->size() - 1;
                         identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer, streamBufferStructName, indexInStruct);
                     }
                     else
                     {
                         //Add the member in the shader cbuffer
-                        cbufferStructTypeList->push_back(shader->listAllDeclaredMembers.at(i));
+                        TTypeLoc typeLoc = { member.type, member.loc };
+                        cbufferStructTypeList->push_back(typeLoc);
                         int indexInStruct = cbufferStructTypeList->size() - 1;
                         identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferStructName, indexInStruct);
                     }
 
-                    shader->listAllMembersLocation.push_back(identifierLocation);
+                    member.memberLocation = identifierLocation;
                 }
                 
                 //Add the shader cbuffer struct
@@ -834,14 +812,45 @@ bool ParseXkslShaderFile(
             }
         }
 
+        //===========================================================================================================
+        //Experimental: replay some saved tokens to resolve unresolved const statement
+        if (success)
+        {
+            if (needToResolveConstsStatement)
+            {
+                if (tmpPROTOPROUTPROUT != nullptr)
+                {
+                    HlslToken* expressionTokensList = &(tmpPROTOPROUTPROUT->expressionTokensList->at(0));
+                    int countTokens = tmpPROTOPROUTPROUT->expressionTokensList->size();
+                    TIntermTyped* expressionNode = parseContext->parseXkslExpression(&shaderLibrary, tmpPROTOPROUTPROUT->shader,
+                        ppContext, expressionTokensList, countTokens, versionWillBeError);
+
+                    if (expressionNode != nullptr)
+                    {
+                        
+                        //TIntermNode* unusedNode = parseContext->declareVariable(type.loc, *variableName, *(type.type),
+                        //    constMemberExpressionStatement.resolvedDeclaredExpression);
+                    }
+                    else
+                    {
+                        success = false;
+                    }
+
+                }
+            }
+        }
+
+        //===========================================================================================================
         //Now we can parse the shader methods' definition!
         if (success)
         {
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-            success = ProcessXkslShaderDefinition(shaderLibrary,
-                *parseContext, ppContext, fullInput, versionWillBeError, symbolTable, *intermediate, optLevel, messages);
+
+            bool parseXkslShaderDeclarationOnly = false;
+            success = parseContext->parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput, versionWillBeError);
         }
 
+        //===========================================================================================================
         //Add all methods in the global tree root
         if (success)
         {
@@ -875,6 +884,7 @@ bool ParseXkslShaderFile(
             intermediate->setTreeRoot(treeRootNode);
         }
 
+        //===========================================================================================================
         //End of parsing
         parseContext->parseXkslShaderFinalize();
     }

@@ -44,6 +44,7 @@ namespace glslang {
 class TAttributeMap; // forward declare
 class XkslShaderDefinition;
 class XkslShaderLibrary;
+class HlslToken;
 
 class HlslParseContext : public TParseContextBase {
 public:
@@ -56,6 +57,7 @@ public:
 
     //XKSL extensions
     bool parseXkslShaderString(XkslShaderLibrary* shaderLibrary, bool parseXkslShaderDeclarationOnly, TPpContext&, TInputScanner& input, bool versionWillBeError);
+    TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, HlslToken* expressionTokensList, int countTokens, bool versionWillBeError);
     void parseXkslShaderFinalize();
 
     void setLimits(const TBuiltInResource&) override;

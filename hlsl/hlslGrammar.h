@@ -46,7 +46,8 @@ namespace glslang {
     enum class XkslShaderParsingOperationEnum {
         Undefined,
         ParseXkslDeclarations,
-        ParseXkslDefinitions
+        ParseXkslDefinitions,
+        ParseXkslConstStatements,
     };
 
     class TAttributeMap; // forward declare
@@ -65,6 +66,7 @@ namespace glslang {
 
         bool parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary);
         bool parseXKslShaderDefinition(XkslShaderLibrary* shaderLibrary);
+        TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader);
 
     protected:
         HlslGrammar();
@@ -94,8 +96,7 @@ namespace glslang {
         bool acceptTextureType(TType&);
         bool acceptStruct(TType&);
         bool acceptShaderClass(TIntermNode** node, TType&);
-        bool acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName,
-            TTypeList& typeList, TVector<TIntermTyped*>& constExpressionNodeList, TVector<TShaderClassFunction>& functionList);
+        bool acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList);
         bool acceptShaderClassFunctionsDefinition(const TString& shaderName, XkslShaderDefinition* shader);
         bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
         bool acceptStructDeclarationList(TTypeList*&);
@@ -130,6 +131,7 @@ namespace glslang {
         void acceptPostDecls(TQualifier&);
         bool advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken);
         bool advanceUntilToken(EHlslTokenClass tok);
+        bool advanceUntilAnyToken(const TVector<EHlslTokenClass>& tokList);
 
         //XKSL extensions
         void acceptShaderClassPostDecls(TIdentifierList*& parents);

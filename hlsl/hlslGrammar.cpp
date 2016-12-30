@@ -83,6 +83,45 @@ bool HlslGrammar::parseXKslShaderDefinition(XkslShaderLibrary* shaderLibrary)
     return res;
 }
 
+TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader)
+{
+    if (xkslShaderCurrentlyParsed != nullptr || xkslShaderLibrary != nullptr)
+    {
+        error("an xksl shader is or have already being parsed");
+        return nullptr;
+    }
+
+    this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslConstStatements;
+    this->xkslShaderLibrary = shaderLibrary;
+    this->xkslShaderCurrentlyParsed = currentShader;
+
+    while (!peekTokenClass(EHTokAssign))
+    {
+        if (peekTokenClass(EHTokNone))
+        {
+            error("failed to find the assignment token");
+            return nullptr;
+        }
+
+        advanceToken();
+    }
+
+    TIntermTyped* expressionNode = nullptr;
+    if (acceptTokenClass(EHTokAssign))
+    {
+        if (!acceptAssignmentExpression(expressionNode))
+        {
+            error("Failed to parse Xksl assignment expression");
+            return nullptr;
+        }
+    }
+
+    this->xkslShaderLibrary = nullptr;
+    this->xkslShaderCurrentlyParsed = nullptr;
+
+    return expressionNode;
+}
+
 bool HlslGrammar::parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary)
 {
     //root entry point for parsing xksl shader declaration
@@ -1825,27 +1864,15 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
                 shaderDefinition->shaderparentsName.push_back( parentsName->at(i) );
             this->xkslShaderCurrentlyParsed = shaderDefinition;
 
-            TTypeList shaderTypeList;							//list of types declared by the shader
-            //TVector<TConstUnionArray> constUnionArrayList;      //list of const values already parsed
-            TVector<TIntermTyped*> listConstExpressionNode;
             TVector<TShaderClassFunction> shaderFunctionsList;  //list of functions declared by the shader
             HlslToken shaderStartingToken = token;
 
             //======================================================================================
             //parse the shader members and variables declaration
-            if (!acceptShaderAllVariablesAndFunctionsDeclaration(*shaderName, shaderTypeList, listConstExpressionNode, shaderFunctionsList)) {
+            if (!acceptShaderAllVariablesAndFunctionsDeclaration(shaderDefinition, shaderFunctionsList)) {
                 error("failed to parse class variables and functions declarations");
                 //listShaderCurrentlyParsed.pop_back();
                 return false;
-            }
-
-            //Add all declared members
-            for (int i = 0; i < shaderTypeList.size(); ++i)
-            {
-                TTypeLoc& typeloc = shaderTypeList.at(i);
-                shaderDefinition->listAllDeclaredMembers.push_back(typeloc);
-                //shaderDefinition->listConstUnionArray.push_back(constUnionArrayList.at(i));
-                shaderDefinition->listConstExpressionNode.push_back(listConstExpressionNode.at(i));
             }
 
             //Add all defined methods
@@ -1943,9 +1970,10 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, T
 }
 
 //Parse a shader class: check for all variables and functions declaration (don't parse into function definition)
-bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName,
-            TTypeList& typeList, TVector<TIntermTyped*>& constExpressionNodeList, TVector<TShaderClassFunction>& functionList)
+bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList)
 {
+    const TString& shaderName = shader->shaderName;
+
     do {
         // some extra SEMI_COLON?
         while (acceptTokenClass(EHTokSemicolon)) {}
@@ -2052,51 +2080,77 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString&
 
                 acceptPostDecls(declaredType.getQualifier());
 
+                HlslToken tokenAtAssignmentStart = token;
+
                 // EQUAL assignment_expression (TOTO)
                 TIntermTyped* expressionNode = nullptr;
-                if (acceptTokenClass(EHTokAssign)) {
-                    if (!acceptAssignmentExpression(expressionNode)) {
-                        expected("initializer");
-                        return false;
-                    }
-                }
-
-                //Treat const values: const values can directly be assigned with a const assignment
+                TVector<HlslToken>* listTokens = nullptr;
+                if (acceptTokenClass(EHTokAssign))
                 {
-                    /*TConstUnionArray constArray; //empty const value
-
-                    //check expression node to pre-solve const variables initialized with const values
-                    if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
+                    if (!acceptAssignmentExpression(expressionNode))
                     {
-                        TIntermNode* node = parseContext.declareVariable(idToken.loc, *idToken.string, declaredType, expressionNode);
-
-                        if (expressionNode->getAsConstantUnion() != nullptr)
+                        //we're initializing a variable while parsing the shader declaration, but we meet unknown symbol
+                        //we ignore it for now and will resolve it during the next step
+                        expressionNode = nullptr;
+                        TVector<EHlslTokenClass> toks; toks.push_back(EHTokSemicolon); toks.push_back(EHTokComma);
+                        if (!advanceUntilAnyToken(toks))
                         {
-                            expressionNode = intermediate.addConversion(EOpAssign, declaredType, expressionNode);
-                            if (declaredType != expressionNode->getType()) {
-                                error("non-matching or non-convertible constant type for const initializer");
-                                return false;
-                            }
-                            constArray = expressionNode->getAsConstantUnion()->getConstArray();
+                            error("Error finding the end of assignment expression");
+                            return false;
                         }
 
-                        parseContext.removeVariable(idToken.loc, *idToken.string);
+                        HlslToken tokenAtAssignmentEnd = token;
+                        
+                        listTokens = new TVector<HlslToken>();
+                        getListPreviouslyParsedToken(tokenAtAssignmentStart, tokenAtAssignmentEnd, *listTokens);
                     }
-                    constUnionArrayList.push_back(constArray);*/
-
-                    if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
-                    {
-                        constExpressionNodeList.push_back(expressionNode);
-                    }
-                    else constExpressionNodeList.push_back(nullptr);
                 }
 
                 // add the new member into the list of class members
                 {
-                    TTypeLoc member = { new TType(EbtVoid), memberLoc };
-                    member.type->shallowCopy(declaredType);
-                    typeList.push_back(member);
+                    XkslShaderDefinition::ShaderMember shaderMember;
+                    
+                    shaderMember.shader = shader;
+                    shaderMember.type = new TType(EbtVoid);
+                    shaderMember.type->shallowCopy(declaredType);
+                    shaderMember.loc = memberLoc;
+                    
+                    if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
+                    {
+                        //const values can directly be assigned with a const assignment if the expression has been resolved
+                        shaderMember.resolvedDeclaredExpression = expressionNode;
+                        shaderMember.expressionTokensList = nullptr;
+                    }
+                    else
+                    {
+                        //const values will be resolved later
+                        shaderMember.resolvedDeclaredExpression = nullptr;
+                        shaderMember.expressionTokensList = listTokens;
+                    }
+                    
+                    shader->listAllDeclaredMembers.push_back(shaderMember);
                 }
+
+                /*TConstUnionArray constArray; //empty const value
+
+                //check expression node to pre-solve const variables initialized with const values
+                if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
+                {
+                    TIntermNode* node = parseContext.declareVariable(idToken.loc, *idToken.string, declaredType, expressionNode);
+
+                    if (expressionNode->getAsConstantUnion() != nullptr)
+                    {
+                        expressionNode = intermediate.addConversion(EOpAssign, declaredType, expressionNode);
+                        if (declaredType != expressionNode->getType()) {
+                            error("non-matching or non-convertible constant type for const initializer");
+                            return false;
+                        }
+                        constArray = expressionNode->getAsConstantUnion()->getConstArray();
+                    }
+
+                    parseContext.removeVariable(idToken.loc, *idToken.string);
+                }
+                constUnionArrayList.push_back(constArray);*/
 
                 // success on seeing the SEMICOLON coming up
                 if (peekTokenClass(EHTokSemicolon))
@@ -2224,6 +2278,18 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
         }
 
     } while (true);
+}
+
+bool HlslGrammar::advanceUntilAnyToken(const TVector<EHlslTokenClass>& tokList)
+{
+    while(true)
+    {   
+        for (int i=0; i<tokList.size(); ++i)
+            if (token.tokenClass == tokList[i]) return true;
+
+        advanceToken();
+        if (token.tokenClass == EHTokNone) return false;
+    }
 }
 
 bool HlslGrammar::advanceUntilToken(EHlslTokenClass tok)
@@ -2878,19 +2944,13 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
         return identifierLocation;
     }
 
-    //look if the shader declared the identifier
+    //look if the shader did declare the identifier
     int countMembers = shader->listAllDeclaredMembers.size();
     for (int i = 0; i < countMembers; ++i)
     {
         if (shader->listAllDeclaredMembers[i].type->getDeclarationName().compare(memberName) == 0)
         {
-            if (i >= shader->listAllMembersLocation.size())
-            {
-                error("Invalid shader.listAllMembersLocation");
-                return identifierLocation;
-            }
-
-            identifierLocation = shader->listAllMembersLocation[i];
+            identifierLocation = shader->listAllDeclaredMembers[i].memberLocation;
             break;
         }
     }
@@ -3004,81 +3064,91 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
             {
                 if (idToken.symbol == nullptr)
                 {
-                    TString* memberName = idToken.string;
-
-                    //the symbol is unknwon, we look if it is a shader's member
-                    TString accessorClassName = classAccessorName == nullptr? *referenceShaderName : classAccessorName;
-                    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, *memberName);
-
-                    if (!identifierLocation.isMember())
+                    if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations)
                     {
-                        error( (TString("Member:\"") + *idToken.string + TString("\" not found in the class (or its parents):\"") + accessorClassName + TString("\"")).c_str() );
+                        //unknown expression while parsing a shader declaration: we're likely initializing a variable
+                        //example: static const int vb = va * 2;
+                        //we return and will keep the expression evaluation for the next step
                         return false;
                     }
-
-                    if (identifierLocation.symbolName == nullptr)
+                    else
                     {
-                        error("identifierLocation.symbolName undefined");
-                        return false;
-                    }
+                        TString* memberName = idToken.string;
 
-                    TString* structSymbolName = nullptr;
-                    TString* variableSymbolName = nullptr;
+                        //the symbol is unknwon, we look if it is a shader's member
+                        TString accessorClassName = classAccessorName == nullptr? *referenceShaderName : classAccessorName;
+                        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, *memberName);
 
-                    switch (identifierLocation.memberLocationType)
-                    {
-                        case XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer:
-                            if (!hasStreamAccessor)
-                            {
-                                //to access a stream variable, we need to use the "streams" keyword accessor
-                                error("The \"streams\" keyword is required to access a stream variable");
+                        if (!identifierLocation.isMember())
+                        {
+                            error( (TString("Member:\"") + *idToken.string + TString("\" not found in the class (or its parents):\"") + accessorClassName + TString("\"")).c_str() );
+                            return false;
+                        }
+
+                        if (identifierLocation.symbolName == nullptr)
+                        {
+                            error("identifierLocation.symbolName undefined");
+                            return false;
+                        }
+
+                        TString* structSymbolName = nullptr;
+                        TString* variableSymbolName = nullptr;
+
+                        switch (identifierLocation.memberLocationType)
+                        {
+                            case XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer:
+                                if (!hasStreamAccessor)
+                                {
+                                    //to access a stream variable, we need to use the "streams" keyword accessor
+                                    error("The \"streams\" keyword is required to access a stream variable");
+                                    return false;
+                                }
+                                structSymbolName = identifierLocation.symbolName;
+                                break;
+
+                            case XkslShaderDefinition::MemberLocationTypeEnum::CBuffer:
+                                structSymbolName = identifierLocation.symbolName;
+                                break;
+
+                            default:
+                                variableSymbolName = identifierLocation.symbolName;
+                                break;
+                        }
+
+                        if (structSymbolName != nullptr)
+                        {
+                            //Add accessor to the member struct
+                            glslang::TSymbol* structSymbol = parseContext.symbolTable.find(*structSymbolName);
+                            if (structSymbol == nullptr || (structSymbol->getAsVariable() && structSymbol->getAsVariable()->isUserType())) {
+                                error((TString("Cannot find valid struct symbol for Member: \"") + *idToken.string + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
                                 return false;
                             }
-                            structSymbolName = identifierLocation.symbolName;
-                            break;
 
-                        case XkslShaderDefinition::MemberLocationTypeEnum::CBuffer:
-                            structSymbolName = identifierLocation.symbolName;
-                            break;
+                            //handle access to the struct
+                            node = parseContext.handleVariable(idToken.loc, structSymbol, identifierLocation.symbolName);
 
-                        default:
-                            variableSymbolName = identifierLocation.symbolName;
-                            break;
-                    }
+                            //handle access to the struct member
+                            //node = parseContext.handleDotDereference(idToken.loc, node, *memberName);
 
-                    if (structSymbolName != nullptr)
-                    {
-                        //Add accessor to the member struct
-                        glslang::TSymbol* structSymbol = parseContext.symbolTable.find(*structSymbolName);
-                        if (structSymbol == nullptr || (structSymbol->getAsVariable() && structSymbol->getAsVariable()->isUserType())) {
-                            error((TString("Cannot find valid struct symbol for Member: \"") + *idToken.string + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
-                            return false;
+                            {
+                                //handleDotDereference will not be able to find the correct member index for stream variable (fieldName != declarationName)
+                                const TTypeList* fields = node->getType().getStruct();
+                                int member = identifierLocation.memberIndex;
+                                TIntermTyped* index = intermediate.addConstantUnion(member, idToken.loc);
+                                node = intermediate.addIndex(EOpIndexDirectStruct, node, index, idToken.loc);
+                                node->setType(*(*fields)[member].type);
+                            }
                         }
-
-                        //handle access to the struct
-                        node = parseContext.handleVariable(idToken.loc, structSymbol, identifierLocation.symbolName);
-
-                        //handle access to the struct member
-                        //node = parseContext.handleDotDereference(idToken.loc, node, *memberName);
-
+                        else if (variableSymbolName != nullptr)
                         {
-                            //handleDotDereference will not be able to find the correct member index for stream variable (fieldName != declarationName)
-                            const TTypeList* fields = node->getType().getStruct();
-                            int member = identifierLocation.memberIndex;
-                            TIntermTyped* index = intermediate.addConstantUnion(member, idToken.loc);
-                            node = intermediate.addIndex(EOpIndexDirectStruct, node, index, idToken.loc);
-                            node->setType(*(*fields)[member].type);
-                        }
-                    }
-                    else if (variableSymbolName != nullptr)
-                    {
-                        glslang::TSymbol* variableSymbol = parseContext.symbolTable.find(*variableSymbolName);
-                        if (variableSymbol == nullptr) {
-                            error((TString("Cannot find variable symbol: \"") + *idToken.string + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
-                            return false;
-                        }
+                            glslang::TSymbol* variableSymbol = parseContext.symbolTable.find(*variableSymbolName);
+                            if (variableSymbol == nullptr) {
+                                error((TString("Cannot find variable symbol: \"") + *idToken.string + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
+                                return false;
+                            }
 
-                        node = parseContext.handleVariable(idToken.loc, variableSymbol, identifierLocation.symbolName);
+                            node = parseContext.handleVariable(idToken.loc, variableSymbol, identifierLocation.symbolName);
+                        }
                     }
                 }
                 else

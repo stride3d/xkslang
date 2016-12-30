@@ -31,15 +31,16 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"declarationMixOfFunctionsAndVariables.xksl", ""},
     //{"2ShaderWithSameFunctionNames.xksl", ""},
     //{"shaderInheritance.xksl", ""},
-    //{"postDeclaration.xksl", "" },
+    //{"postDeclaration.xksl", ""},
     //{"functionReferingToShaderVariable.xksl", ""},
-    //{"classAccessor.xksl", "" },
-    //{"streamsSimple.xksl", "" },
-    //{"streamsWithClassAccessor.xksl", "" },
-
-    {"shaderWithConsts.xksl", ""},
-
-    //{"ShaderSimple01.xksl", "" },
+    //{"classAccessor.xksl", ""},
+    //{"streamsSimple.xksl", ""},
+    //{"streamsWithClassAccessor.xksl", ""},
+    
+    {"shaderWithDefinedConsts.xksl", ""},
+    //{"shaderWithUnresolvedConsts.xksl", ""},
+    
+    //{"ShaderSimple01.xksl", ""},
 
     //{"unresolvedVariable.xksl", ""},
     //{"functionDeclaration.xksl", ""},

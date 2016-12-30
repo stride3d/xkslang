@@ -54,6 +54,50 @@ namespace glslang {
 		return tokenBuffer[tokenBufferPos];
 	}
 
+    void HlslTokenStream::importListParsedToken(HlslToken* expressionTokensList, int countTokens)
+    {
+        if (tokenBufferPos == tokenBuffer.size())
+        {
+            pushTokenBuffer(token);
+            tokenBufferPos = tokenBuffer.size() - 1;
+        }
+
+        for (int i = 0; i < countTokens; ++i)
+        {
+            tokenBuffer.push_back(*expressionTokensList++);
+        }
+    }
+
+    bool HlslTokenStream::getListPreviouslyParsedToken(HlslToken tokenStart, HlslToken tokenEnd, TVector<HlslToken>& listTokens)
+    {
+        if (token.IsEqualsToToken(tokenStart)) return true;
+
+        //find the first token in our list of accepted token
+        int tokenIndex = -1;
+        for (int i = 0; i < tokenBufferPos; ++i)
+        {
+            if (tokenBuffer[i].IsEqualsToToken(tokenStart))
+            {
+                tokenIndex = i;
+                break;
+            }
+        }
+        if (tokenIndex == -1) return false;
+
+        HlslToken curToken = tokenBuffer[tokenIndex++];
+        while (true)
+        {
+            if (curToken.IsEqualsToToken(tokenEnd)) return true;
+
+            listTokens.push_back(curToken);
+
+            if (tokenIndex == tokenBuffer.size()) return true;
+            curToken = tokenBuffer[tokenIndex++];
+        }
+
+        return true;
+    }
+
 	bool HlslTokenStream::recedeToToken(HlslToken tok)
 	{
 		if (token.IsEqualsToToken(tok)) return true;
