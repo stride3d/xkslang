@@ -181,6 +181,7 @@ protected:
                                va_list args);
     virtual void trackLinkage(TSymbol& symbol);
     virtual void trackLinkageDeferred(TSymbol& symbol);
+    virtual void untrackLinkageDeferred(TSymbol& symbol);
     virtual void makeEditable(TSymbol*&);
     virtual TVariable* getEditableVariable(const char* name);
     virtual void finish();

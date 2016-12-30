@@ -240,6 +240,20 @@ void TParseContextBase::trackLinkageDeferred(TSymbol& symbol)
         linkageSymbols.push_back(&symbol);
 }
 
+void TParseContextBase::untrackLinkageDeferred(TSymbol& symbol)
+{
+    if (!parsingBuiltins)
+    {
+        auto it = std::find(linkageSymbols.begin(), linkageSymbols.end(), &symbol);
+        if (it != linkageSymbols.end())
+        {
+            auto itNext = it;
+            itNext++;
+            linkageSymbols.erase(it, itNext);
+        }
+    }
+}
+
 // Make a shared symbol have a non-shared version that can be edited by the current 
 // compile, such that editing its type will not change the shared version and will
 // effect all nodes already sharing it (non-shallow type),

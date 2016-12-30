@@ -135,7 +135,7 @@ public:
     const TFunction* findFunction(const TSourceLoc& loc, const TFunction& call, bool& builtIn, TIntermNode* args);
     void declareTypedef(const TSourceLoc&, TString& identifier, const TType&, TArraySizes* typeArray = 0);
     TIntermNode* declareVariable(const TSourceLoc&, TString& identifier, TType&, TIntermTyped* initializer = 0);
-    bool declareGlobalVariable(const TSourceLoc&, const TString& identifier, TType&);
+    bool removeVariable(const TSourceLoc& loc, TString& identifier);
     void lengthenList(const TSourceLoc&, TIntermSequence& list, int size);
     TIntermTyped* addConstructor(const TSourceLoc&, TIntermNode*, const TType&);
     TIntermTyped* constructAggregate(TIntermNode*, const TType&, int, const TSourceLoc&);
@@ -193,7 +193,6 @@ protected:
     void inheritGlobalDefaults(TQualifier& dst) const;
     TVariable* makeInternalVariable(const char* name, const TType&) const;
     TVariable* declareNonArray(const TSourceLoc&, TString& identifier, TType&, bool track);
-    TVariable* declareNonArrayAtGlobalLevel(const TSourceLoc&, const TString& identifier, TType&);
     void declareArray(const TSourceLoc&, TString& identifier, const TType&, TSymbol*&, bool track);
     TIntermNode* executeInitializer(const TSourceLoc&, TIntermTyped* initializer, TVariable* variable);
     TIntermTyped* convertInitializerList(const TSourceLoc&, const TType&, TIntermTyped* initializer);

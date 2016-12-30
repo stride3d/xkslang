@@ -731,7 +731,10 @@ bool ParseXkslShaderFile(
                 TTypeList* cbufferStructTypeList = new TTypeList();
                 for (int i = 0; i < shader->listAllDeclaredMembers.size(); ++i)
                 {
-                    TTypeLoc type = shader->listAllDeclaredMembers[i];
+                    TTypeLoc& type = shader->listAllDeclaredMembers[i];
+                    type.type->setDeclarationName(type.type->getFieldName()); //declaration name is the field name
+                    TIntermTyped* expressionNode = shader->listConstExpressionNode[i];
+
                     bool isStream = type.type->getQualifier().isStream;
                     bool isConst = type.type->getQualifier().storage == EvqConst;
 
@@ -739,10 +742,52 @@ bool ParseXkslShaderFile(
 
                     if (isConst)
                     {
-                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::Const, nullptr, -1);
+                        TString* variableName = NewPoolTString((TString("const_") + shader->shaderName + "." + type.type->getFieldName()).c_str());
+                        type.type->setFieldName(*variableName);
+
+                        TIntermNode* unusedNode = parseContext->declareVariable(type.loc, *variableName, *(type.type), expressionNode);
+                        
+                        TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
+                        TVariable* constVariable = constVariableSymbol->getAsVariable();
+
+                        if (constVariable == nullptr)
+                        {
+                            parseContext->infoSink.info.message(EPrefixError, (TString("Failed to create const variable:") + *variableName).c_str());
+                            return false;
+                        }
+
+                        /*if (expressionNode != nullptr)
+                        {
+                            TIntermNode* node = parseContext->declareVariable(idToken.loc, *idToken.string, declaredType, expressionNode);
+
+                            if (expressionNode->getAsConstantUnion() != nullptr)
+                            {
+                                expressionNode = intermediate.addConversion(EOpAssign, declaredType, expressionNode);
+                                if (declaredType != expressionNode->getType()) {
+                                    error("non-matching or non-convertible constant type for const initializer");
+                                    return false;
+                                }
+                                constArray = expressionNode->getAsConstantUnion()->getConstArray();
+                            }
+                        }*/
+
+                        //if (token.symbol && token.symbol->getAsVariable() && token.symbol->getAsVariable()->isUserType()) {
+                        //TVariable* constVariable = parseContext->declareNonArray(type.loc, variableName, *(type.type), false);
+
+                        /*if (constUnionArray.size() > 0)
+                        {
+                            constVariable->setConstArray(constUnionArray);
+                        }*/
+
+                        //for const variables: simply create them on global space (their values will be used, then they will be removed)
+                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
                     }
                     else if (isStream)
                     {
+                        //for stream variables: concatenate the shader class name in front of the variable field name
+                        TString* variableName = NewPoolTString((shader->shaderName + "." + type.type->getFieldName()).c_str());
+                        type.type->setFieldName(*variableName);
+
                         //Add the member in the global stream buffer
                         streambufferStructTypeList->push_back(shader->listAllDeclaredMembers.at(i));
                         int indexInStruct = streambufferStructTypeList->size() - 1;

@@ -477,7 +477,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
             // post_decls
             acceptPostDecls(variableType.getQualifier());
 
-            // EQUAL assignment_expression
+            // EQUAL assignment_expression (TOTO)
             TIntermTyped* expressionNode = nullptr;
             if (acceptTokenClass(EHTokAssign)) {
                 if (typedefDecl)
@@ -1826,12 +1826,14 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
             this->xkslShaderCurrentlyParsed = shaderDefinition;
 
             TTypeList shaderTypeList;							//list of types declared by the shader
+            //TVector<TConstUnionArray> constUnionArrayList;      //list of const values already parsed
+            TVector<TIntermTyped*> listConstExpressionNode;
             TVector<TShaderClassFunction> shaderFunctionsList;  //list of functions declared by the shader
             HlslToken shaderStartingToken = token;
 
             //======================================================================================
             //parse the shader members and variables declaration
-            if (!acceptShaderAllVariablesAndFunctionsDeclaration(*shaderName, shaderTypeList, shaderFunctionsList)) {
+            if (!acceptShaderAllVariablesAndFunctionsDeclaration(*shaderName, shaderTypeList, listConstExpressionNode, shaderFunctionsList)) {
                 error("failed to parse class variables and functions declarations");
                 //listShaderCurrentlyParsed.pop_back();
                 return false;
@@ -1842,6 +1844,8 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
             {
                 TTypeLoc& typeloc = shaderTypeList.at(i);
                 shaderDefinition->listAllDeclaredMembers.push_back(typeloc);
+                //shaderDefinition->listConstUnionArray.push_back(constUnionArrayList.at(i));
+                shaderDefinition->listConstExpressionNode.push_back(listConstExpressionNode.at(i));
             }
 
             //Add all defined methods
@@ -1939,7 +1943,8 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, T
 }
 
 //Parse a shader class: check for all variables and functions declaration (don't parse into function definition)
-bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName, TTypeList& typeList, TVector<TShaderClassFunction>& functionList)
+bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString& shaderName,
+            TTypeList& typeList, TVector<TIntermTyped*>& constExpressionNodeList, TVector<TShaderClassFunction>& functionList)
 {
     do {
         // some extra SEMI_COLON?
@@ -2018,32 +2023,79 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(const TString&
             
             do
             {
-                // add the new member into the list of class members
-                {
-                    TTypeLoc member = { new TType(EbtVoid), token.loc };
-                    member.type->shallowCopy(declaredType);
-                    member.type->setFieldName(*token.string);
-                    typeList.push_back(member);
-                }
-                TTypeLoc& member = typeList.back();
+                declaredType.setFieldName(*token.string);
+                TSourceLoc memberLoc = token.loc;
 
                 // array_specifier
                 TArraySizes* arraySizes = nullptr;
                 acceptArraySpecifier(arraySizes);
-                if (arraySizes)
-                    member.type->newArraySizes(*arraySizes);
 
-                acceptPostDecls(member.type->getQualifier());
+                // Fix arrayness in the variableType
+                if (declaredType.isImplicitlySizedArray()) {
+                    // Because "int[] a = int[2](...), b = int[3](...)" makes two arrays a and b
+                    // of different sizes, for this case sharing the shallow copy of arrayness
+                    // with the parseType oversubscribes it, so get a deep copy of the arrayness.
+                    declaredType.newArraySizes(declaredType.getArraySizes());
+                }
+                if (arraySizes || declaredType.isArray()) {
+                    // In the most general case, arrayness is potentially coming both from the
+                    // declared type and from the variable: "int[] a[];" or just one or the other.
+                    // Merge it all to the variableType, so all arrayness is part of the variableType.
+                    parseContext.arrayDimMerge(declaredType, arraySizes);
+                }
 
-                // EQUAL assignment_expression
+                // samplers accept immediate sampler state
+                if (declaredType.getBasicType() == EbtSampler) {
+                    if (!acceptSamplerState())
+                        return false;
+                }
+
+                acceptPostDecls(declaredType.getQualifier());
+
+                // EQUAL assignment_expression (TOTO)
                 TIntermTyped* expressionNode = nullptr;
                 if (acceptTokenClass(EHTokAssign)) {
-                    if (typedefDecl)
-                        error("can't have an typedef initializer");
                     if (!acceptAssignmentExpression(expressionNode)) {
                         expected("initializer");
                         return false;
                     }
+                }
+
+                //Treat const values: const values can directly be assigned with a const assignment
+                {
+                    /*TConstUnionArray constArray; //empty const value
+
+                    //check expression node to pre-solve const variables initialized with const values
+                    if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
+                    {
+                        TIntermNode* node = parseContext.declareVariable(idToken.loc, *idToken.string, declaredType, expressionNode);
+
+                        if (expressionNode->getAsConstantUnion() != nullptr)
+                        {
+                            expressionNode = intermediate.addConversion(EOpAssign, declaredType, expressionNode);
+                            if (declaredType != expressionNode->getType()) {
+                                error("non-matching or non-convertible constant type for const initializer");
+                                return false;
+                            }
+                            constArray = expressionNode->getAsConstantUnion()->getConstArray();
+                        }
+
+                        parseContext.removeVariable(idToken.loc, *idToken.string);
+                    }
+                    constUnionArrayList.push_back(constArray);*/
+
+                    if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
+                    {
+                        constExpressionNodeList.push_back(expressionNode);
+                    }
+                    else constExpressionNodeList.push_back(nullptr);
+                }
+
+                // add the new member into the list of class members
+                {
+                    TTypeLoc member = { new TType(EbtVoid), memberLoc };
+                    member.type->shallowCopy(declaredType);
+                    typeList.push_back(member);
                 }
 
                 // success on seeing the SEMICOLON coming up
@@ -2161,7 +2213,7 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
         {
             //=======================================================================================================
             //variables declaration
-
+            
             advanceUntilToken(EHTokSemicolon);
 
             // SEMI_COLON
@@ -2830,7 +2882,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
     int countMembers = shader->listAllDeclaredMembers.size();
     for (int i = 0; i < countMembers; ++i)
     {
-        if (shader->listAllDeclaredMembers[i].type->getFieldName().compare(memberName) == 0)
+        if (shader->listAllDeclaredMembers[i].type->getDeclarationName().compare(memberName) == 0)
         {
             if (i >= shader->listAllMembersLocation.size())
             {
@@ -2964,11 +3016,14 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
                         return false;
                     }
 
-                    if (identifierLocation.structSymbolName == nullptr)
+                    if (identifierLocation.symbolName == nullptr)
                     {
-                        error("identifierLocation.structSymbolName undefined");
+                        error("identifierLocation.symbolName undefined");
                         return false;
                     }
+
+                    TString* structSymbolName = nullptr;
+                    TString* variableSymbolName = nullptr;
 
                     switch (identifierLocation.memberLocationType)
                     {
@@ -2979,35 +3034,51 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
                                 error("The \"streams\" keyword is required to access a stream variable");
                                 return false;
                             }
+                            structSymbolName = identifierLocation.symbolName;
                             break;
 
                         case XkslShaderDefinition::MemberLocationTypeEnum::CBuffer:
+                            structSymbolName = identifierLocation.symbolName;
                             break;
 
                         default:
-                            error("unknown memberLocationType");
-                            return false;
+                            variableSymbolName = identifierLocation.symbolName;
+                            break;
                     }
 
-                    //Add accessor to the member struct
-                    glslang::TSymbol* structSymbol = parseContext.symbolTable.find(*identifierLocation.structSymbolName);
-                    if (structSymbol == nullptr || (structSymbol->getAsVariable() && structSymbol->getAsVariable()->isUserType())) {
-                        error((TString("Cannot find valid struct symbol for Member: \"") + *idToken.string + TString("\" not found in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
-                        return false;
-                    }
-
-                    //handle variable to the struct
-                    node = parseContext.handleVariable(idToken.loc, structSymbol, identifierLocation.structSymbolName);
-
-                    //node = parseContext.handleDotDereference(idToken.loc, node, *memberName);
-
+                    if (structSymbolName != nullptr)
                     {
-                        //handleDotDereference: will not be able to find the correct member index if several members have the same name
-                        const TTypeList* fields = node->getType().getStruct();
-                        int member = identifierLocation.memberIndex;
-                        TIntermTyped* index = intermediate.addConstantUnion(member, idToken.loc);
-                        node = intermediate.addIndex(EOpIndexDirectStruct, node, index, idToken.loc);
-                        node->setType(*(*fields)[member].type);
+                        //Add accessor to the member struct
+                        glslang::TSymbol* structSymbol = parseContext.symbolTable.find(*structSymbolName);
+                        if (structSymbol == nullptr || (structSymbol->getAsVariable() && structSymbol->getAsVariable()->isUserType())) {
+                            error((TString("Cannot find valid struct symbol for Member: \"") + *idToken.string + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
+                            return false;
+                        }
+
+                        //handle access to the struct
+                        node = parseContext.handleVariable(idToken.loc, structSymbol, identifierLocation.symbolName);
+
+                        //handle access to the struct member
+                        //node = parseContext.handleDotDereference(idToken.loc, node, *memberName);
+
+                        {
+                            //handleDotDereference will not be able to find the correct member index for stream variable (fieldName != declarationName)
+                            const TTypeList* fields = node->getType().getStruct();
+                            int member = identifierLocation.memberIndex;
+                            TIntermTyped* index = intermediate.addConstantUnion(member, idToken.loc);
+                            node = intermediate.addIndex(EOpIndexDirectStruct, node, index, idToken.loc);
+                            node->setType(*(*fields)[member].type);
+                        }
+                    }
+                    else if (variableSymbolName != nullptr)
+                    {
+                        glslang::TSymbol* variableSymbol = parseContext.symbolTable.find(*variableSymbolName);
+                        if (variableSymbol == nullptr) {
+                            error((TString("Cannot find variable symbol: \"") + *idToken.string + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
+                            return false;
+                        }
+
+                        node = parseContext.handleVariable(idToken.loc, variableSymbol, identifierLocation.symbolName);
                     }
                 }
                 else

@@ -377,6 +377,24 @@ public:
             return (*it).second;
     }
 
+    int erase(const TString& name)
+    {
+        return level.erase(name);
+    }
+
+    bool eraseFirst(const TString& name)
+    {
+        tLevel::const_iterator it = level.find(name);
+        if (it == level.end())
+            return false;
+
+        tLevel::const_iterator itNext = it;
+        itNext++;
+
+        level.erase(it, itNext);
+        return true;
+    }
+
     void findFunctionNameList(const TString& name, TVector<const TFunction*>& list)
     {
         size_t parenAt = name.find_first_of('(');
@@ -566,27 +584,6 @@ public:
         return table[currentLevel()]->insert(symbol, separateNameSpaces);
     }
 
-	bool insertAtGlobalLevel(TSymbol& symbol)
-	{
-		symbol.setUniqueId(++uniqueId);
-
-		// make sure there isn't a function of this variable name
-		if (!separateNameSpaces && !symbol.getAsFunction() && table[currentLevel()]->hasFunctionName(symbol.getName()))
-			return false;
-
-		// check for not overloading or redefining a built-in function
-		if (noBuiltInRedeclarations) {
-			if (atGlobalLevel() && currentLevel() > 0) {
-				if (table[0]->hasFunctionName(symbol.getName()))
-					return false;
-				if (currentLevel() > 1 && table[1]->hasFunctionName(symbol.getName()))
-					return false;
-			}
-		}
-
-		return table[globalLevel]->insert(symbol, separateNameSpaces);
-	}
-
     // Add more members to an already inserted aggregate object
     bool amend(TSymbol& symbol, int firstNewMember)
     {
@@ -652,6 +649,24 @@ public:
             *builtIn = isBuiltInLevel(level);
         if (currentScope)
             *currentScope = isGlobalLevel(currentLevel()) || level == currentLevel();  // consider shared levels as "current scope" WRT user globals
+
+        return symbol;
+    }
+
+    TSymbol* remove(const TString& name)
+    {
+        int level = currentLevel();
+        TSymbol* symbol;
+        do {
+            symbol = table[level]->find(name);
+
+            if (symbol)
+            {
+                table[level]->eraseFirst(name);
+            }
+
+            --level;
+        } while (symbol == 0 && level >= 0);
 
         return symbol;
     }

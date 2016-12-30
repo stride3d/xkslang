@@ -104,7 +104,7 @@ public:
 
         int memberIndex;
         MemberLocationTypeEnum memberLocationType;
-        TString* structSymbolName;
+        TString* symbolName;
 
         ShaderIdentifierLocation() : shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1) {}
 
@@ -112,12 +112,12 @@ public:
         bool isMember() { return identifierType == ShaderIdentifierTypeEnum::Member; }
         bool isMethod() { return identifierType == ShaderIdentifierTypeEnum::Method; }
 
-        void SetMemberLocation(XkslShaderDefinition* shader, MemberLocationTypeEnum locationType, TString* structName, int index)
+        void SetMemberLocation(XkslShaderDefinition* shader, MemberLocationTypeEnum locationType, TString* symbolName, int index)
         {
             this->identifierType = ShaderIdentifierTypeEnum::Member;
             this->memberLocationType = locationType;
             this->shader = shader;
-            this->structSymbolName = structName;
+            this->symbolName = symbolName;
             this->memberIndex = index;
         }
     };
@@ -128,27 +128,12 @@ public:
     TString shaderName;
     TIdentifierList shaderparentsName;
 
-    //list of all members created in the shader cbuffer (all non-stream, non-const variables)
-    //TVector<TTypeLoc> cbufferMembers;
-    //TString* cbufferStructSymbolName;
-
     TVector<TTypeLoc> listAllDeclaredMembers;
-    TVector<ShaderIdentifierLocation> listAllMembersLocation;  //will tell us how we can access to the member
+    //TVector<TConstUnionArray> listConstUnionArray; //initial const values for the members
+    TVector<TIntermTyped*> listConstExpressionNode;  //initial const values for the members
+    TVector<ShaderIdentifierLocation> listAllMembersLocation;  //define how we can access the members
 
     TVector<TShaderClassFunction> listMethods;
-
-    /*void SetStructSymbolName(MemberStructTypeEnum structType, TString* name){
-        switch (structType) {
-            case MemberStructTypeEnum::CBuffer: cbufferStructSymbolName = name;
-        }
-    }
-
-    TString* GetStructSymbolName(MemberStructTypeEnum structType){
-        switch (structType){
-            case MemberStructTypeEnum::CBuffer: return cbufferStructSymbolName;
-        }
-        return nullptr;
-    }*/
 };
 
 class XkslShaderLibrary

@@ -3841,6 +3841,21 @@ void HlslParseContext::arrayDimMerge(TType& type, const TArraySizes* sizes)
         type.addArrayOuterSizes(*sizes);
 }
 
+bool HlslParseContext::removeVariable(const TSourceLoc& loc, TString& identifier)
+{
+    TSymbol* symbol = symbolTable.remove(identifier);
+
+    if (symbol == nullptr)
+    {
+        error(loc, "variable not found", identifier.c_str(), "");
+        return false;
+    }
+
+    untrackLinkageDeferred(*symbol);
+
+    return true;
+}
+
 //
 // Do all the semantic checking for declaring or redeclaring an array, with and
 // without a size, and make the right changes to the symbol table.
@@ -4770,34 +4785,6 @@ void HlslParseContext::declareTypedef(const TSourceLoc& loc, TString& identifier
         error(loc, "name already defined", "typedef", identifier.c_str());
 }
 
-//For XKSL extensions: when we parse an unknown identifier, we need to create variable at global level, with type: EbtXKSLUnresolvedType
-bool HlslParseContext::declareGlobalVariable(const TSourceLoc& loc, const TString& identifier, TType& type)
-{
-    if (voidErrorCheck(loc, identifier, type.getBasicType()))
-        return false;
-
-    // Check for redeclaration of built-ins and/or attempting to declare a reserved name
-    TSymbol* symbol = nullptr;
-
-    inheritGlobalDefaults(type.getQualifier());
-
-    // Declare the variable
-    if (type.isArray()) {
-        //// array case
-        //flattenVar = shouldFlatten(type);
-        //declareArrayAtGlobalLevel(loc, identifier, type, symbol, !flattenVar);
-        //if (flattenVar)
-        //	flatten(loc, *symbol->getAsVariable());
-        return false;
-    }
-    else {
-        // non-array case
-        symbol = declareNonArrayAtGlobalLevel(loc, identifier, type);
-    }
-
-    return symbol != nullptr;
-}
-
 //
 // Do everything necessary to handle a variable (non-block) declaration.
 // Either redeclaring a variable, or making a new one, updating the symbol
@@ -4897,21 +4884,6 @@ TVariable* HlslParseContext::declareNonArray(const TSourceLoc& loc, TString& ide
     if (symbolTable.insert(*variable)) {
         if (track && symbolTable.atGlobalLevel())
             trackLinkageDeferred(*variable);
-        return variable;
-    }
-
-    error(loc, "redefinition", variable->getName().c_str(), "");
-    return nullptr;
-}
-
-TVariable* HlslParseContext::declareNonArrayAtGlobalLevel(const TSourceLoc& loc, const TString& identifier, TType& type)
-{
-    // make a new variable
-    TVariable* variable = new TVariable(&identifier, type);
-
-    // add variable to symbol table
-    if (symbolTable.insertAtGlobalLevel(*variable)) {
-        trackLinkageDeferred(*variable);
         return variable;
     }
 

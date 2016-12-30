@@ -1090,7 +1090,8 @@ public:
     explicit TType(TBasicType t = EbtVoid, TStorageQualifier q = EvqTemporary, int vs = 1, int mc = 0, int mr = 0,
                    bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
-                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
+                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1100,7 +1101,8 @@ public:
     TType(TBasicType t, TStorageQualifier q, TPrecisionQualifier p, int vs = 1, int mc = 0, int mr = 0, 
           bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
-                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
+                            arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1112,7 +1114,8 @@ public:
     explicit TType(const TPublicType& p) :
                             basicType(p.basicType),
                             vectorSize(p.vectorSize), matrixCols(p.matrixCols), matrixRows(p.matrixRows), vector1(false),
-                            arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
+                            arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
                             {
                                 if (basicType == EbtSampler)
                                     sampler = p.sampler;
@@ -1127,8 +1130,8 @@ public:
     // for construction of sampler types
     TType(const TSampler& sampler, TStorageQualifier q = EvqUniform, TArraySizes* as = nullptr) :
         basicType(EbtSampler), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-        arraySizes(as), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-        sampler(sampler), ownerClassName(nullptr), parentsName(nullptr)
+        arraySizes(as), structure(nullptr), fieldName(nullptr), typeName(nullptr), sampler(sampler),
+        ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
     {
         qualifier.clear();
         qualifier.storage = q;
@@ -1175,7 +1178,8 @@ public:
     // for making structures, ...
     TType(TTypeList* userDef, const TString& n) :
                             basicType(EbtStruct), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-                            arraySizes(nullptr), structure(userDef), fieldName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
+                            arraySizes(nullptr), structure(userDef), fieldName(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1184,7 +1188,8 @@ public:
     // For interface blocks
     TType(TTypeList* userDef, const TString& n, const TQualifier& q) :
                             basicType(EbtBlock), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-                            qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr), ownerClassName(nullptr), parentsName(nullptr)
+                            qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
                             {
                                 sampler.clear();
                                 typeName = NewPoolTString(n.c_str());
@@ -1193,7 +1198,8 @@ public:
 	// For shader class (XKSL language extension)
 	TType(TTypeList* userDef, const TString& n, const TQualifier& q, TIdentifierList* parentsName) :
 		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
-		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr), ownerClassName(nullptr), parentsName(parentsName)
+		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
+        ownerClassName(nullptr), parentsName(parentsName), declarationName(nullptr)
 	{
 		sampler.clear();
 		typeName = NewPoolTString(n.c_str());
@@ -1216,6 +1222,7 @@ public:
         arraySizes = copyOf.arraySizes;  // copying the pointer only, not the contents
         structure = copyOf.structure;
         fieldName = copyOf.fieldName;
+        declarationName = copyOf.declarationName;
         typeName = copyOf.typeName;
 		ownerClassName = copyOf.ownerClassName;
 		parentsName = copyOf.parentsName;
@@ -1256,6 +1263,8 @@ public:
             fieldName = NewPoolTString(copyOf.fieldName->c_str());
         if (copyOf.typeName)
             typeName = NewPoolTString(copyOf.typeName->c_str());
+        if (copyOf.declarationName)
+            declarationName = NewPoolTString(copyOf.declarationName->c_str());
     }
 
     TType* clone() const
@@ -1294,6 +1303,8 @@ public:
 
     virtual void setTypeName(const TString& n) { typeName = NewPoolTString(n.c_str()); }
     virtual void setFieldName(const TString& n) { fieldName = NewPoolTString(n.c_str()); }
+    virtual void setDeclarationName(const TString& n) { declarationName = NewPoolTString(n.c_str()); }
+
     virtual const TString& getTypeName() const
     {
         assert(typeName);
@@ -1304,6 +1315,12 @@ public:
     {
         assert(fieldName);
         return *fieldName;
+    }
+
+    virtual const TString& getDeclarationName() const
+    {
+        assert(declarationName);
+        return *declarationName;
     }
 
     virtual TBasicType getBasicType() const { return basicType; }
@@ -1865,8 +1882,9 @@ protected:
     TSampler sampler;
 
 	//XKSL type extensions
-	TIdentifierList* parentsName;  // list of parents name for shader class type
-	TString*         ownerClassName;  // class to which the type or function belongs to
+	TIdentifierList* parentsName;       // list of parents name for shader class type
+	TString*         ownerClassName;    // class to which the type or function belongs to
+    TString*         declarationName; // declaration name of the variable in its class (fieldname can be different depending how we organize the variables)
 };
 
 } // end namespace glslang

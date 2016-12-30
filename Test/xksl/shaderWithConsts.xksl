@@ -16,64 +16,22 @@ static const int A3 = 5;
 
 *****************************************************************************************/
 
-static int TOTO_02 = 1 + 5 * 10;
-
-//TODO: accept const assignment expression!
-shader ShaderTestMember
+shader ShaderSimple
 {
-	static const int constValue;// = 5 + 9;
-};
-
-/*int main(int i, int j, int k, float f)
-{
-	return TOTOTO;
-}
-
-int main2()
-{
-	TOTOTO += 2;
-	int k = main(TOTOTO, TOTOTO + 1, 3, 4 );
-	return main(k, k + 1, 3, 4 );
-}*/
-
-/*
-shader ShaderTestAccessor
-{
-	public int i0;
-	private int i1;
-	protected int i2;
-	internal int i3;
+	static const float3 colors[5] = { float3(0,1,0), float3(0,0,1), float3(1,0,1), float3(1,0,0), float3(1,1,1)};
 	
-	//make no sense, but to check the parser
-	public internal private protected float f;
-};
-*/
-
-/*
-shader ShaderTestMember
-{
-    // Default SV_POSITION output for VS/GS shaders
-    //stage stream float4 ShadingPosition : SV_Position;
+	static const int toto = 55;
 	
-	static const int constValue;// = 5;
-	static const int[] constArray = {0, 1, 2, 3};
-	
-	int main()
+	float3 Compute()
 	{
-		return TOTOTO;
+		return colors[1];
 	}
-	
-	static const float CoCCompareEpsilon = 0.01;
-	static const float4 constWhiteColor = new float4(1, 1, 1, 1);
-	
-	public static const int iconst;
-}
-*/
+};
 
 /*
 shader Math
 {
-	static const float3 colors[5] = { float3(0,1,0), float3(0,0,1), float3(1,0,1), float3(1,0,0), float3(1,1,1)};
+	
 	
     static const float PI = 3.14159265358979323846;
 }
@@ -101,22 +59,5 @@ shader SphericalHarmonicsBase<int TOrder> : Math
 		A4, A4, A4, A4, A4, A4, A4, A4, A4
 	};
 }
-
-shader TestShaderMethod
-{
-	// Declare Vertex shader main method
-    stage void VSMain() {}
-
-    // Declare Pixel shader main method
-    stage void PSMain() {}
-	
-	virtual float aVirtualMethod();
-}
 */
-//decorate function and class?
-//check function prototype (virtual)
-//what if members is declared after function body?
-//generics?
-//static function ?
-
 
