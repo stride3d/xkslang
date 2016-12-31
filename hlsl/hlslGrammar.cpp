@@ -1994,7 +1994,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
         // check the type (plus any post-declaration qualifiers)
         TType declaredType;
         if (!acceptFullySpecifiedType(nullptr, declaredType)) {
-            expected("shader: member or function type");
+            expected("invalid member or function type");
             return false;
         }
 
@@ -2002,7 +2002,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
         HlslToken idToken = token;
         if (!acceptIdentifier(idToken))
         {
-            expected("shader: member or function name");
+            expected("invalid member or function name");
             return false;
         }
 
@@ -2080,11 +2080,10 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
 
                 acceptPostDecls(declaredType.getQualifier());
 
-                HlslToken tokenAtAssignmentStart = token;
-
                 // EQUAL assignment_expression (TOTO)
                 TIntermTyped* expressionNode = nullptr;
                 TVector<HlslToken>* listTokens = nullptr;
+                HlslToken tokenAtAssignmentStart = token;
                 if (acceptTokenClass(EHTokAssign))
                 {
                     if (!acceptAssignmentExpression(expressionNode))
@@ -2092,8 +2091,11 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
                         //we're initializing a variable while parsing the shader declaration, but we meet unknown symbol
                         //we ignore it for now and will resolve it during the next step
                         expressionNode = nullptr;
+
+                        //advance until the next variable definition, or end of line
+                        recedeToToken(tokenAtAssignmentStart);
                         TVector<EHlslTokenClass> toks; toks.push_back(EHTokSemicolon); toks.push_back(EHTokComma);
-                        if (!advanceUntilAnyToken(toks))
+                        if (!advanceUntilFirstTokenFromList(toks, true))
                         {
                             error("Error finding the end of assignment expression");
                             return false;
@@ -2280,11 +2282,35 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
     } while (true);
 }
 
-bool HlslGrammar::advanceUntilAnyToken(const TVector<EHlslTokenClass>& tokList)
+bool HlslGrammar::advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks)
 {
+    for (int i = 0; i<tokList.size(); ++i)
+        if (token.tokenClass == tokList[i]) return true;
+        
     while(true)
     {   
-        for (int i=0; i<tokList.size(); ++i)
+        if (jumpOverBlocks)
+        {
+            switch (token.tokenClass)
+            {
+                case EHTokLeftBracket:
+                    advanceToken();
+                    if (!advanceUntilEndOfBlock(EHTokRightBracket)) return false;
+                    break;
+
+                case EHTokLeftBrace:
+                    advanceToken();
+                    if (!advanceUntilEndOfBlock(EHTokRightBrace)) return false;
+                    break;
+
+                case EHTokLeftParen:
+                    advanceToken();
+                    if (!advanceUntilEndOfBlock(EHTokRightParen)) return false;
+                    break;
+            }
+        }
+
+        for (int i = 0; i<tokList.size(); ++i)
             if (token.tokenClass == tokList[i]) return true;
 
         advanceToken();
@@ -2684,6 +2710,10 @@ bool HlslGrammar::acceptInitializer(TIntermTyped*& node)
         // assignment_expression
         TIntermTyped* expr;
         if (! acceptAssignmentExpression(expr)) {
+            
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations)
+                return false; //return false but it's not necessary an error: the expression can be resolved later
+
             expected("assignment expression in initializer list");
             return false;
         }
@@ -2721,6 +2751,9 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
     if (peekTokenClass(EHTokLeftBrace)) {
         if (acceptInitializer(node))
             return true;
+
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations)
+            return false; //return false but it's not necessary an error: the expression can be resolved later
 
         expected("initializer");
         return false;
@@ -2834,6 +2867,10 @@ bool HlslGrammar::acceptBinaryExpression(TIntermTyped*& node, PrecedenceLevel pr
         // ... expression
         TIntermTyped* rightNode = nullptr;
         if (! acceptBinaryExpression(rightNode, (PrecedenceLevel)(precedenceLevel + 1))) {
+
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations)
+                return false; //return false but it's not necessary an error: the expression can be resolved later
+
             expected("expression");
             return false;
         }

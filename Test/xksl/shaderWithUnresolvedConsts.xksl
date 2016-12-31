@@ -3,29 +3,41 @@ Parse const variables assigned with expression not immediately resolvable
 
 *****************************************************************************************/
 
-shader ShaderSA
+shader Mix
 {
-	static const int va = 50;
+	static const int D = A + B + C;
 	
-	static const int vb = va * 2;
+	static const int B = A + Z;
+	static const int A = 0;
 	
-	/*int Compute()
-	{
-		return vb;
-	}*/
+	//static const int Z = B;  //unresolvable cross-dependency
+	static const int Z = C;
+	
+	//static const int C = B;  //unresolvable cross-dependency
+	//static const int C = C;    //unresolvable
+	static const int C = E + F;
+	
+	static const int E = F;
+	static const int F = 6;
 };
 
 /*
 shader Math
 {
+	static const int tata = 5, titi = 1;
+	
+	static const int foo1 = tata + 10;
+	static const int foo2 = 10 + tata;
+	static const int foo3 = tata + 5 + titi;
+	
 	static const float3 colors[5] = { float3(0,1,0), float3(0,0,1), float3(1,0,1), float3(1,0,0), float3(1,1,1)};
 	
     static const float PI = 3.14159265358979323846;
-}
+};
 
-shader SphericalHarmonicsBase<int TOrder> : Math
+shader Test : Math
 {
-	static const int CoefficientsCount = TOrder * TOrder;
+	static const int toto[] = {tata, titi};
 	
 	static const float PI4  =  4 * PI;
 	static const float PI16 = 16 * PI;
@@ -45,6 +57,5 @@ shader SphericalHarmonicsBase<int TOrder> : Math
 		A3, A3, A3, A3, A3, A3, A3,
 		A4, A4, A4, A4, A4, A4, A4, A4, A4
 	};
-}
+};
 */
-

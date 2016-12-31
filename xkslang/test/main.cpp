@@ -37,8 +37,8 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"streamsSimple.xksl", ""},
     //{"streamsWithClassAccessor.xksl", ""},
     
-    {"shaderWithDefinedConsts.xksl", ""},
-    //{"shaderWithUnresolvedConsts.xksl", ""},
+    //{"shaderWithDefinedConsts.xksl", ""},
+    {"shaderWithUnresolvedConsts.xksl", ""},
     
     //{"ShaderSimple01.xksl", ""},
 

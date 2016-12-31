@@ -182,6 +182,8 @@ public:
     void initFlattening() { flattenLevel.push_back(0); flattenOffset.push_back(0); }
     void finalizeFlattening() { flattenLevel.pop_back(); flattenOffset.pop_back(); }
 
+    TIntermNode* executeInitializer(const TSourceLoc&, TIntermTyped* initializer, TVariable* variable);
+
 protected:
     struct TFlattenData {
         TFlattenData() : nextBinding(TQualifier::layoutBindingEnd) { }
@@ -196,7 +198,6 @@ protected:
     TVariable* makeInternalVariable(const char* name, const TType&) const;
     TVariable* declareNonArray(const TSourceLoc&, TString& identifier, TType&, bool track);
     void declareArray(const TSourceLoc&, TString& identifier, const TType&, TSymbol*&, bool track);
-    TIntermNode* executeInitializer(const TSourceLoc&, TIntermTyped* initializer, TVariable* variable);
     TIntermTyped* convertInitializerList(const TSourceLoc&, const TType&, TIntermTyped* initializer);
     bool isZeroConstructor(const TIntermNode*);
     TOperator mapAtomicOp(const TSourceLoc& loc, TOperator op, bool isImage);

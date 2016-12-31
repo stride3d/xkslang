@@ -1317,6 +1317,12 @@ public:
         return *fieldName;
     }
 
+    virtual TString& getWritableFieldName() const
+    {
+        assert(fieldName);
+        return *fieldName;
+    }
+
     virtual const TString& getDeclarationName() const
     {
         assert(declarationName);

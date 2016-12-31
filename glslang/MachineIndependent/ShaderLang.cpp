@@ -592,6 +592,50 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 // XKSL shader extensions
 // TODO: switch from HlslParser to XkslParser ?
 //==========================================================================================
+
+bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary,
+    TVector<XkslShaderDefinition::ShaderMember*>& listUnresolvedConstMembers,
+    HlslParseContext* parseContext, TPpContext& ppContext, bool versionWillBeError)
+{
+    if (listUnresolvedConstMembers.size() == 0) return true;
+
+    for (int i=0; i<listUnresolvedConstMembers.size(); ++i)
+    {
+        XkslShaderDefinition::ShaderMember* constMember = listUnresolvedConstMembers[i];
+
+        HlslToken* expressionTokensList = &(constMember->expressionTokensList->at(0));
+        int countTokens = constMember->expressionTokensList->size();
+        TIntermTyped* expressionNode = parseContext->parseXkslExpression(&shaderLibrary, constMember->shader,
+            ppContext, expressionTokensList, countTokens, versionWillBeError);
+
+        if (expressionNode != nullptr)
+        {
+            constMember->resolvedDeclaredExpression = expressionNode;
+
+            const TString& variableName = constMember->type->getFieldName();
+            //TIntermNode* unusedNode = parseContext->declareVariable(constMember->loc, constMember->type->getWritableFieldName(), *(constMember->type), constMember->resolvedDeclaredExpression);
+
+            TSymbol* constVariableSymbol = parseContext->symbolTable.find(variableName);
+            TVariable* constVariable = constVariableSymbol->getAsVariable();
+
+            if (constVariable == nullptr)
+            {
+                parseContext->infoSink.info.message(EPrefixError, (TString("Failed to retrieve the const variable:") + variableName).c_str());
+                return false;
+            }
+
+            TIntermNode* unusedNode = parseContext->executeInitializer(constMember->loc, expressionNode, constVariable);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 bool ParseXkslShaderFile(
     const std::string& fileName,
     TCompiler* compiler,
@@ -669,8 +713,7 @@ bool ParseXkslShaderFile(
     //==================================================================================================================
     //YEAH, can finally parse !!!!
     bool success = false;
-    bool needToResolveConstsStatement = false;
-    XkslShaderDefinition::ShaderMember* tmpPROTOPROUTPROUT = nullptr;
+    TVector<XkslShaderDefinition::ShaderMember*> listUnresolvedConstMembers;
 
     {
         //==================================================================================================================
@@ -713,9 +756,7 @@ bool ParseXkslShaderFile(
                     {
                         if (member.resolvedDeclaredExpression == nullptr && member.expressionTokensList != nullptr)
                         {
-                            needToResolveConstsStatement = true;
-
-                            tmpPROTOPROUTPROUT = &member;
+                            listUnresolvedConstMembers.push_back(&member);
                         }
 
                         //Create the const variable on global space
@@ -813,31 +854,10 @@ bool ParseXkslShaderFile(
         }
 
         //===========================================================================================================
-        //Experimental: replay some saved tokens to resolve unresolved const statement
+        //resolve all unresolved const members
         if (success)
         {
-            if (needToResolveConstsStatement)
-            {
-                if (tmpPROTOPROUTPROUT != nullptr)
-                {
-                    HlslToken* expressionTokensList = &(tmpPROTOPROUTPROUT->expressionTokensList->at(0));
-                    int countTokens = tmpPROTOPROUTPROUT->expressionTokensList->size();
-                    TIntermTyped* expressionNode = parseContext->parseXkslExpression(&shaderLibrary, tmpPROTOPROUTPROUT->shader,
-                        ppContext, expressionTokensList, countTokens, versionWillBeError);
-
-                    if (expressionNode != nullptr)
-                    {
-                        
-                        //TIntermNode* unusedNode = parseContext->declareVariable(type.loc, *variableName, *(type.type),
-                        //    constMemberExpressionStatement.resolvedDeclaredExpression);
-                    }
-                    else
-                    {
-                        success = false;
-                    }
-
-                }
-            }
+            success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, listUnresolvedConstMembers, parseContext, ppContext, versionWillBeError);
         }
 
         //===========================================================================================================
