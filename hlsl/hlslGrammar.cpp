@@ -111,8 +111,10 @@ TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary
     {
         if (!acceptAssignmentExpression(expressionNode))
         {
-            error("Failed to parse Xksl assignment expression");
-            return nullptr;
+            //not necessary an error, we just cannot resolved the assignment expression yet
+            expressionNode = nullptr;
+
+            advanceUntilEndOfTokenList(); //we clear the remaining tokens
         }
     }
 
@@ -2282,93 +2284,6 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
     } while (true);
 }
 
-bool HlslGrammar::advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks)
-{
-    for (int i = 0; i<tokList.size(); ++i)
-        if (token.tokenClass == tokList[i]) return true;
-        
-    while(true)
-    {   
-        if (jumpOverBlocks)
-        {
-            switch (token.tokenClass)
-            {
-                case EHTokLeftBracket:
-                    advanceToken();
-                    if (!advanceUntilEndOfBlock(EHTokRightBracket)) return false;
-                    break;
-
-                case EHTokLeftBrace:
-                    advanceToken();
-                    if (!advanceUntilEndOfBlock(EHTokRightBrace)) return false;
-                    break;
-
-                case EHTokLeftParen:
-                    advanceToken();
-                    if (!advanceUntilEndOfBlock(EHTokRightParen)) return false;
-                    break;
-            }
-        }
-
-        for (int i = 0; i<tokList.size(); ++i)
-            if (token.tokenClass == tokList[i]) return true;
-
-        advanceToken();
-        if (token.tokenClass == EHTokNone) return false;
-    }
-}
-
-bool HlslGrammar::advanceUntilToken(EHlslTokenClass tok)
-{
-    while (true)
-    {
-        if (token.tokenClass == tok) return true;
-
-        advanceToken();
-        if (token.tokenClass == EHTokNone) return false;
-    }
-}
-
-//Advance the token until we reach the end of the block
-bool HlslGrammar::advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken)
-{
-    while (true)
-    {
-        if (token.tokenClass == endOfBlockToken)
-        {
-            advanceToken();
-            return true;
-        }
-
-        switch (token.tokenClass)
-        {
-            case EHTokNone:
-                return false;
-
-            case EHTokLeftBracket:
-                advanceToken();
-                if (!advanceUntilEndOfBlock(EHTokRightBracket)) return false;
-                break;
-
-            case EHTokLeftBrace:
-                advanceToken();
-                if (!advanceUntilEndOfBlock(EHTokRightBrace)) return false;
-                break;
-
-            case EHTokLeftParen:
-                advanceToken();
-                if (!advanceUntilEndOfBlock(EHTokRightParen)) return false;
-                break;
-
-            default:
-                advanceToken();
-                break;
-        }
-    }
-
-    return false;
-}
-
 // struct
 //      : struct_type IDENTIFIER post_decls LEFT_BRACE struct_declaration_list RIGHT_BRACE
 //      | struct_type            post_decls LEFT_BRACE struct_declaration_list RIGHT_BRACE
@@ -2711,7 +2626,8 @@ bool HlslGrammar::acceptInitializer(TIntermTyped*& node)
         TIntermTyped* expr;
         if (! acceptAssignmentExpression(expr)) {
             
-            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations)
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations ||
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslConstStatements)
                 return false; //return false but it's not necessary an error: the expression can be resolved later
 
             expected("assignment expression in initializer list");
@@ -2752,7 +2668,8 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
         if (acceptInitializer(node))
             return true;
 
-        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations)
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations ||
+            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslConstStatements)
             return false; //return false but it's not necessary an error: the expression can be resolved later
 
         expected("initializer");
@@ -2868,7 +2785,8 @@ bool HlslGrammar::acceptBinaryExpression(TIntermTyped*& node, PrecedenceLevel pr
         TIntermTyped* rightNode = nullptr;
         if (! acceptBinaryExpression(rightNode, (PrecedenceLevel)(precedenceLevel + 1))) {
 
-            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations)
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations ||
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslConstStatements)
                 return false; //return false but it's not necessary an error: the expression can be resolved later
 
             expected("expression");
@@ -3105,7 +3023,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
                     {
                         //unknown expression while parsing a shader declaration: we're likely initializing a variable
                         //example: static const int vb = va * 2;
-                        //we return and will keep the expression evaluation for the next step
+                        //we return and will try to evaluate the expressions on the next step
                         return false;
                     }
                     else
@@ -3147,9 +3065,23 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
                                 structSymbolName = identifierLocation.symbolName;
                                 break;
 
-                            default:
+                            case XkslShaderDefinition::MemberLocationTypeEnum::Const:
                                 variableSymbolName = identifierLocation.symbolName;
                                 break;
+
+                            case XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst:
+                                if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslConstStatements)
+                                    return false; //return false but it's not necessary an error: the const can be resolved later
+                                else
+                                {
+                                    error("The const member is unresolved");
+                                    return false;
+                                }
+                                break;
+
+                            default:
+                                error("Unknown member location type");
+                                return false;
                         }
 
                         if (structSymbolName != nullptr)
@@ -3185,6 +3117,10 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
                             }
 
                             node = parseContext.handleVariable(idToken.loc, variableSymbol, identifierLocation.symbolName);
+                        }
+                        else
+                        {
+                            int lgksdfjglk = 5454;
                         }
                     }
                 }
@@ -3306,6 +3242,11 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
         // arguments
         TIntermTyped* arguments = nullptr;
         if (! acceptArguments(constructorFunction, arguments)) {
+
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations ||
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslConstStatements)
+                return false; //return false but it's not necessary an error: the expression can be resolved later
+
             expected("constructor arguments");
             return false;
         }
@@ -3370,6 +3311,11 @@ bool HlslGrammar::acceptArguments(TFunction* function, TIntermTyped*& arguments)
 
     // RIGHT_PAREN
     if (! acceptTokenClass(EHTokRightParen)) {
+
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations ||
+            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslConstStatements)
+            return false; //return false but it's not necessary an error: the expression can be resolved later
+
         expected(")");
         return false;
     }

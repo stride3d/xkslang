@@ -86,6 +86,7 @@ public:
         CBuffer,
         StreamBuffer,
         Const,
+        UnresolvedConst,
     };
 
     enum class ShaderIdentifierTypeEnum

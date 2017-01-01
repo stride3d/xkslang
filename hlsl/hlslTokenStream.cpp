@@ -54,6 +54,102 @@ namespace glslang {
 		return tokenBuffer[tokenBufferPos];
 	}
 
+
+    bool HlslTokenStream::advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks)
+    {
+        for (int i = 0; i<tokList.size(); ++i)
+            if (token.tokenClass == tokList[i]) return true;
+
+        while (true)
+        {
+            if (jumpOverBlocks)
+            {
+                switch (token.tokenClass)
+                {
+                case EHTokLeftBracket:
+                    advanceToken();
+                    if (!advanceUntilEndOfBlock(EHTokRightBracket)) return false;
+                    break;
+
+                case EHTokLeftBrace:
+                    advanceToken();
+                    if (!advanceUntilEndOfBlock(EHTokRightBrace)) return false;
+                    break;
+
+                case EHTokLeftParen:
+                    advanceToken();
+                    if (!advanceUntilEndOfBlock(EHTokRightParen)) return false;
+                    break;
+                }
+            }
+
+            for (int i = 0; i<tokList.size(); ++i)
+                if (token.tokenClass == tokList[i]) return true;
+
+            advanceToken();
+            if (token.tokenClass == EHTokNone) return false;
+        }
+    }
+
+    bool HlslTokenStream::advanceUntilToken(EHlslTokenClass tok)
+    {
+        while (true)
+        {
+            if (token.tokenClass == tok) return true;
+
+            advanceToken();
+            if (token.tokenClass == EHTokNone) return false;
+        }
+    }
+
+    void HlslTokenStream::advanceUntilEndOfTokenList()
+    {
+        while (token.tokenClass != EHTokNone)
+        {
+            advanceToken();
+        }
+    }
+
+    //Advance the token until we reach the end of the block
+    bool HlslTokenStream::advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken)
+    {
+        while (true)
+        {
+            if (token.tokenClass == endOfBlockToken)
+            {
+                advanceToken();
+                return true;
+            }
+
+            switch (token.tokenClass)
+            {
+            case EHTokNone:
+                return false;
+
+            case EHTokLeftBracket:
+                advanceToken();
+                if (!advanceUntilEndOfBlock(EHTokRightBracket)) return false;
+                break;
+
+            case EHTokLeftBrace:
+                advanceToken();
+                if (!advanceUntilEndOfBlock(EHTokRightBrace)) return false;
+                break;
+
+            case EHTokLeftParen:
+                advanceToken();
+                if (!advanceUntilEndOfBlock(EHTokRightParen)) return false;
+                break;
+
+            default:
+                advanceToken();
+                break;
+            }
+        }
+
+        return false;
+    }
+
     void HlslTokenStream::importListParsedToken(HlslToken* expressionTokensList, int countTokens)
     {
         if (tokenBufferPos == tokenBuffer.size())

@@ -3,14 +3,14 @@ Parse const variables assigned with expression not immediately resolvable
 
 *****************************************************************************************/
 
-shader Mix
+shader TestConsts1
 {
 	static const int D = A + B + C;
 	
 	static const int B = A + Z;
 	static const int A = 0;
 	
-	//static const int Z = B;  //unresolvable cross-dependency
+	
 	static const int Z = C;
 	
 	//static const int C = B;  //unresolvable cross-dependency
@@ -21,7 +21,18 @@ shader Mix
 	static const int F = 6;
 };
 
-/*
+shader TestConsts2
+{
+	static const int Z = 0;
+	static const int Z1 = A / Z;  //division by zero?
+	static const int A = 5;
+	static const int B = C + 1;
+	static const int C = A + 2;
+	static const float D[] = {A, B, C, (B) + C * A};
+	static const int4 E = int4(A, 1, 2, 3);
+	static const float4 F = float4(D[0] * D[2], D[E.z], D[Z], D[3] / Z1);
+};
+
 shader Math
 {
 	static const int tata = 5, titi = 1;
@@ -58,4 +69,20 @@ shader Test : Math
 		A4, A4, A4, A4, A4, A4, A4, A4, A4
 	};
 };
-*/
+
+//Test inter-dependencies consts
+/*
+shader SFail02
+{
+	static const int A = B;
+	static const int B = C + D;
+	static const int D = C;
+	static const int C = A;
+};*/
+
+//Test uninitialized consts
+/*shader SFail01
+{
+	static const int AAA;
+	static const int BBB = AAA;
+};*/

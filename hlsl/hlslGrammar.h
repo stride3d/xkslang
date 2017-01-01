@@ -129,9 +129,6 @@ namespace glslang {
         bool acceptDefaultLabel(TIntermNode*&);
         void acceptArraySpecifier(TArraySizes*&);
         void acceptPostDecls(TQualifier&);
-        bool advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken);
-        bool advanceUntilToken(EHlslTokenClass tok);
-        bool advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks);
 
         //XKSL extensions
         void acceptShaderClassPostDecls(TIdentifierList*& parents);

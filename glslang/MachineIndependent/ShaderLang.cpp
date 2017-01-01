@@ -593,41 +593,102 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 // TODO: switch from HlslParser to XkslParser ?
 //==========================================================================================
 
+//Resolve unresolved consts:
+// const depending on other const variables could not have been assignem with the expression during the shader declaration
+//While parsing them, we stored the token list describing their assignment expression
+//Now we replay them until all consts are resolved
+//we could probably optimize this by sorting consts depending on their dependency
+//however we would need to do the work of the parser to try evaluating expressions such like base.X, class.Y, ...
+//typedef std::map<TString, int> MapString;
 bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary,
-    TVector<XkslShaderDefinition::ShaderMember*>& listUnresolvedConstMembers,
+    TVector<XkslShaderDefinition::ShaderMember*>& vectorResolvedConstMembers,
+    TVector<XkslShaderDefinition::ShaderMember*>& vectorUnresolvedConstMembers,
     HlslParseContext* parseContext, TPpContext& ppContext, bool versionWillBeError)
 {
-    if (listUnresolvedConstMembers.size() == 0) return true;
+    if (vectorUnresolvedConstMembers.size() == 0) return true;
 
-    for (int i=0; i<listUnresolvedConstMembers.size(); ++i)
+    /*
+    //================================================================================================
+    //We first sort all unresolved consts, depending on their inter-dependency
+    MapString mapSymbolsDependencies;
+    for (int i=0; i<listResolvedConstMembers.size(); ++i)
     {
-        XkslShaderDefinition::ShaderMember* constMember = listUnresolvedConstMembers[i];
-
-        HlslToken* expressionTokensList = &(constMember->expressionTokensList->at(0));
-        int countTokens = constMember->expressionTokensList->size();
-        TIntermTyped* expressionNode = parseContext->parseXkslExpression(&shaderLibrary, constMember->shader,
-            ppContext, expressionTokensList, countTokens, versionWillBeError);
-
-        if (expressionNode != nullptr)
+        const TString& name = listResolvedConstMembers[i]->type->getFieldName();
+        std::pair<MapString::iterator, bool> res = mapSymbolsDependencies.insert(std::pair<TString, int>(name, 0));
+        if (!res.second)
         {
-            constMember->resolvedDeclaredExpression = expressionNode;
-
-            const TString& variableName = constMember->type->getFieldName();
-            //TIntermNode* unusedNode = parseContext->declareVariable(constMember->loc, constMember->type->getWritableFieldName(), *(constMember->type), constMember->resolvedDeclaredExpression);
-
-            TSymbol* constVariableSymbol = parseContext->symbolTable.find(variableName);
-            TVariable* constVariable = constVariableSymbol->getAsVariable();
-
-            if (constVariable == nullptr)
-            {
-                parseContext->infoSink.info.message(EPrefixError, (TString("Failed to retrieve the const variable:") + variableName).c_str());
-                return false;
-            }
-
-            TIntermNode* unusedNode = parseContext->executeInitializer(constMember->loc, expressionNode, constVariable);
+            parseContext->infoSink.info.message(EPrefixError, (TString("Symbol already exist:") + name).c_str());
+            return false;
         }
-        else
+    }
+
+    while (listConstsToSort.size() > 0)
+    {
+        bool found = false;
+
+        //std::list<XkslShaderDefinition::ShaderMember*>::iterator it = listConstsToSort.begin();
+
+        if (!found)
         {
+            parseContext->infoSink.info.message(EPrefixError, "Failed to resolved unresolved const members");
+            return false;
+        }
+    }*/
+
+    std::list<XkslShaderDefinition::ShaderMember*> listUnresolvedMembers;
+    for (int i=0; i<vectorUnresolvedConstMembers.size(); ++i)
+        listUnresolvedMembers.push_back(vectorUnresolvedConstMembers[i]);
+
+    //================================================================================================
+    //Resolve all unresolved consts
+    while (listUnresolvedMembers.size() > 0)
+    {
+        bool resolveSomeMembers = false;
+
+        std::list<XkslShaderDefinition::ShaderMember*>::iterator it = listUnresolvedMembers.begin();
+        while (it != listUnresolvedMembers.end())
+        {
+            XkslShaderDefinition::ShaderMember* constMember = *it;
+            bool deleteMember = false;
+
+            HlslToken* expressionTokensList = &(constMember->expressionTokensList->at(0));
+            int countTokens = constMember->expressionTokensList->size();
+            TIntermTyped* expressionNode = parseContext->parseXkslExpression(&shaderLibrary, constMember->shader,
+                ppContext, expressionTokensList, countTokens, versionWillBeError);
+
+            if (expressionNode != nullptr)
+            {
+                constMember->resolvedDeclaredExpression = expressionNode;
+
+                //TIntermNode* unusedNode = parseContext->declareVariable(constMember->loc, constMember->type->getWritableFieldName(), *(constMember->type), constMember->resolvedDeclaredExpression);
+
+                //Retrieve the variable
+                const TString& variableName = constMember->type->getFieldName();
+                TSymbol* constVariableSymbol = parseContext->symbolTable.find(variableName);
+                TVariable* constVariable = constVariableSymbol->getAsVariable();
+
+                if (constVariable == nullptr)
+                {
+                    parseContext->infoSink.info.message(EPrefixError, (TString("Failed to retrieve the const variable:") + variableName).c_str());
+                    return false;
+                }
+
+                //assign its const value
+                TIntermNode* unusedNode = parseContext->executeInitializer(constMember->loc, expressionNode, constVariable);
+
+                //We successfully resolved the const member
+                constMember->memberLocation.memberLocationType = XkslShaderDefinition::MemberLocationTypeEnum::Const;
+                resolveSomeMembers = true;
+                deleteMember = true;
+            }
+        
+            if (deleteMember) it = listUnresolvedMembers.erase(it);
+            else it++;
+        }
+
+        if (!resolveSomeMembers)
+        {
+            parseContext->infoSink.info.message(EPrefixError, "Cannot resolve unresolved const members, are there some inter-dependencies?");
             return false;
         }
     }
@@ -714,6 +775,7 @@ bool ParseXkslShaderFile(
     //YEAH, can finally parse !!!!
     bool success = false;
     TVector<XkslShaderDefinition::ShaderMember*> listUnresolvedConstMembers;
+    TVector<XkslShaderDefinition::ShaderMember*> listResolvedConstMembers;
 
     {
         //==================================================================================================================
@@ -751,53 +813,48 @@ bool ParseXkslShaderFile(
                     bool isConst = member.type->getQualifier().storage == EvqConst;
 
                     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
+                    bool canCreateVariable = true;
+                    bool constIsAssigned = false;
 
                     if (isConst)
                     {
-                        if (member.resolvedDeclaredExpression == nullptr && member.expressionTokensList != nullptr)
+                        if (member.resolvedDeclaredExpression == nullptr)
                         {
-                            listUnresolvedConstMembers.push_back(&member);
-                        }
-
-                        //Create the const variable on global space
-                        TString* variableName = NewPoolTString((TString("const_") + shader->shaderName + "." + member.type->getFieldName()).c_str());
-                        member.type->setFieldName(*variableName);
-
-                        TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression);
-                        
-                        TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
-                        TVariable* constVariable = constVariableSymbol->getAsVariable();
-
-                        if (constVariable == nullptr)
-                        {
-                            parseContext->infoSink.info.message(EPrefixError, (TString("Failed to create const variable:") + *variableName).c_str());
-                            return false;
-                        }
-
-                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
-
-                        /*if (expressionNode != nullptr)
-                        {
-                            TIntermNode* node = parseContext->declareVariable(idToken.loc, *idToken.string, declaredType, expressionNode);
-
-                            if (expressionNode->getAsConstantUnion() != nullptr)
-                            {
-                                expressionNode = intermediate.addConversion(EOpAssign, declaredType, expressionNode);
-                                if (declaredType != expressionNode->getType()) {
-                                    error("non-matching or non-convertible constant type for const initializer");
-                                    return false;
-                                }
-                                constArray = expressionNode->getAsConstantUnion()->getConstArray();
+                            if (member.expressionTokensList == nullptr){
+                                parseContext->infoSink.info.message(EPrefixWarning, (TString("Const member not initialized: ") + member.type->getFieldName()).c_str());
+                                canCreateVariable = false;
                             }
-                        }*/
-
-                        //if (token.symbol && token.symbol->getAsVariable() && token.symbol->getAsVariable()->isUserType()) {
-                        //TVariable* constVariable = parseContext->declareNonArray(type.loc, variableName, *(type.type), false);
-
-                        /*if (constUnionArray.size() > 0)
+                            else
+                                listUnresolvedConstMembers.push_back(&member);
+                        }
+                        else
                         {
-                            constVariable->setConstArray(constUnionArray);
-                        }*/
+                            constIsAssigned = true;
+                            listResolvedConstMembers.push_back(&member);
+                        }
+
+                        if (canCreateVariable)
+                        {
+                            //Create the const variable on global space
+                            TString* variableName = NewPoolTString((TString("const_") + shader->shaderName + "." + member.type->getFieldName()).c_str());
+                            member.type->setFieldName(*variableName);
+
+                            TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression);
+                        
+                            TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
+                            TVariable* constVariable = constVariableSymbol->getAsVariable();
+
+                            if (constVariable == nullptr)
+                            {
+                                parseContext->infoSink.info.message(EPrefixError, (TString("Failed to create const variable:") + *variableName).c_str());
+                                return false;
+                            }
+
+                            if (constIsAssigned)
+                                identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
+                            else
+                                identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst, variableName, -1);
+                        }
                     }
                     else if (isStream)
                     {
@@ -857,7 +914,7 @@ bool ParseXkslShaderFile(
         //resolve all unresolved const members
         if (success)
         {
-            success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, listUnresolvedConstMembers, parseContext, ppContext, versionWillBeError);
+            success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, listResolvedConstMembers, listUnresolvedConstMembers, parseContext, ppContext, versionWillBeError);
         }
 
         //===========================================================================================================
