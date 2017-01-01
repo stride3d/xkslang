@@ -3974,6 +3974,23 @@ void HlslParseContext::updateImplicitArraySize(const TSourceLoc& loc, TIntermNod
 }
 
 //
+// Enforce non-initializer type/qualifier rules.
+//
+void HlslParseContext::fixConstInit(const TSourceLoc& loc, TString& identifier, TType& type, TIntermTyped*& initializer)
+{
+    //
+    // Make the qualifier make sense, given that there is an initializer.
+    //
+    if (initializer == nullptr) {
+        if (type.getQualifier().storage == EvqConst ||
+            type.getQualifier().storage == EvqConstReadOnly) {
+            initializer = intermediate.makeAggregate(loc);
+            warn(loc, "variable with qualifier 'const' not initialized; zero initializing", identifier.c_str(), "");
+        }
+    }
+}
+
+//
 // See if the identifier is a built-in symbol that can be redeclared, and if so,
 // copy the symbol table's read-only built-in variable to the current
 // global level, where it can be modified based on the passed in type.
@@ -4819,6 +4836,9 @@ TIntermNode* HlslParseContext::declareVariable(const TSourceLoc& loc, TString& i
     if (voidErrorCheck(loc, identifier, type.getBasicType()))
         return nullptr;
 
+    // make const and initialization consistent
+    fixConstInit(loc, identifier, type, initializer);
+
     // Check for redeclaration of built-ins and/or attempting to declare a reserved name
     TSymbol* symbol = nullptr;
 
@@ -5043,12 +5063,16 @@ TIntermTyped* HlslParseContext::convertInitializerList(const TSourceLoc& loc, co
         // edit array sizes to fill in unsized dimensions
         if (type.isImplicitlySizedArray())
             arrayType.changeOuterArraySize((int)initList->getSequence().size());
-        TIntermTyped* firstInit = initList->getSequence()[0]->getAsTyped();
-        if (arrayType.isArrayOfArrays() && firstInit->getType().isArray() &&
-            arrayType.getArraySizes().getNumDims() == firstInit->getType().getArraySizes()->getNumDims() + 1) {
-            for (int d = 1; d < arrayType.getArraySizes().getNumDims(); ++d) {
-                if (arrayType.getArraySizes().getDimSize(d) == UnsizedArraySize)
-                    arrayType.getArraySizes().setDimSize(d, firstInit->getType().getArraySizes()->getDimSize(d - 1));
+
+        // set unsized array dimensions that can be derived from the initializer's first element
+        if (arrayType.isArrayOfArrays() && initList->getSequence().size() > 0) {
+            TIntermTyped* firstInit = initList->getSequence()[0]->getAsTyped();
+            if (firstInit->getType().isArray() &&
+                arrayType.getArraySizes().getNumDims() == firstInit->getType().getArraySizes()->getNumDims() + 1) {
+                for (int d = 1; d < arrayType.getArraySizes().getNumDims(); ++d) {
+                    if (arrayType.getArraySizes().getDimSize(d) == UnsizedArraySize)
+                        arrayType.getArraySizes().setDimSize(d, firstInit->getType().getArraySizes()->getDimSize(d - 1));
+                }
             }
         }
 
@@ -5107,6 +5131,9 @@ TIntermTyped* HlslParseContext::convertInitializerList(const TSourceLoc& loc, co
             return nullptr;
         }
     } else if (type.isScalar()) {
+        // lengthen list to be long enough
+        lengthenList(loc, initList->getSequence(), 1);
+
         if ((int)initList->getSequence().size() != 1) {
             error(loc, "scalar expected one element:", "initializer list", type.getCompleteString().c_str());
             return nullptr;
