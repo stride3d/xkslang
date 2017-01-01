@@ -688,7 +688,7 @@ bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary
 
         if (!resolveSomeMembers)
         {
-            parseContext->infoSink.info.message(EPrefixError, "Cannot resolve unresolved const members, are there some inter-dependencies?");
+            parseContext->infoSink.info.message(EPrefixError, "Cannot resolve unresolved const members");
             return false;
         }
     }
@@ -839,7 +839,7 @@ bool ParseXkslShaderFile(
                             TString* variableName = NewPoolTString((TString("const_") + shader->shaderName + "." + member.type->getFieldName()).c_str());
                             member.type->setFieldName(*variableName);
 
-                            TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression);
+                            TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression, false);
                         
                             TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
                             TVariable* constVariable = constVariableSymbol->getAsVariable();

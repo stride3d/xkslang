@@ -4831,13 +4831,16 @@ void HlslParseContext::declareTypedef(const TSourceLoc& loc, TString& identifier
 // 'parseType' is the type part of the declaration (to the left)
 // 'arraySizes' is the arrayness tagged on the identifier (to the right)
 //
-TIntermNode* HlslParseContext::declareVariable(const TSourceLoc& loc, TString& identifier, TType& type, TIntermTyped* initializer)
+TIntermNode* HlslParseContext::declareVariable(const TSourceLoc& loc, TString& identifier, TType& type, TIntermTyped* initializer, bool fixConstInitIfNoInitializer)
 {
     if (voidErrorCheck(loc, identifier, type.getBasicType()))
         return nullptr;
 
     // make const and initialization consistent
-    fixConstInit(loc, identifier, type, initializer);
+    if (fixConstInitIfNoInitializer)
+    {
+        fixConstInit(loc, identifier, type, initializer);
+    }
 
     // Check for redeclaration of built-ins and/or attempting to declare a reserved name
     TSymbol* symbol = nullptr;
