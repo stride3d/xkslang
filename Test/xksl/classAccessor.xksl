@@ -35,3 +35,19 @@ shader S02
 {
 	int b;
 };
+
+shader S04
+{
+	int a;
+};
+
+shader S05 : S04
+{
+	int a;
+	
+	int compute()
+	{
+		int a;
+		return a + this.a + S05.a + base.a + S04.a;
+	}
+};

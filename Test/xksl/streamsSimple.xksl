@@ -2,14 +2,13 @@
 
 shader BaseShader
 {
-	float f3;
-    stream float sf3;
+	float f;
+    stream float f;
 
     float Compute()
     {
 		float f;
-        //f = this.f3 + this.sf3;  //compilation error (sf3 must be accessed using streams)
-		f = this.f3 + streams.sf3;
+		f = this.f + streams.f;
 		
 		return f;
     }

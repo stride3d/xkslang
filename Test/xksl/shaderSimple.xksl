@@ -5,7 +5,7 @@ shader ShaderSimple01
 
 	float4 BaseColor;    
 	
-	static const float colorZ;// = 0.5;
+	static const float colorZ = 0.5;
 	
     stage void VSMain() 
     {

@@ -1,0 +1,24 @@
+//Test calling some intrisics HLSL functions
+//can refer to hlsl.intrisics.frag for a more complete test
+
+shader Effect
+{
+    stage override float Compute(float4 Position, float4x4 MatrixTransform)
+    {
+		float4 aVec4 = mul(Position, MatrixTransform);
+		
+        float distance = length(aVec4);
+        float2 direction = normalize(aVec4);
+
+		float2 wave;
+        sincos(distance, wave.x, wave.y);
+
+        float falloff = saturate(1 - distance);
+        falloff = pow(falloff, 3.0f);
+		float fsat = saturate(falloff / 0.015f);
+		
+        float lighting = lerp(1.0f, 1.0f + wave.x * falloff * 0.2f, fsat);
+		
+		return lighting;
+    }
+};

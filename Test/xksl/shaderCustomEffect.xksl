@@ -1,0 +1,227 @@
+shader Texturing
+{
+    // Default texture slots - might be automatically used by the material
+    stage Texture2D Texture0;
+    stage float2 Texture0TexelSize;
+    stage Texture2D Texture1;
+    stage float2 Texture1TexelSize;
+    stage Texture2D Texture2;
+    stage float2 Texture2TexelSize;
+    stage Texture2D Texture3;
+    stage float2 Texture3TexelSize;
+    stage Texture2D Texture4;
+    stage float2 Texture4TexelSize;
+    stage Texture2D Texture5;
+    stage float2 Texture5TexelSize;
+    stage Texture2D Texture6;   
+    stage float2 Texture6TexelSize;
+    stage Texture2D Texture7;
+    stage float2 Texture7TexelSize;
+    stage Texture2D Texture8;
+    stage float2 Texture8TexelSize;
+    stage Texture2D Texture9;
+    stage float2 Texture9TexelSize;
+
+    // Default texture cube slots
+    stage TextureCube TextureCube0;
+    stage TextureCube TextureCube1;
+    stage TextureCube TextureCube2;
+    stage TextureCube TextureCube3;
+
+    // Default texture 3D slots
+    stage Texture3D Texture3D0;
+    stage Texture3D Texture3D1;
+    stage Texture3D Texture3D2;
+    stage Texture3D Texture3D3;
+
+    // Default sampler
+    stage SamplerState Sampler;
+
+    stage SamplerState PointSampler
+    {
+        Filter = MIN_MAG_MIP_POINT;
+    };
+
+    stage SamplerState LinearSampler
+    {
+        Filter = MIN_MAG_MIP_LINEAR;
+    };
+
+    stage SamplerState LinearBorderSampler
+    {
+        Filter = MIN_MAG_MIP_LINEAR;
+        AddressU = Border;
+        AddressV = Border;
+    };
+
+    stage SamplerComparisonState LinearClampCompareLessEqualSampler
+    {
+        Filter = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+        AddressU = Clamp;
+        AddressV = Clamp;
+        ComparisonFunc = LessEqual;
+
+    };
+
+    stage SamplerState AnisotropicSampler
+    {
+        Filter = ANISOTROPIC;
+    };
+
+    stage SamplerState AnisotropicRepeatSampler
+    {
+        Filter = ANISOTROPIC;
+        AddressU = Wrap;
+        AddressV = Wrap;
+        MaxAnisotropy = 16;
+    };
+
+    stage SamplerState PointRepeatSampler
+    {
+        Filter = MIN_MAG_MIP_POINT;
+        AddressU = Wrap;
+        AddressV = Wrap;
+    };
+
+    stage SamplerState LinearRepeatSampler
+    {
+        Filter = MIN_MAG_MIP_LINEAR;
+        AddressU = Wrap;
+        AddressV = Wrap;
+    };
+
+    stage SamplerState RepeatSampler
+    {
+        AddressU = Wrap;
+        AddressV = Wrap;
+    };
+
+    // Default custom samplers - might be automatically used by the materials
+    stage SamplerState Sampler0;
+    stage SamplerState Sampler1;
+    stage SamplerState Sampler2;
+    stage SamplerState Sampler3;
+    stage SamplerState Sampler4;
+    stage SamplerState Sampler5;
+    stage SamplerState Sampler6;
+    stage SamplerState Sampler7;
+    stage SamplerState Sampler8;
+    stage SamplerState Sampler9;
+
+    // Texcoord attribute inputs
+    stage stream float2 TexCoord : TEXCOORD0;
+    stage stream float2 TexCoord1 : TEXCOORD1;
+    stage stream float2 TexCoord2 : TEXCOORD2;
+    stage stream float2 TexCoord3 : TEXCOORD3;
+    stage stream float2 TexCoord4 : TEXCOORD4;
+    stage stream float2 TexCoord5 : TEXCOORD5;
+    stage stream float2 TexCoord6 : TEXCOORD6;
+    stage stream float2 TexCoord7 : TEXCOORD7;
+    stage stream float2 TexCoord8 : TEXCOORD8;
+    stage stream float2 TexCoord9 : TEXCOORD9;
+};
+
+shader ShaderBaseStream
+{
+    // Default SV_POSITION output for VS/GS shaders
+    stage stream float4 ShadingPosition : SV_Position;
+
+    // Default COLOR outputs for PS shader
+    stage stream float4 ColorTarget : SV_Target0;
+    stage stream float4 ColorTarget1 : SV_Target1;
+    stage stream float4 ColorTarget2 : SV_Target2;
+    stage stream float4 ColorTarget3 : SV_Target3;
+    stage stream float4 ColorTarget4 : SV_Target4;
+    stage stream float4 ColorTarget5 : SV_Target5;
+    stage stream float4 ColorTarget6 : SV_Target6;
+    stage stream float4 ColorTarget7 : SV_Target7;
+
+    // Default DEPTH output for PS shader
+    stage stream float Depth : SV_Depth;
+    stage stream float DepthGreater : SV_DepthGreater; // Special output after PS
+    stage stream float DepthLessEqual : SV_DepthLessEqual; // Special output after PS
+
+    // Default InstanceId for VS/GS shaders
+    stage stream uint InstanceID : SV_InstanceID;
+};
+
+shader ShaderBase : ShaderBaseStream
+{
+    // Declare Vertex shader main method
+    stage void VSMain() {}
+
+    // Declare Pixel shader main method
+    stage void PSMain() {}
+};
+
+shader SpriteBase : ShaderBase, Texturing
+{
+    // -------------------------------------
+    // streams
+    // -------------------------------------
+    stage stream float4 Position : POSITION;
+
+    cbuffer PerDraw
+    {
+        // -------------------------------------
+        // uniforms
+        // -------------------------------------
+        // A general transformation matrix
+        stage float4x4 MatrixTransform;
+    }
+        
+    // -------------------------------------
+    // VertexShader
+    // -------------------------------------
+    stage override void VSMain()
+    {
+        streams.ShadingPosition = mul(streams.Position, MatrixTransform);
+    }
+
+    // Shading of the sprite
+    stage override void PSMain()
+    {
+        streams.ColorTarget = Shading();
+    }
+
+    stage float4 Shading()
+    {
+        return Texture0.Sample(Sampler, streams.TexCoord);
+    }
+};
+
+shader Effect : SpriteBase
+{
+    stage float2 Center;
+    stage float Frequency;
+    stage float Phase;
+    stage float Spread;
+    stage float Amplitude;
+    stage float InvAspectRatio;
+
+    stage override float4 Shading()
+    {
+        float2 wave;
+
+        float2 toPixel = (streams.TexCoord.xy - Center) * float2(1, InvAspectRatio); 
+
+        float distance = length(toPixel);
+        float2 direction = normalize(toPixel);
+
+        sincos(Frequency * distance + Phase, wave.x, wave.y);
+
+        // Clamps the distance between 0 and 1 and squares the value.
+        float falloff = saturate(1 - distance);
+        falloff = pow(falloff, 1.0f / Spread);
+
+        // Calculates new mapping coordinates based on the frequency, center, and amplitude.
+        float2 uv2 = streams.TexCoord.xy + (wave.x * falloff * Amplitude) * direction;
+        float lighting = lerp(1.0f, 1.0f + wave.x * falloff * 0.2f, saturate(Amplitude / 0.015f));
+        
+        // Resamples the image based on the new coordinates.
+        float4 color = Texture0.Sample(Sampler, uv2);
+        color.rgb *= lighting;
+        
+        return color;
+    }
+};

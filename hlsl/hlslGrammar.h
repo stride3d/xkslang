@@ -135,7 +135,7 @@ namespace glslang {
         TString* getCurrentShaderName();
         int getCurrentShaderCountParents();
         TString* getCurrentShaderParentName(int index);
-        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, const TString& memberName);
+        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName);
         bool isRecordedAsAShaderName(const TString& name);
 
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate

@@ -168,7 +168,7 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isStre
     {
         case EHTokThis:
         {
-            className = nullptr;  //null == this
+            className = getCurrentShaderName();
             advanceToken();
             break;
         }
@@ -2877,7 +2877,7 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
     return node != nullptr;
 }
 
-XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, const TString& memberName)
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName)
 {
     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
     XkslShaderDefinition* shader = nullptr;
@@ -2905,6 +2905,16 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
     {
         if (shader->listAllDeclaredMembers[i].type->getDeclarationName().compare(memberName) == 0)
         {
+            //to avoid name conflict, in the case of a shader declare a stream and a non-stream variables using the same name
+            if (hasStreamAccessor)
+            {
+                if (shader->listAllDeclaredMembers[i].memberLocation.memberLocationType != XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer) continue;
+            }
+            else
+            {
+                if (shader->listAllDeclaredMembers[i].memberLocation.memberLocationType == XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer) continue;
+            }
+
             identifierLocation = shader->listAllDeclaredMembers[i].memberLocation;
             break;
         }
@@ -2916,7 +2926,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
         int countParents = shader->shaderparentsName.size();
         for (int p = 0; p < countParents; p++)
         {
-            identifierLocation = findShaderClassMember(*(shader->shaderparentsName[p]), memberName);
+            identifierLocation = findShaderClassMember(*(shader->shaderparentsName[p]), hasStreamAccessor, memberName);
             if (identifierLocation.isMember()) return identifierLocation;
         }
     }
@@ -3017,7 +3027,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
             }
             else
             {
-                if (idToken.symbol == nullptr)
+                if (idToken.symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor)
                 {
                     if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations)
                     {
@@ -3032,7 +3042,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
 
                         //the symbol is unknwon, we look if it is a shader's member
                         TString accessorClassName = classAccessorName == nullptr? *referenceShaderName : classAccessorName;
-                        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, *memberName);
+                        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, hasStreamAccessor, *memberName);
 
                         if (!identifierLocation.isMember())
                         {

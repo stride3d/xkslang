@@ -6,17 +6,10 @@ Parse const variables assigned with expression not immediately resolvable
 shader TestConsts1
 {
 	static const int D = A + B + C;
-	
 	static const int B = A + Z;
 	static const int A = 0;
-	
-	
 	static const int Z = C;
-	
-	//static const int C = B;  //unresolvable cross-dependency
-	//static const int C = C;    //unresolvable
 	static const int C = E + F;
-	
 	static const int E = F;
 	static const int F = 6;
 };
