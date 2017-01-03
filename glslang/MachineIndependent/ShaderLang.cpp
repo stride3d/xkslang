@@ -601,8 +601,8 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 //however we would need to do the work of the parser to try evaluating expressions such like base.X, class.Y, ...
 //typedef std::map<TString, int> MapString;
 bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary,
-    TVector<XkslShaderDefinition::ShaderMember*>& vectorResolvedConstMembers,
-    TVector<XkslShaderDefinition::ShaderMember*>& vectorUnresolvedConstMembers,
+    TVector<XkslShaderDefinition::XkslShaderMember*>& vectorResolvedConstMembers,
+    TVector<XkslShaderDefinition::XkslShaderMember*>& vectorUnresolvedConstMembers,
     HlslParseContext* parseContext, TPpContext& ppContext, bool versionWillBeError)
 {
     if (vectorUnresolvedConstMembers.size() == 0) return true;
@@ -626,7 +626,7 @@ bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary
     {
         bool found = false;
 
-        //std::list<XkslShaderDefinition::ShaderMember*>::iterator it = listConstsToSort.begin();
+        //std::list<XkslShaderDefinition::XkslShaderMember*>::iterator it = listConstsToSort.begin();
 
         if (!found)
         {
@@ -635,7 +635,7 @@ bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary
         }
     }*/
 
-    std::list<XkslShaderDefinition::ShaderMember*> listUnresolvedMembers;
+    std::list<XkslShaderDefinition::XkslShaderMember*> listUnresolvedMembers;
     for (int i=0; i<vectorUnresolvedConstMembers.size(); ++i)
         listUnresolvedMembers.push_back(vectorUnresolvedConstMembers[i]);
 
@@ -645,10 +645,10 @@ bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary
     {
         bool resolveSomeMembers = false;
 
-        std::list<XkslShaderDefinition::ShaderMember*>::iterator it = listUnresolvedMembers.begin();
+        std::list<XkslShaderDefinition::XkslShaderMember*>::iterator it = listUnresolvedMembers.begin();
         while (it != listUnresolvedMembers.end())
         {
-            XkslShaderDefinition::ShaderMember* constMember = *it;
+            XkslShaderDefinition::XkslShaderMember* constMember = *it;
             bool deleteMember = false;
 
             HlslToken* expressionTokensList = &(constMember->expressionTokensList->at(0));
@@ -774,8 +774,8 @@ bool ParseXkslShaderFile(
     //==================================================================================================================
     //YEAH, can finally parse !!!!
     bool success = false;
-    TVector<XkslShaderDefinition::ShaderMember*> listUnresolvedConstMembers;
-    TVector<XkslShaderDefinition::ShaderMember*> listResolvedConstMembers;
+    TVector<XkslShaderDefinition::XkslShaderMember*> listUnresolvedConstMembers;
+    TVector<XkslShaderDefinition::XkslShaderMember*> listResolvedConstMembers;
 
     {
         //==================================================================================================================
@@ -791,7 +791,7 @@ bool ParseXkslShaderFile(
         //We finished parsing the shader declaration: we can now add all function prototypes in the list of symbols, and create all members structs
         if (success)
         {
-            //TString* streamBufferStructName = NewPoolTString((TString("StreamBuffer_") + TString(fileName.c_str())).c_str());
+            //global stream buffer struct (shared by all shaders)
             TString* streamBufferStructName = NewPoolTString((TString("StreamBuffer")).c_str());
             TTypeList* streambufferStructTypeList = new TTypeList();
 
@@ -800,13 +800,23 @@ bool ParseXkslShaderFile(
             {
                 XkslShaderDefinition* shader = listShaderParsed[s];
 
+                //Method declaration: add the shader methods prototype in the table of symbol
+                for (int i = 0; i < shader->listMethods.size(); ++i)
+                {
+                    TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
+
+
+                    //member.type->setDeclarationName(member.type->getFieldName()); //declaration name is the field name
+                    parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
+                }
+
                 //======================================================================================
-                // create and add the new shader structs
+                // Members declaration: create and add the new shader structs
                 TString* cbufferStructName = NewPoolTString((TString("cbuffer_") + shader->shaderName).c_str());
                 TTypeList* cbufferStructTypeList = new TTypeList();
                 for (int i = 0; i < shader->listAllDeclaredMembers.size(); ++i)
                 {
-                    XkslShaderDefinition::ShaderMember& member = shader->listAllDeclaredMembers[i];
+                    XkslShaderDefinition::XkslShaderMember& member = shader->listAllDeclaredMembers[i];
                     member.type->setDeclarationName(member.type->getFieldName()); //declaration name is the field name
 
                     bool isStream = member.type->getQualifier().isStream;
@@ -887,16 +897,9 @@ bool ParseXkslShaderFile(
                     // will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
                     TQualifier postDeclQualifier;
                     postDeclQualifier.clear();
-                    TType* type = new TType(cbufferStructTypeList, *cbufferStructName, postDeclQualifier, &shader->shaderparentsName);
+                    TType* type = new TType(cbufferStructTypeList, shader->shaderName, postDeclQualifier, &shader->shaderparentsName);
                     type->getQualifier().storage = EvqGlobal;
                     parseContext->declareVariable(shader->location, *cbufferStructName, *type, nullptr);
-                }
-
-                //Add all the shader method prototype in the table of symbol
-                for (int i = 0; i < shader->listMethods.size(); ++i)
-                {
-                    TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
-                    parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
                 }
             }
 

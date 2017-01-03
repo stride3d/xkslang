@@ -455,6 +455,22 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
     if (! acceptFullySpecifiedType(&node, declaredType))
         return false;
 
+    if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations ||
+        this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslConstStatements)
+    {
+        if (declaredType.getBasicType() != EbtShaderClass)
+        {
+            //XKSL extensions: we're parsing an xksl file, but we're having a type outside a shader class.
+            //So we skip the declaration if the operation is ParseXkslDeclarations or ParseXkslConstStatements
+            //We will parse this only when processing the ParseXkslDefinitions operation
+            //This case will normally never occur when parsing XKSL shader
+            //however we allow this to let us accept normal hlsl instructions / declaration within an xksl shader file, so that we can easily test and compare HLSL VS XKSL
+
+            advanceUntilToken(EHTokShaderClass, true);
+            return true;
+        }
+    }
+
     // identifier
     HlslToken idToken;
     while (acceptIdentifier(idToken)) {
@@ -518,7 +534,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
             // post_decls
             acceptPostDecls(variableType.getQualifier());
 
-            // EQUAL assignment_expression (TOTO)
+            // EQUAL assignment_expression
             TIntermTyped* expressionNode = nullptr;
             if (acceptTokenClass(EHTokAssign)) {
                 if (typedefDecl)
@@ -1937,6 +1953,9 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
         return false;
     }
 
+    //Even if we don't directly use a shader type, we return its basictype as EbtShaderClass
+    new(&type) TType(EbtShaderClass);
+
     return true;
 }
 
@@ -2008,17 +2027,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
             return false;
         }
 
-        //TString *functionName = NewPoolTString((TString(*idToken.string) + shaderName + ';').c_str());
-        TFunction& function = *new TFunction(idToken.string, declaredType);
-
-        //=======================================================================================================
-        // A same attribute name defined in different shader is not a problem: attributes belongs to the shader namespace.
-        // However all functions are defined in the global namespace and so we need to differentiate them.
-        // A shader function will be named: ShaderClass.functionName(params) --> "functionName(ShaderClass;params"
-        // (to be consistent with SPIRV name structure)
-        //=======================================================================================================
-        function.appendMangleName(shaderName + ';');
-
+        TFunction& function = *new TFunction(&shaderName, token.string, declaredType);
         if (acceptFunctionParameters(function))
         {
             //=======================================================================================================
@@ -2082,7 +2091,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
 
                 acceptPostDecls(declaredType.getQualifier());
 
-                // EQUAL assignment_expression (TOTO)
+                // EQUAL assignment_expression
                 TIntermTyped* expressionNode = nullptr;
                 TVector<HlslToken>* listTokens = nullptr;
                 HlslToken tokenAtAssignmentStart = token;
@@ -2112,7 +2121,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
 
                 // add the new member into the list of class members
                 {
-                    XkslShaderDefinition::ShaderMember shaderMember;
+                    XkslShaderDefinition::XkslShaderMember shaderMember;
                     
                     shaderMember.shader = shader;
                     shaderMember.type = new TType(EbtVoid);
@@ -2121,7 +2130,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
                     
                     if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
                     {
-                        //const values can directly be assigned with a const assignment if the expression has been resolved
+                        //the const value can directly be assigned with a const assignment if the expression has been resolved
                         shaderMember.resolvedDeclaredExpression = expressionNode;
                         shaderMember.expressionTokensList = nullptr;
                     }
@@ -2221,9 +2230,7 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
             return false;
         }
 
-        TFunction& tmpFunction = *new TFunction(idToken.string, declaredType);
-        tmpFunction.appendMangleName(shaderName + ';');
-
+        TFunction& tmpFunction = *new TFunction(&shaderName, token.string, declaredType);
         if (acceptFunctionParameters(tmpFunction))
         {
             //// post_decls
@@ -2272,7 +2279,8 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
             //=======================================================================================================
             //variables declaration
             
-            advanceUntilToken(EHTokSemicolon);
+            //skip the member declaration
+            advanceUntilToken(EHTokSemicolon, true);
 
             // SEMI_COLON
             if (!acceptTokenClass(EHTokSemicolon)) {
@@ -2877,9 +2885,14 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
     return node != nullptr;
 }
 
-XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName)
+XkslShaderDefinition* HlslGrammar::getShaderClassDefinition(const TString& shaderClassName)
 {
-    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
+    if (this->xkslShaderLibrary == nullptr)
+    {
+        error("shaderLibrary has not been set");
+        return nullptr;
+    }
+
     XkslShaderDefinition* shader = nullptr;
 
     //find the shader declaration
@@ -2893,8 +2906,39 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
         }
     }
 
-    if (shader == nullptr)
+    return shader;
+}
+
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMethod(const TString& shaderClassName, const TString& methodName)
+{
+    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
+
+    XkslShaderDefinition* shader = getShaderClassDefinition(shaderClassName);
+    if (shader == nullptr) {
+        error((TString("undeclared class:\"") + shaderClassName + TString("\"")).c_str());
+        return identifierLocation;
+    }
+
+    //look if the shader did declare the method
+    int countMethods = shader->listMethods.size();
+    for (int i = 0; i < countMethods; ++i)
     {
+        if (shader->listMethods[i].function->getDeclaredMangledName().compare(methodName) == 0)
+        {
+            //identifierLocation = shader->listAllDeclaredMembers[i].memberLocation;
+            break;
+        }
+    }
+
+    return identifierLocation;
+}
+
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName)
+{
+    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
+
+    XkslShaderDefinition* shader = getShaderClassDefinition(shaderClassName);
+    if (shader == nullptr){
         error( (TString("undeclared class:\"") + shaderClassName + TString("\"")).c_str() );
         return identifierLocation;
     }
@@ -3040,13 +3084,13 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
                     {
                         TString* memberName = idToken.string;
 
-                        //the symbol is unknwon, we look if it is a shader's member
+                        //we look if the identifier is a shader's member
                         TString accessorClassName = classAccessorName == nullptr? *referenceShaderName : classAccessorName;
                         XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, hasStreamAccessor, *memberName);
 
                         if (!identifierLocation.isMember())
                         {
-                            error( (TString("Member:\"") + *idToken.string + TString("\" not found in the class (or its parents):\"") + accessorClassName + TString("\"")).c_str() );
+                            error( (TString("Member: \"") + *idToken.string + TString("\" not found in the class (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
                             return false;
                         }
 
@@ -3128,9 +3172,9 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
 
                             node = parseContext.handleVariable(idToken.loc, variableSymbol, identifierLocation.symbolName);
                         }
-                        else
-                        {
-                            int lgksdfjglk = 5454;
+                        else {
+                            error("invalid class identifier");
+                            return false;
                         }
                     }
                 }
@@ -3141,12 +3185,54 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
             }
 
         }
-        else if (acceptFunctionCall(idToken, node))
+        else 
         {
-            // function_call (nothing else to do yet)
-        } else {
-            expected("function call arguments");
-            return false;
+            TString* referenceShaderName = getCurrentShaderName();
+            if (referenceShaderName == nullptr)
+            {
+                //we're not parsing a shader: normal hlsl procedure
+                if (acceptFunctionCall(idToken, node)) {
+                    // function_call (nothing else to do yet)
+                }
+                else {
+                    expected("function call arguments");
+                    return false;
+                }
+            }
+            else
+            {
+                if (idToken.symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor)
+                {
+                    //No known symbol or a class accessor: we look for the appropriate method in our xksl shader library
+
+                    if (hasStreamAccessor)
+                    {
+                        error("streams accessor cannot be used in front of a method call");
+                        return false;
+                    }
+
+                    TString accessorClassName = classAccessorName == nullptr ? *referenceShaderName : classAccessorName;
+
+                    if (acceptXkslFunctionCall(accessorClassName, idToken, node)) {
+                        // function_call (nothing else to do yet)
+                    }
+                    else {
+                        expected("Xksl function call arguments");
+                        return false;
+                    }
+                }
+                else
+                {
+                    //the symbol is known and there is no class accessor, this is a call to a normal function (not belonging to a class)
+                    if (acceptFunctionCall(idToken, node)) {
+                        // function_call (nothing else to do yet)
+                    }
+                    else {
+                        expected("function call arguments");
+                        return false;
+                    }
+                }
+            }
         }
     } else {
         // nothing found, can't post operate
@@ -3268,6 +3354,36 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
     }
 
     return false;
+}
+
+bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
+{
+    // arguments
+    TFunction* function = new TFunction(idToken.string, TType(EbtVoid));
+    TIntermTyped* arguments = nullptr;
+
+    // methods have an implicit first argument of the calling object.
+    if (base != nullptr)
+        parseContext.handleFunctionArgument(function, arguments, base);
+
+    if (!acceptArguments(function, arguments))
+        return false;
+
+    // We now have the method mangled name
+    const TString& methodMangledName = function->getDeclaredMangledName();
+    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(shaderClassName, methodMangledName);
+
+    if (!identifierLocation.isMethod())
+    {
+        //method not found in our shader library, we look in the global list of method
+        node = parseContext.handleFunctionCall(idToken.loc, function, arguments);
+    }
+    else
+    {
+        //TODO: Update here!!!!!!
+    }
+
+    return true;
 }
 
 // The function_call identifier was already recognized, and passed in as idToken.

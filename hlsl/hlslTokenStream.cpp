@@ -91,15 +91,12 @@ namespace glslang {
         }
     }
 
-    bool HlslTokenStream::advanceUntilToken(EHlslTokenClass tok)
+    bool HlslTokenStream::advanceUntilToken(EHlslTokenClass tok, bool jumpOverBlocks)
     {
-        while (true)
-        {
-            if (token.tokenClass == tok) return true;
+        TVector<EHlslTokenClass> listTokens;
+        listTokens.push_back(tok);
 
-            advanceToken();
-            if (token.tokenClass == EHTokNone) return false;
-        }
+        return advanceUntilFirstTokenFromList(listTokens, jumpOverBlocks);
     }
 
     void HlslTokenStream::advanceUntilEndOfTokenList()

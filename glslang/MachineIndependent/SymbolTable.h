@@ -213,8 +213,17 @@ public:
     TFunction(const TString *name, const TType& retType, TOperator tOp = EOpNull) :
         TSymbol(name),
         mangledName(*name + '('),
+        declaredMangledName(*name + '('),
         op(tOp),
         defined(false), prototyped(false) { returnType.shallowCopy(retType); }
+    TFunction(const TString *className, const TString *name, const TType& retType, TOperator tOp = EOpNull) :
+        TSymbol(name),
+        mangledName(*className + '.' + *name + '('),
+        declaredMangledName(*name + '('),
+        op(tOp),
+        defined(false), prototyped(false) {
+        returnType.shallowCopy(retType);
+    }
     virtual TFunction* clone() const;
     virtual ~TFunction();
 
@@ -225,6 +234,7 @@ public:
 	{
 		assert(writable);
 		mangledName.append(s);
+        declaredMangledName.append(s);
 	}
 
     virtual void addParameter(TParameter& p)
@@ -232,9 +242,11 @@ public:
         assert(writable);
         parameters.push_back(p);
         p.type->appendMangledName(mangledName);
+        p.type->appendMangledName(declaredMangledName);
     }
 
     virtual const TString& getMangledName() const { return mangledName; }
+    virtual const TString& getDeclaredMangledName() const { return declaredMangledName; }
     virtual const TType& getType() const { return returnType; }
     virtual TType& getWritableType() { return returnType; }
     virtual void relateToOperator(TOperator o) { assert(writable); op = o; }
@@ -258,6 +270,7 @@ protected:
     TParamList parameters;
     TType returnType;
     TString mangledName;
+    TString declaredMangledName;
     TOperator op;
     bool defined;
     bool prototyped;

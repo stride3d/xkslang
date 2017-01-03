@@ -123,10 +123,10 @@ public:
         }
     };
 
-    class ShaderMember
+    class XkslShaderMember
     {
     public:
-        ShaderMember(): type(nullptr), shader(nullptr), resolvedDeclaredExpression(nullptr), expressionTokensList(nullptr){}
+        XkslShaderMember(): type(nullptr), shader(nullptr), resolvedDeclaredExpression(nullptr), expressionTokensList(nullptr){}
 
         TType* type;
         TSourceLoc loc;
@@ -141,15 +141,12 @@ public:
     };
 
 public:
-    TSourceLoc location;  //location where the shader is declared (for logs)
+    TSourceLoc location;  //location where the shader is declared in the file (for logs)
 
     TString shaderName;
     TIdentifierList shaderparentsName;
 
-    //TVector<TTypeLoc> listAllDeclaredMembers;
-    TVector<ShaderMember> listAllDeclaredMembers;
-    //TVector<ShaderIdentifierLocation> listAllMembersLocation;  //define how we can access the members
-
+    TVector<XkslShaderMember> listAllDeclaredMembers;
     TVector<TShaderClassFunction> listMethods;
 };
 

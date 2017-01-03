@@ -113,6 +113,7 @@ namespace glslang {
         bool acceptPostfixExpression(TIntermTyped*&, bool hasStreamAccessor = false, const char* classAccessor = nullptr);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
+        bool acceptXkslFunctionCall(TString& shaderClassName, HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
         bool acceptArguments(TFunction*, TIntermTyped*&);
         bool acceptLiteral(TIntermTyped*&);
         bool acceptCompoundStatement(TIntermNode*&);
@@ -135,7 +136,9 @@ namespace glslang {
         TString* getCurrentShaderName();
         int getCurrentShaderCountParents();
         TString* getCurrentShaderParentName(int index);
+        XkslShaderDefinition* getShaderClassDefinition(const TString& shaderClassName);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName);
+        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName);
         bool isRecordedAsAShaderName(const TString& name);
 
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
