@@ -130,6 +130,7 @@ namespace glslang {
         bool acceptDefaultLabel(TIntermNode*&);
         void acceptArraySpecifier(TArraySizes*&);
         void acceptPostDecls(TQualifier&);
+        bool acceptDefaultParameterDeclaration(const TType&, TIntermTyped*&);
 
         //XKSL extensions
         void acceptShaderClassPostDecls(TIdentifierList*& parents);

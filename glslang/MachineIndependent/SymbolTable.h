@@ -191,6 +191,7 @@ protected:
 struct TParameter {
     TString *name;
     TType* type;
+    TIntermTyped* defaultValue;
     void copyParam(const TParameter& param) 
     {
         if (param.name)
@@ -198,6 +199,7 @@ struct TParameter {
         else
             name = 0;
         type = param.type->clone();
+        defaultValue = param.defaultValue;
     }
 };
 
@@ -209,13 +211,13 @@ public:
     explicit TFunction(TOperator o) :
         TSymbol(0),
         op(o),
-        defined(false), prototyped(false) { }
+        defined(false), prototyped(false), defaultParamCount(0) { }
     TFunction(const TString *name, const TType& retType, TOperator tOp = EOpNull) :
         TSymbol(name),
         mangledName(*name + '('),
         declaredMangledName(*name + '('),
         op(tOp),
-        defined(false), prototyped(false) { returnType.shallowCopy(retType); }
+        defined(false), prototyped(false), defaultParamCount(0) { returnType.shallowCopy(retType); }
     TFunction(const TString *className, const TString *name, const TType& retType, TOperator tOp = EOpNull) :
         TSymbol(name),
         mangledName(*className + '.' + *name + '('),
@@ -243,6 +245,8 @@ public:
         parameters.push_back(p);
         p.type->appendMangledName(mangledName);
         p.type->appendMangledName(declaredMangledName);
+        if (p.defaultValue != nullptr)
+            defaultParamCount++;
     }
 
     virtual const TString& getMangledName() const { return mangledName; }
@@ -256,7 +260,13 @@ public:
     virtual void setPrototyped() { assert(writable); prototyped = true; }
     virtual bool isPrototyped() const { return prototyped; }
 
+    // Return total number of parameters
     virtual int getParamCount() const { return static_cast<int>(parameters.size()); }
+    // Return number of parameters with default values.
+    virtual int getDefaultParamCount() const { return defaultParamCount; }
+    // Return number of fixed parameters (without default values)
+    virtual int getFixedParamCount() const { return getParamCount() - getDefaultParamCount(); }
+
     virtual TParameter& operator[](int i) { assert(writable); return parameters[i]; }
     virtual const TParameter& operator[](int i) const { return parameters[i]; }
 
@@ -274,6 +284,7 @@ protected:
     TOperator op;
     bool defined;
     bool prototyped;
+    int  defaultParamCount;
 };
 
 //
