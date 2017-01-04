@@ -1,4 +1,4 @@
-//Test parsing a shader declaring some functions 
+//Test parsing a shader declaring some methods 
 shader Shader01
 {
 	float4 functionDefinition(bool b)

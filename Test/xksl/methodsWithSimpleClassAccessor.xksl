@@ -1,0 +1,45 @@
+
+//TODO:
+//OVERRIDE? BASE?  STAGE  ??
+
+shader SA
+{
+	int Compute()
+	{
+		return 0;
+	}
+	
+	int ComputeInSAOnly()
+	{
+		return 10;
+	}
+};
+
+shader SB : SA
+{
+	int Compute()
+	{
+		return base.Compute();
+	}
+	
+	int CallComputeInAllClasses()
+	{
+		int res1 = Compute() + this.Compute() + SB.Compute();
+		int res2 = base.Compute() + SA.Compute();
+		//int res3 = streams.SA.Compute();  //invalid
+		
+		return 0;
+	}
+	
+	int CallComputeInSAOnly()
+	{
+		int res = ComputeInSAOnly() + this.ComputeInSAOnly() + base.ComputeInSAOnly();
+		return 0;
+	}
+	
+	int CallIntrisics()
+	{
+		return abs(-5);
+	}
+};
+

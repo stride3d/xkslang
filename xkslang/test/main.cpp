@@ -30,7 +30,6 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"simpleShaderWithFunction.xksl", ""},
     //{"declarationMixOfFunctionsAndVariables.xksl", ""},
     //{"2ShaderWithSameFunctionNames.xksl", ""},
-    //{"functionReferingToShaderVariable.xksl", ""},
     //{"shaderInheritance.xksl", ""},
     //{"postDeclaration.xksl", ""},
     //{"classAccessor.xksl", ""},
@@ -38,8 +37,9 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"streamsWithClassAccessor.xksl", ""},
     //{"shaderWithDefinedConsts.xksl", ""},
     //{"shaderWithUnresolvedConsts.xksl", ""},
-    //{ "intrisicsHlslFunctions.xksl", "" },
-    {"functionsWithClassAccessor.xksl", ""},
+    //{"intrisicsHlslFunctions.xksl", "" },
+    //{"methodReferingToShaderVariable.xksl", ""},
+    {"methodsWithSimpleClassAccessor.xksl", ""},
 
     //{ "textureAndSampler.xksl", "" },
 
@@ -48,7 +48,7 @@ vector<FileNameEntryPointPair> testFiles = {
     //{ "shaderCustomEffect.xksl", "" },
 
     //Streams with semantics ????
-    //{"functionDeclaration.xksl", ""},
+    //{"methodsPrototypes.xksl", ""},
 };
 
 void main(int argc, char** argv)

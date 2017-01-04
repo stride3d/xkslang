@@ -2925,8 +2925,19 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
     {
         if (shader->listMethods[i].function->getDeclaredMangledName().compare(methodName) == 0)
         {
-            //identifierLocation = shader->listAllDeclaredMembers[i].memberLocation;
+            identifierLocation.SetMethodLocation(shader, shader->listMethods[i].function);
             break;
+        }
+    }
+
+    if (identifierLocation.isUnknown())
+    {
+        //method not found: we look in the parent classes
+        int countParents = shader->shaderparentsName.size();
+        for (int p = 0; p < countParents; p++)
+        {
+            identifierLocation = findShaderClassMethod(*(shader->shaderparentsName[p]), methodName);
+            if (identifierLocation.isMember()) return identifierLocation;
         }
     }
 
@@ -3375,12 +3386,12 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, HlslToken idT
 
     if (!identifierLocation.isMethod())
     {
-        //method not found in our shader library, we look in the global list of method
+        //function not found as a method from our shader library, so we look in the global list of method
         node = parseContext.handleFunctionCall(idToken.loc, function, arguments);
     }
     else
     {
-        //TODO: Update here!!!!!!
+        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments);
     }
 
     return true;

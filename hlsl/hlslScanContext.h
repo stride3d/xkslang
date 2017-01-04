@@ -73,9 +73,9 @@ struct HlslToken {
 };
 
 struct TShaderClassFunction {
-    TFunction* function;
-    HlslToken token;
-    TIntermNode* bodyNode;
+    TFunction* function;    //function prototype
+    HlslToken token;        //token where the function is declared
+    TIntermNode* bodyNode;  //resulting node of the function definition
 };
 
 class XkslShaderDefinition
@@ -103,9 +103,13 @@ public:
         XkslShaderDefinition* shader;
         ShaderIdentifierTypeEnum identifierType;
 
+        //for members
         int memberIndex;
         MemberLocationTypeEnum memberLocationType;
         TString* symbolName;
+
+        //for methods
+        TFunction* method;
 
         ShaderIdentifierLocation(): shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1) {}
 
@@ -120,6 +124,12 @@ public:
             this->shader = shader;
             this->symbolName = symbolName;
             this->memberIndex = index;
+        }
+
+        void SetMethodLocation(XkslShaderDefinition* shader, TFunction* method)
+        {
+            this->identifierType = ShaderIdentifierTypeEnum::Method;
+            this->method = method;
         }
     };
 
