@@ -191,6 +191,31 @@ namespace glslang {
         return true;
     }
 
+    //bool HlslTokenStream::recedeToLastTokenClass(EHlslTokenClass tok)
+    //{
+    //    if (token.tokenClass == tok) return true;
+
+    //    int tokenIndex = -1;
+    //    for (int i = tokenBufferPos - 1; i >= 0; i--)
+    //    {
+    //        if (tokenBuffer[i].tokenClass == tok)
+    //        {
+    //            tokenIndex = i;
+    //            break;
+    //        }
+    //    }
+    //    if (tokenIndex == -1) return false;
+
+    //    if (tokenBufferPos == tokenBuffer.size())
+    //    {
+    //        //save current token at the end of buffer, so that we can push it back
+    //        pushTokenBuffer(token);
+    //    }
+    //    tokenBufferPos = tokenIndex;
+    //    token = tokenBuffer[tokenBufferPos];
+    //    return true;
+    //}
+
 	bool HlslTokenStream::recedeToToken(HlslToken tok)
 	{
 		if (token.IsEqualsToToken(tok)) return true;

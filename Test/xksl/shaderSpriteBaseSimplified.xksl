@@ -1,0 +1,53 @@
+shader ShaderBaseStream
+{
+    // Default SV_POSITION output for VS/GS shaders
+    stage stream float4 ShadingPosition : SV_Position;
+
+    // Default COLOR outputs for PS shader
+    stage stream float4 ColorTarget : SV_Target0;
+};
+
+shader Texturing
+{
+    stage Texture2D Texture0;
+    stage SamplerState Sampler;
+
+    // Texcoord attribute inputs
+    stage stream float2 TexCoord : TEXCOORD0;
+};
+
+shader SpriteBase : ShaderBaseStream, Texturing
+{
+    // -------------------------------------
+    // streams
+    // -------------------------------------
+    stage stream float4 Position : POSITION;
+
+    cbuffer PerDraw
+    {
+        // -------------------------------------
+        // uniforms
+        // -------------------------------------
+        // A general transformation matrix
+        stage float4x4 MatrixTransform;
+    }
+        
+    // -------------------------------------
+    // VertexShader
+    // -------------------------------------
+    stage void VSMain()
+    {
+        streams.ShadingPosition = mul(streams.Position, MatrixTransform);
+    }
+
+    // Shading of the sprite
+    stage void PSMain()
+    {
+        streams.ColorTarget = Shading();
+    }
+
+    stage float4 Shading()
+    {
+        return Texture0.Sample(Sampler, streams.TexCoord);
+    }
+};

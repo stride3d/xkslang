@@ -47,7 +47,6 @@ shader Texturing
 		Filter = MIN_MAG_MIP_POINT;
 	};
 	
-	/*
     stage SamplerState LinearSampler
     {
         Filter = MIN_MAG_MIP_LINEAR;
@@ -60,14 +59,13 @@ shader Texturing
         AddressV = Border;
     };
 
-    stage SamplerComparisonState LinearClampCompareLessEqualSampler
+    /*stage SamplerComparisonState LinearClampCompareLessEqualSampler
     {
         Filter = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
         AddressU = Clamp;
         AddressV = Clamp;
         ComparisonFunc = LessEqual;
-
-    };
+    };*/
 
     stage SamplerState AnisotropicSampler
     {
@@ -101,7 +99,6 @@ shader Texturing
         AddressU = Wrap;
         AddressV = Wrap;
     };
-*/
 
     // Default custom samplers - might be automatically used by the materials
     stage SamplerState Sampler0;

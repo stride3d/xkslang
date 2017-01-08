@@ -655,7 +655,13 @@ bool HlslGrammar::acceptFullySpecifiedType(TIntermNode** node, TType& type)
         parseContext.mergeQualifiers(type.getQualifier(), qualifier);
         // further, it can create an anonymous instance of the block
         if (peekTokenClass(EHTokSemicolon))
-            parseContext.declareBlock(loc, type);
+        {
+            //if parsing an xksl shader, we will declare the block by ourselves
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::Undefined)
+            {
+                parseContext.declareBlock(loc, type);
+            }
+        }
     } else {
         // Some qualifiers are set when parsing the type.  Merge those with
         // whatever comes from acceptQualifier.
@@ -2021,13 +2027,24 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
 
         // get the Identifier (variable name)
         HlslToken idToken = token;
+        const TString* identifierName = nullptr;
         if (!acceptIdentifier(idToken))
+        {
+            if (declaredType.getBasicType() == EbtBlock)
+            {
+                //cbuffer declaration, no identifier needed
+                identifierName = &(declaredType.getTypeName());
+            }
+        }
+        else identifierName = idToken.string;
+
+        if (identifierName == nullptr)
         {
             expected("invalid member or function name");
             return false;
         }
 
-        TFunction& function = *new TFunction(&shaderName, token.string, declaredType);
+        TFunction& function = *new TFunction(&shaderName, identifierName, declaredType);
         if (acceptFunctionParameters(function))
         {
             //=======================================================================================================
@@ -2062,7 +2079,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
             
             do
             {
-                declaredType.setFieldName(*token.string);
+                declaredType.setFieldName(*identifierName);
                 TSourceLoc memberLoc = token.loc;
 
                 // array_specifier
@@ -2141,33 +2158,12 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
                         shaderMember.expressionTokensList = listTokens;
                     }
                     
-                    shader->listAllDeclaredMembers.push_back(shaderMember);
+                    shader->listParsedMembers.push_back(shaderMember);
                 }
-
-                /*TConstUnionArray constArray; //empty const value
-
-                //check expression node to pre-solve const variables initialized with const values
-                if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
-                {
-                    TIntermNode* node = parseContext.declareVariable(idToken.loc, *idToken.string, declaredType, expressionNode);
-
-                    if (expressionNode->getAsConstantUnion() != nullptr)
-                    {
-                        expressionNode = intermediate.addConversion(EOpAssign, declaredType, expressionNode);
-                        if (declaredType != expressionNode->getType()) {
-                            error("non-matching or non-convertible constant type for const initializer");
-                            return false;
-                        }
-                        constArray = expressionNode->getAsConstantUnion()->getConstArray();
-                    }
-
-                    parseContext.removeVariable(idToken.loc, *idToken.string);
-                }
-                constUnionArrayList.push_back(constArray);*/
 
                 // success on seeing the SEMICOLON coming up
-                if (peekTokenClass(EHTokSemicolon))
-                    break;
+                if (peekTokenClass(EHTokSemicolon)) break;
+                if (declaredType.getBasicType() == EbtBlock) break; //exception with cbuffer. xksl shaders doesn't necessary require a semicolon after the cbuffer declaration
 
                 // declare another variable of the same type
                 // COMMA
@@ -2181,11 +2177,12 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
                     expected("shader: member name");
                     return false;
                 }
+                identifierName = idToken.string;
 
             } while (true);
 
             // SEMI_COLON
-            if (!acceptTokenClass(EHTokSemicolon)) {
+            if (!acceptTokenClass(EHTokSemicolon) && declaredType.getBasicType() != EbtBlock) {
                 expected("; expected at the end of type declaration");
                 return false;
             }
@@ -2224,13 +2221,24 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
 
         // get the Identifier (variable name)
         HlslToken idToken = token;
+        const TString* identifierName = nullptr;
         if (!acceptIdentifier(idToken))
         {
-            expected("shader: member or function name");
+            if (declaredType.getBasicType() == EbtBlock)
+            {
+                //cbuffer declaration, no identifier needed
+                identifierName = &(declaredType.getTypeName());
+            }
+        }
+        else identifierName = idToken.string;
+
+        if (identifierName == nullptr)
+        {
+            expected("invalid member or function name");
             return false;
         }
 
-        TFunction& tmpFunction = *new TFunction(&shaderName, token.string, declaredType);
+        TFunction& tmpFunction = *new TFunction(&shaderName, identifierName, declaredType);
         if (acceptFunctionParameters(tmpFunction))
         {
             //// post_decls
@@ -2278,12 +2286,17 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
         {
             //=======================================================================================================
             //variables declaration
-            
-            //skip the member declaration
-            advanceUntilToken(EHTokSemicolon, true);
+
+            //xksl shaders doesn't necessary require a semicolon after the cbuffer declaration
+            if (declaredType.getBasicType() == EbtBlock) {
+                //block declaration have no identifier
+            }
+            else {
+                advanceUntilToken(EHTokSemicolon, true);
+            }
 
             // SEMI_COLON
-            if (!acceptTokenClass(EHTokSemicolon)) {
+            if (!acceptTokenClass(EHTokSemicolon) && declaredType.getBasicType() != EbtBlock) {
                 expected("; expected at the end of type declaration");
                 return false;
             }
@@ -3167,7 +3180,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
                             return false;
                         }
 
-                        TString* structSymbolName = nullptr;
+                        TString* blockSymbolName = nullptr;
                         TString* variableSymbolName = nullptr;
 
                         switch (identifierLocation.memberLocationType)
@@ -3179,11 +3192,11 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
                                     error("The \"streams\" keyword is required to access a stream variable");
                                     return false;
                                 }
-                                structSymbolName = identifierLocation.symbolName;
+                                blockSymbolName = identifierLocation.symbolName;
                                 break;
 
                             case XkslShaderDefinition::MemberLocationTypeEnum::CBuffer:
-                                structSymbolName = identifierLocation.symbolName;
+                                blockSymbolName = identifierLocation.symbolName;
                                 break;
 
                             case XkslShaderDefinition::MemberLocationTypeEnum::Const:
@@ -3205,28 +3218,31 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
                                 return false;
                         }
 
-                        if (structSymbolName != nullptr)
+                        if (blockSymbolName != nullptr)
                         {
                             //Add accessor to the member struct
-                            glslang::TSymbol* structSymbol = parseContext.symbolTable.find(*structSymbolName);
-                            if (structSymbol == nullptr || (structSymbol->getAsVariable() && structSymbol->getAsVariable()->isUserType())) {
+                            glslang::TSymbol* blockSymbol = parseContext.symbolTable.find(*blockSymbolName);
+                            if (blockSymbol == nullptr || blockSymbol->getAsVariable() == nullptr) {
                                 error((TString("Cannot find valid struct symbol for Member: \"") + *idToken.string + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
                                 return false;
                             }
 
                             //handle access to the struct
-                            node = parseContext.handleVariable(idToken.loc, structSymbol, identifierLocation.symbolName);
+                            //node = parseContext.handleVariable(idToken.loc, blockSymbol, identifierLocation.symbolName);
 
                             //handle access to the struct member
+                            // handleDotDereference will not be able to find the correct member index for stream variable (fieldName != declarationName)
                             //node = parseContext.handleDotDereference(idToken.loc, node, *memberName);
 
                             {
-                                //handleDotDereference will not be able to find the correct member index for stream variable (fieldName != declarationName)
-                                const TTypeList* fields = node->getType().getStruct();
+                                //Add access to the variable, by first accessing to the struct (stream) or block (cbuffer)
+                                TVariable* blockVariable = blockSymbol->getAsVariable();
+                                TIntermTyped* container = intermediate.addSymbol(*blockVariable, idToken.loc);
+
                                 int member = identifierLocation.memberIndex;
                                 TIntermTyped* index = intermediate.addConstantUnion(member, idToken.loc);
-                                node = intermediate.addIndex(EOpIndexDirectStruct, node, index, idToken.loc);
-                                node->setType(*(*fields)[member].type);
+                                node = intermediate.addIndex(EOpIndexDirectStruct, container, index, idToken.loc);
+                                node->setType(*(*blockVariable->getType().getStruct())[member].type);
                             }
                         }
                         else if (variableSymbolName != nullptr)

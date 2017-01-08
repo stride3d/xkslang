@@ -601,43 +601,25 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 //however we would need to do the work of the parser to try evaluating expressions such like base.X, class.Y, ...
 //typedef std::map<TString, int> MapString;
 bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary,
-    TVector<XkslShaderDefinition::XkslShaderMember*>& vectorResolvedConstMembers,
-    TVector<XkslShaderDefinition::XkslShaderMember*>& vectorUnresolvedConstMembers,
     HlslParseContext* parseContext, TPpContext& ppContext, bool versionWillBeError)
 {
-    if (vectorUnresolvedConstMembers.size() == 0) return true;
+    //find all unresolved members from the shader library
+    std::list<XkslShaderDefinition::XkslShaderMember*> listUnresolvedMembers;
 
-    /*
-    //================================================================================================
-    //We first sort all unresolved consts, depending on their inter-dependency
-    MapString mapSymbolsDependencies;
-    for (int i=0; i<listResolvedConstMembers.size(); ++i)
+    for (int s = 0; s < shaderLibrary.listShaders.size(); s++)
     {
-        const TString& name = listResolvedConstMembers[i]->type->getFieldName();
-        std::pair<MapString::iterator, bool> res = mapSymbolsDependencies.insert(std::pair<TString, int>(name, 0));
-        if (!res.second)
+        XkslShaderDefinition* shader = shaderLibrary.listShaders[s];
+        for (int i = 0; i < shader->listAllDeclaredMembers.size(); ++i)
         {
-            parseContext->infoSink.info.message(EPrefixError, (TString("Symbol already exist:") + name).c_str());
-            return false;
+            XkslShaderDefinition::XkslShaderMember& member = shader->listAllDeclaredMembers[i];
+            if (member.memberLocation.memberLocationType == XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst)
+            {
+                listUnresolvedMembers.push_back(&member);
+            }
         }
     }
 
-    while (listConstsToSort.size() > 0)
-    {
-        bool found = false;
-
-        //std::list<XkslShaderDefinition::XkslShaderMember*>::iterator it = listConstsToSort.begin();
-
-        if (!found)
-        {
-            parseContext->infoSink.info.message(EPrefixError, "Failed to resolved unresolved const members");
-            return false;
-        }
-    }*/
-
-    std::list<XkslShaderDefinition::XkslShaderMember*> listUnresolvedMembers;
-    for (int i=0; i<vectorUnresolvedConstMembers.size(); ++i)
-        listUnresolvedMembers.push_back(vectorUnresolvedConstMembers[i]);
+    if (listUnresolvedMembers.size() == 0) return true;
 
     //================================================================================================
     //Resolve all unresolved consts
@@ -774,9 +756,6 @@ bool ParseXkslShaderFile(
     //==================================================================================================================
     //YEAH, can finally parse !!!!
     bool success = false;
-    TVector<XkslShaderDefinition::XkslShaderMember*> listUnresolvedConstMembers;
-    TVector<XkslShaderDefinition::XkslShaderMember*> listResolvedConstMembers;
-
     {
         //==================================================================================================================
         //Parse shader declaration only!
@@ -812,11 +791,11 @@ bool ParseXkslShaderFile(
 
                 //======================================================================================
                 // Members declaration: create and add the new shader structs
-                TString* cbufferStructName = NewPoolTString((TString("cbuffer_") + shader->shaderName).c_str());
+                TString* cbufferGlobalBlockName = NewPoolTString((shader->shaderName + TString(".globalCBuffer")).c_str());
                 TTypeList* cbufferStructTypeList = new TTypeList();
-                for (int i = 0; i < shader->listAllDeclaredMembers.size(); ++i)
+                for (int i = 0; i < shader->listParsedMembers.size(); ++i)
                 {
-                    XkslShaderDefinition::XkslShaderMember& member = shader->listAllDeclaredMembers[i];
+                    XkslShaderDefinition::XkslShaderMember& member = shader->listParsedMembers[i];
                     member.type->setDeclarationName(member.type->getFieldName()); //declaration name is the field name
 
                     bool isStream = member.type->getQualifier().isStream;
@@ -824,7 +803,7 @@ bool ParseXkslShaderFile(
 
                     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
                     bool canCreateVariable = true;
-                    bool constIsAssigned = false;
+                    bool constIsResolved = false;
 
                     if (isConst)
                     {
@@ -834,13 +813,10 @@ bool ParseXkslShaderFile(
                                 parseContext->infoSink.info.message(EPrefixWarning, (TString("Const member not initialized: ") + member.type->getFieldName()).c_str());
                                 canCreateVariable = false;
                             }
-                            else
-                                listUnresolvedConstMembers.push_back(&member);
                         }
                         else
                         {
-                            constIsAssigned = true;
-                            listResolvedConstMembers.push_back(&member);
+                            constIsResolved = true;
                         }
 
                         if (canCreateVariable)
@@ -860,10 +836,13 @@ bool ParseXkslShaderFile(
                                 return false;
                             }
 
-                            if (constIsAssigned)
+                            if (constIsResolved)
                                 identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
                             else
                                 identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst, variableName, -1);
+
+                            member.memberLocation = identifierLocation;
+                            shader->listAllDeclaredMembers.push_back(member);
                         }
                     }
                     else if (isStream)
@@ -877,29 +856,48 @@ bool ParseXkslShaderFile(
                         streambufferStructTypeList->push_back(typeLoc);
                         int indexInStruct = streambufferStructTypeList->size() - 1;
                         identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer, streamBufferStructName, indexInStruct);
+
+                        member.memberLocation = identifierLocation;
+                        shader->listAllDeclaredMembers.push_back(member);
                     }
                     else
                     {
-                        //Add the member in the shader cbuffer
-                        TTypeLoc typeLoc = { member.type, member.loc };
-                        cbufferStructTypeList->push_back(typeLoc);
-                        int indexInStruct = cbufferStructTypeList->size() - 1;
-                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferStructName, indexInStruct);
-                    }
+                        //Add the member in the shader global cbuffer
+                        if (member.type->getBasicType() != EbtBlock)
+                        {
+                            TTypeLoc typeLoc = { member.type, member.loc };
+                            cbufferStructTypeList->push_back(typeLoc);
+                            int indexInStruct = cbufferStructTypeList->size() - 1;
+                            identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferGlobalBlockName, indexInStruct);
 
-                    member.memberLocation = identifierLocation;
+                            member.memberLocation = identifierLocation;
+                            shader->listAllDeclaredMembers.push_back(member);
+                        }
+                        else
+                        {
+                            //directly insert the new cbuffer block, add the member separatly in the shader 
+                            
+                            fgsdfgfdsgsdfg;
+                        }
+                    }
                 }
                 
-                //Add the shader cbuffer struct
+                //Add the shader global cbuffer
                 {
-                    // Declare a variable on the global level so that we retrieve all shader symbols
-                    // "shader ShaderSimple {float4 BaseColor; };"
-                    // will be equivalent to: "static struct {float4 BaseColor; } ShaderSimple;"
-                    TQualifier postDeclQualifier;
-                    postDeclQualifier.clear();
-                    TType* type = new TType(cbufferStructTypeList, shader->shaderName, postDeclQualifier, &shader->shaderparentsName);
-                    type->getQualifier().storage = EvqGlobal;
-                    parseContext->declareVariable(shader->location, *cbufferStructName, *type, nullptr);
+                    //// Declare a variable on the global level so that we retrieve all shader symbols
+                    //TQualifier postDeclQualifier;
+                    //postDeclQualifier.clear();
+                    //TType* type = new TType(cbufferStructTypeList, shader->shaderName, postDeclQualifier, &shader->shaderparentsName);
+                    //type->getQualifier().storage = EvqGlobal;
+                    //parseContext->declareVariable(shader->location, *cbufferGlobalBlockName, *type, nullptr);
+
+                    //Declare the shader global cbuffer variable
+                    TQualifier blockQualifier;
+                    blockQualifier.clear();
+                    blockQualifier.storage = EvqUniform;
+                    TString& typeName = shader->shaderName; //cbufferGlobalBlockName; //NewPoolTString("");
+                    TType blockType(cbufferStructTypeList, typeName, blockQualifier);
+                    parseContext->declareBlock(shader->location, blockType, cbufferGlobalBlockName);
                 }
             }
 
@@ -917,7 +915,7 @@ bool ParseXkslShaderFile(
         //resolve all unresolved const members
         if (success)
         {
-            success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, listResolvedConstMembers, listUnresolvedConstMembers, parseContext, ppContext, versionWillBeError);
+            success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, parseContext, ppContext, versionWillBeError);
         }
 
         //===========================================================================================================

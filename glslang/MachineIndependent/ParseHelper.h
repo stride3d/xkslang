@@ -143,6 +143,7 @@ public:
     // this is pending getting a fully functional design.
     virtual void growGlobalUniformBlock(TSourceLoc&, TType&, TString& memberName);
     virtual bool insertGlobalUniformBlock();
+    virtual bool insertUniformBlock(TVariable* uniformBlock);
 
     virtual bool lValueErrorCheck(const TSourceLoc&, const char* op, TIntermTyped*);
     virtual void rValueErrorCheck(const TSourceLoc&, const char* op, TIntermTyped*);

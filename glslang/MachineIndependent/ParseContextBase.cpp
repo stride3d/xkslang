@@ -501,6 +501,26 @@ bool TParseContextBase::insertGlobalUniformBlock()
     return inserted;
 }
 
+bool TParseContextBase::insertUniformBlock(TVariable* uniformBlock)
+{
+    if (uniformBlock == nullptr)
+        return true;
+
+    int numMembers = (int)uniformBlock->getType().getStruct()->size();
+    bool inserted = false;
+
+    // This is the first request; we need a normal symbol table insert
+    inserted = symbolTable.insert(*uniformBlock);
+    if (inserted)
+        trackLinkageDeferred(*uniformBlock);
+
+    if (inserted) {
+        finalizeGlobalUniformBlockLayout(*uniformBlock);
+    }
+
+    return inserted;
+}
+
 void TParseContextBase::finish()
 {
     if (!parsingBuiltins) {

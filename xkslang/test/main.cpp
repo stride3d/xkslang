@@ -36,18 +36,20 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"streamsSimple.xksl", ""},
     //{"streamsWithClassAccessor.xksl", ""},
     //{"shaderWithDefinedConsts.xksl", ""},
-    //{"shaderWithUnresolvedConsts.xksl", ""},
+    {"shaderWithUnresolvedConsts.xksl", ""},
     //{"intrisicsHlslFunctions.xksl", "" },
     //{"methodReferingToShaderVariable.xksl", ""},
-    {"methodsWithSimpleClassAccessor.xksl", ""},
+    //{"methodsWithSimpleClassAccessor.xksl", ""},
 
-    //{ "textureAndSampler.xksl", "" },
+    //{"cbuffers.xksl", ""},
+    //{ "shaderSpriteBaseSimplified.xksl", "" },
 
-    //{ "shaderTexturing.xksl", "" },
-//    {"shaderSimple.xksl", ""},
-    //{ "shaderCustomEffect.xksl", "" },
+    //{"textureAndSampler.xksl", ""},
+    //{"shaderTexturing.xksl", ""},
+    //{"shaderBase.xksl", ""},
+    //{"shaderSimple.xksl", ""},
 
-    //Streams with semantics ????
+    //{"shaderCustomEffect.xksl", ""},
     //{"methodsPrototypes.xksl", ""},
 };
 
