@@ -383,7 +383,7 @@ enum Decoration {
 
 	//Specify that a defined structure (OpTypeStruct) is actually a shader class, and specify its name (we could eventually remove the name, there is a rededundancy with OpName)
 	//syntax: OpDecorate <id> DecorationShaderClassType <Literal String: shader name>
-	DecorationShaderClassName = 1000,
+	DecorationDeclarationName = 1000,
 
 	//Specify that a shader inherits from another shader, the order of inheritance is defined by the order of declaration of InheritFromShaderClass decoration
 	DecorationShaderInheritFromParent = 1001,

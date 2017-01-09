@@ -2323,10 +2323,14 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             builder.addDecoration(spvType, spv::DecorationXfbBuffer, type.getQualifier().layoutXfbBuffer);
     }
 
-    //XKSL extensions: decorate the shader class
+    //========================================================================================================
+    //========================================================================================================
+    //XKSL extensions
+    
+    // Add info (as decorate) to the shader class
     if (type.getBasicType() == glslang::EbtShaderClass)
     {
-        builder.addDecoration(spvType, spv::DecorationShaderClassName, type.getTypeName().c_str());
+        builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getTypeName().c_str());
 
         //const glslang::TString* ownerClassName = type.getOwnerClassName();
 
@@ -2339,6 +2343,17 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             }
         }
     }
+
+    // Add info to cbuffers
+    if (type.getBasicType() == glslang::EbtBlock)
+    {
+        if (type.getDeclarationName() != nullptr)
+        {
+            builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getDeclarationName()->c_str());
+        }
+    }
+    //========================================================================================================
+    //========================================================================================================
 }
 
 // Turn the expression forming the array size into an id.

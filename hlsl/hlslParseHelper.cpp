@@ -5519,6 +5519,11 @@ void HlslParseContext::declareBlock(const TSourceLoc& loc, TType& type, const TS
     if (arraySizes)
         blockType.newArraySizes(*arraySizes);
 
+    //XKSL extensions
+    if (type.getDeclarationName() != nullptr) blockType.setDeclarationName(type.getDeclarationName()->c_str());
+    if (type.getOwnerClassName() != nullptr) blockType.setOwnerClassName(type.getOwnerClassName()->c_str());
+    if (type.getParentsName() != nullptr) blockType.SetParentsName(type.getParentsName());
+
     // Add the variable, as anonymous or named instanceName.
     // Make an anonymous variable if no name was provided.
     if (! instanceName)

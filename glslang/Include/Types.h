@@ -1303,7 +1303,12 @@ public:
 
     virtual void setTypeName(const TString& n) { typeName = NewPoolTString(n.c_str()); }
     virtual void setFieldName(const TString& n) { fieldName = NewPoolTString(n.c_str()); }
-    virtual void setDeclarationName(const TString& n) { declarationName = NewPoolTString(n.c_str()); }
+
+    virtual void setDeclarationName(const char* name)
+    {
+        if (name != nullptr) declarationName = NewPoolTString(name);
+        else declarationName = nullptr;
+    }
 
     virtual const TString& getTypeName() const
     {
@@ -1323,11 +1328,7 @@ public:
         return *fieldName;
     }
 
-    virtual const TString& getDeclarationName() const
-    {
-        assert(declarationName);
-        return *declarationName;
-    }
+    const TString* getDeclarationName() const { return declarationName; }
 
     virtual TBasicType getBasicType() const { return basicType; }
     virtual const TSampler& getSampler() const { return sampler; }
@@ -1562,10 +1563,15 @@ public:
         char* end = &buf[maxSize];
 
 		//XKSL: add owner properties for the type
-		if (getOwnerClassName() != nullptr)
+		/*if (getOwnerClassName() != nullptr)
 		{
 			p += snprintf(p, end - p, "OwnerClassName=\"%s\" ", getOwnerClassName()->c_str());
 		}
+
+        if (getDeclarationName() != nullptr)
+        {
+            p += snprintf(p, end - p, "DeclarationName=\"%s\" ", getDeclarationName()->c_str());
+        }*/
 
         if (qualifier.hasLayout()) {
             // To reduce noise, skip this if the only layout is an xfb_buffer
@@ -1753,6 +1759,18 @@ public:
     TTypeList* getWritableStruct() const { return structure; }  // This should only be used when known to not be sharing with other threads
 
 	const TIdentifierList* getParentsName() const { return parentsName; }
+    void SetParentsName(const TIdentifierList* names)
+    {
+        if (names == nullptr) parentsName = nullptr;
+        else
+        {
+            parentsName = new TIdentifierList;
+            for (unsigned int i = 0; i < names->size(); ++i) {
+                parentsName->push_back(NewPoolTString(names->at(i)->c_str()));
+            }
+        }
+    }
+
 	const TString* getOwnerClassName() const { return ownerClassName; }
 	void setOwnerClassName(const char* name)
 	{
@@ -1890,7 +1908,7 @@ protected:
 	//XKSL type extensions
 	TIdentifierList* parentsName;       // list of parents name for shader class type
 	TString*         ownerClassName;    // class to which the type or function belongs to
-    TString*         declarationName; // declaration name of the variable in its class (fieldname can be different depending how we organize the variables)
+    TString*         declarationName;   // declaration name of the variable in its class (fieldname can be different depending how we organize the variables)
 };
 
 } // end namespace glslang

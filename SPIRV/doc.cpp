@@ -254,7 +254,7 @@ const char* DecorationString(int decoration)
     case 44: return "Alignment";
     
     //XKSL extensions
-    case (DecorationShaderClassName):         return "ShaderClassName";
+    case (DecorationDeclarationName):         return "DeclarationName";
     case (DecorationShaderInheritFromParent): return "InheritFromShaderClass";
     case (DecorationAttributeStage):	      return "Stage";
     case (DecorationAttributeStream):         return "Stream";
@@ -1346,7 +1346,7 @@ void Parameterize()
     DecorationOperands[DecorationInputAttachmentIndex].push(OperandLiteralNumber, "'Attachment Index'");
     DecorationOperands[DecorationAlignment].push(OperandLiteralNumber, "'Alignment'");
 
-    //DecorationOperands[DecorationShaderClassName].push(OperandLiteralString, "'Name'");
+    //DecorationOperands[DecorationDeclarationName].push(OperandLiteralString, "'Name'");
 
     OperandClassParams[OperandSource].set(SourceLanguageCeiling, SourceString, 0);
     OperandClassParams[OperandExecutionModel].set(ExecutionModelCeiling, ExecutionModelString, ExecutionModelParams);

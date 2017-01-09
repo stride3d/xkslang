@@ -4,94 +4,65 @@ shader A
 	int Var0;
 	int Var1;
 	
-	cbuffer C1
-    {
-        int Var2;
-        int Var3;
-    };
-	
-	int PixelShaderFunction()
-	{
-		return Var1;
-	}
-
-	//int F
-	/*cbuffer C1
-    {
-        int Var2;
-        int Var3;
-    }*/
-	
-	/*
 	cbuffer
-	{
-		int Var1;
-	}*/
+    {
+        int Var2;
+        int Var3;
+    }
 	
-	/*
-    cbuffer C1
+	cbuffer
     {
         int Var4;
+    }
+	
+	cbuffer C1
+    {
         int Var5;
+        int Var6;
+		int VarC1;
+    }
+	
+	cbuffer C1
+    {
+        int Var7;
     }
 	
 	cbuffer C2
     {
-        int Var6;
-    }*/
+        int Var8;
+    }
+	
+	int PixelShaderFunction()
+	{
+		return Var0 + Var2 + Var4 + Var6;
+	}
 };
 
-/*
-shader B
+shader B : A
 {
+	int Var0;
+	
     cbuffer C1
     {
-        int Var5;
+		int VarC1;
     }
-    cbuffer C1.Subpart1
-    {
-        int Var6;
-    }
-}
-*/
-
-/*shader CBuffer
-{
-    cbuffer PerDraw
-    {
-        stage float4x4 MatrixTransform;
-    }
+    
+	//Not implemented yet
+	//cbuffer C1.Subpart1
+    //{
+    //    int Var6x;
+    //}
 	
-	cbuffer PerA
+	int Compute()
 	{
-		int toto00;
+		return VarC1 + base.VarC1;
 	}
 };
 
-shader Test : CBuffer
+shader C
 {
-	stage stream float4 Position : POSITION;
-	stage stream float2 TexCoord : TEXCOORD0;
-
-	stage float2 Center;
-    stage float Frequency;
-    stage float Phase;
-	
-	cbuffer PerA
-	{
-		int toto00;
-		int toto01;
-	}
-	
-	void Compute()
-	{
-        float2 toPixel = (streams.TexCoord.xy - Center);
-
-		float2 wave;
-        sincos(Frequency + Phase, wave.x, wave.y);
-		wave.x += base.toto00 + toto01;
-		
-		float4 ShadingPosition = mul(Position, MatrixTransform);
-	}
-}
-*/
+	cbuffer C1
+    {
+        int var10;
+    }
+};

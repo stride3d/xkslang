@@ -784,7 +784,6 @@ bool ParseXkslShaderFile(
                 {
                     TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
 
-
                     //member.type->setDeclarationName(member.type->getFieldName()); //declaration name is the field name
                     parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
                 }
@@ -796,7 +795,8 @@ bool ParseXkslShaderFile(
                 for (int i = 0; i < shader->listParsedMembers.size(); ++i)
                 {
                     XkslShaderDefinition::XkslShaderMember& member = shader->listParsedMembers[i];
-                    member.type->setDeclarationName(member.type->getFieldName()); //declaration name is the field name
+                    member.type->setDeclarationName(member.type->getFieldName().c_str()); //declaration name is the field name
+                    member.type->setOwnerClassName(shader->shaderName.c_str());
 
                     bool isStream = member.type->getQualifier().isStream;
                     bool isConst = member.type->getQualifier().storage == EvqConst;
@@ -875,14 +875,40 @@ bool ParseXkslShaderFile(
                         }
                         else
                         {
-                            //directly insert the new cbuffer block, add the member separatly in the shader 
+                            //directly insert the new cbuffer block, and add the block members separatly in the shader 
                             
-                            fgsdfgfdsgsdfg;
+                            TQualifier blockQualifier;
+                            blockQualifier.clear();
+                            blockQualifier.storage = EvqUniform;
+                            TString numberId = TString(std::to_string(shader->listDeclaredBlockNames.size()).c_str());
+                            TString* blockName = NewPoolTString((shader->shaderName + "." + member.type->getFieldName() + "_" + numberId).c_str());  //name = class.name_num
+                            //TType blockType(cbufferStructTypeList, *typeName, blockQualifier);
+
+                            parseContext->declareBlock(member.loc, *member.type, blockName);
+                            shader->listDeclaredBlockNames.push_back(blockName);
+
+                            TTypeList* typeList = member.type->getWritableStruct();
+                            for (unsigned int indexInBlock = 0; indexInBlock < typeList->size(); ++indexInBlock) {
+                                TType& blockMemberType = *(typeList->at(indexInBlock).type);
+                                blockMemberType.setDeclarationName(blockMemberType.getFieldName().c_str());
+                                blockMemberType.setOwnerClassName(shader->shaderName.c_str());
+
+                                XkslShaderDefinition::XkslShaderMember newShaderMember;
+                                newShaderMember.shader = shader;
+                                newShaderMember.type = new TType(EbtVoid);
+                                newShaderMember.type->shallowCopy(blockMemberType);
+                                newShaderMember.loc = typeList->at(indexInBlock).loc;
+
+                                identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, blockName, indexInBlock);
+                                newShaderMember.memberLocation = identifierLocation;
+                                shader->listAllDeclaredMembers.push_back(newShaderMember);
+                            }
                         }
                     }
                 }
                 
                 //Add the shader global cbuffer
+                if (cbufferStructTypeList->size() > 0)
                 {
                     //// Declare a variable on the global level so that we retrieve all shader symbols
                     //TQualifier postDeclQualifier;
@@ -896,8 +922,13 @@ bool ParseXkslShaderFile(
                     blockQualifier.clear();
                     blockQualifier.storage = EvqUniform;
                     TString& typeName = shader->shaderName; //cbufferGlobalBlockName; //NewPoolTString("");
-                    TType blockType(cbufferStructTypeList, typeName, blockQualifier);
-                    parseContext->declareBlock(shader->location, blockType, cbufferGlobalBlockName);
+                    TType globalBlockType(cbufferStructTypeList, typeName, blockQualifier);
+
+                    globalBlockType.setDeclarationName("");  //declaration name is "", will be merged with unnamed cbuffer
+                    globalBlockType.setOwnerClassName(shader->shaderName.c_str());
+
+                    parseContext->declareBlock(shader->location, globalBlockType, cbufferGlobalBlockName);
+                    shader->listDeclaredBlockNames.push_back(cbufferGlobalBlockName);
                 }
             }
 

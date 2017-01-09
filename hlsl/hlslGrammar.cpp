@@ -3027,7 +3027,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
     int countMembers = shader->listAllDeclaredMembers.size();
     for (int i = 0; i < countMembers; ++i)
     {
-        if (shader->listAllDeclaredMembers[i].type->getDeclarationName().compare(memberName) == 0)
+        if (shader->listAllDeclaredMembers[i].type->getDeclarationName()->compare(memberName) == 0)
         {
             //to avoid name conflict, in the case of a shader declare a stream and a non-stream variables using the same name
             if (hasStreamAccessor)

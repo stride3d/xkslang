@@ -156,8 +156,10 @@ public:
     TString shaderName;
     TIdentifierList shaderparentsName;
 
-    TVector<XkslShaderMember> listParsedMembers;  //list of members as parsed by the parser
+    TVector<XkslShaderMember> listParsedMembers;  //list of members read by the parser
     TVector<XkslShaderMember> listAllDeclaredMembers;  //list of members after being declared
+    TVector<TString*> listDeclaredBlockNames;  //list of block (cbuffer) names declared by the shader
+
     TVector<TShaderClassFunction> listMethods;
 };
 
