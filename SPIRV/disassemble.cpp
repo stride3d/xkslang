@@ -360,6 +360,9 @@ void SpirvStream::disassembleInstruction(Id resultId, Id /*typeId*/, Op opCode, 
             case OpTypeStruct:
                 idDescriptor[resultId] = "struct";
                 break;
+            case OpTypeXlslShaderClass:
+                idDescriptor[resultId] = "XkslShaderClass";
+                break;
             case OpTypePointer:
                 idDescriptor[resultId] = "ptr";
                 break;

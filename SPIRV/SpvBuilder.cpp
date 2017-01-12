@@ -84,21 +84,6 @@ Id Builder::import(const char* name)
     return import->getResultId();
 }
 
-Id Builder::makeUnresolvedType()
-{
-	Instruction* type;
-	if (groupedTypes[OpTypeUnresolved].size() == 0) {
-		type = new Instruction(getUniqueId(), NoType, OpTypeUnresolved);
-		groupedTypes[OpTypeUnresolved].push_back(type);
-		constantsTypesGlobals.push_back(std::unique_ptr<Instruction>(type));
-		module.mapInstruction(type);
-	}
-	else
-		type = groupedTypes[OpTypeUnresolved].back();
-
-	return type->getResultId();
-}
-
 // For creating new groupedTypes (will return old type if the requested one was already made).
 Id Builder::makeVoidType()
 {
@@ -226,6 +211,19 @@ Id Builder::makeFloatType(int width)
     default:
         break;
     }
+
+    return type->getResultId();
+}
+
+Id Builder::makeXkslShaderClassType(const std::vector<Id>& members, const char* name)
+{
+    Instruction* type = new Instruction(getUniqueId(), NoType, OpTypeXlslShaderClass);
+    for (int op = 0; op < (int)members.size(); ++op)
+        type->addIdOperand(members[op]);
+    groupedTypes[OpTypeStruct].push_back(type);
+    constantsTypesGlobals.push_back(std::unique_ptr<Instruction>(type));
+    module.mapInstruction(type);
+    addName(type->getResultId(), name);
 
     return type->getResultId();
 }
@@ -503,7 +501,7 @@ Op Builder::getMostBasicTypeClass(Id typeId) const
     Op typeClass = instr->getOpCode();
     switch (typeClass)
     {
-	case OpTypeUnresolved:
+    case OpTypeXlslShaderClass:
     case OpTypeVoid:
     case OpTypeBool:
     case OpTypeInt:
@@ -529,9 +527,6 @@ int Builder::getNumTypeConstituents(Id typeId) const
 
     switch (instr->getOpCode())
     {
-	case OpTypeUnresolved:  //The type is unresolved, we can't know the number of constituents. (for now it will make SPIRV builder to fail)
-		return 0;
-
     case OpTypeBool:
     case OpTypeInt:
     case OpTypeFloat:
@@ -562,7 +557,6 @@ Id Builder::getScalarTypeId(Id typeId) const
     Op typeClass = instr->getOpCode();
     switch (typeClass)
     {
-	case OpTypeUnresolved:
     case OpTypeVoid:
     case OpTypeBool:
     case OpTypeInt:

@@ -2067,23 +2067,21 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
             // If we've seen this struct type, return it
             const glslang::TTypeList* glslangMembers = type.getStruct();
 
-            // Try to share structs for different layouts, but not yet for other
-            // kinds of qualification (primarily not yet including interpolant qualification).
-            if (! HasNonLayoutQualifiers(type, qualifier))
-                spvType = structMap[explicitLayout][qualifier.layoutMatrix][glslangMembers];
-            if (spvType != spv::NoResult)
-                break;
+            if (type.getBasicType() != glslang::EbtShaderClass)
+            {
+                // Try to share structs for different layouts, but not yet for other
+                // kinds of qualification (primarily not yet including interpolant qualification).
+                if (! HasNonLayoutQualifiers(type, qualifier))
+                    spvType = structMap[explicitLayout][qualifier.layoutMatrix][glslangMembers];
+                if (spvType != spv::NoResult)
+                    break;
+            }
 
             // else, we haven't seen it...
             if (type.getBasicType() == glslang::EbtBlock)
                 memberRemapper[glslangMembers].resize(glslangMembers->size());
             spvType = convertGlslangStructToSpvType(type, glslangMembers, explicitLayout, qualifier);
         }
-        break;
-
-    //XKSL extensions: add a Spv unresolved type
-    case glslang::EbtXKSLUnresolvedType:
-        spvType = builder.makeUnresolvedType();
         break;
 
     default:
@@ -2184,7 +2182,12 @@ spv::Id TGlslangToSpvTraverser::convertGlslangStructToSpvType(const glslang::TTy
     }
 
     // Make the SPIR-V type
-    spv::Id spvType = builder.makeStructType(spvMembers, type.getTypeName().c_str());
+    spv::Id spvType;
+    
+    if (type.getBasicType() == glslang::EbtShaderClass) 
+        spvType = builder.makeXkslShaderClassType(spvMembers, type.getTypeName().c_str());
+    else
+        spvType = builder.makeStructType(spvMembers, type.getTypeName().c_str());
     if (! HasNonLayoutQualifiers(type, qualifier))
         structMap[explicitLayout][qualifier.layoutMatrix][glslangMembers] = spvType;
 

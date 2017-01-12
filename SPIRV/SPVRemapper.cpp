@@ -187,7 +187,6 @@ namespace spv {
     bool spirvbin_t::isTypeOp(spv::Op opCode) const
     {
         switch (opCode) {
-		case spv::OpTypeUnresolved:
         case spv::OpTypeVoid:
         case spv::OpTypeBool:
         case spv::OpTypeInt:
@@ -1171,7 +1170,6 @@ namespace spv {
         const spv::Op  opCode      = asOpCode(typeStart);
 
         switch (opCode) {
-		case spv::OpTypeUnresolved:   
         case spv::OpTypeVoid:         return 0;
         case spv::OpTypeBool:         return 1;
         case spv::OpTypeInt:          return 3 + (spv[typeStart+3]);

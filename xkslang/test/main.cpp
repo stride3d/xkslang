@@ -43,8 +43,9 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"methodReferingToShaderVariable.xksl", ""},
     //{"methodsWithSimpleClassAccessor.xksl", ""},
 
-    //{"cbuffers.xksl", ""},
-    { "TestMixin01_Base.xksl", "main" },
+    {"cbuffers.xksl", ""},
+
+    //{ "TestMixin01_Base.xksl", "main" },
     //{ "TestMixin01_Override.xksl", "" },
     //{ "TestMixin01_OverridePlusCallBase.xksl", "" },
 

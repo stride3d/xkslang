@@ -488,12 +488,6 @@ TIntermTyped* TIntermediate::addConversion(TOperator op, const TType& type, TInt
     if (type == node->getType())
         return node;
 
-    //XKSL extensions: if left or right type is unresolved: we directly return the node without any conversion
-    if (type.getBasicType() == EbtXKSLUnresolvedType || node->getType().getBasicType() == EbtXKSLUnresolvedType)
-    {
-        return node;
-    }
-
     // If one's a structure, then no conversions.
     if (type.isStruct() || node->isStruct())
         return nullptr;
@@ -1842,8 +1836,7 @@ bool TIntermediate::promoteUnary(TIntermUnary& node)
 #ifdef AMD_EXTENSIONS
             operand->getBasicType() != EbtFloat16 &&
 #endif
-            operand->getBasicType() != EbtDouble &&
-            operand->getBasicType() != EbtXKSLUnresolvedType)
+            operand->getBasicType() != EbtDouble)
 
             return false;
         break;
@@ -1909,22 +1902,6 @@ bool TIntermediate::promoteBinary(TIntermBinary& node)
     // operand.  Only deviations from this will be coded.
     node.setType(left->getType());
     node.getWritableType().getQualifier().clear();
-
-    //XKSL extensions: if one of the 2 nodes is unresolved, the resulting type will be unresolved as well
-    if (left->getType().getBasicType() == EbtXKSLUnresolvedType)
-    {
-        node.setType(left->getType());
-        node.getWritableType().getQualifier().clear();
-        node.getWritableType().setOwnerClassName(0);
-        return true;
-    }
-    if (right->getType().getBasicType() == EbtXKSLUnresolvedType)
-    {
-        node.setType(right->getType());
-        node.getWritableType().getQualifier().clear();
-        node.getWritableType().setOwnerClassName(0);
-        return true;
-    }
 
     // Composite and opaque types don't having pending operator changes, e.g.,
     // array, structure, and samplers.  Just establish final type and correctness.

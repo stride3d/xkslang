@@ -928,6 +928,18 @@ bool ParseXkslShaderFile(
                     parseContext->declareBlock(shader->location, globalBlockType, cbufferGlobalBlockName);
                     shader->listDeclaredBlockNames.push_back(cbufferGlobalBlockName);
                 }
+
+                //Add a shader class variable, so that it will belongs to the AST and we can add its properties into the SPIRX bytecode
+                {
+                    TQualifier qualifier;
+                    qualifier.clear();
+                    qualifier.storage = EvqGlobal;
+                    TTypeList* emptyList = new TTypeList();
+                    TType* type = new TType(emptyList, shader->shaderName, qualifier, nullptr);
+                    type->setUserIdentifierName(shader->shaderName.c_str());
+                    type->SetParentsName(&shader->shaderparentsName);
+                    parseContext->declareVariable(shader->location, shader->shaderName, *type, nullptr);
+                }
             }
 
             // ======== Add the common stream buffer

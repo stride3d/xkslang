@@ -1549,8 +1549,7 @@ public:
         case EbtSampler:            return "sampler/image";
         case EbtStruct:             return "structure";
         case EbtBlock:              return "block";
-		case EbtShaderClass:        return "shader";
-		case EbtXKSLUnresolvedType: return "unresolved";
+		case EbtShaderClass:        return "XkslShaderClass";
         default:                    return "unknown type";
         }
     }
@@ -1761,7 +1760,7 @@ public:
 	const TIdentifierList* getParentsName() const { return parentsName; }
     void SetParentsName(const TIdentifierList* names)
     {
-        if (names == nullptr) parentsName = nullptr;
+        if (names == nullptr || names->size() == 0) parentsName = nullptr;
         else
         {
             parentsName = new TIdentifierList;
