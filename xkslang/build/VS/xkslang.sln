@@ -8,7 +8,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xkslangtests", "xkslangtest
 		{227A8054-E16B-48DA-A361-9316B8752E4E} = {227A8054-E16B-48DA-A361-9316B8752E4E}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "XkslParser", "XkslParser\XkslParser.vcxproj", "{227A8054-E16B-48DA-A361-9316B8752E4E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Xkslang", "Xkslang\Xkslang.vcxproj", "{227A8054-E16B-48DA-A361-9316B8752E4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

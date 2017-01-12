@@ -63,6 +63,7 @@ bool XkslMixer::GenerateBytecode(SPVBytecode& bytecode, ShadingStage stage, stri
     {
         SPXBytecode* spirXBytecode = listMixins[i];
 
+        //Parse the bytecode (disassemble)
         SpirxStreamParser* sprxStream = ParseSPXBytecode(spirXBytecode, msgs);
         if (sprxStream == nullptr) {
             error(msgs, "Fail to parse the list of mixins");

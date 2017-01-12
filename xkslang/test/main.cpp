@@ -43,9 +43,9 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"methodReferingToShaderVariable.xksl", ""},
     //{"methodsWithSimpleClassAccessor.xksl", ""},
 
-    {"cbuffers.xksl", ""},
+    //{"cbuffers.xksl", ""},
 
-    //{ "TestMixin01_Base.xksl", "main" },
+    { "TestMixin01_Base.xksl", "main" },
     //{ "TestMixin01_Override.xksl", "" },
     //{ "TestMixin01_OverridePlusCallBase.xksl", "" },
 
@@ -103,22 +103,21 @@ void main(int argc, char** argv)
             {
                 SPVBytecode bytecode;
                 ShadingStage stage = ShadingStage::PixelStage;
-                vector<string> msgs;
+                vector<string> errorMsgs;
                 XkslMixer mixer;
                 mixer.AddMixin(&spirXBytecode);
 
                 cout << "Mixin shader:" << shaderFileName << ". entry point=" << entryPoint << " stage=" << GetStageLabel(stage) << "...\n";
 
-                bool success = mixer.GenerateBytecode(bytecode, stage, entryPoint, msgs);
+                bool success = mixer.GenerateBytecode(bytecode, stage, entryPoint, errorMsgs);
 
                 if (success) cout << "  Mixin successful\n";
                 else cout << "  Mixin Failed !!!\n";
 
-                if (msgs.size() > 0)
+                if (errorMsgs.size() > 0)
                 {
                     cout << "   Messages:\n";
-                    for (int m=0; m<msgs.size(); m++)
-                        cout << "   " << msgs[m] << "\n";
+                    for (int m=0; m<errorMsgs.size(); m++) cout << "   " << errorMsgs[m] << "\n";
                 }
             }
 

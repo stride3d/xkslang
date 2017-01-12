@@ -929,7 +929,7 @@ bool ParseXkslShaderFile(
                     shader->listDeclaredBlockNames.push_back(cbufferGlobalBlockName);
                 }
 
-                //Add a shader class variable, so that it will belongs to the AST and we can add its properties into the SPIRX bytecode
+                //Add a shaderClass variable (EbtShaderClass type), so that it will belongs to the AST and we can add its properties into the SPIRX bytecode
                 {
                     TQualifier qualifier;
                     qualifier.clear();
