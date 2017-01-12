@@ -7,6 +7,8 @@
 #include <string>
 
 #include "glslang/Public/ShaderLang.h"
+#include "glslang/MachineIndependent/localintermediate.h"
+//#include "glslang/include/intermediate.h"
 #include "StandAlone/ResourceLimits.h"
 
 #include "SPIRV/GlslangToSpv.h"
@@ -21,7 +23,7 @@
 #include "../test/define.h"
 
 using namespace std;
-using namespace xkslparser;
+using namespace xkslang;
 
 XkslParser::XkslParser()
 {}
@@ -45,13 +47,12 @@ void XkslParser::Finalize()
     glslang::FinalizeProcess();
 }
 
-bool XkslParser::ParseXkslShader(const std::string& shaderFileName, const std::string& shaderString)
+bool XkslParser::ConvertXkslToSpirX(const std::string& shaderFileName, const std::string& shaderString, SPXBytecode& spirXBytecode)
 {
     const char* shaderStrings = shaderString.data();
     const int shaderLengths = static_cast<int>(shaderString.size());
 
-    //TMP  TODO: check the impact of these parameters
-    const EShLanguage kind = EShLangFragment;
+    const EShLanguage kind = EShLangFragment;   //Default kind (glslang expect one, even though we're parsing generic xksl files)
     bool flattenUniformArrays = false;
     bool isForwardCompatible = false;
     int defaultVersion = 100;
@@ -60,7 +61,7 @@ bool XkslParser::ParseXkslShader(const std::string& shaderFileName, const std::s
     bool keepUncalledFuntionsInAST = true;
 
     EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST);
-    controls = static_cast<EShMessages>(controls | EShMsgVulkanRules | EShMsgKeepUncalled);
+    controls = static_cast<EShMessages>(controls | EShMsgVulkanRules);
     if (keepUncalledFuntionsInAST) controls = static_cast<EShMessages>(controls | EShMsgKeepUncalled);
     if (buildSPRV) controls = static_cast<EShMessages>(controls | EShMsgSpvRules);
 
@@ -76,41 +77,59 @@ bool XkslParser::ParseXkslShader(const std::string& shaderFileName, const std::s
         (resources ? resources : &glslang::DefaultTBuiltInResource),
         defaultVersion, isForwardCompatible, controls);
 
+    //We don't really need to link, but glslang will do some final checkups and give access to the intermediary
+    glslang::TProgram program;
+    program.addShader(&shader);
+    success &= program.link(controls);
+    glslang::TIntermediate* AST = program.getIntermediate(kind);
+
+    std::vector<uint32_t> bytecodeList;
+    spv::SpvBuildLogger logger;
+
     //======================================================================
-    //TEMPORARY: link, build SPRV and save to file
+    //build SPRV
+    if (success && AST != nullptr)
     {
-        glslang::TProgram program;
-        program.addShader(&shader);
-        success &= program.link(controls);
+        glslang::GlslangToSpv(*AST, bytecodeList, &logger);
+        spirXBytecode.clear();
+        spirXBytecode.SetBytecode(bytecodeList);
+    }
     
-        spv::SpvBuildLogger logger;
-    
+    //TEMPORARY: output stuff
+    {
+        std::string testDir = "D:/Prgms/glslang/source/Test/xksl";
+
+        //output SPIRV binary
+        if (bytecodeList.size() > 0)
+        {
+            const string newOutputFname = testDir + "/" + shaderFileName + ".spv";
+            glslang::OutputSpvBin(bytecodeList, newOutputFname.c_str());
+        }
+
         xkslangtest::GlslangResult glslangRes;
-        if (success && (controls & EShMsgSpvRules)) {
-            vector<uint32_t> spirv_binary;
-            glslang::GlslangToSpv(*program.getIntermediate(kind), spirv_binary, &logger);
-    
+        if (success && AST != nullptr)
+        {
+            //dissassemble the binary
             ostringstream disassembly_stream;
             spv::Parameterize();
-            spv::Disassemble(disassembly_stream, spirv_binary);
+            spv::Disassemble(disassembly_stream, bytecodeList);
             glslangRes = xkslangtest::GlslangResult{ { { shaderFileName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
                 program.getInfoLog(), program.getInfoDebugLog(),
                 logger.getAllMessages(), disassembly_stream.str(), true };
         }
-        else {
+        else
+        {
             glslangRes = xkslangtest::GlslangResult{ { { shaderFileName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
                 program.getInfoLog(), program.getInfoDebugLog(), "", "", false };
         }
-    
-        //Write result to file
-        // Generate the hybrid output in the way of glslangValidator.
+
+        //Output messages, AST and SPIRV into a human readable file
         ostringstream stream;
         xkslangtest::Utils::OutputResultToStream(&stream, glslangRes, controls);
-    
-        std::string testDir = "D:/Prgms/glslang/source/Test/xksl";
-    
+
         // Write the stream output on the disk
-        const string newOutputFname = testDir + "/" + shaderFileName + ".latest.spv";
+        //const string filenameWithoutSuffix = xkslangtest::Utils::RemoveSuffix(shaderFileName);
+        const string newOutputFname = testDir + "/" + shaderFileName + ".hr.spv";
         xkslangtest::Utils::WriteFile(newOutputFname, stream.str());
     }
 

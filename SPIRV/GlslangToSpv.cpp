@@ -2347,9 +2347,9 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     // Add info to cbuffers
     if (type.getBasicType() == glslang::EbtBlock)
     {
-        if (type.getDeclarationName() != nullptr)
+        if (type.getUserIdentifierName() != nullptr)
         {
-            builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getDeclarationName()->c_str());
+            builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getUserIdentifierName()->c_str());
         }
     }
     //========================================================================================================
@@ -2681,6 +2681,10 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
         //XKSL extensions: add functions attributes (through decorate)
         {
             const glslang::TType &functionType = glslFunction->getType();
+            if (functionType.getUserIdentifierName() != nullptr)
+            {
+                builder.addDecoration(function->getId(), spv::DecorationDeclarationName, functionType.getUserIdentifierName()->c_str());
+            }
             if (functionType.getQualifier().isStage)
             {
                 builder.addDecoration(function->getId(), spv::DecorationAttributeStage, 1);

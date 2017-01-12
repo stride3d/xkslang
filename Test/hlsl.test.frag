@@ -1,24 +1,20 @@
-/*cbuffer C1 {
-    float toto1;
+Texture2D Texture0;
+SamplerState Sampler;
+
+int toto;
+
+cbuffer PerDraw 
+{
+    float4x4 MatrixTransform_id72;
+	Texture2D Texture1;
 };
 
-cbuffer {
-    float toto2;
-	float toto3;
-};*/
-
-/*cbuffer cbufName : register(b2, space10) {
-    float4 toto3;
-    int i3 : packoffset(c1.y);
-};*/
-
-cbuffer TOTO
+struct VS_INPUT 
 {
-	int Var0;
-	int Var1;
+    float2 TexCoord: TEXCOORD0;
 };
-	
-int PixelShaderFunction()
+
+float4 Shading(VS_INPUT input)
 {
-    return Var1;
+	return Texture0.Sample(Sampler, input.TexCoord);
 }

@@ -1,0 +1,36 @@
+shader BasicMixin
+{
+	stream float toto : TOTO;
+
+    float myFloat = 1f;
+    stage float3 myPosition : register(b);
+    
+    float myFunc()
+    {
+		streams.toto = 5;
+        return streams.toto;
+    }
+};
+
+shader BasicMixin2
+{
+    stream float toto : TOTO;
+
+    float myFloat = 2f;
+    
+    float myFunc()
+	{
+		streams.toto = streams.toto + 5;
+        return streams.toto;
+	}
+};
+
+shader MixinNoNameClash : BasicMixin, BasicMixin2
+{
+    stage void VSMain()
+    {
+		float f = myFunc();
+    }
+
+    stage void PSMain(){}
+};

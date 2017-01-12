@@ -1,0 +1,252 @@
+cbuffers.xksl
+Shader version: 450
+gl_FragCoord origin is upper left
+0:? Sequence
+0:36  Function Definition: A.PixelShaderFunction( (temp int)
+0:36    Function Parameters: 
+0:?     Sequence
+0:37      Branch: Return with expression
+0:37        add (temp int)
+0:37          add (temp int)
+0:37            add (temp int)
+0:37              Var0: direct index for structure (layout(row_major std140 ) uniform int)
+0:37                'A.globalCBuffer' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var0, layout(row_major std140 ) uniform int Var1})
+0:37                Constant:
+0:37                  0 (const int)
+0:37              Var2: direct index for structure (layout(row_major std140 ) uniform int)
+0:37                'A._0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var2, layout(row_major std140 ) uniform int Var3})
+0:37                Constant:
+0:37                  0 (const int)
+0:37            Var4: direct index for structure (layout(row_major std140 ) uniform int)
+0:37              'A._1' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var4})
+0:37              Constant:
+0:37                0 (const int)
+0:37          Var6: direct index for structure (layout(row_major std140 ) uniform int)
+0:37            'A.C1_2' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var5, layout(row_major std140 ) uniform int Var6, layout(row_major std140 ) uniform int VarC1})
+0:37            Constant:
+0:37              1 (const int)
+0:57  Function Definition: B.Compute( (temp int)
+0:57    Function Parameters: 
+0:?     Sequence
+0:58      Branch: Return with expression
+0:58        add (temp int)
+0:58          VarC1: direct index for structure (layout(row_major std140 ) uniform int)
+0:58            'B.C1_0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int VarC1})
+0:58            Constant:
+0:58              0 (const int)
+0:58          VarC1: direct index for structure (layout(row_major std140 ) uniform int)
+0:58            'A.C1_2' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var5, layout(row_major std140 ) uniform int Var6, layout(row_major std140 ) uniform int VarC1})
+0:58            Constant:
+0:58              2 (const int)
+0:?   Linker Objects
+0:?     'A._0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var2, layout(row_major std140 ) uniform int Var3})
+0:?     'A._1' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var4})
+0:?     'A.C1_2' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var5, layout(row_major std140 ) uniform int Var6, layout(row_major std140 ) uniform int VarC1})
+0:?     'A.C1_3' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var7})
+0:?     'A.C2_4' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var8})
+0:?     'A.globalCBuffer' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var0, layout(row_major std140 ) uniform int Var1})
+0:?     'B.C1_0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int VarC1})
+0:?     'B.globalCBuffer' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var0})
+0:?     'C.C1_0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int var10})
+
+
+Linked fragment stage:
+
+WARNING: Linking fragment stage: Entry point not found
+
+Shader version: 450
+gl_FragCoord origin is upper left
+0:? Sequence
+0:36  Function Definition: A.PixelShaderFunction( (temp int)
+0:36    Function Parameters: 
+0:?     Sequence
+0:37      Branch: Return with expression
+0:37        add (temp int)
+0:37          add (temp int)
+0:37            add (temp int)
+0:37              Var0: direct index for structure (layout(row_major std140 ) uniform int)
+0:37                'A.globalCBuffer' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var0, layout(row_major std140 ) uniform int Var1})
+0:37                Constant:
+0:37                  0 (const int)
+0:37              Var2: direct index for structure (layout(row_major std140 ) uniform int)
+0:37                'A._0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var2, layout(row_major std140 ) uniform int Var3})
+0:37                Constant:
+0:37                  0 (const int)
+0:37            Var4: direct index for structure (layout(row_major std140 ) uniform int)
+0:37              'A._1' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var4})
+0:37              Constant:
+0:37                0 (const int)
+0:37          Var6: direct index for structure (layout(row_major std140 ) uniform int)
+0:37            'A.C1_2' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var5, layout(row_major std140 ) uniform int Var6, layout(row_major std140 ) uniform int VarC1})
+0:37            Constant:
+0:37              1 (const int)
+0:57  Function Definition: B.Compute( (temp int)
+0:57    Function Parameters: 
+0:?     Sequence
+0:58      Branch: Return with expression
+0:58        add (temp int)
+0:58          VarC1: direct index for structure (layout(row_major std140 ) uniform int)
+0:58            'B.C1_0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int VarC1})
+0:58            Constant:
+0:58              0 (const int)
+0:58          VarC1: direct index for structure (layout(row_major std140 ) uniform int)
+0:58            'A.C1_2' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var5, layout(row_major std140 ) uniform int Var6, layout(row_major std140 ) uniform int VarC1})
+0:58            Constant:
+0:58              2 (const int)
+0:?   Linker Objects
+0:?     'A._0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var2, layout(row_major std140 ) uniform int Var3})
+0:?     'A._1' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var4})
+0:?     'A.C1_2' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var5, layout(row_major std140 ) uniform int Var6, layout(row_major std140 ) uniform int VarC1})
+0:?     'A.C1_3' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var7})
+0:?     'A.C2_4' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var8})
+0:?     'A.globalCBuffer' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var0, layout(row_major std140 ) uniform int Var1})
+0:?     'B.C1_0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int VarC1})
+0:?     'B.globalCBuffer' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int Var0})
+0:?     'C.C1_0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform int var10})
+
+// Module Version 10000
+// Generated by (magic number): 80001
+// Id's are bound by 63
+
+                              Capability Shader
+               1:             ExtInstImport  "GLSL.std.450"
+                              MemoryModel Logical GLSL450
+                              EntryPoint Fragment 4  ""
+                              ExecutionMode 4 OriginUpperLeft
+                              Name 4  ""
+                              Name 8  "A.PixelShaderFunction("
+                              Name 10  "B.Compute("
+                              Name 12  "A.globalCBuffer"
+                              MemberName 12(A.globalCBuffer) 0  "Var0"
+                              MemberName 12(A.globalCBuffer) 1  "Var1"
+                              Name 14  "A.globalCBuffer"
+                              Name 19  "A._0"
+                              MemberName 19(A._0) 0  "Var2"
+                              MemberName 19(A._0) 1  "Var3"
+                              Name 21  "A._0"
+                              Name 25  "A._1"
+                              MemberName 25(A._1) 0  "Var4"
+                              Name 27  "A._1"
+                              Name 31  "A.C1_2"
+                              MemberName 31(A.C1_2) 0  "Var5"
+                              MemberName 31(A.C1_2) 1  "Var6"
+                              MemberName 31(A.C1_2) 2  "VarC1"
+                              Name 33  "A.C1_2"
+                              Name 40  "B.C1_0"
+                              MemberName 40(B.C1_0) 0  "VarC1"
+                              Name 42  "B.C1_0"
+                              Name 51  "A.C1_3"
+                              MemberName 51(A.C1_3) 0  "Var7"
+                              Name 53  "A.C1_3"
+                              Name 54  "A.C2_4"
+                              MemberName 54(A.C2_4) 0  "Var8"
+                              Name 56  "A.C2_4"
+                              Name 57  "B.globalCBuffer"
+                              MemberName 57(B.globalCBuffer) 0  "Var0"
+                              Name 59  "B.globalCBuffer"
+                              Name 60  "C.C1_0"
+                              MemberName 60(C.C1_0) 0  "var10"
+                              Name 62  "C.C1_0"
+                              MemberDecorate 12(A.globalCBuffer) 0 Offset 0
+                              MemberDecorate 12(A.globalCBuffer) 1 Offset 4
+                              Decorate 12(A.globalCBuffer) Block
+                              Decorate 12(A.globalCBuffer) DeclarationName  ""
+                              Decorate 14(A.globalCBuffer) DescriptorSet 0
+                              MemberDecorate 19(A._0) 0 Offset 0
+                              MemberDecorate 19(A._0) 1 Offset 4
+                              Decorate 19(A._0) Block
+                              Decorate 19(A._0) DeclarationName  ""
+                              Decorate 21(A._0) DescriptorSet 0
+                              MemberDecorate 25(A._1) 0 Offset 0
+                              Decorate 25(A._1) Block
+                              Decorate 25(A._1) DeclarationName  ""
+                              Decorate 27(A._1) DescriptorSet 0
+                              MemberDecorate 31(A.C1_2) 0 Offset 0
+                              MemberDecorate 31(A.C1_2) 1 Offset 4
+                              MemberDecorate 31(A.C1_2) 2 Offset 8
+                              Decorate 31(A.C1_2) Block
+                              Decorate 31(A.C1_2) DeclarationName  "C1"
+                              Decorate 33(A.C1_2) DescriptorSet 0
+                              MemberDecorate 40(B.C1_0) 0 Offset 0
+                              Decorate 40(B.C1_0) Block
+                              Decorate 40(B.C1_0) DeclarationName  "C1"
+                              Decorate 42(B.C1_0) DescriptorSet 0
+                              MemberDecorate 51(A.C1_3) 0 Offset 0
+                              Decorate 51(A.C1_3) Block
+                              Decorate 51(A.C1_3) DeclarationName  "C1"
+                              Decorate 53(A.C1_3) DescriptorSet 0
+                              MemberDecorate 54(A.C2_4) 0 Offset 0
+                              Decorate 54(A.C2_4) Block
+                              Decorate 54(A.C2_4) DeclarationName  "C2"
+                              Decorate 56(A.C2_4) DescriptorSet 0
+                              MemberDecorate 57(B.globalCBuffer) 0 Offset 0
+                              Decorate 57(B.globalCBuffer) Block
+                              Decorate 57(B.globalCBuffer) DeclarationName  ""
+                              Decorate 59(B.globalCBuffer) DescriptorSet 0
+                              MemberDecorate 60(C.C1_0) 0 Offset 0
+                              Decorate 60(C.C1_0) Block
+                              Decorate 60(C.C1_0) DeclarationName  "C1"
+                              Decorate 62(C.C1_0) DescriptorSet 0
+               2:             TypeVoid
+               3:             TypeFunction 2
+               6:             TypeInt 32 1
+               7:             TypeFunction 6(int)
+12(A.globalCBuffer):             TypeStruct 6(int) 6(int)
+              13:             TypePointer Uniform 12(A.globalCBuffer)
+14(A.globalCBuffer):     13(ptr) Variable Uniform
+              15:      6(int) Constant 0
+              16:             TypePointer Uniform 6(int)
+        19(A._0):             TypeStruct 6(int) 6(int)
+              20:             TypePointer Uniform 19(A._0)
+        21(A._0):     20(ptr) Variable Uniform
+        25(A._1):             TypeStruct 6(int)
+              26:             TypePointer Uniform 25(A._1)
+        27(A._1):     26(ptr) Variable Uniform
+      31(A.C1_2):             TypeStruct 6(int) 6(int) 6(int)
+              32:             TypePointer Uniform 31(A.C1_2)
+      33(A.C1_2):     32(ptr) Variable Uniform
+              34:      6(int) Constant 1
+      40(B.C1_0):             TypeStruct 6(int)
+              41:             TypePointer Uniform 40(B.C1_0)
+      42(B.C1_0):     41(ptr) Variable Uniform
+              45:      6(int) Constant 2
+      51(A.C1_3):             TypeStruct 6(int)
+              52:             TypePointer Uniform 51(A.C1_3)
+      53(A.C1_3):     52(ptr) Variable Uniform
+      54(A.C2_4):             TypeStruct 6(int)
+              55:             TypePointer Uniform 54(A.C2_4)
+      56(A.C2_4):     55(ptr) Variable Uniform
+57(B.globalCBuffer):             TypeStruct 6(int)
+              58:             TypePointer Uniform 57(B.globalCBuffer)
+59(B.globalCBuffer):     58(ptr) Variable Uniform
+      60(C.C1_0):             TypeStruct 6(int)
+              61:             TypePointer Uniform 60(C.C1_0)
+      62(C.C1_0):     61(ptr) Variable Uniform
+               4:           2 Function None 3
+               5:             Label
+                              Return
+                              FunctionEnd
+8(A.PixelShaderFunction():      6(int) Function None 7
+               9:             Label
+              17:     16(ptr) AccessChain 14(A.globalCBuffer) 15
+              18:      6(int) Load 17
+              22:     16(ptr) AccessChain 21(A._0) 15
+              23:      6(int) Load 22
+              24:      6(int) IAdd 18 23
+              28:     16(ptr) AccessChain 27(A._1) 15
+              29:      6(int) Load 28
+              30:      6(int) IAdd 24 29
+              35:     16(ptr) AccessChain 33(A.C1_2) 34
+              36:      6(int) Load 35
+              37:      6(int) IAdd 30 36
+                              ReturnValue 37
+                              FunctionEnd
+  10(B.Compute():      6(int) Function None 7
+              11:             Label
+              43:     16(ptr) AccessChain 42(B.C1_0) 15
+              44:      6(int) Load 43
+              46:     16(ptr) AccessChain 33(A.C1_2) 45
+              47:      6(int) Load 46
+              48:      6(int) IAdd 44 47
+                              ReturnValue 48
+                              FunctionEnd

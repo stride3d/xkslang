@@ -583,8 +583,12 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
 
     // SEMICOLON
     if (! acceptTokenClass(EHTokSemicolon)) {
-        expected(";");
-        return false;
+
+        if (declaredType.getBasicType() != EbtShaderClass)  //XKSL extension, exception wish shader declaration: we can ommit the ";"
+        {
+            expected(";");
+            return false;
+        }
     }
     
     return true;
@@ -2043,6 +2047,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
             expected("invalid member or function name");
             return false;
         }
+        declaredType.setUserIdentifierName(identifierName->c_str());
 
         TFunction& function = *new TFunction(&shaderName, identifierName, declaredType);
         if (acceptFunctionParameters(function))
@@ -2237,6 +2242,7 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
             expected("invalid member or function name");
             return false;
         }
+        declaredType.setUserIdentifierName(identifierName->c_str());
 
         TFunction& tmpFunction = *new TFunction(&shaderName, identifierName, declaredType);
         if (acceptFunctionParameters(tmpFunction))
@@ -3027,7 +3033,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
     int countMembers = shader->listAllDeclaredMembers.size();
     for (int i = 0; i < countMembers; ++i)
     {
-        if (shader->listAllDeclaredMembers[i].type->getDeclarationName()->compare(memberName) == 0)
+        if (shader->listAllDeclaredMembers[i].type->getUserIdentifierName()->compare(memberName) == 0)
         {
             //to avoid name conflict, in the case of a shader declare a stream and a non-stream variables using the same name
             if (hasStreamAccessor)

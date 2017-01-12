@@ -5520,7 +5520,7 @@ void HlslParseContext::declareBlock(const TSourceLoc& loc, TType& type, const TS
         blockType.newArraySizes(*arraySizes);
 
     //XKSL extensions
-    if (type.getDeclarationName() != nullptr) blockType.setDeclarationName(type.getDeclarationName()->c_str());
+    if (type.getUserIdentifierName() != nullptr) blockType.setUserIdentifierName(type.getUserIdentifierName()->c_str());
     if (type.getOwnerClassName() != nullptr) blockType.setOwnerClassName(type.getOwnerClassName()->c_str());
     if (type.getParentsName() != nullptr) blockType.SetParentsName(type.getParentsName());
 

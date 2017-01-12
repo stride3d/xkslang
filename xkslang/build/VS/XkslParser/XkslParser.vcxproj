@@ -19,10 +19,19 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\source\define.cpp" />
+    <ClCompile Include="..\..\..\source\SpirxStreamParser.cpp" />
+    <ClCompile Include="..\..\..\source\SPXBytecode.cpp" />
+    <ClCompile Include="..\..\..\source\Xkslang.cpp" />
+    <ClCompile Include="..\..\..\source\XkslMixer.cpp" />
     <ClCompile Include="..\..\..\source\XkslParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\define.h" />
+    <ClInclude Include="..\..\..\source\SpirxStreamParser.h" />
+    <ClInclude Include="..\..\..\source\SPXBytecode.h" />
+    <ClInclude Include="..\..\..\source\Xkslang.h" />
+    <ClInclude Include="..\..\..\source\XkslMixer.h" />
     <ClInclude Include="..\..\..\source\XkslParser.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

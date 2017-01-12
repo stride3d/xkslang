@@ -164,5 +164,12 @@ string Utils::GetSuffix(const string& name)
     return (pos == string::npos) ? "" : name.substr(name.rfind('.') + 1);
 }
 
+string Utils::RemoveSuffix(const string& name)
+{
+    const size_t pos = name.rfind('.');
+    if (pos == string::npos) return name;
+    return name.substr(0, pos);
+}
+
 //========================================================================================
 //========================================================================================

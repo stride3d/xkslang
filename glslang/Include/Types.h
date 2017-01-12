@@ -1091,7 +1091,7 @@ public:
                    bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1102,7 +1102,7 @@ public:
           bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1115,7 +1115,7 @@ public:
                             basicType(p.basicType),
                             vectorSize(p.vectorSize), matrixCols(p.matrixCols), matrixRows(p.matrixRows), vector1(false),
                             arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
                             {
                                 if (basicType == EbtSampler)
                                     sampler = p.sampler;
@@ -1131,7 +1131,7 @@ public:
     TType(const TSampler& sampler, TStorageQualifier q = EvqUniform, TArraySizes* as = nullptr) :
         basicType(EbtSampler), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
         arraySizes(as), structure(nullptr), fieldName(nullptr), typeName(nullptr), sampler(sampler),
-        ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
+        ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
     {
         qualifier.clear();
         qualifier.storage = q;
@@ -1179,7 +1179,7 @@ public:
     TType(TTypeList* userDef, const TString& n) :
                             basicType(EbtStruct), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1189,7 +1189,7 @@ public:
     TType(TTypeList* userDef, const TString& n, const TQualifier& q) :
                             basicType(EbtBlock), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), declarationName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
                             {
                                 sampler.clear();
                                 typeName = NewPoolTString(n.c_str());
@@ -1199,7 +1199,7 @@ public:
 	TType(TTypeList* userDef, const TString& n, const TQualifier& q, TIdentifierList* parentsName) :
 		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
 		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-        ownerClassName(nullptr), parentsName(parentsName), declarationName(nullptr)
+        ownerClassName(nullptr), parentsName(parentsName), userIdentifierName(nullptr)
 	{
 		sampler.clear();
 		typeName = NewPoolTString(n.c_str());
@@ -1222,7 +1222,7 @@ public:
         arraySizes = copyOf.arraySizes;  // copying the pointer only, not the contents
         structure = copyOf.structure;
         fieldName = copyOf.fieldName;
-        declarationName = copyOf.declarationName;
+        userIdentifierName = copyOf.userIdentifierName;
         typeName = copyOf.typeName;
 		ownerClassName = copyOf.ownerClassName;
 		parentsName = copyOf.parentsName;
@@ -1263,8 +1263,8 @@ public:
             fieldName = NewPoolTString(copyOf.fieldName->c_str());
         if (copyOf.typeName)
             typeName = NewPoolTString(copyOf.typeName->c_str());
-        if (copyOf.declarationName)
-            declarationName = NewPoolTString(copyOf.declarationName->c_str());
+        if (copyOf.userIdentifierName)
+            userIdentifierName = NewPoolTString(copyOf.userIdentifierName->c_str());
     }
 
     TType* clone() const
@@ -1304,10 +1304,10 @@ public:
     virtual void setTypeName(const TString& n) { typeName = NewPoolTString(n.c_str()); }
     virtual void setFieldName(const TString& n) { fieldName = NewPoolTString(n.c_str()); }
 
-    virtual void setDeclarationName(const char* name)
+    virtual void setUserIdentifierName(const char* name)
     {
-        if (name != nullptr) declarationName = NewPoolTString(name);
-        else declarationName = nullptr;
+        if (name != nullptr) userIdentifierName = NewPoolTString(name);
+        else userIdentifierName = nullptr;
     }
 
     virtual const TString& getTypeName() const
@@ -1328,7 +1328,7 @@ public:
         return *fieldName;
     }
 
-    const TString* getDeclarationName() const { return declarationName; }
+    const TString* getUserIdentifierName() const { return userIdentifierName; }
 
     virtual TBasicType getBasicType() const { return basicType; }
     virtual const TSampler& getSampler() const { return sampler; }
@@ -1906,9 +1906,9 @@ protected:
     TSampler sampler;
 
 	//XKSL type extensions
-	TIdentifierList* parentsName;       // list of parents name for shader class type
-	TString*         ownerClassName;    // class to which the type or function belongs to
-    TString*         declarationName;   // declaration name of the variable in its class (fieldname can be different depending how we organize the variables)
+	TIdentifierList* parentsName;         // list of parents name for shader class type
+	TString*         ownerClassName;      // class to which the type or function belongs to
+    TString*         userIdentifierName;  // user identifier name of the variable or function using the type (fieldname can be different depending how we organize the variables)
 };
 
 } // end namespace glslang

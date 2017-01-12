@@ -7,11 +7,13 @@
 
 #include "Utils.h"
 #include "XkslangTest.h"
+#include "../source/SPXBytecode.h"
 #include "../source/XkslParser.h"
+#include "../source/XkslMixer.h"
 
 using namespace std;
 using namespace xkslangtest;
-using namespace xkslparser;
+using namespace xkslang;
 
 struct FileNameEntryPointPair {
     const char* fileName;
@@ -41,8 +43,10 @@ vector<FileNameEntryPointPair> testFiles = {
     //{"methodReferingToShaderVariable.xksl", ""},
     //{"methodsWithSimpleClassAccessor.xksl", ""},
 
-    {"cbuffers.xksl", ""},
-    //{ "shaderSpriteBaseSimplified.xksl", "" },
+    //{"cbuffers.xksl", ""},
+    { "TestMixin01_Base.xksl", "main" },
+    //{ "TestMixin01_Override.xksl", "" },
+    //{ "TestMixin01_OverridePlusCallBase.xksl", "" },
 
     //{"textureAndSampler.xksl", ""},
     //{"shaderTexturing.xksl", ""},
@@ -66,24 +70,58 @@ void main(int argc, char** argv)
     {
         for (int i = 0; i < testFiles.size(); ++i)
         {
-            //load shader file into a string
+            //============================================================================
+            // load shader file into a string
             std::string shaderFileName = testFiles[i].fileName;
+
+            cout << "Parsing shader:" << shaderFileName << "...\n";
+
             const string inputFname = testDir + "/" + shaderFileName;
             string xkslInput;
-
             if (!Utils::ReadFile(inputFname, xkslInput))
             {
-                cout << "Failed to read the file: " << inputFname << "\n";
+                cout << "  Failed to read the file: " << inputFname << " !!!\n";
                 continue;
             }
 
-            if (!parser.ParseXkslShader(shaderFileName, xkslInput))
+            //============================================================================
+            // Build SPIRX bytecode
+            SPXBytecode spirXBytecode;
+            if (!parser.ConvertXkslToSpirX(shaderFileName, xkslInput, spirXBytecode))
             {
-                cout << "Failed to parse the shader: " << shaderFileName << "\n";
+                cout << "  Failed to parse the shader: " << shaderFileName << " !!!\n";
                 continue;
             }
 
-            cout << "Shader " << shaderFileName << ": Successfully parsed\n";
+            cout << "  Parsing successful\n";
+
+            //============================================================================
+            // Mixin
+            string entryPoint = testFiles[i].entryPoint;
+            if (entryPoint.length() > 0)
+            {
+                SPVBytecode bytecode;
+                ShadingStage stage = ShadingStage::PixelStage;
+                vector<string> msgs;
+                XkslMixer mixer;
+                mixer.AddMixin(&spirXBytecode);
+
+                cout << "Mixin shader:" << shaderFileName << ". entry point=" << entryPoint << " stage=" << GetStageLabel(stage) << "...\n";
+
+                bool success = mixer.GenerateBytecode(bytecode, stage, entryPoint, msgs);
+
+                if (success) cout << "  Mixin successful\n";
+                else cout << "  Mixin Failed !!!\n";
+
+                if (msgs.size() > 0)
+                {
+                    cout << "   Messages:\n";
+                    for (int m=0; m<msgs.size(); m++)
+                        cout << "   " << msgs[m] << "\n";
+                }
+            }
+
+            cout << "\n";
         }
     }
 

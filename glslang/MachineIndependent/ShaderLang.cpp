@@ -783,8 +783,6 @@ bool ParseXkslShaderFile(
                 for (int i = 0; i < shader->listMethods.size(); ++i)
                 {
                     TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
-
-                    //member.type->setDeclarationName(member.type->getFieldName()); //declaration name is the field name
                     parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
                 }
 
@@ -795,7 +793,7 @@ bool ParseXkslShaderFile(
                 for (int i = 0; i < shader->listParsedMembers.size(); ++i)
                 {
                     XkslShaderDefinition::XkslShaderMember& member = shader->listParsedMembers[i];
-                    member.type->setDeclarationName(member.type->getFieldName().c_str()); //declaration name is the field name
+                    //member.type->setUserIdentifierName(member.type->getFieldName().c_str()); //declaration name is the field name
                     member.type->setOwnerClassName(shader->shaderName.c_str());
 
                     bool isStream = member.type->getQualifier().isStream;
@@ -890,7 +888,7 @@ bool ParseXkslShaderFile(
                             TTypeList* typeList = member.type->getWritableStruct();
                             for (unsigned int indexInBlock = 0; indexInBlock < typeList->size(); ++indexInBlock) {
                                 TType& blockMemberType = *(typeList->at(indexInBlock).type);
-                                blockMemberType.setDeclarationName(blockMemberType.getFieldName().c_str());
+                                blockMemberType.setUserIdentifierName(blockMemberType.getFieldName().c_str());
                                 blockMemberType.setOwnerClassName(shader->shaderName.c_str());
 
                                 XkslShaderDefinition::XkslShaderMember newShaderMember;
@@ -924,7 +922,7 @@ bool ParseXkslShaderFile(
                     TString& typeName = shader->shaderName; //cbufferGlobalBlockName; //NewPoolTString("");
                     TType globalBlockType(cbufferStructTypeList, typeName, blockQualifier);
 
-                    globalBlockType.setDeclarationName("");  //declaration name is "", will be merged with unnamed cbuffer
+                    globalBlockType.setUserIdentifierName("");  //declaration name is "", will be merged with unnamed cbuffer
                     globalBlockType.setOwnerClassName(shader->shaderName.c_str());
 
                     parseContext->declareBlock(shader->location, globalBlockType, cbufferGlobalBlockName);

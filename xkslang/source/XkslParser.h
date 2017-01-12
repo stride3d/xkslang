@@ -4,10 +4,6 @@
 #ifndef XKSLANG_XKSLPARSER_H
 #define XKSLANG_XKSLPARSER_H
 
-#include <cstdint>
-#include <fstream>
-#include <sstream>
-#include <streambuf>
 #include <tuple>
 #include <string>
 #include <vector>
@@ -16,8 +12,9 @@
 //#include "StandAlone/ResourceLimits.h"
 
 #include "define.h"
+#include "SPXBytecode.h"
 
-namespace xkslparser
+namespace xkslang
 {
 
 class XkslParser
@@ -31,9 +28,9 @@ public:
     bool InitialiseXkslang();
     void Finalize();
 
-    bool ParseXkslShader(const std::string& shaderFileName, const std::string& shaderString);
+    bool ConvertXkslToSpirX(const std::string& shaderFileName, const std::string& shaderString, SPXBytecode& spirXBytecode);
 };
 
-}  // namespace xkslparser
+}  // namespace xkslang
 
 #endif  // XKSLANG_XKSLPARSER_H

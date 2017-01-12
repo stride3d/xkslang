@@ -1,0 +1,22 @@
+// mixin TestMixin01_Base;
+// expected result: 1
+
+shader TestMixin01_Base
+{
+	stream int ColorTarget;
+
+	void unusedFunction()
+	{
+		int lkgfsdjlgkjd;
+	}
+	
+    abstract int Compute()
+    {
+        return 1;
+    }
+    void main()
+    {
+        // Note: Since we don't have streams yet, we might find a different mechanism to hardcode this into SV_Color?
+        streams.ColorTarget = Compute();
+    }
+}
