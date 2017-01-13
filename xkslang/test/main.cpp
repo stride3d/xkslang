@@ -45,8 +45,8 @@ vector<FileNameEntryPointPair> testFiles = {
 
     //{"cbuffers.xksl", ""},
 
-    { "TestMixin01_Base.xksl", "main" },
-    //{ "TestMixin01_Override.xksl", "" },
+    //{ "TestMixin01_Base.xksl", "main" },
+    { "TestMixin01_Override.xksl", "main" },
     //{ "TestMixin01_OverridePlusCallBase.xksl", "" },
 
     //{"textureAndSampler.xksl", ""},

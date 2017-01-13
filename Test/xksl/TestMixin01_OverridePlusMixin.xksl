@@ -1,0 +1,34 @@
+// mixin TestMixin01_Base;
+// mixin TestMixin01_OverridePlusCallBase;
+// expected result: 4
+
+shader TestMixin01_Base
+{
+	stream int aStream;
+
+    abstract int Compute()
+    {
+        return 1;
+    }
+    void main()
+    {
+        // Note: Since we don't have streams yet, we might find a different mechanism to hardcode this into SV_Color?
+        streams.aStream = Compute();
+    }
+}
+
+shader TestMixin01_Override : TestMixin01_Base
+{
+    override int Compute()
+    {
+        return 2;
+    }
+}
+
+shader TestMixin01_OverridePlusCallBase : TestMixin01_Base
+{
+    override int Compute()
+    {
+        return base.Compute() + 3;
+    }
+}

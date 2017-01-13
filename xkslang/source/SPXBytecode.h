@@ -1,8 +1,8 @@
 //
 // Copyright (C) 
 
-#ifndef XKSLANG_SPXBYTECODE_H
-#define XKSLANG_SPXBYTECODE_H
+#ifndef XKSLANG_SPX_BYTECODE_H__
+#define XKSLANG_SPX_BYTECODE_H__
 
 #include <vector>
 
@@ -35,4 +35,4 @@ public:
 
 }  // namespace xkslang
 
-#endif  // XKSLANG_SPXBYTECODE_H
+#endif  // XKSLANG_SPX_BYTECODE_H__

@@ -16,7 +16,7 @@
 
 #include "Xkslang.h"
 #include "XkslMixer.h"
-#include "SpirxStreamParser.h"
+#include "SPXStreamParser.h"
 
 using namespace std;
 using namespace xkslang;
@@ -64,8 +64,9 @@ bool XkslMixer::GenerateBytecode(SPVBytecode& bytecode, ShadingStage stage, stri
         SPXBytecode* spirXBytecode = listMixins[i];
 
         //Parse the bytecode (disassemble)
-        SpirxStreamParser* sprxStream = ParseSPXBytecode(spirXBytecode, msgs);
+        SPXStreamParser* sprxStream = ParseSPXBytecode(spirXBytecode, msgs);
         if (sprxStream == nullptr) {
+            sprxStream->copyMessagesTo(msgs);
             error(msgs, "Fail to parse the list of mixins");
             return false;
         }
@@ -75,6 +76,7 @@ bool XkslMixer::GenerateBytecode(SPVBytecode& bytecode, ShadingStage stage, stri
         bool success = sprxStream->ProcessSpriXBytecode();
         if (!success)
         {
+            sprxStream->copyMessagesTo(msgs);
             error(msgs, "Fail to process the bytecode");
             return false;
         }
@@ -83,11 +85,11 @@ bool XkslMixer::GenerateBytecode(SPVBytecode& bytecode, ShadingStage stage, stri
     return true;
 }
 
-SpirxStreamParser* XkslMixer::ParseSPXBytecode(SPXBytecode* spirXBytecode, std::vector<std::string>& msgs)
+SPXStreamParser* XkslMixer::ParseSPXBytecode(SPXBytecode* spirXBytecode, std::vector<std::string>& msgs)
 {
     const vector<uint32_t>& stream = spirXBytecode->getBytecodeStream();
 
-    SpirxStreamParser* streamParser = new SpirxStreamParser(stream);
+    SPXStreamParser* streamParser = new SPXStreamParser(stream);
 
     //=============================================================================
     //Validate SPIRX header

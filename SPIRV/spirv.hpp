@@ -387,16 +387,17 @@ enum Decoration {
 
 	//Specify that a shader inherits from another shader, the order of inheritance is defined by the order of declaration of InheritFromShaderClass decoration
 	DecorationShaderInheritFromParent = 1001,
+    DecorationBelongsToShader = 1002,
 
-	//Member Qualifiers
-	DecorationAttributeStage  = 1002,  //member or method is a stage
-	DecorationAttributeStream = 1003,  //member or method is a stream
-	DecorationAttributeStatic = 1004,  //member or method is static
+	//Member/method Qualifiers
+	DecorationAttributeStage  = 1010,  //member or method is a stage
+	DecorationAttributeStream = 1011,  //member or method is a stream
+	DecorationAttributeStatic = 1012,  //member or method is static
 
-	DecorationMemberConst  = 1005,     //const member
-	DecorationMethodAbstract = 1006,   //abstract method
-	DecorationMethodOverride = 1007,   //override method
-	DecorationMethodClone    = 1008,   //clone method
+	DecorationMemberConst    = 1015,   //const member
+	DecorationMethodAbstract = 1016,   //abstract method
+	DecorationMethodOverride = 1017,   //override method
+	DecorationMethodClone    = 1018,   //clone method
 	//**********************************************************************
 
     DecorationMax = 0x7fffffff,

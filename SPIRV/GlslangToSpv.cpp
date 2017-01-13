@@ -2335,8 +2335,6 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     {
         builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getTypeName().c_str());
 
-        //const glslang::TString* ownerClassName = type.getOwnerClassName();
-
         const glslang::TIdentifierList* parentsName = type.getParentsName();
         if (parentsName != nullptr)
         {
@@ -2687,6 +2685,10 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
             if (functionType.getUserIdentifierName() != nullptr)
             {
                 builder.addDecoration(function->getId(), spv::DecorationDeclarationName, functionType.getUserIdentifierName()->c_str());
+            }
+            if (functionType.getOwnerClassName() != nullptr)
+            {
+                builder.addDecoration(function->getId(), spv::DecorationBelongsToShader, functionType.getOwnerClassName()->c_str());
             }
             if (functionType.getQualifier().isStage)
             {

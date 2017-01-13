@@ -1,8 +1,8 @@
 //
 // Copyright (C) 
 
-#ifndef XKSLANG_XKSLANG_H
-#define XKSLANG_XKSLANG_H
+#ifndef XKSLANG_XKSLANG_H__
+#define XKSLANG_XKSLANG_H__
 
 #include "define.h"
 #include "SPXBytecode.h"
@@ -18,4 +18,4 @@ public:
 
 }  // namespace xkslang
 
-#endif  // XKSLANG_XKSLANG_H
+#endif  // XKSLANG_XKSLANG_H__

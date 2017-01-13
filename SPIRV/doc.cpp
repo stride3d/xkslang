@@ -255,7 +255,8 @@ const char* DecorationString(int decoration)
     
     //XKSL extensions
     case (DecorationDeclarationName):         return "DeclarationName";
-    case (DecorationShaderInheritFromParent): return "InheritFromShaderClass";
+    case (DecorationShaderInheritFromParent): return "InheritsFromShaderClass";
+    case (DecorationBelongsToShader):         return "BelongsToShader";
     case (DecorationAttributeStage):	      return "Stage";
     case (DecorationAttributeStream):         return "Stream";
     case (DecorationAttributeStatic):		  return "Static";

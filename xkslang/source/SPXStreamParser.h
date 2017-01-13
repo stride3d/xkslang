@@ -1,8 +1,8 @@
 //
 // Copyright (C) 
 
-#ifndef XKSLANG_XKSLSPIRXPARSER_H
-#define XKSLANG_XKSLSPIRXPARSER_H
+#ifndef XKSLANG_XKSL_SPX_STREAM_PARSER_H__
+#define XKSLANG_XKSL_SPX_STREAM_PARSER_H__
 
 #include <string>
 #include <vector>
@@ -18,23 +18,49 @@
 namespace xkslang
 {
 
-class SpirxStreamParser
+class SPXStreamParser
 {
 public:
 
+    enum class SPVObjectTypeEnum
+    {
+        SPVTypeUndefined,
+        SPVTypeFunction,
+        SPVTypeShader
+    };
+
     class SPVFunction;
+    class SPVShader;
     class SPVObject
     {
     public:
-        SPVObject() {}
+        SPVObject(SPVObjectTypeEnum objectType): objectType(objectType){}
+        virtual ~SPVObject(){}
 
-        virtual SPVFunction* GetAsSPVFunction(){return nullptr;}
+        SPVFunction* GetAsSPVFunction() {return dynamic_cast<SPVFunction*>(this);}
+        SPVShader* GetAsSPVShader() { return dynamic_cast<SPVShader*>(this); }
+
+    public:
+        const SPVObjectTypeEnum objectType;
+        std::string declarationName;
+    };
+
+    class SPVShader : public SPVObject
+    {
+    public:
+        uint32_t opDeclaration;       //index of type declaration (OpTypeXlslShaderClass)
+        std::vector<SPVShader*> parents;
+
+        SPVShader() : SPVObject(SPVObjectTypeEnum::SPVTypeShader), opDeclaration(0) {}
+        void AddParent(SPVShader* p)
+        {
+            parents.push_back(p);
+        }
     };
 
     class SPVFunction : public SPVObject
     {
     public:
-        std::string declarationName;
         uint32_t opStart;       //index of OpFunction
         uint32_t opEnd;         //index of OpFunctionEnd
         bool isAbstract;
@@ -42,9 +68,7 @@ public:
         bool isStage;
         bool isClone;
 
-        SPVFunction() : SPVObject(), opStart(0), opEnd(0), isAbstract(false), isOverride(false), isStage(false), isClone(false) {}
-
-        virtual SPVFunction* GetAsSPVFunction() { return this; }
+        SPVFunction() : SPVObject(SPVObjectTypeEnum::SPVTypeFunction), opStart(0), opEnd(0), isAbstract(false), isOverride(false), isStage(false), isClone(false) {}
     };
 
     class SPVInstruction
@@ -81,14 +105,17 @@ public:
     };
 
 public:
-    SpirxStreamParser(const std::vector<unsigned int>& stream) : stream(stream), size(0), word(0), idBound(0), nextNestedControl(0){ }
-    virtual ~SpirxStreamParser();
+    SPXStreamParser(const std::vector<unsigned int>& stream) : stream(stream), size(0), word(0), idBound(0), nextNestedControl(0){ }
+    virtual ~SPXStreamParser();
 
     bool ValidateHeader(uint32_t& magicNumber, uint32_t& moduleVersion, uint32_t& generatorMagicNumber);
     bool DisassembleSpirXStream();
     bool ProcessSpriXBytecode();
 
+    SPVObject* GetSpvObjectById(uint32_t id);
     SPVFunction* GetSpvFunctionById(uint32_t id);
+    SPVShader* GetSpvShaderById(uint32_t id);
+    SPVShader* GetSpvShaderByName(const std::string& name);
 
     void copyMessagesTo(std::vector<std::string>& list);
 
@@ -116,6 +143,7 @@ private:
 
     std::vector<SPVInstruction*> listInstructions;
     std::vector<SPVFunction*> listFunctions;
+    std::vector<SPVShader*> listShaders;
 
 private:
     void disassembleInstruction(SPVInstruction* instr, spv::Op opCode, spv::Id resultId, spv::Id typeId, int numOperands);
@@ -123,8 +151,11 @@ private:
     void disassembleIds(int numOperands, SPVInstruction* instr);
     int disassembleString(SPVInstruction* instr);
     void setDecorationType(SPVInstruction* instr, uint32_t decorationType);
+
+    bool AddSPVFunction(SPVFunction*, uint32_t resultId);
+    bool AddSPVShader(SPVShader*, uint32_t resultId);
 };
 
 }  // namespace xkslang
 
-#endif  // XKSLANG_XKSLSPIRXPARSER_H
+#endif  // XKSLANG_XKSL_SPX_STREAM_PARSER_H__

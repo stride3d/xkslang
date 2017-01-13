@@ -26,7 +26,7 @@
     <ClInclude Include="..\..\..\source\Xkslang.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\SpirxStreamParser.h">
+    <ClInclude Include="..\..\..\source\SPXStreamParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -46,7 +46,7 @@
     <ClCompile Include="..\..\..\source\Xkslang.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\SpirxStreamParser.cpp">
+    <ClCompile Include="..\..\..\source\SPXStreamParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

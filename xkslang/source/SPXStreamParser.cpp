@@ -13,7 +13,7 @@
 //#include "SPIRV/disassemble.h"
 //#include "SPIRV/SPVRemapper.h"
 
-#include "SpirxStreamParser.h"
+#include "SPXStreamParser.h"
 
 using namespace std;
 using namespace spv;
@@ -21,7 +21,7 @@ using namespace xkslang;
 
 //=====================================================================================================================
 //=====================================================================================================================
-SpirxStreamParser::SPVInstruction::SPVInstruction(uint32_t instructionNum, uint32_t streamIndex, spv::Op opCode, spv::Id resultId, spv::Id typeId)
+SPXStreamParser::SPVInstruction::SPVInstruction(uint32_t instructionNum, uint32_t streamIndex, spv::Op opCode, spv::Id resultId, spv::Id typeId)
 {
     this->instructionNum = instructionNum;
     this->streamIndex = streamIndex;
@@ -53,12 +53,12 @@ static bool error(vector<string>& msgs, string msg)
     return false;
 }
 
-void SpirxStreamParser::copyMessagesTo(std::vector<std::string>& list)
+void SPXStreamParser::copyMessagesTo(std::vector<std::string>& list)
 {
     list.insert(list.end(), messages.begin(), messages.end());
 }
 
-SpirxStreamParser::~SpirxStreamParser()
+SPXStreamParser::~SPXStreamParser()
 {
     for (int i = 0; i<listInstructions.size(); ++i)
     {
@@ -77,7 +77,7 @@ SpirxStreamParser::~SpirxStreamParser()
     listFunctions.clear();
 }
 
-bool SpirxStreamParser::ProcessSpriXBytecode()
+bool SPXStreamParser::ProcessSpriXBytecode()
 {
     //Process all decorate instructions
     int countInstructions = listInstructions.size();
@@ -89,23 +89,60 @@ bool SpirxStreamParser::ProcessSpriXBytecode()
             if (instr->nbIds[0] == 0) return error(messages, "The decorate operand defines no id");
             uint32_t objectDecoratedId = *(instr->ids[0]);
 
-            SPVFunction* spvFunction = GetSpvFunctionById(objectDecoratedId);
-            if (spvFunction != nullptr)
+            SPVObject* spvObj = GetSpvObjectById(objectDecoratedId);
+            if (spvObj != nullptr)
             {
-                //Update the function attributes with decorate
-                switch (instr->decorationType)
+                switch (spvObj->objectType)
                 {
-                    case DecorationDeclarationName:
-                        spvFunction->declarationName = instr->str; break;
-                    case DecorationAttributeStage:
-                        spvFunction->isStage = true; break;
-                    case DecorationMethodAbstract:
-                        spvFunction->isAbstract = true; break;
-                    case DecorationMethodOverride:
-                        spvFunction->isOverride = true; break;
-                    case DecorationMethodClone:
-                        spvFunction->isClone = true; break;
-                }
+                    case SPVObjectTypeEnum::SPVTypeFunction:
+                    {
+                        SPVFunction* spvFunction = spvObj->GetAsSPVFunction();
+                        if (spvFunction == nullptr) return error(messages, "Cannot get SPVFunction from SPVObject");
+
+                        //Update the function attributes with decorate attributes
+                        switch (instr->decorationType)
+                        {
+                            case DecorationBelongsToShader:
+                                //gfdgsdfgsdfg;
+                                break; //spvFunction->declarationName = instr->str; break;
+                            case DecorationDeclarationName:
+                                spvFunction->declarationName = instr->str; break;
+                            case DecorationAttributeStage:
+                                spvFunction->isStage = true; break;
+                            case DecorationMethodAbstract:
+                                spvFunction->isAbstract = true; break;
+                            case DecorationMethodOverride:
+                                spvFunction->isOverride = true; break;
+                            case DecorationMethodClone:
+                                spvFunction->isClone = true; break;
+                        }
+
+                        break;
+                    }
+
+                    case SPVObjectTypeEnum::SPVTypeShader:
+                    {
+                        SPVShader* spvShader = spvObj->GetAsSPVShader();
+                        if (spvShader == nullptr) return error(messages, "Cannot get SPVShader from SPVObject");
+
+                        //Update the shader attributes with decorate attributes
+                        switch (instr->decorationType)
+                        {
+                            case DecorationShaderInheritFromParent:
+                            {
+                                SPVShader* spvParent = GetSpvShaderByName(instr->str);
+                                if (spvParent == nullptr) return error(messages, string("Cannot find shader: ") + instr->str);
+                                spvShader->AddParent(spvParent);
+                                break;
+                            }
+                            case DecorationDeclarationName:
+                                spvShader->declarationName = instr->str; break;
+                                break;
+                        }
+
+                        break;
+                    }
+                } //end switch (spvObj->objectType)
             }
         }
     }
@@ -113,15 +150,55 @@ bool SpirxStreamParser::ProcessSpriXBytecode()
     return true;
 }
 
-SpirxStreamParser::SPVFunction* SpirxStreamParser::GetSpvFunctionById(uint32_t id)
+SPXStreamParser::SPVObject* SPXStreamParser::GetSpvObjectById(uint32_t id)
+{
+    if (id < 0 || id >= listSpvObjectsById.size()) return nullptr;
+    return listSpvObjectsById[id];
+}
+
+SPXStreamParser::SPVFunction* SPXStreamParser::GetSpvFunctionById(uint32_t id)
 {
     if (id < 0 || id >= listSpvObjectsById.size()) return nullptr;
 
     if (listSpvObjectsById[id] == nullptr) return nullptr;
-    listSpvObjectsById[id]->GetAsSPVFunction();
+    return listSpvObjectsById[id]->GetAsSPVFunction();
 }
 
-bool SpirxStreamParser::ValidateHeader(uint32_t& magicNumber, uint32_t& moduleVersion, uint32_t& generatorMagicNumber)
+SPXStreamParser::SPVShader* SPXStreamParser::GetSpvShaderById(uint32_t id)
+{
+    if (id < 0 || id >= listShaders.size()) return nullptr;
+
+    if (listShaders[id] == nullptr) return nullptr;
+    return listShaders[id]->GetAsSPVShader();
+}
+
+SPXStreamParser::SPVShader* SPXStreamParser::GetSpvShaderByName(const std::string& name)
+{
+    int count = listShaders.size();
+    for (int i = 0; i < count; ++i)
+    {
+        if (listShaders[i]->declarationName == name) return listShaders[i];
+    }
+    return nullptr;
+}
+
+bool SPXStreamParser::AddSPVFunction(SPVFunction* func, uint32_t resultId)
+{
+    if (resultId == 0 || resultId >= listSpvObjectsById.size()) return error(messages, "the function has an invalid result Id");
+    if (this->listSpvObjectsById[resultId] != nullptr) return error(messages, "an object already exists with the same resultId");
+    this->listSpvObjectsById[resultId] = func;
+    this->listFunctions.push_back(func);
+}
+
+bool SPXStreamParser::AddSPVShader(SPVShader* shader, uint32_t resultId)
+{
+    if (resultId == 0 || resultId >= listSpvObjectsById.size()) return error(messages, "the shader has an invalid result Id");
+    if (this->listSpvObjectsById[resultId] != nullptr) return error(messages, "an object already exists with the same resultId");
+    this->listSpvObjectsById[resultId] = shader;
+    this->listShaders.push_back(shader);
+}
+
+bool SPXStreamParser::ValidateHeader(uint32_t& magicNumber, uint32_t& moduleVersion, uint32_t& generatorMagicNumber)
 {
     spv::Parameterize();   //get opcode details (if not already done)
 
@@ -151,7 +228,7 @@ bool SpirxStreamParser::ValidateHeader(uint32_t& magicNumber, uint32_t& moduleVe
     return true;
 }
 
-bool SpirxStreamParser::DisassembleSpirXStream()
+bool SPXStreamParser::DisassembleSpirXStream()
 {
     if (word != 4 || word > size)
     {
@@ -205,13 +282,13 @@ bool SpirxStreamParser::DisassembleSpirXStream()
             //idInstruction[resultId] = instructionStart;
         }
 
-        if (opCode == OpDecorate)
+        /*if (opCode == OpDecorate)
         {
             int lkgjflsdj = 343434;
-        }
+        }*/
 
         // Hand off the Op and all its operands
-        SpirxStreamParser::SPVInstruction* instruction = new SpirxStreamParser::SPVInstruction(instructionNum, instructionStart, opCode, resultId, typeId);
+        SPXStreamParser::SPVInstruction* instruction = new SPXStreamParser::SPVInstruction(instructionNum, instructionStart, opCode, resultId, typeId);
         listInstructions.push_back(instruction);
         disassembleInstruction(instruction, opCode, resultId, typeId, numOperands);
 
@@ -233,22 +310,28 @@ bool SpirxStreamParser::DisassembleSpirXStream()
                 break;
 
             case spv::OpFunction:
+            {
                 if (parsedFunction != nullptr) return error(messages, "A function is aready being parsed");
                 parsedFunction = new SPVFunction();
-
-                if (resultId == 0 || resultId >= listSpvObjectsById.size()) return error(messages, "the function has an invalid result Id");
-                if (this->listSpvObjectsById[resultId] != nullptr) return error(messages, "a function already exists with the same resultId");
-
-                this->listSpvObjectsById[resultId] = parsedFunction;
-                this->listFunctions.push_back(parsedFunction);
-
+                AddSPVFunction(parsedFunction, resultId);
                 parsedFunction->opStart = instructionStart;
                 break;
+            }
 
             case spv::OpFunctionEnd:
+            {
                 if (parsedFunction == nullptr) return error(messages, "No function is being parsed");
                 parsedFunction->opEnd = instructionStart;
                 parsedFunction = nullptr;
+                break;
+            }
+
+            case spv::OpTypeXlslShaderClass:
+            {
+                SPVShader* shader = new SPVShader();
+                AddSPVShader(shader, resultId);
+                break;
+            }
 
             default:
                 break;
@@ -258,7 +341,7 @@ bool SpirxStreamParser::DisassembleSpirXStream()
     return true;
 }
 
-void SpirxStreamParser::disassembleInstruction(SPVInstruction* instr, Op opCode, Id resultId, Id typeId, int numOperands)
+void SPXStreamParser::disassembleInstruction(SPVInstruction* instr, Op opCode, Id resultId, Id typeId, int numOperands)
 {
     if (opCode == OpLoopMerge || opCode == OpSelectionMerge)
         nextNestedControl = stream[word];
@@ -354,7 +437,10 @@ void SpirxStreamParser::disassembleInstruction(SPVInstruction* instr, Op opCode,
             return;
         case OperandOptionalLiteral:
         case OperandVariableLiterals:
-            if (opCode == OpDecorate && (stream[word - 1] == DecorationDeclarationName || stream[word - 1] == DecorationShaderInheritFromParent))
+            if (opCode == OpDecorate &&
+                (stream[word - 1] == DecorationDeclarationName
+                || stream[word - 1] == DecorationShaderInheritFromParent
+                || stream[word - 1] == DecorationBelongsToShader))
             {
                 //XKSL extensions. Did not find how to define a different operand class per decorationId (their system don't feature this)
                 numOperands -= disassembleString(instr);
@@ -465,7 +551,7 @@ void SpirxStreamParser::disassembleInstruction(SPVInstruction* instr, Op opCode,
     return;
 }
 
-void SpirxStreamParser::setDecorationType(SPVInstruction* instr, uint32_t decorationType)
+void SPXStreamParser::setDecorationType(SPVInstruction* instr, uint32_t decorationType)
 {
     if (instr->decorationType != 0)
     {
@@ -476,7 +562,7 @@ void SpirxStreamParser::setDecorationType(SPVInstruction* instr, uint32_t decora
     instr->decorationType = decorationType;
 }
 
-void SpirxStreamParser::disassembleImmediates(int numOperands, SpirxStreamParser::SPVInstruction* instr)
+void SPXStreamParser::disassembleImmediates(int numOperands, SPXStreamParser::SPVInstruction* instr)
 {
     int ind;
     for (ind=0; ind < SPVInstruction_MAX_COUNT_IDS; ++ind)
@@ -497,7 +583,7 @@ void SpirxStreamParser::disassembleImmediates(int numOperands, SpirxStreamParser
     }*/
 }
 
-void SpirxStreamParser::disassembleIds(int numOperands, SpirxStreamParser::SPVInstruction* instr)
+void SPXStreamParser::disassembleIds(int numOperands, SPXStreamParser::SPVInstruction* instr)
 {
     int ind;
     for (ind = 0; ind < SPVInstruction_MAX_COUNT_IDS; ++ind)
@@ -519,7 +605,7 @@ void SpirxStreamParser::disassembleIds(int numOperands, SpirxStreamParser::SPVIn
 }
 
 // return the number of operands consumed by the string
-int SpirxStreamParser::disassembleString(SpirxStreamParser::SPVInstruction* instr)
+int SPXStreamParser::disassembleString(SPXStreamParser::SPVInstruction* instr)
 {
     if (instr->str != nullptr)
     {

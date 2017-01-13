@@ -1,15 +1,15 @@
 //
 // Copyright (C) 
 
-#ifndef XKSLANG_XKSLMIXER_H
-#define XKSLANG_XKSLMIXER_H
+#ifndef XKSLANG_XKSL_MIXER_H__
+#define XKSLANG_XKSL_MIXER_H__
 
 #include <string>
 #include <vector>
 
 #include "define.h"
 #include "SPXBytecode.h"
-#include "SpirxStreamParser.h"
+#include "SPXStreamParser.h"
 
 namespace xkslang
 {
@@ -25,12 +25,12 @@ public:
 
 private:
     std::vector<SPXBytecode*> listMixins;
-    std::vector<SpirxStreamParser*> listParsedSprx;
+    std::vector<SPXStreamParser*> listParsedSprx;
 
 private:
-    SpirxStreamParser* ParseSPXBytecode(SPXBytecode* spirXBytecode, std::vector<std::string>& msgs);
+    SPXStreamParser* ParseSPXBytecode(SPXBytecode* spirXBytecode, std::vector<std::string>& msgs);
 };
 
 }  // namespace xkslang
 
-#endif  // XKSLANG_XKSLMIXER_H
+#endif  // XKSLANG_XKSL_MIXER_H__
