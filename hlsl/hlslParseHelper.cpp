@@ -1,12 +1,12 @@
 //
-//Copyright (C) 2016 Google, Inc.
-//Copyright (C) 2016 LunarG, Inc.
+// Copyright (C) 2016 Google, Inc.
+// Copyright (C) 2016 LunarG, Inc.
 //
-//All rights reserved.
+// All rights reserved.
 //
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions
-//are met:
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
 //
 //    Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
@@ -20,18 +20,18 @@
 //    contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-//"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-//LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-//FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-//COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-//BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-//LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-//LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-//ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-//POSSIBILITY OF SUCH DAMAGE.
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 //
 
 #include "hlslParseHelper.h"
@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <functional>
 #include <cctype>
+#include <array>
 
 namespace glslang {
 
@@ -57,9 +58,12 @@ HlslParseContext::HlslParseContext(TSymbolTable& symbolTable, TIntermediate& int
     TParseContextBase(symbolTable, interm, parsingBuiltins, version, profile, spvVersion, language, infoSink, forwardCompatible, messages),
     contextPragma(true, false),
     loopNestingLevel(0), annotationNestingLevel(0), structNestingLevel(0), controlFlowNestingLevel(0),
+    inEntryPoint(false),
     postEntryPointReturn(false),
     limits(resources.limits),
     entryPointOutput(nullptr),
+    builtInIoIndex(nullptr),
+    builtInIoBase(nullptr),
     nextInLocation(0), nextOutLocation(0),
     sourceEntryPointName(sourceEntryPointName)
 {
@@ -74,7 +78,7 @@ HlslParseContext::HlslParseContext(TSymbolTable& symbolTable, TIntermediate& int
     globalInputDefaults.clear();
     globalOutputDefaults.clear();
 
-    // "Shaders in the transform 
+    // "Shaders in the transform
     // feedback capturing mode have an initial global default of
     //     layout(xfb_buffer = 0) out;"
     if (language == EShLangVertex ||
@@ -198,6 +202,12 @@ bool HlslParseContext::shouldConvertLValue(const TIntermNode* node) const
         return false;
 
     const TIntermAggregate* lhsAsAggregate = node->getAsAggregate();
+    const TIntermBinary* lhsAsBinary = node->getAsBinaryNode();
+
+    // If it's a swizzled/indexed aggregate, look at the left node instead.
+    if (lhsAsBinary != nullptr &&
+        (lhsAsBinary->getOp() == EOpVectorSwizzle || lhsAsBinary->getOp() == EOpIndexDirect))
+        lhsAsAggregate = lhsAsBinary->getLeft()->getAsAggregate();
 
     if (lhsAsAggregate != nullptr && lhsAsAggregate->getOp() == EOpImageLoad)
         return true;
@@ -243,7 +253,7 @@ bool HlslParseContext::lValueErrorCheck(const TSourceLoc& loc, const char* op, T
 
         TIntermAggregate* lhsAsAggregate = node->getAsAggregate();
         TIntermTyped* object = lhsAsAggregate->getSequence()[0]->getAsTyped();
-        
+
         if (!object->getType().getSampler().isImage()) {
             error(loc, "operator[] on a non-RW texture must be an r-value", "", "");
             return true;
@@ -261,7 +271,7 @@ bool HlslParseContext::lValueErrorCheck(const TSourceLoc& loc, const char* op, T
 // series of other image operations.
 //
 // Most things are passed through unmodified, except for error checking.
-// 
+//
 TIntermTyped* HlslParseContext::handleLvalue(const TSourceLoc& loc, const char* op, TIntermTyped* node)
 {
     if (node == nullptr)
@@ -336,14 +346,59 @@ TIntermTyped* HlslParseContext::handleLvalue(const TSourceLoc& loc, const char* 
                                               loc);
     };
 
+    // Return true if swizzle or index writes all components of the given variable.
+    const auto writesAllComponents = [&](TIntermSymbol* var, TIntermBinary* swizzle) -> bool {
+        if (swizzle == nullptr)  // not a swizzle or index
+            return true;
+
+        // Track which components are being set.
+        std::array<bool, 4> compIsSet;
+        compIsSet.fill(false);
+
+        const TIntermConstantUnion* asConst     = swizzle->getRight()->getAsConstantUnion();
+        const TIntermAggregate*     asAggregate = swizzle->getRight()->getAsAggregate();
+
+        // This could be either a direct index, or a swizzle.
+        if (asConst) {
+            compIsSet[asConst->getConstArray()[0].getIConst()] = true;
+        } else if (asAggregate) {
+            const TIntermSequence& seq = asAggregate->getSequence();
+            for (int comp=0; comp<int(seq.size()); ++comp)
+                compIsSet[seq[comp]->getAsConstantUnion()->getConstArray()[0].getIConst()] = true;
+        } else {
+            assert(0);
+        }
+
+        // Return true if all components are being set by the index or swizzle
+        return std::all_of(compIsSet.begin(), compIsSet.begin() + var->getType().getVectorSize(),
+                           [](bool isSet) { return isSet; } );
+    };
+
     // helper to create a temporary variable
     const auto addTmpVar = [&](const char* name, const TType& derefType) -> TIntermSymbol* {
         TVariable* tmpVar = makeInternalVariable(name, derefType);
         tmpVar->getWritableType().getQualifier().makeTemporary();
         return intermediate.addSymbol(*tmpVar, loc);
     };
-    
+
+    // Create swizzle matching input swizzle
+    const auto addSwizzle = [&](TIntermSymbol* var, TIntermBinary* swizzle) -> TIntermTyped* {
+        if (swizzle)
+            return intermediate.addBinaryNode(swizzle->getOp(), var, swizzle->getRight(), loc, swizzle->getType());
+        else
+            return var;
+    };
+
+    TIntermBinary*    lhsAsBinary    = lhs->getAsBinaryNode();
     TIntermAggregate* lhsAsAggregate = lhs->getAsAggregate();
+    bool lhsIsSwizzle = false;
+
+    // If it's a swizzled L-value, remember the swizzle, and use the LHS.
+    if (lhsAsBinary != nullptr && (lhsAsBinary->getOp() == EOpVectorSwizzle || lhsAsBinary->getOp() == EOpIndexDirect)) {
+        lhsAsAggregate = lhsAsBinary->getLeft()->getAsAggregate();
+        lhsIsSwizzle = true;
+    }
+
     TIntermTyped* object = lhsAsAggregate->getSequence()[0]->getAsTyped();
     TIntermTyped* coord  = lhsAsAggregate->getSequence()[1]->getAsTyped();
 
@@ -393,12 +448,22 @@ TIntermTyped* HlslParseContext::handleLvalue(const TSourceLoc& loc, const char* 
                 //      rhsTmp op= rhs
                 //      OpImageStore(object, coordTmp, rhsTmp)
                 //      rhsTmp
+                //
+                // If the lvalue is swizzled, we apply that when writing the temp variable, like so:
+                //    ...
+                //    rhsTmp.some_swizzle = ...
+                // For partial writes, an error is generated.
 
                 TIntermSymbol* rhsTmp = rhs->getAsSymbolNode();
                 TIntermTyped* coordTmp = coord;
- 
-                if (rhsTmp == nullptr || isModifyOp) {
+
+                if (rhsTmp == nullptr || isModifyOp || lhsIsSwizzle) {
                     rhsTmp = addTmpVar("storeTemp", objDerefType);
+
+                    // Partial updates not yet supported
+                    if (!writesAllComponents(rhsTmp, lhsAsBinary)) {
+                        error(loc, "unimplemented: partial image updates", "", "");
+                    }
 
                     // Assign storeTemp = rhs
                     if (isModifyOp) {
@@ -409,9 +474,9 @@ TIntermTyped* HlslParseContext::handleLvalue(const TSourceLoc& loc, const char* 
                     }
 
                     // rhsTmp op= rhs.
-                    makeBinary(assignOp, intermediate.addSymbol(*rhsTmp), rhs);
+                    makeBinary(assignOp, addSwizzle(intermediate.addSymbol(*rhsTmp), lhsAsBinary), rhs);
                 }
-                
+
                 makeStore(object, coordTmp, rhsTmp);         // add a store
                 return finishSequence(rhsTmp, objDerefType); // return rhsTmp from sequence
             }
@@ -435,10 +500,10 @@ TIntermTyped* HlslParseContext::handleLvalue(const TSourceLoc& loc, const char* 
                 //      rhsTmp op
                 //      OpImageStore(object, coordTmp, rhsTmp)
                 //      rhsTmp
-                
+
                 TIntermSymbol* rhsTmp = addTmpVar("storeTemp", objDerefType);
                 TIntermTyped* coordTmp = addTmpVar("coordTemp", coord->getType());
- 
+
                 makeBinary(EOpAssign, coordTmp, coord);           // coordtmp = load[param1]
                 makeLoad(rhsTmp, object, coordTmp, objDerefType); // rhsTmp = OpImageLoad(object, coordTmp)
                 makeUnary(assignOp, rhsTmp);                      // op rhsTmp
@@ -468,7 +533,7 @@ TIntermTyped* HlslParseContext::handleLvalue(const TSourceLoc& loc, const char* 
                 makeStore(object, coordTmp, rhsTmp2);              // OpImageStore(object, coordTmp, rhsTmp2)
                 return finishSequence(rhsTmp1, objDerefType);      // return rhsTmp from sequence
             }
-                
+
         default:
             break;
         }
@@ -477,7 +542,7 @@ TIntermTyped* HlslParseContext::handleLvalue(const TSourceLoc& loc, const char* 
     if (lhs)
         if (lValueErrorCheck(loc, op, lhs))
             return nullptr;
- 
+
     return node;
 }
 
@@ -510,78 +575,162 @@ bool HlslParseContext::parseVectorFields(const TSourceLoc& loc, const TString& c
         estpq,
     } fieldSet[4];
 
-        for (int i = 0; i < fields.num; ++i) {
-            switch (compString[i])  {
-            case 'x':
-                fields.offsets[i] = 0;
-                fieldSet[i] = exyzw;
-                break;
-            case 'r':
-                fields.offsets[i] = 0;
-                fieldSet[i] = ergba;
-                break;
-            case 's':
-                fields.offsets[i] = 0;
-                fieldSet[i] = estpq;
-                break;
-            case 'y':
-                fields.offsets[i] = 1;
-                fieldSet[i] = exyzw;
-                break;
-            case 'g':
-                fields.offsets[i] = 1;
-                fieldSet[i] = ergba;
-                break;
-            case 't':
-                fields.offsets[i] = 1;
-                fieldSet[i] = estpq;
-                break;
-            case 'z':
-                fields.offsets[i] = 2;
-                fieldSet[i] = exyzw;
-                break;
-            case 'b':
-                fields.offsets[i] = 2;
-                fieldSet[i] = ergba;
-                break;
-            case 'p':
-                fields.offsets[i] = 2;
-                fieldSet[i] = estpq;
-                break;
+    for (int i = 0; i < fields.num; ++i) {
+        switch (compString[i])  {
+        case 'x':
+            fields.offsets[i] = 0;
+            fieldSet[i] = exyzw;
+            break;
+        case 'r':
+            fields.offsets[i] = 0;
+            fieldSet[i] = ergba;
+            break;
+        case 's':
+            fields.offsets[i] = 0;
+            fieldSet[i] = estpq;
+            break;
+        case 'y':
+            fields.offsets[i] = 1;
+            fieldSet[i] = exyzw;
+            break;
+        case 'g':
+            fields.offsets[i] = 1;
+            fieldSet[i] = ergba;
+            break;
+        case 't':
+            fields.offsets[i] = 1;
+            fieldSet[i] = estpq;
+            break;
+        case 'z':
+            fields.offsets[i] = 2;
+            fieldSet[i] = exyzw;
+            break;
+        case 'b':
+            fields.offsets[i] = 2;
+            fieldSet[i] = ergba;
+            break;
+        case 'p':
+            fields.offsets[i] = 2;
+            fieldSet[i] = estpq;
+            break;
 
-            case 'w':
-                fields.offsets[i] = 3;
-                fieldSet[i] = exyzw;
-                break;
-            case 'a':
-                fields.offsets[i] = 3;
-                fieldSet[i] = ergba;
-                break;
-            case 'q':
-                fields.offsets[i] = 3;
-                fieldSet[i] = estpq;
-                break;
-            default:
-                error(loc, "illegal vector field selection", compString.c_str(), "");
+        case 'w':
+            fields.offsets[i] = 3;
+            fieldSet[i] = exyzw;
+            break;
+        case 'a':
+            fields.offsets[i] = 3;
+            fieldSet[i] = ergba;
+            break;
+        case 'q':
+            fields.offsets[i] = 3;
+            fieldSet[i] = estpq;
+            break;
+        default:
+            error(loc, "illegal vector field selection", compString.c_str(), "");
+            return false;
+        }
+    }
+
+    for (int i = 0; i < fields.num; ++i) {
+        if (fields.offsets[i] >= vecSize) {
+            error(loc, "vector field selection out of range", compString.c_str(), "");
+            return false;
+        }
+
+        if (i > 0) {
+            if (fieldSet[i] != fieldSet[i - 1]) {
+                error(loc, "illegal - vector component fields not from the same set", compString.c_str(), "");
                 return false;
             }
         }
+    }
 
-        for (int i = 0; i < fields.num; ++i) {
-            if (fields.offsets[i] >= vecSize) {
-                error(loc, "vector field selection out of range", compString.c_str(), "");
+    return true;
+}
+
+//
+// Look at a '.' field selector string and change it into components
+// for a matrix. There are two types:
+//
+//   _21    second row, first column (one based)
+//   _m21   third row, second column (zero based)
+//
+// Returns true if there is no error.
+//
+bool HlslParseContext::parseMatrixComponents(const TSourceLoc& loc, const TString& fields, int cols, int rows,
+                                             TMatrixComponents& components)
+{
+    int startPos[TMatrixComponents::maxMatrixComponents];
+    int numComps = 0;
+    TString compString = fields;
+
+    // Find where each component starts,
+    // recording the first character position after the '_'.
+    for (size_t c = 0; c < compString.size(); ++c) {
+        if (compString[c] == '_') {
+            if (numComps >= TMatrixComponents::maxMatrixComponents) {
+                error(loc, "matrix component swizzle has too many components", compString.c_str(), "");
                 return false;
             }
-
-            if (i > 0) {
-                if (fieldSet[i] != fieldSet[i - 1]) {
-                    error(loc, "illegal - vector component fields not from the same set", compString.c_str(), "");
-                    return false;
-                }
+            if (c > compString.size() - 3 ||
+                    ((compString[c+1] == 'm' || compString[c+1] == 'M') && c > compString.size() - 4)) {
+                error(loc, "matrix component swizzle missing", compString.c_str(), "");
+                return false;
             }
+            startPos[numComps++] = c + 1;
         }
+    }
 
-        return true;
+    // Process each component
+    for (int i = 0; i < numComps; ++i) {
+        int pos = startPos[i];
+        int bias = -1;
+        if (compString[pos] == 'm' || compString[pos] == 'M') {
+            bias = 0;
+            ++pos;
+        }
+        TMatrixComponents::tMatrixComponent comp;
+        comp.coord1 = compString[pos+0] - '0' + bias;
+        comp.coord2 = compString[pos+1] - '0' + bias;
+        if (comp.coord1 < 0 || comp.coord1 >= cols) {
+            error(loc, "matrix row component out of range", compString.c_str(), "");
+            return false;
+        }
+        if (comp.coord2 < 0 || comp.coord2 >= rows) {
+            error(loc, "matrix column component out of range", compString.c_str(), "");
+            return false;
+        }
+        components.push_back(comp);
+    }
+
+    return true;
+}
+
+// If the 'comps' express a column of a matrix,
+// return the column.  Column means the first coords all match.
+//
+// Otherwise, return -1.
+//
+int HlslParseContext::getMatrixComponentsColumn(int rows, const TMatrixComponents& comps)
+{
+    int col = -1;
+
+    // right number of comps?
+    if (comps.size() != rows)
+        return -1;
+
+    // all comps in the same column?
+    // rows in order?
+    col = comps.get(0).coord1;
+    for (int i = 0; i < rows; ++i) {
+        if (col != comps.get(i).coord1)
+            return -1;
+        if (i != comps.get(i).coord2)
+            return -1;
+    }
+
+    return col;
 }
 
 //
@@ -717,11 +866,13 @@ TIntermTyped* HlslParseContext::handleBracketDereference(const TSourceLoc& loc, 
 
         if (base->getAsSymbolNode() && (wasFlattened(base) || shouldFlatten(base->getType()))) {
             if (index->getQualifier().storage != EvqConst)
-                error(loc, "Invalid variable index to flattened uniform array", base->getAsSymbolNode()->getName().c_str(), "");
+                error(loc, "Invalid variable index to flattened array", base->getAsSymbolNode()->getName().c_str(), "");
 
-            result = flattenAccess(loc, base, indexValue);
+            result = flattenAccess(base, indexValue);
             flattened = (result != base);
         } else {
+            splitAccessArray(loc, base, index);
+
             if (index->getQualifier().storage == EvqConst) {
                 if (base->getType().isImplicitlySizedArray())
                     updateImplicitArraySize(loc, base, indexValue);
@@ -790,7 +941,7 @@ TIntermTyped* HlslParseContext::handleDotDereference(const TSourceLoc& loc, TInt
 
     //
     // methods can't be resolved until we later see the function-calling syntax.
-    // Save away the name in the AST for now.  Processing is completed in 
+    // Save away the name in the AST for now.  Processing is completed in
     // handleLengthMethod(), etc.
     //
     if (field == "length") {
@@ -826,11 +977,9 @@ TIntermTyped* HlslParseContext::handleDotDereference(const TSourceLoc& loc, TInt
         }
     } else if (field == "Append" ||
                field == "RestartStrip") {
-        // These methods only valid on stage in variables
-        // TODO: ... which are stream out types, if there's any way to test that here.
-        if (base->getType().getQualifier().storage == EvqVaryingOut) {
-            return intermediate.addMethod(base, TType(EbtVoid), &field, loc);
-        }
+        // We cannot check the type here: it may be sanitized if we're not compiling a geometry shader, but
+        // the code is around in the shader source.
+        return intermediate.addMethod(base, TType(EbtVoid), &field, loc);
     }
 
     // It's not .length() if we get to here.
@@ -884,6 +1033,40 @@ TIntermTyped* HlslParseContext::handleDotDereference(const TSourceLoc& loc, TInt
                 result->setType(TType(base->getBasicType(), EvqTemporary, base->getType().getQualifier().precision, (int)vectorString.size()));
             }
         }
+    } else if (base->isMatrix()) {
+        TMatrixComponents comps;
+        if (! parseMatrixComponents(loc, field, base->getMatrixCols(), base->getMatrixRows(), comps))
+            return result;
+
+        if (comps.size() == 1) {
+            // Representable by m[c][r]
+            if (base->getType().getQualifier().storage == EvqConst) {
+                result = intermediate.foldDereference(base, comps.get(0).coord1, loc);
+                result = intermediate.foldDereference(result, comps.get(1).coord2, loc);
+            } else {
+                result = intermediate.addIndex(EOpIndexDirect, base, intermediate.addConstantUnion(comps.get(0).coord1, loc), loc);
+                TType dereferencedCol(base->getType(), 0);
+                result->setType(dereferencedCol);
+                result = intermediate.addIndex(EOpIndexDirect, result, intermediate.addConstantUnion(comps.get(0).coord2, loc), loc);
+                TType dereferenced(dereferencedCol, 0);
+                result->setType(dereferenced);
+            }
+        } else {
+            int column = getMatrixComponentsColumn(base->getMatrixRows(), comps);
+            if (column >= 0) {
+                // Representable by m[c]
+                if (base->getType().getQualifier().storage == EvqConst)
+                    result = intermediate.foldDereference(base, column, loc);
+                else {
+                    result = intermediate.addIndex(EOpIndexDirect, base, intermediate.addConstantUnion(column, loc), loc);
+                    TType dereferenced(base->getType(), 0);
+                    result->setType(dereferenced);
+                }
+            } else {
+                // general case, not a column, not a single component
+                error(loc, "arbitrary matrix component selection not supported", field.c_str(), "");
+            }
+        }
     } else if (base->getBasicType() == EbtStruct || base->getBasicType() == EbtBlock || base->getBasicType() == EbtShaderClass) {
         const TTypeList* fields = base->getType().getStruct();
         bool fieldFound = false;
@@ -895,15 +1078,21 @@ TIntermTyped* HlslParseContext::handleDotDereference(const TSourceLoc& loc, TInt
             }
         }
         if (fieldFound) {
-            if (base->getAsSymbolNode() && (wasFlattened(base) || shouldFlatten(base->getType())))
-                result = flattenAccess(loc, base, member);
-            else {
-                if (base->getType().getQualifier().storage == EvqConst)
-                    result = intermediate.foldDereference(base, member, loc);
-                else {
-                    TIntermTyped* index = intermediate.addConstantUnion(member, loc);
-                    result = intermediate.addIndex(EOpIndexDirectStruct, base, index, loc);
-                    result->setType(*(*fields)[member].type);
+            if (base->getAsSymbolNode() && (wasFlattened(base) || shouldFlatten(base->getType()))) {
+                result = flattenAccess(base, member);
+            } else {
+                // Update the base and member to access if this was a split structure.
+                result = splitAccessStruct(loc, base, member);
+                fields = base->getType().getStruct();
+
+                if (result == nullptr) {
+                    if (base->getType().getQualifier().storage == EvqConst)
+                        result = intermediate.foldDereference(base, member, loc);
+                    else {
+                        TIntermTyped* index = intermediate.addConstantUnion(member, loc);
+                        result = intermediate.addIndex(EOpIndexDirectStruct, base, index, loc);
+                        result->setType(*(*fields)[member].type);
+                    }
                 }
             }
         } else
@@ -914,10 +1103,106 @@ TIntermTyped* HlslParseContext::handleDotDereference(const TSourceLoc& loc, TInt
     return result;
 }
 
+// Determine whether we should split this type
+bool HlslParseContext::shouldSplit(const TType& type)
+{
+    if (! inEntryPoint)
+        return false;
+
+    const TStorageQualifier qualifier = type.getQualifier().storage;
+
+    // If it contains interstage IO, but not ONLY interstage IO, split the struct.
+    return type.isStruct() && type.containsBuiltInInterstageIO(language) &&
+        (qualifier == EvqVaryingIn || qualifier == EvqVaryingOut);
+}
+
+// Split the type of the given node into two structs:
+//   1. interstage IO
+//   2. everything else
+// IO members are put into the ioStruct.  The type is modified to remove them.
+void HlslParseContext::split(TIntermTyped* node)
+{
+    if (node == nullptr)
+        return;
+
+    TIntermSymbol* symNode = node->getAsSymbolNode();
+
+    if (symNode == nullptr)
+        return;
+
+    // Create a new variable:
+    TType& splitType = split(*symNode->getType().clone(), symNode->getName());
+
+    splitIoVars[symNode->getId()] = makeInternalVariable(symNode->getName(), splitType);
+}
+
+// Split the type of the given variable into two structs:
+void HlslParseContext::split(const TVariable& variable)
+{
+    const TType& type = variable.getType();
+
+    TString name = (&variable == entryPointOutput) ? "" : variable.getName();
+
+    // Create a new variable:
+    TType& splitType = split(*type.clone(), name);
+
+    splitIoVars[variable.getUniqueId()] = makeInternalVariable(variable.getName(), splitType);
+}
+
+// Recursive implementation of split(const TVariable& variable).
+// Returns reference to the modified type.
+TType& HlslParseContext::split(TType& type, TString name, const TType* outerStructType)
+{
+    const TArraySizes* arraySizes = nullptr;
+
+    // At the outer-most scope, remember the struct type so we can examine its storage class
+    // at deeper levels.
+    if (outerStructType == nullptr)
+        outerStructType = &type;
+
+    if (type.isArray())
+        arraySizes = &type.getArraySizes();
+
+    // We can ignore arrayness: it's uninvolved.
+    if (type.isStruct()) {
+        TTypeList* userStructure = type.getWritableStruct();
+
+        // Get iterator to (now at end) set of builtin iterstage IO members
+        const auto firstIo = std::stable_partition(userStructure->begin(), userStructure->end(),
+                                                   [this](const TTypeLoc& t) {return !t.type->isBuiltInInterstageIO(language);});
+
+        // Move those to the builtin IO.  However, we also propagate arrayness (just one level is handled
+        // now) to this variable.
+        for (auto ioType = firstIo; ioType != userStructure->end(); ++ioType) {
+            const TType& memberType = *ioType->type;
+            TVariable* ioVar = makeInternalVariable(name + (name.empty() ? "" : "_") + memberType.getFieldName(), memberType);
+
+            if (arraySizes)
+                ioVar->getWritableType().newArraySizes(*arraySizes);
+
+            interstageBuiltInIo[tInterstageIoData(memberType, *outerStructType)] = ioVar;
+
+            // Merge qualifier from the user structure
+            mergeQualifiers(ioVar->getWritableType().getQualifier(), outerStructType->getQualifier());
+        }
+
+        // Erase the IO vars from the user structure.
+        userStructure->erase(firstIo, userStructure->end());
+
+        // Recurse further into the members.
+        for (unsigned int i = 0; i < userStructure->size(); ++i)
+            split(*(*userStructure)[i].type,
+                  name + (name.empty() ? "" : "_") + (*userStructure)[i].type->getFieldName(),
+                  outerStructType);
+    }
+
+    return type;
+}
+
 // Determine whether we should flatten an arbitrary type.
 bool HlslParseContext::shouldFlatten(const TType& type) const
 {
-    return shouldFlattenIO(type) || shouldFlattenUniform(type); 
+    return shouldFlattenIO(type) || shouldFlattenUniform(type);
 }
 
 // Is this an IO variable that can't be passed down the stack?
@@ -929,9 +1214,11 @@ bool HlslParseContext::shouldFlattenIO(const TType& type) const
 
     const TStorageQualifier qualifier = type.getQualifier().storage;
 
-    return type.isStruct() &&
-           (qualifier == EvqVaryingIn ||
-            qualifier == EvqVaryingOut);
+    if (!type.isStruct())
+        return false;
+
+    return ((language == EShLangVertex   && qualifier == EvqVaryingIn) ||
+            (language == EShLangFragment && qualifier == EvqVaryingOut));
 }
 
 // Is this a uniform array which should be flattened?
@@ -950,13 +1237,13 @@ void HlslParseContext::flatten(const TSourceLoc& loc, const TVariable& variable)
     const TType& type = variable.getType();
 
     // emplace gives back a pair whose .first is an iterator to the item...
-    auto entry = flattenMap.emplace(variable.getUniqueId(), 
+    auto entry = flattenMap.emplace(variable.getUniqueId(),
                                     TFlattenData(type.getQualifier().layoutBinding));
-        
+
     // ... and the item is a map pair, so first->second is the TFlattenData itself.
     flatten(loc, variable, type, entry.first->second, "");
 }
-    
+
 // Recursively flatten the given variable at the provided type, building the flattenData as we go.
 //
 // This is mutually recursive with flattenStruct and flattenArray.
@@ -965,7 +1252,7 @@ void HlslParseContext::flatten(const TSourceLoc& loc, const TVariable& variable)
 // location in this linear sequence.
 //
 // If the tree was N-ary, that can be directly calculated.  However, we are dealing with
-// arbitrary numbers - peraps a struct of 7 members containing an array of 3.  Thus, we must
+// arbitrary numbers - perhaps a struct of 7 members containing an array of 3.  Thus, we must
 // build a data structure to allow the sequence of bracket and dot operators on arrays and
 // structs to arrive at the proper member.
 //
@@ -987,13 +1274,6 @@ void HlslParseContext::flatten(const TSourceLoc& loc, const TVariable& variable)
 int HlslParseContext::flatten(const TSourceLoc& loc, const TVariable& variable, const TType& type,
                               TFlattenData& flattenData, TString name)
 {
-    // TODO: when struct splitting is in place we can remove this restriction.
-    if (language == EShLangGeometry) {
-        const TType derefType(type, 0);
-        if (!isFinalFlattening(derefType) && type.getQualifier().storage == EvqVaryingIn)
-            error(loc, "recursive type not yet supported in GS input", variable.getName().c_str(), "");
-    }
-
     // If something is an arrayed struct, the array flattener will recursively call flatten()
     // to then flatten the struct, so this is an "if else": we don't do both.
     if (type.isArray())
@@ -1008,13 +1288,13 @@ int HlslParseContext::flatten(const TSourceLoc& loc, const TVariable& variable, 
 
 // Add a single flattened member to the flattened data being tracked for the composite
 // Returns true for the final flattening level.
-int HlslParseContext::addFlattenedMember(const TSourceLoc& loc, 
-                                          const TVariable& variable, const TType& type, TFlattenData& flattenData, 
+int HlslParseContext::addFlattenedMember(const TSourceLoc& loc,
+                                          const TVariable& variable, const TType& type, TFlattenData& flattenData,
                                           const TString& memberName, bool track)
 {
     if (isFinalFlattening(type)) {
         // This is as far as we flatten.  Insert the variable.
-        TVariable* memberVariable = makeInternalVariable(memberName.c_str(), type);
+        TVariable* memberVariable = makeInternalVariable(memberName, type);
         mergeQualifiers(memberVariable->getWritableType().getQualifier(), variable.getType().getQualifier());
 
         if (flattenData.nextBinding != TQualifier::layoutBindingEnd)
@@ -1040,7 +1320,7 @@ int HlslParseContext::addFlattenedMember(const TSourceLoc& loc,
 //      effecting a transfer of this information to the flattened variable form.
 //
 // Assumes shouldFlatten() or equivalent was called first.
-int HlslParseContext::flattenStruct(const TSourceLoc& loc, const TVariable& variable, const TType& type, 
+int HlslParseContext::flattenStruct(const TSourceLoc& loc, const TVariable& variable, const TType& type,
                                      TFlattenData& flattenData, TString name)
 {
     assert(type.isStruct());
@@ -1070,7 +1350,7 @@ int HlslParseContext::flattenStruct(const TSourceLoc& loc, const TVariable& vari
 // equivalent set of individual variables.
 //
 // Assumes shouldFlatten() or equivalent was called first.
-int HlslParseContext::flattenArray(const TSourceLoc& loc, const TVariable& variable, const TType& type, 
+int HlslParseContext::flattenArray(const TSourceLoc& loc, const TVariable& variable, const TType& type,
                                    TFlattenData& flattenData, TString name)
 {
     assert(type.isArray());
@@ -1089,7 +1369,7 @@ int HlslParseContext::flattenArray(const TSourceLoc& loc, const TVariable& varia
     int pos   = start;
     flattenData.offsets.resize(int(pos + size), -1);
 
-    for (int element=0; element < size; ++element) {      
+    for (int element=0; element < size; ++element) {
         char elementNumBuf[20];  // sufficient for MAXINT
         snprintf(elementNumBuf, sizeof(elementNumBuf)-1, "[%d]", element);
         const int mpos = addFlattenedMember(loc, variable, dereferencedType, flattenData,
@@ -1104,16 +1384,21 @@ int HlslParseContext::flattenArray(const TSourceLoc& loc, const TVariable& varia
 // Return true if we have flattened this node.
 bool HlslParseContext::wasFlattened(const TIntermTyped* node) const
 {
-    return node != nullptr &&
-        node->getAsSymbolNode() != nullptr &&
+    return node != nullptr && node->getAsSymbolNode() != nullptr &&
         wasFlattened(node->getAsSymbolNode()->getId());
 }
 
+// Return true if we have split this structure
+bool HlslParseContext::wasSplit(const TIntermTyped* node) const
+{
+    return node != nullptr && node->getAsSymbolNode() != nullptr &&
+        wasSplit(node->getAsSymbolNode()->getId());
+}
 
 // Turn an access into an aggregate that was flattened to instead be
 // an access to the individual variable the member was flattened to.
 // Assumes shouldFlatten() or equivalent was called first.
-TIntermTyped* HlslParseContext::flattenAccess(const TSourceLoc&, TIntermTyped* base, int member)
+TIntermTyped* HlslParseContext::flattenAccess(TIntermTyped* base, int member)
 {
     const TType dereferencedType(base->getType(), member);  // dereferenced type
 
@@ -1136,6 +1421,114 @@ TIntermTyped* HlslParseContext::flattenAccess(const TSourceLoc&, TIntermTyped* b
         // If this is not the final flattening, accumulate the position and return
         // an object of the partially dereferenced type.
         return new TIntermSymbol(symbolNode.getId(), "flattenShadow", dereferencedType);
+    }
+}
+
+// Find and return the split IO TVariable for id, or nullptr if none.
+TVariable* HlslParseContext::getSplitIoVar(int id) const
+{
+    const auto splitIoVar = splitIoVars.find(id);
+
+    if (splitIoVar == splitIoVars.end())
+        return nullptr;
+
+    return splitIoVar->second;
+}
+
+// Find and return the split IO TVariable for variable, or nullptr if none.
+TVariable* HlslParseContext::getSplitIoVar(const TVariable* var) const
+{
+    if (var == nullptr)
+        return nullptr;
+
+    return getSplitIoVar(var->getUniqueId());
+}
+
+// Find and return the split IO TVariable for symbol in this node, or nullptr if none.
+TVariable* HlslParseContext::getSplitIoVar(const TIntermTyped* node) const
+{
+    if (node == nullptr)
+        return nullptr;
+
+    const TIntermSymbol* symbolNode = node->getAsSymbolNode();
+
+    if (symbolNode == nullptr)
+        return nullptr;
+
+    return getSplitIoVar(symbolNode->getId());
+}
+
+// Remember the index used to dereference into this structure, in case it has to be moved to a
+// split-off builtin IO member.
+void HlslParseContext::splitAccessArray(const TSourceLoc& loc, TIntermTyped* base, TIntermTyped* index)
+{
+    const TVariable* splitIoVar = getSplitIoVar(base);
+
+    // Not a split structure
+    if (splitIoVar == nullptr)
+        return;
+
+    if (builtInIoBase) {
+        error(loc, "only one array dimension supported for builtIn IO variable", "", "");
+        return;
+    }
+
+    builtInIoBase  = base;
+    builtInIoIndex = index;
+}
+
+// Turn an access into an struct that was split to instead be an
+// access to either the modified structure, or a direct reference to
+// one of the split member variables.
+TIntermTyped* HlslParseContext::splitAccessStruct(const TSourceLoc& loc, TIntermTyped*& base, int& member)
+{
+    // nothing to do
+    if (base == nullptr)
+        return nullptr;
+
+    // We have a pending bracket reference to an outer struct that we may want to move to an inner member.
+    if (builtInIoBase)
+        base = builtInIoBase;
+
+    const TVariable* splitIoVar = getSplitIoVar(base);
+
+    if (splitIoVar == nullptr)
+        return nullptr;
+
+    const TTypeList& members = *base->getType().getStruct();
+
+    const TType& memberType = *members[member].type;
+
+    if (memberType.isBuiltInInterstageIO(language)) {
+        // It's one of the interstage IO variables we split off.
+        TIntermTyped* builtIn = intermediate.addSymbol(*interstageBuiltInIo[tInterstageIoData(memberType, base->getType())], loc);
+
+        // If there's an array reference to an outer split struct, we re-apply it here.
+        if (builtInIoIndex != nullptr) {
+            if (builtInIoIndex->getQualifier().storage == EvqConst)
+                builtIn = intermediate.addIndex(EOpIndexDirect, builtIn, builtInIoIndex, loc);
+            else
+                builtIn = intermediate.addIndex(EOpIndexIndirect, builtIn, builtInIoIndex, loc);
+
+            builtIn->setType(memberType);
+
+            builtInIoIndex = nullptr;
+            builtInIoBase  = nullptr;
+        }
+
+        return builtIn;
+    } else {
+        // It's not an IO variable.  Find the equivalent index into the new variable.
+        base = intermediate.addSymbol(*splitIoVar, loc);
+
+        int newMember = 0;
+        for (int m=0; m<member; ++m)
+            if (!members[m].type->isBuiltInInterstageIO(language))
+                ++newMember;
+
+        member = newMember;
+
+        return nullptr;
     }
 }
 
@@ -1166,8 +1559,17 @@ void HlslParseContext::assignLocations(TVariable& variable)
         auto& memberList = flattenMap[variable.getUniqueId()].members;
         for (auto member = memberList.begin(); member != memberList.end(); ++member)
             assignLocation(**member);
-    } else
+    } else if (wasSplit(variable.getUniqueId())) {
+        TVariable* splitIoVar = getSplitIoVar(&variable);
+        const TTypeList* structure = splitIoVar->getType().getStruct();
+        // Struct splitting can produce empty structures if the only members of the
+        // struct were builtin interstage IO types.  Only assign locations if it
+        // isn't a struct, or is a non-empty struct.
+        if (structure == nullptr || !structure->empty())
+            assignLocation(*splitIoVar);
+    } else {
         assignLocation(variable);
+    }
 }
 
 //
@@ -1211,11 +1613,97 @@ TFunction& HlslParseContext::handleFunctionDeclarator(const TSourceLoc& loc, TFu
     return function;
 }
 
+// Add interstage IO variables to the linkage in canonical order.
+void HlslParseContext::addInterstageIoToLinkage()
+{
+    TSourceLoc loc;
+    loc.init();
+
+    std::vector<tInterstageIoData> io;
+    io.reserve(interstageBuiltInIo.size());
+
+    for (auto ioVar = interstageBuiltInIo.begin(); ioVar != interstageBuiltInIo.end(); ++ioVar)
+        io.push_back(ioVar->first);
+
+    // Our canonical order is the TBuiltInVariable numeric order.
+    std::sort(io.begin(), io.end());
+
+    // We have to (potentially) track two IO blocks, one in, one out.  E.g, a GS may have a
+    // PerVertex block in both directions, possibly with different members.
+    static const TStorageQualifier ioType[2] = { EvqVaryingIn, EvqVaryingOut };
+    static const char* blockName[2] = { "PerVertex_in", "PerVertex_out" };
+
+    TTypeList*   ioBlockTypes[2] = { nullptr, nullptr };
+    TArraySizes* ioBlockArray[2] = { nullptr, nullptr };
+
+    for (int idx = 0; idx < int(io.size()); ++idx) {
+        TVariable* var = interstageBuiltInIo[io[idx]];
+
+        // Add the loose interstage IO to the linkage
+        if (var->getType().isLooseAndBuiltIn(language))
+            trackLinkageDeferred(*var);
+
+        // Add the PerVertex interstage IO to the IO block
+        if (var->getType().isPerVertexAndBuiltIn(language)) {
+            int blockId = 0;
+            switch (var->getType().getQualifier().storage) {
+            case EvqVaryingIn:  blockId = 0; break;
+            case EvqVaryingOut: blockId = 1; break;
+            default: assert(0 && "Invalid storage qualifier");
+            }
+
+            // Lazy creation of type list only if we end up needing it.
+            if (ioBlockTypes[blockId] == nullptr)
+                ioBlockTypes[blockId] = new TTypeList();
+
+            TTypeLoc member = { new TType(EbtVoid), loc };
+            member.type->shallowCopy(var->getType());
+            member.type->setFieldName(var->getName());
+
+            // We may have collected these from different parts of different structures.  If their
+            // array dimensions are not the same, we don't know what to do, so issue an error.
+            if (member.type->isArray()) {
+                if (ioBlockArray[blockId] == nullptr) {
+                    ioBlockArray[blockId] = &member.type->getArraySizes();
+                } else  {
+                    if (*ioBlockArray[blockId] != member.type->getArraySizes())
+                        error(loc, "PerVertex block array dimension mismatch", "", "");
+                }
+                member.type->clearArraySizes();
+            }
+
+            ioBlockTypes[blockId]->push_back(member);
+        }
+    }
+
+    // If there were PerVertex items, add the block to the linkage.  Handle in and out separately.
+    for (int blockId = 0; blockId <= 1; ++blockId) {
+        if (ioBlockTypes[blockId] != nullptr) {
+            const TString* instanceName = NewPoolTString(blockName[blockId]);
+            TQualifier     blockQualifier;
+
+            blockQualifier.clear();
+            blockQualifier.storage = ioType[blockId];
+
+            TType blockType(ioBlockTypes[blockId], *instanceName, blockQualifier);
+
+            if (ioBlockArray[blockId] != nullptr)
+                blockType.newArraySizes(*ioBlockArray[blockId]);
+
+            TVariable* ioBlock = new TVariable(instanceName, blockType);
+            if (!symbolTable.insert(*ioBlock))
+                error(loc, "block instance name redefinition", ioBlock->getName().c_str(), "");
+            else
+                trackLinkageDeferred(*ioBlock);
+        }
+    }
+}
+
 //
-// Handle seeing the function prototype in front of a function definition in the grammar.  
+// Handle seeing the function prototype in front of a function definition in the grammar.
 // The body is handled after this function returns.
 //
-TIntermAggregate* HlslParseContext::handleFunctionDefinition(const TSourceLoc& loc, TFunction& function, 
+TIntermAggregate* HlslParseContext::handleFunctionDefinition(const TSourceLoc& loc, TFunction& function,
                                                              const TAttributeMap& attributes)
 {
     currentCaller = function.getMangledName();
@@ -1249,6 +1737,8 @@ TIntermAggregate* HlslParseContext::handleFunctionDefinition(const TSourceLoc& l
         if (entryPointOutput) {
             if (shouldFlatten(entryPointOutput->getType()))
                 flatten(loc, *entryPointOutput);
+            if (shouldSplit(entryPointOutput->getType()))
+                split(*entryPointOutput);
             assignLocations(*entryPointOutput);
         }
     } else
@@ -1276,7 +1766,15 @@ TIntermAggregate* HlslParseContext::handleFunctionDefinition(const TSourceLoc& l
     for (int i = 0; i < function.getParamCount(); i++) {
         TParameter& param = function[i];
         if (param.name != nullptr) {
-            TVariable *variable = new TVariable(param.name, *param.type);
+            TType* sanitizedType;
+
+            // If we're not in the entry point, parameters are sanitized types.
+            if (inEntryPoint)
+                sanitizedType = param.type;
+            else
+                sanitizedType = sanitizeType(param.type);
+
+            TVariable *variable = new TVariable(param.name, *sanitizedType);
 
             // Insert the parameters with name in the symbol table.
             if (! symbolTable.insert(*variable))
@@ -1286,6 +1784,8 @@ TIntermAggregate* HlslParseContext::handleFunctionDefinition(const TSourceLoc& l
                 if (inEntryPoint) {
                     if (shouldFlatten(*param.type))
                         flatten(loc, *variable);
+                    if (shouldSplit(*param.type))
+                        split(*variable);
                     assignLocations(*variable);
                 }
 
@@ -1300,6 +1800,7 @@ TIntermAggregate* HlslParseContext::handleFunctionDefinition(const TSourceLoc& l
         } else
             paramNodes = intermediate.growAggregate(paramNodes, intermediate.addSymbol(*param.type, loc), loc);
     }
+
     intermediate.setAggregateOperator(paramNodes, EOpParameters, TType(EbtVoid), loc);
     loopNestingLevel = 0;
     controlFlowNestingLevel = 0;
@@ -1310,7 +1811,7 @@ TIntermAggregate* HlslParseContext::handleFunctionDefinition(const TSourceLoc& l
         const TIntermAggregate* numThreads = attributes[EatNumThreads];
         if (numThreads != nullptr) {
             const TIntermSequence& sequence = numThreads->getSequence();
- 
+
             for (int lid = 0; lid < int(sequence.size()); ++lid)
                 intermediate.setLocalSize(lid, sequence[lid]->getAsConstantUnion()->getConstArray()[0].getIConst());
         }
@@ -1434,10 +1935,12 @@ TIntermNode* HlslParseContext::handleReturnValue(const TSourceLoc& loc, TIntermT
         return intermediate.addBranch(EOpReturn, value, loc);
 }
 
-void HlslParseContext::handleFunctionArgument(TFunction* function, TIntermTyped*& arguments, TIntermTyped* newArg)
+void HlslParseContext::handleFunctionArgument(TFunction* function,
+                                              TIntermTyped*& arguments, TIntermTyped* newArg)
 {
     TParameter param = { 0, new TType, nullptr };
     param.type->shallowCopy(newArg->getType());
+
     function->addParameter(param);
     if (arguments)
         arguments = intermediate.growAggregate(arguments, newArg);
@@ -1453,14 +1956,15 @@ TIntermTyped* HlslParseContext::handleAssign(const TSourceLoc& loc, TOperator op
     if (left == nullptr || right == nullptr)
         return nullptr;
 
-    const auto mustFlatten = [&](const TIntermTyped& node) {
-        return wasFlattened(&node) && node.getAsSymbolNode() &&
-               flattenMap.find(node.getAsSymbolNode()->getId()) != flattenMap.end();
-    };
+    const bool isSplitLeft    = wasSplit(left);
+    const bool isSplitRight   = wasSplit(right);
 
-    const bool flattenLeft = mustFlatten(*left);
-    const bool flattenRight = mustFlatten(*right);
-    if (! flattenLeft && ! flattenRight)
+    const bool isFlattenLeft  = wasFlattened(left);
+    const bool isFlattenRight = wasFlattened(right);
+
+    // OK to do a single assign if both are split, or both are unsplit.  But if one is and the other
+    // isn't, we fall back to a memberwise copy.
+    if (! isFlattenLeft && ! isFlattenRight && !isSplitLeft && !isSplitRight)
         return intermediate.addAssign(op, left, right, loc);
 
     TIntermAggregate* assignList = nullptr;
@@ -1486,17 +1990,17 @@ TIntermTyped* HlslParseContext::handleAssign(const TSourceLoc& loc, TOperator op
     if (left->getType().isArray())
         memberCount = left->getType().getCumulativeArraySize();
 
-    if (flattenLeft)
+    if (isFlattenLeft)
         leftVariables = &flattenMap.find(left->getAsSymbolNode()->getId())->second.members;
 
-    if (flattenRight) {
+    if (isFlattenRight) {
         rightVariables = &flattenMap.find(right->getAsSymbolNode()->getId())->second.members;
     } else {
         // The RHS is not flattened.  There are several cases:
         // 1. 1 item to copy:  Use the RHS directly.
         // 2. >1 item, simple symbol RHS: we'll create a new TIntermSymbol node for each, but no assign to temp.
         // 3. >1 item, complex RHS: assign it to a new temp variable, and create a TIntermSymbol for each member.
-        
+
         if (memberCount <= 1) {
             // case 1: we'll use the symbol directly below.  Nothing to do.
         } else {
@@ -1517,63 +2021,33 @@ TIntermTyped* HlslParseContext::handleAssign(const TSourceLoc& loc, TOperator op
 
     int memberIdx = 0;
 
-    const auto getMember = [&](bool flatten, TIntermTyped* node,
-                               const TVector<TVariable*>& memberVariables, int member,
-                               TOperator op, const TType& memberType) -> TIntermTyped * {
+    // We track the outer-most aggregate, so that we can use its storage class later.
+    const TIntermTyped* outerLeft  = left;
+    const TIntermTyped* outerRight = right;
+
+    const auto getMember = [&](bool isLeft, TIntermTyped* node, int member, TIntermTyped* splitNode, int splitMember) -> TIntermTyped * {
         TIntermTyped* subTree;
-        if (flatten && isFinalFlattening(memberType)) {
-            subTree = intermediate.addSymbol(*memberVariables[memberIdx++]);
+
+        const bool flattened      = isLeft ? isFlattenLeft : isFlattenRight;
+        const bool split          = isLeft ? isSplitLeft : isSplitRight;
+        const TIntermTyped* outer = isLeft ? outerLeft   : outerRight;
+        const TVector<TVariable*>& flatVariables      = isLeft ? *leftVariables : *rightVariables;
+        const TOperator op = node->getType().isArray() ? EOpIndexDirect : EOpIndexDirectStruct;
+        const TType derefType(node->getType(), member);
+
+        if (split && derefType.isBuiltInInterstageIO(language)) {
+            // copy from interstage IO builtin if needed
+            subTree = intermediate.addSymbol(*interstageBuiltInIo.find(tInterstageIoData(derefType, outer->getType()))->second);
+        } else if (flattened && isFinalFlattening(derefType)) {
+            subTree = intermediate.addSymbol(*flatVariables[memberIdx++]);
         } else {
-            subTree = intermediate.addIndex(op, node, intermediate.addConstantUnion(member, loc), loc);
-            subTree->setType(memberType);
+            const TType splitDerefType(splitNode->getType(), splitMember);
+
+            subTree = intermediate.addIndex(op, splitNode, intermediate.addConstantUnion(splitMember, loc), loc);
+            subTree->setType(splitDerefType);
         }
 
         return subTree;
-    };
-
-    // Cannot use auto here, because this is recursive, and auto can't work out the type without seeing the
-    // whole thing.  So, we'll resort to an explicit type via std::function.
-    const std::function<void(TIntermTyped* left, TIntermTyped* right)>
-    traverse = [&](TIntermTyped* left, TIntermTyped* right) -> void {
-        // If we get here, we are assigning to or from a whole array or struct that must be
-        // flattened, so have to do member-by-member assignment:
-
-        if (left->getType().isArray()) {
-            // array case
-            const TType dereferencedType(left->getType(), 0);
-
-            for (int element=0; element < left->getType().getOuterArraySize(); ++element) {
-                    // Add a new AST symbol node if we have a temp variable holding a complex RHS.
-                TIntermTyped* subRight = getMember(flattenRight, right, *rightVariables, element,
-                                                   EOpIndexDirect, dereferencedType);
-                TIntermTyped* subLeft = getMember(flattenLeft, left, *leftVariables, element,
-                                                  EOpIndexDirect, dereferencedType);
-
-                if (isFinalFlattening(dereferencedType))
-                    assignList = intermediate.growAggregate(assignList, intermediate.addAssign(op, subLeft, subRight, loc), loc);
-                else
-                    traverse(subLeft, subRight);
-            }
-        } else if (left->getType().isStruct()) {
-            // struct case
-            const auto& members = *left->getType().getStruct();
-
-            for (int member = 0; member < (int)members.size(); ++member) {
-                TIntermTyped* subRight = getMember(flattenRight, right, *rightVariables, member,
-                                                   EOpIndexDirectStruct, *members[member].type);
-                TIntermTyped* subLeft = getMember(flattenLeft, left, *leftVariables, member,
-                                                  EOpIndexDirectStruct, *members[member].type);
-
-                if (isFinalFlattening(*members[member].type))
-                    assignList = intermediate.growAggregate(assignList, intermediate.addAssign(op, subLeft, subRight, loc), loc);
-                else
-                    traverse(subLeft, subRight);
-            }
-        } else {
-            assert(0);  // we should never be called on a non-flattenable thing, because
-                        // that case bails out above to a simple copy.
-        }
-
     };
 
     // Use the proper RHS node: a new symbol from a TVariable, copy
@@ -1582,8 +2056,83 @@ TIntermTyped* HlslParseContext::handleAssign(const TSourceLoc& loc, TOperator op
             cloneSymNode ? intermediate.addSymbol(*cloneSymNode) :
             right;
 
+    // Cannot use auto here, because this is recursive, and auto can't work out the type without seeing the
+    // whole thing.  So, we'll resort to an explicit type via std::function.
+    const std::function<void(TIntermTyped* left, TIntermTyped* right, TIntermTyped* splitLeft, TIntermTyped* splitRight)>
+    traverse = [&](TIntermTyped* left, TIntermTyped* right, TIntermTyped* splitLeft, TIntermTyped* splitRight) -> void {
+        // If we get here, we are assigning to or from a whole array or struct that must be
+        // flattened, so have to do member-by-member assignment:
+
+        if (left->getType().isArray()) {
+            const TType dereferencedType(left->getType(), 0);
+
+            // array case
+            for (int element=0; element < left->getType().getOuterArraySize(); ++element) {
+                    // Add a new AST symbol node if we have a temp variable holding a complex RHS.
+                TIntermTyped* subLeft  = getMember(true,  left,  element, left, element);
+                TIntermTyped* subRight = getMember(false, right, element, right, element);
+
+                if (isFinalFlattening(dereferencedType))
+                    assignList = intermediate.growAggregate(assignList, intermediate.addAssign(op, subLeft, subRight, loc), loc);
+                else
+                    traverse(subLeft, subRight, splitLeft, splitRight);
+            }
+        } else if (left->getType().isStruct()) {
+            // struct case
+            const auto& membersL = *left->getType().getStruct();
+            const auto& membersR = *right->getType().getStruct();
+
+            // These track the members in the split structures corresponding to the same in the unsplit structures,
+            // which we traverse in parallel.
+            int memberL = 0;
+            int memberR = 0;
+
+            for (int member = 0; member < int(membersL.size()); ++member) {
+                const TType& typeL = *membersL[member].type;
+                const TType& typeR = *membersR[member].type;
+
+                TIntermTyped* subLeft  = getMember(true,  left, member, left, member);
+                TIntermTyped* subRight = getMember(false, right, member, right, member);
+
+                // If there is no splitting, use the same values to avoid inefficiency.
+                TIntermTyped* subSplitLeft =  isSplitLeft  ? getMember(true,  left,  member, splitLeft, memberL) : subLeft;
+                TIntermTyped* subSplitRight = isSplitRight ? getMember(false, right, member, splitRight, memberR) : subRight;
+
+                // If this is the final flattening (no nested types below to flatten) we'll copy the member, else
+                // recurse into the type hierarchy.  However, if splitting the struct, that means we can copy a whole
+                // subtree here IFF it does not itself contain any interstage built-in IO variables, so we only have to
+                // recurse into it if there's something for splitting to do.  That can save a lot of AST verbosity for
+                // a bunch of memberwise copies.
+                if (isFinalFlattening(typeL) || (!isFlattenLeft && !isFlattenRight &&
+                                                 !typeL.containsBuiltInInterstageIO(language) && !typeR.containsBuiltInInterstageIO(language))) {
+                    assignList = intermediate.growAggregate(assignList, intermediate.addAssign(op, subSplitLeft, subSplitRight, loc), loc);
+                } else {
+                    traverse(subLeft, subRight, subSplitLeft, subSplitRight);
+                }
+
+                memberL += (typeL.isBuiltInInterstageIO(language) ? 0 : 1);
+                memberR += (typeR.isBuiltInInterstageIO(language) ? 0 : 1);
+            }
+        } else {
+            assert(0);  // we should never be called on a non-flattenable thing, because
+                        // that case bails out above to a simple copy.
+        }
+
+    };
+
+    TIntermTyped* splitLeft  = left;
+    TIntermTyped* splitRight = right;
+
+    // If either left or right was a split structure, we must read or write it, but still have to
+    // parallel-recurse through the unsplit structure to identify the builtin IO vars.
+    if (isSplitLeft)
+        splitLeft = intermediate.addSymbol(*getSplitIoVar(left), loc);
+
+    if (isSplitRight)
+        splitRight = intermediate.addSymbol(*getSplitIoVar(right), loc);
+
     // This makes the whole assignment, recursing through subtypes as needed.
-    traverse(left, right);
+    traverse(left, right, splitLeft, splitRight);
 
     assert(assignList != nullptr);
     assignList->setOperator(EOpSequence);
@@ -1607,7 +2156,7 @@ TOperator HlslParseContext::mapAtomicOp(const TSourceLoc& loc, TOperator op, boo
     case EOpInterlockedOr:              return isImage ? EOpImageAtomicOr       : EOpAtomicOr;
     case EOpInterlockedXor:             return isImage ? EOpImageAtomicXor      : EOpAtomicXor;
     case EOpInterlockedExchange:        return isImage ? EOpImageAtomicExchange : EOpAtomicExchange;
-    case EOpInterlockedCompareStore:  // TODO: ... 
+    case EOpInterlockedCompareStore:  // TODO: ...
     default:
         error(loc, "unknown atomic operation", "unknown op", "");
         return EOpNull;
@@ -1706,7 +2255,7 @@ void HlslParseContext::decomposeSampleMethods(const TSourceLoc& loc, TIntermType
             tex->getSequence().push_back(arg0);           // sampler
             tex->getSequence().push_back(constructCoord); // coordinate
             tex->getSequence().push_back(bias);           // bias
-            
+
             node = clampReturn(tex, sampler);
 
             break;
@@ -1751,7 +2300,7 @@ void HlslParseContext::decomposeSampleMethods(const TSourceLoc& loc, TIntermType
 
             break;
         }
-        
+
     case EOpMethodSampleGrad: // ...
         {
             TIntermTyped* argTex    = argAggregate->getSequence()[0]->getAsTyped();
@@ -1858,7 +2407,7 @@ void HlslParseContext::decomposeSampleMethods(const TSourceLoc& loc, TIntermType
                 } else {
                     indexedOut = sizeQueryReturn;
                 }
-                
+
                 TIntermTyped* outParam = argAggregate->getSequence()[outParamBase + compNum]->getAsTyped();
                 TIntermTyped* compAssign = intermediate.addAssign(EOpAssign, outParam, indexedOut, loc);
 
@@ -1886,7 +2435,7 @@ void HlslParseContext::decomposeSampleMethods(const TSourceLoc& loc, TIntermType
                 samplesQuery->getSequence().push_back(argTex);
                 samplesQuery->setType(TType(EbtUint, EvqTemporary, 1));
                 samplesQuery->setLoc(loc);
-                
+
                 TIntermTyped* compAssign = intermediate.addAssign(EOpAssign, outParam, samplesQuery, loc);
                 compoundStatement = intermediate.growAggregate(compoundStatement, compAssign);
             }
@@ -1912,7 +2461,7 @@ void HlslParseContext::decomposeSampleMethods(const TSourceLoc& loc, TIntermType
             // optional offset value
             if (argAggregate->getSequence().size() > 4)
                 argOffset = argAggregate->getSequence()[4]->getAsTyped();
-            
+
             const int coordDimWithCmpVal = argCoord->getType().getVectorSize() + 1; // +1 for cmp
 
             // AST wants comparison value as one of the texture coordinates
@@ -2039,12 +2588,12 @@ void HlslParseContext::decomposeSampleMethods(const TSourceLoc& loc, TIntermType
             TIntermTyped* argLod    = argAggregate->getSequence()[3]->getAsTyped();
             TIntermTyped* argOffset = nullptr;
             const TSampler& sampler = argTex->getType().getSampler();
-            
+
             const int  numArgs = (int)argAggregate->getSequence().size();
 
             if (numArgs == 5) // offset, if present
                 argOffset = argAggregate->getSequence()[4]->getAsTyped();
-            
+
             const TOperator textureOp = (argOffset == nullptr ? EOpTextureLod : EOpTextureLodOffset);
             TIntermAggregate* txsample = new TIntermAggregate(textureOp);
 
@@ -2091,7 +2640,7 @@ void HlslParseContext::decomposeSampleMethods(const TSourceLoc& loc, TIntermType
 
             break;
         }
-        
+
     case EOpMethodGatherRed:      // fall through...
     case EOpMethodGatherGreen:    // ...
     case EOpMethodGatherBlue:     // ...
@@ -2275,9 +2824,9 @@ void HlslParseContext::decomposeGeometryMethods(const TSourceLoc& loc, TIntermTy
             emit->setType(TType(EbtVoid));
 
             sequence = intermediate.growAggregate(sequence,
-                                                  intermediate.addAssign(EOpAssign, 
-                                                                         argAggregate->getSequence()[0]->getAsTyped(),
-                                                                         argAggregate->getSequence()[1]->getAsTyped(), loc),
+                                                  handleAssign(loc, EOpAssign,
+                                                               argAggregate->getSequence()[0]->getAsTyped(),
+                                                               argAggregate->getSequence()[1]->getAsTyped()),
                                                   loc);
 
             sequence = intermediate.growAggregate(sequence, emit);
@@ -2335,7 +2884,7 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
 
     if (!decomposeHlslIntrinsics || !node || !node->getAsOperator())
         return;
-    
+
     const TIntermAggregate* argAggregate = arguments ? arguments->getAsAggregate() : nullptr;
     TIntermUnary* fnUnary = node->getAsUnaryNode();
     const TOperator op  = node->getAsOperator()->getOp();
@@ -2432,7 +2981,7 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
                                     arg0->getType().isVector()));
 
                 // calculate # of components for comparison const
-                const int constComponentCount = 
+                const int constComponentCount =
                     std::max(arg0->getType().getVectorSize(), 1) *
                     std::max(arg0->getType().getMatrixCols(), 1) *
                     std::max(arg0->getType().getMatrixRows(), 1);
@@ -2448,12 +2997,12 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
                 TIntermTyped* zero = intermediate.addConstantUnion(0, type0, loc, true);
                 compareNode = handleBinaryMath(loc, "clip", EOpLessThan, arg0, zero);
             }
-            
+
             TIntermBranch* killNode = intermediate.addBranch(EOpKill, loc);
 
             node = new TIntermSelection(compareNode, killNode, nullptr);
             node->setLoc(loc);
-            
+
             break;
         }
 
@@ -2522,7 +3071,7 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
             atomic->setType(arg0->getType());
             atomic->getWritableType().getQualifier().makeTemporary();
             atomic->setLoc(loc);
- 
+
             if (isImage) {
                 // orig_value = imageAtomicOp(image, loc, data)
                 imageAtomicParams(atomic, arg0);
@@ -2573,7 +3122,7 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
             atomic->getSequence().push_back(arg1);
             atomic->getSequence().push_back(arg2);
             node = intermediate.addAssign(EOpAssign, arg3, atomic, loc);
-            
+
             break;
         }
 
@@ -2599,7 +3148,7 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
                                                          intermediate.addConversion(EOpConstructFloat,
                                                                                     TType(EbtFloat, EvqTemporary, 2), iU),
                                                          recip16);
-            
+
             TIntermAggregate* interp = new TIntermAggregate(EOpInterpolateAtOffset);
             interp->getSequence().push_back(arg0);
             interp->getSequence().push_back(floatOffset);
@@ -2643,7 +3192,7 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
             TIntermTyped* n_dot_h_m = handleBinaryMath(loc, "mul", EOpMul, n_dot_h, m);  // n_dot_h * m
 
             dst->getSequence().push_back(intermediate.addSelection(compare, zero, n_dot_h_m, loc));
-            
+
             // One:
             dst->getSequence().push_back(intermediate.addConstantUnion(1.0, EbtFloat, loc, true));
 
@@ -2678,10 +3227,10 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
             convert->setLoc(loc);
             convert->setType(TType(EbtDouble, EvqTemporary));
             node = convert;
-            
+
             break;
         }
-        
+
     case EOpF16tof32:
     case EOpF32tof16:
         {
@@ -2797,7 +3346,7 @@ TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunct
 
             // for decompositions, since we want to operate on the function node, not the aggregate holding
             // output conversions.
-            const TIntermTyped* fnNode = result; 
+            const TIntermTyped* fnNode = result;
 
             decomposeIntrinsic(loc, result, arguments);       // HLSL->AST intrinsic decompositions
             decomposeSampleMethods(loc, result, arguments);   // HLSL->AST sample method decompositions
@@ -2828,7 +3377,7 @@ TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunct
 }
 
 // Finish processing object.length(). This started earlier in handleDotDereference(), where
-// the ".length" part was recognized and semantically checked, and finished here where the 
+// the ".length" part was recognized and semantically checked, and finished here where the
 // function syntax "()" is recognized.
 //
 // Return resulting tree node.
@@ -2901,14 +3450,14 @@ void HlslParseContext::addInputArgumentConversions(const TFunction& function, TI
             else
                 error(arg->getLoc(), "cannot convert input argument, argument", "", "%d", i);
         } else {
-            if (wasFlattened(arg)) {
+            if (wasFlattened(arg) || wasSplit(arg)) {
                 // Will make a two-level subtree.
                 // The deepest will copy member-by-member to build the structure to pass.
                 // The level above that will be a two-operand EOpComma sequence that follows the copy by the
                 // object itself.
                 TVariable* internalAggregate = makeInternalVariable("aggShadow", *function[i].type);
                 internalAggregate->getWritableType().getQualifier().makeTemporary();
-                TIntermSymbol* internalSymbolNode = new TIntermSymbol(internalAggregate->getUniqueId(), 
+                TIntermSymbol* internalSymbolNode = new TIntermSymbol(internalAggregate->getUniqueId(),
                                                                       internalAggregate->getName(),
                                                                       internalAggregate->getType());
                 internalSymbolNode->setLoc(arg->getLoc());
@@ -3200,8 +3749,7 @@ void HlslParseContext::handleSemantic(TSourceLoc loc, TQualifier& qualifier, con
     // Also, in DX10 if a SV value is present as the input of a stage, but isn't appropriate for that
     // stage, it would just be ignored as it is likely there as part of an output struct from one stage
     // to the next
-    
-    
+
     bool bParseDX9 = false;
     if (bParseDX9) {
         if (semanticUpperCase == "PSIZE")
@@ -3216,7 +3764,7 @@ void HlslParseContext::handleSemantic(TSourceLoc loc, TQualifier& qualifier, con
             qualifier.builtIn = EbvFragCoord;
     }
 
-    //SV Position has a different meaning in vertex vs fragment
+    // SV Position has a different meaning in vertex vs fragment
     if (semanticUpperCase == "SV_POSITION" && language != EShLangFragment)
         qualifier.builtIn = EbvPosition;
     else if (semanticUpperCase == "SV_POSITION" && language == EShLangFragment)
@@ -3232,34 +3780,34 @@ void HlslParseContext::handleSemantic(TSourceLoc loc, TQualifier& qualifier, con
     else if (semanticUpperCase == "SV_TESSFACTOR")
         qualifier.builtIn = EbvTessLevelOuter;
 
-    //Targets are defined 0-7
+    // Targets are defined 0-7
     else if (semanticUpperCase == "SV_TARGET") {
         qualifier.builtIn = EbvNone;
-        //qualifier.layoutLocation = 0;
+        // qualifier.layoutLocation = 0;
     } else if (semanticUpperCase == "SV_TARGET0") {
         qualifier.builtIn = EbvNone;
-        //qualifier.layoutLocation = 0;
+        // qualifier.layoutLocation = 0;
     } else if (semanticUpperCase == "SV_TARGET1") {
         qualifier.builtIn = EbvNone;
-        //qualifier.layoutLocation = 1;
+        // qualifier.layoutLocation = 1;
     } else if (semanticUpperCase == "SV_TARGET2") {
         qualifier.builtIn = EbvNone;
-        //qualifier.layoutLocation = 2;
+        // qualifier.layoutLocation = 2;
     } else if (semanticUpperCase == "SV_TARGET3") {
         qualifier.builtIn = EbvNone;
-        //qualifier.layoutLocation = 3;
+        // qualifier.layoutLocation = 3;
     } else if (semanticUpperCase == "SV_TARGET4") {
         qualifier.builtIn = EbvNone;
-        //qualifier.layoutLocation = 4;
+        // qualifier.layoutLocation = 4;
     } else if (semanticUpperCase == "SV_TARGET5") {
         qualifier.builtIn = EbvNone;
-        //qualifier.layoutLocation = 5;
+        // qualifier.layoutLocation = 5;
     } else if (semanticUpperCase == "SV_TARGET6") {
         qualifier.builtIn = EbvNone;
-        //qualifier.layoutLocation = 6;
+        // qualifier.layoutLocation = 6;
     } else if (semanticUpperCase == "SV_TARGET7") {
         qualifier.builtIn = EbvNone;
-        //qualifier.layoutLocation = 7;
+        // qualifier.layoutLocation = 7;
     } else if (semanticUpperCase == "SV_SAMPLEINDEX")
         qualifier.builtIn = EbvSampleId;
     else if (semanticUpperCase == "SV_RENDERTARGETARRAYINDEX")
@@ -3289,7 +3837,7 @@ void HlslParseContext::handleSemantic(TSourceLoc loc, TQualifier& qualifier, con
     else if( semanticUpperCase == "SV_COVERAGE")
         qualifier.builtIn = EbvSampleMask;
 
-    //TODO, these need to get refined to be more specific 
+    // TODO, these need to get refined to be more specific
     else if( semanticUpperCase == "SV_DEPTHGREATEREQUAL")
         qualifier.builtIn = EbvFragDepthGreater;
     else if( semanticUpperCase == "SV_DEPTHLESSEQUAL")
@@ -3490,7 +4038,6 @@ void HlslParseContext::globalCheck(const TSourceLoc& loc, const char* token)
     if (! symbolTable.atGlobalLevel())
         error(loc, "not allowed in nested scope", token, "");
 }
-
 
 bool HlslParseContext::builtInName(const TString& /*identifier*/)
 {
@@ -4199,38 +4746,38 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
     }
     if (language == EShLangGeometry || language == EShLangTessEvaluation) {
         if (id == TQualifier::getGeometryString(ElgTriangles)) {
-            //publicType.shaderQualifiers.geometry = ElgTriangles;
+            // publicType.shaderQualifiers.geometry = ElgTriangles;
             warn(loc, "ignored", id.c_str(), "");
             return;
         }
         if (language == EShLangGeometry) {
             if (id == TQualifier::getGeometryString(ElgPoints)) {
-                //publicType.shaderQualifiers.geometry = ElgPoints;
+                // publicType.shaderQualifiers.geometry = ElgPoints;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getGeometryString(ElgLineStrip)) {
-                //publicType.shaderQualifiers.geometry = ElgLineStrip;
+                // publicType.shaderQualifiers.geometry = ElgLineStrip;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getGeometryString(ElgLines)) {
-                //publicType.shaderQualifiers.geometry = ElgLines;
+                // publicType.shaderQualifiers.geometry = ElgLines;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getGeometryString(ElgLinesAdjacency)) {
-                //publicType.shaderQualifiers.geometry = ElgLinesAdjacency;
+                // publicType.shaderQualifiers.geometry = ElgLinesAdjacency;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getGeometryString(ElgTrianglesAdjacency)) {
-                //publicType.shaderQualifiers.geometry = ElgTrianglesAdjacency;
+                // publicType.shaderQualifiers.geometry = ElgTrianglesAdjacency;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getGeometryString(ElgTriangleStrip)) {
-                //publicType.shaderQualifiers.geometry = ElgTriangleStrip;
+                // publicType.shaderQualifiers.geometry = ElgTriangleStrip;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
@@ -4239,53 +4786,53 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
 
             // input primitive
             if (id == TQualifier::getGeometryString(ElgTriangles)) {
-                //publicType.shaderQualifiers.geometry = ElgTriangles;
+                // publicType.shaderQualifiers.geometry = ElgTriangles;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getGeometryString(ElgQuads)) {
-                //publicType.shaderQualifiers.geometry = ElgQuads;
+                // publicType.shaderQualifiers.geometry = ElgQuads;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getGeometryString(ElgIsolines)) {
-                //publicType.shaderQualifiers.geometry = ElgIsolines;
+                // publicType.shaderQualifiers.geometry = ElgIsolines;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
 
             // vertex spacing
             if (id == TQualifier::getVertexSpacingString(EvsEqual)) {
-                //publicType.shaderQualifiers.spacing = EvsEqual;
+                // publicType.shaderQualifiers.spacing = EvsEqual;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getVertexSpacingString(EvsFractionalEven)) {
-                //publicType.shaderQualifiers.spacing = EvsFractionalEven;
+                // publicType.shaderQualifiers.spacing = EvsFractionalEven;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getVertexSpacingString(EvsFractionalOdd)) {
-                //publicType.shaderQualifiers.spacing = EvsFractionalOdd;
+                // publicType.shaderQualifiers.spacing = EvsFractionalOdd;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
 
             // triangle order
             if (id == TQualifier::getVertexOrderString(EvoCw)) {
-                //publicType.shaderQualifiers.order = EvoCw;
+                // publicType.shaderQualifiers.order = EvoCw;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == TQualifier::getVertexOrderString(EvoCcw)) {
-                //publicType.shaderQualifiers.order = EvoCcw;
+                // publicType.shaderQualifiers.order = EvoCcw;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
 
             // point mode
             if (id == "point_mode") {
-                //publicType.shaderQualifiers.pointMode = true;
+                // publicType.shaderQualifiers.pointMode = true;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
@@ -4293,23 +4840,23 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
     }
     if (language == EShLangFragment) {
         if (id == "origin_upper_left") {
-            //publicType.shaderQualifiers.originUpperLeft = true;
+            // publicType.shaderQualifiers.originUpperLeft = true;
             warn(loc, "ignored", id.c_str(), "");
             return;
         }
         if (id == "pixel_center_integer") {
-            //publicType.shaderQualifiers.pixelCenterInteger = true;
+            // publicType.shaderQualifiers.pixelCenterInteger = true;
             warn(loc, "ignored", id.c_str(), "");
             return;
         }
         if (id == "early_fragment_tests") {
-            //publicType.shaderQualifiers.earlyFragmentTests = true;
+            // publicType.shaderQualifiers.earlyFragmentTests = true;
             warn(loc, "ignored", id.c_str(), "");
             return;
         }
         for (TLayoutDepth depth = (TLayoutDepth)(EldNone + 1); depth < EldCount; depth = (TLayoutDepth)(depth + 1)) {
             if (id == TQualifier::getLayoutDepthString(depth)) {
-                //publicType.shaderQualifiers.layoutDepth = depth;
+                // publicType.shaderQualifiers.layoutDepth = depth;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
@@ -4320,7 +4867,7 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
                 if (id == TQualifier::getBlendEquationString(be)) {
                     requireExtensions(loc, 1, &E_GL_KHR_blend_equation_advanced, "blend equation");
                     intermediate.addBlendEquation(be);
-                    //publicType.shaderQualifiers.blendEquation = true;
+                    // publicType.shaderQualifiers.blendEquation = true;
                     warn(loc, "ignored", id.c_str(), "");
                     found = true;
                     break;
@@ -4339,7 +4886,7 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
 void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qualifier, TString& id, const TIntermTyped* node)
 {
     const char* feature = "layout-id value";
-    //const char* nonLiteralFeature = "non-literal layout-id value";
+    // const char* nonLiteralFeature = "non-literal layout-id value";
 
     integerCheck(node, feature);
     const TIntermConstantUnion* constUnion = node->getAsConstantUnion();
@@ -4385,9 +4932,9 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
             qualifier.layoutComponent = value;
         return;
     } else if (id.compare(0, 4, "xfb_") == 0) {
-        // "Any shader making any static use (after preprocessing) of any of these 
-        // *xfb_* qualifiers will cause the shader to be in a transform feedback 
-        // capturing mode and hence responsible for describing the transform feedback 
+        // "Any shader making any static use (after preprocessing) of any of these
+        // *xfb_* qualifiers will cause the shader to be in a transform feedback
+        // capturing mode and hence responsible for describing the transform feedback
         // setup."
         intermediate.setXfbMode();
         if (id == "xfb_buffer") {
@@ -4407,7 +4954,7 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
                 qualifier.layoutXfbOffset = value;
             return;
         } else if (id == "xfb_stride") {
-            // "The resulting stride (implicit or explicit), when divided by 4, must be less than or equal to the 
+            // "The resulting stride (implicit or explicit), when divided by 4, must be less than or equal to the
             // implementation-dependent constant gl_MaxTransformFeedbackInterleavedComponents."
             if (value > 4 * resources.maxTransformFeedbackInterleavedComponents)
                 error(loc, "1/4 stride is too large:", id.c_str(), "gl_MaxTransformFeedbackInterleavedComponents is %d", resources.maxTransformFeedbackInterleavedComponents);
@@ -4449,7 +4996,7 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
             if (value == 0)
                 error(loc, "must be greater than 0", "vertices", "");
             else
-                //publicType.shaderQualifiers.vertices = value;
+                // publicType.shaderQualifiers.vertices = value;
                 warn(loc, "ignored", id.c_str(), "");
             return;
         }
@@ -4463,12 +5010,12 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
             if (value == 0)
                 error(loc, "must be at least 1", "invocations", "");
             else
-                //publicType.shaderQualifiers.invocations = value;
+                // publicType.shaderQualifiers.invocations = value;
                 warn(loc, "ignored", id.c_str(), "");
             return;
         }
         if (id == "max_vertices") {
-            //publicType.shaderQualifiers.vertices = value;
+            // publicType.shaderQualifiers.vertices = value;
             warn(loc, "ignored", id.c_str(), "");
             if (value > resources.maxGeometryOutputVertices)
                 error(loc, "too large, must be less than gl_MaxGeometryOutputVertices", "max_vertices", "");
@@ -4490,33 +5037,33 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
     case EShLangCompute:
         if (id.compare(0, 11, "local_size_") == 0) {
             if (id == "local_size_x") {
-                //publicType.shaderQualifiers.localSize[0] = value;
+                // publicType.shaderQualifiers.localSize[0] = value;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == "local_size_y") {
-                //publicType.shaderQualifiers.localSize[1] = value;
+                // publicType.shaderQualifiers.localSize[1] = value;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (id == "local_size_z") {
-                //publicType.shaderQualifiers.localSize[2] = value;
+                // publicType.shaderQualifiers.localSize[2] = value;
                 warn(loc, "ignored", id.c_str(), "");
                 return;
             }
             if (spvVersion.spv != 0) {
                 if (id == "local_size_x_id") {
-                    //publicType.shaderQualifiers.localSizeSpecId[0] = value;
+                    // publicType.shaderQualifiers.localSizeSpecId[0] = value;
                     warn(loc, "ignored", id.c_str(), "");
                     return;
                 }
                 if (id == "local_size_y_id") {
-                    //publicType.shaderQualifiers.localSizeSpecId[1] = value;
+                    // publicType.shaderQualifiers.localSizeSpecId[1] = value;
                     warn(loc, "ignored", id.c_str(), "");
                     return;
                 }
                 if (id == "local_size_z_id") {
-                    //publicType.shaderQualifiers.localSizeSpecId[2] = value;
+                    // publicType.shaderQualifiers.localSizeSpecId[2] = value;
                     warn(loc, "ignored", id.c_str(), "");
                     return;
                 }
@@ -4534,17 +5081,17 @@ void HlslParseContext::setLayoutQualifier(const TSourceLoc& loc, TQualifier& qua
 // Merge any layout qualifier information from src into dst, leaving everything else in dst alone
 //
 // "More than one layout qualifier may appear in a single declaration.
-// Additionally, the same layout-qualifier-name can occur multiple times 
-// within a layout qualifier or across multiple layout qualifiers in the 
-// same declaration. When the same layout-qualifier-name occurs 
-// multiple times, in a single declaration, the last occurrence overrides 
-// the former occurrence(s).  Further, if such a layout-qualifier-name 
-// will effect subsequent declarations or other observable behavior, it 
-// is only the last occurrence that will have any effect, behaving as if 
-// the earlier occurrence(s) within the declaration are not present.  
-// This is also true for overriding layout-qualifier-names, where one 
-// overrides the other (e.g., row_major vs. column_major); only the last 
-// occurrence has any effect."    
+// Additionally, the same layout-qualifier-name can occur multiple times
+// within a layout qualifier or across multiple layout qualifiers in the
+// same declaration. When the same layout-qualifier-name occurs
+// multiple times, in a single declaration, the last occurrence overrides
+// the former occurrence(s).  Further, if such a layout-qualifier-name
+// will effect subsequent declarations or other observable behavior, it
+// is only the last occurrence that will have any effect, behaving as if
+// the earlier occurrence(s) within the declaration are not present.
+// This is also true for overriding layout-qualifier-names, where one
+// overrides the other (e.g., row_major vs. column_major); only the last
+// occurrence has any effect."
 //
 void HlslParseContext::mergeObjectLayoutQualifiers(TQualifier& dst, const TQualifier& src, bool inheritOnly)
 {
@@ -4599,7 +5146,7 @@ void HlslParseContext::mergeObjectLayoutQualifiers(TQualifier& dst, const TQuali
 // Look up a function name in the symbol table, and make sure it is a function.
 //
 // First, look for an exact match.  If there is none, use the generic selector
-// TParseContextBase::selectFunction() to find one, parameterized by the 
+// TParseContextBase::selectFunction() to find one, parameterized by the
 // convertible() and better() predicates defined below.
 //
 // Return the function symbol if found, otherwise nullptr.
@@ -4624,7 +5171,7 @@ const TFunction* HlslParseContext::findFunction(const TSourceLoc& loc, TFunction
     // create list of candidates to send
     TVector<const TFunction*> candidateList;
     symbolTable.findFunctionNameList(call.getMangledName(), candidateList, builtIn);
-    
+
     // These builtin ops can accept any type, so we bypass the argument selection
     if (candidateList.size() == 1 && builtIn &&
         (candidateList[0]->getBuiltInOp() == EOpMethodAppend ||
@@ -4641,7 +5188,7 @@ const TFunction* HlslParseContext::findFunction(const TSourceLoc& loc, TFunction
             return true;
 
         // no aggregate conversions
-        if (from.isArray()  || to.isArray() || 
+        if (from.isArray()  || to.isArray() ||
             from.isStruct() || to.isStruct())
             return false;
 
@@ -4658,7 +5205,7 @@ const TFunction* HlslParseContext::findFunction(const TSourceLoc& loc, TFunction
             // We do not promote the texture or image type for these ocodes.  Normally that would not
             // be an issue because it's a buffer, but we haven't decomposed the opcode yet, and at this
             // stage it's merely e.g, a basic integer type.
-            // 
+            //
             // Instead, we want to promote other arguments, but stay within the same family.  In other
             // words, InterlockedAdd(RWBuffer<int>, ...) will always use the int flavor, never the uint flavor,
             // but it is allowed to promote its other arguments.
@@ -4749,7 +5296,7 @@ const TFunction* HlslParseContext::findFunction(const TSourceLoc& loc, TFunction
 
     // for ambiguity reporting
     bool tie = false;
-    
+
     // send to the generic selector
     const TFunction* bestMatch = selectFunction(candidateList, call, convertible, better, tie);
 
@@ -4850,7 +5397,7 @@ const TFunction* HlslParseContext::findFunction(const TSourceLoc& loc, TFunction
 
 //
 // Do everything necessary to handle a typedef declaration, for a single symbol.
-// 
+//
 // 'parseType' is the type part of the declaration (to the left)
 // 'arraySizes' is the arrayness tagged on the identifier (to the right)
 //
@@ -4862,6 +5409,43 @@ void HlslParseContext::declareTypedef(const TSourceLoc& loc, TString& identifier
     TVariable* typeSymbol = new TVariable(&identifier, type, true);
     if (! symbolTable.insert(*typeSymbol))
         error(loc, "name already defined", "typedef", identifier.c_str());
+}
+
+// Type sanitization: return existing sanitized (temporary) type if there is one, else make new one.
+TType* HlslParseContext::sanitizeType(TType* type)
+{
+    // We only do this for structs.
+    if (!type->isStruct())
+        return type;
+
+    // Type sanitization: if this is declaring a variable of a type that contains
+    // interstage IO, we want to make it a temporary.
+    const auto sanitizedTypeIter = sanitizedTypeMap.find(type->getStruct());
+
+    if (sanitizedTypeIter != sanitizedTypeMap.end()) {
+        // We've sanitized this before.  Use that one.
+        TType* sanitizedType = new TType();
+        sanitizedType->shallowCopy(*sanitizedTypeIter->second);
+
+        // Arrayness is not part of the sanitized type.  Use the input type's arrayness.
+        if (type->isArray())
+            sanitizedType->newArraySizes(type->getArraySizes());
+        else
+            sanitizedType->clearArraySizes();
+        return sanitizedType;
+    } else {
+        if (type->containsBuiltInInterstageIO(language)) {
+            // This means the type contains interstage IO, but we've never encountered it before.
+            // Copy it, sanitize it, and remember it in the sanitizedTypeMap
+            TType* sanitizedType = type->clone();
+            sanitizedType->makeTemporary();
+            sanitizedTypeMap[type->getStruct()] = sanitizedType;
+            return sanitizedType;
+        } else {
+            // This means the type has no interstage IO, so we can use it as is.
+            return type;
+        }
+    }
 }
 
 //
@@ -4892,21 +5476,29 @@ TIntermNode* HlslParseContext::declareVariable(const TSourceLoc& loc, TString& i
     inheritGlobalDefaults(type.getQualifier());
 
     const bool flattenVar = shouldFlatten(type);
+    const bool splitVar   = shouldSplit(type);
+
+    // Type sanitization: if this is declaring a variable of a type that contains
+    // interstage IO, we want to make it a temporary.
+    TType* sanitizedType = sanitizeType(&type);
 
     // Declare the variable
     if (type.isArray()) {
         // array case
-        declareArray(loc, identifier, type, symbol, !flattenVar);
+        declareArray(loc, identifier, *sanitizedType, symbol, !flattenVar);
     } else {
         // non-array case
         if (! symbol)
-            symbol = declareNonArray(loc, identifier, type, !flattenVar);
+            symbol = declareNonArray(loc, identifier, *sanitizedType, !flattenVar);
         else if (type != symbol->getType())
             error(loc, "cannot change the type of", "redeclaration", symbol->getName().c_str());
     }
 
     if (flattenVar)
         flatten(loc, *symbol->getAsVariable());
+
+    if (splitVar)
+        split(*symbol->getAsVariable());
 
     if (! symbol)
         return nullptr;
@@ -4995,8 +5587,16 @@ TIntermNode* HlslParseContext::executeInitializer(const TSourceLoc& loc, TInterm
     // constructor-style subtree, allowing the rest of the code to operate
     // identically for both kinds of initializers.
     //
+    //
+    // Type can't be deduced from the initializer list, so a skeletal type to
+    // follow has to be passed in.  Constness and specialization-constness
+    // should be deduced bottom up, not dictated by the skeletal type.
+    //
+    TType skeletalType;
+    skeletalType.shallowCopy(variable->getType());
+    skeletalType.getQualifier().makeTemporary();
     if (initializer->getAsAggregate() && initializer->getAsAggregate()->getOp() == EOpNull)
-        initializer = convertInitializerList(loc, variable->getType(), initializer);
+        initializer = convertInitializerList(loc, skeletalType, initializer);
     if (! initializer) {
         // error recovery; don't leave const without constant values
         if (qualifier == EvqConst)
@@ -5432,7 +6032,7 @@ void HlslParseContext::declareBlock(const TSourceLoc& loc, TType& type, const TS
 
     // This might be a redeclaration of a built-in block.  If so, redeclareBuiltinBlock() will
     // do all the rest.
-    //if (! symbolTable.atBuiltInLevel() && builtInName(*blockName)) {
+    // if (! symbolTable.atBuiltInLevel() && builtInName(*blockName)) {
     //    redeclareBuiltinBlock(loc, typeList, *blockName, instanceName, arraySizes);
     //    return;
     //}
@@ -5467,9 +6067,9 @@ void HlslParseContext::declareBlock(const TSourceLoc& loc, TType& type, const TS
                 error(memberLoc, "member cannot contradict block", "stream", "");
         }
 
-        // "This includes a block's inheritance of the 
-        // current global default buffer, a block member's inheritance of the block's 
-        // buffer, and the requirement that any *xfb_buffer* declared on a block 
+        // "This includes a block's inheritance of the
+        // current global default buffer, a block member's inheritance of the block's
+        // buffer, and the requirement that any *xfb_buffer* declared on a block
         // member must match the buffer inherited from the block."
         if (memberQualifier.hasXfbBuffer()) {
             if (defaultQualification.layoutXfbBuffer != memberQualifier.layoutXfbBuffer)
@@ -5551,15 +6151,15 @@ void HlslParseContext::finalizeGlobalUniformBlockLayout(TVariable& block)
 }
 
 //
-// "For a block, this process applies to the entire block, or until the first member 
-// is reached that has a location layout qualifier. When a block member is declared with a location 
+// "For a block, this process applies to the entire block, or until the first member
+// is reached that has a location layout qualifier. When a block member is declared with a location
 // qualifier, its location comes from that qualifier: The member's location qualifier overrides the block-level
-// declaration. Subsequent members are again assigned consecutive locations, based on the newest location, 
-// until the next member declared with a location qualifier. The values used for locations do not have to be 
+// declaration. Subsequent members are again assigned consecutive locations, based on the newest location,
+// until the next member declared with a location qualifier. The values used for locations do not have to be
 // declared in increasing order."
 void HlslParseContext::fixBlockLocations(const TSourceLoc& loc, TQualifier& qualifier, TTypeList& typeList, bool memberWithLocation, bool memberWithoutLocation)
 {
-    // "If a block has no block-level location layout qualifier, it is required that either all or none of its members 
+    // "If a block has no block-level location layout qualifier, it is required that either all or none of its members
     // have a location layout qualifier, or a compile-time error results."
     if (! qualifier.hasLocation() && memberWithLocation && memberWithoutLocation)
         error(loc, "either the block needs a location, or all members need a location, or no members have a location", "location", "");
@@ -5595,9 +6195,9 @@ void HlslParseContext::fixBlockLocations(const TSourceLoc& loc, TQualifier& qual
 
 void HlslParseContext::fixBlockXfbOffsets(TQualifier& qualifier, TTypeList& typeList)
 {
-    // "If a block is qualified with xfb_offset, all its 
-    // members are assigned transform feedback buffer offsets. If a block is not qualified with xfb_offset, any 
-    // members of that block not qualified with an xfb_offset will not be assigned transform feedback buffer 
+    // "If a block is qualified with xfb_offset, all its
+    // members are assigned transform feedback buffer offsets. If a block is not qualified with xfb_offset, any
+    // members of that block not qualified with an xfb_offset will not be assigned transform feedback buffer
     // offsets."
 
     if (! qualifier.hasXfbBuffer() || ! qualifier.hasXfbOffset())
@@ -5624,10 +6224,10 @@ void HlslParseContext::fixBlockXfbOffsets(TQualifier& qualifier, TTypeList& type
     qualifier.layoutXfbOffset = TQualifier::layoutXfbOffsetEnd;
 }
 
-// Calculate and save the offset of each block member, using the recursively 
+// Calculate and save the offset of each block member, using the recursively
 // defined block offset rules and the user-provided offset and align.
 //
-// Also, compute and save the total size of the block. For the block's size, arrayness 
+// Also, compute and save the total size of the block. For the block's size, arrayness
 // is not taken into account, as each element is backed by a separate buffer.
 //
 void HlslParseContext::fixBlockUniformOffsets(const TQualifier& qualifier, TTypeList& typeList)
@@ -5653,25 +6253,25 @@ void HlslParseContext::fixBlockUniformOffsets(const TQualifier& qualifier, TType
                                                             subMatrixLayout != ElmNone ? subMatrixLayout == ElmRowMajor
                                                                                        : qualifier.layoutMatrix == ElmRowMajor);
         if (memberQualifier.hasOffset()) {
-            // "The specified offset must be a multiple 
+            // "The specified offset must be a multiple
             // of the base alignment of the type of the block member it qualifies, or a compile-time error results."
             if (! IsMultipleOfPow2(memberQualifier.layoutOffset, memberAlignment))
                 error(memberLoc, "must be a multiple of the member's alignment", "offset", "");
 
-            // "The offset qualifier forces the qualified member to start at or after the specified 
-            // integral-constant expression, which will be its byte offset from the beginning of the buffer. 
-            // "The actual offset of a member is computed as 
+            // "The offset qualifier forces the qualified member to start at or after the specified
+            // integral-constant expression, which will be its byte offset from the beginning of the buffer.
+            // "The actual offset of a member is computed as
             // follows: If offset was declared, start with that offset, otherwise start with the next available offset."
             offset = std::max(offset, memberQualifier.layoutOffset);
         }
 
-        // "The actual alignment of a member will be the greater of the specified align alignment and the standard 
+        // "The actual alignment of a member will be the greater of the specified align alignment and the standard
         // (e.g., std140) base alignment for the member's type."
         if (memberQualifier.hasAlign())
             memberAlignment = std::max(memberAlignment, memberQualifier.layoutAlign);
 
         // "If the resulting offset is not a multiple of the actual alignment,
-        // increase it to the first offset that is a multiple of 
+        // increase it to the first offset that is a multiple of
         // the actual alignment."
         RoundToPow2(offset, memberAlignment);
         typeList[member].type->getQualifier().layoutOffset = offset;
@@ -5952,6 +6552,14 @@ void HlslParseContext::renameShaderFunction(TString*& name) const
     // if there is a substitution.
     if (name != nullptr && *name == sourceEntryPointName)
         name = new TString(intermediate.getEntryPointName().c_str());
+}
+
+// post-processing
+void HlslParseContext::finish()
+{
+    addInterstageIoToLinkage();
+
+    TParseContextBase::finish();
 }
 
 } // end namespace glslang
