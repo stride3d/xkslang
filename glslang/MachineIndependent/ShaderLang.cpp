@@ -755,7 +755,7 @@ bool ParseXkslShaderFile(
     HlslParseContext* parseContext = new HlslParseContext(symbolTable, *intermediate, parsingBuiltIns, version, profile, spvVersion,
         stage, compiler->infoSink, sourceEntryPointName.c_str(), forwardCompatible, messages);
 
-    TShader::ForbidInclude includer;
+    TShader::ForbidIncluder includer;
     TPpContext ppContext(*parseContext, "", includer);
 
     //glslang::TScanContext scanContext(*parseContext);

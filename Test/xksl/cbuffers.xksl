@@ -1,4 +1,19 @@
 
+shader S
+{
+	//note: this case used to throw an error because the "int" type can be consider as the cbuffer identifier, if the ";" is omitted
+	//int int; is a valid declaration with glslang
+	cbuffer cb
+    {
+        int aInt;
+    }
+	
+	int aFunction()
+	{
+		return 5;
+	}
+}
+
 shader A
 {
 	int Var0;

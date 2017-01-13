@@ -3,6 +3,12 @@ Parse const variables assigned with expression not immediately resolvable
 
 *****************************************************************************************/
 
+shader TestA
+{
+	static const int tata = 5, titi = 1;
+	static const int toto[] = {tata, titi};
+};
+
 shader TestConsts1
 {
 	static const int D = A + B + C;

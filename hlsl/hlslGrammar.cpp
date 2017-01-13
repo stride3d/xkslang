@@ -2066,19 +2066,26 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
             return false;
         }
 
-        // get the Identifier (variable name)
-        HlslToken idToken = token;
         const TString* identifierName = nullptr;
-        if (!acceptIdentifier(idToken))
+        bool acceptIdentifierAfterTypeDeclaration = true;
+        if (declaredType.getBasicType() == EbtBlock)
         {
-            if (declaredType.getBasicType() == EbtBlock)
+            //XKSL extension: cbuffer declaration, no identifier needed after the block declaration
+            //with xksl, a cbuffer does not require ";" after its declaration, so accepting an identifier after the cbuffer declaration would create some confusions
+            acceptIdentifierAfterTypeDeclaration = false;
+            identifierName = &(declaredType.getTypeName());
+        }
+
+        if (acceptIdentifierAfterTypeDeclaration)
+        {
+            // get the Identifier (variable name)
+            HlslToken idToken = token;
+            if (acceptIdentifier(idToken))
             {
-                //cbuffer declaration, no identifier needed
-                identifierName = &(declaredType.getTypeName());
+                identifierName = idToken.string;
             }
         }
-        else identifierName = idToken.string;
-
+        
         if (identifierName == nullptr)
         {
             expected("invalid member or function name");
@@ -2195,9 +2202,8 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
                     }
                     else
                     {
-                        //const values will be resolved later
                         shaderMember.resolvedDeclaredExpression = nullptr;
-                        shaderMember.expressionTokensList = listTokens;
+                        shaderMember.expressionTokensList = listTokens;  //const values will be resolved later
                     }
                     
                     shader->listParsedMembers.push_back(shaderMember);
@@ -2214,12 +2220,17 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
                     return false;
                 }
 
-                if (!acceptIdentifier(idToken))
                 {
-                    expected("shader: member name");
-                    return false;
+                    //get new type identifier
+                    HlslToken idToken = token;
+                    if (!acceptIdentifier(idToken))
+                    {
+                        expected("shader: member name");
+                        return false;
+                    }
+                    identifierName = idToken.string;
+                    declaredType.setUserIdentifierName(identifierName->c_str());
                 }
-                identifierName = idToken.string;
 
             } while (true);
 
@@ -2261,18 +2272,25 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
             return false;
         }
 
-        // get the Identifier (variable name)
-        HlslToken idToken = token;
         const TString* identifierName = nullptr;
-        if (!acceptIdentifier(idToken))
+        bool acceptIdentifierAfterTypeDeclaration = true;
+        if (declaredType.getBasicType() == EbtBlock)
         {
-            if (declaredType.getBasicType() == EbtBlock)
+            //XKSL extension: cbuffer declaration, no identifier needed after the block declaration
+            //with xksl, a cbuffer does not require ";" after its declaration, so accepting an identifier after the cbuffer declaration would create some confusions
+            acceptIdentifierAfterTypeDeclaration = false;
+            identifierName = &(declaredType.getTypeName());
+        }
+
+        if (acceptIdentifierAfterTypeDeclaration)
+        {
+            // get the Identifier (variable name)
+            HlslToken idToken = token;
+            if (acceptIdentifier(idToken))
             {
-                //cbuffer declaration, no identifier needed
-                identifierName = &(declaredType.getTypeName());
+                identifierName = idToken.string;
             }
         }
-        else identifierName = idToken.string;
 
         if (identifierName == nullptr)
         {

@@ -90,7 +90,7 @@ void main(int argc, char** argv)
             SPXBytecode spirXBytecode;
             if (!parser.ConvertXkslToSpirX(shaderFileName, xkslInput, spirXBytecode))
             {
-                cout << "  Failed to parse the shader: " << shaderFileName << " !!!\n";
+                cout << "  Failed to parse the shader: " << shaderFileName << " !!!!!!!!!!!!!!!!\n";
                 continue;
             }
 
