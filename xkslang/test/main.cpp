@@ -5,9 +5,12 @@
 #include <memory>
 #include <string>
 
+#include "SPIRV/doc.h"
+#include "SPIRV/disassemble.h"
+
 #include "Utils.h"
 #include "XkslangTest.h"
-#include "../source/SPXBytecode.h"
+#include "../source/SpxBytecode.h"
 #include "../source/XkslParser.h"
 #include "../source/XkslMixer.h"
 
@@ -85,10 +88,12 @@ void main(int argc, char** argv)
                 continue;
             }
 
-            //============================================================================
-            // Build SPIRX bytecode
-            SPXBytecode spirXBytecode;
-            if (!parser.ConvertXkslToSpirX(shaderFileName, xkslInput, spirXBytecode))
+            //===============================================================================================
+            //===============================================================================================
+            // Parse and convert HLSL to SPIRX bytecode
+            SpxBytecode spirXBytecode;
+            bool success = parser.ConvertXkslToSpirX(shaderFileName, xkslInput, spirXBytecode);
+            if (!success)
             {
                 cout << "  Failed to parse the shader: " << shaderFileName << " !!!!!!!!!!!!!!!!\n";
                 continue;
@@ -96,23 +101,50 @@ void main(int argc, char** argv)
 
             cout << "  Parsing successful\n";
 
-            //============================================================================
+            //===============================================================================================
+            //===============================================================================================
             // Mixin
             string entryPoint = testFiles[i].entryPoint;
             if (entryPoint.length() > 0)
             {
-                SPVBytecode bytecode;
-                ShadingStage stage = ShadingStage::PixelStage;
-                vector<string> errorMsgs;
+                cout << "Mixin shader:" << shaderFileName << "...\n";
+
+                //Add mixin files
                 XkslMixer mixer;
                 mixer.AddMixin(&spirXBytecode);
 
-                cout << "Mixin shader:" << shaderFileName << ". entry point=" << entryPoint << " stage=" << GetStageLabel(stage) << "...\n";
-
-                bool success = mixer.GenerateBytecode(bytecode, stage, entryPoint, errorMsgs);
+                //Create AST
+                vector<string> errorMsgs;
+                bool success = mixer.CreateMixinAST(errorMsgs);
 
                 if (success) cout << "  Mixin successful\n";
                 else cout << "  Mixin Failed !!!\n";
+
+                //Generate stage SPIRV bytecode
+                if (success)
+                {
+                    SpvBytecode bytecode;
+                    ShadingStage stage = ShadingStage::Pixel;
+
+                    cout << "   Generate SPIRV bytecode for entry point:" << entryPoint << " stage:" << GetStageLabel(stage) << "\n";
+                    success = mixer.GenerateStageBytecode(bytecode, stage, entryPoint, errorMsgs);
+
+                    if (success) cout << "  Bytecode successfully generated\n";
+                    else cout << "  Fail to generate the bytecode !!!\n";
+
+                    //Save the SPIRV bytecode on the disk
+                    if (success)
+                    {
+                        // dissassemble the binary
+                        const std::vector<uint32_t>& bytecodeList = bytecode.getBytecodeStream();
+                        ostringstream disassembly_stream;
+                        spv::Parameterize();
+                        spv::Disassemble(disassembly_stream, bytecodeList);
+
+                        const string newOutputFname = testDir + "/" + shaderFileName + "_" + GetStageLabel(stage) + ".hr.spv";
+                        xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                    }
+                }
 
                 if (errorMsgs.size() > 0)
                 {

@@ -3,20 +3,17 @@
 
 shader TestMixin01_Base
 {
-	stream int ColorTarget;
+	//stream int ColorTarget;
 
-	void unusedFunction()
-	{
-		int lkgfsdjlgkjd;
-	}
-	
     abstract int Compute()
     {
         return 1;
     }
-    void main()
+	
+    int main(float param1, float param2)
     {
         // Note: Since we don't have streams yet, we might find a different mechanism to hardcode this into SV_Color?
-        streams.ColorTarget = Compute();
+        //streams.ColorTarget = Compute();
+		return Compute();
     }
 }

@@ -5,7 +5,7 @@
 #define XKSLANG_XKSLANG_H__
 
 #include "define.h"
-#include "SPXBytecode.h"
+//#include "SpxBytecode.h"
 
 namespace xkslang
 {

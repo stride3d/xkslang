@@ -12,7 +12,7 @@
 //#include "StandAlone/ResourceLimits.h"
 
 #include "define.h"
-#include "SPXBytecode.h"
+#include "SpxBytecode.h"
 
 namespace xkslang
 {
@@ -28,7 +28,7 @@ public:
     bool InitialiseXkslang();
     void Finalize();
 
-    bool ConvertXkslToSpirX(const std::string& shaderFileName, const std::string& shaderString, SPXBytecode& spirXBytecode);
+    bool ConvertXkslToSpirX(const std::string& shaderFileName, const std::string& shaderString, SpxBytecode& spirXBytecode);
 };
 
 }  // namespace xkslang

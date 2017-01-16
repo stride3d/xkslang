@@ -1,20 +1,9 @@
-Texture2D Texture0;
-SamplerState Sampler;
-
-int toto;
-
-cbuffer PerDraw 
+int ShaderFunction(float inf, int toto) : COLOR0
 {
-    float4x4 MatrixTransform_id72;
-	Texture2D Texture1;
-};
+	return 0;
+}
 
-struct VS_INPUT 
+void Toto(float f, int i)
 {
-    float2 TexCoord: TEXCOORD0;
-};
 
-float4 Shading(VS_INPUT input)
-{
-	return Texture0.Sample(Sampler, input.TexCoord);
 }

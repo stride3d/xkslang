@@ -11,26 +11,27 @@
 namespace xkslang
 {
 
-class SPVBytecode
+class SpvBytecode
 {
 public:
-    SPVBytecode();
-    virtual ~SPVBytecode();
+    SpvBytecode();
+    virtual ~SpvBytecode();
 
     void clear();
     void SetBytecode(const std::vector<uint32_t>& bytecode);
 
     const std::vector<uint32_t>& getBytecodeStream() const;
+    std::vector<uint32_t>& getWritableBytecodeStream();
 
 protected:
-    std::vector<uint32_t> spirXBytecode;
+    std::vector<uint32_t> bytecode;
 };
 
-class SPXBytecode : public SPVBytecode
+class SpxBytecode : public SpvBytecode
 {
 public:
-    SPXBytecode();
-    virtual ~SPXBytecode();
+    SpxBytecode();
+    virtual ~SpxBytecode();
 };
 
 }  // namespace xkslang

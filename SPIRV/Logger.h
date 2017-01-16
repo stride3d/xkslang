@@ -59,6 +59,7 @@ public:
     // Returns all messages accumulated in the order of:
     // TBD functionalities, missing functionalities, warnings, errors.
     std::string getAllMessages() const;
+    void getAllMessages(std::vector<std::string>& msgs) const;
 
 private:
     SpvBuildLogger(const SpvBuildLogger&);

@@ -1,7 +1,10 @@
 //
 // Copyright (C)
 
+#include <cassert>
+
 #include "define.h"
+#include "glslang/Public/ShaderLang.h"
 
 using namespace std;
 using namespace xkslang;
@@ -10,11 +13,27 @@ string xkslang::GetStageLabel(ShadingStage stage)
 {
     switch (stage)
     {
-    case xkslang::ShadingStage::VertexStage:
+    case ShadingStage::Vertex:
         return "Vertex";
-    case xkslang::ShadingStage::PixelStage:
+    case ShadingStage::Pixel:
         return "Pixel";
     }
 
     return "Undefined";
 }
+
+/*
+EShLanguage xkslang::TranslateXkslStageToGlslangStage(ShadingStage stage)
+{
+    switch (stage) {
+    case ShadingStage::Vertex:      return EShLangVertex;
+    case ShadingStage::Pixel:       return EShLangFragment;
+    case ShadingStage::TessControl: return EShLangTessControl;
+    case ShadingStage::TessEval:    return EShLangTessEvaluation;
+    case ShadingStage::Geometry:    return EShLangGeometry;
+    case ShadingStage::Compute:     return EShLangCompute;
+    }
+    assert(0);
+    return EShLangFragment;
+}
+*/

@@ -16,14 +16,16 @@
 
 #include "Xkslang.h"
 #include "XkslMixer.h"
-#include "SPXStreamParser.h"
+#include "SpxStreamParser.h"
+#include "SpxMixerToSpvBuilder.h"
 
 using namespace std;
 using namespace xkslang;
 
-static void error(vector<string>& msgs, string msg)
+static bool error(vector<string>& msgs, string msg)
 {
     msgs.push_back(string("Error: ") + msg);
+    return false;
 }
 
 static void warning(vector<string>& msgs, string msg)
@@ -31,65 +33,210 @@ static void warning(vector<string>& msgs, string msg)
     msgs.push_back(string("Warning: ") + msg);
 }
 
+SPVFunction* SPVObject::GetAsSPVFunction() { return dynamic_cast<SPVFunction*>(this); }
+SPVShader* SPVObject::GetAsSPVShader() { return dynamic_cast<SPVShader*>(this); }
+
+//=============================================================================================================//
+//=============================================================================================================//
+
 XkslMixer::XkslMixer()
 {
-    listParsedSprx.clear();
+    listSpxStream.clear();
+    m_astGenerated = false;
 }
 
 XkslMixer::~XkslMixer()
 {
-    for (int i = 0; i < listParsedSprx.size(); ++i)
+    for (int i = 0; i < listSpxStream.size(); ++i)
     {
-        delete listParsedSprx[i];
+        delete listSpxStream[i];
     }
 }
 
-void XkslMixer::AddMixin(SPXBytecode* spirXBytecode)
+void XkslMixer::AddMixin(SpxBytecode* spirXBytecode)
 {
     listMixins.push_back(spirXBytecode);
 }
 
-bool XkslMixer::GenerateBytecode(SPVBytecode& bytecode, ShadingStage stage, string entryPoint, vector<string>& msgs)
+bool XkslMixer::AddSPVFunction(SPVFunction* func)
+{
+    this->listAllFunctions.push_back(func);
+    return true;
+}
+
+bool XkslMixer::AddSPVShader(SPVShader* shader)
+{
+    this->listAllShaders.push_back(shader);
+    return true;
+}
+
+SPVShader* XkslMixer::GetSpvShaderByName(const std::string& name)
+{
+    int count = listAllShaders.size();
+    for (int i = 0; i < count; ++i)
+    {
+        if (listAllShaders[i]->declarationName == name) return listAllShaders[i];
+    }
+    return nullptr;
+}
+
+SPVFunction* XkslMixer::GetFunctionCalledByName(const std::string& name)
+{
+    //TMP: stop at the first function having the specified name
+    int count = listAllFunctions.size();
+    for (int i = 0; i < count; ++i)
+    {
+        if (listAllFunctions[i]->declarationName == name)
+        {
+            SPVFunction* function = listAllFunctions[i];
+            if (function->isOverriddenBy != nullptr) function = function->isOverriddenBy;
+            return function;
+        }
+    }
+    return nullptr;
+}
+
+bool XkslMixer::CreateMixinAST(vector<string>& msgs)
 {
     if (listMixins.size() == 0)
-    {
-        error(msgs, "No bytecodes in the mixin list");
-        return false;
-    }
+        return error(msgs, "No bytecodes in the mixin list");
 
-    //======================================================================================
+    //call the function one time only
+    if (m_astGenerated)
+        return error(msgs, "Mixin AST has already been created");
+
+    //======================================================================================================
+    //======================================================================================================
     // Parse the SPIRX bytecodes (disassemble the bytecode instructions)
-    for (int i=0; i<listMixins.size(); ++i)
+    for (int mixinNum=0; mixinNum<listMixins.size(); ++mixinNum)
     {
-        SPXBytecode* spirXBytecode = listMixins[i];
+        SpxBytecode* spirXBytecode = listMixins[mixinNum];
 
         //Parse the bytecode (disassemble)
-        SPXStreamParser* sprxStream = ParseSPXBytecode(spirXBytecode, msgs);
+        SpxStreamParser* sprxStream = DisassembleSpxBytecode(spirXBytecode, mixinNum, msgs);
         if (sprxStream == nullptr) {
             sprxStream->copyMessagesTo(msgs);
-            error(msgs, "Fail to parse the list of mixins");
-            return false;
+            return error(msgs, "Fail to parse the list of mixins");
         }
-        listParsedSprx.push_back(sprxStream);
+        listSpxStream.push_back(sprxStream);
+    }
+
+    //======================================================================================================
+    //======================================================================================================
+    // Process the parsed bytecodes
+    // - Link the classes according the inheritance
+    // - Link the functions with their owner class
+    // - Add all functions attributes (abstract, override, stage, clone)
+    int countSpxStream = listSpxStream.size();
+    for (int i = 0; i<countSpxStream; ++i)
+    {
+        SpxStreamParser* sprxStream = listSpxStream[i];
 
         //process the bytecode
-        bool success = sprxStream->ProcessSpriXBytecode();
+        bool success = sprxStream->DecorateAllObjects();
         if (!success)
         {
             sprxStream->copyMessagesTo(msgs);
-            error(msgs, "Fail to process the bytecode");
-            return false;
+            return error(msgs, "Fail to decorate the spxStream");
         }
     }
+
+    //======================================================================================================
+    //======================================================================================================
+    // Process methods overrides
+    ProcessOverrideMethods();
+
+    m_astGenerated = true;
+    return true;
+}
+
+void OverrideShaderParentsMethodRecursif(SPVShader* shader, const string& overringMethodName, SPVFunction* overringMethod)
+{
+    if (shader == nullptr) return;
+
+    for (int p = 0; p < shader->parents.size(); ++p)
+    {
+        SPVShader* parent = shader->parents[p];
+        for (int m = 0; m < parent->methods.size(); m++)
+        {
+            SPVFunction* aFunc = parent->methods[m];
+            if (aFunc->declarationName == overringMethodName)
+            {
+                aFunc->SetOverridingFunction(overringMethod);
+            }
+        }
+
+        OverrideShaderParentsMethodRecursif(parent, overringMethodName, overringMethod);
+    }
+}
+
+void XkslMixer::ProcessOverrideMethods()
+{
+    int countFunctions = listAllFunctions.size();
+    for (int i = 0; i < countFunctions; ++i)
+    {
+        SPVFunction* func = listAllFunctions[i];
+
+        //is the function overriding another one?
+        if (func->isOverride)
+        {
+            //set to override all functions from parents classes declared with the same mangled name 
+            //TMP: a function override only its parents class for now: no mixin, no border case of parent being mixed after children
+            
+            SPVShader* shaderOwner = func->shaderOwner;
+            if (shaderOwner != nullptr)
+            {
+                OverrideShaderParentsMethodRecursif(shaderOwner, func->declarationName, func);
+            }
+        }
+    }
+}
+
+bool XkslMixer::GenerateStageBytecode(SpvBytecode& bytecode, ShadingStage stage, string entryPoint, vector<string>& msgs)
+{
+    if (!m_astGenerated)
+        return error(msgs, "The mixin AST must been created: call CreateMixinAST first");
+
+    //Find entry point function
+    SPVFunction* entryPointFunction = GetFunctionCalledByName(entryPoint);
+    if (entryPointFunction == nullptr)
+        return error(msgs, string("Cannot find the entryPoint function in the mixin shaders: ") + entryPoint);
+
+    //======================================================================================================
+    //======================================================================================================
+    // Build the SPIV bytecode
+    SpxMixerToSpvBuilder* builder = new SpxMixerToSpvBuilder();
+    builder->SetupBuilder(entryPointFunction, stage);
+    
+    //Proto: copy all functions
+    for (int f = 0; f < listAllFunctions.size(); ++f)
+    {
+        SPVFunction* func = listAllFunctions[f];
+        if (func == entryPointFunction) continue;
+
+        //clone the function code
+        SpxStreamParser* sprxStream = func->stream;
+        for (int opIndex = func->opStart; opIndex < func->opEnd; ++opIndex)
+        {
+            gfdgdsfg;
+        }
+    }
+
+    builder->FinalizeBuilder();
+
+    builder->DumpToSpvBytecode(bytecode);
+    builder->DumpLoggerMessage(msgs);
+
+    delete builder;
 
     return true;
 }
 
-SPXStreamParser* XkslMixer::ParseSPXBytecode(SPXBytecode* spirXBytecode, std::vector<std::string>& msgs)
+SpxStreamParser* XkslMixer::DisassembleSpxBytecode(SpxBytecode* spirXBytecode, int streamMixinNum, vector<string>& msgs)
 {
     const vector<uint32_t>& stream = spirXBytecode->getBytecodeStream();
 
-    SPXStreamParser* streamParser = new SPXStreamParser(stream);
+    SpxStreamParser* streamParser = new SpxStreamParser(this, stream);
 
     //=============================================================================
     //Validate SPIRX header
@@ -107,9 +254,8 @@ SPXStreamParser* XkslMixer::ParseSPXBytecode(SPXBytecode* spirXBytecode, std::ve
     }
 
     //=============================================================================
-    //Iterate through SPIRX instructions
-
-    bool success = streamParser->DisassembleSpirXStream();
+    //Iterate through SPX instructions
+    bool success = streamParser->DisassembleSpirXStream(streamMixinNum);
     if (!success)
     {
         streamParser->copyMessagesTo(msgs);
@@ -117,52 +263,4 @@ SPXStreamParser* XkslMixer::ParseSPXBytecode(SPXBytecode* spirXBytecode, std::ve
     }
 
     return streamParser;
-
-    /*
-    SPVFunction parsedFunction;
-    parsedFunction.byteCode = spirXBytecode;
-    while (word < size)
-    {
-        int instructionStart = word;
-
-        // Instruction wordCount and opcode
-        uint32_t firstWord = stream[word];
-        uint32_t wordCount = firstWord >> spv::WordCountShift;
-        spv::Op opCode = (spv::Op)(firstWord & spv::OpCodeMask);
-        uint32_t nextInst = word + wordCount;
-        ++word;
-
-        // Presence of full instruction
-        if (nextInst > size)
-            return error(msgs, "stream instruction terminated too early");
-
-        // Base for computing number of operands; will be updated as more is learned
-        unsigned numOperands = wordCount - 1;
-
-        spv::Id typeId = 0;
-        spv::Id resultId = 0;
-
-        switch (opCode)
-        {
-            case spv::OpDecorate:
-                //if (!DisassembleOpDecorateInstruction(stream, word, opCode, numOperands, typeId, resultId))
-                    return error(msgs, "Failed to disassemble the instruction");
-                break;
-
-            case spv::OpFunction:
-                parsedFunction.opStart = instructionStart;
-                break;
-
-            case spv::OpFunctionEnd:
-                parsedFunction.opEnd = instructionStart;
-                this->listFunctions.push_back(parsedFunction);
-        
-            default:
-                break;
-        }
-
-        word = nextInst;
-    }
-
-    return true;*/
 }

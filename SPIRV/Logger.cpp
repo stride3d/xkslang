@@ -65,4 +65,16 @@ std::string SpvBuildLogger::getAllMessages() const {
     return messages.str();
 }
 
+void SpvBuildLogger::getAllMessages(std::vector<std::string>& msgs) const
+{
+    for (auto it = tbdFeatures.cbegin(); it != tbdFeatures.cend(); ++it)
+        msgs.push_back(std::string("TBD functionality: ") + *it);
+    for (auto it = missingFeatures.cbegin(); it != missingFeatures.cend(); ++it)
+        msgs.push_back(std::string("Missing functionality: ") + *it);
+    for (auto it = warnings.cbegin(); it != warnings.cend(); ++it)
+        msgs.push_back(std::string("warning: ") + *it);
+    for (auto it = errors.cbegin(); it != errors.cend(); ++it)
+        msgs.push_back(std::string("error: ") + *it);
+}
+
 } // end spv namespace

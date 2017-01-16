@@ -2096,6 +2096,10 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
         TFunction& function = *new TFunction(&shaderName, identifierName, declaredType);
         if (acceptFunctionParameters(function))
         {
+            //The function declared name will be mangled with the function parameters
+            declaredType.setUserIdentifierName(function.getDeclaredMangledName().c_str());
+            function.getWritableType().shallowCopy(declaredType);
+
             //=======================================================================================================
             //Accept function declaration / definition
 
@@ -2302,6 +2306,10 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
         TFunction& tmpFunction = *new TFunction(&shaderName, identifierName, declaredType);
         if (acceptFunctionParameters(tmpFunction))
         {
+            //The function declared name will be mangled with the function parameters
+            declaredType.setUserIdentifierName(tmpFunction.getDeclaredMangledName().c_str());
+            tmpFunction.getWritableType().shallowCopy(declaredType);
+
             //// post_decls
             //acceptPostDecls(function.getWritableType().getQualifier());
 

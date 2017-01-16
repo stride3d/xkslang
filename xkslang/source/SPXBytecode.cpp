@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "SPXBytecode.h"
+#include "SpxBytecode.h"
 
 //TMP
 #include "../test/Utils.h"
@@ -15,33 +15,38 @@ using namespace xkslang;
 //=================================================================================================================//
 //=================================================================================================================//
 //=================================================================================================================//
-SPVBytecode::SPVBytecode()
+SpvBytecode::SpvBytecode()
 {}
 
-SPVBytecode::~SPVBytecode()
+SpvBytecode::~SpvBytecode()
 {}
 
-void SPVBytecode::clear()
+void SpvBytecode::clear()
 {
-    spirXBytecode.clear();
+    bytecode.clear();
 }
 
-void SPVBytecode::SetBytecode(const vector<uint32_t>& bytecode)
+void SpvBytecode::SetBytecode(const vector<uint32_t>& bytecode)
 {
     clear();
-    spirXBytecode = bytecode;
+    this->bytecode = bytecode;
 }
 
-const std::vector<uint32_t>& SPVBytecode::getBytecodeStream() const
+const std::vector<uint32_t>& SpvBytecode::getBytecodeStream() const
 {
-    return spirXBytecode;
+    return bytecode;
+}
+
+std::vector<uint32_t>& SpvBytecode::getWritableBytecodeStream()
+{
+    return bytecode;
 }
 
 //=================================================================================================================//
 //=================================================================================================================//
 //=================================================================================================================//
-SPXBytecode::SPXBytecode() : SPVBytecode()
+SpxBytecode::SpxBytecode() : SpvBytecode()
 {}
 
-SPXBytecode::~SPXBytecode()
+SpxBytecode::~SpxBytecode()
 {}
