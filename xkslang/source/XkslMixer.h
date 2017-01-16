@@ -9,11 +9,12 @@
 
 #include "define.h"
 #include "SpxBytecode.h"
-#include "SpxStreamParser.h"
+//#include "SpxStreamParser.h"
 
 namespace xkslang
 {
 
+/*
 enum class SPVObjectTypeEnum
 {
     SPVTypeUndefined,
@@ -89,11 +90,12 @@ public:
         m->SetShaderOwner(this);
     }
 };
-
+*/
 
 //=============================================================================================================//
 //==============================================  XkslMixer  =================================================//
 //============================================================================================================//
+class SpxStreamRemapper;
 class XkslMixer
 {
 public:
@@ -102,24 +104,28 @@ public:
     virtual ~XkslMixer();
 
     void AddMixin(SpxBytecode* spirXBytecode);
-    bool CreateMixinAST(std::vector<std::string>& messages);
-    bool GenerateStageBytecode(SpvBytecode& bytecode, ShadingStage stage, std::string entryPoint, std::vector<std::string>& messages);
+    bool MergeAllMixin(std::vector<std::string>& messages);
+    bool GetMixinBytecode(SpxBytecode& output, std::vector<std::string>& messages);
+    bool GenerateStageBytecode(ShadingStage stage, std::string entryPoint, SpvBytecode& output, std::vector<std::string>& messages);
 
-    bool AddSPVFunction(SPVFunction*);
-    bool AddSPVShader(SPVShader*);
-    SPVShader* GetSpvShaderByName(const std::string& name);
+    //bool AddSPVFunction(SPVFunction*);
+    //bool AddSPVShader(SPVShader*);
+    //SPVShader* GetSpvShaderByName(const std::string& name);
 
-    SPVFunction* GetFunctionCalledByName(const std::string& name);
+    //SPVFunction* GetFunctionCalledByName(const std::string& name);
+
+    //SpvBytecode TMPbytecodeFromRemapping;
 
 private:
-    SpxStreamParser* DisassembleSpxBytecode(SpxBytecode* spirXBytecode, int streamMixinNum, std::vector<std::string>& msgs);
-    void ProcessOverrideMethods();
+    //SpxStreamParser* DisassembleSpxBytecode(SpxBytecode* spirXBytecode, int streamMixinNum, std::vector<std::string>& msgs);
+    //void ProcessOverrideMethods();
 
     std::vector<SpxBytecode*> listMixins;
-    std::vector<SpxStreamParser*> listSpxStream;
+    //std::vector<SpxStreamParser*> listSpxStream;
+    SpxStreamRemapper* spxStreamRemapper;
 
-    std::vector<SPVFunction*> listAllFunctions; //list all functions defined by the mixins
-    std::vector<SPVShader*> listAllShaders;     //list all shaders defined by the mixins
+    //std::vector<SPVFunction*> listAllFunctions; //list all functions defined by the mixins
+    //std::vector<SPVShader*> listAllShaders;     //list all shaders defined by the mixins
 
     bool m_astGenerated;
 };

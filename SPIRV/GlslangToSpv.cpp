@@ -2285,8 +2285,8 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
                 addMemberDecoration(spvType, member, spv::DecorationBuiltIn, (int)builtIn);
 
             /**********************************************************************************************/
-            //XKSL extensions
-            if (type.getBasicType() == glslang::EbtShaderClass)
+            //XKSL extensions: decorate EbtShaderClass members
+            /*if (type.getBasicType() == glslang::EbtShaderClass)
             {
                 //Decorate if the member is a stage attribute
                 if (glslangMember.getQualifier().isStage) addMemberDecoration(spvType, member, spv::DecorationAttributeStage, 1);
@@ -2304,7 +2304,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
                     //We decorate the member if it's a static member
                     addMemberDecoration(spvType, member, spv::DecorationAttributeStatic, 8888);
                 }
-            }
+            }*/
             /**********************************************************************************************/
         }
     }
@@ -2326,9 +2326,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 
     //========================================================================================================
     //========================================================================================================
-    //XKSL extensions
-    
-    // Add info (as decorate) to the shader class
+    //XKSL extensions: Add info (as decorate) to the shader class
     if (type.getBasicType() == glslang::EbtShaderClass)
     {
         builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getTypeName().c_str());

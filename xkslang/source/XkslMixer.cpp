@@ -18,6 +18,7 @@
 #include "XkslMixer.h"
 #include "SpxStreamParser.h"
 #include "SpxMixerToSpvBuilder.h"
+#include "SpxStreamRemapper.h"
 
 using namespace std;
 using namespace xkslang;
@@ -33,24 +34,26 @@ static void warning(vector<string>& msgs, string msg)
     msgs.push_back(string("Warning: ") + msg);
 }
 
-SPVFunction* SPVObject::GetAsSPVFunction() { return dynamic_cast<SPVFunction*>(this); }
-SPVShader* SPVObject::GetAsSPVShader() { return dynamic_cast<SPVShader*>(this); }
+//SPVFunction* SPVObject::GetAsSPVFunction() { return dynamic_cast<SPVFunction*>(this); }
+//SPVShader* SPVObject::GetAsSPVShader() { return dynamic_cast<SPVShader*>(this); }
 
 //=============================================================================================================//
 //=============================================================================================================//
 
 XkslMixer::XkslMixer()
 {
-    listSpxStream.clear();
+    spxStreamRemapper = nullptr;
+    //listSpxStream.clear();
     m_astGenerated = false;
 }
 
 XkslMixer::~XkslMixer()
 {
-    for (int i = 0; i < listSpxStream.size(); ++i)
-    {
-        delete listSpxStream[i];
-    }
+    //for (int i = 0; i < listSpxStream.size(); ++i)
+    //{
+    //    delete listSpxStream[i];
+    //}
+    if (spxStreamRemapper != nullptr) delete spxStreamRemapper;
 }
 
 void XkslMixer::AddMixin(SpxBytecode* spirXBytecode)
@@ -58,57 +61,73 @@ void XkslMixer::AddMixin(SpxBytecode* spirXBytecode)
     listMixins.push_back(spirXBytecode);
 }
 
-bool XkslMixer::AddSPVFunction(SPVFunction* func)
-{
-    this->listAllFunctions.push_back(func);
-    return true;
-}
+//bool XkslMixer::AddSPVFunction(SPVFunction* func)
+//{
+//    this->listAllFunctions.push_back(func);
+//    return true;
+//}
+//
+//bool XkslMixer::AddSPVShader(SPVShader* shader)
+//{
+//    this->listAllShaders.push_back(shader);
+//    return true;
+//}
+//
+//SPVShader* XkslMixer::GetSpvShaderByName(const std::string& name)
+//{
+//    int count = listAllShaders.size();
+//    for (int i = 0; i < count; ++i)
+//    {
+//        if (listAllShaders[i]->declarationName == name) return listAllShaders[i];
+//    }
+//    return nullptr;
+//}
+//
+//SPVFunction* XkslMixer::GetFunctionCalledByName(const std::string& name)
+//{
+//    //TMP: stop at the first function having the specified name
+//    int count = listAllFunctions.size();
+//    for (int i = 0; i < count; ++i)
+//    {
+//        if (listAllFunctions[i]->declarationName == name)
+//        {
+//            SPVFunction* function = listAllFunctions[i];
+//            if (function->isOverriddenBy != nullptr) function = function->isOverriddenBy;
+//            return function;
+//        }
+//    }
+//    return nullptr;
+//}
 
-bool XkslMixer::AddSPVShader(SPVShader* shader)
-{
-    this->listAllShaders.push_back(shader);
-    return true;
-}
-
-SPVShader* XkslMixer::GetSpvShaderByName(const std::string& name)
-{
-    int count = listAllShaders.size();
-    for (int i = 0; i < count; ++i)
-    {
-        if (listAllShaders[i]->declarationName == name) return listAllShaders[i];
-    }
-    return nullptr;
-}
-
-SPVFunction* XkslMixer::GetFunctionCalledByName(const std::string& name)
-{
-    //TMP: stop at the first function having the specified name
-    int count = listAllFunctions.size();
-    for (int i = 0; i < count; ++i)
-    {
-        if (listAllFunctions[i]->declarationName == name)
-        {
-            SPVFunction* function = listAllFunctions[i];
-            if (function->isOverriddenBy != nullptr) function = function->isOverriddenBy;
-            return function;
-        }
-    }
-    return nullptr;
-}
-
-bool XkslMixer::CreateMixinAST(vector<string>& msgs)
+bool XkslMixer::MergeAllMixin(vector<string>& msgs)
 {
     if (listMixins.size() == 0)
         return error(msgs, "No bytecodes in the mixin list");
 
     //call the function one time only
-    if (m_astGenerated)
-        return error(msgs, "Mixin AST has already been created");
+    if (m_astGenerated || spxStreamRemapper != nullptr)
+        return error(msgs, "Mixin has already been created");
 
     //======================================================================================================
     //======================================================================================================
-    // Parse the SPIRX bytecodes (disassemble the bytecode instructions)
+    // Generate mixins
+    spxStreamRemapper = new SpxStreamRemapper();
     for (int mixinNum=0; mixinNum<listMixins.size(); ++mixinNum)
+    {
+        SpxBytecode* spirXBytecode = listMixins[mixinNum];
+
+        if (!spxStreamRemapper->MapSpxStream(*spirXBytecode))
+        {
+            spxStreamRemapper->copyMessagesTo(msgs);
+            return error(msgs, "Fail to map SPRX bytecode");
+        }
+    }
+
+    /*
+    //======================================================================================================
+    //======================================================================================================
+    // Parse the SPIRX bytecodes (disassemble the bytecode instructions)
+    for (int mixinNum = 0; mixinNum<listMixins.size(); ++mixinNum)
     {
         SpxBytecode* spirXBytecode = listMixins[mixinNum];
 
@@ -145,11 +164,13 @@ bool XkslMixer::CreateMixinAST(vector<string>& msgs)
     //======================================================================================================
     // Process methods overrides
     ProcessOverrideMethods();
+    */
 
     m_astGenerated = true;
     return true;
 }
 
+/*
 void OverrideShaderParentsMethodRecursif(SPVShader* shader, const string& overringMethodName, SPVFunction* overringMethod)
 {
     if (shader == nullptr) return;
@@ -191,16 +212,37 @@ void XkslMixer::ProcessOverrideMethods()
         }
     }
 }
+*/
 
-bool XkslMixer::GenerateStageBytecode(SpvBytecode& bytecode, ShadingStage stage, string entryPoint, vector<string>& msgs)
+bool XkslMixer::GetMixinBytecode(SpxBytecode& output, std::vector<std::string>& messages)
 {
-    if (!m_astGenerated)
-        return error(msgs, "The mixin AST must been created: call CreateMixinAST first");
+    if (!m_astGenerated || spxStreamRemapper == nullptr)
+        return error(messages, "The mixin AST must been created first");
 
+    spxStreamRemapper->GetMappedSpxBytecode(output);
+
+    return true;
+}
+
+bool XkslMixer::GenerateStageBytecode(ShadingStage stage, std::string entryPoint, SpvBytecode& output, std::vector<std::string>& messages)
+{
+    if (!m_astGenerated || spxStreamRemapper == nullptr)
+        return error(messages, "The mixin AST must been created first");
+
+    bool success = spxStreamRemapper->GenerateSpvStageBytecode(stage, entryPoint, output);
+    if (!success)
+    {
+        spxStreamRemapper->copyMessagesTo(messages);
+        return false;
+    }
+
+    return true;
+
+    /*
     //Find entry point function
     SPVFunction* entryPointFunction = GetFunctionCalledByName(entryPoint);
     if (entryPointFunction == nullptr)
-        return error(msgs, string("Cannot find the entryPoint function in the mixin shaders: ") + entryPoint);
+        return error(messages, string("Cannot find the entryPoint function in the mixin shaders: ") + entryPoint);
 
     //======================================================================================================
     //======================================================================================================
@@ -218,7 +260,7 @@ bool XkslMixer::GenerateStageBytecode(SpvBytecode& bytecode, ShadingStage stage,
         SpxStreamParser* sprxStream = func->stream;
         for (int opIndex = func->opStart; opIndex < func->opEnd; ++opIndex)
         {
-            gfdgdsfg;
+            //gfdgdsfg;
         }
     }
 
@@ -230,8 +272,10 @@ bool XkslMixer::GenerateStageBytecode(SpvBytecode& bytecode, ShadingStage stage,
     delete builder;
 
     return true;
+    */
 }
 
+/*
 SpxStreamParser* XkslMixer::DisassembleSpxBytecode(SpxBytecode* spirXBytecode, int streamMixinNum, vector<string>& msgs)
 {
     const vector<uint32_t>& stream = spirXBytecode->getBytecodeStream();
@@ -264,3 +308,4 @@ SpxStreamParser* XkslMixer::DisassembleSpxBytecode(SpxBytecode* spirXBytecode, i
 
     return streamParser;
 }
+*/

@@ -40,6 +40,10 @@
 #include <vector>
 #include <cstdlib>
 
+namespace xkslang{
+    class SpxStreamRemapper;
+}
+
 namespace spv {
 
 // MSVC defines __cplusplus as an older value, even when it supports almost all of 11.
@@ -165,7 +169,7 @@ private:
    typedef std::unordered_map<spv::Id, unsigned> typesize_map_t;
 
    // handle error
-   void error(const std::string& txt) const { errorHandler(txt); }
+   virtual void error(const std::string& txt) const { errorHandler(txt); }
 
    bool     isConstOp(spv::Op opCode)      const;
    bool     isTypeOp(spv::Op opCode)       const;
@@ -288,6 +292,9 @@ private:
 
    static errorfn_t errorHandler;
    static logfn_t   logHandler;
+
+   //XKSL extensions
+   friend class xkslang::SpxStreamRemapper;
 };
 
 } // namespace SPV

@@ -20,18 +20,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\define.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixerToSpvBuilder.cpp" />
-    <ClCompile Include="..\..\..\source\SpxStreamParser.cpp" />
     <ClCompile Include="..\..\..\source\SpxBytecode.cpp" />
+    <ClCompile Include="..\..\..\source\SpxStreamRemapper.cpp" />
     <ClCompile Include="..\..\..\source\Xkslang.cpp" />
     <ClCompile Include="..\..\..\source\XkslMixer.cpp" />
     <ClCompile Include="..\..\..\source\XkslParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\define.h" />
-    <ClInclude Include="..\..\..\source\SpxMixerToSpvBuilder.h" />
-    <ClInclude Include="..\..\..\source\SpxStreamParser.h" />
     <ClInclude Include="..\..\..\source\SpxBytecode.h" />
+    <ClInclude Include="..\..\..\source\SpxStreamRemapper.h" />
     <ClInclude Include="..\..\..\source\Xkslang.h" />
     <ClInclude Include="..\..\..\source\XkslMixer.h" />
     <ClInclude Include="..\..\..\source\XkslParser.h" />

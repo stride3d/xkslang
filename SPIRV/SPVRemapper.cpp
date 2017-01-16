@@ -198,6 +198,7 @@ namespace spv {
         case spv::OpTypeArray:
         case spv::OpTypeRuntimeArray:
         case spv::OpTypeStruct:
+        case spv::OpTypeXlslShaderClass:    //XKSL extension
         case spv::OpTypeOpaque:
         case spv::OpTypePointer:
         case spv::OpTypeFunction:
@@ -446,8 +447,10 @@ namespace spv {
     {
         msg(2, 2, std::string("validating: "));
 
-        if (spv.size() < header_size)
-            error("file too short: ");
+        if (spv.size() < header_size){
+            error("file too short");
+            return;
+        }
 
         if (magic() != spv::MagicNumber)
             error("bad magic number");

@@ -113,12 +113,27 @@ void main(int argc, char** argv)
                 XkslMixer mixer;
                 mixer.AddMixin(&spirXBytecode);
 
-                //Create AST
+                //Create mixin
                 vector<string> errorMsgs;
-                bool success = mixer.CreateMixinAST(errorMsgs);
+                bool success = mixer.MergeAllMixin(errorMsgs);
 
                 if (success) cout << "  Mixin successful\n";
                 else cout << "  Mixin Failed !!!\n";
+
+                //TMP: Save the SPIRV remapped mixin
+                if (success)
+                {
+                    // dissassemble the binary
+                    SpxBytecode mixinBytecode;
+                    mixer.GetMixinBytecode(mixinBytecode, errorMsgs);
+                    const std::vector<uint32_t>& bytecodeList = mixinBytecode.getBytecodeStream();
+                    ostringstream disassembly_stream;
+                    spv::Parameterize();
+                    spv::Disassemble(disassembly_stream, bytecodeList);
+
+                    const string newOutputFname = testDir + "/" + shaderFileName + "_mixin" + ".hr.spv";
+                    xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                }
 
                 //Generate stage SPIRV bytecode
                 if (success)
@@ -127,12 +142,12 @@ void main(int argc, char** argv)
                     ShadingStage stage = ShadingStage::Pixel;
 
                     cout << "   Generate SPIRV bytecode for entry point:" << entryPoint << " stage:" << GetStageLabel(stage) << "\n";
-                    success = mixer.GenerateStageBytecode(bytecode, stage, entryPoint, errorMsgs);
+                    success = mixer.GenerateStageBytecode(stage, entryPoint, bytecode, errorMsgs);
 
                     if (success) cout << "  Bytecode successfully generated\n";
                     else cout << "  Fail to generate the bytecode !!!\n";
 
-                    //Save the SPIRV bytecode on the disk
+                    //TMP: Save the SPIRV bytecode on the disk
                     if (success)
                     {
                         // dissassemble the binary

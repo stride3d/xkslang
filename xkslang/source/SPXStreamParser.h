@@ -74,11 +74,6 @@ public:
 
     SPVObject* GetSpvObjectByResultId(uint32_t id);
 
-    /*
-    SPVFunction* GetSpvFunctionById(uint32_t id);
-    SPVShader* GetSpvShaderById(uint32_t id);
-    SPVShader* GetSpvShaderByName(const std::string& name);*/
-
     void copyMessagesTo(std::vector<std::string>& list);
 
 private:
