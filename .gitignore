@@ -15,3 +15,4 @@ External/googletest
 *.latest.spv
 *.xksl.spv
 *.xksl.hr.spv
+.hr.spv

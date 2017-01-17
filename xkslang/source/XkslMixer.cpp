@@ -116,7 +116,7 @@ bool XkslMixer::MergeAllMixin(vector<string>& msgs)
     {
         SpxBytecode* spirXBytecode = listMixins[mixinNum];
 
-        if (!spxStreamRemapper->MapSpxStream(*spirXBytecode))
+        if (!spxStreamRemapper->MixSpxBytecodeStream(*spirXBytecode))
         {
             spxStreamRemapper->copyMessagesTo(msgs);
             return error(msgs, "Fail to map SPRX bytecode");

@@ -21,8 +21,6 @@ namespace xkslang
 
     std::string GetStageLabel(ShadingStage stage);
 
-    //EShLanguage TranslateXkslStageToGlslangStage(ShadingStage stage);
-
 } //namespace xkslang
 
 #endif  // XKSLANG_XKSLPARSER_DEFINE_H

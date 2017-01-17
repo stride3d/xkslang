@@ -181,7 +181,7 @@ private:
    unsigned typeSizeInWords(spv::Id id)    const;
    unsigned idTypeSizeInWords(spv::Id id)  const;
 
-   spv::Id&        asId(unsigned word)                { return spv[word]; }
+   spv::Id&        asId(unsigned word)                { return spv[word]; }  
    const spv::Id&  asId(unsigned word)          const { return spv[word]; }
    spv::Op         asOpCode(unsigned word)      const { return opOpCode(spv[word]); }
    std::uint32_t   asOpCodeHash(unsigned word);
@@ -213,7 +213,7 @@ private:
    // which std::vector<bool> doens't have.
    inline spv::Id   nextUnusedId(spv::Id id);
 
-   void buildLocalMaps();
+   virtual void buildLocalMaps();
    std::string literalString(unsigned word) const; // Return literal as a std::string
    int literalStringWords(const std::string& str) const { return (int(str.size())+4)/4; }
 
