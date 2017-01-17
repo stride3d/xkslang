@@ -38,8 +38,6 @@ public:
     spv::ExecutionModel GetShadingStageExecutionMode(ShadingStage stage);
 
 private:
-    std::unordered_map<spv::Id, std::string> declarationNameMap;  // delaration name from functions and shaders (XKSL extensions)
-
     void dceXkslData();
     void dceEntryPoints();
 
@@ -47,7 +45,10 @@ private:
     bool BuildAndSetShaderStageHeader(ShadingStage stage, spv::Id entryFunctionId, std::string unmangledFunctionName);
     bool ProcessOverridingMethods();
 
+private:
     std::vector<std::string> errorMessages;
+
+    std::unordered_map<spv::Id, std::string> declarationNameMap;  // delaration name from functions and shaders (XKSL extensions)
 };
 
 }  // namespace xkslang
