@@ -142,7 +142,7 @@ void main(int argc, char** argv)
                 if (success) cout << " Mixin successful\n";
                 else cout << " Mixin Failed !!!\n";
 
-                //TMP: Save the SPIRV remapped mixin
+                //Save the mixin SPIRX bytecode (HR form)
                 if (success)
                 {
                     // dissassemble the binary
@@ -160,26 +160,37 @@ void main(int argc, char** argv)
                 //Generate stage SPIRV bytecode
                 if (success)
                 {
-                    SpvBytecode bytecode;
+                    SpvBytecode stageBytecode;
                     ShadingStage stage = ShadingStage::Pixel;
 
                     cout << " Generate SPIRV bytecode for entry point:" << entryPoint << " stage:" << GetStageLabel(stage) << "\n";
-                    success = mixer.GenerateStageBytecode(stage, entryPoint, bytecode, errorMsgs);
+                    success = mixer.GenerateStageBytecode(stage, entryPoint, stageBytecode, errorMsgs);
 
                     if (success) cout << " Bytecode successfully generated\n";
                     else cout << " Fail to generate the bytecode !!!\n";
 
-                    //TMP: Save the SPIRV bytecode (and its text format) on the disk
+                    //Save the SPIRV bytecode (and its HR form)
                     if (success)
                     {
+                        //output the binary
+                        const std::vector<uint32_t>& bytecodeList = stageBytecode.getBytecodeStream();
+                        string outputFname = testDir + "/" + shaderFileName + "_" + GetStageLabel(stage) + ".spv";
+                        glslang::OutputSpvBin(bytecodeList, outputFname.c_str());
+
                         // dissassemble the binary
-                        const std::vector<uint32_t>& bytecodeList = bytecode.getBytecodeStream();
                         ostringstream disassembly_stream;
                         spv::Parameterize();
                         spv::Disassemble(disassembly_stream, bytecodeList);
 
-                        const string newOutputFname = testDir + "/" + shaderFileName + "_" + GetStageLabel(stage) + ".hr.spv";
-                        xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                        outputFname = testDir + "/" + shaderFileName + "_" + GetStageLabel(stage) + ".hr.spv";
+                        xkslangtest::Utils::WriteFile(outputFname, disassembly_stream.str());
+
+                        //convert back the SPIRV bytecode into GLSL
+                        {
+                            string spirvCrossExe = "D:/Prgms/glslang/source/Test/xksl";
+                            "D:\Prgms\glslang\batchTest\spirv-cross";
+                            int result = system("C:\\Program Files\\Program.exe");
+                        }
                     }
                 }
 

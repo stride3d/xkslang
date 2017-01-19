@@ -162,12 +162,10 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\test\main.cpp" />
     <ClCompile Include="..\..\..\test\Utils.cpp" />
-    <ClCompile Include="..\..\..\test\XkslangTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\test\define.h" />
     <ClInclude Include="..\..\..\test\Utils.h" />
-    <ClInclude Include="..\..\..\test\XkslangTest.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
