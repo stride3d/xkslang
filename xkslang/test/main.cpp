@@ -7,9 +7,9 @@
 
 #include "SPIRV/doc.h"
 #include "SPIRV/disassemble.h"
+#include "SPIRV/GlslangToSpv.h"
 
 #include "Utils.h"
-#include "XkslangTest.h"
 #include "../source/SpxBytecode.h"
 #include "../source/XkslParser.h"
 #include "../source/XkslMixer.h"
@@ -74,7 +74,9 @@ void main(int argc, char** argv)
     {
         for (int i = 0; i < testFiles.size(); ++i)
         {
-            //============================================================================
+            //======================================================================================================
+            //======================================================================================================
+            //======================================================================================================
             // load shader file into a string
             std::string shaderFileName = testFiles[i].fileName;
 
@@ -88,21 +90,41 @@ void main(int argc, char** argv)
                 continue;
             }
 
-            //===============================================================================================
-            //===============================================================================================
-            // Parse and convert HLSL to SPIRX bytecode
+            //======================================================================================================
+            //======================================================================================================
+            //======================================================================================================
+            // Parse and convert XKSL shaders to SPIRX bytecode
             SpxBytecode spirXBytecode;
-            bool success = parser.ConvertXkslToSpirX(shaderFileName, xkslInput, spirXBytecode);
-            if (!success)
+            ostringstream errorAndDebugMessages;
+            ostringstream outputHumanReadableASTAndSPV;
+
+            bool success = parser.ConvertXkslToSpirX(shaderFileName, xkslInput, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
+
+            //output binary and debug info
             {
-                cout << "  Failed to parse the shader: " << shaderFileName << " !!!!!!!!!!!!!!!!\n";
-                continue;
+                //output the SPIRX binary
+                const std::vector<uint32_t>& bytecodeList = spirXBytecode.getBytecodeStream();
+                if (bytecodeList.size() > 0)
+                {
+                    const string newOutputFname = testDir + "/" + shaderFileName + ".spv";
+                    glslang::OutputSpvBin(bytecodeList, newOutputFname.c_str());
+                }
+
+                //output the AST and debug and HR spirv binary
+                const string newOutputFname = testDir + "/" + shaderFileName + ".hr.spv";
+                errorAndDebugMessages << outputHumanReadableASTAndSPV.str();
+                xkslangtest::Utils::WriteFile(newOutputFname, errorAndDebugMessages.str());
             }
 
+            if (!success) {
+                cout << "  Failed to parse the shader: " << shaderFileName << " !!!!!!!\n";
+                continue;
+            }
             cout << "  Parsing successful\n";
 
-            //===============================================================================================
-            //===============================================================================================
+            //======================================================================================================
+            //======================================================================================================
+            //======================================================================================================
             // Mixin
             string entryPoint = testFiles[i].entryPoint;
             if (entryPoint.length() > 0)
@@ -147,7 +169,7 @@ void main(int argc, char** argv)
                     if (success) cout << " Bytecode successfully generated\n";
                     else cout << " Fail to generate the bytecode !!!\n";
 
-                    //TMP: Save the SPIRV bytecode on the disk
+                    //TMP: Save the SPIRV bytecode (and its text format) on the disk
                     if (success)
                     {
                         // dissassemble the binary
@@ -173,36 +195,6 @@ void main(int argc, char** argv)
     }
 
     parser.Finalize();
-
-#if 0
-    //Parse the shaders by calling glslang functions
-    {
-        glslang::InitializeProcess();
-
-        XkslangTest xkslangTest;
-
-        for (int i = 0; i < testFiles.size(); ++i)
-        {
-            std::string testName = testFiles[i].fileName;
-            std::string entryPointName = testFiles[i].entryPoint;
-
-            bool success = xkslangTest.loadFileCompileAndCheck(
-                testDir, testName, source, semantics, target, entryPointName
-            );
-
-            if (!success)
-            {
-                cout << testName << ": Error\n";
-            }
-            else
-            {
-                cout << testName << ": OK\n";
-            }
-        }
-
-        glslang::FinalizeProcess();
-    }
-#endif
 
 }
 

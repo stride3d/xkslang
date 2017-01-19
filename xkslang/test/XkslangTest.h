@@ -17,6 +17,7 @@
 
 #include "define.h"
 
+/*
 namespace xkslangtest
 {
 class XkslangTest
@@ -60,5 +61,6 @@ public:
 };
 
 }  // namespace glslangtest
+*/
 
 #endif  // XKSLANG_TEST_H

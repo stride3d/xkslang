@@ -27,7 +27,7 @@ namespace xkslangtest
         BothASTAndSpv,
     };
 
-    struct ShaderResult {
+    /*struct ShaderResult {
         std::string shaderName;
         std::string output;
         std::string error;
@@ -41,7 +41,7 @@ namespace xkslangtest
         std::string spirvWarningsErrors;
         std::string spirv;  // Optional SPIR-V disassembly text.
         bool success;
-    };
+    };*/
 }
 
 #define EXPECT_THROW(statement, expected_exception) \

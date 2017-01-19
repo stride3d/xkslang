@@ -47,7 +47,8 @@ void XkslParser::Finalize()
     glslang::FinalizeProcess();
 }
 
-bool XkslParser::ConvertXkslToSpirX(const std::string& shaderFileName, const std::string& shaderString, SpxBytecode& spirXBytecode)
+bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& shaderString, SpxBytecode& spirXBytecode,
+    std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV)
 {
     const char* shaderStrings = shaderString.data();
     const int shaderLengths = static_cast<int>(shaderString.size());
@@ -83,7 +84,7 @@ bool XkslParser::ConvertXkslToSpirX(const std::string& shaderFileName, const std
     success &= program.link(controls);
     glslang::TIntermediate* AST = program.getIntermediate(kind);
 
-    std::vector<uint32_t> bytecodeList;
+    vector<uint32_t> bytecodeList;
     spv::SpvBuildLogger logger;
 
     //=============================================================================================
@@ -96,42 +97,37 @@ bool XkslParser::ConvertXkslToSpirX(const std::string& shaderFileName, const std
         spirXBytecode.SetBytecode(bytecodeList);
     }
     
-    //TEMPORARY: output stuff
+    //output debug and error messages
+    if (errorAndDebugMessages != nullptr)
     {
-        std::string testDir = "D:/Prgms/glslang/source/Test/xksl";
-    
-        //output SPIRV binary
-        if (bytecodeList.size() > 0)
-        {
-            const string newOutputFname = testDir + "/" + shaderFileName + ".spv";
-            glslang::OutputSpvBin(bytecodeList, newOutputFname.c_str());
-        }
-    
-        xkslangtest::GlslangResult glslangRes;
+        const char* c;
+        ostringstream& stream = *errorAndDebugMessages;
+
+        stream << shaderFileName << "\n";
+        c = shader.getInfoLog();
+        if (c != nullptr && strlen(c) > 0) stream << c << "\n";
+        stream << logger.getAllMessages();
+        stream << "\n";
+    }
+
+    //output Human Readable form of AST and SPIV bytecode
+    if (outputHumanReadableASTAndSPV != nullptr)
+    {    
+        const char* c;
+        ostringstream& stream = *outputHumanReadableASTAndSPV;
+
+        c = shader.getInfoDebugLog();
+        if (c != nullptr && strlen(c) > 0) stream << c << "\n";
+        
         if (success && AST != nullptr)
         {
             //dissassemble the binary
             ostringstream disassembly_stream;
             spv::Parameterize();
             spv::Disassemble(disassembly_stream, bytecodeList);
-            glslangRes = xkslangtest::GlslangResult{ { { shaderFileName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
-                program.getInfoLog(), program.getInfoDebugLog(),
-                logger.getAllMessages(), disassembly_stream.str(), true };
+
+            stream << disassembly_stream.str();
         }
-        else
-        {
-            glslangRes = xkslangtest::GlslangResult{ { { shaderFileName, shader.getInfoLog(), shader.getInfoDebugLog() }, },
-                program.getInfoLog(), program.getInfoDebugLog(), "", "", false };
-        }
-    
-        //Output messages, AST and SPIRV into a human readable file
-        ostringstream stream;
-        xkslangtest::Utils::OutputResultToStream(&stream, glslangRes, controls);
-    
-        // Write the stream output on the disk
-        //const string filenameWithoutSuffix = xkslangtest::Utils::RemoveSuffix(shaderFileName);
-        const string newOutputFname = testDir + "/" + shaderFileName + ".hr.spv";
-        xkslangtest::Utils::WriteFile(newOutputFname, stream.str());
     }
 
     return success;

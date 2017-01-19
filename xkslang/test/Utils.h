@@ -23,11 +23,6 @@ namespace xkslangtest
 class Utils
 {
 public:
-    //Utils
-    static void OutputResultToStream(std::ostringstream* stream, const GlslangResult& result, EShMessages controls);
-    static EShMessages DeriveOptions(Source source, Semantics semantics, Target target);
-    static EShLanguage GetShaderStage(const std::string& stage);
-
     //Files IO
     // Reads the content of the file at the given |path|. On success, returns true
     // and the contents; otherwise, returns false and an empty string.

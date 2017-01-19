@@ -14,6 +14,7 @@
 using namespace std;
 using namespace xkslangtest;
 
+/*
 bool XkslangTest::loadFileCompileAndCheck(const string& testDir,
     const string& testName,
     Source source,
@@ -98,3 +99,4 @@ bool XkslangTest::compile(glslang::TShader* shader, const string& code,
         (resources ? resources : &glslang::DefaultTBuiltInResource),
         defaultVersion, isForwardCompatible, controls);
 }
+*/
