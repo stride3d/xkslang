@@ -20,14 +20,23 @@ namespace xkslang
 //===========================================  SpxStreamRemapper  ==============================================//
 //==============================================================================================================//
 
+enum class SpxRemapperStatusEnum
+{
+    Undefined,
+    MixinInProgress,
+    MixinBeingFinalized,
+    MixinFinalized
+};
+
 class SpxStreamRemapper : public spv::spirvbin_t
 {
 
 public:
-    SpxStreamRemapper(int verbose = 0) : spirvbin_t(verbose){ }
+    SpxStreamRemapper(int verbose = 0);
     virtual ~SpxStreamRemapper() { }
 
     bool MixSpxBytecodeStream(const SpxBytecode& bytecode);
+    bool FinalizeMixin();
 
     bool GetMappedSpxBytecode(SpxBytecode& bytecode);
     bool GenerateSpvStageBytecode(ShadingStage stage, std::string entryPointName, SpvBytecode& output);
@@ -43,12 +52,18 @@ private:
 
     virtual void buildLocalMaps();
     bool BuildAndSetShaderStageHeader(ShadingStage stage, spv::Id entryFunctionId, std::string unmangledFunctionName);
-    bool ProcessOverridingMethods();
+    bool BuildOverridenFunctionMap();
+    bool RemapAllOverridenFunctions();
 
 private:
+    SpxRemapperStatusEnum status;
+
     std::vector<std::string> errorMessages;
 
-    std::unordered_map<spv::Id, std::string> declarationNameMap;  // delaration name from functions and shaders (XKSL extensions)
+    std::unordered_map<spv::Id, std::string> declarationNameMap;     // delaration name from functions and shaders (XKSL extensions)
+
+    //map of methods being overriden (first id), associated with a pair<id of the overriding method, method level in the tree inheritance>
+    std::unordered_map<spv::Id, std::pair<spv::Id, int>> mapOverridenFunctions;
 };
 
 }  // namespace xkslang

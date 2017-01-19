@@ -119,8 +119,13 @@ bool XkslMixer::MergeAllMixin(vector<string>& msgs)
         if (!spxStreamRemapper->MixSpxBytecodeStream(*spirXBytecode))
         {
             spxStreamRemapper->copyMessagesTo(msgs);
-            return error(msgs, "Fail to map SPRX bytecode");
+            return error(msgs, "Fail to mix the bytecode");
         }
+    }
+    if (!spxStreamRemapper->FinalizeMixin())
+    {
+        spxStreamRemapper->copyMessagesTo(msgs);
+        return error(msgs, "Fail to finalize the mixin");
     }
 
     /*

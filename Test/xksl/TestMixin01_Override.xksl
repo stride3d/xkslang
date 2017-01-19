@@ -17,7 +17,21 @@ shader TestMixin01_Base
     }
 }
 
-shader TestMixin01_Override : TestMixin01_Base
+shader TestMixin01_OverrideB : TestMixin01_OverrideA
+{
+    override int Compute()
+    {
+        return 5;
+    }
+	
+	override void main()
+    {
+        // Note: Since we don't have streams yet, we might find a different mechanism to hardcode this into SV_Color?
+        streams.ColorTarget = 1 + Compute();
+    }
+}
+
+shader TestMixin01_OverrideA : TestMixin01_Base
 {
     override int Compute()
     {

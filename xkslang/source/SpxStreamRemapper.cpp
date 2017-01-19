@@ -40,9 +40,19 @@ static const auto spx_inst_fn_nop = [](spv::Op, unsigned) { return false; };
 static const auto spx_op_fn_nop = [](spv::Id&) {};
 //===================================================================================================//
 
+SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
+{
+    staticErrorMessages.clear(); //clear the list of error messages that we will receive from the parent class
+    status = SpxRemapperStatusEnum::Undefined;
+}
+
 bool SpxStreamRemapper::MixSpxBytecodeStream(const SpxBytecode& bytecode)
 {
-    staticErrorMessages.clear();  //error messages receivable from parent class
+    if (status != SpxRemapperStatusEnum::Undefined && status != SpxRemapperStatusEnum::MixinInProgress) {
+        errorMessages.push_back("Invalid remappper status");
+        return false;
+    }
+    status = SpxRemapperStatusEnum::MixinInProgress;
 
     const std::vector<uint32_t>& spx = bytecode.getBytecodeStream();
 
@@ -58,24 +68,74 @@ bool SpxStreamRemapper::MixSpxBytecodeStream(const SpxBytecode& bytecode)
         return false;
     }
 
-    validate();
+    return true;
+}
+
+//Mixin is finalized: no more updates will be brought to the mixin bytecode after
+bool SpxStreamRemapper::FinalizeMixin()
+{
+    if (status != SpxRemapperStatusEnum::MixinInProgress) {
+        errorMessages.push_back("Invalid remappper status");
+        return false;
+    }
+    status = SpxRemapperStatusEnum::MixinBeingFinalized;
+
+    validate();  //validate the header
     if (staticErrorMessages.size() > 0) {
         copyStaticErrorMessagesTo(errorMessages);
         return false;
     }
 
-    //When a method is set as override: it will replace all methods defined with the same name
-    if (!ProcessOverridingMethods())
-    {
-        errorMessages.push_back("Processing overriding methods failed");
+    //Build the list of all overriding methods
+    if (!BuildOverridenFunctionMap()) {
+        errorMessages.push_back("Processing overriding functions failed");
         return false;
     }
-    
+
+    //Remap all overriden functions
+    if (!RemapAllOverridenFunctions()) {
+        errorMessages.push_back("Remapping overriding functions failed");
+        return false;
+    }
+
+    status = SpxRemapperStatusEnum::MixinFinalized;
     return true;
 }
 
-bool SpxStreamRemapper::ProcessOverridingMethods()
+bool SpxStreamRemapper::RemapAllOverridenFunctions()
 {
+    if (mapOverridenFunctions.size() == 0) return true; //nothing to override
+
+    process(
+        [&](spv::Op opCode, unsigned start)
+        {
+            switch (opCode) {
+                case spv::OpFunctionCall:
+                {
+                    spv::Id functionCalledId = asId(start + 3);
+
+                    auto gotOverrided = mapOverridenFunctions.find(functionCalledId);
+                    if (gotOverrided != mapOverridenFunctions.end())
+                    {
+                        spv::Id overridingFunctionId = gotOverrided->second.first;
+                        spv[start + 3] = overridingFunctionId;
+                    }
+
+                    break;
+                }
+            }
+            return true;
+        },
+        spx_op_fn_nop
+    );
+
+    return true;
+}
+
+bool SpxStreamRemapper::BuildOverridenFunctionMap()
+{
+    mapOverridenFunctions.clear();
+
     buildLocalMaps();
     if (staticErrorMessages.size() > 0) {
         copyStaticErrorMessagesTo(errorMessages);
@@ -84,17 +144,20 @@ bool SpxStreamRemapper::ProcessOverridingMethods()
 
     //========================================================================================================================//
     //========================================================================================================================//
-    // build methods and classes attributes
-    unordered_map<spv::Id, bool> fnOverride;                    // methods having the override attributes
-    unordered_map<spv::Id, spv::Id> fnOwnerClass;               // method linked with the class declaring it
-    unordered_map<spv::Id, vector<spv::Id>> shaderParentsList;   // list of parents for the shader
-    unordered_map<spv::Id, vector<spv::Id>> shaderFunctionsList;   // list of functions for the shader
+    // build functions and classes attributes by parsing XKSL declaration attributes
+    unordered_map<spv::Id, int> declaredShaderAndTheirLevel;        // list of xksl shader type declared in the bytecode, and their level
+    unordered_map<spv::Id, bool> fnWithOverrideAttribute;           // methods having the override attributes
+    unordered_map<spv::Id, spv::Id> fnOwnerShader;                  // method linked with the shader declaring it
+    unordered_map<spv::Id, vector<spv::Id>> shaderParentsList;      // list of parents inherited by the shader
+    unordered_map<spv::Id, vector<spv::Id>> shaderFunctionsList;    // list of functions declared within the shader
 
-    std::vector<bool> isXkslShaderClassType(bound(), false);
     for (const auto typeStart : typeConstPos)
     {
         if (asOpCode(typeStart) == spv::OpTypeXlslShaderClass)
-            isXkslShaderClassType[asTypeConstId(typeStart)] = true;
+        {
+            spv::Id shaderId = asTypeConstId(typeStart);
+            declaredShaderAndTheirLevel[shaderId] = -1;
+        }
     }
 
     process(
@@ -111,7 +174,7 @@ bool SpxStreamRemapper::ProcessOverridingMethods()
                     case spv::DecorationMethodOverride:
                     {
                         //a function is defined with an override attribute
-                        fnOverride[target] = true;
+                        fnWithOverrideAttribute[target] = true;
                         break;
                     }
                     case spv::DecorationBelongsToShader:
@@ -120,17 +183,17 @@ bool SpxStreamRemapper::ProcessOverridingMethods()
                         const std::string shaderName = literalString(start + 3);
                         spv::Id shaderId = spv::NoResult;
                         for (const auto& name : declarationNameMap) {
-                            if (isXkslShaderClassType[name.first] && name.second == shaderName) {
+                            if ((declaredShaderAndTheirLevel.find(name.first) != declaredShaderAndTheirLevel.end()) && name.second == shaderName) {
                                 shaderId = name.first;
                                 break;
                             }
                         }
                         if (shaderId == spv::NoResult) {
-                            errorMessages.push_back(string("shader not found:") + shaderName);
+                            errorMessages.push_back(string("undeclared shader:") + shaderName);
                             break;
                         }
 
-                        fnOwnerClass[target] = shaderId;
+                        fnOwnerShader[target] = shaderId;
 
                         //Add the function in the shader's functions list
                         unordered_map<spv::Id, vector<spv::Id>>::iterator got = shaderFunctionsList.find(shaderId);
@@ -149,17 +212,17 @@ bool SpxStreamRemapper::ProcessOverridingMethods()
                     }
                     case spv::DecorationShaderInheritFromParent:
                     {
-                        //A shader inherits from a parent
+                        //A shader inherits from a parent: get its parent id
                         const std::string parentName = literalString(start + 3);
                         spv::Id parentId = spv::NoResult;
                         for (const auto& name : declarationNameMap){
-                            if (isXkslShaderClassType[name.first] && name.second == parentName){
+                            if ((declaredShaderAndTheirLevel.find(name.first) != declaredShaderAndTheirLevel.end()) && name.second == parentName){
                                 parentId = name.first;
                                 break;
                             }
                         }
                         if (parentId == spv::NoResult){
-                            errorMessages.push_back(string("Parent shader not found:") + parentName);
+                            errorMessages.push_back(string("undeclared parent shader:") + parentName);
                             break;
                         }
 
@@ -186,55 +249,125 @@ bool SpxStreamRemapper::ProcessOverridingMethods()
 
     if (errorMessages.size() > 0) return false;
 
-    if (fnOverride.size() == 0) return true;  //no overriding function, we can directly return
+    if (fnWithOverrideAttribute.size() == 0) return true;  //no functions declared with override attributes, we can return here
+
+    //========================================================================================================================//
+    // Set the shader levels (this algorithm also detects cyclic shader inheritance)
+    {
+        bool allShaderSet = false;
+        while (!allShaderSet)
+        {
+            allShaderSet = true;
+            bool anyShaderUpdated = false;
+
+            for (auto sh = declaredShaderAndTheirLevel.begin(); sh != declaredShaderAndTheirLevel.end(); sh++)
+            {
+                spv::Id shaderId = sh->first;
+                if (sh->second != -1) continue;  //shader already set
+
+                unordered_map<spv::Id, vector<spv::Id>>::iterator gotParents = shaderParentsList.find(shaderId);
+                if (gotParents == shaderParentsList.end())
+                {
+                    sh->second = 0; //shader has no parent
+                    anyShaderUpdated = true;
+                    continue;
+                }
+
+                int maxParentLevel = -1;
+                const vector<spv::Id>& vecParents = gotParents->second;
+                for (int p = 0; p<vecParents.size(); ++p)
+                {
+                    spv::Id parentId = vecParents[p];
+                    int parentLevel = declaredShaderAndTheirLevel[parentId];
+
+                    if (parentLevel == -1)
+                    {
+                        //parent not set yet: got to wait
+                        allShaderSet = false;
+                        maxParentLevel = -1;
+                        break;
+                    }
+                    if (parentLevel > maxParentLevel) maxParentLevel = parentLevel;
+                }
+
+                if (maxParentLevel >= 0)
+                {
+                    sh->second = maxParentLevel + 1; //shader level
+                    anyShaderUpdated = true;
+                }
+            }
+
+            if (!anyShaderUpdated)
+            {
+                errorMessages.push_back("Cyclic inheritance detected among shaders");
+                return false;
+            }
+        }
+    }
 
     //========================================================================================================================//
     //========================================================================================================================//
-    // override each functions having an override attribute
+    // check overrides for each functions declared with an override attribute
     // temporary implementation for now: simply override (replace) similar (same mangled name) functions from the function shader's parents classes
-    vector<pair<unsigned, unsigned>> functionsToOverrides;
-    for (auto fn = fnOverride.begin(); fn != fnOverride.end(); fn++)
+    for (auto fn = fnWithOverrideAttribute.begin(); fn != fnWithOverrideAttribute.end(); fn++)
     {
         spv::Id overridingFunctionId = fn->first;
         const string& overringFunctionName = declarationNameMap[overridingFunctionId];
-        spv::Id ownerClassId = fnOwnerClass[overridingFunctionId];
-        if (ownerClassId == 0){
-            errorMessages.push_back(string("Overriding function does not belong to a shader class:") + overringFunctionName);
+        spv::Id overridingFunctionShaderId = fnOwnerShader[overridingFunctionId];
+        if (overridingFunctionShaderId == 0 || declaredShaderAndTheirLevel.find(overridingFunctionShaderId) == declaredShaderAndTheirLevel.end()){
+            errorMessages.push_back(string("Overriding function does not belong to a known shader class:") + overringFunctionName);
             return false;
         }
+        int overridingFunctionShaderLevel = declaredShaderAndTheirLevel[overridingFunctionShaderId];
 
-        vector<spv::Id> vectorClassToCheckForOverride;
-        vectorClassToCheckForOverride.push_back(ownerClassId);
+        vector<spv::Id> listShadersToCheckForOverrideWithinParents;
+        listShadersToCheckForOverrideWithinParents.push_back(overridingFunctionShaderId);
 
-        while (vectorClassToCheckForOverride.size() > 0)
+        while (listShadersToCheckForOverrideWithinParents.size() > 0)
         {
-            spv::Id classIdToCheckForOverride = vectorClassToCheckForOverride.back();
-            vectorClassToCheckForOverride.pop_back();
+            spv::Id classIdToCheckForOverride = listShadersToCheckForOverrideWithinParents.back();
+            listShadersToCheckForOverrideWithinParents.pop_back();
 
-            //Check all parents
+            //Get list of parents
             unordered_map<spv::Id, vector<spv::Id>>::iterator gotParents = shaderParentsList.find(classIdToCheckForOverride);
             if (gotParents == shaderParentsList.end()) continue; //shader has no parent
             const vector<spv::Id>& vecParents = gotParents->second;
 
+            //Check all parents
             for (int p=0; p<vecParents.size(); ++p)
             {
                 spv::Id parentId = vecParents[p];
-                vectorClassToCheckForOverride.push_back(parentId);
+                listShadersToCheckForOverrideWithinParents.push_back(parentId);
 
-                //check all functions belonging to the parent class
+                //check all functions belonging to the parent shader
                 unordered_map<spv::Id, vector<spv::Id>>::iterator gotFunctions = shaderFunctionsList.find(parentId);
-                if (gotFunctions == shaderFunctionsList.end()) continue; //shader has no functions
+                if (gotFunctions == shaderFunctionsList.end()) continue; //the parent shader declares no functions
                 const vector<spv::Id>& vecFunctions = gotFunctions->second;
 
                 for (int f = 0; f<vecFunctions.size(); ++f)
                 {
+                    //compare the shader's functions name with the overring function name
                     spv::Id shaderFunctionId = vecFunctions[f];
                     const string& aParentFunctionName = declarationNameMap[shaderFunctionId];
                     if (overringFunctionName == aParentFunctionName)
                     {
                         //Yeah: got a function to be overriden !
-                        pair<unsigned, unsigned> idPairSwap(shaderFunctionId, overridingFunctionId);
-                        functionsToOverrides.push_back(idPairSwap);
+                        pair<spv::Id, int> overridingMethod(overridingFunctionId, overridingFunctionShaderLevel);
+
+                        auto gotRegistered = mapOverridenFunctions.find(shaderFunctionId);
+                        if (gotRegistered == mapOverridenFunctions.end())
+                        {
+                            mapOverridenFunctions[shaderFunctionId] = overridingMethod;
+                        }
+                        else
+                        {
+                            //only replace the override indirection if the level is higher
+                            int currentLevel = gotRegistered->second.second;
+                            if (overridingFunctionShaderLevel > currentLevel)
+                            {
+                                mapOverridenFunctions[shaderFunctionId] = overridingMethod;
+                            }
+                        }
                     }
                 }
             }
@@ -242,16 +375,6 @@ bool SpxStreamRemapper::ProcessOverridingMethods()
     }
 
     if (errorMessages.size() > 0) return false;
-
-    if (functionsToOverrides.size())
-    {
-        //process(spx_inst_fn_nop, // ignore instructions
-        //    [this](spv::Id& id) {
-        //        id = localId(id);
-        //        assert(id != unused && id != unmapped);
-        //    }
-        //);
-    }
 
     return true;
 }
@@ -273,20 +396,14 @@ bool SpxStreamRemapper::GetMappedSpxBytecode(SpxBytecode& bytecode)
 
 bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string entryPointName, SpvBytecode& output)
 {
-    if (spv.size() == 0)
+    if (status != SpxRemapperStatusEnum::MixinFinalized)
     {
-        errorMessages.push_back("No code mapped");
+        errorMessages.push_back("Invalid remappper status");
         return false;
     }
 
     //==========================================================================================
-    //Check the bytecode header validity
-    validate();
-    if (staticErrorMessages.size() > 0) {
-        copyStaticErrorMessagesTo(errorMessages);
-        return false;
-    }
-
+    //==========================================================================================
     //Map all local maps
     buildLocalMaps();
     if (staticErrorMessages.size() > 0) {
@@ -303,7 +420,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
         isFunction[fn.first] = true;
     }
 
-    spv::Id functionId = spv::NoResult;
+    spv::Id entryPointFunctionId = spv::NoResult;
     string unmangledEntryPointFunctionName;
     for (const auto& name : declarationNameMap)
     {
@@ -312,20 +429,25 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
             string unmangledFunctionName = name.second.substr(0, name.second.find('('));
             if (unmangledFunctionName == entryPointName)
             {
-                if (functionId != spv::NoResult)
-                {
-                    errorMessages.push_back(string("2 or more entry points found: ") + entryPointName);
-                    return false;
-                }
-                functionId = name.first;
+                //We take the first valid function
+                entryPointFunctionId = name.first;
                 unmangledEntryPointFunctionName = unmangledFunctionName;
+                break;
             }
         }
     }
-    if (functionId == spv::NoResult)
+    if (entryPointFunctionId == spv::NoResult)
     {
         errorMessages.push_back(string("Entry point not found: ") + entryPointName);
         return false;
+    }
+    //Check if the entry point function has been overriden
+    {
+        auto gotOverrided = mapOverridenFunctions.find(entryPointFunctionId);
+        if (gotOverrided != mapOverridenFunctions.end())
+        {
+            entryPointFunctionId = gotOverrided->second.first;
+        }
     }
 
     //==========================================================================================
@@ -337,7 +459,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
     //==========================================================================================
     //==========================================================================================
     // Update the shader stage header
-    if (!BuildAndSetShaderStageHeader(stage, functionId, unmangledEntryPointFunctionName))
+    if (!BuildAndSetShaderStageHeader(stage, entryPointFunctionId, unmangledEntryPointFunctionName))
     {
         errorMessages.push_back("Error buiding the shader stage header");
         spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
@@ -477,7 +599,7 @@ void SpxStreamRemapper::buildLocalMaps()
                     //}
                     //case spv::DecorationMethodOverride:
                     //{
-                    //    fnOverride[target] = true;
+                    //    fnWithOverrideAttribute[target] = true;
                     //    break;
                     //}
                     //case spv::DecorationBelongsToShader:

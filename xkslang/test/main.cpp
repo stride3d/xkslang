@@ -117,8 +117,8 @@ void main(int argc, char** argv)
                 vector<string> errorMsgs;
                 bool success = mixer.MergeAllMixin(errorMsgs);
 
-                if (success) cout << "  Mixin successful\n";
-                else cout << "  Mixin Failed !!!\n";
+                if (success) cout << " Mixin successful\n";
+                else cout << " Mixin Failed !!!\n";
 
                 //TMP: Save the SPIRV remapped mixin
                 if (success)
@@ -141,11 +141,11 @@ void main(int argc, char** argv)
                     SpvBytecode bytecode;
                     ShadingStage stage = ShadingStage::Pixel;
 
-                    cout << "   Generate SPIRV bytecode for entry point:" << entryPoint << " stage:" << GetStageLabel(stage) << "\n";
+                    cout << " Generate SPIRV bytecode for entry point:" << entryPoint << " stage:" << GetStageLabel(stage) << "\n";
                     success = mixer.GenerateStageBytecode(stage, entryPoint, bytecode, errorMsgs);
 
-                    if (success) cout << "  Bytecode successfully generated\n";
-                    else cout << "  Fail to generate the bytecode !!!\n";
+                    if (success) cout << " Bytecode successfully generated\n";
+                    else cout << " Fail to generate the bytecode !!!\n";
 
                     //TMP: Save the SPIRV bytecode on the disk
                     if (success)
