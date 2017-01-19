@@ -6,7 +6,7 @@ shader TestMixin01_Base
 {
 	stream int ColorTarget;
 
-    abstract int Compute()
+    int Compute()
     {
         return 1;
     }

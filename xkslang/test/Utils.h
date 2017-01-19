@@ -35,6 +35,7 @@ public:
     // Returns the suffix of the given |name|.
     static std::string GetSuffix(const std::string& name);
     static std::string RemoveSuffix(const std::string& name);
+    static std::string GetDirectoryFromFileFullName(const std::string& fullName);
     //========================================================================================
 };
 

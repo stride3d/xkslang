@@ -82,5 +82,12 @@ string Utils::RemoveSuffix(const string& name)
     return name.substr(0, pos);
 }
 
+string Utils::GetDirectoryFromFileFullName(const string& fullName)
+{
+    const size_t pos = fullName.find_last_of("\\/");
+    if (pos == string::npos) return fullName;
+    return fullName.substr(0, pos);
+}
+
 //========================================================================================
 //========================================================================================

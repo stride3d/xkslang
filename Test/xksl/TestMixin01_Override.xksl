@@ -1,6 +1,7 @@
 // mixin TestMixin01_Base;
-// mixin TestMixin01_Override;
-// expected result: 2
+// mixin TestMixin01_OverrideA;
+// mixin TestMixin01_OverrideB;
+// expected result: 6
 
 shader TestMixin01_Base
 {
