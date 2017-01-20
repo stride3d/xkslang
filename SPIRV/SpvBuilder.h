@@ -558,7 +558,7 @@ public:
 
     SourceLanguage source;
     int sourceVersion;
-    std::set<const char*> extensions;
+    std::set<std::string> extensions;
     std::vector<const char*> sourceExtensions;
     AddressingModel addressModel;
     MemoryModel memoryModel;
