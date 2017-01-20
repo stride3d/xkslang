@@ -938,6 +938,10 @@ enum Op {
     OpSubgroupBallotKHR = 4421,
     OpSubgroupFirstInvocationKHR = 4422,
     OpSubgroupReadInvocationKHR = 4432,
+
+    //XKSL extensions
+    OpFunctionCallBase = 4600, //a function call with base accessor (similar to a normal function call, except that the call cannot be overriden
+
     OpMax = 0x7fffffff,
 };
 

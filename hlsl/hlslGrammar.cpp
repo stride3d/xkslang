@@ -160,7 +160,7 @@ void HlslGrammar::error(const char* error)
 }
 
 //Process class accessor: this, base, Knwon ClassName, ...
-bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isStream)
+bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStream)
 {
     if (getCurrentShaderName() == nullptr) return false;
 
@@ -182,6 +182,7 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isStre
                 error("Invalid \"base\" accessor: the current shader has no inherited parents");
                 return false;
             }
+            isBase = true;
             className = NewPoolTString(getCurrentShaderParentName(0)->c_str());
             advanceToken();
             break;
@@ -3170,13 +3171,14 @@ bool HlslGrammar::isRecordedAsAShaderName(const TString& name)
 //      | postfix_expression INC_OP
 //      | postfix_expression DEC_OP
 //
-bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAccessor, const char* classAccessorName)
+bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAccessor, bool hasStreamAccessor, const char* classAccessorName)
 {
     // Not implemented as self-recursive:
     // The logical "right recursion" is done with an loop at the end
 
     TString* className = nullptr;
     bool parseStreamsAccessor = hasStreamAccessor;
+    bool parseBaseAccessor = hasBaseAccessor;
 
     // idToken will pick up either a variable or a function name in a function call
     HlslToken idToken;
@@ -3198,10 +3200,10 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
     } else if (acceptConstructor(node)) {
         // constructor (nothing else to do yet)
     }
-    else if (acceptClassReferenceAccessor(className, parseStreamsAccessor))
+    else if (acceptClassReferenceAccessor(className, parseBaseAccessor, parseStreamsAccessor))
     {
         const char* classAccessor = className == nullptr? nullptr: className->c_str();
-        return acceptPostfixExpression(node, parseStreamsAccessor, classAccessor);
+        return acceptPostfixExpression(node, parseBaseAccessor, parseStreamsAccessor, classAccessor);
     }
     else if (acceptIdentifier(idToken))
     {
@@ -3361,7 +3363,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasStreamAcc
 
                     TString accessorClassName = classAccessorName == nullptr ? *referenceShaderName : classAccessorName;
 
-                    if (acceptXkslFunctionCall(accessorClassName, idToken, node)) {
+                    if (acceptXkslFunctionCall(accessorClassName, hasBaseAccessor, idToken, node)) {
                         // function_call (nothing else to do yet)
                     }
                     else {
@@ -3506,7 +3508,7 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
     return false;
 }
 
-bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
+bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, bool callToFunctionFromBaseShaderClass, HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
 {
     // arguments
     TFunction* function = new TFunction(idToken.string, TType(EbtVoid));
@@ -3526,11 +3528,11 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, HlslToken idT
     if (!identifierLocation.isMethod())
     {
         //function not found as a method from our shader library, so we look in the global list of method
-        node = parseContext.handleFunctionCall(idToken.loc, function, arguments);
+        node = parseContext.handleFunctionCall(idToken.loc, function, arguments, callToFunctionFromBaseShaderClass);
     }
     else
     {
-        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments);
+        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments, callToFunctionFromBaseShaderClass);
     }
 
     return true;

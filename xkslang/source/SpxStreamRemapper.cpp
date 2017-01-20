@@ -98,7 +98,54 @@ bool SpxStreamRemapper::FinalizeMixin()
         return false;
     }
 
+    //Convert SPIRX extensions to SPIRV
+    if (!ConvertSpirxToSpirVBytecode()) {
+        errorMessages.push_back("Failed to convert SPIRX to SPIRV");
+        return false;
+    }
+
     status = SpxRemapperStatusEnum::MixinFinalized;
+    return true;
+}
+
+bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
+{
+    //Convert OpIntructions
+    // - OpFunctionCallBase --> OpFunctionCall (remapping of override functions has been completed)
+
+    process(
+        [&](spv::Op opCode, unsigned start)
+        {
+            switch (opCode) {
+                case spv::OpFunctionCallBase:
+                {
+                    setOpCode(start, spv::OpFunctionCall);
+                    break;
+                }
+                case spv::OpTypeXlslShaderClass:
+                {
+                    stripInst(start); //remove OpTypeXlslShaderClass type
+                    break;
+                }
+                case spv::OpName:
+                case spv::OpDecorate:
+                {
+                    //id = asId(start + 1);
+                    //if (id != spv::NoResult && isXkslShaderClassType[id] == 1)
+                    //    stripInst(start);
+
+                    //remove all XKSL decoration
+                    const spv::Decoration dec = asDecoration(start + 2);
+                    if (dec >= spv::DecorationDeclarationName && dec <= spv::DecorationMethodClone)
+                        stripInst(start);
+                    break;
+                }
+            }
+            return true;
+        },
+        spx_op_fn_nop
+    );
+
     return true;
 }
 
@@ -466,7 +513,10 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
         return false;
     }
 
-    //updating the header invalidated the maps
+    //==========================================================================================
+    //==========================================================================================
+    //Clean and generate SPIRV bytecode
+
     buildLocalMaps();
     if (staticErrorMessages.size() > 0) {
         copyStaticErrorMessagesTo(errorMessages);
@@ -474,11 +524,6 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
         return false;
     }
 
-    //==========================================================================================
-    //==========================================================================================
-    //Clean and generate SPIRV bytecode
-
-    dceXkslData();  //dce additionnal info added by Xksl extensions (name and decoration)
     dceFuncs(); //dce uncalled functions
     dceVars();  //dce unused function variables + decorations / name
     dceTypes(); //dce unused types
@@ -610,48 +655,6 @@ void SpxStreamRemapper::buildLocalMaps()
                     //}
                 }
 
-            }
-            return true;
-        },
-        spx_op_fn_nop
-    );
-}
-
-//Remove extra data added by SPRX extensions
-void SpxStreamRemapper::dceXkslData()
-{
-    msg(3, 2, std::string("DCE dceXkslData: "));
-
-    //std::vector<bool> isXkslShaderClassType(bound(), false);
-    //for (const auto typeStart : typeConstPos)
-    //{
-    //    if (asOpCode(typeStart) == spv::OpTypeXlslShaderClass)
-    //        isXkslShaderClassType[asTypeConstId(typeStart)] = true;
-    //}
-
-    process(
-        [&](spv::Op opCode, unsigned start)
-        {
-            spv::Id id = spv::NoResult;
-            switch (opCode) {
-                case spv::OpTypeXlslShaderClass:
-                {
-                    stripInst(start); //remove OpTypeXlslShaderClass
-                    break;
-                }
-                case spv::OpName:
-                case spv::OpDecorate:
-                {
-                    //id = asId(start + 1);
-                    //if (id != spv::NoResult && isXkslShaderClassType[id] == 1)
-                    //    stripInst(start);
-
-                    //remove all XKSL decoration
-                    const spv::Decoration dec = asDecoration(start + 2);
-                    if (dec >= spv::DecorationDeclarationName && dec <= spv::DecorationMethodClone)
-                        stripInst(start);
-                    break;
-                }
             }
             return true;
         },

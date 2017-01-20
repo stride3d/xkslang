@@ -3122,6 +3122,7 @@ spv::Id TGlslangToSpvTraverser::handleUserFunctionCall(const glslang::TIntermAgg
 
     const glslang::TIntermSequence& glslangArgs = node->getSequence();
     const glslang::TQualifierList& qualifiers = node->getQualifierList();
+    bool targetBaseShaderClassFunction = node->GetTargetBaseShaderClass();
 
     //  See comments in makeFunctions() for details about the semantics for parameter passing.
     //
@@ -3185,7 +3186,7 @@ spv::Id TGlslangToSpvTraverser::handleUserFunctionCall(const glslang::TIntermAgg
     }
 
     // 3. Make the call.
-    spv::Id result = builder.createFunctionCall(function, spvArgs);
+    spv::Id result = builder.createFunctionCall(function, spvArgs, targetBaseShaderClassFunction);
     builder.setPrecision(result, TranslatePrecisionDecoration(node->getType()));
 
     // 4. Copy back out an "out" arguments.

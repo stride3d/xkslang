@@ -193,6 +193,11 @@ private:
    static unsigned opWordCount(spirword_t data) { return data >> spv::WordCountShift; }
    static spv::Op  opOpCode(spirword_t data)    { return spv::Op(data & spv::OpCodeMask); }
 
+   void setOpCode(unsigned word, spv::Op op) {
+       unsigned data = spv[word];
+       spv[word] = (data & ~(spv::OpCodeMask)) + ((unsigned)op);
+   }
+
    // Header access & set methods
    spirword_t  magic()    const       { return spv[0]; } // return magic number
    spirword_t  bound()    const       { return spv[3]; } // return Id bound from header

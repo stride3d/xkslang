@@ -87,7 +87,7 @@ public:
     TIntermNode* handleReturnValue(const TSourceLoc&, TIntermTyped*);
     void handleFunctionArgument(TFunction*, TIntermTyped*& arguments, TIntermTyped* newArg);
     TIntermTyped* handleAssign(const TSourceLoc&, TOperator, TIntermTyped* left, TIntermTyped* right) const;
-    TIntermTyped* handleFunctionCall(const TSourceLoc&, TFunction*, TIntermTyped*);
+    TIntermTyped* handleFunctionCall(const TSourceLoc&, TFunction*, TIntermTyped*, bool callBaseClass = false);
     void decomposeIntrinsic(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeSampleMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeGeometryMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);

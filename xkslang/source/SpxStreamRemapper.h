@@ -54,6 +54,7 @@ private:
     bool BuildAndSetShaderStageHeader(ShadingStage stage, spv::Id entryFunctionId, std::string unmangledFunctionName);
     bool BuildOverridenFunctionMap();
     bool RemapAllOverridenFunctions();
+    bool ConvertSpirxToSpirVBytecode();
 
 private:
     SpxRemapperStatusEnum status;

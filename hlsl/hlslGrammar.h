@@ -76,7 +76,7 @@ namespace glslang {
         void unimplemented(const char*);
         void error(const char*);
         bool acceptIdentifier(HlslToken&);
-        bool acceptClassReferenceAccessor(TString*& className, bool& isStreams);
+        bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStreams);
         bool acceptCompilationUnit();
         bool acceptDeclaration(TIntermNode*& node);
         bool acceptControlDeclaration(TIntermNode*& node);
@@ -110,10 +110,10 @@ namespace glslang {
         bool acceptConditionalExpression(TIntermTyped*&);
         bool acceptBinaryExpression(TIntermTyped*&, PrecedenceLevel);
         bool acceptUnaryExpression(TIntermTyped*&);
-        bool acceptPostfixExpression(TIntermTyped*&, bool hasStreamAccessor = false, const char* classAccessor = nullptr);
+        bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor = false, bool hasStreamAccessor = false, const char* classAccessor = nullptr);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
-        bool acceptXkslFunctionCall(TString& shaderClassName, HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
+        bool acceptXkslFunctionCall(TString& shaderClassName, bool callToFunctionFromBaseShaderClass, HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
         bool acceptArguments(TFunction*, TIntermTyped*&);
         bool acceptLiteral(TIntermTyped*&);
         bool acceptCompoundStatement(TIntermNode*&);

@@ -2,7 +2,7 @@
 
 struct StreamBuffer
 {
-    int TestMixin01_Base.ColorTarget;
+    int TestMixin01_Base_ColorTarget;
 };
 
 StreamBuffer StreamBuffer_1;
@@ -14,6 +14,6 @@ int TestMixin01_OverrideB_Compute()
 
 void main()
 {
-    StreamBuffer_1.TestMixin01_Base.ColorTarget = (1 + TestMixin01_OverrideB_Compute());
+    StreamBuffer_1.TestMixin01_Base_ColorTarget = 1 + TestMixin01_OverrideB_Compute();
 }
 

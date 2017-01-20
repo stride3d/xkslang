@@ -1182,6 +1182,8 @@ const char* OpcodeString(int op)
     case 5006: return "OpGroupUMaxNonUniformAMD";
     case 5007: return "OpGroupSMaxNonUniformAMD";
 #endif
+
+    case (OpFunctionCallBase): return "OpFunctionCallBase";
     }
 }
 
@@ -1819,6 +1821,9 @@ void Parameterize()
 
     InstructionDesc[OpFunctionCall].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCall].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
+
+    InstructionDesc[OpFunctionCallBase].operands.push(OperandId, "'Function'");
+    InstructionDesc[OpFunctionCallBase].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
 
     InstructionDesc[OpExtInst].operands.push(OperandId, "'Set'");
     InstructionDesc[OpExtInst].operands.push(OperandLiteralNumber, "'Instruction'");

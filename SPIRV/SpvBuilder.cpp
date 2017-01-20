@@ -1352,9 +1352,11 @@ Id Builder::createSpecConstantOp(Op opCode, Id typeId, const std::vector<Id>& op
     return op->getResultId();
 }
 
-Id Builder::createFunctionCall(spv::Function* function, std::vector<spv::Id>& args)
+Id Builder::createFunctionCall(spv::Function* function, std::vector<spv::Id>& args, bool targetBaseShaderClassFunction)
 {
-    Instruction* op = new Instruction(getUniqueId(), function->getReturnType(), OpFunctionCall);
+    Instruction* op;
+    if (targetBaseShaderClassFunction) op = new Instruction(getUniqueId(), function->getReturnType(), OpFunctionCallBase);
+    else op = new Instruction(getUniqueId(), function->getReturnType(), OpFunctionCall);
     op->addIdOperand(function->getId());
     for (int a = 0; a < (int)args.size(); ++a)
         op->addIdOperand(args[a]);

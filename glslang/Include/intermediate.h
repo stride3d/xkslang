@@ -1067,8 +1067,8 @@ typedef TVector<int> TQualifierList;
 //
 class TIntermAggregate : public TIntermOperator {
 public:
-    TIntermAggregate() : TIntermOperator(EOpNull), userDefined(false), pragmaTable(0) { }
-    TIntermAggregate(TOperator o) : TIntermOperator(o), pragmaTable(0) { }
+    TIntermAggregate() : TIntermOperator(EOpNull), userDefined(false), pragmaTable(0), targetBaseShaderClass(false){ }
+    TIntermAggregate(TOperator o) : TIntermOperator(o), pragmaTable(0), targetBaseShaderClass(false) { }
     ~TIntermAggregate() { delete pragmaTable; }
     virtual       TIntermAggregate* getAsAggregate()       { return this; }
     virtual const TIntermAggregate* getAsAggregate() const { return this; }
@@ -1088,6 +1088,10 @@ public:
     bool getDebug() const { return debug; }
     void addToPragmaTable(const TPragmaTable& pTable);
     const TPragmaTable& getPragmaTable() const { return *pragmaTable; }
+
+    void SetTargetBaseShaderClass(bool b) { targetBaseShaderClass = b; }
+    bool GetTargetBaseShaderClass() const { return targetBaseShaderClass; }
+
 protected:
     TIntermAggregate(const TIntermAggregate&); // disallow copy constructor
     TIntermAggregate& operator=(const TIntermAggregate&); // disallow assignment operator
@@ -1098,6 +1102,8 @@ protected:
     bool optimize;
     bool debug;
     TPragmaTable* pragmaTable;
+
+    bool targetBaseShaderClass; //xksl extensions, if we call a method with base accessor, we need to record this information (to make sure the function call can't get overriden)
 };
 
 //

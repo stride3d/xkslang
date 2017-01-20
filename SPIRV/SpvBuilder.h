@@ -270,7 +270,7 @@ public:
     Id createBinOp(Op, Id typeId, Id operand1, Id operand2);
     Id createTriOp(Op, Id typeId, Id operand1, Id operand2, Id operand3);
     Id createOp(Op, Id typeId, const std::vector<Id>& operands);
-    Id createFunctionCall(spv::Function*, std::vector<spv::Id>&);
+    Id createFunctionCall(spv::Function*, std::vector<spv::Id>&, bool targetBaseShaderClassFunction = false);
     Id createSpecConstantOp(Op, Id typeId, const std::vector<spv::Id>& operands, const std::vector<unsigned>& literals);
 
     // Take an rvalue (source) and a set of channels to extract from it to

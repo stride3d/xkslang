@@ -13,3 +13,4 @@ Test/frag.spv
 External/googletest
 *.spv
 *.hr.spv
+*.rv.glsl

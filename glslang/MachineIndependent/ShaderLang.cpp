@@ -837,7 +837,7 @@ bool ParseXkslShaderFile(
                         if (canCreateVariable)
                         {
                             //Create the const variable on global space
-                            TString* variableName = NewPoolTString((TString("const_") + shader->shaderName + "." + member.type->getFieldName()).c_str());
+                            TString* variableName = NewPoolTString((TString("const_") + shader->shaderName + "_" + member.type->getFieldName()).c_str());
                             member.type->setFieldName(*variableName);
 
                             TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression, false);
@@ -863,7 +863,7 @@ bool ParseXkslShaderFile(
                     else if (isStream)
                     {
                         //for stream variables: concatenate the shader class name in front of the variable field name
-                        TString* variableName = NewPoolTString((shader->shaderName + "." + member.type->getFieldName()).c_str());
+                        TString* variableName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName()).c_str());
                         member.type->setFieldName(*variableName);
 
                         //Add the member in the global stream buffer
@@ -896,7 +896,7 @@ bool ParseXkslShaderFile(
                             blockQualifier.clear();
                             blockQualifier.storage = EvqUniform;
                             TString numberId = TString(std::to_string(shader->listDeclaredBlockNames.size()).c_str());
-                            TString* blockName = NewPoolTString((shader->shaderName + "." + member.type->getFieldName() + "_" + numberId).c_str());  //name = class.name_num
+                            TString* blockName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName() + "_" + numberId).c_str());  //name = class_name_num
                             //TType blockType(cbufferStructTypeList, *typeName, blockQualifier);
 
                             parseContext->declareBlock(member.loc, *member.type, blockName);

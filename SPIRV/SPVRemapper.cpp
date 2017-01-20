@@ -412,7 +412,7 @@ namespace spv {
                     const std::string  name = literalString(start+2);
                     nameMap[name] = target;
 
-                } else if (opCode == spv::Op::OpFunctionCall) {
+                } else if (opCode == spv::Op::OpFunctionCall || opCode == spv::Op::OpFunctionCallBase) {
                     ++fnCalls[asId(start + 3)];
                 } else if (opCode == spv::Op::OpEntryPoint) {
                     entryPoint = asId(start + 2);
@@ -733,6 +733,7 @@ namespace spv {
                 case spv::OpStore:
                 case spv::OpCompositeConstruct:
                 case spv::OpFunctionCall:
+                case spv::OpFunctionCallBase:
                     ++opCounter[opCode];
                     idCounter = 0;
                     thisOpCode = opCode;
@@ -980,7 +981,7 @@ namespace spv {
                     // decrease counts of called functions
                     process(
                         [&](spv::Op opCode, unsigned start) {
-                            if (opCode == spv::Op::OpFunctionCall) {
+                            if (opCode == spv::Op::OpFunctionCall || opCode == spv::Op::OpFunctionCallBase) {
                                 const auto call_it = fnCalls.find(asId(start + 3));
                                 if (call_it != fnCalls.end()) {
                                     if (--call_it->second <= 0)

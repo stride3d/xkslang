@@ -14,7 +14,7 @@
                               Name 14  "TestMixin01_OverrideB.main("
                               Name 16  "TestMixin01_OverrideA.Compute("
                               Name 21  "StreamBuffer"
-                              MemberName 21(StreamBuffer) 0  "TestMixin01_Base.ColorTarget"
+                              MemberName 21(StreamBuffer) 0  "TestMixin01_Base_ColorTarget"
                               Name 23  "StreamBuffer"
                               Name 37  "TestMixin01_Base"
                               Name 39  "TestMixin01_Base"
