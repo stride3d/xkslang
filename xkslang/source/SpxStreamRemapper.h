@@ -35,7 +35,7 @@ public:
     SpxStreamRemapper(int verbose = 0);
     virtual ~SpxStreamRemapper() { }
 
-    bool MixSpxBytecodeStream(const SpxBytecode& bytecode);
+    bool MixWithSpxBytecode(const SpxBytecode& bytecode);
     bool FinalizeMixin();
 
     bool GetMappedSpxBytecode(SpxBytecode& bytecode);

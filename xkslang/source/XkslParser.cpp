@@ -95,6 +95,7 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
         glslang::GlslangToSpv(*AST, bytecodeList, &logger);
         spirXBytecode.clear();
         spirXBytecode.SetBytecode(bytecodeList);
+        spirXBytecode.SetName(shaderFileName);
     }
     
     //output debug and error messages

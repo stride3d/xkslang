@@ -21,45 +21,55 @@ using namespace std;
 using namespace xkslangtest;
 using namespace xkslang;
 
-struct FileNameEntryPointPair {
+struct XkslInput {
     const char* fileName;
+};
+
+struct MixinOutput {
     const char* entryPoint;
+    ShadingStage stage;
     const char* expectedGlslOutput;
+};
+
+//To test single file parsing and convertion
+struct XkslFilesToParseAndConvert {
+    vector<XkslInput> inputs;
+    vector<MixinOutput> outputs;
 };
 
 static string testDir = "glslang\\source\\Test\\xksl";
 
-vector<FileNameEntryPointPair> testFiles = {
-    //{"shaderWithVariable.xksl", "", nullptr},
-    //{"shaderWithManyVariables.xksl", "", nullptr},
-    //{"manySimpleShaders.xksl", "", nullptr},
-    //{"simpleShaderWithFunction.xksl", "", nullptr},
-    //{"declarationMixOfFunctionsAndVariables.xksl", "", nullptr},
-    //{"2ShaderWithSameFunctionNames.xksl", "", nullptr},
-    //{"shaderInheritance.xksl", "", nullptr},
-    //{"postDeclaration.xksl", "", nullptr},
-    //{"classAccessor.xksl", "", nullptr},
-    //{"streamsSimple.xksl", "", nullptr},
-    //{"streamsWithClassAccessor.xksl", "", nullptr},
-    //{"shaderWithDefinedConsts.xksl", "", nullptr},
-    //{"shaderWithUnresolvedConsts.xksl", "", nullptr},
-    //{"intrisicsHlslFunctions.xksl", "" },
-    //{"methodReferingToShaderVariable.xksl", "", nullptr},
-    //{"methodsWithSimpleClassAccessor.xksl", "", nullptr},
+vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
+    //{ {{"shaderWithVariable.xksl"}}, {} },
+    //{ {{"shaderWithManyVariables.xksl"}},{} },
+    //{ {{"manySimpleShaders.xksl"}},{} },
+    //{ {{"simpleShaderWithFunction.xksl"}},{} },
+    //{ {{"declarationMixOfFunctionsAndVariables.xksl"}},{} },
+    //{ {{"2ShaderWithSameFunctionNames.xksl"}},{} },
+    //{ {{"shaderInheritance.xksl"}},{} },
+    //{ {{"postDeclaration.xksl"}},{} },
+    //{ {{"classAccessor.xksl"}},{} },
+    //{ {{"streamsSimple.xksl"}},{} },
+    //{ {{"streamsWithClassAccessor.xksl"}},{} },
+    //{ {{"shaderWithDefinedConsts.xksl"}},{} },
+    //{ {{"shaderWithUnresolvedConsts.xksl"}},{} },
+    //{ {{"intrisicsHlslFunctions.xksl"}},{} },
+    //{ {{"methodReferingToShaderVariable.xksl"}},{} },
+    //{ {{"methodsWithSimpleClassAccessor.xksl"}},{} },
+    //{ {{"cbuffers.xksl"}},{} },
 
-    //{"cbuffers.xksl", "", nullptr},
+    //{ {{"TestMixin01_Base.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Base.xksl_Pixel.glsl"}} },
+    //{ {{"TestMixin01_Override.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Override.xksl_Pixel.glsl"}} },
+    { {{"TestMixin01_OverridePlusCallBase.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase.xksl_Pixel.glsl"}} },
+    //{ {"TestMixin01_2Overrides.xksl"}, {"main", nullptr}/*"TestMixin01_OverridePlusCallBase.xksl_Pixel.glsl"*/ },
 
-    { "TestMixin01_Base.xksl", "main", "TestMixin01_Base.xksl_Pixel.glsl" },
-    { "TestMixin01_Override.xksl", "main", "TestMixin01_Override.xksl_Pixel.glsl" },
-    { "TestMixin01_OverridePlusCallBase.xksl", "main", "TestMixin01_OverridePlusCallBase.xksl_Pixel.glsl" },
+    //{{"textureAndSampler.xksl"}, {"", nullptr}},
+    //{{"shaderTexturing.xksl"}, {"", nullptr}},
+    //{{"shaderBase.xksl"}, {"", nullptr}},
+    //{{"shaderSimple.xksl"}, {"", nullptr}},
 
-    //{"textureAndSampler.xksl", "", nullptr},
-    //{"shaderTexturing.xksl", "", nullptr},
-    //{"shaderBase.xksl", "", nullptr},
-    //{"shaderSimple.xksl", "", nullptr},
-
-    //{"shaderCustomEffect.xksl", "", nullptr},
-    //{"methodsPrototypes.xksl", "", nullptr},
+    //{{"shaderCustomEffect.xksl"}, {"", nullptr}},
+    //{{"methodsPrototypes.xksl"}, {"", nullptr}},
 };
 
 #ifdef _DEBUG
@@ -141,167 +151,201 @@ void main(int argc, char** argv)
         return;
     }
 
+    int countTestProcessed = 0;
+    int countTestSuccessful = 0;
+
     //Parse the shaders using XkslParser library
     {
-        for (int i = 0; i < testFiles.size(); ++i)
+        for (int n = 0; n < vecXkslFilesToConvert.size(); ++n)
         {
-            //======================================================================================================
+            XkslFilesToParseAndConvert& xkslFilesToParseAndConvert = vecXkslFilesToConvert[n];
+            vector<XkslInput>& inputs = xkslFilesToParseAndConvert.inputs;
+            vector<MixinOutput>& outputs = xkslFilesToParseAndConvert.outputs;
+            if (inputs.size() == 0) continue;
+
+            countTestProcessed++;
+            bool success = true;
+
+            vector<SpxBytecode> listInputBytecodes;
+
             //======================================================================================================
             //======================================================================================================
             // load shader file into a string
-            string shaderFileName = testFiles[i].fileName;
+            string xkslShaderFileName = inputs[0].fileName;
 
-            cout << "Parsing XKSL shader \"" << shaderFileName << "\"" << endl;
+            cout << "Parsing XKSL shader \"" << xkslShaderFileName << "\"" << endl;
 
-            const string inputFname = testDir + "/" + shaderFileName;
+            const string inputFname = testDir + "/" + xkslShaderFileName;
             string xkslInput;
             if (!Utils::ReadFile(inputFname, xkslInput))
             {
                 cout << " Failed to read the file: " << inputFname << " !!!" << endl;
-                continue;
+                success = false;
             }
 
-            //======================================================================================================
             //======================================================================================================
             //======================================================================================================
             // Parse and convert XKSL shaders to SPIRX bytecode
-            SpxBytecode spirXBytecode;
-            ostringstream errorAndDebugMessages;
-            ostringstream outputHumanReadableASTAndSPV;
-
-            time_before = GetTickCount();
-            bool success = parser.ConvertXkslToSpirX(shaderFileName, xkslInput, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
-            time_after = GetTickCount();
-
-            if (!success) {
-                cout << " Failed to parse the shader: " << shaderFileName << " !!!!!!!" << endl;
-                continue;
-            }
-            cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
-
-            //output binary and debug info
+            if (success)
             {
-                //output the SPIRX binary
-                const vector<uint32_t>& bytecodeList = spirXBytecode.getBytecodeStream();
-                if (bytecodeList.size() > 0)
-                {
-                    const string newOutputFname = testDir + "/" + shaderFileName + ".spv";
-                    glslang::OutputSpvBin(bytecodeList, newOutputFname.c_str());
-                }
-
-                //output the AST and debug and HR spirv binary
-                const string newOutputFname = testDir + "/" + shaderFileName + ".hr.spv";
-                errorAndDebugMessages << outputHumanReadableASTAndSPV.str();
-                xkslangtest::Utils::WriteFile(newOutputFname, errorAndDebugMessages.str());
-            }
-
-            //======================================================================================================
-            //======================================================================================================
-            // Mixin
-            string entryPoint = testFiles[i].entryPoint;
-            if (entryPoint.length() > 0)
-            {
-                cout << "Mixin shader \"" << shaderFileName << "\"" << endl;
+                SpxBytecode spirXBytecode;
+                ostringstream errorAndDebugMessages;
+                ostringstream outputHumanReadableASTAndSPV;
 
                 time_before = GetTickCount();
-
-                //Add mixin files
-                XkslMixer mixer;
-                mixer.AddMixin(&spirXBytecode);
-
-                //Create mixin
-                vector<string> errorMsgs;
-                bool success = mixer.MergeAllMixin(errorMsgs);
-
+                bool success = parser.ConvertXkslToSpirX(xkslShaderFileName, xkslInput, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
                 time_after = GetTickCount();
 
-                if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
-                else cout << " Mixin Failed !!!" << endl;
-                
-                //Save the mixin SPIRX bytecode (HR form)
-                if (success)
+                if (!success) {
+                    cout << " Failed to parse the shader: " << xkslShaderFileName << " !!!!!!!" << endl;
+                }
+                else
                 {
-                    // dissassemble the binary
+                    cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+
+                    //output binary and debug info
+                    {
+                        //output the SPIRX binary
+                        const vector<uint32_t>& bytecodeList = spirXBytecode.getBytecodeStream();
+                        if (bytecodeList.size() > 0)
+                        {
+                            const string newOutputFname = testDir + "/" + xkslShaderFileName + ".spv";
+                            glslang::OutputSpvBin(bytecodeList, newOutputFname.c_str());
+                        }
+
+                        //output the AST and debug and HR spirv binary
+                        const string newOutputFname = testDir + "/" + xkslShaderFileName + ".hr.spv";
+                        errorAndDebugMessages << outputHumanReadableASTAndSPV.str();
+                        xkslangtest::Utils::WriteFile(newOutputFname, errorAndDebugMessages.str());
+                    }
+                }
+
+                listInputBytecodes.push_back(spirXBytecode);
+            }
+
+            //======================================================================================================
+            //======================================================================================================
+            // Mixin all inputs
+            if (success && outputs.size() > 0)
+            {
+                cout << "Mixin SPIRX shaders" << endl;
+
+                time_before = GetTickCount();
+                XkslMixer mixer;
+                vector<string> errorMsgs;
+                for (int i=0; i<listInputBytecodes.size(); ++i)
+                {
+                    const SpxBytecode& spirXBytecode = listInputBytecodes[i];
+
+                    cout << " Mixin" << spirXBytecode.GetName() << ": ";
+
+                    //Add mixin files
+                    success = mixer.Mixin(spirXBytecode, errorMsgs);
+                    if (!success){
+                        cout << "Mixin failed !!" << endl;
+                        break;
+                    }
+
+                    cout << "OK" << endl;
+                }
+                time_after = GetTickCount();
+
+                /////Create mixin
+                ///bool success = mixer.MergeAllMixin(errorMsgs);
+                ///time_after = GetTickCount();
+
+                if (!success) cout << " Mixin Failed !!!" << endl;
+                else
+                {
+                    cout << " Mixin completed. time: " << (time_after - time_before) << " ms" << endl;
+
+                    //Save the mixin SPIRX bytecode (HR form)
                     SpxBytecode mixinBytecode;
-                    mixer.GetMixinBytecode(mixinBytecode, errorMsgs);
+                    success = mixer.GetMixinBytecode(mixinBytecode, errorMsgs);
+                    if (!success) cout << " Failed to get the mixin bytecode" << endl;
+
                     const vector<uint32_t>& bytecodeList = mixinBytecode.getBytecodeStream();
                     ostringstream disassembly_stream;
                     spv::Parameterize();
                     spv::Disassemble(disassembly_stream, bytecodeList);
 
-                    const string newOutputFname = testDir + "/" + shaderFileName + "_mixin" + ".hr.spv";
+                    const string newOutputFname = testDir + "/" + xkslShaderFileName + "_mixin" + ".hr.spv";
                     xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
                 }
 
                 //======================================================================================================
                 //======================================================================================================
-                //Generate stage SPIRV bytecode
+                //Generate outputs SPIRV bytecode
                 if (success)
                 {
-                    SpvBytecode stageBytecode;
-                    ShadingStage stage = ShadingStage::Pixel;
-
-                    cout << "Generate SPIRV bytecode for entry point=\"" << entryPoint << "\" stage=\"" << GetStageLabel(stage) << "\"" << endl;
-
-                    time_before = GetTickCount();
-                    success = mixer.GenerateStageBytecode(stage, entryPoint, stageBytecode, errorMsgs);
-                    time_after = GetTickCount();
-
-                    if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
-                    else cout << " Fail to generate the SPIRV bytecode !!!" << endl;
-
-                    //Save the SPIRV bytecode (and its HR form)
-                    if (success)
+                    for (int i=0; i<outputs.size(); ++i)
                     {
-                        //output the binary
-                        const vector<uint32_t>& bytecodeList = stageBytecode.getBytecodeStream();
-                        string outputNameSpv = testDir + "/" + shaderFileName + "_" + GetStageLabel(stage) + ".spv";
-                        glslang::OutputSpvBin(bytecodeList, outputNameSpv.c_str());
+                        SpvBytecode stageBytecode;
+                        ShadingStage stage = outputs[i].stage;
+                        const char* entryPoint = outputs[i].entryPoint;
 
-                        // dissassemble the binary
-                        ostringstream disassembly_stream;
-                        spv::Parameterize();
-                        spv::Disassemble(disassembly_stream, bytecodeList);
+                        cout << "Generate SPIRV bytecode for entry point=\"" << entryPoint << "\" stage=\"" << GetStageLabel(stage) << "\"" << endl;
 
-                        string outputNameHrSpv = testDir + "/" + shaderFileName + "_" + GetStageLabel(stage) + ".hr.spv";
-                        xkslangtest::Utils::WriteFile(outputNameHrSpv, disassembly_stream.str());
+                        time_before = GetTickCount();
+                        success = mixer.GenerateStageBytecode(stage, entryPoint, stageBytecode, errorMsgs);
+                        time_after = GetTickCount();
 
-                        //======================================================================================================
-                        //======================================================================================================
-                        //convert back the SPIRV bytecode into GLSL
+                        if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+                        else cout << " Fail to generate the SPIRV bytecode !!!" << endl;
+
+                        //Save the SPIRV bytecode (and its HR form)
+                        if (success)
                         {
-                            string outputNameGlsl = testDir + "/" + shaderFileName + "_" + GetStageLabel(stage) + ".rv.glsl";
+                            //output the binary
+                            const vector<uint32_t>& bytecodeList = stageBytecode.getBytecodeStream();
+                            string outputNameSpv = testDir + "/" + xkslShaderFileName + "_" + GetStageLabel(stage) + ".spv";
+                            glslang::OutputSpvBin(bytecodeList, outputNameSpv.c_str());
 
-                            cout << "Convert SPIRV bytecode to GLSL." << endl;
+                            // dissassemble the binary
+                            ostringstream disassembly_stream;
+                            spv::Parameterize();
+                            spv::Disassemble(disassembly_stream, bytecodeList);
 
-                            time_before = GetTickCount();
-                            int result = ConvertSpvToGlsl(outputNameSpv, outputNameGlsl);
-                            time_after = GetTickCount();
+                            string outputNameHrSpv = testDir + "/" + xkslShaderFileName + "_" + GetStageLabel(stage) + ".hr.spv";
+                            xkslangtest::Utils::WriteFile(outputNameHrSpv, disassembly_stream.str());
 
-                            if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
-                            else cout << " Fail to convert the SPIRV file to GLSL" << endl;
-
-                            //compare the glsl output with the expected output
-                            const char* expectedGlslOutput = testFiles[i].expectedGlslOutput;
-                            if (expectedGlslOutput != nullptr)
+                            //======================================================================================================
+                            //======================================================================================================
+                            //convert back the SPIRV bytecode into GLSL
                             {
-                                string expectedOutputFileName = testDir + "\\expectedOutput\\" + string(expectedGlslOutput);
-                                string glslExpectedOutput;
-                                if (Utils::ReadFile(expectedOutputFileName, glslExpectedOutput))
+                                string outputNameGlsl = testDir + "/" + xkslShaderFileName + "_" + GetStageLabel(stage) + ".rv.glsl";
+
+                                cout << "Convert SPIRV bytecode to GLSL." << endl;
+
+                                time_before = GetTickCount();
+                                int result = ConvertSpvToGlsl(outputNameSpv, outputNameGlsl);
+                                time_after = GetTickCount();
+
+                                if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+                                else cout << " Fail to convert the SPIRV file to GLSL" << endl;
+
+                                //compare the glsl output with the expected output
+                                const char* expectedGlslOutput = outputs[i].expectedGlslOutput;
+                                if (expectedGlslOutput != nullptr)
                                 {
-                                    string glslConvertedOutput;
-                                    if (Utils::ReadFile(outputNameGlsl, glslConvertedOutput))
+                                    string expectedOutputFileName = testDir + "\\expectedOutput\\" + string(expectedGlslOutput);
+                                    string glslExpectedOutput;
+                                    if (Utils::ReadFile(expectedOutputFileName, glslExpectedOutput))
                                     {
-                                        if (glslExpectedOutput.compare(glslConvertedOutput) != 0)
+                                        string glslConvertedOutput;
+                                        if (Utils::ReadFile(outputNameGlsl, glslConvertedOutput))
                                         {
-                                            cout << "expected output:" << endl << glslExpectedOutput;
-                                            cout << "output:" << endl << glslConvertedOutput;
-                                            cout << " Glsl output and expected output are different !!!" << endl;
-                                        }
-                                        else cout << " GLSL output VS expected output: OK" << endl;                                    }
-                                    else cout << " Failed to read the file: " << outputNameGlsl << " !!!" << endl;
+                                            if (glslExpectedOutput.compare(glslConvertedOutput) != 0)
+                                            {
+                                                cout << "expected output:" << endl << glslExpectedOutput;
+                                                cout << "output:" << endl << glslConvertedOutput;
+                                                cout << " Glsl output and expected output are different !!!" << endl;
+                                            }
+                                            else cout << " GLSL output VS expected output: OK" << endl;                                    }
+                                        else cout << " Failed to read the file: " << outputNameGlsl << " !!!" << endl;
+                                    }
+                                    else cout << " Failed to read the file: " << expectedOutputFileName << " !!!" << endl;
                                 }
-                                else cout << " Failed to read the file: " << expectedOutputFileName << " !!!" << endl;
                             }
                         }
                     }
@@ -314,8 +358,13 @@ void main(int argc, char** argv)
                 }
             }
 
+            if (success) countTestSuccessful++;
+
             cout << endl;
         }
+
+        cout << "Count tests processed: " << countTestProcessed << endl;
+        cout << "Count tests successful: " << countTestSuccessful << endl;
     }
 
     parser.Finalize();

@@ -15,11 +15,9 @@ using namespace xkslang;
 //=================================================================================================================//
 //=================================================================================================================//
 //=================================================================================================================//
-SpvBytecode::SpvBytecode()
-{}
-
-SpvBytecode::~SpvBytecode()
-{}
+SpvBytecode::SpvBytecode(const string& n) : name(n){}
+SpvBytecode::SpvBytecode(){}
+SpvBytecode::~SpvBytecode(){}
 
 void SpvBytecode::clear()
 {
@@ -45,8 +43,6 @@ std::vector<uint32_t>& SpvBytecode::getWritableBytecodeStream()
 //=================================================================================================================//
 //=================================================================================================================//
 //=================================================================================================================//
-SpxBytecode::SpxBytecode() : SpvBytecode()
-{}
-
-SpxBytecode::~SpxBytecode()
-{}
+SpxBytecode::SpxBytecode(const std::string& n) : SpvBytecode(n){}
+SpxBytecode::SpxBytecode() : SpvBytecode() {}
+SpxBytecode::~SpxBytecode(){}

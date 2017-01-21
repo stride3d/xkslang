@@ -46,7 +46,7 @@ SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
     status = SpxRemapperStatusEnum::Undefined;
 }
 
-bool SpxStreamRemapper::MixSpxBytecodeStream(const SpxBytecode& bytecode)
+bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
 {
     if (status != SpxRemapperStatusEnum::Undefined && status != SpxRemapperStatusEnum::MixinInProgress) {
         errorMessages.push_back("Invalid remappper status");

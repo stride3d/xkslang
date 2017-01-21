@@ -5,6 +5,7 @@
 #define XKSLANG_SPX_BYTECODE_H__
 
 #include <vector>
+#include <string>
 
 #include "define.h"
 
@@ -15,6 +16,7 @@ class SpvBytecode
 {
 public:
     SpvBytecode();
+    SpvBytecode(const std::string& name);
     virtual ~SpvBytecode();
 
     void clear();
@@ -23,14 +25,19 @@ public:
     const std::vector<uint32_t>& getBytecodeStream() const;
     std::vector<uint32_t>& getWritableBytecodeStream();
 
+    void SetName(const std::string& str) {name = str;}
+    const std::string& GetName() const {return name;}
+
 protected:
     std::vector<uint32_t> bytecode;
+    std::string name;
 };
 
 class SpxBytecode : public SpvBytecode
 {
 public:
     SpxBytecode();
+    SpxBytecode(const std::string& name);
     virtual ~SpxBytecode();
 };
 
