@@ -36,6 +36,12 @@ void SpxStreamRemapper::error(const string& txt) const
     staticErrorMessages.push_back(txt);
 }
 
+bool SpxStreamRemapper::error(const std::string& txt)
+{
+    errorMessages.push_back(txt);
+    return false;
+}
+
 static const auto spx_inst_fn_nop = [](spv::Op, unsigned) { return false; };
 static const auto spx_op_fn_nop = [](spv::Id&) {};
 //===================================================================================================//
@@ -46,28 +52,74 @@ SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
     status = SpxRemapperStatusEnum::Undefined;
 }
 
+SpxStreamRemapper::~SpxStreamRemapper()
+{
+    ClearAllMaps();
+}
+
 bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
 {
     if (status != SpxRemapperStatusEnum::Undefined && status != SpxRemapperStatusEnum::MixinInProgress) {
-        errorMessages.push_back("Invalid remappper status");
-        return false;
+        return error("Invalid remapper status");
     }
     status = SpxRemapperStatusEnum::MixinInProgress;
 
-    const std::vector<uint32_t>& spx = bytecode.getBytecodeStream();
-
     if (spv.size() == 0)
     {
-        //add the new code into the mixer
-        spv.insert(spv.end(), spx.begin(), spx.end());
+        //just copy the full code into the remapper
+        if (!SetBytecode(bytecode)) return false;
     }
     else
     {
-        //add the codes minus the header
-        errorMessages.push_back("Not implemented yet");
-        return false;
+        //merge the new bytecode
+        if (!MergeWithBytecode(bytecode)) return false;
     }
 
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
+{
+    int maxCountIds = bound();
+
+    bool res = BuildXkslStreamShadersParsingData();
+
+    if (!res){
+        return error("Error building XKSL shaders data map");
+    }
+
+    SpxStreamRemapper bytecodeToMerge;
+    if (!bytecodeToMerge.SetBytecode(bytecode)) return false;
+    res = bytecodeToMerge.BuildXkslStreamShadersParsingData();
+
+    if (!res) {
+        return error(string("Error building XKSL shaders data map from bytecode:") + bytecode.GetName());
+    }
+
+    /// //Check the list of shaders from the bytecode we want to merge
+    /// vector<spv::Id> listShaderToMerge;
+    /// for (auto sh = bytecodeToMerge.declaredShaderAndTheirLevel.begin(); sh != bytecodeToMerge.declaredShaderAndTheirLevel.end(); sh++)
+    /// {
+    ///     spv::Id shaderId = sh->first;
+    ///     const string& shaderName = bytecodeToMerge.GetDeclarationNameForId(shaderId);
+    /// 
+    ///     //if (currentData.declaredShaderAndTheirLevel.find(shaderId) == currentData.declaredShaderAndTheirLevel.end())
+    ///     {
+    ///         //a new shader to merge
+    ///         listShaderToMerge.push_back(shaderId);
+    ///     }
+    /// }
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
+{
+    const std::vector<uint32_t>& spx = bytecode.getBytecodeStream();
+    spv.clear();
+    spv.insert(spv.end(), spx.begin(), spx.end());
     return true;
 }
 
@@ -75,8 +127,7 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
 bool SpxStreamRemapper::FinalizeMixin()
 {
     if (status != SpxRemapperStatusEnum::MixinInProgress) {
-        errorMessages.push_back("Invalid remappper status");
-        return false;
+        return error("Invalid remapper status");
     }
     status = SpxRemapperStatusEnum::MixinBeingFinalized;
 
@@ -88,20 +139,17 @@ bool SpxStreamRemapper::FinalizeMixin()
 
     //Build the list of all overriding methods
     if (!BuildOverridenFunctionMap()) {
-        errorMessages.push_back("Processing overriding functions failed");
-        return false;
+        return error("Processing overriding functions failed");
     }
 
     //Remap all overriden functions
     if (!RemapAllOverridenFunctions()) {
-        errorMessages.push_back("Remapping overriding functions failed");
-        return false;
+        return error("Remapping overriding functions failed");
     }
 
     //Convert SPIRX extensions to SPIRV
     if (!ConvertSpirxToSpirVBytecode()) {
-        errorMessages.push_back("Failed to convert SPIRX to SPIRV");
-        return false;
+        return error("Failed to convert SPIRX to SPIRV");
     }
 
     status = SpxRemapperStatusEnum::MixinFinalized;
@@ -183,228 +231,60 @@ bool SpxStreamRemapper::BuildOverridenFunctionMap()
 {
     mapOverridenFunctions.clear();
 
-    buildLocalMaps();
-    if (staticErrorMessages.size() > 0) {
-        copyStaticErrorMessagesTo(errorMessages);
-        return false;
-    }
+    bool res = BuildXkslStreamShadersParsingData();
 
-    //========================================================================================================================//
-    //========================================================================================================================//
-    // build functions and classes attributes by parsing XKSL declaration attributes
-    unordered_map<spv::Id, int> declaredShaderAndTheirLevel;        // list of xksl shader type declared in the bytecode, and their level
-    unordered_map<spv::Id, bool> fnWithOverrideAttribute;           // methods having the override attributes
-    unordered_map<spv::Id, spv::Id> fnOwnerShader;                  // method linked with the shader declaring it
-    unordered_map<spv::Id, vector<spv::Id>> shaderParentsList;      // list of parents inherited by the shader
-    unordered_map<spv::Id, vector<spv::Id>> shaderFunctionsList;    // list of functions declared within the shader
-
-    for (const auto typeStart : typeConstPos)
+    if (!res)
     {
-        if (asOpCode(typeStart) == spv::OpTypeXlslShaderClass)
-        {
-            spv::Id shaderId = asTypeConstId(typeStart);
-            declaredShaderAndTheirLevel[shaderId] = -1;
-        }
-    }
-
-    process(
-        [&](spv::Op opCode, unsigned start) {
-            unsigned word = start + 1;
-            spv::Id  typeId = spv::NoResult;
-
-            if (opCode == spv::Op::OpDecorate) {
-                const spv::Id target = asId(start + 1);
-                const spv::Decoration dec = asDecoration(start + 2);
-
-                switch (dec)
-                {
-                    case spv::DecorationMethodOverride:
-                    {
-                        //a function is defined with an override attribute
-                        fnWithOverrideAttribute[target] = true;
-                        break;
-                    }
-                    case spv::DecorationBelongsToShader:
-                    {
-                        //a function is defined as being owned by a shader
-                        const std::string shaderName = literalString(start + 3);
-                        spv::Id shaderId = spv::NoResult;
-                        for (const auto& name : declarationNameMap) {
-                            if ((declaredShaderAndTheirLevel.find(name.first) != declaredShaderAndTheirLevel.end()) && name.second == shaderName) {
-                                shaderId = name.first;
-                                break;
-                            }
-                        }
-                        if (shaderId == spv::NoResult) {
-                            errorMessages.push_back(string("undeclared shader:") + shaderName);
-                            break;
-                        }
-
-                        fnOwnerShader[target] = shaderId;
-
-                        //Add the function in the shader's functions list
-                        unordered_map<spv::Id, vector<spv::Id>>::iterator got = shaderFunctionsList.find(shaderId);
-                        if (got == shaderFunctionsList.end())
-                        {
-                            vector<spv::Id> vec;
-                            vec.push_back(target);
-                            shaderFunctionsList[shaderId] = vec;
-                        }
-                        else
-                        {
-                            got->second.push_back(target);
-                        }
-
-                        break;
-                    }
-                    case spv::DecorationShaderInheritFromParent:
-                    {
-                        //A shader inherits from a parent: get its parent id
-                        const std::string parentName = literalString(start + 3);
-                        spv::Id parentId = spv::NoResult;
-                        for (const auto& name : declarationNameMap){
-                            if ((declaredShaderAndTheirLevel.find(name.first) != declaredShaderAndTheirLevel.end()) && name.second == parentName){
-                                parentId = name.first;
-                                break;
-                            }
-                        }
-                        if (parentId == spv::NoResult){
-                            errorMessages.push_back(string("undeclared parent shader:") + parentName);
-                            break;
-                        }
-
-                        unordered_map<spv::Id, vector<spv::Id>>::iterator got = shaderParentsList.find(target);
-                        if (got == shaderParentsList.end())
-                        {
-                            vector<spv::Id> vec;
-                            vec.push_back(parentId);
-                            shaderParentsList[target] = vec;
-                        }
-                        else
-                        {
-                            got->second.push_back(parentId);
-                        }
-                        break;
-                    }
-                }
-
-            }
-            return true;
-        },
-        spx_op_fn_nop
-    );
-
-    if (errorMessages.size() > 0) return false;
-
-    if (fnWithOverrideAttribute.size() == 0) return true;  //no functions declared with override attributes, we can return here
-
-    //========================================================================================================================//
-    // Set the shader levels (this algorithm also detects cyclic shader inheritance)
-    {
-        bool allShaderSet = false;
-        while (!allShaderSet)
-        {
-            allShaderSet = true;
-            bool anyShaderUpdated = false;
-
-            for (auto sh = declaredShaderAndTheirLevel.begin(); sh != declaredShaderAndTheirLevel.end(); sh++)
-            {
-                spv::Id shaderId = sh->first;
-                if (sh->second != -1) continue;  //shader already set
-
-                unordered_map<spv::Id, vector<spv::Id>>::iterator gotParents = shaderParentsList.find(shaderId);
-                if (gotParents == shaderParentsList.end())
-                {
-                    sh->second = 0; //shader has no parent
-                    anyShaderUpdated = true;
-                    continue;
-                }
-
-                int maxParentLevel = -1;
-                const vector<spv::Id>& vecParents = gotParents->second;
-                for (int p = 0; p<vecParents.size(); ++p)
-                {
-                    spv::Id parentId = vecParents[p];
-                    int parentLevel = declaredShaderAndTheirLevel[parentId];
-
-                    if (parentLevel == -1)
-                    {
-                        //parent not set yet: got to wait
-                        allShaderSet = false;
-                        maxParentLevel = -1;
-                        break;
-                    }
-                    if (parentLevel > maxParentLevel) maxParentLevel = parentLevel;
-                }
-
-                if (maxParentLevel >= 0)
-                {
-                    sh->second = maxParentLevel + 1; //shader level
-                    anyShaderUpdated = true;
-                }
-            }
-
-            if (!anyShaderUpdated)
-            {
-                errorMessages.push_back("Cyclic inheritance detected among shaders");
-                return false;
-            }
-        }
+        return error("Error building XKSL shaders data map");
     }
 
     //========================================================================================================================//
     //========================================================================================================================//
     // check overrides for each functions declared with an override attribute
     // temporary implementation for now: simply override (replace) similar (same mangled name) functions from the function shader's parents classes
-    for (auto fn = fnWithOverrideAttribute.begin(); fn != fnWithOverrideAttribute.end(); fn++)
+    for (auto itfn = mapFunctionsById.begin(); itfn != mapFunctionsById.end(); itfn++)
     {
-        spv::Id overridingFunctionId = fn->first;
-        const string& overringFunctionName = declarationNameMap[overridingFunctionId];
-        spv::Id overridingFunctionShaderId = fnOwnerShader[overridingFunctionId];
-        if (overridingFunctionShaderId == 0 || declaredShaderAndTheirLevel.find(overridingFunctionShaderId) == declaredShaderAndTheirLevel.end()){
-            errorMessages.push_back(string("Overriding function does not belong to a known shader class:") + overringFunctionName);
-            return false;
-        }
-        int overridingFunctionShaderLevel = declaredShaderAndTheirLevel[overridingFunctionShaderId];
+        FunctionData* function = itfn->second;
+        if (!function->isOverride) continue;
 
-        vector<spv::Id> listShadersToCheckForOverrideWithinParents;
-        listShadersToCheckForOverrideWithinParents.push_back(overridingFunctionShaderId);
+        spv::Id overridingFunctionId = function->id;
+        const string& overringFunctionName = function->mangledName;
+        ShaderClassData* functionShaderOwner = function->owner;
+        if (functionShaderOwner == nullptr){
+            return error(string("Overriding function does not belong to a known shader class:") + overringFunctionName);
+        }
+        int overridingFunctionShaderLevel = functionShaderOwner->level;
+
+        //Check all parents classes for functions with same mangles name
+        vector<ShaderClassData*> listShadersToCheckForOverrideWithinParents;
+        listShadersToCheckForOverrideWithinParents.push_back(function->owner);
 
         while (listShadersToCheckForOverrideWithinParents.size() > 0)
         {
-            spv::Id classIdToCheckForOverride = listShadersToCheckForOverrideWithinParents.back();
+            ShaderClassData* shaderToCheckForOverride = listShadersToCheckForOverrideWithinParents.back();
             listShadersToCheckForOverrideWithinParents.pop_back();
 
-            //Get list of parents
-            unordered_map<spv::Id, vector<spv::Id>>::iterator gotParents = shaderParentsList.find(classIdToCheckForOverride);
-            if (gotParents == shaderParentsList.end()) continue; //shader has no parent
-            const vector<spv::Id>& vecParents = gotParents->second;
-
             //Check all parents
-            for (int p=0; p<vecParents.size(); ++p)
+            for (int p=0; p<shaderToCheckForOverride->parentsList.size(); ++p)
             {
-                spv::Id parentId = vecParents[p];
-                listShadersToCheckForOverrideWithinParents.push_back(parentId);
+                ShaderClassData* parent = shaderToCheckForOverride->parentsList[p];
+                listShadersToCheckForOverrideWithinParents.push_back(parent);
 
                 //check all functions belonging to the parent shader
-                unordered_map<spv::Id, vector<spv::Id>>::iterator gotFunctions = shaderFunctionsList.find(parentId);
-                if (gotFunctions == shaderFunctionsList.end()) continue; //the parent shader declares no functions
-                const vector<spv::Id>& vecFunctions = gotFunctions->second;
-
-                for (int f = 0; f<vecFunctions.size(); ++f)
+                for (int f = 0; f<parent->functionsList.size(); ++f)
                 {
                     //compare the shader's functions name with the overring function name
-                    spv::Id shaderFunctionId = vecFunctions[f];
-                    const string& aParentFunctionName = declarationNameMap[shaderFunctionId];
+                    FunctionData* aFunctionFromParent = parent->functionsList[f];
+                    const string& aParentFunctionName = aFunctionFromParent->mangledName;
                     if (overringFunctionName == aParentFunctionName)
                     {
                         //Yeah: got a function to be overriden !
                         pair<spv::Id, int> overridingMethod(overridingFunctionId, overridingFunctionShaderLevel);
 
-                        auto gotRegistered = mapOverridenFunctions.find(shaderFunctionId);
+                        auto gotRegistered = mapOverridenFunctions.find(aFunctionFromParent->id);
                         if (gotRegistered == mapOverridenFunctions.end())
                         {
-                            mapOverridenFunctions[shaderFunctionId] = overridingMethod;
+                            mapOverridenFunctions[aFunctionFromParent->id] = overridingMethod;
                         }
                         else
                         {
@@ -412,7 +292,7 @@ bool SpxStreamRemapper::BuildOverridenFunctionMap()
                             int currentLevel = gotRegistered->second.second;
                             if (overridingFunctionShaderLevel > currentLevel)
                             {
-                                mapOverridenFunctions[shaderFunctionId] = overridingMethod;
+                                mapOverridenFunctions[aFunctionFromParent->id] = overridingMethod;
                             }
                         }
                     }
@@ -430,8 +310,7 @@ bool SpxStreamRemapper::GetMappedSpxBytecode(SpxBytecode& bytecode)
 {
     if (spv.size() == 0)
     {
-        errorMessages.push_back("No code mapped");
-        return false;
+        return error("No code mapped");
     }
 
     std::vector<uint32_t>& bytecodeStream = bytecode.getWritableBytecodeStream();
@@ -445,8 +324,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
 {
     if (status != SpxRemapperStatusEnum::MixinFinalized)
     {
-        errorMessages.push_back("Invalid remappper status");
-        return false;
+        return error("Invalid remapper status");
     }
 
     //==========================================================================================
@@ -458,6 +336,8 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
         return false;
     }
 
+    BuildMapDeclarationName();
+    
     //==========================================================================================
     //==========================================================================================
     // Search for the shader entry point
@@ -469,7 +349,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
 
     spv::Id entryPointFunctionId = spv::NoResult;
     string unmangledEntryPointFunctionName;
-    for (const auto& name : declarationNameMap)
+    for (const auto& name : mapDeclarationName)
     {
         if (isFunction[name.first])
         {
@@ -485,8 +365,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
     }
     if (entryPointFunctionId == spv::NoResult)
     {
-        errorMessages.push_back(string("Entry point not found: ") + entryPointName);
-        return false;
+        return error(string("Entry point not found: ") + entryPointName);
     }
     //Check if the entry point function has been overriden
     {
@@ -508,7 +387,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
     // Update the shader stage header
     if (!BuildAndSetShaderStageHeader(stage, entryPointFunctionId, unmangledEntryPointFunctionName))
     {
-        errorMessages.push_back("Error buiding the shader stage header");
+        error("Error buiding the shader stage header");
         spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
         return false;
     }
@@ -568,15 +447,13 @@ bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, spv::Id
 
     if (entryFunctionId == spv::NoResult )
     {
-        errorMessages.push_back("Unknown entry function");
-        return false;
+        return error("Unknown entry function");
     }
 
     spv::ExecutionModel model = GetShadingStageExecutionMode(stage);
     if (model == spv::ExecutionModelMax)
     {
-        errorMessages.push_back("Unknown stage");
-        return false;
+        return error("Unknown stage");
     }
 
     vector<unsigned int> stageHeader;
@@ -612,11 +489,215 @@ spv::ExecutionModel SpxStreamRemapper::GetShadingStageExecutionMode(ShadingStage
     }
 }
 
-void SpxStreamRemapper::buildLocalMaps()
+void SpxStreamRemapper::ClearAllMaps()
 {
-    spirvbin_t::buildLocalMaps();
+    if (mapShadersById.size() > 0)
+    {
+        for (auto it = mapShadersById.begin(); it != mapShadersById.end(); it++)
+        {
+            ShaderClassData* shader = it->second;
+            delete shader;
+        }
+    }
 
-    declarationNameMap.clear();
+    if (mapFunctionsById.size() > 0)
+    {
+        for (auto it = mapFunctionsById.begin(); it != mapFunctionsById.end(); it++)
+        {
+            FunctionData* func = it->second;
+            delete func;
+        }
+    }
+
+    mapFunctionsById.clear();
+    mapShadersById.clear();
+    mapShadersByName.clear();
+    mapDeclarationName.clear();
+}
+
+bool SpxStreamRemapper::BuildXkslStreamShadersParsingData()
+{
+    cout << "BuildXkslStreamShadersParsingData!!" << endl;
+
+    ClearAllMaps();
+
+    buildLocalMaps();
+    BuildMapDeclarationName();
+
+    //create all shader data objects
+    for (const auto typeStart : typeConstPos)
+    {
+        if (asOpCode(typeStart) == spv::OpTypeXlslShaderClass)
+        {
+            spv::Id shaderId = asTypeConstId(typeStart);
+            string shaderName;
+            if (!GetDeclarationNameForId(shaderId, shaderName)){
+                error(string("Unknown name for shader type with Id:") + to_string(shaderId));
+                break;
+            }
+
+            if (mapShadersById.find(shaderId) != mapShadersById.end()) {
+                error("2 shaders have the same Id");
+                break;
+            }
+            if (mapShadersByName.find(shaderName) != mapShadersByName.end()) {
+                error("2 shaders have the same name");
+                break;
+            }
+
+            ShaderClassData* shader = new ShaderClassData(shaderId, shaderName);
+            mapShadersById[shaderId] = shader;
+            mapShadersByName[shaderName] = shader;
+        }
+    }
+
+    //create all functions data objects
+    for (auto fn = fnPos.begin(); fn != fnPos.end(); fn++)
+    {
+        spv::Id functionId = fn->first;
+        string functionName;
+        if (!GetDeclarationNameForId(functionId, functionName)) {
+            //some functions can be declared outside a shader class
+            continue;
+        }
+
+        if (mapFunctionsById.find(functionId) != mapFunctionsById.end()) {
+            error("2 functions have the same Id");
+            break;
+        }
+
+        FunctionData* function = new FunctionData(functionId, functionName);
+        mapFunctionsById[functionId] = function;
+    }
+
+    if (errorMessages.size() > 0) return false;
+
+    int processLineNb = 0;
+    process(
+        [&](spv::Op opCode, unsigned start) {
+            processLineNb++;
+            unsigned word = start + 1;
+            spv::Id  typeId = spv::NoResult;
+
+            if (opCode == spv::Op::OpDecorate) {
+                const spv::Id target = asId(start + 1);
+                const spv::Decoration dec = asDecoration(start + 2);
+
+                switch (dec)
+                {
+                    case spv::DecorationMethodOverride:
+                    {
+                        //a function is defined with an override attribute
+                        FunctionData* function = GetFunctionById(target);
+                        if (function == nullptr)
+                            {error(string("undeclared function id:") + to_string(target)); break;}
+                        function->isOverride = true;
+                        break;
+                    }
+
+                    case spv::DecorationBelongsToShader:
+                    {
+                        FunctionData* function = IsFunction(target);
+                        if (function != nullptr) {
+                            //a function is defined as being owned by a shader
+                            const std::string ownerName = literalString(start + 3);
+                            ShaderClassData* shaderOwner = GetShaderByName(ownerName);
+                            if (shaderOwner == nullptr)
+                                {error(string("undeclared parent shader:") + ownerName); break;}
+                            if (function->owner != nullptr)
+                                {error(string("Function already has a shader owner:") + function->mangledName); break;}
+
+                            function->owner = shaderOwner;
+                            shaderOwner->functionsList.push_back(function);
+                        }
+                        else
+                        {
+                            int lgksldj = 545;
+                        }
+                        break;
+                    }
+
+                    case spv::DecorationShaderInheritFromParent:
+                    {
+                        //A shader inherits from a parent
+                        ShaderClassData* shader = GetShaderById(target);
+                        if (shader == nullptr)
+                            {error(string("undeclared shader id:") + to_string(target)); break;}
+
+                        const std::string parentName = literalString(start + 3);
+                        ShaderClassData* shaderParent = GetShaderByName(parentName);
+                        if (shaderParent == nullptr)
+                            {error(string("undeclared parent shader:") + parentName); break;}
+                        
+                        shader->parentsList.push_back(shaderParent);
+                        break;
+                    }
+                }
+
+            }
+            return true;
+        },
+        spx_op_fn_nop
+    );
+
+    if (errorMessages.size() > 0) return false;
+
+    //========================================================================================================================//
+    // Set the shader levels (also detects cyclic shader inheritance)
+    {
+        bool allShaderSet = false;
+        while (!allShaderSet)
+        {
+            allShaderSet = true;
+            bool anyShaderUpdated = false;
+
+            for (auto itsh = mapShadersById.begin(); itsh != mapShadersById.end(); itsh++)
+            {
+                spv::Id shaderId = itsh->first;
+                ShaderClassData* shader = itsh->second;
+                if (shader->level != -1) continue;  //shader already set
+
+                if (shader->parentsList.size() == 0)
+                {
+                    shader->level = 0; //shader has no parent
+                    anyShaderUpdated = true;
+                    continue;
+                }
+
+                int maxParentLevel = -1;
+                for (int p = 0; p<shader->parentsList.size(); ++p)
+                {
+                    int parentLevel = shader->parentsList[p]->level;
+                    if (parentLevel == -1)
+                    {
+                        //parent not set yet: got to wait
+                        allShaderSet = false;
+                        maxParentLevel = -1;
+                        break;
+                    }
+                    if (parentLevel > maxParentLevel) maxParentLevel = parentLevel;
+                }
+
+                if (maxParentLevel >= 0)
+                {
+                    shader->level = maxParentLevel + 1; //shader level
+                    anyShaderUpdated = true;
+                }
+            }
+
+            if (!anyShaderUpdated)
+            {
+                return error("Cyclic inheritance detected among shaders");
+            }
+        }
+    }
+
+    return true;
+}
+
+void SpxStreamRemapper::BuildMapDeclarationName()
+{
+    mapDeclarationName.clear();
 
     //build maps needed for XKSL extensions
     //build declaration name maps
@@ -634,25 +715,9 @@ void SpxStreamRemapper::buildLocalMaps()
                     case spv::DecorationDeclarationName:
                     {
                         const std::string  name = literalString(start + 3);
-                        declarationNameMap[target] = name;
+                        mapDeclarationName[target] = name;
                         break;
                     }
-                    //case spv::DecorationShaderInheritFromParent:
-                    //case spv::DecorationBelongsToShader:
-                    //{
-                    //    const std::string  name = literalString(start + 3);
-                    //}
-                    //case spv::DecorationMethodOverride:
-                    //{
-                    //    fnWithOverrideAttribute[target] = true;
-                    //    break;
-                    //}
-                    //case spv::DecorationBelongsToShader:
-                    //{
-                    //    const std::string shaderName = literalString(start + 3);
-                    //    fnOwnerClass[target] = shaderName;
-                    //    break;
-                    //}
                 }
 
             }
@@ -674,4 +739,70 @@ void SpxStreamRemapper::dceEntryPoints()
         },
         spx_op_fn_nop
     );
+}
+
+//===========================================================================================================================//
+//===========================================================================================================================//
+string SpxStreamRemapper::GetDeclarationNameForId(spv::Id id)
+{
+    auto it = mapDeclarationName.find(id);
+    if (it == mapDeclarationName.end())
+    {
+        error(string("Id:") + to_string(id) + string(" has no declaration name"));
+        return string("");
+    }
+    return it->second;
+}
+
+bool SpxStreamRemapper::GetDeclarationNameForId(spv::Id id, string& name)
+{
+    auto it = mapDeclarationName.find(id);
+    if (it == mapDeclarationName.end())
+        return false;
+
+    name = it->second;
+    return true;
+}
+
+SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const std::string& name)
+{
+    auto it = mapShadersByName.find(name);
+    if (it == mapShadersByName.end())
+    {
+        error(string("Cannot find the shader:") + name);
+        return nullptr;
+    }
+    return it->second;
+}
+
+SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)
+{
+    auto it = mapShadersById.find(id);
+    if (it == mapShadersById.end())
+    {
+        error(string("Cannot find the shader for Id:") + to_string(id));
+        return nullptr;
+    }
+    return it->second;
+}
+
+SpxStreamRemapper::FunctionData* SpxStreamRemapper::GetFunctionById(spv::Id id)
+{
+    auto it = mapFunctionsById.find(id);
+    if (it == mapFunctionsById.end())
+    {
+        error(string("Cannot find the function for Id:") + to_string(id));
+        return nullptr;
+    }
+    return it->second;
+}
+
+SpxStreamRemapper::FunctionData* SpxStreamRemapper::IsFunction(spv::Id id)
+{
+    auto it = mapFunctionsById.find(id);
+    if (it == mapFunctionsById.end()) 
+    {
+        return nullptr;
+    }
+    return it->second;
 }

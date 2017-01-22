@@ -2343,12 +2343,17 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
         }
     }
 
-    // Add info to cbuffers
-    if (type.getBasicType() == glslang::EbtBlock)
+    // Add info to struct types
+    //if (type.getBasicType() == glslang::EbtBlock)
     {
         if (type.getUserIdentifierName() != nullptr)
         {
             builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getUserIdentifierName()->c_str());
+        }
+
+        if (type.getOwnerClassName() != nullptr)
+        {
+            builder.addDecoration(spvType, spv::DecorationBelongsToShader, type.getOwnerClassName()->c_str());
         }
     }
     //========================================================================================================

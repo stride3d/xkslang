@@ -787,10 +787,6 @@ bool ParseXkslShaderFile(
         //We finished parsing the shader declaration: we can now add all function prototypes in the list of symbols, and create all members structs
         if (success)
         {
-            //global stream buffer struct (shared by all shaders)
-            TString* streamBufferStructName = NewPoolTString((TString("StreamBuffer")).c_str());
-            TTypeList* streambufferStructTypeList = new TTypeList();
-
             TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
             for (int s = 0; s < listShaderParsed.size(); s++)
             {
@@ -805,8 +801,15 @@ bool ParseXkslShaderFile(
 
                 //======================================================================================
                 // Members declaration: create and add the new shader structs
+
+                //cbuffer of variables declared by the shader
                 TString* cbufferGlobalBlockName = NewPoolTString((shader->shaderName + TString(".globalCBuffer")).c_str());
                 TTypeList* cbufferStructTypeList = new TTypeList();
+
+                //stream buffer of stream variables declared by the shader
+                TString* streamBufferStructName = NewPoolTString((shader->shaderName + TString(".streamBuffer")).c_str());
+                TTypeList* streambufferStructTypeList = new TTypeList();
+
                 for (int i = 0; i < shader->listParsedMembers.size(); ++i)
                 {
                     XkslShaderDefinition::XkslShaderMember& member = shader->listParsedMembers[i];
@@ -946,6 +949,19 @@ bool ParseXkslShaderFile(
                     shader->listDeclaredBlockNames.push_back(cbufferGlobalBlockName);
                 }
 
+                // Add the stream buffer
+                if (streambufferStructTypeList->size() > 0)
+                {
+                    TSourceLoc loc;
+                    TType* type = new TType(streambufferStructTypeList, *streamBufferStructName);   //struct type
+                    type->getQualifier().storage = EvqGlobal;
+
+                    //type->setUserIdentifierName("");  //declaration name is "", will be merged with unnamed cbuffer
+                    type->setOwnerClassName(shader->shaderName.c_str());
+
+                    parseContext->declareVariable(loc, *streamBufferStructName, *type, nullptr);
+                }
+
                 //Add a shaderClass variable (EbtShaderClass type), so that it will belongs to the AST and we can add its properties into the SPIRX bytecode
                 {
                     TQualifier qualifier;
@@ -957,15 +973,6 @@ bool ParseXkslShaderFile(
                     type->SetParentsName(&shader->shaderparentsName);
                     parseContext->declareVariable(shader->location, shader->shaderName, *type, nullptr);
                 }
-            }
-
-            // ======== Add the common stream buffer
-            if (streambufferStructTypeList->size() > 0)
-            {
-                TSourceLoc loc;
-                TType* type = new TType(streambufferStructTypeList, *streamBufferStructName);   //struct type
-                type->getQualifier().storage = EvqGlobal;
-                parseContext->declareVariable(loc, *streamBufferStructName, *type, nullptr);
             }
         }
 

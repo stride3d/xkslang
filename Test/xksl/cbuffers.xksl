@@ -68,7 +68,7 @@ shader B : A
     //    int Var6x;
     //}
 	
-	int Compute()
+	int VSmain()
 	{
 		return VarC1 + base.VarC1;
 	}

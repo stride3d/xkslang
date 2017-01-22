@@ -1,0 +1,33 @@
+// mixin TestMixin01_Base;
+// mixin TestMixin01_OverridePlusCallBase;
+// expected result: 5
+
+shader TestMixin01_Base
+{
+	stream int ColorTarget;
+
+    int Compute()
+    {
+        return 1;
+    }
+    void main()
+    {
+        streams.ColorTarget = Compute();
+    }
+}
+
+shader TestMixin01_OverrideA : TestMixin01_Base
+{
+    override int Compute()
+    {
+        return base.Compute() + 2;
+    }
+}
+
+shader TestMixin01_OverrideB : TestMixin01_Base
+{
+    override int Compute()
+    {
+        return base.Compute() + 3;
+    }
+}

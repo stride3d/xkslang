@@ -218,7 +218,7 @@ private:
    // which std::vector<bool> doens't have.
    inline spv::Id   nextUnusedId(spv::Id id);
 
-   virtual void buildLocalMaps();
+   void buildLocalMaps();
    std::string literalString(unsigned word) const; // Return literal as a std::string
    int literalStringWords(const std::string& str) const { return (int(str.size())+4)/4; }
 

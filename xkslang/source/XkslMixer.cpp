@@ -52,20 +52,11 @@ bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, std::vector<std::string>
     //listMixins.push_back(spirXBytecode);
 
     if (spxStreamRemapper == nullptr) spxStreamRemapper = new SpxStreamRemapper();
-    else {
-        return error(msgs, "Not implemented yet");
-    }
 
     if (!spxStreamRemapper->MixWithSpxBytecode(spirXBytecode))
     {
         spxStreamRemapper->copyMessagesTo(msgs);
         return error(msgs, string("Fail to mix the bytecode:" + spirXBytecode.GetName()) );
-    }
-
-    if (!spxStreamRemapper->FinalizeMixin())
-    {
-        spxStreamRemapper->copyMessagesTo(msgs);
-        return error(msgs, "Fail to finalize the mixin");
     }
 
     return true;
@@ -85,6 +76,15 @@ bool XkslMixer::GenerateStageBytecode(ShadingStage stage, std::string entryPoint
 {
     if (spxStreamRemapper == nullptr)
         return error(messages, "The mixin AST must been created first");
+
+
+    //TOTO
+    if (!spxStreamRemapper->FinalizeMixin())
+    {
+        spxStreamRemapper->copyMessagesTo(messages);
+        return error(messages, "Fail to finalize the mixin");
+    }
+
 
     bool success = spxStreamRemapper->GenerateSpvStageBytecode(stage, entryPoint, output);
     if (!success)

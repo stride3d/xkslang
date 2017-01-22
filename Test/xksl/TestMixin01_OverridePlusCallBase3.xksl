@@ -1,0 +1,43 @@
+shader TestMixin01_Base
+{
+	static const int constBase = 1;
+
+    int Compute()
+    {
+        return constBase;
+    }
+    int main()
+    {
+        return Compute();
+    }
+}
+
+shader TestMixin01_B : TestMixin01_A
+{
+    static const int constB = 3;
+
+    override int Compute()
+    {
+        return base.Compute() + constB;
+    }
+}
+
+shader TestMixin01_A : TestMixin01_Base
+{
+    static const int constA = 2;
+
+    override int Compute()
+    {
+        return base.Compute() + constA;
+    }
+}
+
+shader TestMixin01_C : TestMixin01_B
+{
+    static const int constC = 4;
+
+    override int Compute()
+    {
+        return base.Compute() + constC;
+    }
+}
