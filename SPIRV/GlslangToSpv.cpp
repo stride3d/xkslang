@@ -940,6 +940,13 @@ void TGlslangToSpvTraverser::dumpSpv(std::vector<unsigned int>& out)
 //
 void TGlslangToSpvTraverser::visitSymbol(glslang::TIntermSymbol* symbol)
 {
+    if (symbol->getType().getBasicType() == glslang::EbtShaderClass)
+    {
+        //XKSL extensions: we don't add a variable of type EbtShaderClass (such variables will never be used), but just create/define the type
+        spv::Id spvType = convertGlslangToSpvType(symbol->getType());
+        return;
+    }
+
     SpecConstantOpModeGuard spec_constant_op_mode_setter(&builder);
     if (symbol->getType().getQualifier().isSpecConstant())
         spec_constant_op_mode_setter.turnOnSpecConstantOpMode();
@@ -2331,7 +2338,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     //XKSL extensions: Add info (as decorate) to the shader class
     if (type.getBasicType() == glslang::EbtShaderClass)
     {
-        builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getTypeName().c_str());
+        //builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getTypeName().c_str());
 
         const glslang::TIdentifierList* parentsName = type.getParentsName();
         if (parentsName != nullptr)
@@ -2343,8 +2350,8 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
         }
     }
 
-    // Add info to struct types
-    //if (type.getBasicType() == glslang::EbtBlock)
+    // obsolete: if (type.getBasicType() == glslang::EbtBlock)
+    // Now add info to all type defined within a shader
     {
         if (type.getUserIdentifierName() != nullptr)
         {

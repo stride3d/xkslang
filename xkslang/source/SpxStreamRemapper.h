@@ -22,7 +22,7 @@ namespace xkslang
 
 enum class SpxRemapperStatusEnum
 {
-    Undefined,
+    WaitingForMixin,
     MixinInProgress,
     MixinBeingFinalized,
     MixinFinalized
@@ -49,9 +49,10 @@ class SpxStreamRemapper : public spv::spirvbin_t
         spv::Id id;
         std::string mangledName;
         ShaderClassData* owner;
-        bool isOverride;
+        bool hasOverride;  //has the override attribute
+        FunctionData* overridenBy;  //the function is being overriden by another function
 
-        FunctionData(spv::Id id, std::string mangledName) : id(id), mangledName(mangledName), owner(nullptr), isOverride(false){}
+        FunctionData(spv::Id id, std::string mangledName) : id(id), mangledName(mangledName), owner(nullptr), hasOverride(false), overridenBy(nullptr){}
     };
 
 public:
@@ -71,16 +72,15 @@ public:
     spv::ExecutionModel GetShadingStageExecutionMode(ShadingStage stage);
 
 private:
-    void dceEntryPoints(); //remove all entry point instructions
     bool MergeWithBytecode(const SpxBytecode& bytecode);
     bool SetBytecode(const SpxBytecode& bytecode);
 
     void ClearAllMaps();
-    void BuildMapDeclarationName();
-    bool BuildXkslStreamShadersParsingData();
+    void BuildDeclarationNameMap();
+    bool BuildAllMaps();
     bool BuildOverridenFunctionMap();
 
-    bool BuildAndSetShaderStageHeader(ShadingStage stage, spv::Id entryFunctionId, std::string unmangledFunctionName);
+    bool BuildAndSetShaderStageHeader(ShadingStage stage, FunctionData* entryFunction, std::string unmangledFunctionName);
     bool RemapAllOverridenFunctions();
     bool ConvertSpirxToSpirVBytecode();
 
@@ -88,11 +88,7 @@ private:
     SpxRemapperStatusEnum status;
 
     std::vector<std::string> errorMessages;
-
-    //map of methods being overriden (first id), associated with a pair<id of the overriding method, method level in the tree inheritance>
-    std::unordered_map<spv::Id, std::pair<spv::Id, int>> mapOverridenFunctions;
-
-    
+   
     //std::unordered_map<spv::Id, int> declaredShaderAndTheirLevel;           // list of xksl shader type declared in the bytecode, and their level
     //std::unordered_map<spv::Id, bool> fnWithOverrideAttribute;              // list of all methods having the override attributes
     //std::unordered_map<spv::Id, spv::Id> fnOwnerShader;                     // list of all methods, linked with the shader declaring it
@@ -110,6 +106,8 @@ private:
     ShaderClassData* GetShaderById(spv::Id id);
     FunctionData* GetFunctionById(spv::Id id);
     FunctionData* IsFunction(spv::Id id);
+
+    void stripBytecode(std::vector<range_t>& ranges);
 };
 
 }  // namespace xkslang

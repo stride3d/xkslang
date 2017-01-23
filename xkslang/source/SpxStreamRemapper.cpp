@@ -49,7 +49,7 @@ static const auto spx_op_fn_nop = [](spv::Id&) {};
 SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
 {
     staticErrorMessages.clear(); //clear the list of error messages that we will receive from the parent class
-    status = SpxRemapperStatusEnum::Undefined;
+    status = SpxRemapperStatusEnum::WaitingForMixin;
 }
 
 SpxStreamRemapper::~SpxStreamRemapper()
@@ -59,7 +59,7 @@ SpxStreamRemapper::~SpxStreamRemapper()
 
 bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
 {
-    if (status != SpxRemapperStatusEnum::Undefined && status != SpxRemapperStatusEnum::MixinInProgress) {
+    if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
     }
     status = SpxRemapperStatusEnum::MixinInProgress;
@@ -68,6 +68,19 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     {
         //just copy the full code into the remapper
         if (!SetBytecode(bytecode)) return false;
+
+
+        //Build the list of all overriding methods
+        if (!BuildOverridenFunctionMap())
+        {
+            return error("Processing overriding functions failed");
+        }
+
+        //Remap all overriden functions
+        if (!RemapAllOverridenFunctions())
+        {
+            return error("Remapping overriding functions failed");
+        }
     }
     else
     {
@@ -76,6 +89,8 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     }
 
     if (errorMessages.size() > 0) return false;
+
+    status = SpxRemapperStatusEnum::WaitingForMixin;
     return true;
 }
 
@@ -83,7 +98,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
 {
     int maxCountIds = bound();
 
-    bool res = BuildXkslStreamShadersParsingData();
+    bool res = BuildAllMaps();
 
     if (!res){
         return error("Error building XKSL shaders data map");
@@ -91,7 +106,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
 
     SpxStreamRemapper bytecodeToMerge;
     if (!bytecodeToMerge.SetBytecode(bytecode)) return false;
-    res = bytecodeToMerge.BuildXkslStreamShadersParsingData();
+    res = bytecodeToMerge.BuildAllMaps();
 
     if (!res) {
         return error(string("Error building XKSL shaders data map from bytecode:") + bytecode.GetName());
@@ -120,13 +135,20 @@ bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
     const std::vector<uint32_t>& spx = bytecode.getBytecodeStream();
     spv.clear();
     spv.insert(spv.end(), spx.begin(), spx.end());
+
+    validate();  //validate the header
+    if (staticErrorMessages.size() > 0) {
+        copyStaticErrorMessagesTo(errorMessages);
+        return false;
+    }
+
     return true;
 }
 
 //Mixin is finalized: no more updates will be brought to the mixin bytecode after
 bool SpxStreamRemapper::FinalizeMixin()
 {
-    if (status != SpxRemapperStatusEnum::MixinInProgress) {
+    if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
     }
     status = SpxRemapperStatusEnum::MixinBeingFinalized;
@@ -135,16 +157,6 @@ bool SpxStreamRemapper::FinalizeMixin()
     if (staticErrorMessages.size() > 0) {
         copyStaticErrorMessagesTo(errorMessages);
         return false;
-    }
-
-    //Build the list of all overriding methods
-    if (!BuildOverridenFunctionMap()) {
-        return error("Processing overriding functions failed");
-    }
-
-    //Remap all overriden functions
-    if (!RemapAllOverridenFunctions()) {
-        return error("Remapping overriding functions failed");
     }
 
     //Convert SPIRX extensions to SPIRV
@@ -161,18 +173,21 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
     //Convert OpIntructions
     // - OpFunctionCallBase --> OpFunctionCall (remapping of override functions has been completed)
 
+    std::vector<range_t> vecStripRanges;
     process(
         [&](spv::Op opCode, unsigned start)
         {
             switch (opCode) {
                 case spv::OpFunctionCallBase:
                 {
+                    // change OpFunctionCallBase to OpFunctionCall
                     setOpCode(start, spv::OpFunctionCall);
                     break;
                 }
                 case spv::OpTypeXlslShaderClass:
                 {
-                    stripInst(start); //remove OpTypeXlslShaderClass type
+                    //remove OpTypeXlslShaderClass type
+                    stripInst(start, vecStripRanges);
                     break;
                 }
                 case spv::OpName:
@@ -185,7 +200,7 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
                     //remove all XKSL decoration
                     const spv::Decoration dec = asDecoration(start + 2);
                     if (dec >= spv::DecorationDeclarationName && dec <= spv::DecorationMethodClone)
-                        stripInst(start);
+                        stripInst(start, vecStripRanges);
                     break;
                 }
             }
@@ -194,11 +209,20 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
         spx_op_fn_nop
     );
 
+    stripBytecode(vecStripRanges);
+
     return true;
 }
 
 bool SpxStreamRemapper::RemapAllOverridenFunctions()
 {
+    std::unordered_map<spv::Id, FunctionData*> mapOverridenFunctions;
+    for (auto itfn = mapFunctionsById.begin(); itfn != mapFunctionsById.end(); itfn++)
+    {
+        FunctionData* function = itfn->second;
+        if (function->overridenBy != nullptr) mapOverridenFunctions[function->id] = function;
+    }
+
     if (mapOverridenFunctions.size() == 0) return true; //nothing to override
 
     process(
@@ -212,7 +236,7 @@ bool SpxStreamRemapper::RemapAllOverridenFunctions()
                     auto gotOverrided = mapOverridenFunctions.find(functionCalledId);
                     if (gotOverrided != mapOverridenFunctions.end())
                     {
-                        spv::Id overridingFunctionId = gotOverrided->second.first;
+                        spv::Id overridingFunctionId = gotOverrided->second->overridenBy->id;
                         spv[start + 3] = overridingFunctionId;
                     }
 
@@ -229,10 +253,7 @@ bool SpxStreamRemapper::RemapAllOverridenFunctions()
 
 bool SpxStreamRemapper::BuildOverridenFunctionMap()
 {
-    mapOverridenFunctions.clear();
-
-    bool res = BuildXkslStreamShadersParsingData();
-
+    bool res = BuildAllMaps();
     if (!res)
     {
         return error("Error building XKSL shaders data map");
@@ -244,20 +265,18 @@ bool SpxStreamRemapper::BuildOverridenFunctionMap()
     // temporary implementation for now: simply override (replace) similar (same mangled name) functions from the function shader's parents classes
     for (auto itfn = mapFunctionsById.begin(); itfn != mapFunctionsById.end(); itfn++)
     {
-        FunctionData* function = itfn->second;
-        if (!function->isOverride) continue;
+        FunctionData* overridingFunction = itfn->second;
+        if (!overridingFunction->hasOverride) continue;
 
-        spv::Id overridingFunctionId = function->id;
-        const string& overringFunctionName = function->mangledName;
-        ShaderClassData* functionShaderOwner = function->owner;
+        const string& overringFunctionName = overridingFunction->mangledName;
+        ShaderClassData* functionShaderOwner = overridingFunction->owner;
         if (functionShaderOwner == nullptr){
             return error(string("Overriding function does not belong to a known shader class:") + overringFunctionName);
         }
-        int overridingFunctionShaderLevel = functionShaderOwner->level;
 
         //Check all parents classes for functions with same mangles name
         vector<ShaderClassData*> listShadersToCheckForOverrideWithinParents;
-        listShadersToCheckForOverrideWithinParents.push_back(function->owner);
+        listShadersToCheckForOverrideWithinParents.push_back(functionShaderOwner);
 
         while (listShadersToCheckForOverrideWithinParents.size() > 0)
         {
@@ -275,25 +294,12 @@ bool SpxStreamRemapper::BuildOverridenFunctionMap()
                 {
                     //compare the shader's functions name with the overring function name
                     FunctionData* aFunctionFromParent = parent->functionsList[f];
-                    const string& aParentFunctionName = aFunctionFromParent->mangledName;
-                    if (overringFunctionName == aParentFunctionName)
+                    if (overringFunctionName == aFunctionFromParent->mangledName)
                     {
-                        //Yeah: got a function to be overriden !
-                        pair<spv::Id, int> overridingMethod(overridingFunctionId, overridingFunctionShaderLevel);
-
-                        auto gotRegistered = mapOverridenFunctions.find(aFunctionFromParent->id);
-                        if (gotRegistered == mapOverridenFunctions.end())
+                        //Got a function to be overriden !
+                        if (aFunctionFromParent->overridenBy == nullptr || aFunctionFromParent->overridenBy->owner->level <= overridingFunction->owner->level)
                         {
-                            mapOverridenFunctions[aFunctionFromParent->id] = overridingMethod;
-                        }
-                        else
-                        {
-                            //only replace the override indirection if the level is higher
-                            int currentLevel = gotRegistered->second.second;
-                            if (overridingFunctionShaderLevel > currentLevel)
-                            {
-                                mapOverridenFunctions[aFunctionFromParent->id] = overridingMethod;
-                            }
+                            aFunctionFromParent->overridenBy = overridingFunction;
                         }
                     }
                 }
@@ -326,54 +332,26 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
     {
         return error("Invalid remapper status");
     }
-
-    //==========================================================================================
-    //==========================================================================================
-    //Map all local maps
-    buildLocalMaps();
-    if (staticErrorMessages.size() > 0) {
-        copyStaticErrorMessagesTo(errorMessages);
-        return false;
-    }
-
-    BuildMapDeclarationName();
     
     //==========================================================================================
     //==========================================================================================
     // Search for the shader entry point
-    std::vector<bool> isFunction(bound(), false);
-    for (const auto fn : fnPos)
+    FunctionData* entryPointFunction = nullptr;
+    for (auto it = mapFunctionsById.begin(); it != mapFunctionsById.end(); it++)
     {
-        isFunction[fn.first] = true;
-    }
-
-    spv::Id entryPointFunctionId = spv::NoResult;
-    string unmangledEntryPointFunctionName;
-    for (const auto& name : mapDeclarationName)
-    {
-        if (isFunction[name.first])
+        FunctionData* func = it->second;
+        string unmangledFunctionName = func->mangledName.substr(0, func->mangledName.find('('));
+        if (unmangledFunctionName == entryPointName)
         {
-            string unmangledFunctionName = name.second.substr(0, name.second.find('('));
-            if (unmangledFunctionName == entryPointName)
-            {
-                //We take the first valid function
-                entryPointFunctionId = name.first;
-                unmangledEntryPointFunctionName = unmangledFunctionName;
-                break;
-            }
+            entryPointFunction = func;
+            //has the function been overriden?
+            if (entryPointFunction->overridenBy != nullptr) entryPointFunction = entryPointFunction->overridenBy;
+            break;
         }
     }
-    if (entryPointFunctionId == spv::NoResult)
+    if (entryPointFunction == nullptr)
     {
         return error(string("Entry point not found: ") + entryPointName);
-    }
-    //Check if the entry point function has been overriden
-    {
-        auto gotOverrided = mapOverridenFunctions.find(entryPointFunctionId);
-        if (gotOverrided != mapOverridenFunctions.end())
-        {
-            entryPointFunctionId = gotOverrided->second.first;
-        }
     }
 
     //==========================================================================================
@@ -385,7 +363,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
     //==========================================================================================
     //==========================================================================================
     // Update the shader stage header
-    if (!BuildAndSetShaderStageHeader(stage, entryPointFunctionId, unmangledEntryPointFunctionName))
+    if (!BuildAndSetShaderStageHeader(stage, entryPointFunction, entryPointName))
     {
         error("Error buiding the shader stage header");
         spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
@@ -426,7 +404,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
     return true;
 }
 
-bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, spv::Id entryFunctionId, string unmangledFunctionName)
+bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, FunctionData* entryFunction, string unmangledFunctionName)
 {
     /*
     //capabilities
@@ -445,7 +423,7 @@ bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, spv::Id
     import->addStringOperand(name);
     */
 
-    if (entryFunctionId == spv::NoResult )
+    if (entryFunction == nullptr)
     {
         return error("Unknown entry function");
     }
@@ -456,17 +434,28 @@ bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, spv::Id
         return error("Unknown stage");
     }
 
-    vector<unsigned int> stageHeader;
-
     //opEntryPoint: set the stage model, and entry point
+    vector<unsigned int> stageHeader;
     spv::Instruction entryPointInstr(spv::OpEntryPoint);
     entryPointInstr.addImmediateOperand(model);
-    entryPointInstr.addIdOperand(entryFunctionId);
+    entryPointInstr.addIdOperand(entryFunction->id);
     entryPointInstr.addStringOperand(unmangledFunctionName.c_str());
     entryPointInstr.dump(stageHeader);
 
-    dceEntryPoints(); //remove current entry points
-    strip();
+    //remove all current entry points
+    {
+        std::vector<range_t> vecStripRanges;
+        process(
+            [&](spv::Op opCode, unsigned start)
+            {
+                if (opCode == spv::OpEntryPoint)
+                    stripInst(start, vecStripRanges);
+                return true;
+            },
+            spx_op_fn_nop
+        );
+        stripBytecode(vecStripRanges);
+    }
 
     //insert the stage header in the bytecode, after the header
     vector<unsigned int>::iterator it = spv.begin() + header_size;
@@ -515,14 +504,16 @@ void SpxStreamRemapper::ClearAllMaps()
     mapDeclarationName.clear();
 }
 
-bool SpxStreamRemapper::BuildXkslStreamShadersParsingData()
+bool SpxStreamRemapper::BuildAllMaps()
 {
-    cout << "BuildXkslStreamShadersParsingData!!" << endl;
+    cout << "BuildAllMaps!!" << endl;
 
     ClearAllMaps();
 
-    buildLocalMaps();
-    BuildMapDeclarationName();
+    dsfgsdfgsdfg;
+
+    buildLocalMaps();     // TOTOTOTOTOTOTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+    BuildDeclarationNameMap();
 
     //create all shader data objects
     for (const auto typeStart : typeConstPos)
@@ -591,7 +582,7 @@ bool SpxStreamRemapper::BuildXkslStreamShadersParsingData()
                         FunctionData* function = GetFunctionById(target);
                         if (function == nullptr)
                             {error(string("undeclared function id:") + to_string(target)); break;}
-                        function->isOverride = true;
+                        function->hasOverride = true;
                         break;
                     }
 
@@ -695,7 +686,7 @@ bool SpxStreamRemapper::BuildXkslStreamShadersParsingData()
     return true;
 }
 
-void SpxStreamRemapper::BuildMapDeclarationName()
+void SpxStreamRemapper::BuildDeclarationNameMap()
 {
     mapDeclarationName.clear();
 
@@ -721,20 +712,6 @@ void SpxStreamRemapper::BuildMapDeclarationName()
                 }
 
             }
-            return true;
-        },
-        spx_op_fn_nop
-    );
-}
-
-//remove entry points operation
-void SpxStreamRemapper::dceEntryPoints()
-{
-    process(
-        [&](spv::Op opCode, unsigned start)
-        {
-            if (opCode == spv::OpEntryPoint)
-                stripInst(start);
             return true;
         },
         spx_op_fn_nop
@@ -805,4 +782,28 @@ SpxStreamRemapper::FunctionData* SpxStreamRemapper::IsFunction(spv::Id id)
         return nullptr;
     }
     return it->second;
+}
+
+void SpxStreamRemapper::stripBytecode(vector<range_t>& ranges)
+{
+    if (ranges.empty()) // nothing to do
+        return;
+
+    // Sort strip ranges in order of traversal
+    std::sort(ranges.begin(), ranges.end());
+
+    // Allocate a new binary big enough to hold old binary
+    // We'll step this iterator through the strip ranges as we go through the binary
+    auto strip_it = ranges.begin();
+
+    int strippedPos = 0;
+    for (unsigned word = 0; word < unsigned(spv.size()); ++word) {
+        if (strip_it != ranges.end() && word >= strip_it->second)
+            ++strip_it;
+
+        if (strip_it == ranges.end() || word < strip_it->first || word >= strip_it->second)
+            spv[strippedPos++] = spv[word];
+    }
+
+    spv.resize(strippedPos);
 }

@@ -26,6 +26,8 @@ public:
     virtual ~XkslMixer();
 
     bool Mixin(const SpxBytecode& spirXBytecode, std::vector<std::string>& messages);
+    bool FinalizeMixin(std::vector<std::string>& messages);
+
     //bool MergeAllMixin(std::vector<std::string>& messages);
     bool GetMixinBytecode(SpxBytecode& output, std::vector<std::string>& messages);
     bool GenerateStageBytecode(ShadingStage stage, std::string entryPoint, SpvBytecode& output, std::vector<std::string>& messages);
