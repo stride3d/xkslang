@@ -31,6 +31,30 @@ enum class SpxRemapperStatusEnum
 class SpxStreamRemapper : public spv::spirvbin_t
 {
     class FunctionData;
+    class ShaderClassData;
+    class TypeData
+    {
+    public:
+        spv::Op opCode;
+        spv::Id id;
+        unsigned int pos;
+        ShaderClassData* owner;
+        std::string debugName;  //for Debug
+
+        TypeData(spv::Op op, spv::Id id, unsigned int pos) : opCode(op), id(id), pos(pos), owner(nullptr){}
+        std::string& GetName(){return debugName;}
+    };
+
+    class ConstData
+    {
+    public:
+        spv::Op opCode;
+        spv::Id id;
+        unsigned int pos;
+
+        ConstData(spv::Op op, spv::Id id, unsigned int pos) : opCode(op), id(id), pos(pos) {}
+    };
+
     class ShaderClassData
     {
     public:
@@ -39,8 +63,28 @@ class SpxStreamRemapper : public spv::spirvbin_t
         int level;
         std::vector<ShaderClassData*> parentsList;
         std::vector<FunctionData*> functionsList;
+        std::vector<TypeData*> typesList;
 
         ShaderClassData(spv::Id id, std::string name): id(id), name(name), level(-1){}
+        std::string& GetName() { return name; }
+
+        void AddParent(ShaderClassData* parent) { parentsList.push_back(parent); }
+        bool HasParent(ShaderClassData* parent) {
+            for (int i = 0; i<parentsList.size(); ++i) if (parentsList[i] == parent) return true;
+            return false;
+        }
+        
+        void AddFunction(FunctionData* function) { functionsList.push_back(function); }
+        bool HasFunction(FunctionData* function) {
+            for (int i = 0; i<functionsList.size(); ++i) if (functionsList[i] == function) return true;
+            return false;
+        }
+
+        void AddType(TypeData* type) { typesList.push_back(type); }
+        bool HasType(TypeData* type) {
+            for (int i = 0; i<typesList.size(); ++i) if (typesList[i] == type) return true;
+            return false;
+        }
     };
 
     class FunctionData
@@ -73,10 +117,11 @@ public:
 
 private:
     bool MergeWithBytecode(const SpxBytecode& bytecode);
+    bool MergeWithShader(SpxStreamRemapper& bytecodeToMerge, ShaderClassData* shaderToMerge);
     bool SetBytecode(const SpxBytecode& bytecode);
 
     void ClearAllMaps();
-    void BuildDeclarationNameMap();
+    bool BuildDeclarationNameConstTypeMap(std::unordered_map<spv::Id, range_t>& functionPos);
     bool BuildAllMaps();
     bool BuildOverridenFunctionMap();
 
@@ -89,23 +134,23 @@ private:
 
     std::vector<std::string> errorMessages;
    
-    //std::unordered_map<spv::Id, int> declaredShaderAndTheirLevel;           // list of xksl shader type declared in the bytecode, and their level
-    //std::unordered_map<spv::Id, bool> fnWithOverrideAttribute;              // list of all methods having the override attributes
-    //std::unordered_map<spv::Id, spv::Id> fnOwnerShader;                     // list of all methods, linked with the shader declaring it
-    //std::unordered_map<spv::Id, std::vector<spv::Id>> shaderParentsList;    // list of all parents inherited by the shader
-    //std::unordered_map<spv::Id, std::vector<spv::Id>> shaderFunctionsList;  // list of all functions declared within a shader
-
     std::unordered_map<spv::Id, std::string> mapDeclarationName;            // delaration name (user defined name) for methods, shaders and variables
+
     std::unordered_map<spv::Id, ShaderClassData*> mapShadersById;
     std::unordered_map<std::string, ShaderClassData*> mapShadersByName;
     std::unordered_map<spv::Id, FunctionData*> mapFunctionsById;
+    std::unordered_map<spv::Id, TypeData*> mapTypeById;
+    std::unordered_map<spv::Id, ConstData*> mapConstById;
 
     std::string GetDeclarationNameForId(spv::Id id);
     bool GetDeclarationNameForId(spv::Id id, std::string& name);
     ShaderClassData* GetShaderByName(const std::string& name);
+    ShaderClassData* HasShader(const std::string& name);
     ShaderClassData* GetShaderById(spv::Id id);
     FunctionData* GetFunctionById(spv::Id id);
     FunctionData* IsFunction(spv::Id id);
+    TypeData* IsType(spv::Id id);
+    ConstData* IsConst(spv::Id id);
 
     void stripBytecode(std::vector<range_t>& ranges);
 };

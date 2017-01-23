@@ -7,6 +7,8 @@
 #include <string>
 //#include "glslang/Public/ShaderLang.h"
 
+#define XKSLANG_DEBUG_MODE
+
 namespace xkslang
 {
     enum class ShadingStage
