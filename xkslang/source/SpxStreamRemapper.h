@@ -30,6 +30,8 @@ enum class SpxRemapperStatusEnum
 
 class SpxStreamRemapper : public spv::spirvbin_t
 {
+    typedef std::pair<spv::Id, int> pairIdPos;
+
     class FunctionData;
     class ShaderClassData;
     class TypeData
@@ -121,6 +123,7 @@ private:
 
     void ClearAllMaps();
     bool BuildDeclarationName_ConstType_FunctionPos_Maps(std::unordered_map<spv::Id, range_t>& functionPos);
+    bool BuildTypesAndConstsHashmap(std::unordered_map<uint32_t, pairIdPos>& mapHashPos);
     bool BuildAllMaps();
     bool BuildOverridenFunctionMap();
 
@@ -152,14 +155,20 @@ private:
     FunctionData* IsFunction(spv::Id id);
     TypeData* IsType(spv::Id id);
     ConstData* IsConst(spv::Id id);
+    //ConstData* HasConstEqualTo(ConstData*);
     //TypeData* HasSimilarTypeDefinedInBytecode(TypeData*);
 
     void stripBytecode(std::vector<range_t>& ranges);
-    void CopyInstructionToVector(std::vector<spirword_t>& vec, unsigned opStart)
-    {
+
+    void CopyInstructionAtEndOfVector(std::vector<spirword_t>& vec, unsigned opStart){
         auto start = spv.begin() + opStart;
         auto end = start + asWordCount(opStart);
         vec.insert(vec.end(), start, end);
+    }
+    void CopyInstructionAtBeginningOfVector(std::vector<spirword_t>& vec, unsigned opStart){
+        auto start = spv.begin() + opStart;
+        auto end = start + asWordCount(opStart);
+        vec.insert(vec.begin(), start, end);
     }
 };
 

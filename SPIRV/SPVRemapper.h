@@ -235,7 +235,7 @@ private:
    spirvbin_t& processOnFullBytecode(instfn_t, idfn_t);
    spirvbin_t& process(instfn_t, idfn_t, unsigned begin = 0, unsigned end = 0);
    int         processInstruction(unsigned word, instfn_t, idfn_t);
-   bool parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, std::vector<spv::Id>& listIds);
+   bool parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds);
 
    void        validate() const;
    void        mapTypeConst();

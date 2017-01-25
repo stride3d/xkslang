@@ -463,7 +463,7 @@ namespace spv {
             error("bad schema, must be 0");
     }
 
-    bool spirvbin_t::parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, std::vector<spv::Id>& listIds)
+    bool spirvbin_t::parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds)
     {
         const auto instructionStart = word;
         wordCount = asWordCount(instructionStart);
@@ -481,14 +481,18 @@ namespace spv {
 
         // Read type and result ID from instruction desc table
         if (spv::InstructionDesc[opCode].hasType()) {
-            listIds.push_back(asId(word++));
+            //listIds.push_back(asId(word++));
+            type = asId(word++);
             --numOperands;
         }
+        else type = unused;
 
         if (spv::InstructionDesc[opCode].hasResult()) {
-            listIds.push_back(asId(word++));
+            //listIds.push_back(asId(word++));
+            result = asId(word++);
             --numOperands;
         }
+        else result = unused;
 
         // Extended instructions: currently, assume everything is an ID.
         // TODO: add whatever data we need for exceptions to that
@@ -1396,6 +1400,9 @@ namespace spv {
                     hash += w * spv[typeStart+w];
                 return hash;
             }
+
+        case spv::OpTypeXlslShaderClass:
+            return 0;
 
         default:
             error("unknown type opcode");

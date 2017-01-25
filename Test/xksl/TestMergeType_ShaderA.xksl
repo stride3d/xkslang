@@ -6,7 +6,8 @@ shader Base
 	float4 baseF4;
 	int baseITab[2];
 	
-	const int BaseConst = 2;
+	const int BaseConst1 = 2;
+	const int BaseConst2 = 5;
 	
 	cbuffer C1
     {
@@ -38,4 +39,9 @@ shader shaderA : Base
     }
 	
 	stream int aStream0;
+	
+	int main()
+	{
+		return 2;
+	}
 };
