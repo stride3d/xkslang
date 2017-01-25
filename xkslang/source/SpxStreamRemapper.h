@@ -117,13 +117,14 @@ public:
 
 private:
     bool MergeWithBytecode(const SpxBytecode& bytecode);
-    bool MergeWithShader(SpxStreamRemapper& bytecodeToMerge, ShaderClassData* shaderToMerge);
     bool SetBytecode(const SpxBytecode& bytecode);
 
     void ClearAllMaps();
-    bool BuildDeclarationNameConstTypeMap(std::unordered_map<spv::Id, range_t>& functionPos);
+    bool BuildDeclarationName_ConstType_FunctionPos_Maps(std::unordered_map<spv::Id, range_t>& functionPos);
     bool BuildAllMaps();
     bool BuildOverridenFunctionMap();
+
+    void GetBytecodeTypeMap(std::unordered_map<spv::Id, unsigned>& mapTypes);
 
     bool BuildAndSetShaderStageHeader(ShadingStage stage, FunctionData* entryFunction, std::string unmangledFunctionName);
     bool RemapAllOverridenFunctions();
@@ -151,8 +152,15 @@ private:
     FunctionData* IsFunction(spv::Id id);
     TypeData* IsType(spv::Id id);
     ConstData* IsConst(spv::Id id);
+    //TypeData* HasSimilarTypeDefinedInBytecode(TypeData*);
 
     void stripBytecode(std::vector<range_t>& ranges);
+    void CopyInstructionToVector(std::vector<spirword_t>& vec, unsigned opStart)
+    {
+        auto start = spv.begin() + opStart;
+        auto end = start + asWordCount(opStart);
+        vec.insert(vec.end(), start, end);
+    }
 };
 
 }  // namespace xkslang

@@ -1,0 +1,41 @@
+
+shader Base
+{
+	int baseI0;
+	int baseI1;
+	float4 baseF4;
+	int baseITab[2];
+	
+	const int BaseConst = 2;
+	
+	cbuffer C1
+    {
+        int baseCb1I0;
+        int baseCb1I1;
+    }
+	
+	stream int baseStreamI0;
+	stream int baseStreamI1;
+};
+
+shader shaderA : Base
+{
+	int ai0;
+	float4 aF4;
+	float3 aF3;
+	int aITab[4];
+	
+	const int aConst = 5;
+	
+    cbuffer C1
+    {
+		int Var1;
+    }
+	
+	cbuffer C2
+    {
+		int Var2;
+    }
+	
+	stream int aStream0;
+};

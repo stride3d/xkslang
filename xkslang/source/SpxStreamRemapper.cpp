@@ -155,7 +155,9 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
         return error(string("Error building XKSL shaders data map from bytecode:") + bytecode.GetName());
     }
 
-    //list of shaders we want to merge
+    //=============================================================================================================
+    //=============================================================================================================
+    //Get the list of shaders we want to merge (shaders not already in the destination bytecode)
     vector<ShaderClassData*> listShadersToMerge;
     for (auto itsh = bytecodeToMerge.mapShadersById.begin(); itsh != bytecodeToMerge.mapShadersById.end(); itsh++)
     {
@@ -164,19 +166,237 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
             listShadersToMerge.push_back(shaderToMerge);
     }
 
-    for (int i=0; i<listShadersToMerge.size(); ++i)
+    if (errorMessages.size() > 0) return false;
+    if (listShadersToMerge.size() == 0) return true;  //no new shaders to merge
+
+    //=============================================================================================================
+    //=============================================================================================================
+    //Merge the selected shaders
+    int newId = bound();
+
+    spirvbin_t vecNamesToMerge;
+    spirvbin_t vecDecoratesToMerge;
+    spirvbin_t vecTypesConstsAndVariablesToMerge;
+
+    vector<spv::Id> remapTable;
+    remapTable.resize(bytecodeToMerge.bound(), unused);
+
+    for (int is=0; is<listShadersToMerge.size(); ++is)
     {
-        if (MergeWithShader(bytecodeToMerge, listShadersToMerge[i]))
-            return false;
+        ShaderClassData* shaderToMerge = listShadersToMerge[is];
+
+        //=============================================================================================================
+        //add all types declared by the shader
+        for (int t = 0; t < shaderToMerge->typesList.size(); ++t)
+        {
+            TypeData* typeToMerge = shaderToMerge->typesList[t];
+            remapTable[typeToMerge->id] = newId++;
+
+            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, typeToMerge->pos);
+        }
+
+        //=============================================================================================================
+        //add all pointer to those types, plus the shader type definition
+        for (auto it = bytecodeToMerge.mapTypeById.begin(); it != bytecodeToMerge.mapTypeById.end(); it++)
+        {
+            TypeData* type = it->second;
+            switch (type->opCode)
+            {
+                case spv::OpTypePointer:
+                {
+                    unsigned start = type->pos;
+                    const spv::Id resultId = bytecodeToMerge.asId(start + 1);
+                    const spv::Id typeId = bytecodeToMerge.asId(start + 3);
+                    if (remapTable[typeId] != unused)  //is it a pointer to a type to merge?
+                    {
+                        remapTable[resultId] = newId++;
+                        bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, start);
+                    }
+                    break;
+                }
+
+                case spv::OpTypeXlslShaderClass:
+                {
+                    string name = bytecodeToMerge.GetDeclarationNameForId(type->id);
+                    if (name == shaderToMerge->name)
+                    {
+                        unsigned start = type->pos;
+                        const spv::Id resultId = bytecodeToMerge.asId(start + 1);
+                        remapTable[resultId] = newId++;
+                        bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, start);
+                    }
+                    break;
+                }
+            }
+        }
+
+        //=============================================================================================================
+        //add all variables for those pointers
+        bytecodeToMerge.process(
+            [&](spv::Op opCode, unsigned start)
+            {
+                if (opCode == spv::OpVariable)
+                {
+                    const spv::Id resultId = bytecodeToMerge.asId(start + 2);
+                    const spv::Id typeId = bytecodeToMerge.asId(start + 1);
+                    if (remapTable[typeId] != unused)  //is it a variable to a type to merge?
+                    {
+                        remapTable[resultId] = newId++;
+                        bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, start);
+                    }
+                }
+                return true;
+            },
+            spx_op_fn_nop
+        );
+
+        //=============================================================================================================
+        // get all name and decoration for the types / variables we need to merge
+        bytecodeToMerge.process(
+            [&](spv::Op opCode, unsigned start)
+            {
+                switch (opCode)
+                {
+                    case spv::OpName:
+                    case spv::OpMemberName:
+                    {
+                        const spv::Id id = bytecodeToMerge.asId(start + 1);
+                        if (remapTable[id] != unused)
+                        {
+                            bytecodeToMerge.CopyInstructionToVector(vecNamesToMerge.spv, start);
+                        }
+                        break;
+                    }
+
+                    case spv::OpDecorate:
+                    case spv::OpMemberDecorate:
+                    {
+                        const spv::Id id = bytecodeToMerge.asId(start + 1);
+                        if (remapTable[id] != unused)
+                        {
+                            bytecodeToMerge.CopyInstructionToVector(vecDecoratesToMerge.spv, start);
+                        }
+                        break;
+                    }
+                }
+                return true;
+            },
+            spx_op_fn_nop
+        );
+    } //end shaderToMerge loop
+
+    //=============================================================================================================
+    //=============================================================================================================
+    //Check for unmapped Ids among the list of types / variables to merge
+    while (true)
+    {
+        vector<bool> unmappedIds;
+        unmappedIds.resize(bytecodeToMerge.bound(), false);
+        unsigned int countUnmappedIds = 0;
+
+        unsigned pos = 0;
+        unsigned end = vecTypesConstsAndVariablesToMerge.spv.size();
+        spv::Op opCode;
+        unsigned wordCount;
+        std::vector<spv::Id> listIds;
+        while (pos < end)
+        {
+            listIds.clear();
+            if (!vecTypesConstsAndVariablesToMerge.parseInstruction(pos, opCode, wordCount, listIds))
+                return error("Error parsing vecTypesConstsAndVariablesToMerge");
+
+            const unsigned len = listIds.size();
+            for (int i = 0; i < len; ++i)
+            {
+                const spv::Id id = listIds[i];
+                if (remapTable[id] == unused)
+                {
+                    if (!unmappedIds[id])
+                    {
+                        unmappedIds[id] = true;
+                        countUnmappedIds++;
+                    }
+                }
+            }
+
+            pos += wordCount;
+        }
+
+        if (countUnmappedIds == 0) break;
+
+        //resolved the unmapped ids
+        TypeData* typeToMerge;
+        ConstData* constToMerge;
+        for (unsigned i = 0; i < unmappedIds.size(); ++i)
+        {
+            if (!unmappedIds[i]) continue;
+            spv::Id unmappedId = i;
+
+            jhfdkgjhdskfhgk;
+            if ((typeToMerge = bytecodeToMerge.IsType(unmappedId)) != nullptr)
+            {
+                //copy the full instructions: to optimize: we could check in the code to merge if the type declarataion already exists!
+                remapTable[typeToMerge->id] = newId++;
+                bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, typeToMerge->pos);
+            }
+            else if ((constToMerge = bytecodeToMerge.IsConst(unmappedId)) != nullptr)
+            {
+                //copy the full instructions: to optimize: we could check in the code to merge if the type declarataion already exists!
+                remapTable[constToMerge->id] = newId++;
+                bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, constToMerge->pos);
+            }
+            else
+                return error(string("The unmapped Id is not a type, const or variable:") + to_string(unmappedId));
+        }
     }
 
-    if (errorMessages.size() > 0) return false;
-    return true;
-}
+    //=============================================================================================================
+    //=============================================================================================================
+    //remap IDs for all types / variables / consts
+    vecTypesConstsAndVariablesToMerge.processOnFullBytecode(
+        spx_inst_fn_nop, // ignore instructions
+        [&](spv::Id& id)
+        {
+            spv::Id newId = remapTable[id];
+            if (newId == unused) error(string("Invalid remapper Id:") + to_string(id));
+            else id = newId;
+        }
+    );
 
-bool SpxStreamRemapper::MergeWithShader(SpxStreamRemapper& bytecodeToMerge, ShaderClassData* shaderToMerge)
-{
+    //=============================================================================================================
+    //=============================================================================================================
+    //merge all types / variables / consts in the current bytecode
+    bound(newId);
+
+    //get the best positions where we can merge
+    unsigned int firstDecoratePos = header_size;
+    unsigned int firstFunctionPos = spv.size();
+    process(
+        [&](spv::Op opCode, unsigned start)
+        {
+            switch (opCode)
+            {
+            case spv::OpDecorate:
+            case spv::OpMemberDecorate:
+                if (firstDecoratePos == header_size) firstDecoratePos = start;
+                break;
+            case spv::OpFunction:
+                if (firstFunctionPos == header_size) firstFunctionPos = start;
+                break;
+            }
+            return true;
+        },
+        spx_op_fn_nop
+    );
     
+    //=============================================================================================================
+    //Merge types and variables
+    {
+        gfdksjgljldfg;
+        vector<unsigned int>::iterator it = spv.begin() + firstFunctionPos;
+        //spv.insert(it, vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
+        spv.insert(spv.end(), vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
+    }
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -537,7 +757,7 @@ bool SpxStreamRemapper::BuildAllMaps()
     ClearAllMaps();
     unordered_map<spv::Id, range_t> functionPos;
 
-    bool res = BuildDeclarationNameConstTypeMap(functionPos);
+    bool res = BuildDeclarationName_ConstType_FunctionPos_Maps(functionPos);
     if (!res) {
         return error("Failed to build maps");
     }
@@ -600,7 +820,6 @@ bool SpxStreamRemapper::BuildAllMaps()
         [&](spv::Op opCode, unsigned start) {
             processLineNb++;
             unsigned word = start + 1;
-            spv::Id  typeId = spv::NoResult;
 
             if (opCode == spv::Op::OpDecorate) {
                 const spv::Id target = asId(start + 1);
@@ -739,7 +958,38 @@ bool SpxStreamRemapper::BuildAllMaps()
     return true;
 }
 
-bool SpxStreamRemapper::BuildDeclarationNameConstTypeMap(unordered_map<spv::Id, range_t>& functionPos)
+void SpxStreamRemapper::GetBytecodeTypeMap(std::unordered_map<spv::Id, unsigned>& mapTypes)
+{
+    mapTypes.clear();
+
+    spv::Id fnResId = spv::NoResult;
+    process(
+        [&](spv::Op opCode, unsigned start) {
+            /*if (isConstOp(opCode))
+            {
+                
+                spv::Id id = asId(start + 2);
+                if (mapConstById.find(id) != mapConstById.end()) {
+                    error("2 consts have the same Id");
+                }
+                else
+                {
+                    ConstData* cd = new ConstData(opCode, id, start);
+                    mapConstById[id] = cd;
+                }
+            }*/
+            if (isTypeOp(opCode))
+            {
+                spv::Id id = asId(start + 1);
+                mapTypes[id] = start;
+            }
+            return true;
+        },
+        spx_op_fn_nop
+    );
+}
+
+bool SpxStreamRemapper::BuildDeclarationName_ConstType_FunctionPos_Maps(unordered_map<spv::Id, range_t>& functionPos)
 {
     mapDeclarationName.clear();
     functionPos.clear();
@@ -748,9 +998,6 @@ bool SpxStreamRemapper::BuildDeclarationNameConstTypeMap(unordered_map<spv::Id, 
     spv::Id fnResId = spv::NoResult;
     process(
         [&](spv::Op opCode, unsigned start) {
-            unsigned word = start + 1;
-            spv::Id  typeId = spv::NoResult;
-
             if (opCode == spv::Op::OpName)
             {
 #ifdef XKSLANG_DEBUG_MODE

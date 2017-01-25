@@ -4,6 +4,8 @@ shader Base
 	int Var0;
 	int Var1;
 	
+	const int BaseConst = 2;
+	
 	cbuffer C1
     {
         int Var2;
@@ -26,13 +28,20 @@ shader shaderA : Base
 	int Var0;
 	stream int sa1;
 	
+	const int aConst = 5;
+	
     cbuffer C1
     {
 		int Var1;
     }
 	
+	cbuffer C2
+    {
+		int Var2;
+    }
+	
 	int main()
 	{
-		return streams.sbase1 + Var1 + base.Var1 + ComputeBase();
+		return BaseConst + streams.sbase1 + Var1 + base.Var1 + ComputeBase() + aConst;
 	}
 };

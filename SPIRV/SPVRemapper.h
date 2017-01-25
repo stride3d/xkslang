@@ -232,8 +232,10 @@ private:
    // spv::Id findType(const globaltypes_t& globalTypes, spv::Id lt) const;
    std::uint32_t hashType(unsigned typeStart) const;
 
+   spirvbin_t& processOnFullBytecode(instfn_t, idfn_t);
    spirvbin_t& process(instfn_t, idfn_t, unsigned begin = 0, unsigned end = 0);
    int         processInstruction(unsigned word, instfn_t, idfn_t);
+   bool parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, std::vector<spv::Id>& listIds);
 
    void        validate() const;
    void        mapTypeConst();

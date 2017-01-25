@@ -1,0 +1,20 @@
+//Test merging shader types only (no function declaration)
+
+shader Base
+{
+	int baseI0;
+	int baseI1;
+	float4 baseF4;
+	int baseITab[2];
+	
+	const int BaseConst = 2;
+	
+	cbuffer C1
+    {
+        int baseCb1I0;
+        int baseCb1I1;
+    }
+	
+	stream int baseStreamI0;
+	stream int baseStreamI1;
+};
