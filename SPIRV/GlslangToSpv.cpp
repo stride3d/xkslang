@@ -1948,7 +1948,14 @@ spv::Id TGlslangToSpvTraverser::createSpvVariable(const glslang::TIntermSymbol* 
     if (glslang::IsAnonymous(name))
         name = "";
 
-    return builder.createVariable(storageClass, spvType, name);
+    spv::Id variableId = builder.createVariable(storageClass, spvType, name);
+
+    if (node->GetUserDefinedName() != nullptr)
+    {
+        builder.addDecoration(variableId, spv::DecorationDeclarationName, node->GetUserDefinedName()->c_str());
+    }
+
+    return variableId;
 }
 
 // Return type Id of the sampled type.

@@ -183,6 +183,24 @@ namespace spv {
         }
     }
 
+    // Return true if this opcode defines a variable
+    bool spirvbin_t::isVariableOp(spv::Op opCode) const
+    {
+        switch (opCode) {
+        case spv::OpVariable:   return true;
+        default:                return false;
+        }
+    }
+
+    // Return true if this opcode defines a pointer type
+    bool spirvbin_t::isPointerTypeOp(spv::Op opCode) const
+    {
+        switch (opCode) {
+        case spv::OpTypePointer: return true;
+        default:                 return false;
+        }
+    }
+
     // Return true if this opcode defines a type
     bool spirvbin_t::isTypeOp(spv::Op opCode) const
     {

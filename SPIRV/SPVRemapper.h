@@ -173,6 +173,8 @@ private:
 
    bool     isConstOp(spv::Op opCode)      const;
    bool     isTypeOp(spv::Op opCode)       const;
+   bool     isPointerTypeOp(spv::Op opCode) const;
+   bool     isVariableOp(spv::Op opCode)   const;
    bool     isStripOp(spv::Op opCode)      const;
    bool     isFlowCtrl(spv::Op opCode)     const;
    range_t  literalRange(spv::Op opCode)   const;

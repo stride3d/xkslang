@@ -64,6 +64,12 @@ void SpxStreamRemapper::ClearAllMaps()
         for (auto it = mapShadersById.begin(); it != mapShadersById.end(); it++)
         {
             ShaderClassData* shader = it->second;
+
+            for (auto itt = shader->shaderTypesList.begin(); itt != shader->shaderTypesList.end(); itt++)
+            {
+                ShaderTypeData* shaderType = *itt;
+                delete shaderType;
+            }
             delete shader;
         }
     }
@@ -93,6 +99,15 @@ void SpxStreamRemapper::ClearAllMaps()
         }
     }
 
+    if (mapVariablesById.size() > 0)
+    {
+        for (auto it = mapVariablesById.begin(); it != mapVariablesById.end(); it++)
+        {
+            delete it->second;
+        }
+    }
+
+    mapVariablesById.clear();
     mapTypeById.clear();
     mapConstById.clear();
     mapFunctionsById.clear();
@@ -184,6 +199,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
     spirvbin_t vecNamesToMerge;
     spirvbin_t vecDecoratesToMerge;
     spirvbin_t vecTypesConstsAndVariablesToMerge;
+    spirvbin_t vecFunctionsToMerge;
 
     vector<spv::Id> finalRemapTable;
     finalRemapTable.resize(bytecodeToMerge.bound(), unused);
@@ -196,71 +212,83 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
         ShaderClassData* shaderToMerge = listShadersToMerge[is];
 
         //=============================================================================================================
-        //add all types declared by the shader
-        for (int t = 0; t < shaderToMerge->typesList.size(); ++t)
+        //=============================================================================================================
+        //add all types and variables declared by the shader
+        mapVariablesById;
+        for (int t = 0; t < shaderToMerge->shaderTypesList.size(); ++t)
         {
-            TypeData* typeToMerge = shaderToMerge->typesList[t];
-            finalRemapTable[typeToMerge->id] = newId++;
+            ShaderTypeData* shaderTypeToMerge = shaderToMerge->shaderTypesList[t];
 
-            bytecodeToMerge.CopyInstructionAtEndOfVector(vecTypesConstsAndVariablesToMerge.spv, typeToMerge->pos);
+            TypeData* type = shaderTypeToMerge->type;
+            TypeData* pointerToType = shaderTypeToMerge->pointerToType;
+            VariableData* variable = shaderTypeToMerge->variable;
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (finalRemapTable[type->id] != unused) error(string("id:") + to_string(type->id) + string(" has already been remapped"));
+            if (finalRemapTable[pointerToType->id] != unused) error(string("id:") + to_string(pointerToType->id) + string(" has already been remapped"));
+            if (finalRemapTable[variable->id] != unused) error(string("id:") + to_string(variable->id) + string(" has already been remapped"));
+#endif
+
+            finalRemapTable[type->id] = newId++;
+            bytecodeToMerge.CopyInstructionAtEndOfVector(vecTypesConstsAndVariablesToMerge.spv, type->pos);
+            finalRemapTable[pointerToType->id] = newId++;
+            bytecodeToMerge.CopyInstructionAtEndOfVector(vecTypesConstsAndVariablesToMerge.spv, pointerToType->pos);
+            finalRemapTable[variable->id] = newId++;
+            bytecodeToMerge.CopyInstructionAtEndOfVector(vecTypesConstsAndVariablesToMerge.spv, variable->pos);
+        }
+
+        //Add the shader type declaration
+        {
+            TypeData* shaderType = shaderToMerge->shaderType;
+            const spv::Id resultId = shaderType->id;
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (finalRemapTable[resultId] != unused) error(string("id:") + to_string(resultId) + string(" has already been remapped"));
+#endif
+
+            finalRemapTable[resultId] = newId++;
+            bytecodeToMerge.CopyInstructionAtEndOfVector(vecTypesConstsAndVariablesToMerge.spv, shaderType->pos);
         }
 
         //=============================================================================================================
-        //add all pointer to those types, plus the shader type definition
-        for (auto it = bytecodeToMerge.mapTypeById.begin(); it != bytecodeToMerge.mapTypeById.end(); it++)
-        {
-            TypeData* type = it->second;
-            switch (type->opCode)
-            {
-                case spv::OpTypePointer:
-                {
-                    unsigned start = type->pos;
-                    const spv::Id resultId = bytecodeToMerge.asId(start + 1);
-                    const spv::Id typeId = bytecodeToMerge.asId(start + 3);
-                    if (finalRemapTable[typeId] != unused)  //is it a pointer to a type to merge?
-                    {
-                        finalRemapTable[resultId] = newId++;
-                        bytecodeToMerge.CopyInstructionAtEndOfVector(vecTypesConstsAndVariablesToMerge.spv, start);
-                    }
-                    break;
-                }
-
-                case spv::OpTypeXlslShaderClass:
-                {
-                    string name = bytecodeToMerge.GetDeclarationNameForId(type->id);
-                    if (name == shaderToMerge->name)
-                    {
-                        unsigned start = type->pos;
-                        const spv::Id resultId = bytecodeToMerge.asId(start + 1);
-                        finalRemapTable[resultId] = newId++;
-                        bytecodeToMerge.CopyInstructionAtEndOfVector(vecTypesConstsAndVariablesToMerge.spv, start);
-                    }
-                    break;
-                }
-            }
-        }
-
         //=============================================================================================================
-        //add all variables for those pointers
-        bytecodeToMerge.process(
-            [&](spv::Op opCode, unsigned start)
-            {
-                if (opCode == spv::OpVariable)
+        //add all functions' instructions declared by the shader
+        for (int t = 0; t < shaderToMerge->functionsList.size(); ++t)
+        {
+            FunctionData* functionToMerge = shaderToMerge->functionsList[t];
+            //finalRemapTable[functionToMerge->id] = newId++; //done below
+
+            //Remap all instructions results IDs within the function code
+            bytecodeToMerge.process(
+                [&](spv::Op opCode, unsigned start)
                 {
-                    const spv::Id resultId = bytecodeToMerge.asId(start + 2);
-                    const spv::Id typeId = bytecodeToMerge.asId(start + 1);
-                    if (finalRemapTable[typeId] != unused)  //is it a variable to a type to merge?
-                    {
-                        finalRemapTable[resultId] = newId++;
-                        bytecodeToMerge.CopyInstructionAtEndOfVector(vecTypesConstsAndVariablesToMerge.spv, start);
+                    unsigned word = start + 1;
+
+                    // Read type and result ID from instruction desc table
+                    if (spv::InstructionDesc[opCode].hasType()) {
+                        word++;  //spv::Id typeId = bytecodeToMerge.asId(word++);
                     }
-                }
-                return true;
-            },
-            spx_op_fn_nop
-        );
+
+                    if (spv::InstructionDesc[opCode].hasResult()) {
+                        spv::Id resultId = bytecodeToMerge.asId(word++);
+#ifdef XKSLANG_DEBUG_MODE
+                        if (finalRemapTable[resultId] != unused) error(string("id:") + to_string(resultId) + string(" has already been remapped"));
+#endif
+                        finalRemapTable[resultId] = newId++;
+                    }
+
+                    return true;
+                },
+                spx_op_fn_nop,
+                functionToMerge->posStart, functionToMerge->posEnd
+            );
+
+            //Copy all bytecode instructions from the function
+            bytecodeToMerge.CopyInstructionsAtEndOfVector(vecFunctionsToMerge.spv, functionToMerge->posStart, functionToMerge->posEnd);
+        }
     } //end shaderToMerge loop
 
+    //update newIdMerged table (this table defines the name and decorate to fetch and merge)
     {
         int len = bytecodeToMerge.bound();
         for (int i = 0; i < len; ++i)
@@ -277,22 +305,23 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
     {
         //Init by checking all types instructions for unmapped IDs
         spirvbin_t bytecodeToParseForIds;
-        bytecodeToParseForIds.spv = vecTypesConstsAndVariablesToMerge.spv;
+        bytecodeToParseForIds.spv.insert(bytecodeToParseForIds.spv.end(), vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
+        bytecodeToParseForIds.spv.insert(bytecodeToParseForIds.spv.end(), vecFunctionsToMerge.spv.begin(), vecFunctionsToMerge.spv.end());
         vector<pairIdPos> listUnmappedIdsToProcess;  //unmapped ids and their pos in the bytecode to merge
 
-        unsigned pos = 0;
-        const unsigned end = bytecodeToParseForIds.spv.size();
         spv::Op opCode;
         unsigned wordCount;
         std::vector<spv::Id> listIds;
         spv::Id type;
         spv::Id result;
         unsigned listIdsLen;
+        unsigned pos = 0;
+        const unsigned end = bytecodeToParseForIds.spv.size();
         while (pos < end)
         {
             listIds.clear();
             if (!bytecodeToParseForIds.parseInstruction(pos, opCode, wordCount, type, result, listIds))
-                return error("Error parsing vecTypesConstsAndVariablesToMerge");
+                return error("Error parsing bytecodeToParseForIds");
 
             if (type != unused) listIds.push_back(type);
             listIdsLen = listIds.size();
@@ -310,6 +339,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
 
         TypeData* typeToMerge;
         ConstData* constToMerge;
+        VariableData* variableToAccess;
         while (listUnmappedIdsToProcess.size() > 0)
         {
             pairIdPos& unmappedIdPos = listUnmappedIdsToProcess.back();
@@ -320,63 +350,86 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
                 continue;
             }
 
-            //check if all depending IDS are already mapped, if not add them in the list and continue
+            //Find the position in the code to merge where the unmapped IDs is defined
             int instructionPos = unmappedIdPos.second;
+            bool isAccessToVariable = false;
             if (instructionPos < 0)
             {
-                if ((typeToMerge = bytecodeToMerge.IsType(unmappedId)) != nullptr)
+                if ((typeToMerge = bytecodeToMerge.HasATypeForId(unmappedId)) != nullptr)
                     instructionPos = typeToMerge->pos;
-                else if ((constToMerge = bytecodeToMerge.IsConst(unmappedId)) != nullptr)
+                else if ((constToMerge = bytecodeToMerge.HasAConstForId(unmappedId)) != nullptr)
                     instructionPos = constToMerge->pos;
                 else
-                    return error(string("The unmapped Id is not a type, const or variable:") + to_string(unmappedId));
+                {
+                    if ((variableToAccess = bytecodeToMerge.HasVariableForId(unmappedId)) != nullptr)
+                    {
+                        isAccessToVariable = true;
+                    }
+                    else
+                        return error(string("The unmapped Id is not a type, const or variable:") + to_string(unmappedId));
+                }
 
                 unmappedIdPos.second = instructionPos;
             }
 
-            uint32_t typeHash = bytecodeToMerge.hashType(instructionPos);
-            auto hashTypePosIt = mapHashPos.find(typeHash);
-            if (hashTypePosIt != mapHashPos.end())
+            if (isAccessToVariable)
             {
-                //The type already exists in the destination bytecode, we can simply remap to it
-                finalRemapTable[unmappedId] = hashTypePosIt->second.first;
-                listUnmappedIdsToProcess.pop_back();
+                //CHECK TOTO FROM VARIABLE NAME --> //TOTO CHECK BELOW: DO WE HAVE DECLARATION NAME IF NOT DEBUG TOO!
+                int gfdsgdsf = 5435454;
+                //we access a variable declared by a parent class, retrieve its id
             }
             else
             {
-                //The type doesn't exist yet, we will copy the full instruction, but only after all depending IDs are mapped as well
-                bytecodeToParseForIds.spv.clear();
-                bytecodeToMerge.CopyInstructionAtEndOfVector(bytecodeToParseForIds.spv, instructionPos);
-                listIds.clear();
-                if (!bytecodeToParseForIds.parseInstruction(0, opCode, wordCount, type, result, listIds))
-                    return error("Error parsing vecTypesConstsAndVariablesToMerge");
-
-                if (type != unused) listIds.push_back(type);
-                listIdsLen = listIds.size();
-                bool canAddTheInstruction = true;
-                for (int i = 0; i < listIdsLen; ++i)
+                //unmapped ID is a type or const, we can either remap it to an existing, similar one, or copy the type/const to the destination bytecode
+                uint32_t typeHash = bytecodeToMerge.hashType(instructionPos);
+                auto hashTypePosIt = mapHashPos.find(typeHash);
+                if (hashTypePosIt != mapHashPos.end())
                 {
-                    const spv::Id anotherId = listIds[i];
-                    if (anotherId != unmappedId && finalRemapTable[anotherId] == unused)
+                    //The type already exists in the destination bytecode, we can simply remap to it
+                    finalRemapTable[unmappedId] = hashTypePosIt->second.first;
+                    listUnmappedIdsToProcess.pop_back();
+                }
+                else
+                {
+                    //The type doesn't exist yet, we will copy the full instruction, but only after all depending IDs are mapped as well
+                    bytecodeToParseForIds.spv.clear();
+                    bytecodeToMerge.CopyInstructionAtEndOfVector(bytecodeToParseForIds.spv, instructionPos);
+                    listIds.clear();
+                    if (!bytecodeToParseForIds.parseInstruction(0, opCode, wordCount, type, result, listIds))
+                        return error("Error parsing bytecodeToParseForIds");
+
+                    if (type != unused) listIds.push_back(type);
+                    listIdsLen = listIds.size();
+                    bool canAddTheInstruction = true;
+                    for (int i = 0; i < listIdsLen; ++i)
                     {
-                        listUnmappedIdsToProcess.push_back(pairIdPos(anotherId, -1));
-                        canAddTheInstruction = false;
+                        const spv::Id anotherId = listIds[i];
+    #ifdef XKSLANG_DEBUG_MODE
+                        if (anotherId == unmappedId) return error(string("anotherId == unmappedId:") + to_string(anotherId) + string(". This should be impossible (bytecode is invalid)"));
+    #endif
+                        if (finalRemapTable[anotherId] == unused)
+                        {
+                            //we add anotherId to the list of Ids to process (we're depending on it)
+                            listUnmappedIdsToProcess.push_back(pairIdPos(anotherId, -1));
+                            canAddTheInstruction = false;
+                        }
+                    }
+
+                    if (canAddTheInstruction)
+                    {
+                        //the instruction is not depending on another unmapped IDs anymore, we can copy it
+                        finalRemapTable[unmappedId] = newId++;
+                        listUnmappedIdsToProcess.pop_back();
+                        bytecodeToMerge.CopyInstructionAtEndOfVector(bytecodeWithExtraTypesToMerge.spv, instructionPos);
+
+                        newIdMerged[unmappedId] = true;
                     }
                 }
-
-                if (canAddTheInstruction)
-                {
-                    //the instruction is not depending on another unmapped IDs anymore, we can copy it
-                    finalRemapTable[unmappedId] = newId++;
-                    listUnmappedIdsToProcess.pop_back();
-                    bytecodeToMerge.CopyInstructionAtEndOfVector(bytecodeWithExtraTypesToMerge.spv, instructionPos);
-
-                    newIdMerged[unmappedId] = true;
-                }
             }
-        }
-    }
+        }  //end while (listUnmappedIdsToProcess.size() > 0)
+    }  //end block
 
+    //Add the extra types we found for merge in our vec of type/const/variable
     if (bytecodeWithExtraTypesToMerge.spv.size() > 0)
     {
         vecTypesConstsAndVariablesToMerge.spv.insert(vecTypesConstsAndVariablesToMerge.spv.begin(), bytecodeWithExtraTypesToMerge.spv.begin(), bytecodeWithExtraTypesToMerge.spv.end());       
@@ -419,7 +472,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
 
     //=============================================================================================================
     //=============================================================================================================
-    //remap IDs for all types / variables / consts
+    //remap IDs for all mergable types / variables / consts / functions
     vecTypesConstsAndVariablesToMerge.processOnFullBytecode(
         spx_inst_fn_nop, // ignore instructions
         [&](spv::Id& id)
@@ -439,6 +492,15 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
         }
     );
     vecNamesToMerge.processOnFullBytecode(
+        spx_inst_fn_nop, // ignore instructions
+        [&](spv::Id& id)
+        {
+            spv::Id newId = finalRemapTable[id];
+            if (newId == unused) error(string("Invalid remapper Id:") + to_string(id));
+            else id = newId;
+        }
+    );
+    vecFunctionsToMerge.processOnFullBytecode(
         spx_inst_fn_nop, // ignore instructions
         [&](spv::Id& id)
         {
@@ -478,6 +540,8 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
     if (firstFunctionPos == 0) spv.size();
 
     //=============================================================================================================
+    //merge functions
+    spv.insert(spv.end(), vecFunctionsToMerge.spv.begin(), vecFunctionsToMerge.spv.end());
     //Merge types and variables
     spv.insert(spv.begin() + firstFunctionPos, vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
     //Merge names and decorates
@@ -521,6 +585,8 @@ bool SpxStreamRemapper::FinalizeMixin()
         copyStaticErrorMessagesTo(errorMessages);
         return false;
     }
+
+    BuildAllMaps();
 
     //Convert SPIRX extensions to SPIRV
     if (!ConvertSpirxToSpirVBytecode()) {
@@ -878,7 +944,7 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
 
 bool SpxStreamRemapper::BuildAllMaps()
 {
-    cout << "BuildAllMaps!!" << endl;
+    //cout << "BuildAllMaps!!" << endl;
 
     idPosR.clear();
     ClearAllMaps();
@@ -912,7 +978,7 @@ bool SpxStreamRemapper::BuildAllMaps()
                 break;
             }
 
-            ShaderClassData* shader = new ShaderClassData(shaderId, shaderName);
+            ShaderClassData* shader = new ShaderClassData(type, shaderName);
             mapShadersById[shaderId] = shader;
             mapShadersByName[shaderName] = shader;
         }
@@ -928,6 +994,7 @@ bool SpxStreamRemapper::BuildAllMaps()
             //some functions can be declared outside a shader class
             continue;
         }
+        if (functionName.size() == 0) continue;
 
         if (mapFunctionsById.find(functionId) != mapFunctionsById.end()) {
             error("2 functions have the same Id");
@@ -935,6 +1002,7 @@ bool SpxStreamRemapper::BuildAllMaps()
         }
 
         FunctionData* function = new FunctionData(functionId, functionName);
+        function->SetRangePos(fn->second.first, fn->second.second);
         mapFunctionsById[functionId] = function;
     }
 
@@ -946,6 +1014,7 @@ bool SpxStreamRemapper::BuildAllMaps()
         [&](spv::Op opCode, unsigned start) {
             unsigned word = start + 1;
 
+            //Fill base.idPosR map (used by hashType)
             spv::Id  typeId = spv::NoResult;
             if (spv::InstructionDesc[opCode].hasType())
                 typeId = asId(word++);
@@ -989,20 +1058,27 @@ bool SpxStreamRemapper::BuildAllMaps()
                         }
                         else
                         {
-                            TypeData* type = IsType(target);
+                            TypeData* type = HasATypeForId(target);
                             if (type != nullptr)
                             {
                                 const std::string ownerName = literalString(start + 3);
                                 ShaderClassData* shaderOwner = GetShaderByName(ownerName);
 
+                                //find the pointer type and the variable
+                                TypeData* pointerToType = HasPointerToType(type);
+                                VariableData* variable = HasVariableForType(pointerToType);
+
 #ifdef XKSLANG_DEBUG_MODE
                                 if (shaderOwner == nullptr) { error(string("undeclared parent shader:") + ownerName); break; }
                                 if (type->owner != nullptr) { error(string("type already has a shader owner:") + type->GetName()); break; }
                                 if (shaderOwner->HasType(type)) { error(string("shader:") + ownerName + string(" already possesses the type:") + type->GetName()); break; }
+                                if (pointerToType == nullptr) { error(string("cannot find the pointer type to shader type:") + type->GetName()); break; }
+                                if (variable == nullptr) { error(string("cannot find the variable for shader type:") + type->GetName()); break; }
 #endif
 
+                                ShaderTypeData* shaderType = new ShaderTypeData(type, pointerToType, variable);
                                 type->owner = shaderOwner;
-                                shaderOwner->AddType(type);
+                                shaderOwner->AddShaderType(shaderType);
                             }
                             else
                             {
@@ -1091,7 +1167,7 @@ bool SpxStreamRemapper::BuildAllMaps()
     return true;
 }
 
-void SpxStreamRemapper::GetBytecodeTypeMap(std::unordered_map<spv::Id, unsigned>& mapTypes)
+void SpxStreamRemapper::GetBytecodeTypeMap(std::unordered_map<spv::Id, uint32_t>& mapTypes)
 {
     mapTypes.clear();
 
@@ -1159,30 +1235,67 @@ bool SpxStreamRemapper::BuildDeclarationName_ConstType_FunctionPos_Maps(unordere
             else if (isConstOp(opCode))
             {
                 spv::Id id = asId(start + 2);
+
+#ifdef XKSLANG_DEBUG_MODE
                 if (mapConstById.find(id) != mapConstById.end()) {
                     error("2 consts have the same Id");
                 }
-                else
-                {
-                    ConstData* cd = new ConstData(opCode, id, start);
-                    mapConstById[id] = cd;
-                }
+#endif //XKSLANG_DEBUG_MODE
+
+                ConstData* cd = new ConstData(opCode, id, start);
+                mapConstById[id] = cd;
             }
             else if (isTypeOp(opCode))
             {
                 spv::Id id = asId(start + 1);
+                TypeData* td = new TypeData(opCode, id, start);
+
+#ifdef XKSLANG_DEBUG_MODE
                 if (mapTypeById.find(id) != mapTypeById.end()) {
                     error("2 types have the same Id");
                 }
+                string dataDebugName;
+                if (GetDeclarationNameForId(id, dataDebugName))
+                    td->debugName = dataDebugName;
+#endif //XKSLANG_DEBUG_MODE
+                
+                //if the type is a pointer, find and set the target
+                if (isPointerTypeOp(opCode))
+                {
+                    spv::Id targetId = asId(start + 3);
+                    TypeData* typePointed = HasATypeForId(targetId);
+                    if (typePointed == nullptr)
+                        error(string("Error creating the pointer type:") + to_string(id) + string(": no type found for the pointer target id:") + to_string(targetId));
+                    else
+                        td->SetPointerToType(typePointed);
+                }
+
+                mapTypeById[id] = td;
+            }
+            else if (isVariableOp(opCode))
+            {
+                spv::Id typeId = asId(start + 1);
+                spv::Id id = asId(start + 2);
+                TypeData* td = HasATypeForId(typeId);
+                if (td == nullptr)
+                {
+                    error(string("Error creating the variable:") + to_string(id) + string(": no type found for the id:") + to_string(typeId));
+                }
                 else
                 {
-                    TypeData* td = new TypeData(opCode, id, start);
+                    //TOTO CHECK HERE: DO WE HAVE DECLARATION NAME IF NOT DEBUG TOO!
+                    string variableName;
+                    if (!GetDeclarationNameForId(id, variableName)) {
+                        error(string("Unknown name for variable with Id:") + to_string(id));
+                    }
+
+                    VariableData* vd = new VariableData(opCode, id, td, variableName, start);
 #ifdef XKSLANG_DEBUG_MODE
-                    string dataDebugName;
-                    if (GetDeclarationNameForId(id, dataDebugName))
-                        td->debugName = dataDebugName;
+                    if (mapVariablesById.find(id) != mapVariablesById.end()) {
+                        error("2 variables have the same Id");
+                    }
 #endif //XKSLANG_DEBUG_MODE
-                    mapTypeById[id] = td;
+                    mapVariablesById[id] = vd;
                 }
             }
             else if (opCode == spv::Op::OpFunction)
@@ -1277,14 +1390,41 @@ SpxStreamRemapper::FunctionData* SpxStreamRemapper::IsFunction(spv::Id id)
     return it->second;
 }
 
-SpxStreamRemapper::TypeData* SpxStreamRemapper::IsType(spv::Id id)
+SpxStreamRemapper::TypeData* SpxStreamRemapper::HasATypeForId(spv::Id id)
 {
     auto it = mapTypeById.find(id);
     if (it == mapTypeById.end()) return nullptr;
     return it->second;
 }
 
-SpxStreamRemapper::ConstData* SpxStreamRemapper::IsConst(spv::Id id)
+SpxStreamRemapper::TypeData* SpxStreamRemapper::HasPointerToType(TypeData* type)
+{
+    if (type == nullptr) return nullptr;
+    for (auto it = mapTypeById.begin(); it != mapTypeById.end(); it++)
+    {
+        if (it->second->pointerToType == type) return it->second;
+    }
+    return nullptr;
+}
+
+SpxStreamRemapper::VariableData* SpxStreamRemapper::HasVariableForType(TypeData* type)
+{
+    if (type == nullptr) return nullptr;
+    for (auto it = mapVariablesById.begin(); it != mapVariablesById.end(); it++)
+    {
+        if (it->second->type == type) return it->second;
+    }
+    return nullptr;
+}
+
+SpxStreamRemapper::VariableData* SpxStreamRemapper::HasVariableForId(spv::Id id)
+{
+    auto it = mapVariablesById.find(id);
+    if (it == mapVariablesById.end()) return nullptr;
+    return it->second;
+}
+
+SpxStreamRemapper::ConstData* SpxStreamRemapper::HasAConstForId(spv::Id id)
 {
     auto it = mapConstById.find(id);
     if (it == mapConstById.end()) return nullptr;

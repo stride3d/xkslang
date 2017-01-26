@@ -34,6 +34,19 @@ class SpxStreamRemapper : public spv::spirvbin_t
 
     class FunctionData;
     class ShaderClassData;
+    class TypeData;
+    class VariableData
+    {
+    public:
+        spv::Op opCode;
+        spv::Id id;
+        unsigned int pos;
+        TypeData* type;
+        std::string variableName;  //we need the name to identify variables when mixin shaders
+
+        VariableData(spv::Op op, spv::Id id, TypeData* type, const std::string& variableName, unsigned int pos) : opCode(op), id(id), type(type), variableName(variableName), pos(pos) {}
+    };
+
     class TypeData
     {
     public:
@@ -41,10 +54,23 @@ class SpxStreamRemapper : public spv::spirvbin_t
         spv::Id id;
         unsigned int pos;
         ShaderClassData* owner;
+        TypeData* pointerToType;  //if the type is a pointer to another type
         std::string debugName;  //for Debug
 
-        TypeData(spv::Op op, spv::Id id, unsigned int pos) : opCode(op), id(id), pos(pos), owner(nullptr){}
+        TypeData(spv::Op op, spv::Id id, unsigned int pos) : opCode(op), id(id), pos(pos), owner(nullptr), pointerToType(nullptr){}
         std::string& GetName(){return debugName;}
+        void SetPointerToType(TypeData* type){ pointerToType  = type;}
+    };
+
+    //A type declared by a shader, we store the type definition, plus the variable and pointer to access it
+    class ShaderTypeData
+    {
+    public:
+        TypeData* type;
+        TypeData* pointerToType;
+        VariableData* variable;
+
+        ShaderTypeData(TypeData* type, TypeData* pointerToType, VariableData* variable) : type(type), pointerToType(pointerToType), variable(variable){}
     };
 
     class ConstData
@@ -60,14 +86,14 @@ class SpxStreamRemapper : public spv::spirvbin_t
     class ShaderClassData
     {
     public:
-        spv::Id id;
+        TypeData* shaderType;
         std::string name;
         int level;
         std::vector<ShaderClassData*> parentsList;
         std::vector<FunctionData*> functionsList;
-        std::vector<TypeData*> typesList;
+        std::vector<ShaderTypeData*> shaderTypesList;
 
-        ShaderClassData(spv::Id id, std::string name): id(id), name(name), level(-1){}
+        ShaderClassData(TypeData* shaderType, std::string name): shaderType(shaderType), name(name), level(-1){}
         std::string& GetName() { return name; }
 
         void AddParent(ShaderClassData* parent) { parentsList.push_back(parent); }
@@ -82,9 +108,9 @@ class SpxStreamRemapper : public spv::spirvbin_t
             return false;
         }
 
-        void AddType(TypeData* type) { typesList.push_back(type); }
+        void AddShaderType(ShaderTypeData* type) { shaderTypesList.push_back(type); }
         bool HasType(TypeData* type) {
-            for (int i = 0; i<typesList.size(); ++i) if (typesList[i] == type) return true;
+            for (int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->type == type) return true;
             return false;
         }
     };
@@ -97,8 +123,15 @@ class SpxStreamRemapper : public spv::spirvbin_t
         ShaderClassData* owner;
         bool hasOverride;  //has the override attribute
         FunctionData* overridenBy;  //the function is being overriden by another function
+        uint32_t posStart;
+        uint32_t posEnd;
 
-        FunctionData(spv::Id id, std::string mangledName) : id(id), mangledName(mangledName), owner(nullptr), hasOverride(false), overridenBy(nullptr){}
+        FunctionData(spv::Id id, std::string mangledName)
+            : id(id), mangledName(mangledName), owner(nullptr), hasOverride(false), overridenBy(nullptr), posStart(0), posEnd(0){}
+
+        void SetRangePos(uint32_t start, uint32_t end) {
+            posStart = start; posEnd = end;
+        }
     };
 
 public:
@@ -127,7 +160,7 @@ private:
     bool BuildAllMaps();
     bool BuildOverridenFunctionMap();
 
-    void GetBytecodeTypeMap(std::unordered_map<spv::Id, unsigned>& mapTypes);
+    void GetBytecodeTypeMap(std::unordered_map<spv::Id, uint32_t>& mapTypes);
 
     bool BuildAndSetShaderStageHeader(ShadingStage stage, FunctionData* entryFunction, std::string unmangledFunctionName);
     bool RemapAllOverridenFunctions();
@@ -145,6 +178,7 @@ private:
     std::unordered_map<spv::Id, FunctionData*> mapFunctionsById;
     std::unordered_map<spv::Id, TypeData*> mapTypeById;
     std::unordered_map<spv::Id, ConstData*> mapConstById;
+    std::unordered_map<spv::Id, VariableData*> mapVariablesById;
 
     std::string GetDeclarationNameForId(spv::Id id);
     bool GetDeclarationNameForId(spv::Id id, std::string& name);
@@ -153,19 +187,26 @@ private:
     ShaderClassData* GetShaderById(spv::Id id);
     FunctionData* GetFunctionById(spv::Id id);
     FunctionData* IsFunction(spv::Id id);
-    TypeData* IsType(spv::Id id);
-    ConstData* IsConst(spv::Id id);
-    //ConstData* HasConstEqualTo(ConstData*);
-    //TypeData* HasSimilarTypeDefinedInBytecode(TypeData*);
+    TypeData* HasATypeForId(spv::Id id);
+    TypeData* HasPointerToType(TypeData* type);
+    VariableData* HasVariableForType(TypeData* type);
+    VariableData* HasVariableForId(spv::Id id);
+    ConstData* HasAConstForId(spv::Id id);
+
 
     void stripBytecode(std::vector<range_t>& ranges);
 
-    void CopyInstructionAtEndOfVector(std::vector<spirword_t>& vec, unsigned opStart){
+    void CopyInstructionAtEndOfVector(std::vector<spirword_t>& vec, uint32_t opStart){
         auto start = spv.begin() + opStart;
         auto end = start + asWordCount(opStart);
         vec.insert(vec.end(), start, end);
     }
-    void CopyInstructionAtBeginningOfVector(std::vector<spirword_t>& vec, unsigned opStart){
+    void CopyInstructionsAtEndOfVector(std::vector<spirword_t>& vec, uint32_t opStart, uint32_t opEnd) {
+        auto start = spv.begin() + opStart;
+        auto end = spv.begin() + opEnd;
+        vec.insert(vec.end(), start, end);
+    }
+    void CopyInstructionAtBeginningOfVector(std::vector<spirword_t>& vec, uint32_t opStart){
         auto start = spv.begin() + opStart;
         auto end = start + asWordCount(opStart);
         vec.insert(vec.begin(), start, end);

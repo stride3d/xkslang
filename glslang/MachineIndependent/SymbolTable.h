@@ -148,6 +148,7 @@ public:
         : TSymbol(name),
           userType(uT),
           constSubtree(nullptr),
+          userDefinedName(nullptr),
           anonId(-1) { type.shallowCopy(t); }
     virtual TVariable* clone() const;
     virtual ~TVariable() { }
@@ -167,6 +168,9 @@ public:
 
     virtual void dump(TInfoSink &infoSink) const;
 
+    void SetUserDefinedName(const char* name){ userDefinedName = NewPoolTString(name); }
+    TString* GetUserDefinedName() const {return userDefinedName;}
+
 protected:
     explicit TVariable(const TVariable&);
     TVariable& operator=(const TVariable&);
@@ -182,6 +186,8 @@ protected:
     TConstUnionArray constArray;  // for compile-time constant value
     TIntermTyped* constSubtree;   // for specialization constant computation
     int anonId;                   // the ID used for anonymous blocks: TODO: see if uniqueId could serve a dual purpose
+
+    TString* userDefinedName;  //XKSL extensions
 };
 
 //

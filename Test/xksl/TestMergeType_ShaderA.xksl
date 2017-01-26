@@ -1,3 +1,4 @@
+//Test merging shader types only (no function declaration)
 
 shader Base
 {

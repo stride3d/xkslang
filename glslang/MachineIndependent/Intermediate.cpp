@@ -1574,7 +1574,15 @@ void TIntermediate::addSymbolLinkageNode(TIntermAggregate*& linkage, const TSymb
         const TAnonMember* anon = symbol.getAsAnonMember();
         variable = &anon->getAnonContainer();
     }
+
     TIntermSymbol* node = addSymbol(*variable);
+
+    //XKSL extensions: if the variable has an user name: add this name in the symbol
+    if (variable->GetUserDefinedName() != nullptr)
+    {
+        node->SetUserDefinedName(variable->GetUserDefinedName());
+    }
+
     linkage = growAggregate(linkage, node);
 }
 

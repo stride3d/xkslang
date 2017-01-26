@@ -804,10 +804,12 @@ bool ParseXkslShaderFile(
 
                 //cbuffer of variables declared by the shader
                 TString* cbufferGlobalBlockName = NewPoolTString((shader->shaderName + TString(".globalCBuffer")).c_str());
+                TString* cbufferGlobalBlockVarName = NewPoolTString((TString("var_") + *cbufferGlobalBlockName).c_str());
                 TTypeList* cbufferStructTypeList = new TTypeList();
 
                 //stream buffer of stream variables declared by the shader
                 TString* streamBufferStructName = NewPoolTString((shader->shaderName + TString(".streamBuffer")).c_str());
+                TString* streamBufferVarName = NewPoolTString((TString("var_") + *streamBufferStructName).c_str());
                 TTypeList* streambufferStructTypeList = new TTypeList();
 
                 for (int i = 0; i < shader->listParsedMembers.size(); ++i)
@@ -873,7 +875,7 @@ bool ParseXkslShaderFile(
                         TTypeLoc typeLoc = {member.type, member.loc};
                         streambufferStructTypeList->push_back(typeLoc);
                         int indexInStruct = streambufferStructTypeList->size() - 1;
-                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer, streamBufferStructName, indexInStruct);
+                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer, streamBufferVarName, indexInStruct);
 
                         member.memberLocation = identifierLocation;
                         shader->listAllDeclaredMembers.push_back(member);
@@ -886,7 +888,7 @@ bool ParseXkslShaderFile(
                             TTypeLoc typeLoc = { member.type, member.loc };
                             cbufferStructTypeList->push_back(typeLoc);
                             int indexInStruct = cbufferStructTypeList->size() - 1;
-                            identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferGlobalBlockName, indexInStruct);
+                            identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferGlobalBlockVarName, indexInStruct);
 
                             member.memberLocation = identifierLocation;
                             shader->listAllDeclaredMembers.push_back(member);
@@ -900,11 +902,25 @@ bool ParseXkslShaderFile(
                             blockQualifier.storage = EvqUniform;
                             TString numberId = TString(std::to_string(shader->listDeclaredBlockNames.size()).c_str());
                             TString* blockName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName() + "_" + numberId).c_str());  //name = class_name_num
-                            //TType blockType(cbufferStructTypeList, *typeName, blockQualifier);
+                            TString* blockVarName = NewPoolTString((TString("var_") + *blockName).c_str());
 
-                            parseContext->declareBlock(member.loc, *member.type, blockName);
-                            shader->listDeclaredBlockNames.push_back(blockName);
+                            parseContext->declareBlock(member.loc, *member.type, blockVarName);
+                            shader->listDeclaredBlockNames.push_back(blockVarName);
 
+                            TSymbol* symbol = parseContext->symbolTable.find(*blockVarName);
+                            if (symbol == nullptr || symbol->getAsVariable() == nullptr)
+                            {
+                                parseContext->infoSink.info.message(EPrefixError, ("Error creating the block cbuffer variable"));
+                            }
+                            else
+                            {
+                                symbol->getWritableType().setTypeName(*blockName);  //set the type name
+                                //set the userName to the variable (needed to retrieve variables id when mixing shaders)
+                                TVariable* variableSymbol = symbol->getAsVariable();
+                                variableSymbol->SetUserDefinedName(blockVarName->c_str());
+                            }
+
+                            //Individually add the block members in the shader list of member
                             TTypeList* typeList = member.type->getWritableStruct();
                             for (unsigned int indexInBlock = 0; indexInBlock < typeList->size(); ++indexInBlock) {
                                 TType& blockMemberType = *(typeList->at(indexInBlock).type);
@@ -917,7 +933,7 @@ bool ParseXkslShaderFile(
                                 newShaderMember.type->shallowCopy(blockMemberType);
                                 newShaderMember.loc = typeList->at(indexInBlock).loc;
 
-                                identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, blockName, indexInBlock);
+                                identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, blockVarName, indexInBlock);
                                 newShaderMember.memberLocation = identifierLocation;
                                 shader->listAllDeclaredMembers.push_back(newShaderMember);
                             }
@@ -928,38 +944,57 @@ bool ParseXkslShaderFile(
                 //Add the shader global cbuffer
                 if (cbufferStructTypeList->size() > 0)
                 {
-                    //// Declare a variable on the global level so that we retrieve all shader symbols
-                    //TQualifier postDeclQualifier;
-                    //postDeclQualifier.clear();
-                    //TType* type = new TType(cbufferStructTypeList, shader->shaderName, postDeclQualifier, &shader->shaderparentsName);
-                    //type->getQualifier().storage = EvqGlobal;
-                    //parseContext->declareVariable(shader->location, *cbufferGlobalBlockName, *type, nullptr);
-
                     //Declare the shader global cbuffer variable
                     TQualifier blockQualifier;
                     blockQualifier.clear();
                     blockQualifier.storage = EvqUniform;
-                    TString& typeName = shader->shaderName; //cbufferGlobalBlockName; //NewPoolTString("");
+                    TString& typeName = *cbufferGlobalBlockName; //shader->shaderName; //cbufferGlobalBlockName; //NewPoolTString("");
                     TType globalBlockType(cbufferStructTypeList, typeName, blockQualifier);
 
-                    globalBlockType.setUserIdentifierName("");  //declaration name is "", will be merged with unnamed cbuffer
+                    globalBlockType.setUserIdentifierName("");  //type name is "", will be merged with unnamed cbuffer
                     globalBlockType.setOwnerClassName(shader->shaderName.c_str());
 
-                    parseContext->declareBlock(shader->location, globalBlockType, cbufferGlobalBlockName);
-                    shader->listDeclaredBlockNames.push_back(cbufferGlobalBlockName);
+                    parseContext->declareBlock(shader->location, globalBlockType, cbufferGlobalBlockVarName);
+                    shader->listDeclaredBlockNames.push_back(cbufferGlobalBlockVarName);
+
+                    TSymbol* symbol = parseContext->symbolTable.find(*cbufferGlobalBlockVarName);
+                    if (symbol == nullptr || symbol->getAsVariable() == nullptr)
+                    {
+                        parseContext->infoSink.info.message(EPrefixError, ("Error creating the global cbuffer variable"));
+                    }
+                    else
+                    {
+                        symbol->getWritableType().setTypeName(typeName);  //set the type name (type name has been changed when declaring the block)
+                        //set the userName to the variable (needed to retrieve variables id when mixing shaders)
+                        TVariable* variableSymbol = symbol->getAsVariable();
+                        variableSymbol->SetUserDefinedName(cbufferGlobalBlockVarName->c_str());
+                    }
                 }
 
-                // Add the stream buffer
+                // Add the stream buffer type and variable
                 if (streambufferStructTypeList->size() > 0)
                 {
+                    //Add the type
                     TSourceLoc loc;
                     TType* type = new TType(streambufferStructTypeList, *streamBufferStructName);   //struct type
                     type->getQualifier().storage = EvqGlobal;
 
-                    //type->setUserIdentifierName("");  //declaration name is "", will be merged with unnamed cbuffer
+                    type->setUserIdentifierName(streamBufferStructName->c_str());
                     type->setOwnerClassName(shader->shaderName.c_str());
 
-                    parseContext->declareVariable(loc, *streamBufferStructName, *type, nullptr);
+                    //Add the variable
+                    parseContext->declareVariable(loc, *streamBufferVarName, *type, nullptr);
+                    TSymbol* symbol = parseContext->symbolTable.find(*streamBufferVarName);
+                    if (symbol == nullptr || symbol->getAsVariable() == nullptr)
+                    {
+                        parseContext->infoSink.info.message(EPrefixError, ("Error creating the stream buffer variable"));
+                    }
+                    else
+                    {
+                        //set the userName to the variable (needed to retrieve variables id when mixing shaders)
+                        TVariable* variableSymbol = symbol->getAsVariable();
+                        variableSymbol->SetUserDefinedName(streamBufferVarName->c_str());
+                    }
                 }
 
                 //Add a shaderClass variable (EbtShaderClass type), so that it will belongs to the AST and we can add its properties into the SPIRX bytecode

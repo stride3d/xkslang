@@ -811,7 +811,7 @@ public:
     // per process threadPoolAllocator, then it causes increased memory usage per compile
     // it is essential to use "symbol = sym" to assign to symbol
     TIntermSymbol(int i, const TString& n, const TType& t)
-        : TIntermTyped(t), id(i), constSubtree(nullptr)
+        : TIntermTyped(t), id(i), constSubtree(nullptr), userDefinedName(nullptr)
           { name = n; }
     virtual int getId() const { return id; }
     virtual const TString& getName() const { return name; }
@@ -823,11 +823,16 @@ public:
     void setConstSubtree(TIntermTyped* subtree) { constSubtree = subtree; }
     TIntermTyped* getConstSubtree() const { return constSubtree; }
 
+    void SetUserDefinedName(TString* name) { userDefinedName = name; }
+    TString* GetUserDefinedName() const { return userDefinedName; }
+
 protected:
     int id;                      // the unique id of the symbol this node represents
     TString name;                // the name of the symbol this node represents
     TConstUnionArray constArray; // if the symbol is a front-end compile-time constant, this is its value
     TIntermTyped* constSubtree;
+
+    TString* userDefinedName;  //XKSL extensions
 };
 
 class TIntermConstantUnion : public TIntermTyped {
