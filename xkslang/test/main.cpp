@@ -51,6 +51,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ {{"shaderInheritance.xksl"}},{} },
     //{ {{"postDeclaration.xksl"}},{} },
     //{ {{"classAccessor.xksl"}},{} },
+    //{ {{"typeDeclarationOnly.xksl"}},{} },
     //{ {{"streamsSimple.xksl"}},{} },
     //{ {{"streamsWithClassAccessor.xksl"}},{} },
     //{ {{"shaderWithDefinedConsts.xksl"}},{} },
@@ -61,10 +62,10 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ {{"cbuffers.xksl"}},{} },
 
     //{ {{"TestMixin01_Base.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Base.xksl_Pixel.rv.glsl"}} },
-    { {{"TestMixin01_Override.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Override.xksl_Pixel.rv.glsl"}} },
+    //{ {{"TestMixin01_Override.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Override.xksl_Pixel.rv.glsl"}} },
     //{ {{"TestMixin01_OverridePlusCallBase.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase.xksl_Pixel.rv.glsl"}} },
     //{ {{"TestMixin01_OverridePlusCallBase2.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase2.xksl_Pixel.rv.glsl"}} },
-    //{ {{"TestMixin01_OverridePlusCallBase3.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase3.xksl_Pixel.rv.glsl"}} },
+    { {{"TestMixin01_OverridePlusCallBase3.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase3.xksl_Pixel.rv.glsl"}} },
     
     //{ {{ "TestMergeType_Base.xksl" }, { "TestMergeType_ShaderA.xksl" }}, {{ "main", ShadingStage::Pixel, "TestMergeType_Base.xksl_Pixel.rv.glsl" }} },
     //{ {{ "TestMerge02_Base.xksl" },{ "TestMerge02_ShaderA.xksl" }},{ { "main", ShadingStage::Pixel, "TestMerge02_Base.xksl_Pixel.rv.glsl" }} },

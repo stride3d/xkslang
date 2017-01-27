@@ -1,0 +1,26 @@
+//Parse a simple shader defining and using stream variables
+
+shader BaseShader
+{
+	stream bool s1;
+    stream float s2;
+	
+	int aVar0;
+	float3 aVar1;
+	
+	cbuffer{
+		float3 aVar2;
+	}
+	
+	cbuffer C2{
+		float3 aVar3;
+	}
+	
+	const bool b = true;
+	
+	void f()
+	{
+		streams.s1;
+		aVar3;
+	}
+};

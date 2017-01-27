@@ -54,66 +54,20 @@ SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
 
 SpxStreamRemapper::~SpxStreamRemapper()
 {
-    ClearAllMaps();
+    ReleaseAllMaps();
 }
 
-void SpxStreamRemapper::ClearAllMaps()
+void SpxStreamRemapper::ReleaseAllMaps()
 {
-    if (mapShadersById.size() > 0)
-    {
-        for (auto it = mapShadersById.begin(); it != mapShadersById.end(); it++)
-        {
-            ShaderClassData* shader = it->second;
-
-            for (auto itt = shader->shaderTypesList.begin(); itt != shader->shaderTypesList.end(); itt++)
-            {
-                ShaderTypeData* shaderType = *itt;
-                delete shaderType;
-            }
-            delete shader;
-        }
-    }
-
-    if (mapFunctionsById.size() > 0)
-    {
-        for (auto it = mapFunctionsById.begin(); it != mapFunctionsById.end(); it++)
-        {
-            FunctionData* func = it->second;
-            delete func;
-        }
-    }
-
-    if (mapTypeById.size() > 0)
-    {
-        for (auto it = mapTypeById.begin(); it != mapTypeById.end(); it++)
-        {
-            delete it->second;
-        }
-    }
-
-    if (mapConstById.size() > 0)
-    {
-        for (auto it = mapConstById.begin(); it != mapConstById.end(); it++)
-        {
-            delete it->second;
-        }
-    }
-
-    if (mapVariablesById.size() > 0)
-    {
-        for (auto it = mapVariablesById.begin(); it != mapVariablesById.end(); it++)
-        {
-            delete it->second;
-        }
-    }
-
-    mapVariablesById.clear();
-    mapTypeById.clear();
-    mapConstById.clear();
-    mapFunctionsById.clear();
-    mapShadersById.clear();
-    mapShadersByName.clear();
     mapDeclarationName.clear();
+    int size = listAllObjects.size();
+    for (int i = 0; i < size; ++i)
+    {
+        if (listAllObjects[i] != nullptr) delete listAllObjects[i];
+    }
+    listAllObjects.clear();
+    vecAllShaders.clear();
+    vecAllShaderFunctions.clear();
 }
 
 bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
@@ -128,6 +82,10 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
         //just copy the full code into the remapper
         if (!SetBytecode(bytecode)) return false;
 
+        if (!BuildAllMaps())
+        {
+            return error("Error building bytecode data map");
+        }
 
         //Build the list of all overriding methods
         if (!BuildOverridenFunctionMap())
@@ -135,8 +93,8 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
             return error("Processing overriding functions failed");
         }
 
-        //Remap all overriden functions
-        if (!RemapAllOverridenFunctions())
+        //target function to the overriing functions
+        if (!UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions())
         {
             return error("Remapping overriding functions failed");
         }
@@ -155,14 +113,18 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
 
 bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
 {
+    return false;
+
+    /*
+
     int maxCountIds = bound();
 
     //=============================================================================================================
     //Init
-    bool res = BuildAllMaps();
-    if (!res){
-        return error("Error building XKSL shaders data map");
-    }
+    //bool res = BuildAllMaps();
+    //if (!res){
+    //    return error("Error building XKSL shaders data map");
+    //}
 
     unordered_map<uint32_t, pairIdPos> mapHashPos;
     if (!BuildTypesAndConstsHashmap(mapHashPos)) {
@@ -171,7 +133,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
 
     SpxStreamRemapper bytecodeToMerge;
     if (!bytecodeToMerge.SetBytecode(bytecode)) return false;
-    res = bytecodeToMerge.BuildAllMaps();
+    bool res = bytecodeToMerge.BuildAllMaps();
 
     if (!res) {
         return error(string("Error building XKSL shaders data map from bytecode:") + bytecode.GetName());
@@ -548,13 +510,12 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
     spv.insert(spv.begin() + firstTypeOrConstPos, vecDecoratesToMerge.spv.begin(), vecDecoratesToMerge.spv.end());
     spv.insert(spv.begin() + firstTypeOrConstPos, vecNamesToMerge.spv.begin(), vecNamesToMerge.spv.end());
 
-    //remap types and const
-    //buildLocalMaps(); // build ID maps
-    //mapTypeConst();
-    //applyMap();
+    //TOTO
+    //UpdateAllMaps();
+    int klgjfdslkgjdlfkjgljdflgjs = 3454;
 
     if (errorMessages.size() > 0) return false;
-    return true;
+    return true;*/
 }
 
 bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
@@ -586,7 +547,8 @@ bool SpxStreamRemapper::FinalizeMixin()
         return false;
     }
 
-    BuildAllMaps();
+    //TOTO: TMP
+    //BuildAllMaps();
 
     //Convert SPIRX extensions to SPIRV
     if (!ConvertSpirxToSpirVBytecode()) {
@@ -643,16 +605,22 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
     return true;
 }
 
-bool SpxStreamRemapper::RemapAllOverridenFunctions()
+bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
 {
-    std::unordered_map<spv::Id, FunctionData*> mapOverridenFunctions;
-    for (auto itfn = mapFunctionsById.begin(); itfn != mapFunctionsById.end(); itfn++)
+    std::vector<FunctionInstruction*> vecFunctionIdBeingOverriden;
+    vecFunctionIdBeingOverriden.resize(bound(), nullptr);
+    bool anyOverridingFunction = false;
+    for (auto itfn = vecAllShaderFunctions.begin(); itfn != vecAllShaderFunctions.end(); itfn++)
     {
-        FunctionData* function = itfn->second;
-        if (function->overridenBy != nullptr) mapOverridenFunctions[function->id] = function;
+        FunctionInstruction* function = *itfn;
+        if (function->GetOverridingFunction() != nullptr)
+        {
+            vecFunctionIdBeingOverriden[function->GetResultId()] = function->GetOverridingFunction();
+            anyOverridingFunction = true;
+        }
     }
 
-    if (mapOverridenFunctions.size() == 0) return true; //nothing to override
+    if (!anyOverridingFunction) return true; //nothing to override
 
     process(
         [&](spv::Op opCode, unsigned start)
@@ -662,10 +630,10 @@ bool SpxStreamRemapper::RemapAllOverridenFunctions()
                 {
                     spv::Id functionCalledId = asId(start + 3);
 
-                    auto gotOverrided = mapOverridenFunctions.find(functionCalledId);
-                    if (gotOverrided != mapOverridenFunctions.end())
+                    FunctionInstruction* overridingFunction = vecFunctionIdBeingOverriden[functionCalledId];
+                    if (overridingFunction != nullptr)
                     {
-                        spv::Id overridingFunctionId = gotOverrided->second->overridenBy->id;
+                        spv::Id overridingFunctionId = overridingFunction->GetResultId();
                         spv[start + 3] = overridingFunctionId;
                     }
 
@@ -682,28 +650,22 @@ bool SpxStreamRemapper::RemapAllOverridenFunctions()
 
 bool SpxStreamRemapper::BuildOverridenFunctionMap()
 {
-    bool res = BuildAllMaps();
-    if (!res)
-    {
-        return error("Error building XKSL shaders data map");
-    }
-
     //========================================================================================================================//
     //========================================================================================================================//
     // check overrides for each functions declared with an override attribute
     // temporary implementation for now: simply override (replace) similar (same mangled name) functions from the function shader's parents classes
-    for (auto itfn = mapFunctionsById.begin(); itfn != mapFunctionsById.end(); itfn++)
+    for (auto itfn = vecAllShaderFunctions.begin(); itfn != vecAllShaderFunctions.end(); itfn++)
     {
-        FunctionData* overridingFunction = itfn->second;
-        if (!overridingFunction->hasOverride) continue;
+        FunctionInstruction* overridingFunction = *itfn;
+        if (!overridingFunction->HasAttributeOverride()) continue;
 
-        const string& overringFunctionName = overridingFunction->mangledName;
-        ShaderClassData* functionShaderOwner = overridingFunction->owner;
+        const string& overringFunctionName = overridingFunction->GetMangledName();
+        ShaderClassData* functionShaderOwner = overridingFunction->GetShaderOwner();
         if (functionShaderOwner == nullptr){
             return error(string("Overriding function does not belong to a known shader class:") + overringFunctionName);
         }
 
-        //Check all parents classes for functions with same mangles name
+        //Check all parents classes for functions with same mangled name
         vector<ShaderClassData*> listShadersToCheckForOverrideWithinParents;
         listShadersToCheckForOverrideWithinParents.push_back(functionShaderOwner);
 
@@ -722,13 +684,14 @@ bool SpxStreamRemapper::BuildOverridenFunctionMap()
                 for (int f = 0; f<parent->functionsList.size(); ++f)
                 {
                     //compare the shader's functions name with the overring function name
-                    FunctionData* aFunctionFromParent = parent->functionsList[f];
-                    if (overringFunctionName == aFunctionFromParent->mangledName)
+                    FunctionInstruction* aFunctionFromParent = parent->functionsList[f];
+                    if (overringFunctionName == aFunctionFromParent->GetMangledName())
                     {
                         //Got a function to be overriden !
-                        if (aFunctionFromParent->overridenBy == nullptr || aFunctionFromParent->overridenBy->owner->level <= overridingFunction->owner->level)
+                        if (aFunctionFromParent->GetOverridingFunction() == nullptr ||
+                            aFunctionFromParent->GetOverridingFunction()->GetShaderOwner()->level <= overridingFunction->GetShaderOwner()->level)
                         {
-                            aFunctionFromParent->overridenBy = overridingFunction;
+                            aFunctionFromParent->SetOverridingFunction(overridingFunction);
                         }
                     }
                 }
@@ -765,16 +728,17 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
     //==========================================================================================
     //==========================================================================================
     // Search for the shader entry point
-    FunctionData* entryPointFunction = nullptr;
-    for (auto it = mapFunctionsById.begin(); it != mapFunctionsById.end(); it++)
+    FunctionInstruction* entryPointFunction = nullptr;
+    for (auto it = vecAllShaderFunctions.begin(); it != vecAllShaderFunctions.end(); it++)
     {
-        FunctionData* func = it->second;
-        string unmangledFunctionName = func->mangledName.substr(0, func->mangledName.find('('));
+        FunctionInstruction* func = *it;
+        string mangledFunctionName = func->GetMangledName();
+        string unmangledFunctionName = mangledFunctionName.substr(0, mangledFunctionName.find('('));
         if (unmangledFunctionName == entryPointName)
         {
             entryPointFunction = func;
             //has the function been overriden?
-            if (entryPointFunction->overridenBy != nullptr) entryPointFunction = entryPointFunction->overridenBy;
+            if (entryPointFunction->GetOverridingFunction() != nullptr) entryPointFunction = entryPointFunction->GetOverridingFunction();
             break;
         }
     }
@@ -833,7 +797,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
     return true;
 }
 
-bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, FunctionData* entryFunction, string unmangledFunctionName)
+bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, FunctionInstruction* entryFunction, string unmangledFunctionName)
 {
     /*
     //capabilities
@@ -867,7 +831,7 @@ bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, Functio
     vector<unsigned int> stageHeader;
     spv::Instruction entryPointInstr(spv::OpEntryPoint);
     entryPointInstr.addImmediateOperand(model);
-    entryPointInstr.addIdOperand(entryFunction->id);
+    entryPointInstr.addIdOperand(entryFunction->GetResultId());
     entryPointInstr.addStringOperand(unmangledFunctionName.c_str());
     entryPointInstr.dump(stageHeader);
 
@@ -907,6 +871,7 @@ spv::ExecutionModel SpxStreamRemapper::GetShadingStageExecutionMode(ShadingStage
     }
 }
 
+/*
 bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
 {
     mapHashPos.clear();
@@ -941,90 +906,125 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
 
     return true;
 }
+*/
+
+/*
+bool SpxStreamRemapper::UpdateAllMaps()
+{
+    unordered_map<spv::Id, range_t> functionPos;
+}
+*/
 
 bool SpxStreamRemapper::BuildAllMaps()
 {
     //cout << "BuildAllMaps!!" << endl;
 
-    idPosR.clear();
-    ClearAllMaps();
-    unordered_map<spv::Id, range_t> functionPos;
-
-    bool res = BuildDeclarationName_ConstType_FunctionPos_Maps(functionPos);
+    ReleaseAllMaps();
+    
+    std::vector<ParsedObjectData> listParsedObjectsData;
+    bool res = BuildDeclarationNameMapsAndObjectsDataList(listParsedObjectsData);
     if (!res) {
         return error("Failed to build maps");
     }
 
     //======================================================================================================
-    //create all shader data objects
-    for (auto it = mapTypeById.begin(); it != mapTypeById.end(); it++)
+    //create all objects
+    int maxResultId = bound();
+    listAllObjects.resize(maxResultId, nullptr);
+    int countParsedObjects = listParsedObjectsData.size();
+    for (int i = 0; i < countParsedObjects; ++i)
     {
-        TypeData* type = it->second;
-        if (type->opCode == spv::OpTypeXlslShaderClass)
+        ParsedObjectData& parsedData = listParsedObjectsData[i];
+        
+        spv::Id resultId = parsedData.resultId;
+        if (resultId <= 0 || resultId == spv::NoResult || resultId >= maxResultId)
+            return error(string("The object has an invalid resultId:") + to_string(resultId));
+        if (listAllObjects[resultId] != nullptr)
+            return error(string("An object with the same resultId already exists. resultId:") + to_string(resultId));
+
+        string name;
+        bool declarationNameRequired = true;
+        ObjectInstructionBase* newObject = nullptr;
+
+        bool hasDeclarationName = GetDeclarationNameForId(parsedData.resultId, name);
+
+        switch (parsedData.kind)
         {
-            spv::Id shaderId = type->id;
-            string shaderName;
-            if (!GetDeclarationNameForId(shaderId, shaderName)) {
-                error(string("Unknown name for shader type with Id:") + to_string(shaderId));
+            case ObjectInstructionTypeEnum::Const:
+            {
+                declarationNameRequired = false;
+                newObject = new ConstInstruction(parsedData, name);
                 break;
             }
-
-            if (mapShadersById.find(shaderId) != mapShadersById.end()) {
-                error("2 shaders have the same Id");
+            case ObjectInstructionTypeEnum::Shader:
+            {
+                declarationNameRequired = true;
+                ShaderClassData* shader = new ShaderClassData(parsedData, name);
+                vecAllShaders.push_back(shader);
+                newObject = shader;
                 break;
             }
-            if (mapShadersByName.find(shaderName) != mapShadersByName.end()) {
-                error("2 shaders have the same name");
+            case ObjectInstructionTypeEnum::Type:
+            {
+                declarationNameRequired = false;
+                TypeInstruction* type = new TypeInstruction(parsedData, name);
+                if (isPointerTypeOp(parsedData.opCode))
+                {
+                    //create the link to the type pointed by the pointer (already created at this stage)
+                    TypeInstruction* pointedType = GetTypeById(parsedData.targetId);
+                    if (pointedType == nullptr)
+                        return error(string("Cannot find the typeId:") + to_string(parsedData.targetId) + string(", pointed by pointer Id:") + to_string(resultId));
+                    type->SetTypePointed(pointedType);
+                }
+                newObject = type;
+
                 break;
             }
+            case ObjectInstructionTypeEnum::Variable:
+            {
+                declarationNameRequired = true;
+                VariableInstruction* variable = new VariableInstruction(parsedData, name);
 
-            ShaderClassData* shader = new ShaderClassData(type, shaderName);
-            mapShadersById[shaderId] = shader;
-            mapShadersByName[shaderName] = shader;
+                //create the link to the type pointed by the variable (already created at this stage)
+                TypeInstruction* pointedType = GetTypeById(parsedData.typeId);
+                if (pointedType == nullptr)
+                    return error(string("Cannot find the typeId:") + to_string(parsedData.typeId) + string(", pointed by variable Id:") + to_string(resultId));
+
+                variable->SetTypePointed(pointedType);
+                newObject = variable;
+                break;
+            }
+            case ObjectInstructionTypeEnum::Function:
+            {
+                declarationNameRequired = false;  //some functions can be declared outside a shader definition, they don't belong to a shader then
+                FunctionInstruction* function = new FunctionInstruction(parsedData, name);
+
+                if (hasDeclarationName && name.size() > 0)
+                {
+                    vecAllShaderFunctions.push_back(function);
+                }
+
+                newObject = function;
+                break;
+            }
         }
-    }
 
-    //======================================================================================================
-    //create all functions data objects
-    for (auto fn = functionPos.begin(); fn != functionPos.end(); fn++)
-    {
-        spv::Id functionId = fn->first;
-        string functionName;
-        if (!GetDeclarationNameForId(functionId, functionName)) {
-            //some functions can be declared outside a shader class
-            continue;
-        }
-        if (functionName.size() == 0) continue;
+        listAllObjects[resultId] = newObject;
 
-        if (mapFunctionsById.find(functionId) != mapFunctionsById.end()) {
-            error("2 functions have the same Id");
-            break;
-        }
-
-        FunctionData* function = new FunctionData(functionId, functionName);
-        function->SetRangePos(fn->second.first, fn->second.second);
-        mapFunctionsById[functionId] = function;
+        if (newObject == nullptr) return error("Unknown parsed data kind");
+        if (declarationNameRequired && !hasDeclarationName) return error("Object requires a declaration name");
     }
 
     if (errorMessages.size() > 0) return false;
 
     //======================================================================================================
-    // Process Decorate operations, plus build idPosR map
+    // Decorate objects
     process(
         [&](spv::Op opCode, unsigned start) {
             unsigned word = start + 1;
 
-            //Fill base.idPosR map (used by hashType)
-            spv::Id  typeId = spv::NoResult;
-            if (spv::InstructionDesc[opCode].hasType())
-                typeId = asId(word++);
-            if (spv::InstructionDesc[opCode].hasResult()) {
-                const spv::Id resultId = asId(word++);
-                idPosR[resultId] = start;
-            }
-
             if (opCode == spv::Op::OpDecorate) {
-                const spv::Id target = asId(start + 1);
+                const spv::Id targetId = asId(start + 1);
                 const spv::Decoration dec = asDecoration(start + 2);
 
                 switch (dec)
@@ -1032,57 +1032,53 @@ bool SpxStreamRemapper::BuildAllMaps()
                     case spv::DecorationMethodOverride:
                     {
                         //a function is defined with an override attribute
-                        FunctionData* function = GetFunctionById(target);
-                        if (function == nullptr)
-                            {error(string("undeclared function id:") + to_string(target)); break;}
-                        function->hasOverride = true;
+                        FunctionInstruction* function = GetFunctionById(targetId);
+                        if (function == nullptr) {error(string("undeclared function id:") + to_string(targetId)); break;}
+                        function->SetAttributeOverride(true);
                         break;
                     }
 
                     case spv::DecorationBelongsToShader:
                     {
-                        FunctionData* function = IsFunction(target);
+                        FunctionInstruction* function = GetFunctionById(targetId);
+                        const std::string ownerName = literalString(start + 3);
+                        ShaderClassData* shaderOwner = GetShaderByName(ownerName);
+                        if (shaderOwner == nullptr) { error(string("undeclared shader owner:") + ownerName); break; }
+
                         if (function != nullptr) {
                             //a function is defined as being owned by a shader
-                            const std::string ownerName = literalString(start + 3);
-                            ShaderClassData* shaderOwner = GetShaderByName(ownerName);
-
 #ifdef XKSLANG_DEBUG_MODE
-                            if (shaderOwner == nullptr) {error(string("undeclared parent shader:") + ownerName); break;}
-                            if (function->owner != nullptr) {error(string("function already has a shader owner:") + function->mangledName); break;}
+                            if (function->GetShaderOwner() != nullptr) {error(string("function already has a shader owner:") + function->GetMangledName()); break;}
                             if (shaderOwner->HasFunction(function))
-                            { error(string("shader:") + ownerName + string(" already possesses the function:") + function->mangledName); break; }
+                            { error(string("The shader:") + ownerName + string(" already possesses the function:") + function->GetMangledName()); break; }
 #endif
-                            function->owner = shaderOwner;
+                            function->SetShaderOwner(shaderOwner);
                             shaderOwner->AddFunction(function);
                         }
                         else
                         {
-                            TypeData* type = HasATypeForId(target);
+                            //a type is defined as being owned by a shader
+                            TypeInstruction* type = GetTypeById(targetId);
                             if (type != nullptr)
                             {
-                                const std::string ownerName = literalString(start + 3);
-                                ShaderClassData* shaderOwner = GetShaderByName(ownerName);
+                                //A type belongs to a shader, we fetch the necessary data
+                                //A shader type is defined by: the type, a pointer type to it, and a variable to access it
+                                TypeInstruction* typePointer = GetTypePointingTo(type);
+                                VariableInstruction* variable = GetVariablePointingTo(typePointer);
 
-                                //find the pointer type and the variable
-                                TypeData* pointerToType = HasPointerToType(type);
-                                VariableData* variable = HasVariableForType(pointerToType);
-
-#ifdef XKSLANG_DEBUG_MODE
-                                if (shaderOwner == nullptr) { error(string("undeclared parent shader:") + ownerName); break; }
-                                if (type->owner != nullptr) { error(string("type already has a shader owner:") + type->GetName()); break; }
-                                if (shaderOwner->HasType(type)) { error(string("shader:") + ownerName + string(" already possesses the type:") + type->GetName()); break; }
-                                if (pointerToType == nullptr) { error(string("cannot find the pointer type to shader type:") + type->GetName()); break; }
+                                if (typePointer == nullptr) { error(string("cannot find the pointer type to the shader type:") + type->GetName()); break; }
                                 if (variable == nullptr) { error(string("cannot find the variable for shader type:") + type->GetName()); break; }
+#ifdef XKSLANG_DEBUG_MODE
+                                if (type->GetShaderOwner() != nullptr) { error(string("type already has a shader owner:") + type->GetName()); break; }
+                                if (shaderOwner->HasType(type)) { error(string("shader:") + ownerName + string(" already possesses the type:") + type->GetName()); break; }
 #endif
-
-                                ShaderTypeData* shaderType = new ShaderTypeData(type, pointerToType, variable);
-                                type->owner = shaderOwner;
+                                ShaderTypeData* shaderType = new ShaderTypeData(type, typePointer, variable);
+                                type->SetShaderOwner(shaderOwner);
                                 shaderOwner->AddShaderType(shaderType);
                             }
                             else
                             {
-                                error("unprocessed DecorationBelongsToShader operand");
+                                error(string("unprocessed DecorationBelongsToShader operand, invalid Id:") + to_string(targetId));
                             }
                         }
                         break;
@@ -1091,14 +1087,14 @@ bool SpxStreamRemapper::BuildAllMaps()
                     case spv::DecorationShaderInheritFromParent:
                     {
                         //A shader inherits from a parent
-                        ShaderClassData* shader = GetShaderById(target);
+                        ShaderClassData* shader = GetShaderById(targetId);
                         const std::string parentName = literalString(start + 3);
                         ShaderClassData* shaderParent = GetShaderByName(parentName);
 
+                        if (shader == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
+                        if (shaderParent == nullptr) { error(string("undeclared parent shader:") + parentName); break; }
 #ifdef XKSLANG_DEBUG_MODE
-                        if (shader == nullptr) {error(string("undeclared shader id:") + to_string(target)); break;}
-                        if (shaderParent == nullptr) {error(string("undeclared parent shader:") + parentName); break;}
-                        if (shader->HasParent(shaderParent)) {error(string("shader:") + shader->name + string(" already inherits from parent:") + parentName); break;}
+                        if (shader->HasParent(shaderParent)) {error(string("shader:") + shader->GetName() + string(" already inherits from parent:") + parentName); break;}
 #endif
 
                         shader->AddParent(shaderParent);
@@ -1117,16 +1113,18 @@ bool SpxStreamRemapper::BuildAllMaps()
     //========================================================================================================================//
     // Set the shader levels (also detects cyclic shader inheritance)
     {
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+            (*itsh)->level = -1;
+
         bool allShaderSet = false;
         while (!allShaderSet)
         {
             allShaderSet = true;
             bool anyShaderUpdated = false;
 
-            for (auto itsh = mapShadersById.begin(); itsh != mapShadersById.end(); itsh++)
+            for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
             {
-                spv::Id shaderId = itsh->first;
-                ShaderClassData* shader = itsh->second;
+                ShaderClassData* shader = *itsh;
                 if (shader->level != -1) continue;  //shader already set
 
                 if (shader->parentsList.size() == 0)
@@ -1167,55 +1165,42 @@ bool SpxStreamRemapper::BuildAllMaps()
     return true;
 }
 
-void SpxStreamRemapper::GetBytecodeTypeMap(std::unordered_map<spv::Id, uint32_t>& mapTypes)
-{
-    mapTypes.clear();
-
-    spv::Id fnResId = spv::NoResult;
-    process(
-        [&](spv::Op opCode, unsigned start) {
-            /*if (isConstOp(opCode))
-            {
-                
-                spv::Id id = asId(start + 2);
-                if (mapConstById.find(id) != mapConstById.end()) {
-                    error("2 consts have the same Id");
-                }
-                else
-                {
-                    ConstData* cd = new ConstData(opCode, id, start);
-                    mapConstById[id] = cd;
-                }
-            }*/
-            if (isTypeOp(opCode))
-            {
-                spv::Id id = asId(start + 1);
-                mapTypes[id] = start;
-            }
-            return true;
-        },
-        spx_op_fn_nop
-    );
-}
-
-bool SpxStreamRemapper::BuildDeclarationName_ConstType_FunctionPos_Maps(unordered_map<spv::Id, range_t>& functionPos)
+bool SpxStreamRemapper::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObjectData>& listParsedObjectsData)
 {
     mapDeclarationName.clear();
-    functionPos.clear();
+    idPosR.clear();
+    listParsedObjectsData.clear();
 
     int fnStart = 0;
     spv::Id fnResId = spv::NoResult;
+    spv::Id fnTypeId = spv::NoResult;
+    spv::Op fnOpCode;
     process(
-        [&](spv::Op opCode, unsigned start) {
+        [&](spv::Op opCode, unsigned start)
+        {
+            unsigned end = start + asWordCount(start);
+
+            //Fill idPosR map (used by hashType)
+            unsigned word = start+1;
+            spv::Id typeId = spv::NoType;
+            spv::Id resultId = spv::NoResult;
+            if (spv::InstructionDesc[opCode].hasType())
+                typeId = asId(word++);
+            if (spv::InstructionDesc[opCode].hasResult()) {
+                resultId = asId(word++);
+                idPosR[resultId] = start;
+            }
+
             if (opCode == spv::Op::OpName)
             {
+            /*
 #ifdef XKSLANG_DEBUG_MODE
                 const spv::Id target = asId(start + 1);
                 const std::string name = literalString(start + 2);
 
                 if (mapDeclarationName.find(target) == mapDeclarationName.end())
                     mapDeclarationName[target] = name;
-#endif
+#endif*/
             }
             else if (opCode == spv::Op::OpDecorate)
             {
@@ -1234,81 +1219,42 @@ bool SpxStreamRemapper::BuildDeclarationName_ConstType_FunctionPos_Maps(unordere
             }
             else if (isConstOp(opCode))
             {
-                spv::Id id = asId(start + 2);
-
-#ifdef XKSLANG_DEBUG_MODE
-                if (mapConstById.find(id) != mapConstById.end()) {
-                    error("2 consts have the same Id");
-                }
-#endif //XKSLANG_DEBUG_MODE
-
-                ConstData* cd = new ConstData(opCode, id, start);
-                mapConstById[id] = cd;
+                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Const, opCode, resultId, typeId, start, end));
             }
             else if (isTypeOp(opCode))
             {
-                spv::Id id = asId(start + 1);
-                TypeData* td = new TypeData(opCode, id, start);
-
-#ifdef XKSLANG_DEBUG_MODE
-                if (mapTypeById.find(id) != mapTypeById.end()) {
-                    error("2 types have the same Id");
-                }
-                string dataDebugName;
-                if (GetDeclarationNameForId(id, dataDebugName))
-                    td->debugName = dataDebugName;
-#endif //XKSLANG_DEBUG_MODE
-                
-                //if the type is a pointer, find and set the target
-                if (isPointerTypeOp(opCode))
+                if (opCode == spv::OpTypeXlslShaderClass)
                 {
-                    spv::Id targetId = asId(start + 3);
-                    TypeData* typePointed = HasATypeForId(targetId);
-                    if (typePointed == nullptr)
-                        error(string("Error creating the pointer type:") + to_string(id) + string(": no type found for the pointer target id:") + to_string(targetId));
-                    else
-                        td->SetPointerToType(typePointed);
-                }
-
-                mapTypeById[id] = td;
-            }
-            else if (isVariableOp(opCode))
-            {
-                spv::Id typeId = asId(start + 1);
-                spv::Id id = asId(start + 2);
-                TypeData* td = HasATypeForId(typeId);
-                if (td == nullptr)
-                {
-                    error(string("Error creating the variable:") + to_string(id) + string(": no type found for the id:") + to_string(typeId));
+                    listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Shader, opCode, resultId, typeId, start, end));
                 }
                 else
                 {
-                    //TOTO CHECK HERE: DO WE HAVE DECLARATION NAME IF NOT DEBUG TOO!
-                    string variableName;
-                    if (!GetDeclarationNameForId(id, variableName)) {
-                        error(string("Unknown name for variable with Id:") + to_string(id));
+                    ParsedObjectData data = ParsedObjectData(ObjectInstructionTypeEnum::Type, opCode, resultId, typeId, start, end);
+                    if (isPointerTypeOp(opCode))
+                    {
+                        spv::Id targetId = asId(start + 3);
+                        data.SetTargetId(targetId);
                     }
-
-                    VariableData* vd = new VariableData(opCode, id, td, variableName, start);
-#ifdef XKSLANG_DEBUG_MODE
-                    if (mapVariablesById.find(id) != mapVariablesById.end()) {
-                        error("2 variables have the same Id");
-                    }
-#endif //XKSLANG_DEBUG_MODE
-                    mapVariablesById[id] = vd;
+                    listParsedObjectsData.push_back(data);
                 }
+            }
+            else if (isVariableOp(opCode))
+            {
+                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Variable, opCode, resultId, typeId, start, end));
             }
             else if (opCode == spv::Op::OpFunction)
             {
                 if (fnStart != 0) error("nested function found");
                 fnStart = start;
-                fnResId = asId(start + 2);
+                fnTypeId = typeId;
+                fnResId = resultId;
+                fnOpCode = opCode;
             }
             else if (opCode == spv::Op::OpFunctionEnd)
             {
                 if (fnStart == 0) error("function end without function start");
                 if (fnResId == spv::NoResult) error("function has no result iD");
-                functionPos[fnResId] = range_t(fnStart, start + asWordCount(start));
+                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Function, fnOpCode, fnResId, fnTypeId, fnStart, end));
                 fnStart = 0;
             }
             return true;
@@ -1345,90 +1291,95 @@ bool SpxStreamRemapper::GetDeclarationNameForId(spv::Id id, string& name)
 
 SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const std::string& name)
 {
-    auto it = mapShadersByName.find(name);
-    if (it == mapShadersByName.end())
+    int size = vecAllShaders.size();
+    for (int i = 0; i < size; ++i)
     {
-        error(string("Cannot find the shader:") + name);
-        return nullptr;
+        ShaderClassData* shader = vecAllShaders[i];
+        if (shader->GetName() == name)
+        {
+            return shader;
+        }
     }
-    return it->second;
-}
-
-SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::HasShader(const std::string& name)
-{
-    auto it = mapShadersByName.find(name);
-    if (it == mapShadersByName.end()) return false;
-    return it->second;
+    return nullptr;
 }
 
 SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)
 {
-    auto it = mapShadersById.find(id);
-    if (it == mapShadersById.end())
+    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+
+    if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Shader)
     {
-        error(string("Cannot find the shader for Id:") + to_string(id));
-        return nullptr;
-    }
-    return it->second;
-}
-
-SpxStreamRemapper::FunctionData* SpxStreamRemapper::GetFunctionById(spv::Id id)
-{
-    auto it = mapFunctionsById.find(id);
-    if (it == mapFunctionsById.end())
-    {
-        error(string("Cannot find the function for Id:") + to_string(id));
-        return nullptr;
-    }
-    return it->second;
-}
-
-SpxStreamRemapper::FunctionData* SpxStreamRemapper::IsFunction(spv::Id id)
-{
-    auto it = mapFunctionsById.find(id);
-    if (it == mapFunctionsById.end()) return nullptr;
-    return it->second;
-}
-
-SpxStreamRemapper::TypeData* SpxStreamRemapper::HasATypeForId(spv::Id id)
-{
-    auto it = mapTypeById.find(id);
-    if (it == mapTypeById.end()) return nullptr;
-    return it->second;
-}
-
-SpxStreamRemapper::TypeData* SpxStreamRemapper::HasPointerToType(TypeData* type)
-{
-    if (type == nullptr) return nullptr;
-    for (auto it = mapTypeById.begin(); it != mapTypeById.end(); it++)
-    {
-        if (it->second->pointerToType == type) return it->second;
+        ShaderClassData* shader = dynamic_cast<ShaderClassData*>(obj);
+        return shader;
     }
     return nullptr;
 }
 
-SpxStreamRemapper::VariableData* SpxStreamRemapper::HasVariableForType(TypeData* type)
+SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetFunctionById(spv::Id id)
 {
-    if (type == nullptr) return nullptr;
-    for (auto it = mapVariablesById.begin(); it != mapVariablesById.end(); it++)
+    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+
+    if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Function)
     {
-        if (it->second->type == type) return it->second;
+        FunctionInstruction* function = dynamic_cast<FunctionInstruction*>(obj);
+        return function;
     }
     return nullptr;
 }
 
-SpxStreamRemapper::VariableData* SpxStreamRemapper::HasVariableForId(spv::Id id)
+SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypeById(spv::Id id)
 {
-    auto it = mapVariablesById.find(id);
-    if (it == mapVariablesById.end()) return nullptr;
-    return it->second;
+    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+
+    if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Type)
+    {
+        TypeInstruction* type = dynamic_cast<TypeInstruction*>(obj);
+        return type;
+    }
+    return nullptr;
 }
 
-SpxStreamRemapper::ConstData* SpxStreamRemapper::HasAConstForId(spv::Id id)
+SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypePointingTo(TypeInstruction* targetType)
 {
-    auto it = mapConstById.find(id);
-    if (it == mapConstById.end()) return nullptr;
-    return it->second;
+    TypeInstruction* res = nullptr;
+    int size = listAllObjects.size();
+    for (int i = 0; i < size; ++i)
+    {
+        ObjectInstructionBase* obj = listAllObjects[i];
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Type)
+        {
+            TypeInstruction* aType = dynamic_cast<TypeInstruction*>(obj);
+            if (aType->GetTypePointed() == targetType)
+            {
+                if (res != nullptr) error("found 2 types pointing to the same type");
+                res = aType;
+            }
+        }
+    }
+    return res;
+}
+
+SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariablePointingTo(TypeInstruction* targetType)
+{
+    VariableInstruction* res = nullptr;
+    int size = listAllObjects.size();
+    for (int i = 0; i < size; ++i)
+    {
+        ObjectInstructionBase* obj = listAllObjects[i];
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable)
+        {
+            VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+            if (variable->GetTypePointed() == targetType)
+            {
+                if (res != nullptr) error("found 2 variables pointing to the same type");
+                res = variable;
+            }
+        }
+    }
+    return res;
 }
 
 void SpxStreamRemapper::stripBytecode(vector<range_t>& ranges)

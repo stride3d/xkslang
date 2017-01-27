@@ -64,12 +64,13 @@ namespace glslang {
 //
 
 TIntermSymbol* TIntermediate::addSymbol(int id, const TString& name, const TType& type, const TConstUnionArray& constArray,
-                                        TIntermTyped* constSubtree, const TSourceLoc& loc)
+                                        TIntermTyped* constSubtree, const TSourceLoc& loc, TString* userDefinedName)
 {
     TIntermSymbol* node = new TIntermSymbol(id, name, type);
     node->setLoc(loc);
     node->setConstArray(constArray);
     node->setConstSubtree(constSubtree);
+    if (userDefinedName != nullptr) node->SetUserDefinedName(userDefinedName);
 
     return node;
 }
@@ -81,7 +82,8 @@ TIntermSymbol* TIntermediate::addSymbol(const TIntermSymbol& intermSymbol)
                      intermSymbol.getType(),
                      intermSymbol.getConstArray(),
                      intermSymbol.getConstSubtree(),
-                     intermSymbol.getLoc());
+                     intermSymbol.getLoc(),
+                     intermSymbol.GetUserDefinedName());
 }
 
 TIntermSymbol* TIntermediate::addSymbol(const TVariable& variable)
@@ -94,14 +96,14 @@ TIntermSymbol* TIntermediate::addSymbol(const TVariable& variable)
 
 TIntermSymbol* TIntermediate::addSymbol(const TVariable& variable, const TSourceLoc& loc)
 {
-    return addSymbol(variable.getUniqueId(), variable.getName(), variable.getType(), variable.getConstArray(), variable.getConstSubtree(), loc);
+    return addSymbol(variable.getUniqueId(), variable.getName(), variable.getType(), variable.getConstArray(), variable.getConstSubtree(), loc, variable.GetUserDefinedName());
 }
 
 TIntermSymbol* TIntermediate::addSymbol(const TType& type, const TSourceLoc& loc)
 {
     TConstUnionArray unionArray;  // just a null constant
 
-    return addSymbol(0, "", type, unionArray, nullptr, loc);
+    return addSymbol(0, "", type, unionArray, nullptr, loc, nullptr);
 }
 
 //

@@ -32,107 +32,172 @@ class SpxStreamRemapper : public spv::spirvbin_t
 {
     typedef std::pair<spv::Id, int> pairIdPos;
 
-    class FunctionData;
+    //============================================================================================================================================
+    //============================================================================================================================================
+    enum class ObjectInstructionTypeEnum
+    {
+        Shader,
+        Const,
+        Type,
+        Variable,
+        Function,
+    };
+
+    //Generic, simplified data type that we build while parsing the bytecode
+    class ParsedObjectData
+    {
+    public:
+        ObjectInstructionTypeEnum kind;
+        spv::Op opCode;
+        spv::Id resultId;
+        spv::Id typeId;
+        spv::Id targetId;  //for some data we already read the target (for example with OpTypePointer)
+        uint32_t bytecodeStartPosition;
+        uint32_t bytecodeEndPosition;
+
+        ParsedObjectData(){}
+        ParsedObjectData(ObjectInstructionTypeEnum kind, spv::Op op, spv::Id resultId, spv::Id typeId, uint32_t startPos, uint32_t endPos)
+            : kind(kind), opCode(op), resultId(resultId), typeId(typeId), bytecodeStartPosition(startPos), bytecodeEndPosition(endPos), targetId(spv::NoResult){}
+
+        void SetTargetId(spv::Id id){targetId  = id;}
+    };
+
+    //More advanced data structure to process the different obejcts and their relationship
+    //Base class for SPX object
     class ShaderClassData;
-    class TypeData;
-    class VariableData
+    class ObjectInstructionBase
     {
     public:
-        spv::Op opCode;
-        spv::Id id;
-        unsigned int pos;
-        TypeData* type;
-        std::string variableName;  //we need the name to identify variables when mixin shaders
+        ObjectInstructionBase(const ParsedObjectData& parsedData, std::string name)
+            : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId),
+              bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition), name(name), shaderOwner(nullptr) {}
+        virtual ~ObjectInstructionBase(){}
 
-        VariableData(spv::Op op, spv::Id id, TypeData* type, const std::string& variableName, unsigned int pos) : opCode(op), id(id), type(type), variableName(variableName), pos(pos) {}
+        ObjectInstructionTypeEnum GetKind() const {return kind;}
+        const std::string& GetName() const {return name;}
+        spv::Op GetOpCode() const {return opCode;}
+        spv::Id GetResultId() const { return resultId; }
+        
+        uint32_t GetBytecodeStartPosition() const {return bytecodeStartPosition;}
+        uint32_t GetBytecodeEndPosition() const { return bytecodeEndPosition; }
+        void SetBytecodeStartPosition(uint32_t pos) {bytecodeStartPosition = pos;}
+        void SetBytecodeRangePositions(uint32_t start, uint32_t end) {bytecodeStartPosition = start; bytecodeEndPosition = end;}
+
+        void SetShaderOwner(ShaderClassData* owner) { shaderOwner = owner; }
+        ShaderClassData* GetShaderOwner() const { return shaderOwner; }
+
+    private:
+        ObjectInstructionTypeEnum kind;
+        std::string name;
+        spv::Op opCode;
+        spv::Id resultId;
+        spv::Id typeId;
+        ShaderClassData* shaderOwner;  //some object can belong to a shader
+
+        //those fields can change when we mix bytecodes
+        uint32_t bytecodeStartPosition;
+        uint32_t bytecodeEndPosition;
     };
 
-    class TypeData
+    class ConstInstruction : public ObjectInstructionBase
     {
     public:
-        spv::Op opCode;
-        spv::Id id;
-        unsigned int pos;
-        ShaderClassData* owner;
-        TypeData* pointerToType;  //if the type is a pointer to another type
-        std::string debugName;  //for Debug
-
-        TypeData(spv::Op op, spv::Id id, unsigned int pos) : opCode(op), id(id), pos(pos), owner(nullptr), pointerToType(nullptr){}
-        std::string& GetName(){return debugName;}
-        void SetPointerToType(TypeData* type){ pointerToType  = type;}
+        ConstInstruction(const ParsedObjectData& parsedData, std::string name)
+            : ObjectInstructionBase(parsedData, name) {}
+        virtual ~ConstInstruction() {}
     };
 
-    //A type declared by a shader, we store the type definition, plus the variable and pointer to access it
+    class TypeInstruction : public ObjectInstructionBase
+    {
+    public:
+        TypeInstruction(const ParsedObjectData& parsedData, std::string name)
+            : ObjectInstructionBase(parsedData, name), pointerTo(nullptr){}
+        virtual ~TypeInstruction() {}
+
+        void SetTypePointed(TypeInstruction* type) { pointerTo = type; }
+        TypeInstruction* GetTypePointed() const { return pointerTo; }
+
+    private:
+        TypeInstruction* pointerTo;
+    };
+
+    class VariableInstruction : public ObjectInstructionBase
+    {
+    public:
+        VariableInstruction(const ParsedObjectData& parsedData, std::string name)
+            : ObjectInstructionBase(parsedData, name), variableTo(nullptr) {}
+        virtual ~VariableInstruction() {}
+
+        void SetTypePointed(TypeInstruction* type) { variableTo = type; }
+        TypeInstruction* GetTypePointed() const { return variableTo; }
+
+    private:
+        TypeInstruction* variableTo;
+    };
+
+    class FunctionInstruction : public ObjectInstructionBase
+    {
+    public:
+        FunctionInstruction(const ParsedObjectData& parsedData, std::string name)
+            : ObjectInstructionBase(parsedData, name), hasAttributeOverride(false), overridenBy(nullptr){}
+        virtual ~FunctionInstruction() {}
+
+        const std::string& GetMangledName() const { return GetName(); }
+        void SetOverridingFunction(FunctionInstruction* function) { overridenBy = function; }
+        FunctionInstruction* GetOverridingFunction() const { return overridenBy; }
+        void SetAttributeOverride(bool b) { hasAttributeOverride = b; }
+        bool HasAttributeOverride() const { return hasAttributeOverride; }
+
+    private:
+        bool hasAttributeOverride;
+        FunctionInstruction* overridenBy;  //the function is being overriden by another function
+    };
+
+    //This is a type declared by a shader: we store the type definition, plus the variable and pointer to access it
     class ShaderTypeData
     {
     public:
-        TypeData* type;
-        TypeData* pointerToType;
-        VariableData* variable;
+        TypeInstruction* type;
+        TypeInstruction* pointerToType;
+        VariableInstruction* variable;
 
-        ShaderTypeData(TypeData* type, TypeData* pointerToType, VariableData* variable) : type(type), pointerToType(pointerToType), variable(variable){}
+        ShaderTypeData(TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) : type(type), pointerToType(pointerToType), variable(variable){}
     };
 
-    class ConstData
+    class ShaderClassData : public ObjectInstructionBase
     {
     public:
-        spv::Op opCode;
-        spv::Id id;
-        unsigned int pos;
-
-        ConstData(spv::Op op, spv::Id id, unsigned int pos) : opCode(op), id(id), pos(pos) {}
-    };
-
-    class ShaderClassData
-    {
-    public:
-        TypeData* shaderType;
-        std::string name;
-        int level;
-        std::vector<ShaderClassData*> parentsList;
-        std::vector<FunctionData*> functionsList;
-        std::vector<ShaderTypeData*> shaderTypesList;
-
-        ShaderClassData(TypeData* shaderType, std::string name): shaderType(shaderType), name(name), level(-1){}
-        std::string& GetName() { return name; }
+        ShaderClassData(const ParsedObjectData& parsedData, std::string name)
+            : ObjectInstructionBase(parsedData, name), level(-1) {
+        }
+        virtual ~ShaderClassData() {}
 
         void AddParent(ShaderClassData* parent) { parentsList.push_back(parent); }
         bool HasParent(ShaderClassData* parent) {
             for (int i = 0; i<parentsList.size(); ++i) if (parentsList[i] == parent) return true;
             return false;
         }
-        
-        void AddFunction(FunctionData* function) { functionsList.push_back(function); }
-        bool HasFunction(FunctionData* function) {
+
+        void AddFunction(FunctionInstruction* function) { functionsList.push_back(function); }
+        bool HasFunction(FunctionInstruction* function) {
             for (int i = 0; i<functionsList.size(); ++i) if (functionsList[i] == function) return true;
             return false;
         }
 
         void AddShaderType(ShaderTypeData* type) { shaderTypesList.push_back(type); }
-        bool HasType(TypeData* type) {
+        bool HasType(TypeInstruction* type) {
             for (int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->type == type) return true;
             return false;
         }
-    };
 
-    class FunctionData
-    {
     public:
-        spv::Id id;
-        std::string mangledName;
-        ShaderClassData* owner;
-        bool hasOverride;  //has the override attribute
-        FunctionData* overridenBy;  //the function is being overriden by another function
-        uint32_t posStart;
-        uint32_t posEnd;
-
-        FunctionData(spv::Id id, std::string mangledName)
-            : id(id), mangledName(mangledName), owner(nullptr), hasOverride(false), overridenBy(nullptr), posStart(0), posEnd(0){}
-
-        void SetRangePos(uint32_t start, uint32_t end) {
-            posStart = start; posEnd = end;
-        }
+        int level;
+        std::vector<ShaderClassData*> parentsList;
+        std::vector<ShaderTypeData*> shaderTypesList;
+        std::vector<FunctionInstruction*> functionsList;
     };
+    //============================================================================================================================================
+    //============================================================================================================================================
 
 public:
     SpxStreamRemapper(int verbose = 0);
@@ -151,47 +216,54 @@ public:
     spv::ExecutionModel GetShadingStageExecutionMode(ShadingStage stage);
 
 private:
-    bool MergeWithBytecode(const SpxBytecode& bytecode);
     bool SetBytecode(const SpxBytecode& bytecode);
+    bool MergeWithBytecode(const SpxBytecode& bytecode);
 
-    void ClearAllMaps();
-    bool BuildDeclarationName_ConstType_FunctionPos_Maps(std::unordered_map<spv::Id, range_t>& functionPos);
-    bool BuildTypesAndConstsHashmap(std::unordered_map<uint32_t, pairIdPos>& mapHashPos);
+    void ReleaseAllMaps();
+    bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
     bool BuildAllMaps();
+    //bool UpdateAllMaps();
+
     bool BuildOverridenFunctionMap();
+    bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
 
-    void GetBytecodeTypeMap(std::unordered_map<spv::Id, uint32_t>& mapTypes);
-
-    bool BuildAndSetShaderStageHeader(ShadingStage stage, FunctionData* entryFunction, std::string unmangledFunctionName);
-    bool RemapAllOverridenFunctions();
+    bool BuildAndSetShaderStageHeader(ShadingStage stage, FunctionInstruction* entryFunction, std::string unmangledFunctionName);
     bool ConvertSpirxToSpirVBytecode();
 
 private:
     SpxRemapperStatusEnum status;
 
     std::vector<std::string> errorMessages;
-   
+
     std::unordered_map<spv::Id, std::string> mapDeclarationName;            // delaration name (user defined name) for methods, shaders and variables
 
-    std::unordered_map<spv::Id, ShaderClassData*> mapShadersById;
-    std::unordered_map<std::string, ShaderClassData*> mapShadersByName;
-    std::unordered_map<spv::Id, FunctionData*> mapFunctionsById;
-    std::unordered_map<spv::Id, TypeData*> mapTypeById;
-    std::unordered_map<spv::Id, ConstData*> mapConstById;
-    std::unordered_map<spv::Id, VariableData*> mapVariablesById;
+    std::vector<ObjectInstructionBase*> listAllObjects;
+    std::vector<ShaderClassData*> vecAllShaders;
+    std::vector<FunctionInstruction*> vecAllShaderFunctions;  //vec of all functions declared by a shader
+
+    //std::unordered_map<spv::Id, ShaderClassData*> mapShadersById;
+    //
+    //
+    //std::unordered_map<spv::Id, TypeData*> mapTypeById;
+    //std::unordered_map<spv::Id, ConstData*> mapConstById;
+    //std::unordered_map<spv::Id, VariableData*> mapVariablesById;
 
     std::string GetDeclarationNameForId(spv::Id id);
     bool GetDeclarationNameForId(spv::Id id, std::string& name);
     ShaderClassData* GetShaderByName(const std::string& name);
-    ShaderClassData* HasShader(const std::string& name);
     ShaderClassData* GetShaderById(spv::Id id);
-    FunctionData* GetFunctionById(spv::Id id);
-    FunctionData* IsFunction(spv::Id id);
-    TypeData* HasATypeForId(spv::Id id);
-    TypeData* HasPointerToType(TypeData* type);
-    VariableData* HasVariableForType(TypeData* type);
-    VariableData* HasVariableForId(spv::Id id);
-    ConstData* HasAConstForId(spv::Id id);
+    FunctionInstruction* GetFunctionById(spv::Id id);
+    TypeInstruction* GetTypeById(spv::Id id);
+    TypeInstruction* GetTypePointingTo(TypeInstruction* targetType);
+    VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
+
+    //ShaderClassData* HasShader(const std::string& name);
+    //ShaderClassData* GetShaderById(spv::Id id);
+    //TypeData* HasATypeForId(spv::Id id);
+    //
+    //VariableData* HasVariableForType(TypeData* type);
+    //VariableData* HasVariableForId(spv::Id id);
+    //ConstData* HasAConstForId(spv::Id id);
 
 
     void stripBytecode(std::vector<range_t>& ranges);
