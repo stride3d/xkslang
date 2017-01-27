@@ -77,6 +77,7 @@ class SpxStreamRemapper : public spv::spirvbin_t
         const std::string& GetName() const {return name;}
         spv::Op GetOpCode() const {return opCode;}
         spv::Id GetResultId() const { return resultId; }
+        spv::Id GetId() const { return resultId; }
         
         uint32_t GetBytecodeStartPosition() const {return bytecodeStartPosition;}
         uint32_t GetBytecodeEndPosition() const { return bytecodeEndPosition; }
@@ -221,6 +222,7 @@ private:
 
     void ReleaseAllMaps();
     bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
+    bool BuildTypesAndConstsHashmap(std::unordered_map<uint32_t, pairIdPos>& mapHashPos);
     bool BuildAllMaps();
     //bool UpdateAllMaps();
 
@@ -248,6 +250,7 @@ private:
     //std::unordered_map<spv::Id, ConstData*> mapConstById;
     //std::unordered_map<spv::Id, VariableData*> mapVariablesById;
 
+    ObjectInstructionBase* GetObjectForId(spv::Id id);
     std::string GetDeclarationNameForId(spv::Id id);
     bool GetDeclarationNameForId(spv::Id id, std::string& name);
     ShaderClassData* GetShaderByName(const std::string& name);
@@ -268,20 +271,15 @@ private:
 
     void stripBytecode(std::vector<range_t>& ranges);
 
-    void CopyInstructionAtEndOfVector(std::vector<spirword_t>& vec, uint32_t opStart){
+    void CopyInstructionToVector(std::vector<spirword_t>& vec, uint32_t opStart){
         auto start = spv.begin() + opStart;
         auto end = start + asWordCount(opStart);
         vec.insert(vec.end(), start, end);
     }
-    void CopyInstructionsAtEndOfVector(std::vector<spirword_t>& vec, uint32_t opStart, uint32_t opEnd) {
+    void CopyInstructionToVector(std::vector<spirword_t>& vec, uint32_t opStart, uint32_t opEnd) {
         auto start = spv.begin() + opStart;
         auto end = spv.begin() + opEnd;
         vec.insert(vec.end(), start, end);
-    }
-    void CopyInstructionAtBeginningOfVector(std::vector<spirword_t>& vec, uint32_t opStart){
-        auto start = spv.begin() + opStart;
-        auto end = start + asWordCount(opStart);
-        vec.insert(vec.begin(), start, end);
     }
 };
 

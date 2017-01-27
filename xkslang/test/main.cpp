@@ -65,9 +65,9 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ {{"TestMixin01_Override.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Override.xksl_Pixel.rv.glsl"}} },
     //{ {{"TestMixin01_OverridePlusCallBase.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase.xksl_Pixel.rv.glsl"}} },
     //{ {{"TestMixin01_OverridePlusCallBase2.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase2.xksl_Pixel.rv.glsl"}} },
-    { {{"TestMixin01_OverridePlusCallBase3.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase3.xksl_Pixel.rv.glsl"}} },
+    //{ {{"TestMixin01_OverridePlusCallBase3.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase3.xksl_Pixel.rv.glsl"}} },
     
-    //{ {{ "TestMergeType_Base.xksl" }, { "TestMergeType_ShaderA.xksl" }}, {{ "main", ShadingStage::Pixel, "TestMergeType_Base.xksl_Pixel.rv.glsl" }} },
+    { {{ "TestMergeType_Base.xksl" }, { "TestMergeType_ShaderA.xksl" }}, {{ "main", ShadingStage::Pixel, "TestMergeType_Base.xksl_Pixel.rv.glsl" }} },
     //{ {{ "TestMerge02_Base.xksl" },{ "TestMerge02_ShaderA.xksl" }},{ { "main", ShadingStage::Pixel, "TestMerge02_Base.xksl_Pixel.rv.glsl" }} },
     //{ {{ "TestMerge03_Base.xksl" },{ "TestMerge03_ShaderA.xksl" }},{ { "main", ShadingStage::Pixel, "TestMerge03_Base.xksl_Pixel.rv.glsl" }} },
 
@@ -258,7 +258,7 @@ void main(int argc, char** argv)
                 {
                     const SpxBytecode& spirXBytecode = listInputBytecodes[i];
 
-                    cout << " Mixin" << spirXBytecode.GetName() << ": ";
+                    cout << " Mixin " << spirXBytecode.GetName() << ": ";
 
                     //Add mixin files
                     success = mixer.Mixin(spirXBytecode, errorMsgs);
