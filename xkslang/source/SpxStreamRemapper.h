@@ -139,18 +139,27 @@ class SpxStreamRemapper : public spv::spirvbin_t
     class FunctionInstruction : public ObjectInstructionBase
     {
     public:
+        enum class OverrideAttributeStateEnum
+        {
+            Undefined,
+            Defined,
+            Processed,
+        };
+
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name), hasAttributeOverride(false), overridenBy(nullptr){}
+            : ObjectInstructionBase(parsedData, name), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr){}
         virtual ~FunctionInstruction() {}
 
         const std::string& GetMangledName() const { return GetName(); }
         void SetOverridingFunction(FunctionInstruction* function) { overridenBy = function; }
         FunctionInstruction* GetOverridingFunction() const { return overridenBy; }
-        void SetAttributeOverride(bool b) { hasAttributeOverride = b; }
-        bool HasAttributeOverride() const { return hasAttributeOverride; }
+        
+        void ParsedOverrideAttribute(){if (overrideAttributeState == OverrideAttributeStateEnum::Undefined) overrideAttributeState = OverrideAttributeStateEnum::Defined; }
+        OverrideAttributeStateEnum GetOverrideAttributeState() const { return overrideAttributeState; }
+        void SetOverrideAttributeState(OverrideAttributeStateEnum state) { overrideAttributeState = state; }
 
     private:
-        bool hasAttributeOverride;
+        OverrideAttributeStateEnum overrideAttributeState;
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
     };
 
@@ -221,11 +230,14 @@ private:
     bool MergeWithBytecode(const SpxBytecode& bytecode);
 
     void ReleaseAllMaps();
-    bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
-    bool BuildTypesAndConstsHashmap(std::unordered_map<uint32_t, pairIdPos>& mapHashPos);
     bool BuildAllMaps();
-    //bool UpdateAllMaps();
+    bool UpdateAllMaps();
+    bool BuildTypesAndConstsHashmap(std::unordered_map<uint32_t, pairIdPos>& mapHashPos);
+    bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
+    ObjectInstructionBase* CreateAndAddNewObjectFor(ParsedObjectData& parsedData);
+    bool DecorateObjects(std::vector<bool>& vectorIdsToDecorate);
 
+    bool ComputeShadersLevel();
     bool BuildOverridenFunctionMap();
     bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
 

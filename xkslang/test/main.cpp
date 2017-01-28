@@ -67,9 +67,9 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ {{"TestMixin01_OverridePlusCallBase2.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase2.xksl_Pixel.rv.glsl"}} },
     //{ {{"TestMixin01_OverridePlusCallBase3.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase3.xksl_Pixel.rv.glsl"}} },
     
-    { {{ "TestMergeType_Base.xksl" }, { "TestMergeType_ShaderA.xksl" }}, {{ "main", ShadingStage::Pixel, "TestMergeType_Base.xksl_Pixel.rv.glsl" }} },
+    //{ {{ "TestMergeType_Base.xksl" }, { "TestMergeType_ShaderA.xksl" }}, {{ "main", ShadingStage::Pixel, "TestMergeType_Base.xksl_Pixel.rv.glsl" }} },
     //{ {{ "TestMerge02_Base.xksl" },{ "TestMerge02_ShaderA.xksl" }},{ { "main", ShadingStage::Pixel, "TestMerge02_Base.xksl_Pixel.rv.glsl" }} },
-    //{ {{ "TestMerge03_Base.xksl" },{ "TestMerge03_ShaderA.xksl" }},{ { "main", ShadingStage::Pixel, "TestMerge03_Base.xksl_Pixel.rv.glsl" }} },
+    { {{ "TestMerge03_Base.xksl" },{ "TestMerge03_ShaderA.xksl" }},{ { "main", ShadingStage::Pixel, "TestMerge03_Base.xksl_Pixel.rv.glsl" }} },
 
     //{ {{"TestMerge01_OverridePlusCallBase4a.xksl"}, { "TestMixin01_OverridePlusCallBase4b.xksl" } }, {{"main", ShadingStage::Pixel, ""}} },
     //{ {{ "TestMixin01_2shaderOverridingA.xksl" }, { "TestMixin01_2shaderOverridingB.xksl" }}, {{ "main", ShadingStage::Pixel, nullptr}} },
@@ -424,8 +424,10 @@ void main(int argc, char** argv)
         cout << "Count tests successful: " << countTestSuccessful << endl;
         if (listFailedTest.size() > 0)
         {
-            cout << "Failed tests:" << endl;
+            cout << endl;
+            cout << "<======================  Failed tests ======================>" << endl;
             for (int i=0; i<listFailedTest.size(); ++i) cout << listFailedTest[i] << endl;
+            cout << endl;
         }
     }
 

@@ -495,10 +495,11 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
     spv.insert(spv.begin() + firstTypeOrConstPos, vecDecoratesToMerge.spv.begin(), vecDecoratesToMerge.spv.end());
     spv.insert(spv.begin() + firstTypeOrConstPos, vecNamesToMerge.spv.begin(), vecNamesToMerge.spv.end());
 
-    //TOTO: reupdate all type, check for overrides!
-    asdadadas;
+    //destination bytecode has been updated: reupdate all maps
     UpdateAllMaps();
-    int klgjfdslkgjdlfkjgljdflgjs = 3454;
+
+    //check for override
+    int klgjsdflgj = 543453;
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -532,9 +533,6 @@ bool SpxStreamRemapper::FinalizeMixin()
         copyStaticErrorMessagesTo(errorMessages);
         return false;
     }
-
-    //TOTO: TMP
-    //BuildAllMaps();
 
     //Convert SPIRX extensions to SPIRV
     if (!ConvertSpirxToSpirVBytecode()) {
@@ -636,6 +634,10 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
 
 bool SpxStreamRemapper::BuildOverridenFunctionMap()
 {
+    //we need to know the shader level before building the overriding map
+    if (!ComputeShadersLevel())
+        return error(string("Failed to build the shader level"));
+
     //========================================================================================================================//
     //========================================================================================================================//
     // check overrides for each functions declared with an override attribute
@@ -643,7 +645,7 @@ bool SpxStreamRemapper::BuildOverridenFunctionMap()
     for (auto itfn = vecAllShaderFunctions.begin(); itfn != vecAllShaderFunctions.end(); itfn++)
     {
         FunctionInstruction* overridingFunction = *itfn;
-        if (!overridingFunction->HasAttributeOverride()) continue;
+        if (overridingFunction->GetOverrideAttributeState() != FunctionInstruction::OverrideAttributeStateEnum::Defined) continue;
 
         const string& overringFunctionName = overridingFunction->GetMangledName();
         ShaderClassData* functionShaderOwner = overridingFunction->GetShaderOwner();
@@ -683,6 +685,9 @@ bool SpxStreamRemapper::BuildOverridenFunctionMap()
                 }
             }
         }
+
+        //We process an override attribute only once
+        overridingFunction->SetOverrideAttributeState(FunctionInstruction::OverrideAttributeStateEnum::Processed);
     }
 
     if (errorMessages.size() > 0) return false;
@@ -892,12 +897,54 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
     return true;
 }
 
-/*
+
 bool SpxStreamRemapper::UpdateAllMaps()
 {
-    unordered_map<spv::Id, range_t> functionPos;
+    //Parse the list of all object data
+    std::vector<ParsedObjectData> listParsedObjectsData;
+    bool res = BuildDeclarationNameMapsAndObjectsDataList(listParsedObjectsData);
+    if (!res) {
+        return error("Failed to build maps");
+    }
+
+    //Resize our vector of ALL objects
+    int maxResultId = bound();
+    if (maxResultId < listAllObjects.size()){
+        return error("We lost some objects since last update");
+    }
+    listAllObjects.resize(maxResultId, nullptr);
+
+    //======================================================================================================
+    //create and store all NEW objects in corresponding maps
+    vector<bool> vectorIdsToDecorate;
+    vectorIdsToDecorate.resize(maxResultId, false);
+
+    int countParsedObjects = listParsedObjectsData.size();
+    for (int i = 0; i < countParsedObjects; ++i)
+    {
+        ParsedObjectData& parsedData = listParsedObjectsData[i];
+        spv::Id resultId = parsedData.resultId;
+
+        if (resultId <= 0 || resultId == spv::NoResult || resultId >= maxResultId)
+            return error(string("The object has an invalid resultId:") + to_string(resultId));
+        if (listAllObjects[resultId] != nullptr) continue;  //the object already exist
+
+        ObjectInstructionBase* newObject = CreateAndAddNewObjectFor(parsedData);
+        if (newObject == nullptr) {
+            return error("Failed to create the PSX objects from parsed data");
+        }
+        vectorIdsToDecorate[resultId] = true;
+    }
+
+    //decorate all objects
+    res = DecorateObjects(vectorIdsToDecorate);
+    if (!res) {
+        return error("Failed to decorate objects");
+    }
+
+    if (errorMessages.size() > 0) return false;
+    return true;
 }
-*/
 
 bool SpxStreamRemapper::BuildAllMaps()
 {
@@ -905,6 +952,7 @@ bool SpxStreamRemapper::BuildAllMaps()
 
     ReleaseAllMaps();
     
+    //Parse the list of all object data
     std::vector<ParsedObjectData> listParsedObjectsData;
     bool res = BuildDeclarationNameMapsAndObjectsDataList(listParsedObjectsData);
     if (!res) {
@@ -912,97 +960,41 @@ bool SpxStreamRemapper::BuildAllMaps()
     }
 
     //======================================================================================================
-    //create all objects
+    //create and store all objects in corresponding maps
     int maxResultId = bound();
     listAllObjects.resize(maxResultId, nullptr);
+    vector<bool> vectorIdsToDecorate;
+    vectorIdsToDecorate.resize(maxResultId, false);
+
     int countParsedObjects = listParsedObjectsData.size();
     for (int i = 0; i < countParsedObjects; ++i)
     {
         ParsedObjectData& parsedData = listParsedObjectsData[i];
         
-        spv::Id resultId = parsedData.resultId;
-        if (resultId <= 0 || resultId == spv::NoResult || resultId >= maxResultId)
-            return error(string("The object has an invalid resultId:") + to_string(resultId));
-        if (listAllObjects[resultId] != nullptr)
-            return error(string("An object with the same resultId already exists. resultId:") + to_string(resultId));
-
-        string name;
-        bool declarationNameRequired = true;
-        ObjectInstructionBase* newObject = nullptr;
-
-        bool hasDeclarationName = GetDeclarationNameForId(parsedData.resultId, name);
-
-        switch (parsedData.kind)
-        {
-            case ObjectInstructionTypeEnum::Const:
-            {
-                declarationNameRequired = false;
-                newObject = new ConstInstruction(parsedData, name);
-                break;
-            }
-            case ObjectInstructionTypeEnum::Shader:
-            {
-                declarationNameRequired = true;
-                ShaderClassData* shader = new ShaderClassData(parsedData, name);
-                vecAllShaders.push_back(shader);
-                newObject = shader;
-                break;
-            }
-            case ObjectInstructionTypeEnum::Type:
-            {
-                declarationNameRequired = false;
-                TypeInstruction* type = new TypeInstruction(parsedData, name);
-                if (isPointerTypeOp(parsedData.opCode))
-                {
-                    //create the link to the type pointed by the pointer (already created at this stage)
-                    TypeInstruction* pointedType = GetTypeById(parsedData.targetId);
-                    if (pointedType == nullptr)
-                        return error(string("Cannot find the typeId:") + to_string(parsedData.targetId) + string(", pointed by pointer Id:") + to_string(resultId));
-                    type->SetTypePointed(pointedType);
-                }
-                newObject = type;
-
-                break;
-            }
-            case ObjectInstructionTypeEnum::Variable:
-            {
-                declarationNameRequired = true;
-                VariableInstruction* variable = new VariableInstruction(parsedData, name);
-
-                //create the link to the type pointed by the variable (already created at this stage)
-                TypeInstruction* pointedType = GetTypeById(parsedData.typeId);
-                if (pointedType == nullptr)
-                    return error(string("Cannot find the typeId:") + to_string(parsedData.typeId) + string(", pointed by variable Id:") + to_string(resultId));
-
-                variable->SetTypePointed(pointedType);
-                newObject = variable;
-                break;
-            }
-            case ObjectInstructionTypeEnum::Function:
-            {
-                declarationNameRequired = false;  //some functions can be declared outside a shader definition, they don't belong to a shader then
-                FunctionInstruction* function = new FunctionInstruction(parsedData, name);
-
-                if (hasDeclarationName && name.size() > 0)
-                {
-                    vecAllShaderFunctions.push_back(function);
-                }
-
-                newObject = function;
-                break;
-            }
+        ObjectInstructionBase* newObject = CreateAndAddNewObjectFor(parsedData);
+        if (newObject == nullptr) {
+            return error("Failed to create the PSX objects from parsed data");
         }
 
-        listAllObjects[resultId] = newObject;
-
-        if (newObject == nullptr) return error("Unknown parsed data kind");
-        if (declarationNameRequired && !hasDeclarationName) return error("Object requires a declaration name");
+        vectorIdsToDecorate[newObject->GetResultId()] = true;
     }
 
     if (errorMessages.size() > 0) return false;
 
+    //decorate all objects
+    res = DecorateObjects(vectorIdsToDecorate);
+    if (!res) {
+        return error("Failed to decorate objects");
+    }
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
+{
     //======================================================================================================
-    // Decorate objects
+    // Decorate objects attributes and relations
     process(
         [&](spv::Op opCode, unsigned start) {
             unsigned word = start + 1;
@@ -1011,6 +1003,9 @@ bool SpxStreamRemapper::BuildAllMaps()
                 const spv::Id targetId = asId(start + 1);
                 const spv::Decoration dec = asDecoration(start + 2);
 
+                if (targetId < 0 || targetId >= vectorIdsToDecorate.size()) return true;
+                if (!vectorIdsToDecorate[targetId]) return true;
+
                 switch (dec)
                 {
                     case spv::DecorationMethodOverride:
@@ -1018,7 +1013,7 @@ bool SpxStreamRemapper::BuildAllMaps()
                         //a function is defined with an override attribute
                         FunctionInstruction* function = GetFunctionById(targetId);
                         if (function == nullptr) {error(string("undeclared function id:") + to_string(targetId)); break;}
-                        function->SetAttributeOverride(true);
+                        function->ParsedOverrideAttribute();
                         break;
                     }
 
@@ -1093,56 +1088,156 @@ bool SpxStreamRemapper::BuildAllMaps()
     );
 
     if (errorMessages.size() > 0) return false;
+    return true;
+}
 
+SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObjectFor(ParsedObjectData& parsedData)
+{
+    spv::Id resultId = parsedData.resultId;
+    if (resultId <= 0 || resultId == spv::NoResult || resultId >= listAllObjects.size()) {
+        error(string("The object has an invalid resultId:") + to_string(resultId));
+        return nullptr;
+    }
+    if (listAllObjects[resultId] != nullptr) {
+        error(string("An object with the same resultId already exists. resultId:") + to_string(resultId));
+        return nullptr;
+    }
+
+    string declarationName;
+    bool hasDeclarationName = GetDeclarationNameForId(parsedData.resultId, declarationName);
+
+    bool declarationNameRequired = true;
+    ObjectInstructionBase* newObject = nullptr;
+    switch (parsedData.kind)
+    {
+        case ObjectInstructionTypeEnum::Const:
+        {
+            declarationNameRequired = false;
+            newObject = new ConstInstruction(parsedData, declarationName);
+            break;
+        }
+        case ObjectInstructionTypeEnum::Shader:
+        {
+            declarationNameRequired = true;
+            ShaderClassData* shader = new ShaderClassData(parsedData, declarationName);
+            vecAllShaders.push_back(shader);
+            newObject = shader;
+            break;
+        }
+        case ObjectInstructionTypeEnum::Type:
+        {
+            declarationNameRequired = false;
+            TypeInstruction* type = new TypeInstruction(parsedData, declarationName);
+            if (isPointerTypeOp(parsedData.opCode))
+            {
+                //create the link to the type pointed by the pointer (already created at this stage)
+                TypeInstruction* pointedType = GetTypeById(parsedData.targetId);
+                if (pointedType == nullptr) {
+                    error(string("Cannot find the typeId:") + to_string(parsedData.targetId) + string(", pointed by pointer Id:") + to_string(resultId));
+                    delete type;
+                    return nullptr;
+                }
+                type->SetTypePointed(pointedType);
+            }
+            newObject = type;
+
+            break;
+        }
+        case ObjectInstructionTypeEnum::Variable:
+        {
+            declarationNameRequired = true;
+            
+            //create the link to the type pointed by the variable (already created at this stage)
+            TypeInstruction* pointedType = GetTypeById(parsedData.typeId);
+            if (pointedType == nullptr) {
+                error(string("Cannot find the typeId:") + to_string(parsedData.typeId) + string(", pointed by variable Id:") + to_string(resultId));
+                return nullptr;
+            }
+
+            VariableInstruction* variable = new VariableInstruction(parsedData, declarationName);
+            variable->SetTypePointed(pointedType);
+            newObject = variable;
+            break;
+        }
+        case ObjectInstructionTypeEnum::Function:
+        {
+            declarationNameRequired = false;  //some functions can be declared outside a shader definition, they don't belong to a shader then
+            FunctionInstruction* function = new FunctionInstruction(parsedData, declarationName);
+
+            if (hasDeclarationName && declarationName.size() > 0)
+            {
+                vecAllShaderFunctions.push_back(function);
+            }
+
+            newObject = function;
+            break;
+        }
+    }
+
+    listAllObjects[resultId] = newObject;
+
+    if (newObject == nullptr) {
+        error("Unknown parsed data kind");
+        return nullptr;
+    }
+
+    if (declarationNameRequired && !hasDeclarationName) {
+        error("Object requires a declaration name");
+        return nullptr;
+    }
+
+    return newObject;
+}
+
+bool SpxStreamRemapper::ComputeShadersLevel()
+{
     //========================================================================================================================//
     // Set the shader levels (also detects cyclic shader inheritance)
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+        (*itsh)->level = -1;
+
+    bool allShaderSet = false;
+    while (!allShaderSet)
     {
+        allShaderSet = true;
+        bool anyShaderUpdated = false;
+
         for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
-            (*itsh)->level = -1;
-
-        bool allShaderSet = false;
-        while (!allShaderSet)
         {
-            allShaderSet = true;
-            bool anyShaderUpdated = false;
+            ShaderClassData* shader = *itsh;
+            if (shader->level != -1) continue;  //shader already set
 
-            for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+            if (shader->parentsList.size() == 0)
             {
-                ShaderClassData* shader = *itsh;
-                if (shader->level != -1) continue;  //shader already set
-
-                if (shader->parentsList.size() == 0)
-                {
-                    shader->level = 0; //shader has no parent
-                    anyShaderUpdated = true;
-                    continue;
-                }
-
-                int maxParentLevel = -1;
-                for (int p = 0; p<shader->parentsList.size(); ++p)
-                {
-                    int parentLevel = shader->parentsList[p]->level;
-                    if (parentLevel == -1)
-                    {
-                        //parent not set yet: got to wait
-                        allShaderSet = false;
-                        maxParentLevel = -1;
-                        break;
-                    }
-                    if (parentLevel > maxParentLevel) maxParentLevel = parentLevel;
-                }
-
-                if (maxParentLevel >= 0)
-                {
-                    shader->level = maxParentLevel + 1; //shader level
-                    anyShaderUpdated = true;
-                }
+                shader->level = 0; //shader has no parent
+                anyShaderUpdated = true;
+                continue;
             }
 
-            if (!anyShaderUpdated)
+            int maxParentLevel = -1;
+            for (int p = 0; p<shader->parentsList.size(); ++p)
             {
-                return error("Cyclic inheritance detected among shaders");
+                int parentLevel = shader->parentsList[p]->level;
+                if (parentLevel == -1)
+                {
+                    //parent not set yet: got to wait
+                    allShaderSet = false;
+                    maxParentLevel = -1;
+                    break;
+                }
+                if (parentLevel > maxParentLevel) maxParentLevel = parentLevel;
             }
+
+            if (maxParentLevel >= 0)
+            {
+                shader->level = maxParentLevel + 1; //shader level
+                anyShaderUpdated = true;
+            }
+        }
+
+        if (!anyShaderUpdated)
+        {
+            return error("Cyclic inheritance detected among shaders");
         }
     }
 

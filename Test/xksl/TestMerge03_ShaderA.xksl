@@ -1,5 +1,5 @@
 //Test merging ShaderA into Base SPX bytecode
-//ShaderA main function refers to type declared by both ShaderA and Base
+//ShaderA main function refers to type declared by the Base shader
 
 shader Base
 {
@@ -14,25 +14,8 @@ shader Base
 
 shader shaderA : Base
 {
-	//int Var0;
-	//stream int sa1;
-	
-	/*const int aConst = 5;
-	
-    cbuffer C1
-    {
-		int Var1;
-    }
-	
-	cbuffer C2
-    {
-		int Var2;
-    }
-	*/
-	
 	int main()
 	{
 		return streams.sbase1 + Var1 + BaseConst;
-		//return BaseConst + streams.sbase1 + Var1 + base.Var1 + aConst;
 	}
 };

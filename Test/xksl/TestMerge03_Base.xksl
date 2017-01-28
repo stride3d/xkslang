@@ -1,5 +1,5 @@
 //Test merging ShaderA into Base SPX bytecode
-//ShaderA main function refers to type declared by both ShaderA and Base
+//ShaderA main function refers to type declared by the Base shader
 
 shader Base
 {
