@@ -1,0 +1,23 @@
+//Compute: Expected result: 3
+
+shader Base
+{
+	stream int ColorTarget;
+
+    int Compute()
+    {
+        return 1;
+    }
+    void main()
+    {
+        streams.ColorTarget = Compute();
+    }
+}
+
+shader ShaderA : Base
+{
+    override int Compute()
+    {
+        return base.Compute() + 2;
+    }
+}

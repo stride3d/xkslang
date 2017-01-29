@@ -33,6 +33,7 @@ struct MixinOutput {
 
 //To test single file parsing and convertion
 struct XkslFilesToParseAndConvert {
+    string effectName;
     vector<XkslInput> inputs;
     vector<MixinOutput> outputs;
 };
@@ -42,36 +43,41 @@ static string outputDir;
 static string expectedOutputDir;
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
-    //{ {{"shaderWithVariable.xksl"}}, {} },
-    //{ {{"shaderWithManyVariables.xksl"}},{} },
-    //{ {{"manySimpleShaders.xksl"}},{} },
-    //{ {{"simpleShaderWithFunction.xksl"}},{} },
-    //{ {{"declarationMixOfFunctionsAndVariables.xksl"}},{} },
-    //{ {{"2ShaderWithSameFunctionNames.xksl"}},{} },
-    //{ {{"shaderInheritance.xksl"}},{} },
-    //{ {{"postDeclaration.xksl"}},{} },
-    //{ {{"classAccessor.xksl"}},{} },
-    //{ {{"typeDeclarationOnly.xksl"}},{} },
-    //{ {{"streamsSimple.xksl"}},{} },
-    //{ {{"streamsWithClassAccessor.xksl"}},{} },
-    //{ {{"shaderWithDefinedConsts.xksl"}},{} },
-    //{ {{"shaderWithUnresolvedConsts.xksl"}},{} },
-    //{ {{"intrisicsHlslFunctions.xksl"}},{} },
-    //{ {{"methodReferingToShaderVariable.xksl"}},{} },
-    //{ {{"methodsWithSimpleClassAccessor.xksl"}},{} },
-    //{ {{"cbuffers.xksl"}},{} },
+    //{ "", {{"shaderWithVariable.xksl"}}, {} },
+    //{ "", {{"shaderWithManyVariables.xksl"}},{} },
+    //{ "", {{"manySimpleShaders.xksl"}},{} },
+    //{ "", {{"simpleShaderWithFunction.xksl"}},{} },
+    //{ "", {{"declarationMixOfFunctionsAndVariables.xksl"}},{} },
+    //{ "", {{"2ShaderWithSameFunctionNames.xksl"}},{} },
+    //{ "", {{"shaderInheritance.xksl"}},{} },
+    //{ "", {{"postDeclaration.xksl"}},{} },
+    //{ "", {{"classAccessor.xksl"}},{} },
+    //{ "", {{"typeDeclarationOnly.xksl"}},{} },
+    //{ "", {{"streamsSimple.xksl"}},{} },
+    //{ "", {{"streamsWithClassAccessor.xksl"}},{} },
+    //{ "", {{"shaderWithDefinedConsts.xksl"}},{} },
+    //{ "", {{"shaderWithUnresolvedConsts.xksl"}},{} },
+    //{ "", {{"intrisicsHlslFunctions.xksl"}},{} },
+    //{ "", {{"methodReferingToShaderVariable.xksl"}},{} },
+    //{ "", {{"methodsWithSimpleClassAccessor.xksl"}},{} },
+    //{ "", {{"cbuffers.xksl"}},{} },
 
-    //{ {{"TestMixin01_Base.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Base.xksl_Pixel.rv.glsl"}} },
-    //{ {{"TestMixin01_Override.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Override.xksl_Pixel.rv.glsl"}} },
-    //{ {{"TestMixin01_OverridePlusCallBase.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase.xksl_Pixel.rv.glsl"}} },
-    //{ {{"TestMixin01_OverridePlusCallBase2.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase2.xksl_Pixel.rv.glsl"}} },
-    //{ {{"TestMixin01_OverridePlusCallBase3.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase3.xksl_Pixel.rv.glsl"}} },
+    //{ "", {{"TestMixin01_Base.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Base.xksl_Pixel.rv.glsl"}} },
+    //{ "", {{"TestMixin01_Override.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_Override.xksl_Pixel.rv.glsl"}} },
+    //{ "", {{"TestMixin01_OverridePlusCallBase.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase.xksl_Pixel.rv.glsl"}} },
+    //{ "", {{"TestMixin01_OverridePlusCallBase2.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase2.xksl_Pixel.rv.glsl"}} },
+    //{ "", {{"TestMixin01_OverridePlusCallBase3.xksl"}}, {{"main", ShadingStage::Pixel, "TestMixin01_OverridePlusCallBase3.xksl_Pixel.rv.glsl"}} },
     
-    //{ {{ "TestMergeType_Base.xksl" }, { "TestMergeType_ShaderA.xksl" }}, {{ "main", ShadingStage::Pixel, "TestMergeType_Base.xksl_Pixel.rv.glsl" }} },
-    //{ {{ "TestMerge02_Base.xksl" },{ "TestMerge02_ShaderA.xksl" }},{ { "main", ShadingStage::Pixel, "TestMerge02_Base.xksl_Pixel.rv.glsl" }} },
-    { {{ "TestMerge03_Base.xksl" },{ "TestMerge03_ShaderA.xksl" }},{ { "main", ShadingStage::Pixel, "TestMerge03_Base.xksl_Pixel.rv.glsl" }} },
+    { "TestMerge01", {{"TestMerge01_Base.xksl"}, {"TestMerge01_ShaderA.xksl"}}, {{"main", ShadingStage::Pixel, "TestMerge01_Pixel.rv.glsl" } } },
+    { "TestMerge02", {{"TestMerge02_Base.xksl"}, {"TestMerge02_ShaderA.xksl"}}, {{"main", ShadingStage::Pixel, "TestMerge02_Pixel.rv.glsl"}} },
+    { "TestMerge03", {{"TestMerge03_Base.xksl"}, {"TestMerge03_ShaderA.xksl"}}, {{"main", ShadingStage::Pixel, "TestMerge03_Pixel.rv.glsl"}} },
+    { "TestMerge04", {{"TestMerge04_Base.xksl"}, {"TestMerge04_ShaderA.xksl"}}, {{"main", ShadingStage::Pixel, "TestMerge04_Pixel.rv.glsl"}} },
+    { "TestMerge05", {{"TestMerge05_Base.xksl"}, {"TestMerge05_ShaderA.xksl"}}, {{"main", ShadingStage::Pixel, "TestMerge05_Pixel.rv.glsl"}} },
+    { "TestMerge06", {{"TestMerge06_Base.xksl"}, {"TestMerge06_ShaderA.xksl"}}, {{"main", ShadingStage::Pixel, "TestMerge06_Pixel.rv.glsl"}} },
+    { "TestMerge07", {{"TestMerge07_Base.xksl"}, {"TestMerge07_ShaderA.xksl"}}, {{"main", ShadingStage::Pixel, "TestMerge07_Pixel.rv.glsl"}} },
+    { "TestMerge08", {{"TestMerge08_Base.xksl"}, {"TestMerge08_ShaderA.xksl"}}, {{"main", ShadingStage::Pixel, "TestMerge08_Pixel.rv.glsl"}} },
+    { "TestMerge09", {{"TestMerge09_ShaderA.xksl"}, {"TestMerge09_ShaderB.xksl" }}, {{"main", ShadingStage::Pixel, "TestMerge09_Pixel.rv.glsl"}} },
 
-    //{ {{"TestMerge01_OverridePlusCallBase4a.xksl"}, { "TestMixin01_OverridePlusCallBase4b.xksl" } }, {{"main", ShadingStage::Pixel, ""}} },
     //{ {{ "TestMixin01_2shaderOverridingA.xksl" }, { "TestMixin01_2shaderOverridingB.xksl" }}, {{ "main", ShadingStage::Pixel, nullptr}} },
 
     //{{"textureAndSampler.xksl"}, {"", nullptr}},
@@ -178,7 +184,11 @@ void main(int argc, char** argv)
             vector<MixinOutput>& outputs = xkslFilesToParseAndConvert.outputs;
             if (inputs.size() == 0) continue;
 
-            string effectDefaultName = inputs[0].fileName;
+            string effectName = xkslFilesToParseAndConvert.effectName;
+            if (effectName.size() == 0){
+                effectName = inputs[0].fileName;
+                effectName = Utils::RemoveSuffix(effectName);
+            }
             countTestProcessed++;
             bool success = true;
 
@@ -193,7 +203,7 @@ void main(int argc, char** argv)
 
                 cout << "Parsing XKSL shader \"" << xkslShaderInputFile << "\"" << endl;
 
-                const string inputFname = inputDir + "/" + xkslShaderInputFile;
+                const string inputFname = inputDir + "\\" + xkslShaderInputFile;
                 string xkslInput;
                 if (!Utils::ReadFile(inputFname, xkslInput))
                 {
@@ -251,54 +261,62 @@ void main(int argc, char** argv)
             {
                 cout << "Mixin SPIRX shaders" << endl;
 
-                time_before = GetTickCount();
                 XkslMixer mixer;
                 vector<string> errorMsgs;
+                DWORD mixinTotalTime = 0;
                 for (int i=0; i<listInputBytecodes.size(); ++i)
                 {
                     const SpxBytecode& spirXBytecode = listInputBytecodes[i];
-
+                    
                     cout << " Mixin " << spirXBytecode.GetName() << ": ";
 
-                    //Add mixin files
-                    success = mixer.Mixin(spirXBytecode, errorMsgs);
+                    time_before = GetTickCount();
+                    success = mixer.Mixin(spirXBytecode, errorMsgs);    //Add mixin files
+                    time_after = GetTickCount();
+
                     if (!success){
                         cout << "Mixin failed !!" << endl;
                         break;
                     }
 
-                    cout << "OK" << endl;
+                    mixinTotalTime += (time_after - time_before);
+                    if (success) cout << " OK. Time:  " << (time_after - time_before) << " ms" << endl;
+                    else{
+                        cout << " mixin FAILED" << endl;
+                        break;
+                    }
+
+                    if (success)
+                    {
+                        //Save the mixin resulting SPIRX bytecode (HR form)
+                        SpxBytecode mixinBytecode;
+                        success = mixer.GetMixinBytecode(mixinBytecode, errorMsgs);
+                        if (!success){
+                            cout << " Failed to get the mixin bytecode" << endl;
+                            break;
+                        }
+
+                        const vector<uint32_t>& bytecodeList = mixinBytecode.getBytecodeStream();
+                        ostringstream disassembly_stream;
+                        spv::Parameterize();
+                        spv::Disassemble(disassembly_stream, bytecodeList);
+
+                        const string newOutputFname = outputDir + effectName + "_mixin_" + to_string(i) + "_" + spirXBytecode.GetName() + ".hr.spv";
+                        xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                    }
                 }
-                time_after = GetTickCount();
-                if (success)
-                {
-                    if (success) cout << " Mixin done. time: " << (time_after - time_before) << " ms" << endl;
-                    else cout << " mixin FAILED" << endl;
-
-                    //Save the mixin SPIRX bytecode (HR form)
-                    SpxBytecode mixinBytecode;
-                    success = mixer.GetMixinBytecode(mixinBytecode, errorMsgs);
-                    if (!success) cout << " Failed to get the mixin bytecode" << endl;
-
-                    const vector<uint32_t>& bytecodeList = mixinBytecode.getBytecodeStream();
-                    ostringstream disassembly_stream;
-                    spv::Parameterize();
-                    spv::Disassemble(disassembly_stream, bytecodeList);
-
-                    const string newOutputFname = outputDir + effectDefaultName + "_mixinA" + ".hr.spv";
-                    xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
-                }
-
+                
                 //finalize mixin
                 if (success)
                 {
+
+                    cout << " Finalize Mixin: ";
                     time_before = GetTickCount();
-
                     success = mixer.FinalizeMixin(errorMsgs);
-
                     time_after = GetTickCount();
-                    if (success) cout << " Mixin finalized. time: " << (time_after - time_before) << " ms" << endl;
-                    else cout << " finalizing mixin FAILED" << endl;
+
+                    if (success) cout << "OK. time: " << (time_after - time_before) << " ms" << endl;
+                    else cout << "FAILED" << endl;
 
                     if (success)
                     {
@@ -312,10 +330,13 @@ void main(int argc, char** argv)
                         spv::Parameterize();
                         spv::Disassemble(disassembly_stream, bytecodeList);
 
-                        const string newOutputFname = outputDir + effectDefaultName + "_mixinB" + ".hr.spv";
+                        const string newOutputFname = outputDir + effectName + "_mixin_finalized_" + ".hr.spv";
                         xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
                     }
                 }
+
+                if (success) cout << "Mixin done. total time: " << mixinTotalTime << " ms" << endl;
+                else cout << "Mixin FAILED" << endl;
 
                 //======================================================================================================
                 //======================================================================================================
@@ -342,7 +363,7 @@ void main(int argc, char** argv)
                         {
                             //output the binary
                             const vector<uint32_t>& bytecodeList = stageBytecode.getBytecodeStream();
-                            string outputNameSpv = outputDir + effectDefaultName + "_" + GetStageLabel(stage) + ".spv";
+                            string outputNameSpv = outputDir + effectName + "_" + GetStageLabel(stage) + ".spv";
                             glslang::OutputSpvBin(bytecodeList, outputNameSpv.c_str());
 
                             // dissassemble the binary
@@ -350,14 +371,14 @@ void main(int argc, char** argv)
                             spv::Parameterize();
                             spv::Disassemble(disassembly_stream, bytecodeList);
 
-                            string outputNameHrSpv = outputDir + effectDefaultName + "_" + GetStageLabel(stage) + ".hr.spv";
+                            string outputNameHrSpv = outputDir + effectName + "_" + GetStageLabel(stage) + ".hr.spv";
                             xkslangtest::Utils::WriteFile(outputNameHrSpv, disassembly_stream.str());
 
                             //======================================================================================================
                             //======================================================================================================
                             //convert back the SPIRV bytecode into GLSL
                             {
-                                string outputNameGlsl = outputDir + effectDefaultName + "_" + GetStageLabel(stage) + ".rv.glsl";
+                                string outputNameGlsl = outputDir + effectName + "_" + GetStageLabel(stage) + ".rv.glsl";
 
                                 cout << "Convert SPIRV bytecode to GLSL." << endl;
 
@@ -415,7 +436,7 @@ void main(int argc, char** argv)
             }
 
             if (success) countTestSuccessful++;
-            else listFailedTest.push_back(effectDefaultName);
+            else listFailedTest.push_back(effectName);
 
             cout << endl;
         }

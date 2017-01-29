@@ -147,13 +147,15 @@ class SpxStreamRemapper : public spv::spirvbin_t
         };
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr){}
+            : ObjectInstructionBase(parsedData, name), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name){}
         virtual ~FunctionInstruction() {}
 
         const std::string& GetMangledName() const { return GetName(); }
+        const std::string& GetFullName() const { return fullName; }
         void SetOverridingFunction(FunctionInstruction* function) { overridenBy = function; }
         FunctionInstruction* GetOverridingFunction() const { return overridenBy; }
-        
+        void SetFullName(const std::string& str) { fullName = str; }
+
         void ParsedOverrideAttribute(){if (overrideAttributeState == OverrideAttributeStateEnum::Undefined) overrideAttributeState = OverrideAttributeStateEnum::Defined; }
         OverrideAttributeStateEnum GetOverrideAttributeState() const { return overrideAttributeState; }
         void SetOverrideAttributeState(OverrideAttributeStateEnum state) { overrideAttributeState = state; }
@@ -161,6 +163,7 @@ class SpxStreamRemapper : public spv::spirvbin_t
     private:
         OverrideAttributeStateEnum overrideAttributeState;
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
+        std::string fullName;  //name only use for debug purpose
     };
 
     //This is a type declared by a shader: we store the type definition, plus the variable and pointer to access it
@@ -192,6 +195,13 @@ class SpxStreamRemapper : public spv::spirvbin_t
         bool HasFunction(FunctionInstruction* function) {
             for (int i = 0; i<functionsList.size(); ++i) if (functionsList[i] == function) return true;
             return false;
+        }
+        FunctionInstruction* GetFunctionByName(const std::string& name) {
+            for (auto it = functionsList.begin(); it != functionsList.end(); ++it){
+                FunctionInstruction* function = *it;
+                if (function->GetName() == name) return function;
+            }
+            return nullptr;
         }
 
         void AddShaderType(ShaderTypeData* type) { shaderTypesList.push_back(type); }
@@ -262,7 +272,8 @@ private:
     //std::unordered_map<spv::Id, ConstData*> mapConstById;
     //std::unordered_map<spv::Id, VariableData*> mapVariablesById;
 
-    ObjectInstructionBase* GetObjectForId(spv::Id id);
+    ObjectInstructionBase* GetObjectById(spv::Id id);
+    ObjectInstructionBase* GetObjectByName(const std::string& name);
     std::string GetDeclarationNameForId(spv::Id id);
     bool GetDeclarationNameForId(spv::Id id, std::string& name);
     ShaderClassData* GetShaderByName(const std::string& name);

@@ -1,0 +1,25 @@
+//Test merging ShaderA into Base SPX bytecode, where ShaderA main function calls a method from Base shader
+
+shader Base
+{
+	int Var1;
+	stream int sbase1;
+
+	int ComputeBase()
+	{
+		return Var1 + streams.sbase1;
+	}
+};
+
+shader shaderA : Base
+{
+	int f1()
+	{
+		return base.ComputeBase();
+	}
+	
+	int main()
+	{
+		return ComputeBase() + Var1 + base.ComputeBase() + f1();
+	}
+};

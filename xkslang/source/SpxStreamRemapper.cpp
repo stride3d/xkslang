@@ -86,23 +86,23 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
         {
             return error("Error building bytecode data map");
         }
-
-        //Build the list of all overriding methods
-        if (!BuildOverridenFunctionMap())
-        {
-            return error("Processing overriding functions failed");
-        }
-
-        //target function to the overriing functions
-        if (!UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions())
-        {
-            return error("Remapping overriding functions failed");
-        }
     }
     else
     {
         //merge the new bytecode
         if (!MergeWithBytecode(bytecode)) return false;
+    }
+
+    //Build the list of all overriding methods
+    if (!BuildOverridenFunctionMap())
+    {
+        return error("Processing overriding functions failed");
+    }
+
+    //target function to the overring functions
+    if (!UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions())
+    {
+        return error("Remapping overriding functions failed");
     }
 
     if (errorMessages.size() > 0) return false;
@@ -127,6 +127,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
     bool res = bytecodeToMerge.BuildAllMaps();
 
     if (!res) {
+        bytecodeToMerge.copyMessagesTo(errorMessages);
         return error(string("Error building XKSL shaders data map from bytecode:") + bytecode.GetName());
     }
 
@@ -303,7 +304,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
             }
 
             //Find the position in the code to merge where the unmapped IDs is defined
-            ObjectInstructionBase* objectFromUnmappedId = bytecodeToMerge.GetObjectForId(unmappedId);
+            ObjectInstructionBase* objectFromUnmappedId = bytecodeToMerge.GetObjectById(unmappedId);
             if (objectFromUnmappedId == nullptr) return error(string("No object is defined for the unmapped id:") + to_string(unmappedId));
 
             bool mappingResolved = false;
@@ -323,6 +324,41 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
                         mappingResolved = true;
                         finalRemapTable[unmappedId] = hashTypePosIt->second.first;
                     }
+                    break;
+                }
+
+                case ObjectInstructionTypeEnum::Variable:
+                {
+                    //this is a variable from destination bytecode, we retrieve its id in the destination bytecode using its declaration name
+                    ObjectInstructionBase* object = this->GetObjectByName(objectFromUnmappedId->GetName());
+                    VariableInstruction* variable = nullptr;
+                    if (object == nullptr)
+                        return error(string("No object exists in destination bytecode with the name:") + objectFromUnmappedId->GetName());
+                    if ((variable = dynamic_cast<VariableInstruction*>(object)) == nullptr)
+                        return error(string("The object from destination bytecode named \"") + objectFromUnmappedId->GetName() + string("\" is not a variable"));
+
+                    //remap the unmapped ID to the destination variable
+                    mappingResolved = true;
+                    finalRemapTable[unmappedId] = variable->GetId();
+                    break;
+                }
+
+                case ObjectInstructionTypeEnum::Function:
+                {
+                    //this is a function from destination bytecode, we retrieve its id in the destination bytecode using its declaration name and shader owner
+                    if (objectFromUnmappedId->GetShaderOwner() == nullptr)
+                        return error(string("The function does not have a shader owner:") + objectFromUnmappedId->GetName());
+
+                    ShaderClassData* shader = this->GetShaderByName(objectFromUnmappedId->GetShaderOwner()->GetName());
+                    if (shader == nullptr)
+                        return error(string("No shader exists in destination bytecode with the name:") + objectFromUnmappedId->GetShaderOwner()->GetName());
+                    FunctionInstruction* function = shader->GetFunctionByName(objectFromUnmappedId->GetName());
+                    if (function == nullptr)
+                        return error(string("Shader \"") + shader->GetName() + string("\" does not have a function named \"") + objectFromUnmappedId->GetName() + string("\""));
+
+                    //remap the unmapped ID to the destination variable
+                    mappingResolved = true;
+                    finalRemapTable[unmappedId] = function->GetId();
                     break;
                 }
 
@@ -497,9 +533,6 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
 
     //destination bytecode has been updated: reupdate all maps
     UpdateAllMaps();
-
-    //check for override
-    int klgjsdflgj = 543453;
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -1030,6 +1063,7 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                             if (function->GetShaderOwner() != nullptr) {error(string("function already has a shader owner:") + function->GetMangledName()); break;}
                             if (shaderOwner->HasFunction(function))
                             { error(string("The shader:") + ownerName + string(" already possesses the function:") + function->GetMangledName()); break; }
+                            function->SetFullName(shaderOwner->GetName() + string(".") + function->GetMangledName());
 #endif
                             function->SetShaderOwner(shaderOwner);
                             shaderOwner->AddFunction(function);
@@ -1145,7 +1179,7 @@ SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObje
         }
         case ObjectInstructionTypeEnum::Variable:
         {
-            declarationNameRequired = true;
+            declarationNameRequired = false;
             
             //create the link to the type pointed by the variable (already created at this stage)
             TypeInstruction* pointedType = GetTypeById(parsedData.typeId);
@@ -1370,10 +1404,9 @@ bool SpxStreamRemapper::GetDeclarationNameForId(spv::Id id, string& name)
 
 SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const std::string& name)
 {
-    int size = vecAllShaders.size();
-    for (int i = 0; i < size; ++i)
+    for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
     {
-        ShaderClassData* shader = vecAllShaders[i];
+        ShaderClassData* shader = *it;
         if (shader->GetName() == name)
         {
             return shader;
@@ -1382,7 +1415,21 @@ SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const std
     return nullptr;
 }
 
-SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::GetObjectForId(spv::Id id)
+SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::GetObjectByName(const std::string& name)
+{
+    int size = listAllObjects.size();
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetName() == name)
+        {
+            return obj;
+        }
+    }
+    return nullptr;
+}
+
+SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::GetObjectById(spv::Id id)
 {
     if (id < 0 || id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
@@ -1431,10 +1478,9 @@ SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypeById(spv::Id id)
 SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypePointingTo(TypeInstruction* targetType)
 {
     TypeInstruction* res = nullptr;
-    int size = listAllObjects.size();
-    for (int i = 0; i < size; ++i)
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
     {
-        ObjectInstructionBase* obj = listAllObjects[i];
+        ObjectInstructionBase* obj = *it;
         if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Type)
         {
             TypeInstruction* aType = dynamic_cast<TypeInstruction*>(obj);
@@ -1451,10 +1497,9 @@ SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypePointingTo(TypeIns
 SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariablePointingTo(TypeInstruction* targetType)
 {
     VariableInstruction* res = nullptr;
-    int size = listAllObjects.size();
-    for (int i = 0; i < size; ++i)
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
     {
-        ObjectInstructionBase* obj = listAllObjects[i];
+        ObjectInstructionBase* obj = *it;
         if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable)
         {
             VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);

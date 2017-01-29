@@ -6,6 +6,11 @@ shader Base
 	int Var0;
 	int Var1;
 	
+	cbuffer
+	{
+		float Var2;
+	}
+	
 	const int BaseConst = 2;
 	
 	stream float sbase1;
@@ -16,6 +21,6 @@ shader shaderA : Base
 {
 	int main()
 	{
-		return streams.sbase1 + Var1 + BaseConst;
+		return streams.sbase1 + Var1 + Var2 + BaseConst;
 	}
 };

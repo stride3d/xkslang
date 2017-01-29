@@ -1,24 +1,9 @@
+//Test merging ShaderA into Base SPX bytecode, where ShaderA calls functions from shaderA class only
 
 shader Base
 {
-	int Var0;
 	int Var1;
-	
-	const int BaseConst = 2;
-	
-	cbuffer C1
-    {
-        int Var2;
-        int Var3;
-    }
-	
 	stream int sbase1;
-	stream int sbase2;
 	
-	const bool b01 = false;
-	
-	int ComputeBase()
-	{
-		return Var1 + streams.sbase1;
-	}
+	void ComputeBase(){}
 };

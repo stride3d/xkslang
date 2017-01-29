@@ -1,0 +1,9 @@
+//Test merging ShaderA into Base SPX bytecode, where ShaderA calls intrisics functions
+
+shader Base
+{
+	float ComputeBase(float distance)
+	{
+		return saturate(1 - distance);
+	}
+};

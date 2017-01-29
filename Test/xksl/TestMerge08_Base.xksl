@@ -1,0 +1,11 @@
+//Test merging ShaderA into Base SPX bytecode, with ShaderA calling intrisics functions plus base class function and methods
+
+shader Base
+{
+	float basef;
+	float4 basef4;
+	float4 ComputeBase(float f)
+	{
+		return float4(f, f, f, f);
+	}
+};
