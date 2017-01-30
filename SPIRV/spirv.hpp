@@ -944,8 +944,8 @@ enum Op {
     OpSubgroupAllEqualKHR = 4430,
 
     //XKSL extensions
-    OpFunctionCallBase = 4600, //a function call with base accessor (similar to a normal function call, except that the call cannot be overriden
-
+    OpFunctionCallBaseUnresolved = 4600, //an unresolved function call with base accessor
+    OpFunctionCallBaseResolved = 4601, //a resolved function call with base accessor
     
     OpMax = 0x7fffffff,
 };

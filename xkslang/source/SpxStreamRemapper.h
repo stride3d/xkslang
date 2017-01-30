@@ -30,6 +30,7 @@ enum class SpxRemapperStatusEnum
 
 class SpxStreamRemapper : public spv::spirvbin_t
 {
+public:
     typedef std::pair<spv::Id, int> pairIdPos;
 
     //============================================================================================================================================
@@ -181,7 +182,7 @@ class SpxStreamRemapper : public spv::spirvbin_t
     {
     public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name), level(-1) {
+            : ObjectInstructionBase(parsedData, name), level(-1), flag(0) {
         }
         virtual ~ShaderClassData() {}
 
@@ -215,6 +216,8 @@ class SpxStreamRemapper : public spv::spirvbin_t
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
         std::vector<FunctionInstruction*> functionsList;
+
+        int flag;
     };
     //============================================================================================================================================
     //============================================================================================================================================
@@ -237,7 +240,7 @@ public:
 
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
-    bool MergeWithBytecode(const SpxBytecode& bytecode);
+    bool MergeWithBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
 
     void ReleaseAllMaps();
     bool BuildAllMaps();
@@ -247,12 +250,16 @@ private:
     ObjectInstructionBase* CreateAndAddNewObjectFor(ParsedObjectData& parsedData);
     bool DecorateObjects(std::vector<bool>& vectorIdsToDecorate);
 
-    bool ComputeShadersLevel();
-    bool BuildOverridenFunctionMap();
+    bool UpdateOverridenFunctionMap(std::vector<ShaderClassData*>& listShadersMerged);
     bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
+    bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
 
     bool BuildAndSetShaderStageHeader(ShadingStage stage, FunctionInstruction* entryFunction, std::string unmangledFunctionName);
     bool ConvertSpirxToSpirVBytecode();
+
+    bool ComputeShadersLevel();
+    void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
+    void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);
 
 private:
     SpxRemapperStatusEnum status;

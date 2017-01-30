@@ -1,5 +1,3 @@
-//ShaderA: Expected result: 3
-
 shader Base
 {
 	stream int ColorTarget;
@@ -19,5 +17,13 @@ shader ShaderA : Base
     override int Compute()
     {
         return base.Compute() + 2;
+    }
+}
+
+shader ShaderB : Base
+{
+    override int Compute()
+    {
+        return base.Compute() + 3;
     }
 }

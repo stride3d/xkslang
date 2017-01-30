@@ -77,26 +77,43 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     }
     status = SpxRemapperStatusEnum::MixinInProgress;
 
+    //=============================================================================================================
+    //=============================================================================================================
+    //Merge or set the bytecode
+    vector<ShaderClassData*> listShadersMerged;
     if (spv.size() == 0)
     {
         //just copy the full code into the remapper
-        if (!SetBytecode(bytecode)) return false;
+        if (!SetBytecode(bytecode))
+            return error(string("Error setting the bytecode: ") + bytecode.GetName());
 
         if (!BuildAllMaps())
-        {
-            return error("Error building bytecode data map");
-        }
+            return error("Error building the bytecode data map");
+
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+            listShadersMerged.push_back(*itsh);
     }
     else
     {
-        //merge the new bytecode
-        if (!MergeWithBytecode(bytecode)) return false;
+        //merge the new bytecode into current one
+        if (!MergeWithBytecode(bytecode, listShadersMerged))
+            return error(string("Error merging the bytecode: ") + bytecode.GetName());
     }
 
-    //Build the list of all overriding methods
-    if (!BuildOverridenFunctionMap())
+    //=============================================================================================================
+    //=============================================================================================================
+    // Deal with base and overrides function
+
+    //BEFORE checking for overrides, we first deal with base function calls
+    if (!UpdateFunctionCallsHavingUnresolvedBaseAccessor())
     {
-        return error("Processing overriding functions failed");
+        return error("Updating function calls to base target failed");
+    }
+
+    //Update the list of overriding methods
+    if (!UpdateOverridenFunctionMap(listShadersMerged))
+    {
+        return error("Updating overriding functions failed");
     }
 
     //target function to the overring functions
@@ -111,8 +128,9 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     return true;
 }
 
-bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
+bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<ShaderClassData*>& listShadersMerged)
 {
+    listShadersMerged.clear();
     int maxCountIds = bound();
 
     //=============================================================================================================
@@ -133,7 +151,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
 
     //=============================================================================================================
     //=============================================================================================================
-    //Get the list of shaders we want to merge (shaders not already in the destination bytecode)
+    //Get the list of new shaders we want to merge (shaders not already in the destination bytecode)    
     vector<ShaderClassData*> listShadersToMerge;
     for (auto itsh = bytecodeToMerge.vecAllShaders.begin(); itsh != bytecodeToMerge.vecAllShaders.end(); itsh++)
     {
@@ -523,6 +541,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
     if (firstFunctionPos == 0) spv.size();
 
     //=============================================================================================================
+    // merge all data in the destination bytecode
     //merge functions
     spv.insert(spv.end(), vecFunctionsToMerge.spv.begin(), vecFunctionsToMerge.spv.end());
     //Merge types and variables
@@ -533,6 +552,16 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode)
 
     //destination bytecode has been updated: reupdate all maps
     UpdateAllMaps();
+
+    //=============================================================================================================
+    //retrieve the list of merged shader
+    for (int is = 0; is<listShadersToMerge.size(); ++is)
+    {
+        ShaderClassData* shaderToMerge = listShadersToMerge[is];
+        ShaderClassData* shaderMerged = GetShaderByName(shaderToMerge->GetName());
+        if (shaderMerged == nullptr) return error(string("Cannot retrieve the shader:") + shaderToMerge->GetName());
+        listShadersMerged.push_back(shaderMerged);
+    }
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -579,17 +608,22 @@ bool SpxStreamRemapper::FinalizeMixin()
 bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
 {
     //Convert OpIntructions
-    // - OpFunctionCallBase --> OpFunctionCall (remapping of override functions has been completed)
+    // - OpFunctionCallBaseResolved --> OpFunctionCall (remapping of override functions has been completed)
 
     std::vector<range_t> vecStripRanges;
     process(
         [&](spv::Op opCode, unsigned start)
         {
             switch (opCode) {
-                case spv::OpFunctionCallBase:
+                case spv::OpFunctionCallBaseResolved:
                 {
-                    // change OpFunctionCallBase to OpFunctionCall
+                    // change OpFunctionCallBaseResolved to OpFunctionCall
                     setOpCode(start, spv::OpFunctionCall);
+                    break;
+                }
+                case spv::OpFunctionCallBaseUnresolved:
+                {
+                    error(string("A function base call has an unresolved state. Pos:") + to_string(start));
                     break;
                 }
                 case spv::OpTypeXlslShaderClass:
@@ -616,9 +650,49 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
         },
         spx_op_fn_nop
     );
+    if (errorMessages.size() > 0) return false;
 
     stripBytecode(vecStripRanges);
 
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+//For every call to a function using base accessor (base.function()), we check if we need to redirect to another overriding method
+bool SpxStreamRemapper::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
+{
+    process(
+        [&](spv::Op opCode, unsigned start)
+        {
+            switch (opCode) {
+                case spv::OpFunctionCallBaseUnresolved:
+                {
+                    // change OpFunctionCallBaseUnresolved to OpFunctionCallBaseResolved
+                    setOpCode(start, spv::OpFunctionCallBaseResolved);
+
+                    spv::Id functionCalledId = asId(start + 3);
+
+                    FunctionInstruction* functionCalled = GetFunctionById(functionCalledId);
+                    if (functionCalled != nullptr)
+                    {
+                        if (functionCalled->GetOverridingFunction() != nullptr)
+                        {
+                            spv::Id overridingFunctionId = functionCalled->GetOverridingFunction()->GetResultId();
+                            spv[start + 3] = overridingFunctionId;
+                        }
+                    }
+                    else
+                        error(string("OpFunctionCallBaseUnresolved: targeted Id is not a known function. Id:") + to_string(functionCalledId));
+
+                    break;
+                }
+            }
+            return true;
+        },
+        spx_op_fn_nop
+        );
+
+    if (errorMessages.size() > 0) return false;
     return true;
 }
 
@@ -646,7 +720,12 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
                 case spv::OpFunctionCall:
                 {
                     spv::Id functionCalledId = asId(start + 3);
-
+#ifdef XKSLANG_DEBUG_MODE
+                    if (functionCalledId < 0 || functionCalledId >= vecFunctionIdBeingOverriden.size()){
+                        error(string("function call Id is out of bound. Id:") + to_string(functionCalledId));
+                        return true;
+                    }
+#endif
                     FunctionInstruction* overridingFunction = vecFunctionIdBeingOverriden[functionCalledId];
                     if (overridingFunction != nullptr)
                     {
@@ -662,65 +741,107 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
         spx_op_fn_nop
     );
 
+    if (errorMessages.size() > 0) return false;
     return true;
 }
 
-bool SpxStreamRemapper::BuildOverridenFunctionMap()
+void SpxStreamRemapper::GetShaderChildrenList(ShaderClassData* shader, vector<ShaderClassData*>& children)
 {
+    children.clear();
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+    {
+        ShaderClassData* aShader = *itsh;
+        if (aShader == shader) continue;
+
+        if (aShader->HasParent(shader)) children.push_back(aShader);
+    }
+}
+
+void SpxStreamRemapper::GetShaderFamilyTree(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)
+{
+    shaderFamilyTree.clear();
+
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) (*itsh)->flag = 0;
+
+    vector<ShaderClassData*> children;
+    vector<ShaderClassData*> listShaderToValidate;
+    listShaderToValidate.push_back(shaderFromFamily);
+    while (listShaderToValidate.size() > 0)
+    {
+        ShaderClassData* aShader = listShaderToValidate.back();
+        listShaderToValidate.pop_back();
+
+        if (aShader->flag != 0) continue;  //the shader has already been added
+        shaderFamilyTree.push_back(aShader);
+        aShader->flag = 1;
+
+        //Add all parents
+        for (auto itsh = aShader->parentsList.begin(); itsh != aShader->parentsList.end(); itsh++)
+            listShaderToValidate.push_back(*itsh);
+
+        //Add all children
+        GetShaderChildrenList(aShader, children);
+        for (auto itsh = children.begin(); itsh != children.end(); itsh++)
+            listShaderToValidate.push_back(*itsh);
+    }
+}
+
+static bool shaderLevelSortFunction(SpxStreamRemapper::ShaderClassData* sa, SpxStreamRemapper::ShaderClassData* sb)
+{
+    return (sa->level < sb->level);
+}
+
+bool SpxStreamRemapper::UpdateOverridenFunctionMap(vector<ShaderClassData*>& listShadersMerged)
+{
+    if (listShadersMerged.size() == 0) return true;
+
     //we need to know the shader level before building the overriding map
     if (!ComputeShadersLevel())
         return error(string("Failed to build the shader level"));
 
-    //========================================================================================================================//
-    //========================================================================================================================//
-    // check overrides for each functions declared with an override attribute
-    // temporary implementation for now: simply override (replace) similar (same mangled name) functions from the function shader's parents classes
-    for (auto itfn = vecAllShaderFunctions.begin(); itfn != vecAllShaderFunctions.end(); itfn++)
+    //sort the shaders according to their level
+    std::sort(listShadersMerged.begin(), listShadersMerged.end(), shaderLevelSortFunction);
+
+    for (auto itshaderMerged = listShadersMerged.begin(); itshaderMerged != listShadersMerged.end(); itshaderMerged++)
     {
-        FunctionInstruction* overridingFunction = *itfn;
-        if (overridingFunction->GetOverrideAttributeState() != FunctionInstruction::OverrideAttributeStateEnum::Defined) continue;
+        ShaderClassData* shaderWithOverridingFunctions = *itshaderMerged;
+        vector<ShaderClassData*> shaderFamilyTree;
+        vector<FunctionInstruction*> listOverridingFunctions;
 
-        const string& overringFunctionName = overridingFunction->GetMangledName();
-        ShaderClassData* functionShaderOwner = overridingFunction->GetShaderOwner();
-        if (functionShaderOwner == nullptr){
-            return error(string("Overriding function does not belong to a known shader class:") + overringFunctionName);
-        }
-
-        //Check all parents classes for functions with same mangled name
-        vector<ShaderClassData*> listShadersToCheckForOverrideWithinParents;
-        listShadersToCheckForOverrideWithinParents.push_back(functionShaderOwner);
-
-        while (listShadersToCheckForOverrideWithinParents.size() > 0)
+        //get the list of all functions having the override attribute
+        for (auto itOverridingFn = shaderWithOverridingFunctions->functionsList.begin(); itOverridingFn != shaderWithOverridingFunctions->functionsList.end(); itOverridingFn++)
         {
-            ShaderClassData* shaderToCheckForOverride = listShadersToCheckForOverrideWithinParents.back();
-            listShadersToCheckForOverrideWithinParents.pop_back();
+            FunctionInstruction* shaderFunction = *itOverridingFn;
+            if (shaderFunction->GetOverrideAttributeState() == FunctionInstruction::OverrideAttributeStateEnum::Defined)
+                listOverridingFunctions.push_back(shaderFunction);
+        }
+        if (listOverridingFunctions.size() == 0) continue;
 
-            //Check all parents
-            for (int p=0; p<shaderToCheckForOverride->parentsList.size(); ++p)
+        //the overriding functions will override every functions having the same name, from the whole parents tree
+        GetShaderFamilyTree(shaderWithOverridingFunctions, shaderFamilyTree);
+        for (auto itOverridingFn = listOverridingFunctions.begin(); itOverridingFn != listOverridingFunctions.end(); itOverridingFn++)
+        {
+            FunctionInstruction* overridingFunction = *itOverridingFn;
+            overridingFunction->SetOverrideAttributeState(FunctionInstruction::OverrideAttributeStateEnum::Processed);
+            overridingFunction->SetOverridingFunction(nullptr); //the overriding function overrides itself by default (this could have been set to a different function previously)
+            const string& overringFunctionName = overridingFunction->GetMangledName();
+
+            for (auto itShaderFromTree = shaderFamilyTree.begin(); itShaderFromTree != shaderFamilyTree.end(); itShaderFromTree++)
             {
-                ShaderClassData* parent = shaderToCheckForOverride->parentsList[p];
-                listShadersToCheckForOverrideWithinParents.push_back(parent);
+                ShaderClassData* shaderFromFamily = *itShaderFromTree;
+                if (shaderFromFamily == shaderWithOverridingFunctions) continue;
 
-                //check all functions belonging to the parent shader
-                for (int f = 0; f<parent->functionsList.size(); ++f)
+                for (auto itFn = shaderFromFamily->functionsList.begin(); itFn != shaderFromFamily->functionsList.end(); itFn++)
                 {
-                    //compare the shader's functions name with the overring function name
-                    FunctionInstruction* aFunctionFromParent = parent->functionsList[f];
-                    if (overringFunctionName == aFunctionFromParent->GetMangledName())
+                    FunctionInstruction* aFunction = *itFn;
+                    if (overringFunctionName == aFunction->GetMangledName())
                     {
                         //Got a function to be overriden !
-                        if (aFunctionFromParent->GetOverridingFunction() == nullptr ||
-                            aFunctionFromParent->GetOverridingFunction()->GetShaderOwner()->level <= overridingFunction->GetShaderOwner()->level)
-                        {
-                            aFunctionFromParent->SetOverridingFunction(overridingFunction);
-                        }
+                        aFunction->SetOverridingFunction(overridingFunction);
                     }
                 }
             }
         }
-
-        //We process an override attribute only once
-        overridingFunction->SetOverrideAttributeState(FunctionInstruction::OverrideAttributeStateEnum::Processed);
     }
 
     if (errorMessages.size() > 0) return false;

@@ -1,3 +1,5 @@
+//Similar to previous merge samples, except that here both ShaderA and ShaderB inherits from Base. Thanks to mixin, expected result is the same: 6
+
 shader Base
 {
 	stream int ColorTarget;
