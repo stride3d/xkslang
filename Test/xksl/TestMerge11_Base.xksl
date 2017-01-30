@@ -11,11 +11,3 @@ shader Base
         streams.ColorTarget = Compute();
     }
 }
-
-shader ShaderA : Base
-{
-    override int Compute()
-    {
-        return base.Compute() + 2;
-    }
-}

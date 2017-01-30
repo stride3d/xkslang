@@ -6,16 +6,25 @@ shader Base
     {
         return 1;
     }
+	
     void main()
     {
         streams.ColorTarget = Compute();
     }
 }
 
-shader ShaderA : Base
+shader A1 : Base
 {
     override int Compute()
     {
         return base.Compute() + 2;
+    }
+}
+
+shader B1 : A1
+{
+    override int Compute()
+    {
+        return base.Compute() + 3;
     }
 }

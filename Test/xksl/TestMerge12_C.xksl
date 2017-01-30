@@ -12,10 +12,26 @@ shader Base
     }
 }
 
-shader ShaderA : Base
+shader A1 : Base
 {
     override int Compute()
     {
         return base.Compute() + 2;
+    }
+}
+
+shader A2 : Base
+{
+    override int Compute()
+    {
+        return base.Compute() + 20;
+    }
+}
+
+shader C : A1, A2
+{
+    override int Compute()
+    {
+        return base.Compute() + 100;
     }
 }
