@@ -57,17 +57,129 @@ SpxStreamRemapper::~SpxStreamRemapper()
     ReleaseAllMaps();
 }
 
+SpxStreamRemapper* SpxStreamRemapper::Clone()
+{
+    SpxStreamRemapper* clonedSpxRemapper = new SpxStreamRemapper();
+    clonedSpxRemapper->spv = this->spv;
+    clonedSpxRemapper->listAllObjects.resize(listAllObjects.size(), nullptr);
+
+    for (int i=0; i<listAllObjects.size(); ++i)
+    {
+        ObjectInstructionBase* obj = listAllObjects[i];
+        if (obj != nullptr)
+        {
+            ObjectInstructionBase* clonedObj = obj->CloneBasicData();
+            clonedSpxRemapper->listAllObjects[i] = clonedObj;
+        }
+    }
+
+    for (int i = 0; i < listAllObjects.size(); ++i)
+    {
+        ObjectInstructionBase* obj = listAllObjects[i];
+        if (obj == nullptr) continue;
+
+        ObjectInstructionBase* clonedObj = clonedSpxRemapper->listAllObjects[i];
+        switch (obj->GetKind())
+        {
+            case ObjectInstructionTypeEnum::Type:
+            {
+                TypeInstruction* type = dynamic_cast<TypeInstruction*>(obj);
+                if (type->GetTypePointed() != nullptr)
+                {
+                    TypeInstruction* clonedType = dynamic_cast<TypeInstruction*>(clonedObj);
+                    TypeInstruction* pointedType = clonedSpxRemapper->GetTypeById(type->GetTypePointed()->GetId());
+                    clonedType->SetTypePointed(pointedType);
+                }
+                break;
+            }
+            case ObjectInstructionTypeEnum::Variable:
+            {
+                VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+                if (variable->GetTypePointed() != nullptr)
+                {
+                    VariableInstruction* clonedVariable = dynamic_cast<VariableInstruction*>(clonedObj);
+                    TypeInstruction* pointedType = clonedSpxRemapper->GetTypeById(variable->GetTypePointed()->GetId());
+                    clonedVariable->SetTypePointed(pointedType);
+                }
+                break;
+            }
+            case ObjectInstructionTypeEnum::Function:
+            {
+                FunctionInstruction* function = dynamic_cast<FunctionInstruction*>(obj);
+                if (function->GetOverridingFunction() != nullptr)
+                {
+                    FunctionInstruction* clonedFunction = dynamic_cast<FunctionInstruction*>(clonedObj);
+                    FunctionInstruction* pointedFunction = clonedSpxRemapper->GetFunctionById(function->GetOverridingFunction()->GetId());
+                    clonedFunction->SetOverridingFunction(pointedFunction);
+                }
+                break;
+            }
+            case ObjectInstructionTypeEnum::Shader:
+            {
+                ShaderClassData* shader = dynamic_cast<ShaderClassData*>(obj);
+                ShaderClassData* clonedShader = dynamic_cast<ShaderClassData*>(clonedObj);
+                for (auto it = shader->parentsList.begin(); it != shader->parentsList.end(); it++)
+                {
+                    ShaderClassData* parent = clonedSpxRemapper->GetShaderById((*it)->GetId());
+                    clonedShader->AddParent(parent);
+                }
+                for (auto it = shader->functionsList.begin(); it != shader->functionsList.end(); it++)
+                {
+                    FunctionInstruction* function = clonedSpxRemapper->GetFunctionById((*it)->GetId());
+                    clonedShader->AddFunction(function);
+                }
+                for (auto it = shader->shaderTypesList.begin(); it != shader->shaderTypesList.end(); it++)
+                {
+                    ShaderTypeData* type = *it;
+                    TypeInstruction* clonedType = clonedSpxRemapper->GetTypeById(type->type->GetId());
+                    TypeInstruction* clonedTypePointer = clonedSpxRemapper->GetTypeById(type->pointerToType->GetId());
+                    VariableInstruction* clonedVariable = clonedSpxRemapper->GetVariableById(type->variable->GetId());
+                    ShaderTypeData* clonedShaderType = new ShaderTypeData(clonedType, clonedTypePointer, clonedVariable);
+                    clonedShader->AddShaderType(clonedShaderType);
+                }
+                break;
+            }
+        }
+    }
+
+    for (auto it = mapDeclarationName.begin(); it != mapDeclarationName.end(); it++)
+    {
+        clonedSpxRemapper->mapDeclarationName[it->first] = it->second;
+    }
+
+    for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); it++)
+    {
+        ShaderClassData* shader = clonedSpxRemapper->GetShaderById((*it)->GetId());
+        clonedSpxRemapper->vecAllShaders.push_back(shader);
+    }
+
+    for (auto it = vecAllShaderFunctions.begin(); it != vecAllShaderFunctions.end(); it++)
+    {
+        FunctionInstruction* function = clonedSpxRemapper->GetFunctionById((*it)->GetId());
+        clonedSpxRemapper->vecAllShaderFunctions.push_back(function);
+    }
+
+    clonedSpxRemapper->status = status;
+    for (auto it = idPosR.begin(); it != idPosR.end(); it++)
+        clonedSpxRemapper->idPosR[it->first] = it->second;
+    for (auto it = errorMessages.begin(); it != errorMessages.end(); it++)
+        clonedSpxRemapper->errorMessages.push_back(*it);
+    
+    return clonedSpxRemapper;
+}
+
 void SpxStreamRemapper::ReleaseAllMaps()
 {
-    mapDeclarationName.clear();
     int size = listAllObjects.size();
     for (int i = 0; i < size; ++i)
     {
         if (listAllObjects[i] != nullptr) delete listAllObjects[i];
     }
+
     listAllObjects.clear();
     vecAllShaders.clear();
     vecAllShaderFunctions.clear();
+    mapDeclarationName.clear();
 }
 
 bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
@@ -849,21 +961,14 @@ bool SpxStreamRemapper::UpdateOverridenFunctionMap(vector<ShaderClassData*>& lis
     return true;
 }
 
-bool SpxStreamRemapper::GetMappedSpxBytecode(SpxBytecode& bytecode)
+bool SpxStreamRemapper::GetMixinBytecode(vector<uint32_t>& bytecodeStream)
 {
-    if (spv.size() == 0)
-    {
-        return error("No code mapped");
-    }
-
-    std::vector<uint32_t>& bytecodeStream = bytecode.getWritableBytecodeStream();
     bytecodeStream.clear();
     bytecodeStream.insert(bytecodeStream.end(), spv.begin(), spv.end());
-
     return true;
 }
 
-bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string entryPointName, SpvBytecode& output)
+bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, SpvBytecode& output)
 {
     if (status != SpxRemapperStatusEnum::MixinFinalized)
     {
@@ -942,7 +1047,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStage stage, std::string
     return true;
 }
 
-bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, FunctionInstruction* entryFunction, string unmangledFunctionName)
+bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStageEnum stage, FunctionInstruction* entryFunction, string unmangledFunctionName)
 {
     /*
     //capabilities
@@ -1002,15 +1107,15 @@ bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStage stage, Functio
     return true;
 }
 
-spv::ExecutionModel SpxStreamRemapper::GetShadingStageExecutionMode(ShadingStage stage)
+spv::ExecutionModel SpxStreamRemapper::GetShadingStageExecutionMode(ShadingStageEnum stage)
 {
     switch (stage) {
-    case ShadingStage::Vertex:           return spv::ExecutionModelVertex;
-    case ShadingStage::Pixel:            return spv::ExecutionModelFragment;
-    case ShadingStage::TessControl:      return spv::ExecutionModelTessellationControl;
-    case ShadingStage::TessEvaluation:   return spv::ExecutionModelTessellationEvaluation;
-    case ShadingStage::Geometry:         return spv::ExecutionModelGeometry;
-    case ShadingStage::Compute:          return spv::ExecutionModelGLCompute;
+    case ShadingStageEnum::Vertex:           return spv::ExecutionModelVertex;
+    case ShadingStageEnum::Pixel:            return spv::ExecutionModelFragment;
+    case ShadingStageEnum::TessControl:      return spv::ExecutionModelTessellationControl;
+    case ShadingStageEnum::TessEvaluation:   return spv::ExecutionModelTessellationEvaluation;
+    case ShadingStageEnum::Geometry:         return spv::ExecutionModelGeometry;
+    case ShadingStageEnum::Compute:          return spv::ExecutionModelGLCompute;
     default:
         return spv::ExecutionModelMax;
     }
@@ -1592,6 +1697,19 @@ SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypeById(spv::Id id)
     {
         TypeInstruction* type = dynamic_cast<TypeInstruction*>(obj);
         return type;
+    }
+    return nullptr;
+}
+
+SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableById(spv::Id id)
+{
+    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+
+    if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable)
+    {
+        VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+        return variable;
     }
     return nullptr;
 }

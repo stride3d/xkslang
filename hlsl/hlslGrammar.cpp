@@ -2060,10 +2060,18 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
             return false;
         }
 
+        // check if there is a composition
+        bool isComposition = acceptTokenClass(EHTokCompose);
+        if (isComposition)
+        {
+            error("Cannot have \"compose\" blurp");
+            return false;
+        }
+
         // check the type (plus any post-declaration qualifiers)
         TType declaredType;
         if (!acceptFullySpecifiedType(nullptr, declaredType)) {
-            expected("invalid member or function type");
+            error((TString("invalid keyword, member or function type: ") + *token.string).c_str());
             return false;
         }
 
@@ -2270,10 +2278,18 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
             return false;
         }
 
+        // check if there is a composition
+        bool isComposition = acceptTokenClass(EHTokCompose);
+        if (isComposition)
+        {
+            error("Cannot have \"compose\" blurp");
+            return false;
+        }
+
         // check the type (plus any post-declaration qualifiers)
         TType declaredType;
         if (!acceptFullySpecifiedType(nullptr, declaredType)) {
-            expected("shader: member or function type");
+            error((TString("invalid keyword, member or function type: ") + *token.string).c_str());
             return false;
         }
 

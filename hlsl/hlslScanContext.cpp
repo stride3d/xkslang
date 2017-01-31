@@ -340,18 +340,19 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["default"] =                 EHTokDefault;
 
     //XKSL extensions: map keywords
-    (*KeywordMap)["public"]    =                 EHTokPublic;
-    (*KeywordMap)["private"]   =                 EHTokPrivate;
-    (*KeywordMap)["protected"] =                 EHTokProtected;
-    (*KeywordMap)["internal"]  =                 EHTokInternal;
-    (*KeywordMap)["stage"]     =                 EHTokStage;
-    (*KeywordMap)["stream"]    =                 EHTokStream;
-    (*KeywordMap)["override"]  =                 EHTokOverride;
-    (*KeywordMap)["abstract"]  =                 EHTokAbstract;
-    (*KeywordMap)["clone"]     =                 EHTokClone;
-    (*KeywordMap)["this"]      =                 EHTokThis;
-    (*KeywordMap)["base"]      =                 EHTokBase;
-    (*KeywordMap)["streams"]   =                 EHTokStreams;
+    (*KeywordMap)["public"]    =               EHTokPublic;
+    (*KeywordMap)["private"]   =               EHTokPrivate;
+    (*KeywordMap)["protected"] =               EHTokProtected;
+    (*KeywordMap)["internal"]  =               EHTokInternal;
+    (*KeywordMap)["stage"]     =               EHTokStage;
+    (*KeywordMap)["stream"]    =               EHTokStream;
+    (*KeywordMap)["override"]  =               EHTokOverride;
+    (*KeywordMap)["abstract"]  =               EHTokAbstract;
+    (*KeywordMap)["clone"]     =               EHTokClone;
+    (*KeywordMap)["this"]      =               EHTokThis;
+    (*KeywordMap)["base"]      =               EHTokBase;
+    (*KeywordMap)["streams"]   =               EHTokStreams;
+    (*KeywordMap)["compose"]   =               EHTokCompose;
 
     // TODO: get correct set here
     ReservedSet = new std::unordered_set<const char*, str_hash, str_eq>;
@@ -555,6 +556,7 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokThis:
     case EHTokBase:
     case EHTokStreams:
+    case EHTokCompose:
         return keyword;
 
     // primitive types

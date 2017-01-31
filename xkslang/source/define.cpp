@@ -9,13 +9,13 @@
 using namespace std;
 using namespace xkslang;
 
-string xkslang::GetStageLabel(ShadingStage stage)
+string xkslang::GetShadingStageLabel(ShadingStageEnum stage)
 {
     switch (stage)
     {
-    case ShadingStage::Vertex:
+    case ShadingStageEnum::Vertex:
         return "Vertex";
-    case ShadingStage::Pixel:
+    case ShadingStageEnum::Pixel:
         return "Pixel";
     }
 

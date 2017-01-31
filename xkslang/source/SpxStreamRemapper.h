@@ -73,6 +73,9 @@ public:
             : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId),
               bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition), name(name), shaderOwner(nullptr) {}
         virtual ~ObjectInstructionBase(){}
+        virtual ObjectInstructionBase* CloneBasicData() {
+            return new ObjectInstructionBase(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+        }
 
         ObjectInstructionTypeEnum GetKind() const {return kind;}
         const std::string& GetName() const {return name;}
@@ -88,7 +91,7 @@ public:
         void SetShaderOwner(ShaderClassData* owner) { shaderOwner = owner; }
         ShaderClassData* GetShaderOwner() const { return shaderOwner; }
 
-    private:
+    protected:
         ObjectInstructionTypeEnum kind;
         std::string name;
         spv::Op opCode;
@@ -107,6 +110,10 @@ public:
         ConstInstruction(const ParsedObjectData& parsedData, std::string name)
             : ObjectInstructionBase(parsedData, name) {}
         virtual ~ConstInstruction() {}
+        virtual ObjectInstructionBase* CloneBasicData() {
+            ConstInstruction* obj = new ConstInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            return obj;
+        }
     };
 
     class TypeInstruction : public ObjectInstructionBase
@@ -115,6 +122,10 @@ public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name)
             : ObjectInstructionBase(parsedData, name), pointerTo(nullptr){}
         virtual ~TypeInstruction() {}
+        virtual ObjectInstructionBase* CloneBasicData() {
+            TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            return obj;
+        }
 
         void SetTypePointed(TypeInstruction* type) { pointerTo = type; }
         TypeInstruction* GetTypePointed() const { return pointerTo; }
@@ -129,6 +140,10 @@ public:
         VariableInstruction(const ParsedObjectData& parsedData, std::string name)
             : ObjectInstructionBase(parsedData, name), variableTo(nullptr) {}
         virtual ~VariableInstruction() {}
+        virtual ObjectInstructionBase* CloneBasicData() {
+            VariableInstruction* obj = new VariableInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            return obj;
+        }
 
         void SetTypePointed(TypeInstruction* type) { variableTo = type; }
         TypeInstruction* GetTypePointed() const { return variableTo; }
@@ -150,6 +165,12 @@ public:
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name)
             : ObjectInstructionBase(parsedData, name), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name){}
         virtual ~FunctionInstruction() {}
+        virtual ObjectInstructionBase* CloneBasicData() {
+            FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            obj->overrideAttributeState = overrideAttributeState;
+            obj->fullName = fullName;
+            return obj;
+        }
 
         const std::string& GetMangledName() const { return GetName(); }
         const std::string& GetFullName() const { return fullName; }
@@ -176,6 +197,7 @@ public:
         VariableInstruction* variable;
 
         ShaderTypeData(TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) : type(type), pointerToType(pointerToType), variable(variable){}
+        virtual ~ShaderTypeData(){}
     };
 
     class ShaderClassData : public ObjectInstructionBase
@@ -184,7 +206,15 @@ public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name)
             : ObjectInstructionBase(parsedData, name), level(-1), flag(0) {
         }
-        virtual ~ShaderClassData() {}
+        virtual ~ShaderClassData() {
+            for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
+        }
+        virtual ObjectInstructionBase* CloneBasicData() {
+            ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            obj->level = level;
+            obj->flag = flag;
+            return obj;
+        }
 
         void AddParent(ShaderClassData* parent) { parentsList.push_back(parent); }
         bool HasParent(ShaderClassData* parent) {
@@ -226,17 +256,19 @@ public:
     SpxStreamRemapper(int verbose = 0);
     virtual ~SpxStreamRemapper();
 
+    SpxStreamRemapper* Clone();
+
     bool MixWithSpxBytecode(const SpxBytecode& bytecode);
     bool FinalizeMixin();
 
-    bool GetMappedSpxBytecode(SpxBytecode& bytecode);
-    bool GenerateSpvStageBytecode(ShadingStage stage, std::string entryPointName, SpvBytecode& output);
+    bool GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
+    bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, SpvBytecode& output);
 
     virtual void error(const std::string& txt) const;
     bool error(const std::string& txt);
     void copyMessagesTo(std::vector<std::string>& list);
 
-    spv::ExecutionModel GetShadingStageExecutionMode(ShadingStage stage);
+    spv::ExecutionModel GetShadingStageExecutionMode(ShadingStageEnum stage);
 
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
@@ -254,7 +286,7 @@ private:
     bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
     bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
 
-    bool BuildAndSetShaderStageHeader(ShadingStage stage, FunctionInstruction* entryFunction, std::string unmangledFunctionName);
+    bool BuildAndSetShaderStageHeader(ShadingStageEnum stage, FunctionInstruction* entryFunction, std::string unmangledFunctionName);
     bool ConvertSpirxToSpirVBytecode();
 
     bool ComputeShadersLevel();
@@ -287,6 +319,7 @@ private:
     ShaderClassData* GetShaderById(spv::Id id);
     FunctionInstruction* GetFunctionById(spv::Id id);
     TypeInstruction* GetTypeById(spv::Id id);
+    VariableInstruction* GetVariableById(spv::Id id);
     TypeInstruction* GetTypePointingTo(TypeInstruction* targetType);
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
 

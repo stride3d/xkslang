@@ -1,0 +1,17 @@
+shader ShaderComp
+{
+	float4 Compute(float4 color)
+	{
+		return color;
+	}
+}
+
+shader ShaderA
+{
+	compose ShaderComp color;
+	
+	float4 VSmain()
+	{
+		return color.Compute();
+	}
+}

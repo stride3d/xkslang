@@ -11,7 +11,7 @@
 
 namespace xkslang
 {
-    enum class ShadingStage
+    enum class ShadingStageEnum
     {
         Vertex,
         Pixel,
@@ -21,7 +21,7 @@ namespace xkslang
         Compute,
     };
 
-    std::string GetStageLabel(ShadingStage stage);
+    std::string GetShadingStageLabel(ShadingStageEnum stage);
 
 } //namespace xkslang
 

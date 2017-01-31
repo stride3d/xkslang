@@ -17,7 +17,6 @@
 #include "Xkslang.h"
 #include "XkslMixer.h"
 #include "SpxStreamParser.h"
-#include "SpxMixerToSpvBuilder.h"
 #include "SpxStreamRemapper.h"
 
 using namespace std;
@@ -62,41 +61,62 @@ bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, std::vector<std::string>
     return true;
 }
 
-bool XkslMixer::FinalizeMixin(std::vector<std::string>& messages)
+bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, std::vector<std::string>& messages)
 {
     if (spxStreamRemapper == nullptr)
-        return error(messages, "The mixin AST must been created first");
+        return error(messages, "you must process some mixin first");
 
-    if (!spxStreamRemapper->FinalizeMixin())
+    spxStreamRemapper->GetMixinBytecode(output.getWritableBytecodeStream());
+
+    return true;
+}
+
+bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, SpvBytecode& compiledSpv, std::vector<std::string>& messages)
+{
+    if (spxStreamRemapper == nullptr)
+        return error(messages, "you must process some mixin first");
+
+    if (outputStages.size() == 0)
+        return error(messages, "you must define some stage outputs");
+
+    //=============================================================================================================================================
+    //=============================================================================================================================================
+    //We clone the stream before compiling it: we want to keep the original stream as it is, so that user can keep mixin and updating it if need
+    SpxStreamRemapper* clonedSpxStream = spxStreamRemapper->Clone();
+    if (clonedSpxStream == nullptr)
+        return error(messages, "Failed to clone the SpxStreamRemapper");
+
+    //TODO
+    /*if (!clonedSpxStream->Compile())
     {
-        spxStreamRemapper->copyMessagesTo(messages);
+        clonedSpxStream->copyMessagesTo(messages);
+        return error(messages, "Fail to compile the mixin");
+    }*/
+
+    if (!clonedSpxStream->FinalizeMixin()){
+        clonedSpxStream->copyMessagesTo(messages);
         return error(messages, "Fail to finalize the mixin");
     }
 
-    return true;
-}
-
-bool XkslMixer::GetMixinBytecode(SpxBytecode& output, std::vector<std::string>& messages)
-{
-    if (spxStreamRemapper == nullptr)
-        return error(messages, "The mixin AST must been created first");
-
-    spxStreamRemapper->GetMappedSpxBytecode(output);
-
-    return true;
-}
-
-bool XkslMixer::GenerateStageBytecode(ShadingStage stage, std::string entryPoint, SpvBytecode& output, std::vector<std::string>& messages)
-{
-    if (spxStreamRemapper == nullptr)
-        return error(messages, "The mixin AST must been created first");
-
-    bool success = spxStreamRemapper->GenerateSpvStageBytecode(stage, entryPoint, output);
-    if (!success)
-    {
-        spxStreamRemapper->copyMessagesTo(messages);
-        return false;
+    if (!clonedSpxStream->GetMixinBytecode(compiledSpv.getWritableBytecodeStream())){
+        clonedSpxStream->copyMessagesTo(messages);
+        return error(messages, "Fail to get the mixin bytecode");
     }
+        
+    for (int i=0; i<outputStages.size(); ++i)
+    {
+        XkslMixerOutputStage& outputStage = outputStages[i];
+        bool success = clonedSpxStream->GenerateSpvStageBytecode(outputStage.stage, outputStage.entryPoint, outputStage.resultingBytecode);
+        if (!success)
+        {
+            clonedSpxStream->copyMessagesTo(messages);
+            return error(messages, string("Fail to generate SPV stage bytecode for stage=\"") + GetShadingStageLabel(outputStage.stage) + string("\""));
+        }
+    }
+
+    delete clonedSpxStream;
+    //=============================================================================================================================================
+    //=============================================================================================================================================
 
     return true;
 }
