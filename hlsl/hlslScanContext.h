@@ -133,6 +133,15 @@ public:
         }
     };
 
+    class XkslCompositionDeclaration
+    {
+    public:
+        TSourceLoc location;
+        TString shaderName;
+        TString variableName;
+        bool isArray;
+    };
+
     class XkslShaderMember
     {
     public:
@@ -155,6 +164,8 @@ public:
 
     TString shaderName;
     TIdentifierList shaderparentsName;
+
+    TVector<XkslCompositionDeclaration> listCompositions;  //list of composition declared in the shader
 
     TVector<XkslShaderMember> listParsedMembers;  //list of members read by the parser
     TVector<XkslShaderMember> listAllDeclaredMembers;  //list of members after being declared

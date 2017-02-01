@@ -9,9 +9,6 @@ shader ShaderComp
 shader ShaderA
 {
 	compose ShaderComp color;
-	
-	float4 VSmain()
-	{
-		return color.Compute();
-	}
+	compose ShaderComp colorTab[];
+	compose UnknownShader unkwnown;
 }

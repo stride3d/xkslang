@@ -610,6 +610,73 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 // TODO: switch from HlslParser to XkslParser ?
 //==========================================================================================
 
+void ClearShaderLibrary(XkslShaderLibrary& shaderLibrary)
+{
+    for (int s = 0; s < shaderLibrary.listShaders.size(); s++)
+    {
+        XkslShaderDefinition* shader = shaderLibrary.listShaders[s];
+        delete shader;
+    }
+
+    shaderLibrary.listShaders.clear();
+}
+
+/*
+//A shader is declared as a composition: we duplicate the shader members and functions
+XkslShaderDefinition* CloneShaderForComposition(HlslParseContext* parseContext, XkslShaderDefinition* shaderToClone, XkslShaderDefinition::XkslCompositionDeclaration& composition)
+{
+    if (shaderToClone->shaderparentsName.size() > 0) {
+        parseContext->infoSink.info.message(EPrefixError, (TString("Unimplemented yet: The shader has some parents: ") + shaderToClone->shaderName).c_str());
+        return nullptr;
+    }
+
+    XkslShaderDefinition* clonedShader = new XkslShaderDefinition();
+
+    clonedShader->location = composition.location;
+    clonedShader->shaderName = TString("TOTOTOTOTOTOTO_") + shaderToClone->shaderName;
+
+    //TOTO
+    for (int i = 0; i < shaderToClone->listParsedMembers.size(); ++i)
+    {
+        XkslShaderDefinition::XkslShaderMember& memberToClone = shaderToClone->listParsedMembers[i];
+
+        XkslShaderDefinition::XkslShaderMember clonedMember;
+
+        switch (memberToClone.memberLocation.memberLocationType)
+        {
+            case XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst:
+            {
+                parseContext->infoSink.info.message(EPrefixError, (TString("A const member from a shader to be cloned is unresolved: ") + memberToClone.type->getFieldName()).c_str());
+                delete clonedShader;
+                return nullptr;
+            }
+
+            case XkslShaderDefinition::MemberLocationTypeEnum::Const:
+            {
+                //a const variable will simply redirect to its original definition
+                clonedMember.memberLocation = memberToClone.memberLocation;
+                clonedShader->listAllDeclaredMembers.push_back(clonedMember);
+                break;
+            }
+
+            default:
+            {
+                parseContext->infoSink.info.message(EPrefixError, "Unknown member locationType");
+                delete clonedShader;
+                return nullptr;
+            }
+        }
+    }
+
+    //int countParents = parentsName == nullptr ? 0 : parentsName->size();
+    //for (int i = 0; i < countParents; ++i)
+    //    shaderDefinition->shaderparentsName.push_back(parentsName->at(i));
+    //this->xkslShaderCurrentlyParsed = shaderDefinition;
+
+    return clonedShader;
+}
+*/
+
 //Resolve unresolved consts:
 // const depending on other const variables could not have been assignem with the expression during the shader declaration
 //While parsing them, we stored the token list describing their assignment expression
@@ -695,6 +762,17 @@ bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary
     return true;
 }
 
+//Return a pointer to the shader definition for the input shaderName
+XkslShaderDefinition* GetShaderDefinition(XkslShaderLibrary& shaderLibrary, const TString& shaderName)
+{
+    TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+    for (int s = 0; s < listShaderParsed.size(); s++)
+    {
+        XkslShaderDefinition* shader = listShaderParsed[s];
+        if (shader->shaderName.compare(shaderName) == 0) return shader;
+    }
+    return nullptr;
+}
 
 bool ParseXkslShaderFile(
     const std::string& fileName,
@@ -775,6 +853,7 @@ bool ParseXkslShaderFile(
     bool success = false;
     {
         //==================================================================================================================
+        //==================================================================================================================
         //Parse shader declaration only!
         {
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
@@ -784,7 +863,8 @@ bool ParseXkslShaderFile(
         }
 
         //==================================================================================================================
-        //We finished parsing the shader declaration: we can now add all function prototypes in the list of symbols, and create all members structs
+        //==================================================================================================================
+        //We finished parsing the shaders declaration: we can now add all function prototypes in the list of symbols, and create all members structs
         if (success)
         {
             TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
@@ -792,6 +872,7 @@ bool ParseXkslShaderFile(
             {
                 XkslShaderDefinition* shader = listShaderParsed[s];
 
+                //======================================================================================
                 //Method declaration: add the shader methods prototype in the table of symbol
                 for (int i = 0; i < shader->listMethods.size(); ++i)
                 {
@@ -1011,14 +1092,53 @@ bool ParseXkslShaderFile(
             }
         }
 
-        //===========================================================================================================
+        //==================================================================================================================
+        //==================================================================================================================
         //resolve all unresolved const members
         if (success)
         {
             success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, parseContext, ppContext, versionWillBeError);
         }
 
-        //===========================================================================================================
+        /*
+        //==================================================================================================================
+        //==================================================================================================================
+        //Process all compositions declared in the shaders: we need to duplicate the composed shader then instantiate them
+        if (success)
+        {
+            TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+            for (int s = 0; s < listShaderParsed.size(); s++)
+            {
+                XkslShaderDefinition* shader = listShaderParsed[s];
+                for (int i = 0; i < shader->listCompositions.size(); ++i)
+                {
+                    XkslShaderDefinition::XkslCompositionDeclaration& composition = shader->listCompositions.at(i);
+                    TString& shaderName = composition.shaderName;
+
+                    XkslShaderDefinition* shaderToInstantiate = GetShaderDefinition(shaderLibrary, shaderName);
+                    if (shaderToInstantiate == nullptr) {
+                        parseContext->infoSink.info.message(EPrefixError, (TString("No Shader found in the library with the name: ") + shaderName).c_str());
+                        success = false;
+                    }
+                    else
+                    {
+                        XkslShaderDefinition* compositionShader = CloneShaderForComposition(parseContext, shaderToInstantiate, composition);
+                        if (compositionShader == nullptr) {
+                            parseContext->infoSink.info.message(EPrefixError, (TString("Failed to instantiate the composition for the shader: ") + shaderName).c_str());
+                            success = false;
+                        }
+                        else
+                        {
+                            shaderLibrary.listCompositionShaders.push_back(compositionShader);
+                        }
+                    }
+                }
+            }
+        }
+        */
+
+        //==================================================================================================================
+        //==================================================================================================================
         //Now we can parse the shader methods' definition!
         if (success)
         {
@@ -1028,7 +1148,7 @@ bool ParseXkslShaderFile(
             success = parseContext->parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput, versionWillBeError);
         }
 
-        //===========================================================================================================
+        //==================================================================================================================
         //Add all methods in the global tree root
         if (success)
         {
@@ -1062,7 +1182,7 @@ bool ParseXkslShaderFile(
             intermediate->setTreeRoot(treeRootNode);
         }
 
-        //===========================================================================================================
+        //==================================================================================================================
         //End of parsing
         parseContext->parseXkslShaderFinalize();
     }
@@ -1088,6 +1208,7 @@ bool ParseXkslShaderFile(
     // Clean up the symbol table. The AST is self-sufficient now.
     delete symbolTableMemory;
     delete parseContext;
+    ClearShaderLibrary(shaderLibrary);
 
     //delete infoSink;
     //delete intermediate;
