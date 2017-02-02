@@ -10,5 +10,4 @@ shader ShaderA
 {
 	compose ShaderComp color;
 	compose ShaderComp colorTab[];
-	compose UnknownShader unkwnown;
 }

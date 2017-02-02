@@ -114,7 +114,7 @@ namespace glslang {
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
         bool acceptXkslFunctionCall(TString& shaderClassName, bool callToFunctionFromBaseShaderClass, int shaderCompositionIndexTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
-        bool acceptXkslShaderComposition(XkslShaderDefinition::XkslCompositionDeclaration&);
+        bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
         bool acceptLiteral(TIntermTyped*&);
         bool acceptCompoundStatement(TIntermNode*&);

@@ -953,6 +953,20 @@ void Builder::addLine(Id target, Id fileName, int lineNum, int column)
     lines.push_back(std::unique_ptr<Instruction>(line));
 }
 
+void Builder::addDecoration(Id id, Decoration decoration, int index, const char* str1, const char* str2)
+{
+    if (decoration == spv::DecorationMax)
+        return;
+    Instruction* dec = new Instruction(OpDecorate);
+    dec->addIdOperand(id);
+    dec->addImmediateOperand(decoration);
+    dec->addImmediateOperand(index);
+    dec->addStringOperand(str1);
+    dec->addStringOperand(str2);
+
+    decorations.push_back(std::unique_ptr<Instruction>(dec));
+}
+
 void Builder::addDecoration(Id id, Decoration decoration, const char* str)
 {
 	if (decoration == spv::DecorationMax)

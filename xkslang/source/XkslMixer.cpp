@@ -14,9 +14,7 @@
 #include "SPIRV/doc.h"
 #include "SPIRV/SPVRemapper.h"
 
-#include "Xkslang.h"
 #include "XkslMixer.h"
-#include "SpxStreamParser.h"
 #include "SpxStreamRemapper.h"
 
 using namespace std;

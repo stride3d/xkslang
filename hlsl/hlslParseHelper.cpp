@@ -3261,7 +3261,8 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
 //  - user function
 //  - subroutine call (not implemented yet)
 //
-TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunction* function, TIntermTyped* arguments, bool callToFunctionFromBaseShaderClass)
+TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunction* function, TIntermTyped* arguments,
+    bool callToFunctionFromBaseShaderClass, TShaderCompositionVariable* calledThroughCompositionVariable)
 {
     TIntermTyped* result = nullptr;
 
@@ -3322,6 +3323,10 @@ TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunct
                 TIntermAggregate* call = result->getAsAggregate();
                 call->setName(fnCandidate->getMangledName());
                 call->SetTargetBaseShaderClass(callToFunctionFromBaseShaderClass);
+                if (calledThroughCompositionVariable != nullptr)
+                    call->GetWritableCompositionVariable() = *calledThroughCompositionVariable;
+                else
+                    call->GetWritableCompositionVariable().id = -1;
 
                 // this is how we know whether the given function is a built-in function or a user-defined function
                 // if builtIn == false, it's a userDefined -> could be an overloaded built-in function also
@@ -6144,6 +6149,7 @@ void HlslParseContext::declareBlock(const TSourceLoc& loc, TType& type, const TS
     if (type.getUserIdentifierName() != nullptr) blockType.setUserIdentifierName(type.getUserIdentifierName()->c_str());
     if (type.getOwnerClassName() != nullptr) blockType.setOwnerClassName(type.getOwnerClassName()->c_str());
     if (type.getParentsName() != nullptr) blockType.SetParentsName(type.getParentsName());
+    if (type.getCompositionsList() != nullptr) blockType.SetCompositionsList(type.getCompositionsList());
 
     // Add the variable, as anonymous or named instanceName.
     // Make an anonymous variable if no name was provided.

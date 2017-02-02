@@ -254,16 +254,18 @@ const char* DecorationString(int decoration)
     case 44: return "Alignment";
     
     //XKSL extensions
-    case (DecorationDeclarationName):         return "DeclarationName";
-    case (DecorationShaderInheritFromParent): return "InheritsFromShaderClass";
-    case (DecorationBelongsToShader):         return "BelongsToShader";
-    case (DecorationAttributeStage):	      return "Stage";
-    case (DecorationAttributeStream):         return "Stream";
-    case (DecorationAttributeStatic):		  return "Static";
-    case (DecorationMemberConst):             return "Const";
-    case (DecorationMethodOverride):          return "Override";
-    case (DecorationMethodAbstract):          return "Abstract";
-    case (DecorationMethodClone):             return "Clone";
+    case (DecorationDeclarationName):                return "DeclarationName";
+    case (DecorationShaderInheritFromParent):        return "InheritsFromShaderClass";
+    case (DecorationShaderDeclareComposition):       return "DeclareComposition";
+    case (DecorationShaderDeclareArrayComposition):  return "DeclareArrayComposition";
+    case (DecorationBelongsToShader):                return "BelongsToShader";
+    case (DecorationAttributeStage):	             return "Stage";
+    case (DecorationAttributeStream):                return "Stream";
+    case (DecorationAttributeStatic):		         return "Static";
+    case (DecorationMemberConst):                    return "Const";
+    case (DecorationMethodOverride):                 return "Override";
+    case (DecorationMethodAbstract):                 return "Abstract";
+    case (DecorationMethodClone):                    return "Clone";
 
     case DecorationCeiling:
     default:  return "Bad";

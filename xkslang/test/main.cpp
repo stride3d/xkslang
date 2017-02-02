@@ -61,10 +61,6 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "", {{"methodReferingToShaderVariable.xksl"}},{} },
     //{ "", {{"methodsWithSimpleClassAccessor.xksl"}},{} },
     //{ "", {{"cbuffers.xksl"}},{} },
-    //{ "", {{"TestComposeDeclaration.xksl"}},{} },
-    { "",{ { "TestComposeShaderWithConsts.xksl" } },{} },
-        //{ "",{ { "TestComposeShaderWithParents.xksl" } },{} },
-        //{ "",{ { "TestCompose.xksl" } },{} },
 
     //{ "", {{"TestMixin01_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin01_Base.xksl_Pixel.rv.glsl"}} },
     //{ "", {{"TestMixin01_Override.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin01_Override.xksl_Pixel.rv.glsl"}} },
@@ -84,6 +80,11 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestMerge10", {{"TestMerge10_ShaderA.xksl"}, {"TestMerge10_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge10_Pixel.rv.glsl"}} },
     //{ "TestMerge11", {{"TestMerge11_Base.xksl"}, {"TestMerge11_ShaderA.xksl"}, {"TestMerge11_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge11_Pixel.rv.glsl"}} },
     //{ "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge12_Pixel.rv.glsl"}} },
+
+    //{ "TestCompose01", {{"TestComposeDeclaration.xksl"}},{} },
+    { "TestCompose02",{ { "TestCompose.xksl" } },{} },
+        //{ "",{ { "TestComposeShaderWithParents.xksl" } },{} },
+        //{ "",{ { "TestCompose.xksl" } },{} },
 
     //{{"textureAndSampler.xksl"}, {"", nullptr}},
     //{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -262,7 +263,7 @@ void main(int argc, char** argv)
             //======================================================================================================
             //======================================================================================================
             // Mixin all inputs
-            if (success && outputs.size() > 0)
+            if (success)
             {
                 cout << "Mixin SPIRX shaders" << endl;
 
@@ -312,7 +313,7 @@ void main(int argc, char** argv)
                 }
                 
                 //compile the mixin
-                if (success)
+                if (success && outputs.size() > 0)
                 {
                     SpvBytecode compiledSpv;
                     vector<XkslMixer::XkslMixerOutputStage> outputStages;

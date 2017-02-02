@@ -208,6 +208,7 @@ public:
     void addLine(Id target, Id fileName, int line, int column);
     void addDecoration(Id, Decoration, int num = -1);
 	void addDecoration(Id, Decoration, const char* str);
+    void addDecoration(Id, Decoration, int index, const char* str1, const char* str2);
     void addMemberDecoration(Id, unsigned int member, Decoration, int num = -1);
 
     // At the end of what block do the next create*() instructions go?

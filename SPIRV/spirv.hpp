@@ -389,6 +389,8 @@ enum Decoration {
 	//Specify that a shader inherits from another shader, the order of inheritance is defined by the order of declaration of InheritFromShaderClass decoration
 	DecorationShaderInheritFromParent = 1001,
     DecorationBelongsToShader = 1002,
+    DecorationShaderDeclareComposition = 1003,
+    DecorationShaderDeclareArrayComposition = 1004,
 
 	//Member/method Qualifiers
 	DecorationAttributeStage  = 1010,  //member or method is a stage

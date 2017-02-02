@@ -1087,6 +1087,7 @@ bool ParseXkslShaderFile(
                     TType* type = new TType(emptyList, shader->shaderName, qualifier, nullptr);
                     type->setUserIdentifierName(shader->shaderName.c_str());
                     type->SetParentsName(&shader->shaderparentsName);
+                    type->SetCompositionsList(&shader->listCompositions);
                     parseContext->declareVariable(shader->location, shader->shaderName, *type, nullptr);
                 }
             }
@@ -2204,7 +2205,7 @@ bool TShader::parse(const TBuiltInResource* builtInResources, int defaultVersion
     return parse(builtInResources, defaultVersion, ENoProfile, false, forwardCompatible, messages);
 }
 
-bool TShader::parseXkslShaderFile(const std::string& fileName, const TBuiltInResource* builtInResources, int defaultVersion, bool forwardCompatible, EShMessages messages)
+bool TShader::parseXkslShaderFile(const std::string& fileName, const TBuiltInResource* builtInResources, EShMessages messages)
 {
     if (numStrings != 1) return false;
 

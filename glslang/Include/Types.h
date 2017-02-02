@@ -386,6 +386,19 @@ enum TBlendEquationShift {
     EBlendCount
 };
 
+//for XKSL extensions
+class TShaderCompositionVariable {
+public:
+    int id;  //-1 = invalid id
+    TSourceLoc location;
+    TString shaderOwnerName;
+    TString shaderTypeName;
+    TString variableName;
+    bool isArray;
+
+    TShaderCompositionVariable() : id(-1){}
+};
+
 class TQualifier {
 public:
     static const int layoutNotSet = -1;
@@ -1091,7 +1104,7 @@ public:
                    bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), compositionsList(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1102,7 +1115,7 @@ public:
           bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), compositionsList(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1115,7 +1128,7 @@ public:
                             basicType(p.basicType),
                             vectorSize(p.vectorSize), matrixCols(p.matrixCols), matrixRows(p.matrixRows), vector1(false),
                             arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), compositionsList(nullptr)
                             {
                                 if (basicType == EbtSampler)
                                     sampler = p.sampler;
@@ -1131,7 +1144,7 @@ public:
     TType(const TSampler& sampler, TStorageQualifier q = EvqUniform, TArraySizes* as = nullptr) :
         basicType(EbtSampler), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
         arraySizes(as), structure(nullptr), fieldName(nullptr), typeName(nullptr), sampler(sampler),
-        ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
+        ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), compositionsList(nullptr)
     {
         qualifier.clear();
         qualifier.storage = q;
@@ -1179,7 +1192,7 @@ public:
     TType(TTypeList* userDef, const TString& n) :
                             basicType(EbtStruct), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), compositionsList(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1189,7 +1202,7 @@ public:
     TType(TTypeList* userDef, const TString& n, const TQualifier& q) :
                             basicType(EbtBlock), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), compositionsList(nullptr)
                             {
                                 sampler.clear();
                                 typeName = NewPoolTString(n.c_str());
@@ -1199,7 +1212,7 @@ public:
 	TType(TTypeList* userDef, const TString& n, const TQualifier& q, TIdentifierList* parentsName) :
 		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
 		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-        ownerClassName(nullptr), parentsName(parentsName), userIdentifierName(nullptr)
+        ownerClassName(nullptr), parentsName(parentsName), userIdentifierName(nullptr), compositionsList(nullptr)
 	{
 		sampler.clear();
 		typeName = NewPoolTString(n.c_str());
@@ -1226,6 +1239,7 @@ public:
         typeName = copyOf.typeName;
 		ownerClassName = copyOf.ownerClassName;
 		parentsName = copyOf.parentsName;
+        compositionsList = copyOf.compositionsList;
     }
 
     void deepCopy(const TType& copyOf)
@@ -1254,10 +1268,16 @@ public:
 
 		if (copyOf.parentsName) {
 			parentsName = new TIdentifierList;
-			for (unsigned int i = 0; i < copyOf.parentsName->size(); ++i) {
+            *parentsName = *copyOf.parentsName;
+			/*for (unsigned int i = 0; i < copyOf.parentsName->size(); ++i) {
 				parentsName->push_back(NewPoolTString((*copyOf.parentsName)[i]->c_str()) );
-			}
+			}*/
 		}
+
+        if (copyOf.compositionsList) {
+            compositionsList = new TVector<TShaderCompositionVariable>;
+            *compositionsList = *copyOf.compositionsList;
+        }
 
         if (copyOf.fieldName)
             fieldName = NewPoolTString(copyOf.fieldName->c_str());
@@ -1820,9 +1840,17 @@ public:
         else
         {
             parentsName = new TIdentifierList;
-            for (unsigned int i = 0; i < names->size(); ++i) {
-                parentsName->push_back(NewPoolTString(names->at(i)->c_str()));
-            }
+            *parentsName = *names;
+        }
+    }
+    const TVector<TShaderCompositionVariable>* getCompositionsList() const { return compositionsList; }
+    void SetCompositionsList(const TVector<TShaderCompositionVariable>* compositions)
+    {
+        if (compositions == nullptr || compositions->size() == 0) compositionsList = nullptr;
+        else
+        {
+            compositionsList = new TVector<TShaderCompositionVariable>;
+            *compositionsList = *compositions;
         }
     }
 
@@ -1964,6 +1992,7 @@ protected:
 	TIdentifierList* parentsName;         // list of parents name for shader class type
 	TString*         ownerClassName;      // class to which the type or function belongs to
     TString*         userIdentifierName;  // user identifier name of the variable or function using the type (fieldname can be different depending how we organize the variables)
+    TVector<TShaderCompositionVariable>* compositionsList;  // nullptr unless a shaderclass declaring compositions (can it be shared among type?)
 };
 
 } // end namespace glslang

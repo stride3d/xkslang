@@ -55,8 +55,6 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
 
     const EShLanguage kind = EShLangFragment;   //Default kind (glslang expect one, even though we're parsing generic xksl files)
     bool flattenUniformArrays = false;
-    bool isForwardCompatible = false;
-    int defaultVersion = 100;
     TBuiltInResource* resources = nullptr;
     bool buildSPRV = true;
     bool keepUncalledFuntionsInAST = true;
@@ -74,9 +72,7 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
 
     bool success = false;
 
-    success = shader.parseXkslShaderFile(shaderFileName,
-        (resources ? resources : &glslang::DefaultTBuiltInResource),
-        defaultVersion, isForwardCompatible, controls);
+    success = shader.parseXkslShaderFile(shaderFileName, (resources ? resources : &glslang::DefaultTBuiltInResource), controls);
 
     //We don't really need to link, but glslang will do some final checkups, then give access to the intermediary
     glslang::TProgram program;

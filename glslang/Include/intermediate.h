@@ -1111,6 +1111,7 @@ public:
 
     void SetTargetBaseShaderClass(bool b) { targetBaseShaderClass = b; }
     bool GetTargetBaseShaderClass() const { return targetBaseShaderClass; }
+    TShaderCompositionVariable& GetWritableCompositionVariable() { return functionCalledThroughComposition; }
 
 protected:
     TIntermAggregate(const TIntermAggregate&); // disallow copy constructor
@@ -1123,7 +1124,9 @@ protected:
     bool debug;
     TPragmaTable* pragmaTable;
 
-    bool targetBaseShaderClass; //xksl extensions, if we call a method with base accessor, we need to record this information (to make sure the function call can't get overriden)
+    //xksl extensions
+    bool targetBaseShaderClass; //if we call a method with base accessor, we need to record this information (to make sure the function call can't get overriden)
+    TShaderCompositionVariable functionCalledThroughComposition;  //the method has been called though a composition variable
 };
 
 //

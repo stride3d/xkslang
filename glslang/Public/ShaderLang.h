@@ -408,7 +408,7 @@ public:
                bool forwardCompatible, EShMessages, Includer&);
 
     //XKSL extensions
-    bool parseXkslShaderFile(const std::string& fileName, const TBuiltInResource* builtInResources, int defaultVersion, bool forwardCompatible, EShMessages messages);
+    bool parseXkslShaderFile(const std::string& fileName, const TBuiltInResource* builtInResources, EShMessages messages);
 
     // Equivalent to parse() without a default profile and without forcing defaults.
     // Provided for backwards compatibility.

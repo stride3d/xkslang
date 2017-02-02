@@ -149,8 +149,20 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
 
     for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); it++)
     {
-        ShaderClassData* shader = clonedSpxRemapper->GetShaderById((*it)->GetId());
-        clonedSpxRemapper->vecAllShaders.push_back(shader);
+        ShaderClassData* shaderToClone = *it;
+        ShaderClassData* clonedShader = clonedSpxRemapper->GetShaderById(shaderToClone->GetId());
+        clonedSpxRemapper->vecAllShaders.push_back(clonedShader);
+
+        for (int i = 0; i < shaderToClone->compositionsList.size(); ++i)
+        {
+            ShaderComposition& compositionToClone = shaderToClone->compositionsList[i];
+            ShaderClassData* compShaderOriginal = compositionToClone.originalShader == nullptr? nullptr:
+                clonedSpxRemapper->GetShaderById(compositionToClone.originalShader->GetId());
+            ShaderClassData* compShaderInstantiate = compositionToClone.instantiateShader == nullptr ? nullptr :
+                clonedSpxRemapper->GetShaderById(compositionToClone.instantiateShader->GetId());
+            ShaderComposition clonedComposition(compositionToClone.id, compShaderOriginal, compShaderInstantiate, compositionToClone.variableName, compositionToClone.isArray);
+            shaderToClone->AddComposition(clonedComposition);
+        }
     }
 
     for (auto it = vecAllShaderFunctions.begin(); it != vecAllShaderFunctions.end(); it++)
@@ -210,6 +222,11 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
         //merge the new bytecode into current one
         if (!MergeWithBytecode(bytecode, listShadersMerged))
             return error(string("Error merging the bytecode: ") + bytecode.GetName());
+    }
+
+    if (!ValidateSpxBytecode())
+    {
+        return error("Error validating the bytecode");
     }
 
     //=============================================================================================================
@@ -460,12 +477,9 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<Sh
                 case ObjectInstructionTypeEnum::Variable:
                 {
                     //this is a variable from destination bytecode, we retrieve its id in the destination bytecode using its declaration name
-                    ObjectInstructionBase* object = this->GetObjectByName(objectFromUnmappedId->GetName());
-                    VariableInstruction* variable = nullptr;
-                    if (object == nullptr)
-                        return error(string("No object exists in destination bytecode with the name:") + objectFromUnmappedId->GetName());
-                    if ((variable = dynamic_cast<VariableInstruction*>(object)) == nullptr)
-                        return error(string("The object from destination bytecode named \"") + objectFromUnmappedId->GetName() + string("\" is not a variable"));
+                    VariableInstruction* variable = this->GetVariableByName(objectFromUnmappedId->GetName());
+                    if (variable == nullptr)
+                        return error(string("No variable exists in destination bytecode with the name:") + objectFromUnmappedId->GetName());
 
                     //remap the unmapped ID to the destination variable
                     mappingResolved = true;
@@ -685,11 +699,48 @@ bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
     spv.clear();
     spv.insert(spv.end(), spx.begin(), spx.end());
 
+    return true;
+}
+
+bool SpxStreamRemapper::ValidateSpxBytecode()
+{
     validate();  //validate the header
     if (staticErrorMessages.size() > 0) {
         copyStaticErrorMessagesTo(errorMessages);
         return false;
     }
+
+#ifdef XKSLANG_DEBUG_MODE
+    //Debug sanity check: make sure that 2 shaders or 2 variables does not share the same name
+    std::unordered_map<string, int> shaderVariablesDeclarationName;
+    std::unordered_map<string, int> shadersFunctionsDeclarationName;
+    std::unordered_map<string, int> shadersDeclarationName;
+
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+    {
+        ShaderClassData* aShader = *itsh;
+        if (shadersDeclarationName.find(aShader->GetName()) != shadersDeclarationName.end())
+                return error(string("A shader already exists with the name: ") + aShader->GetName());
+        shadersDeclarationName[aShader->GetName()] = 1;
+
+        //2 different shaders cannot share an identical variable name
+        for (auto itt = aShader->shaderTypesList.begin(); itt != aShader->shaderTypesList.end(); itt++)
+        {
+            ShaderTypeData* type = *itt;
+            if (shaderVariablesDeclarationName.find(type->variable->GetName()) != shaderVariablesDeclarationName.end())
+                return error(string("A variable already exists with the name: ") + type->variable->GetName());
+            shaderVariablesDeclarationName[type->variable->GetName()] = 1;
+        }
+    }
+    /*
+    for (auto itf = vecAllShaderFunctions.begin(); itf != vecAllShaderFunctions.end(); itf++)
+    {
+        FunctionInstruction* function = *itf;
+        if (shadersFunctionsDeclarationName.find(function->GetName()) != shadersFunctionsDeclarationName.end())
+            return error(string("A shader function already exists with the name: ") + function->GetName());
+        shadersFunctionsDeclarationName[function->GetName()] = 1;
+    }*/
+#endif
 
     return true;
 }
@@ -1267,6 +1318,27 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
                 switch (dec)
                 {
+                    case spv::DecorationShaderDeclareArrayComposition:
+                    case spv::DecorationShaderDeclareComposition:
+                    {
+                        bool isArray = dec == spv::DecorationShaderDeclareArrayComposition? true: false;
+                        ShaderClassData* shader = GetShaderById(targetId);
+                        if (shader == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
+
+                        int compositionId = asId(start + 3);
+
+                        const std::string shaderCompositionName = literalString(start + 4);
+                        ShaderClassData* compositionOriginalShader = GetShaderByName(shaderCompositionName);
+                        if (compositionOriginalShader == nullptr) { error(string("undeclared shader name:") + shaderCompositionName); break; }
+
+                        int stringWord = literalStringWords(shaderCompositionName);
+                        const std::string compositionVariableName = literalString(start + 4 + stringWord);
+
+                        ShaderComposition shaderComposition(compositionId, compositionOriginalShader, compositionVariableName, isArray);
+                        shader->AddComposition(shaderComposition);
+                        break;
+                    }
+
                     case spv::DecorationMethodOverride:
                     {
                         //a function is defined with an override attribute
@@ -1630,6 +1702,8 @@ bool SpxStreamRemapper::GetDeclarationNameForId(spv::Id id, string& name)
 
 SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const std::string& name)
 {
+    if (name.size() == 0) return nullptr;
+
     for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
     {
         ShaderClassData* shader = *it;
@@ -1639,27 +1713,6 @@ SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const std
         }
     }
     return nullptr;
-}
-
-SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::GetObjectByName(const std::string& name)
-{
-    int size = listAllObjects.size();
-    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
-    {
-        ObjectInstructionBase* obj = *it;
-        if (obj != nullptr && obj->GetName() == name)
-        {
-            return obj;
-        }
-    }
-    return nullptr;
-}
-
-SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::GetObjectById(spv::Id id)
-{
-    if (id < 0 || id >= listAllObjects.size()) return nullptr;
-    ObjectInstructionBase* obj = listAllObjects[id];
-    return obj;
 }
 
 SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)
@@ -1673,6 +1726,30 @@ SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)
         return shader;
     }
     return nullptr;
+}
+
+SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableByName(const std::string& name)
+{
+    if (name.size() == 0) return nullptr;
+
+    int size = listAllObjects.size();
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable && obj->GetName() == name)
+        {
+            VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+            return variable;
+        }
+    }
+    return nullptr;
+}
+
+SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::GetObjectById(spv::Id id)
+{
+    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+    return obj;
 }
 
 SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetFunctionById(spv::Id id)

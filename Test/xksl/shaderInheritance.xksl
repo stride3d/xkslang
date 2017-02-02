@@ -4,6 +4,9 @@ We'll simply keep the inheritance information in the bytecode
 Also test using declaration keywords before the shader
 ****************************************************************/
 
+shader Parent02
+{};
+
 shader toto
 {};
 

@@ -200,6 +200,21 @@ public:
         virtual ~ShaderTypeData(){}
     };
 
+    class ShaderComposition
+    {
+    public:
+        int id;
+        ShaderClassData* originalShader;
+        ShaderClassData* instantiateShader;
+        std::string variableName;
+        bool isArray;
+
+        ShaderComposition(int id, ShaderClassData* originalShader, const std::string& variableName, bool isArray)
+            :id(id), originalShader(originalShader), instantiateShader(nullptr), variableName(variableName), isArray(isArray){}
+        ShaderComposition(int id, ShaderClassData* originalShader, ShaderClassData* instantiateShader, const std::string& variableName, bool isArray)
+            :id(id), originalShader(originalShader), instantiateShader(instantiateShader), variableName(variableName), isArray(isArray) {}
+    };
+
     class ShaderClassData : public ObjectInstructionBase
     {
     public:
@@ -241,11 +256,15 @@ public:
             return false;
         }
 
+        void AddComposition(const ShaderComposition& composition) { compositionsList.push_back(composition); }
+
     public:
         int level;
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
         std::vector<FunctionInstruction*> functionsList;
+
+        std::vector<ShaderComposition> compositionsList;
 
         int flag;
     };
@@ -273,6 +292,7 @@ public:
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
     bool MergeWithBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
+    bool ValidateSpxBytecode();
 
     void ReleaseAllMaps();
     bool BuildAllMaps();
@@ -312,7 +332,6 @@ private:
     //std::unordered_map<spv::Id, VariableData*> mapVariablesById;
 
     ObjectInstructionBase* GetObjectById(spv::Id id);
-    ObjectInstructionBase* GetObjectByName(const std::string& name);
     std::string GetDeclarationNameForId(spv::Id id);
     bool GetDeclarationNameForId(spv::Id id, std::string& name);
     ShaderClassData* GetShaderByName(const std::string& name);
@@ -320,6 +339,7 @@ private:
     FunctionInstruction* GetFunctionById(spv::Id id);
     TypeInstruction* GetTypeById(spv::Id id);
     VariableInstruction* GetVariableById(spv::Id id);
+    VariableInstruction* GetVariableByName(const std::string& name);
     TypeInstruction* GetTypePointingTo(TypeInstruction* targetType);
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
 

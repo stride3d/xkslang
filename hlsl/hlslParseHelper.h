@@ -89,7 +89,7 @@ public:
     void handleFunctionArgument(TFunction*, TIntermTyped*& arguments, TIntermTyped* newArg);
     TIntermTyped* handleAssign(const TSourceLoc&, TOperator, TIntermTyped* left, TIntermTyped* right);
     TIntermTyped* handleAssignToMatrixSwizzle(const TSourceLoc&, TOperator, TIntermTyped* left, TIntermTyped* right);
-    TIntermTyped* handleFunctionCall(const TSourceLoc&, TFunction*, TIntermTyped*, bool callBaseClass = false);
+    TIntermTyped* handleFunctionCall(const TSourceLoc&, TFunction*, TIntermTyped*, bool callBaseClass = false, TShaderCompositionVariable* calledThroughCompositionVariable = nullptr);
     void decomposeIntrinsic(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeSampleMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeGeometryMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);

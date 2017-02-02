@@ -410,6 +410,11 @@ void SpirvStream::disassembleInstruction(Id resultId, Id /*typeId*/, Op opCode, 
         return;
     }
 
+    if (opCode == spv::OpDecorate)
+    {
+        int kljfsdlg = 5454;
+    }
+
     // Handle all the parameterized operands
     for (int op = 0; op < InstructionDesc[opCode].operands.getNum() && numOperands > 0; ++op) {
         out << " ";
@@ -434,14 +439,22 @@ void SpirvStream::disassembleInstruction(Id resultId, Id /*typeId*/, Op opCode, 
             return;
         case OperandOptionalLiteral:
         case OperandVariableLiterals:
-            if (opCode == OpDecorate &&
-                (stream[word - 1] == DecorationDeclarationName
-                || stream[word - 1] == DecorationShaderInheritFromParent
-                || stream[word - 1] == DecorationBelongsToShader))
+            if (opCode == OpDecorate)
             {
-                //XKSL extensions. Did not find how to define a different operand class per decorationId (their system don't feature this)
-                numOperands -= disassembleString();
-                break;
+                switch (stream[word - 1])
+                {
+                    case DecorationDeclarationName:
+                    case DecorationShaderInheritFromParent:
+                    case DecorationBelongsToShader:
+                        numOperands -= disassembleString();
+                        return;
+                    case DecorationShaderDeclareComposition:
+                    case DecorationShaderDeclareArrayComposition:
+                        disassembleImmediates(1);
+                        numOperands--;
+                        numOperands -= disassembleString();
+                        numOperands -= disassembleString();
+                }
             }
 
             if ((opCode == OpDecorate && stream[word - 1] == DecorationBuiltIn) ||

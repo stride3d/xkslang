@@ -2070,12 +2070,14 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
         bool isComposition = acceptTokenClass(EHTokCompose);
         if (isComposition)
         {
-            XkslShaderDefinition::XkslCompositionDeclaration composition;
+            TShaderCompositionVariable composition;
             composition.location = token.loc;
+            composition.shaderOwnerName = shader->shaderName;
             if (!acceptXkslShaderComposition(composition)) {
                 error("Failed to accept the composition declaration");
                 return false;
             }
+            composition.id = shader->listCompositions.size();
             shader->listCompositions.push_back(composition);
 
             continue;
@@ -3132,7 +3134,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& 
         {
             if (shader->listCompositions[i].variableName.compare(identifierName) == 0)
             {
-                compositionIndexTargeted = i;
+                compositionIndexTargeted = shader->listCompositions[i].id;
                 //compositionTargetShaderName = &(shader->listCompositions[i].shaderName);
                 return true;
             }
@@ -3578,7 +3580,7 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
     return false;
 }
 
-bool HlslGrammar::acceptXkslShaderComposition(XkslShaderDefinition::XkslCompositionDeclaration& composition)
+bool HlslGrammar::acceptXkslShaderComposition(TShaderCompositionVariable& composition)
 {
     HlslToken idToken = token;
     if (!acceptIdentifier(idToken))
@@ -3586,7 +3588,7 @@ bool HlslGrammar::acceptXkslShaderComposition(XkslShaderDefinition::XkslComposit
         error("Cannot parse composition: shaderName expected");
         return false;
     }
-    composition.shaderName = *idToken.string;
+    composition.shaderTypeName = *idToken.string;
 
     if (!acceptIdentifier(idToken))
     {
@@ -3621,11 +3623,9 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, bool callToFu
 
     if (!acceptArguments(function, arguments))
         return false;
-
-    // We now have the method mangled name
-    const TString& methodMangledName = function->getDeclaredMangledName();
-    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(shaderClassName, methodMangledName);
-
+    
+    TString classOwningTheFunction = shaderClassName;
+    TShaderCompositionVariable* pcompositionVariable;
     if (shaderCompositionIndexTargeted >= 0)
     {
         //we're calling a method through a composition, get the composition
@@ -3635,25 +3635,27 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, bool callToFu
             return false;
         }
 
-        if (shaderCompositionIndexTargeted >= shader->listCompositions.size()){
-            error("invalid composition index");
+        pcompositionVariable = shader->GetCompositionVariableForId(shaderCompositionIndexTargeted);
+        if (pcompositionVariable == nullptr) {
+            error("invalid composition id");
             return false;
         }
-        
-        //shader->listCompositions[shaderCompositionIndexTargeted];
 
-        error("compositionTargetShaderName blorp blorp");
-        return false;
+        classOwningTheFunction = pcompositionVariable->shaderTypeName;
     }
 
-    if (!identifierLocation.isMethod())
+    // We now have the method mangled name, find the corresponding method in the shader library
+    const TString& methodMangledName = function->getDeclaredMangledName();
+    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(classOwningTheFunction, methodMangledName);
+
+    if (identifierLocation.isMethod())
     {
-        //function not found as a method from our shader library, so we look in the global list of method
-        node = parseContext.handleFunctionCall(idToken.loc, function, arguments, callToFunctionFromBaseShaderClass);
+        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments, callToFunctionFromBaseShaderClass, pcompositionVariable);
     }
     else
     {
-        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments, callToFunctionFromBaseShaderClass);
+        //function not found as a method from our shader library, so we look in the global list of method
+        node = parseContext.handleFunctionCall(idToken.loc, function, arguments, false, nullptr);
     }
 
     return true;

@@ -9,7 +9,6 @@
 
 #include "define.h"
 #include "SpxBytecode.h"
-//#include "SpxStreamParser.h"
 
 namespace xkslang
 {

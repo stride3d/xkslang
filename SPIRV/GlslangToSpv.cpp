@@ -2346,13 +2346,25 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     if (type.getBasicType() == glslang::EbtShaderClass)
     {
         //builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getTypeName().c_str());
-
         const glslang::TIdentifierList* parentsName = type.getParentsName();
         if (parentsName != nullptr)
         {
             for (int i=0; i<parentsName->size(); ++i)
             {
                 builder.addDecoration(spvType, spv::DecorationShaderInheritFromParent, parentsName->at(i)->c_str());
+            }
+        }
+
+        const glslang::TVector<glslang::TShaderCompositionVariable>* compositionsList = type.getCompositionsList();
+        if (compositionsList != nullptr)
+        {
+            for (int index = 0; index<compositionsList->size(); ++index)
+            {
+                const glslang::TShaderCompositionVariable& composition = compositionsList->at(index);
+                if (composition.isArray)
+                    builder.addDecoration(spvType, spv::DecorationShaderDeclareArrayComposition, composition.id, composition.shaderTypeName.c_str(), composition.variableName.c_str());
+                else
+                    builder.addDecoration(spvType, spv::DecorationShaderDeclareComposition, composition.id, composition.shaderTypeName.c_str(), composition.variableName.c_str());
             }
         }
     }
