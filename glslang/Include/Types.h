@@ -389,14 +389,14 @@ enum TBlendEquationShift {
 //for XKSL extensions
 class TShaderCompositionVariable {
 public:
-    int id;  //-1 = invalid id
+    int shaderCompositionId;  //composition id for a given shader. -1 = invalid id
     TSourceLoc location;
     TString shaderOwnerName;
     TString shaderTypeName;
     TString variableName;
     bool isArray;
 
-    TShaderCompositionVariable() : id(-1){}
+    TShaderCompositionVariable() : shaderCompositionId(-1){}
 };
 
 class TQualifier {

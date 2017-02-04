@@ -199,6 +199,14 @@ private:
        unsigned data = spv[word];
        spv[word] = (data & ~(spv::OpCodeMask)) + ((unsigned)op);
    }
+   void setWordCount(unsigned word, unsigned wordCount) {
+       unsigned data = spv[word];
+       spv[word] = (data & spv::OpCodeMask) + (wordCount << spv::WordCountShift);
+   }
+   void setOpAndWordCount(unsigned word, spv::Op op, unsigned wordCount) {
+       unsigned data = spv[word];
+       spv[word] = ((unsigned)op) + (wordCount << spv::WordCountShift);
+   }
 
    // Header access & set methods
    spirword_t  magic()    const       { return spv[0]; } // return magic number

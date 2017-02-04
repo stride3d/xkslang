@@ -1112,6 +1112,8 @@ public:
     void SetTargetBaseShaderClass(bool b) { targetBaseShaderClass = b; }
     bool GetTargetBaseShaderClass() const { return targetBaseShaderClass; }
     TShaderCompositionVariable& GetWritableCompositionVariable() { return functionCalledThroughComposition; }
+    TShaderCompositionVariable GetCompositionVariable() const { return functionCalledThroughComposition; }
+    bool IsAFunctionCallThroughCompositionVariable() const { return functionCalledThroughComposition.shaderCompositionId != -1; }
 
 protected:
     TIntermAggregate(const TIntermAggregate&); // disallow copy constructor

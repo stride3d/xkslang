@@ -15,18 +15,18 @@ layout(std140) uniform Base_globalCBuffer
 {
     int Var0;
     int Var1;
-} var_Base_globalCBuffer;
+} Base_globalCBuffer_var;
 
 layout(std140) uniform shaderA_C1_0
 {
     int Var1;
-} var_shaderA_C1_0;
+} shaderA_C1_0_var;
 
-Base_streamBuffer var_Base_streamBuffer;
-shaderA_streamBuffer var_shaderA_streamBuffer;
+Base_streamBuffer Base_streamBuffer_var;
+shaderA_streamBuffer shaderA_streamBuffer_var;
 
 int main()
 {
-    return int(((((2.0 + var_Base_streamBuffer.Base_sbase1) + float(var_shaderA_C1_0.Var1)) + float(var_Base_globalCBuffer.Var1)) + 5.0) + float(var_shaderA_streamBuffer.shaderA_sa1));
+    return int(((((2.0 + Base_streamBuffer_var.Base_sbase1) + float(shaderA_C1_0_var.Var1)) + float(Base_globalCBuffer_var.Var1)) + 5.0) + float(shaderA_streamBuffer_var.shaderA_sa1));
 }
 

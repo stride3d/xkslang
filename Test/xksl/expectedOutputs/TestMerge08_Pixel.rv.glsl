@@ -4,7 +4,7 @@ layout(std140) uniform Base_globalCBuffer
 {
     float basef;
     vec4 basef4;
-} var_Base_globalCBuffer;
+} Base_globalCBuffer_var;
 
 vec4 Base_ComputeBase(float f)
 {
@@ -13,8 +13,8 @@ vec4 Base_ComputeBase(float f)
 
 float main()
 {
-    float dist = length(var_Base_globalCBuffer.basef4);
-    float param = var_Base_globalCBuffer.basef;
+    float dist = length(Base_globalCBuffer_var.basef4);
+    float param = Base_globalCBuffer_var.basef;
     vec2 direction = vec2(normalize(Base_ComputeBase(param)).xy);
     return direction.x + dist;
 }

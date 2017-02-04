@@ -885,12 +885,12 @@ bool ParseXkslShaderFile(
 
                 //cbuffer of variables declared by the shader
                 TString* cbufferGlobalBlockName = NewPoolTString((shader->shaderName + TString(".globalCBuffer")).c_str());
-                TString* cbufferGlobalBlockVarName = NewPoolTString((TString("var_") + *cbufferGlobalBlockName).c_str());
+                TString* cbufferGlobalBlockVarName = NewPoolTString((*cbufferGlobalBlockName + TString("_var")).c_str());
                 TTypeList* cbufferStructTypeList = new TTypeList();
 
                 //stream buffer of stream variables declared by the shader
                 TString* streamBufferStructName = NewPoolTString((shader->shaderName + TString(".streamBuffer")).c_str());
-                TString* streamBufferVarName = NewPoolTString((TString("var_") + *streamBufferStructName).c_str());
+                TString* streamBufferVarName = NewPoolTString((*streamBufferStructName + TString("_var")).c_str());
                 TTypeList* streambufferStructTypeList = new TTypeList();
 
                 for (int i = 0; i < shader->listParsedMembers.size(); ++i)
@@ -983,7 +983,7 @@ bool ParseXkslShaderFile(
                             blockQualifier.storage = EvqUniform;
                             TString numberId = TString(std::to_string(shader->listDeclaredBlockNames.size()).c_str());
                             TString* blockName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName() + "_" + numberId).c_str());  //name = class_name_num
-                            TString* blockVarName = NewPoolTString((TString("var_") + *blockName).c_str());
+                            TString* blockVarName = NewPoolTString((*blockName + TString("_var")).c_str());
 
                             parseContext->declareBlock(member.loc, *member.type, blockVarName);
                             shader->listDeclaredBlockNames.push_back(blockVarName);

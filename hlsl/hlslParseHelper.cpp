@@ -3326,7 +3326,7 @@ TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunct
                 if (calledThroughCompositionVariable != nullptr)
                     call->GetWritableCompositionVariable() = *calledThroughCompositionVariable;
                 else
-                    call->GetWritableCompositionVariable().id = -1;
+                    call->GetWritableCompositionVariable().shaderCompositionId = -1;
 
                 // this is how we know whether the given function is a built-in function or a user-defined function
                 // if builtIn == false, it's a userDefined -> could be an overloaded built-in function also

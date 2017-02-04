@@ -5,7 +5,7 @@ struct Base_streamBuffer
     int Base_ColorTarget;
 };
 
-Base_streamBuffer var_Base_streamBuffer;
+Base_streamBuffer Base_streamBuffer_var;
 
 int Base_Compute()
 {
@@ -39,6 +39,6 @@ int C_Compute()
 
 void main()
 {
-    var_Base_streamBuffer.Base_ColorTarget = C_Compute();
+    Base_streamBuffer_var.Base_ColorTarget = C_Compute();
 }
 

@@ -84,6 +84,11 @@ bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, SpvBytecode&
     if (clonedSpxStream == nullptr)
         return error(messages, "Failed to clone the SpxStreamRemapper");
 
+    if (!clonedSpxStream->InstantiateAllCompositions()) {
+        clonedSpxStream->copyMessagesTo(messages);
+        return error(messages, "Fail to instantiate the compositions");
+    }
+
     //TODO
     /*if (!clonedSpxStream->Compile())
     {

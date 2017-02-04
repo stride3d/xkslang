@@ -158,10 +158,10 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
             ShaderComposition& compositionToClone = shaderToClone->compositionsList[i];
             ShaderClassData* compShaderOriginal = compositionToClone.originalShader == nullptr? nullptr:
                 clonedSpxRemapper->GetShaderById(compositionToClone.originalShader->GetId());
-            ShaderClassData* compShaderInstantiate = compositionToClone.instantiateShader == nullptr ? nullptr :
-                clonedSpxRemapper->GetShaderById(compositionToClone.instantiateShader->GetId());
-            ShaderComposition clonedComposition(compositionToClone.id, compShaderOriginal, compShaderInstantiate, compositionToClone.variableName, compositionToClone.isArray);
-            shaderToClone->AddComposition(clonedComposition);
+            ShaderClassData* compShaderInstantiate = compositionToClone.instantiatedShader == nullptr ? nullptr :
+                clonedSpxRemapper->GetShaderById(compositionToClone.instantiatedShader->GetId());
+            ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionOwnerShader, compShaderOriginal, compShaderInstantiate, compositionToClone.variableName, compositionToClone.isArray);
+            clonedShader->AddComposition(clonedComposition);
         }
     }
 
@@ -220,8 +220,8 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     else
     {
         //merge the new bytecode into current one
-        if (!MergeWithBytecode(bytecode, listShadersMerged))
-            return error(string("Error merging the bytecode: ") + bytecode.GetName());
+        if (!MergeShadersFromBytecode(bytecode, listShadersMerged))
+            return error(string("Error merging the shaders from the bytecode: ") + bytecode.GetName());
     }
 
     if (!ValidateSpxBytecode())
@@ -257,18 +257,13 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     return true;
 }
 
-bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<ShaderClassData*>& listShadersMerged)
+bool SpxStreamRemapper::MergeShadersFromBytecode(const SpxBytecode& bytecode, vector<ShaderClassData*>& listShadersMerged)
 {
     listShadersMerged.clear();
     int maxCountIds = bound();
 
     //=============================================================================================================
-    //Init
-    unordered_map<uint32_t, pairIdPos> destinationBytecodeTypeHashMap;
-    if (!this->BuildTypesAndConstsHashmap(destinationBytecodeTypeHashMap)) {
-        return error("Error building type and const hashmap");
-    }
-
+    //Init bytecode to merge
     SpxStreamRemapper bytecodeToMerge;
     if (!bytecodeToMerge.SetBytecode(bytecode)) return false;
     bool res = bytecodeToMerge.BuildAllMaps();
@@ -294,9 +289,43 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<Sh
     if (errorMessages.size() > 0) return false;
     if (listShadersToMerge.size() == 0) return true;  //no new shaders to merge
 
+    if (!MergeShadersIntoBytecode(bytecodeToMerge, listShadersToMerge, ""))
+    {
+        return false;
+    }
+
+    //=============================================================================================================
+    //retrieve the merged shaders from the destination bytecode
+    for (int is = 0; is<listShadersToMerge.size(); ++is)
+    {
+        ShaderClassData* shaderToMerge = listShadersToMerge[is];
+        ShaderClassData* shaderMerged = GetShaderByName(shaderToMerge->GetName());
+        if (shaderMerged == nullptr) return error(string("Cannot retrieve the shader:") + shaderToMerge->GetName());
+        listShadersMerged.push_back(shaderMerged);
+    }
+
+    return true;
+}
+
+bool SpxStreamRemapper::MergeShaderIntoBytecode(SpxStreamRemapper& bytecodeToMerge, ShaderClassData* shaderToMerge, string namesPrefixToAdd)
+{
+    vector<ShaderClassData*> listShadersToMerge;
+    listShadersToMerge.push_back(shaderToMerge);
+    return MergeShadersIntoBytecode(bytecodeToMerge, listShadersToMerge, namesPrefixToAdd);
+}
+
+bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const vector<ShaderClassData*>& listShadersToMerge, string namesPrefixToAdd)
+{
+    //=============================================================================================================
+    //Init destination bytecode hashmap
+    unordered_map<uint32_t, pairIdPos> destinationBytecodeTypeHashMap;
+    if (!this->BuildTypesAndConstsHashmap(destinationBytecodeTypeHashMap)) {
+        return error("Error building type and const hashmap");
+    }
+
     //=============================================================================================================
     //=============================================================================================================
-    //Merge all the selected shaders
+    //Merge all the shaders
     int newId = bound();
 
     spirvbin_t vecNamesToMerge;
@@ -307,8 +336,10 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<Sh
     vector<spv::Id> finalRemapTable;
     finalRemapTable.resize(bytecodeToMerge.bound(), unused);
     //keep the list of merged Ids so that we can look for their name or decorate
-    vector<bool> newIdMerged;  
-    newIdMerged.resize(bytecodeToMerge.bound(), false);
+    vector<bool> listAllNewIdMerged;
+    vector<bool> listIdsWhereToAddNamePrefix;
+    listAllNewIdMerged.resize(bytecodeToMerge.bound(), false);
+    listIdsWhereToAddNamePrefix.resize(bytecodeToMerge.bound(), false);
 
     for (int is=0; is<listShadersToMerge.size(); ++is)
     {
@@ -389,13 +420,20 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<Sh
         }
     } //end shaderToMerge loop
 
-    //update newIdMerged table (this table will define the name and decorate to fetch and merge)
     {
         int len = finalRemapTable.size();
+        //update listAllNewIdMerged table (this table defines the name and decorate to fetch and merge)
         for (int i = 0; i < len; ++i)
         {
-            if (finalRemapTable[i] != unused)
-                newIdMerged[i] = true;
+            if (finalRemapTable[i] != unused) listAllNewIdMerged[i] = true;
+        }
+        //this list defines id for which we update the names and labels with a prefix
+        if (namesPrefixToAdd.size() > 0)
+        {
+            for (int i = 0; i < len; ++i)
+            {
+                if (finalRemapTable[i] != unused) listIdsWhereToAddNamePrefix[i] = true;
+            }
         }
     }
 
@@ -549,7 +587,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<Sh
                         listUnmappedIdsToProcess.pop_back();
                         bytecodeToMerge.CopyInstructionToVector(bytecodeWithExtraTypesToMerge.spv, objectFromUnmappedId->GetBytecodeStartPosition());
 
-                        newIdMerged[unmappedId] = true;
+                        listAllNewIdMerged[unmappedId] = true;
                     }
                 }
             }
@@ -571,12 +609,48 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<Sh
             switch (opCode)
             {
                 case spv::OpName:
+                {
+                    const spv::Id id = bytecodeToMerge.asId(start + 1);
+                    if (listAllNewIdMerged[id])
+                    {
+                        if (listIdsWhereToAddNamePrefix[id])
+                        {
+                            //disassemble and reassemble the instruction with a name updated with the prefix
+                            string strUpdatedName(namesPrefixToAdd + bytecodeToMerge.literalString(start + 2));
+                            spv::Instruction nameInstr(spv::OpName);
+                            nameInstr.addIdOperand(id);
+                            nameInstr.addStringOperand(strUpdatedName.c_str());
+                            nameInstr.dump(vecNamesToMerge.spv);
+                        }
+                        else
+                        {
+                            bytecodeToMerge.CopyInstructionToVector(vecNamesToMerge.spv, start);
+                        }
+                    }
+                    break;
+                }
                 case spv::OpMemberName:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
-                    if (newIdMerged[id])
+                    if (listAllNewIdMerged[id])
                     {
-                        bytecodeToMerge.CopyInstructionToVector(vecNamesToMerge.spv, start);
+                        if (listIdsWhereToAddNamePrefix[id])
+                        {
+                            int id = bytecodeToMerge.asId(start + 2);
+
+
+                            //disassemble and reassemble the instruction with a name updated with the prefix
+                            string strUpdatedName(namesPrefixToAdd + bytecodeToMerge.literalString(start + 3));
+                            spv::Instruction nameInstr(spv::OpName);
+                            nameInstr.addIdOperand(id);
+                            nameInstr.addImmediateOperand(bytecodeToMerge.asId(start + 2));
+                            nameInstr.addStringOperand(strUpdatedName.c_str());
+                            nameInstr.dump(vecNamesToMerge.spv);
+                        }
+                        else
+                        {
+                            bytecodeToMerge.CopyInstructionToVector(vecNamesToMerge.spv, start);
+                        }
                     }
                     break;
                 }
@@ -585,7 +659,7 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<Sh
                 case spv::OpMemberDecorate:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
-                    if (newIdMerged[id])
+                    if (listAllNewIdMerged[id])
                     {
                         bytecodeToMerge.CopyInstructionToVector(vecDecoratesToMerge.spv, start);
                     }
@@ -679,16 +753,6 @@ bool SpxStreamRemapper::MergeWithBytecode(const SpxBytecode& bytecode, vector<Sh
     //destination bytecode has been updated: reupdate all maps
     UpdateAllMaps();
 
-    //=============================================================================================================
-    //retrieve the list of merged shader
-    for (int is = 0; is<listShadersToMerge.size(); ++is)
-    {
-        ShaderClassData* shaderToMerge = listShadersToMerge[is];
-        ShaderClassData* shaderMerged = GetShaderByName(shaderToMerge->GetName());
-        if (shaderMerged == nullptr) return error(string("Cannot retrieve the shader:") + shaderToMerge->GetName());
-        listShadersMerged.push_back(shaderMerged);
-    }
-
     if (errorMessages.size() > 0) return false;
     return true;
 }
@@ -745,13 +809,96 @@ bool SpxStreamRemapper::ValidateSpxBytecode()
     return true;
 }
 
-//Mixin is finalized: no more updates will be brought to the mixin bytecode after
-bool SpxStreamRemapper::FinalizeMixin()
+//Instantiate all compositions
+bool SpxStreamRemapper::InstantiateAllCompositions()
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
     }
     status = SpxRemapperStatusEnum::MixinBeingFinalized;
+
+    //==============================================================================================================
+    //Early test to check if there is any composition to instantiate (before cloning the bytecode)
+    bool anyCompositions = false;
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+    {
+        ShaderClassData* aShader = *itsh;
+        if (aShader->compositionsList.size() > 0)
+        {
+            anyCompositions = true;
+            break;
+        }
+    }
+    if (!anyCompositions) return true; //no composition, can immediatly return
+
+    //==============================================================================================================
+    //We clone the bytecode before instantiating the shaders
+    SpxStreamRemapper* clonedSpxStream = this->Clone();
+    if (clonedSpxStream == nullptr) return error("Failed to clone the SpxStreamRemapper");
+
+    //List all the compositions
+    vector<ShaderComposition*> listCompositions;
+    for (auto itsh = clonedSpxStream->vecAllShaders.begin(); itsh != clonedSpxStream->vecAllShaders.end(); itsh++)
+    {
+        ShaderClassData* aShader = *itsh;
+        for (int ic = 0; ic < aShader->compositionsList.size(); ic++)
+            listCompositions.push_back(&(aShader->compositionsList[ic]));
+    }
+
+    //==============================================================================================================
+    //Instantiate the shader for each composition
+    for (auto itc = listCompositions.begin(); itc != listCompositions.end(); itc++)
+    {
+        ShaderComposition* composition = *itc;
+        ShaderClassData* shaderToClone = composition->originalShader;
+
+        //prefix to rename the shader, its variables and functions
+        string namePrefix = composition->compositionOwnerShader->GetName() + string("_") + composition->variableName + string("_");
+        if (!MergeShaderIntoBytecode(*clonedSpxStream, shaderToClone, namePrefix))
+        {
+            return error(string("failed to clone the composition targeting shader: ") + shaderToClone->GetName());
+        }
+    }
+    delete clonedSpxStream;
+
+    //==============================================================================================================
+    //Replace all OpInstructions related to composition
+    std::vector<range_t> vecStripRanges;
+    process(
+        [&](spv::Op opCode, unsigned start)
+        {
+            switch (opCode) {
+                case spv::OpFunctionCallBaseResolved:
+                {
+                    break;
+                }
+                case spv::OpFunctionCallThroughCompositionVariable:
+                {
+                    // change OpFunctionCallThroughCompositionVariable to OpFunctionCall
+                    int wordCount = asWordCount(start);
+                    vecStripRanges.push_back(range_t(start + 4, start + 5 + 1)); //remove composition variable identification
+                    setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 2);
+                    wordCount = asWordCount(start);
+                }
+            }
+            return true;
+        },
+        spx_op_fn_nop
+    );
+    if (errorMessages.size() > 0) return false;
+
+    stripBytecode(vecStripRanges);
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+//Mixin is finalized: no more updates will be brought to the mixin bytecode after
+bool SpxStreamRemapper::FinalizeMixin()
+{
+    if (status != SpxRemapperStatusEnum::MixinBeingFinalized) {
+        return error("Invalid remapper status");
+    }
 
     validate();  //validate the header
     if (staticErrorMessages.size() > 0) {
@@ -784,9 +931,14 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
                     setOpCode(start, spv::OpFunctionCall);
                     break;
                 }
+                case spv::OpFunctionCallThroughCompositionVariable:
+                {
+                    error(string("PROUT OpFunctionCallThroughCompositionVariable. pos=") + to_string(start));
+                    break;
+                }
                 case spv::OpFunctionCallBaseUnresolved:
                 {
-                    error(string("A function base call has an unresolved state. Pos:") + to_string(start));
+                    error(string("A function base call has an unresolved state. Pos=") + to_string(start));
                     break;
                 }
                 case spv::OpTypeXlslShaderClass:
@@ -795,7 +947,6 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
                     stripInst(start, vecStripRanges);
                     break;
                 }
-                case spv::OpName:
                 case spv::OpDecorate:
                 {
                     //id = asId(start + 1);
@@ -830,8 +981,7 @@ bool SpxStreamRemapper::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
             switch (opCode) {
                 case spv::OpFunctionCallBaseUnresolved:
                 {
-                    // change OpFunctionCallBaseUnresolved to OpFunctionCallBaseResolved
-                    setOpCode(start, spv::OpFunctionCallBaseResolved);
+                    setOpCode(start, spv::OpFunctionCallBaseResolved); // change OpFunctionCallBaseUnresolved to OpFunctionCallBaseResolved
 
                     spv::Id functionCalledId = asId(start + 3);
 
@@ -1322,8 +1472,8 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     case spv::DecorationShaderDeclareComposition:
                     {
                         bool isArray = dec == spv::DecorationShaderDeclareArrayComposition? true: false;
-                        ShaderClassData* shader = GetShaderById(targetId);
-                        if (shader == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
+                        ShaderClassData* shaderCompositionOwner = GetShaderById(targetId);
+                        if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
 
                         int compositionId = asId(start + 3);
 
@@ -1334,8 +1484,8 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                         int stringWord = literalStringWords(shaderCompositionName);
                         const std::string compositionVariableName = literalString(start + 4 + stringWord);
 
-                        ShaderComposition shaderComposition(compositionId, compositionOriginalShader, compositionVariableName, isArray);
-                        shader->AddComposition(shaderComposition);
+                        ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, compositionOriginalShader, compositionVariableName, isArray);
+                        shaderCompositionOwner->AddComposition(shaderComposition);
                         break;
                     }
 

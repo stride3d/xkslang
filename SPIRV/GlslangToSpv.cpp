@@ -145,6 +145,7 @@ protected:
 
     bool isShaderEntryPoint(const glslang::TIntermAggregate* node);
     void makeFunctions(const glslang::TIntermSequence&);
+    bool makeShaderClassesType(const glslang::TIntermSequence&);
     void makeGlobalInitializers(const glslang::TIntermSequence&);
     void visitFunctions(const glslang::TIntermSequence&);
     void handleFunctionEntry(const glslang::TIntermAggregate* node);
@@ -199,6 +200,9 @@ protected:
     std::unordered_map<const glslang::TTypeList*, spv::Id> structMap[glslang::ElpCount][glslang::ElmCount];
     std::unordered_map<const glslang::TTypeList*, std::vector<int> > memberRemapper;  // for mapping glslang block indices to spv indices (e.g., due to hidden members)
     std::stack<bool> breakForLoop;  // false means break for switch
+
+    //XKSL extensions
+    std::unordered_map<std::string, spv::Id> shaderClassMap; //map shader definition with its spv ID
 };
 
 //
@@ -942,8 +946,15 @@ void TGlslangToSpvTraverser::visitSymbol(glslang::TIntermSymbol* symbol)
 {
     if (symbol->getType().getBasicType() == glslang::EbtShaderClass)
     {
-        //XKSL extensions: we don't add a variable of type EbtShaderClass (such variables will never be used), but just create/define the type
-        spv::Id spvType = convertGlslangToSpvType(symbol->getType());
+        //shader classes have already been created in makeShaderClassesType function
+        std::string strName = symbol->getType().getUserIdentifierName() == nullptr? "": symbol->getType().getUserIdentifierName()->c_str();
+        if (shaderClassMap.find(strName) == shaderClassMap.end())
+        {
+            if (logger) logger->error(std::string("The EbtShaderClass Types has not been created") + strName);
+        }
+
+        //XKSL extensions: we don't add a variable for EbtShaderClass types (such variables will never be used), we just define the type
+        //spv::Id spvType = convertGlslangToSpvType(symbol->getType());
         return;
     }
 
@@ -1360,6 +1371,12 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
             // early, so all call points have actual SPIR-V functions to reference.
             // In all cases, still let the traverser visit the children for us.
             makeFunctions(node->getAsAggregate()->getSequence());
+
+            //We create the SPV type for all XKSL shader classes, so that we will have their IDs available
+            if (!makeShaderClassesType(node->getAsAggregate()->getSequence()))
+            {
+                return false;
+            }
 
             // Also, we want all globals initializers to go into the beginning of the entry point, before
             // anything else gets there, so visit out of order, doing them all now.
@@ -2362,9 +2379,9 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             {
                 const glslang::TShaderCompositionVariable& composition = compositionsList->at(index);
                 if (composition.isArray)
-                    builder.addDecoration(spvType, spv::DecorationShaderDeclareArrayComposition, composition.id, composition.shaderTypeName.c_str(), composition.variableName.c_str());
+                    builder.addDecoration(spvType, spv::DecorationShaderDeclareArrayComposition, composition.shaderCompositionId, composition.shaderTypeName.c_str(), composition.variableName.c_str());
                 else
-                    builder.addDecoration(spvType, spv::DecorationShaderDeclareComposition, composition.id, composition.shaderTypeName.c_str(), composition.variableName.c_str());
+                    builder.addDecoration(spvType, spv::DecorationShaderDeclareComposition, composition.shaderCompositionId, composition.shaderTypeName.c_str(), composition.variableName.c_str());
             }
         }
     }
@@ -2652,6 +2669,41 @@ void TGlslangToSpvTraverser::declareUseOfStructMember(const glslang::TTypeList& 
 bool TGlslangToSpvTraverser::isShaderEntryPoint(const glslang::TIntermAggregate* node)
 {
     return node->getName().compare(glslangIntermediate->getEntryPointMangledName().c_str()) == 0;
+}
+
+bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequence& glslFunctions)
+{
+    for (int f = 0; f < (int)glslFunctions.size(); ++f) {
+        glslang::TIntermAggregate* node = glslFunctions[f]->getAsAggregate();
+        if (node && (node->getOp() == glslang::EOpLinkerObjects))
+        {
+            glslang::TIntermSequence& nodeSequence = node->getSequence();
+
+            for (int a = 0; a < nodeSequence.size(); ++a)
+            {
+                glslang::TIntermSymbol* symbol = nodeSequence[a]->getAsSymbolNode();
+                if (symbol != nullptr && symbol->getType().getBasicType() == glslang::EbtShaderClass)
+                {
+                    //XKSL extensions: we don't add a variable for EbtShaderClass types (such variables will never be used), we just define the type
+                    spv::Id spvType = convertGlslangToSpvType(symbol->getType());
+                    const glslang::TString* pname = symbol->getType().getUserIdentifierName();
+                    if (pname == nullptr || pname->size() == 0){
+                        if (logger) logger->error("EbtShaderClass Type has no valid name");
+                        return false;
+                    }
+                    std::string strName(pname->c_str());
+                    if (shaderClassMap.find(strName) != shaderClassMap.end())
+                    {
+                        if (logger) logger->error(std::string("2 EbtShaderClass Types has the same name: ") + strName);
+                        return false;
+                    }
+                    shaderClassMap[strName] = spvType;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 // Make all the functions, skeletally, without actually visiting their bodies.
@@ -3219,7 +3271,28 @@ spv::Id TGlslangToSpvTraverser::handleUserFunctionCall(const glslang::TIntermAgg
     }
 
     // 3. Make the call.
-    spv::Id result = builder.createFunctionCall(function, spvArgs, targetBaseShaderClassFunction);
+    spv::Id result;
+    if (node->IsAFunctionCallThroughCompositionVariable())
+    {
+        int compositionVariableIndex = 0;
+        glslang::TShaderCompositionVariable compositionVariable = node->GetCompositionVariable();
+
+        std::string shaderCompositionOwnerName(compositionVariable.shaderOwnerName.c_str());
+        spv::Id shaderCompositionVariableOwnerId = 0;
+        auto fit = shaderClassMap.find(shaderCompositionOwnerName);
+        if (fit == shaderClassMap.end())
+        {
+            if (logger) logger->error(std::string("The composition variable shader owner has not been created: ") + shaderCompositionOwnerName);
+        }
+        else 
+            shaderCompositionVariableOwnerId = fit->second;
+        
+        result = builder.createFunctionCallThroughCompositionVariable(function, spvArgs, shaderCompositionVariableOwnerId, compositionVariable.shaderCompositionId);
+    }
+    else
+    {
+        result = builder.createFunctionCall(function, spvArgs, targetBaseShaderClassFunction);
+    }
     builder.setPrecision(result, TranslatePrecisionDecoration(node->getType()));
 
     // 4. Copy back out an "out" arguments.

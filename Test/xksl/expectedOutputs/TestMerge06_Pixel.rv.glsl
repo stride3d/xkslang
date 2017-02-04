@@ -8,13 +8,13 @@ struct Base_streamBuffer
 layout(std140) uniform Base_globalCBuffer
 {
     int Var1;
-} var_Base_globalCBuffer;
+} Base_globalCBuffer_var;
 
-Base_streamBuffer var_Base_streamBuffer;
+Base_streamBuffer Base_streamBuffer_var;
 
 int Base_ComputeBase()
 {
-    return var_Base_globalCBuffer.Var1 + var_Base_streamBuffer.Base_sbase1;
+    return Base_globalCBuffer_var.Var1 + Base_streamBuffer_var.Base_sbase1;
 }
 
 int shaderA_f1()
@@ -24,6 +24,6 @@ int shaderA_f1()
 
 int main()
 {
-    return ((Base_ComputeBase() + var_Base_globalCBuffer.Var1) + Base_ComputeBase()) + shaderA_f1();
+    return ((Base_ComputeBase() + Base_globalCBuffer_var.Var1) + Base_ComputeBase()) + shaderA_f1();
 }
 

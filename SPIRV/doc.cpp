@@ -1191,6 +1191,7 @@ const char* OpcodeString(int op)
 
     case (OpFunctionCallBaseUnresolved): return "OpFunctionCallBaseUnres";
     case (OpFunctionCallBaseResolved):   return "OpFunctionCallBaseRes";
+    case (OpFunctionCallThroughCompositionVariable):  return "OpFunctionCallThroughCompositionVar";
     }
 }
 
@@ -1833,6 +1834,10 @@ void Parameterize()
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
     InstructionDesc[OpFunctionCallBaseResolved].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallBaseResolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
+    InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandId, "'Function'");
+    InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandId, "'Composition Shader owner'");
+    InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandLiteralNumber, "'Composition Id'");
+    InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
 
     InstructionDesc[OpExtInst].operands.push(OperandId, "'Set'");
     InstructionDesc[OpExtInst].operands.push(OperandLiteralNumber, "'Instruction'");

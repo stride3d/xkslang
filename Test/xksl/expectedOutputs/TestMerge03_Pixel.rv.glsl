@@ -9,18 +9,18 @@ struct Base_streamBuffer
 layout(std140) uniform Base__0
 {
     float Var2;
-} var_Base__0;
+} Base__0_var;
 
 layout(std140) uniform Base_globalCBuffer
 {
     int Var0;
     int Var1;
-} var_Base_globalCBuffer;
+} Base_globalCBuffer_var;
 
-Base_streamBuffer var_Base_streamBuffer;
+Base_streamBuffer Base_streamBuffer_var;
 
 int main()
 {
-    return int(((var_Base_streamBuffer.Base_sbase1 + float(var_Base_globalCBuffer.Var1)) + var_Base__0.Var2) + 2.0);
+    return int(((Base_streamBuffer_var.Base_sbase1 + float(Base_globalCBuffer_var.Var1)) + Base__0_var.Var2) + 2.0);
 }
 

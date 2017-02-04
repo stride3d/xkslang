@@ -14,12 +14,12 @@ struct shaderA_streamBuffer
 layout(std140) uniform shaderA_globalCBuffer
 {
     int Var0;
-} var_shaderA_globalCBuffer;
+} shaderA_globalCBuffer_var;
 
-shaderA_streamBuffer var_shaderA_streamBuffer;
+shaderA_streamBuffer shaderA_streamBuffer_var;
 
 int main()
 {
-    return ((var_shaderA_globalCBuffer.Var0 + var_shaderA_streamBuffer.shaderA_sa1) + 2) + 3;
+    return ((shaderA_globalCBuffer_var.Var0 + shaderA_streamBuffer_var.shaderA_sa1) + 2) + 3;
 }
 

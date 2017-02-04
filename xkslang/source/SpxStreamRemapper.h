@@ -203,16 +203,19 @@ public:
     class ShaderComposition
     {
     public:
-        int id;
+        int compositionShaderId;
+        ShaderClassData* compositionOwnerShader;
         ShaderClassData* originalShader;
-        ShaderClassData* instantiateShader;
+        ShaderClassData* instantiatedShader;
         std::string variableName;
         bool isArray;
 
-        ShaderComposition(int id, ShaderClassData* originalShader, const std::string& variableName, bool isArray)
-            :id(id), originalShader(originalShader), instantiateShader(nullptr), variableName(variableName), isArray(isArray){}
-        ShaderComposition(int id, ShaderClassData* originalShader, ShaderClassData* instantiateShader, const std::string& variableName, bool isArray)
-            :id(id), originalShader(originalShader), instantiateShader(instantiateShader), variableName(variableName), isArray(isArray) {}
+        ShaderComposition(int compositionShaderId, ShaderClassData* compositionOwnerShader, ShaderClassData* originalShader, const std::string& variableName, bool isArray)
+            :compositionShaderId(compositionShaderId), compositionOwnerShader(compositionOwnerShader), originalShader(originalShader),
+            instantiatedShader(nullptr), variableName(variableName), isArray(isArray){}
+        ShaderComposition(int compositionShaderId, ShaderClassData* compositionOwnerShader, ShaderClassData* originalShader, ShaderClassData* instantiatedShader, const std::string& variableName, bool isArray)
+            :compositionShaderId(compositionShaderId), compositionOwnerShader(compositionOwnerShader), originalShader(originalShader),
+            instantiatedShader(instantiatedShader), variableName(variableName), isArray(isArray) {}
     };
 
     class ShaderClassData : public ObjectInstructionBase
@@ -291,7 +294,9 @@ public:
 
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
-    bool MergeWithBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
+    bool MergeShadersFromBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
+    bool MergeShaderIntoBytecode(SpxStreamRemapper& bytecodeToMerge, ShaderClassData* shaderToMerge, std::string namesPrefixToAdd);
+    bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderClassData*>& listShadersToMerge, std::string namesPrefixToAdd);
     bool ValidateSpxBytecode();
 
     void ReleaseAllMaps();
@@ -305,6 +310,8 @@ private:
     bool UpdateOverridenFunctionMap(std::vector<ShaderClassData*>& listShadersMerged);
     bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
     bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
+
+    bool InstantiateAllCompositions();
 
     bool BuildAndSetShaderStageHeader(ShadingStageEnum stage, FunctionInstruction* entryFunction, std::string unmangledFunctionName);
     bool ConvertSpirxToSpirVBytecode();
@@ -364,6 +371,8 @@ private:
         auto end = spv.begin() + opEnd;
         vec.insert(vec.end(), start, end);
     }
+
+    friend class XkslMixer;
 };
 
 }  // namespace xkslang

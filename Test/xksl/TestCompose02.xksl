@@ -1,6 +1,6 @@
 shader ShaderComp
 {
-	int varC = 10;
+	float varC = 10;
 	
 	float Compute()
 	{
@@ -15,10 +15,11 @@ shader ShaderA
 	compose ShaderComp colorA;
 	compose ShaderComp colorB;
 	
-	//float Compute(){return 5;}
+	float Compute(){return 5;}
 	
-	float VSmain()
+	float main()
 	{
-		return colorA.Compute();
+		float f = Compute();
+		return f + colorA.Compute();
 	}
 }

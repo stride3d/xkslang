@@ -948,6 +948,7 @@ enum Op {
     //XKSL extensions
     OpFunctionCallBaseUnresolved = 4600, //an unresolved function call with base accessor
     OpFunctionCallBaseResolved = 4601, //a resolved function call with base accessor
+    OpFunctionCallThroughCompositionVariable = 4602,  //a function is called through a composition variable
     
     OpMax = 0x7fffffff,
 };
