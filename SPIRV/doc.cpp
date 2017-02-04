@@ -258,7 +258,7 @@ const char* DecorationString(int decoration)
     case (DecorationShaderInheritFromParent):        return "InheritsFromShaderClass";
     case (DecorationShaderDeclareComposition):       return "DeclareComposition";
     case (DecorationShaderDeclareArrayComposition):  return "DeclareArrayComposition";
-    case (DecorationBelongsToShader):                return "BelongsToShader";
+    //case (DecorationBelongsToShader):                return "BelongsToShader";
     case (DecorationAttributeStage):	             return "Stage";
     case (DecorationAttributeStream):                return "Stream";
     case (DecorationAttributeStatic):		         return "Static";
@@ -1189,6 +1189,11 @@ const char* OpcodeString(int op)
     case 5007: return "OpGroupSMaxNonUniformAMD";
 #endif
 
+    case (OpDeclarationName):        return "OpDeclarationName";
+    case (OpShaderInheritance):      return "OpShaderInheritance";
+    case (OpBelongsToShader):        return "OpBelongsToShader";
+    case (OpShaderComposition):      return "OpShaderComposition";
+    case (OpShaderArrayComposition): return "OpShaderArrayComposition";
     case (OpFunctionCallBaseUnresolved): return "OpFunctionCallBaseUnres";
     case (OpFunctionCallBaseResolved):   return "OpFunctionCallBaseRes";
     case (OpFunctionCallThroughCompositionVariable):  return "OpFunctionCallThroughCompositionVar";
@@ -1321,6 +1326,16 @@ void Parameterize()
     InstructionDesc[OpGroupWaitEvents].setResultAndType(false, false);
     InstructionDesc[OpAtomicFlagClear].setResultAndType(false, false);
 
+    //XKSL extensions
+    InstructionDesc[OpDeclarationName].setResultAndType(false, false);
+    InstructionDesc[OpShaderInheritance].setResultAndType(false, false);
+    InstructionDesc[OpBelongsToShader].setResultAndType(false, false);
+    InstructionDesc[OpShaderComposition].setResultAndType(false, false);
+    InstructionDesc[OpShaderArrayComposition].setResultAndType(false, false);
+    InstructionDesc[OpFunctionCallBaseUnresolved].setResultAndType(true, true);
+    InstructionDesc[OpFunctionCallBaseResolved].setResultAndType(true, true);
+    InstructionDesc[OpFunctionCallThroughCompositionVariable].setResultAndType(true, true);
+
     // Specific additional context-dependent operands
 
     ExecutionModeOperands[ExecutionModeInvocations].push(OperandLiteralNumber, "'Number of <<Invocation,invocations>>'");
@@ -1356,8 +1371,6 @@ void Parameterize()
     DecorationOperands[DecorationSpecId].push(OperandLiteralNumber, "'Specialization Constant ID'");
     DecorationOperands[DecorationInputAttachmentIndex].push(OperandLiteralNumber, "'Attachment Index'");
     DecorationOperands[DecorationAlignment].push(OperandLiteralNumber, "'Alignment'");
-
-    //DecorationOperands[DecorationDeclarationName].push(OperandLiteralString, "'Name'");
 
     OperandClassParams[OperandSource].set(SourceLanguageCeiling, SourceString, 0);
     OperandClassParams[OperandExecutionModel].set(ExecutionModelCeiling, ExecutionModelString, ExecutionModelParams);
@@ -1830,6 +1843,26 @@ void Parameterize()
     InstructionDesc[OpFunctionCall].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCall].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
 
+    //======================================================================================================
+    //XKSL OpCode extensions
+    InstructionDesc[OpDeclarationName].operands.push(OperandId, "'Target'");
+    InstructionDesc[OpDeclarationName].operands.push(OperandLiteralString, "'DeclarationName'");
+
+    InstructionDesc[OpShaderInheritance].operands.push(OperandId, "'Shader'");
+    InstructionDesc[OpShaderInheritance].operands.push(OperandVariableIds, "'Parent 0', +\n'Parent 1', +\n...");
+    
+    InstructionDesc[OpBelongsToShader].operands.push(OperandId, "'Shader'");
+    InstructionDesc[OpBelongsToShader].operands.push(OperandId, "'Object'");
+    
+    InstructionDesc[OpShaderComposition].operands.push(OperandId, "'Shader'");
+    InstructionDesc[OpShaderComposition].operands.push(OperandLiteralNumber, "'CompId'");
+    InstructionDesc[OpShaderComposition].operands.push(OperandId, "'ShaderType'");
+    InstructionDesc[OpShaderComposition].operands.push(OperandLiteralString, "'VariableName'");
+    InstructionDesc[OpShaderArrayComposition].operands.push(OperandId, "'Shader'");
+    InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralNumber, "'CompId'");
+    InstructionDesc[OpShaderArrayComposition].operands.push(OperandId, "'ShaderType'");
+    InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralString, "'VariableName'");
+
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
     InstructionDesc[OpFunctionCallBaseResolved].operands.push(OperandId, "'Function'");
@@ -1838,6 +1871,7 @@ void Parameterize()
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandId, "'Composition Shader owner'");
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandLiteralNumber, "'Composition Id'");
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
+    //======================================================================================================
 
     InstructionDesc[OpExtInst].operands.push(OperandId, "'Set'");
     InstructionDesc[OpExtInst].operands.push(OperandLiteralNumber, "'Instruction'");

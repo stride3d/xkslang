@@ -953,8 +953,17 @@ void Builder::addLine(Id target, Id fileName, int lineNum, int column)
     lines.push_back(std::unique_ptr<Instruction>(line));
 }
 
+void Builder::addBelongToShaderDecoration(Id shaderId, Id objectId)
+{
+    Instruction* dec = new Instruction(OpBelongsToShader);
+    dec->addIdOperand(shaderId);
+    dec->addIdOperand(objectId);
+    decorations.push_back(std::unique_ptr<Instruction>(dec));
+}
+
 void Builder::addDecoration(Id id, Decoration decoration, int index, const char* str1, const char* str2)
 {
+    //TOTO REMOVE HERE
     if (decoration == spv::DecorationMax)
         return;
     Instruction* dec = new Instruction(OpDecorate);
@@ -969,6 +978,7 @@ void Builder::addDecoration(Id id, Decoration decoration, int index, const char*
 
 void Builder::addDecoration(Id id, Decoration decoration, const char* str)
 {
+    //TOTO REMOVE HERE
 	if (decoration == spv::DecorationMax)
 		return;
 	Instruction* dec = new Instruction(OpDecorate);

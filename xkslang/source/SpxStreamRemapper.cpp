@@ -617,7 +617,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                         {
                             //disassemble and reassemble the instruction with a name updated with the prefix
                             string strUpdatedName(namesPrefixToAdd + bytecodeToMerge.literalString(start + 2));
-                            spv::Instruction nameInstr(spv::OpName);
+                            spv::Instruction nameInstr(opCode);
                             nameInstr.addIdOperand(id);
                             nameInstr.addStringOperand(strUpdatedName.c_str());
                             nameInstr.dump(vecNamesToMerge.spv);
@@ -634,23 +634,17 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
                     {
-                        if (listIdsWhereToAddNamePrefix[id])
-                        {
-                            int id = bytecodeToMerge.asId(start + 2);
+                        bytecodeToMerge.CopyInstructionToVector(vecNamesToMerge.spv, start);
+                    }
+                    break;
+                }
 
-
-                            //disassemble and reassemble the instruction with a name updated with the prefix
-                            string strUpdatedName(namesPrefixToAdd + bytecodeToMerge.literalString(start + 3));
-                            spv::Instruction nameInstr(spv::OpName);
-                            nameInstr.addIdOperand(id);
-                            nameInstr.addImmediateOperand(bytecodeToMerge.asId(start + 2));
-                            nameInstr.addStringOperand(strUpdatedName.c_str());
-                            nameInstr.dump(vecNamesToMerge.spv);
-                        }
-                        else
-                        {
-                            bytecodeToMerge.CopyInstructionToVector(vecNamesToMerge.spv, start);
-                        }
+                case spv::OpBelongsToShader:
+                {
+                    const spv::Id id = bytecodeToMerge.asId(start + 1);
+                    if (listAllNewIdMerged[id])
+                    {
+                        bytecodeToMerge.CopyInstructionToVector(vecDecoratesToMerge.spv, start);
                     }
                     break;
                 }
@@ -853,7 +847,7 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
         ShaderClassData* shaderToClone = composition->originalShader;
 
         //prefix to rename the shader, its variables and functions
-        string namePrefix = composition->compositionOwnerShader->GetName() + string("_") + composition->variableName + string("_");
+        string namePrefix = string("comp") + composition->compositionOwnerShader->GetName() + composition->variableName + string("_");
         if (!MergeShaderIntoBytecode(*clonedSpxStream, shaderToClone, namePrefix))
         {
             return error(string("failed to clone the composition targeting shader: ") + shaderToClone->GetName());
@@ -941,9 +935,9 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
                     error(string("A function base call has an unresolved state. Pos=") + to_string(start));
                     break;
                 }
+                case spv::OpBelongsToShader:
                 case spv::OpTypeXlslShaderClass:
                 {
-                    //remove OpTypeXlslShaderClass type
                     stripInst(start, vecStripRanges);
                     break;
                 }
@@ -1357,7 +1351,6 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
     return true;
 }
 
-
 bool SpxStreamRemapper::UpdateAllMaps()
 {
     //Parse the list of all object data
@@ -1456,114 +1449,126 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
     //======================================================================================================
     // Decorate objects attributes and relations
     process(
-        [&](spv::Op opCode, unsigned start) {
-            unsigned word = start + 1;
-
-            if (opCode == spv::Op::OpDecorate) {
-                const spv::Id targetId = asId(start + 1);
-                const spv::Decoration dec = asDecoration(start + 2);
-
-                if (targetId < 0 || targetId >= vectorIdsToDecorate.size()) return true;
-                if (!vectorIdsToDecorate[targetId]) return true;
-
-                switch (dec)
+        [&](spv::Op opCode, unsigned start)
+        {
+            switch (opCode)
+            {
+                case spv::Op::OpBelongsToShader:
                 {
-                    case spv::DecorationShaderDeclareArrayComposition:
-                    case spv::DecorationShaderDeclareComposition:
-                    {
-                        bool isArray = dec == spv::DecorationShaderDeclareArrayComposition? true: false;
-                        ShaderClassData* shaderCompositionOwner = GetShaderById(targetId);
-                        if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
+                    const spv::Id shaderId = asId(start + 1);
+                    const spv::Id objectId = asId(start + 2);
 
-                        int compositionId = asId(start + 3);
+                    if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) return true;
+                    if (!vectorIdsToDecorate[shaderId]) return true;
 
-                        const std::string shaderCompositionName = literalString(start + 4);
-                        ShaderClassData* compositionOriginalShader = GetShaderByName(shaderCompositionName);
-                        if (compositionOriginalShader == nullptr) { error(string("undeclared shader name:") + shaderCompositionName); break; }
+                    ShaderClassData* shaderOwner = GetShaderById(shaderId);
+                    if (shaderOwner == nullptr) { error(string("undeclared shader owner for Id:") + to_string(shaderId)); break; }
 
-                        int stringWord = literalStringWords(shaderCompositionName);
-                        const std::string compositionVariableName = literalString(start + 4 + stringWord);
-
-                        ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, compositionOriginalShader, compositionVariableName, isArray);
-                        shaderCompositionOwner->AddComposition(shaderComposition);
-                        break;
-                    }
-
-                    case spv::DecorationMethodOverride:
-                    {
-                        //a function is defined with an override attribute
-                        FunctionInstruction* function = GetFunctionById(targetId);
-                        if (function == nullptr) {error(string("undeclared function id:") + to_string(targetId)); break;}
-                        function->ParsedOverrideAttribute();
-                        break;
-                    }
-
-                    case spv::DecorationBelongsToShader:
-                    {
-                        FunctionInstruction* function = GetFunctionById(targetId);
-                        const std::string ownerName = literalString(start + 3);
-                        ShaderClassData* shaderOwner = GetShaderByName(ownerName);
-                        if (shaderOwner == nullptr) { error(string("undeclared shader owner:") + ownerName); break; }
-
-                        if (function != nullptr) {
-                            //a function is defined as being owned by a shader
+                    FunctionInstruction* function = GetFunctionById(objectId);
+                    if (function != nullptr) {
+                        //a function is defined as being owned by a shader
 #ifdef XKSLANG_DEBUG_MODE
-                            if (function->GetShaderOwner() != nullptr) {error(string("function already has a shader owner:") + function->GetMangledName()); break;}
-                            if (shaderOwner->HasFunction(function))
-                            { error(string("The shader:") + ownerName + string(" already possesses the function:") + function->GetMangledName()); break; }
-                            function->SetFullName(shaderOwner->GetName() + string(".") + function->GetMangledName());
+                        if (function->GetShaderOwner() != nullptr) { error(string("The function already has a shader owner:") + function->GetMangledName()); break; }
+                        if (shaderOwner->HasFunction(function))
+                        {
+                            error(string("The shader:") + shaderOwner->GetName() + string(" already possesses the function:") + function->GetMangledName()); break;
+                        }
+                        function->SetFullName(shaderOwner->GetName() + string(".") + function->GetMangledName());
 #endif
-                            function->SetShaderOwner(shaderOwner);
-                            shaderOwner->AddFunction(function);
+                        function->SetShaderOwner(shaderOwner);
+                        shaderOwner->AddFunction(function);
+                    }
+                    else
+                    {
+                        //a type is defined as being owned by a shader
+                        TypeInstruction* type = GetTypeById(objectId);
+                        if (type != nullptr)
+                        {
+                            //A type belongs to a shader, we fetch the necessary data
+                            //A shader type is defined by: the type, a pointer type to it, and a variable to access it
+                            TypeInstruction* typePointer = GetTypePointingTo(type);
+                            VariableInstruction* variable = GetVariablePointingTo(typePointer);
+
+                            if (typePointer == nullptr) { error(string("cannot find the pointer type to the shader type:") + type->GetName()); break; }
+                            if (variable == nullptr) { error(string("cannot find the variable for shader type:") + type->GetName()); break; }
+#ifdef XKSLANG_DEBUG_MODE
+                            if (type->GetShaderOwner() != nullptr) { error(string("The type already has a shader owner:") + type->GetName()); break; }
+                            if (shaderOwner->HasType(type)) { error(string("The shader:") + shaderOwner->GetName() + string(" already possesses the type:") + type->GetName()); break; }
+#endif
+                            ShaderTypeData* shaderType = new ShaderTypeData(type, typePointer, variable);
+                            type->SetShaderOwner(shaderOwner);
+                            shaderOwner->AddShaderType(shaderType);
                         }
                         else
                         {
-                            //a type is defined as being owned by a shader
-                            TypeInstruction* type = GetTypeById(targetId);
-                            if (type != nullptr)
-                            {
-                                //A type belongs to a shader, we fetch the necessary data
-                                //A shader type is defined by: the type, a pointer type to it, and a variable to access it
-                                TypeInstruction* typePointer = GetTypePointingTo(type);
-                                VariableInstruction* variable = GetVariablePointingTo(typePointer);
-
-                                if (typePointer == nullptr) { error(string("cannot find the pointer type to the shader type:") + type->GetName()); break; }
-                                if (variable == nullptr) { error(string("cannot find the variable for shader type:") + type->GetName()); break; }
-#ifdef XKSLANG_DEBUG_MODE
-                                if (type->GetShaderOwner() != nullptr) { error(string("type already has a shader owner:") + type->GetName()); break; }
-                                if (shaderOwner->HasType(type)) { error(string("shader:") + ownerName + string(" already possesses the type:") + type->GetName()); break; }
-#endif
-                                ShaderTypeData* shaderType = new ShaderTypeData(type, typePointer, variable);
-                                type->SetShaderOwner(shaderOwner);
-                                shaderOwner->AddShaderType(shaderType);
-                            }
-                            else
-                            {
-                                error(string("unprocessed DecorationBelongsToShader operand, invalid Id:") + to_string(targetId));
-                            }
+                            error(string("unprocessed OpBelongsToShader instruction, invalid objectId:") + to_string(objectId));
                         }
-                        break;
                     }
-
-                    case spv::DecorationShaderInheritFromParent:
-                    {
-                        //A shader inherits from a parent
-                        ShaderClassData* shader = GetShaderById(targetId);
-                        const std::string parentName = literalString(start + 3);
-                        ShaderClassData* shaderParent = GetShaderByName(parentName);
-
-                        if (shader == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
-                        if (shaderParent == nullptr) { error(string("undeclared parent shader:") + parentName); break; }
-#ifdef XKSLANG_DEBUG_MODE
-                        if (shader->HasParent(shaderParent)) {error(string("shader:") + shader->GetName() + string(" already inherits from parent:") + parentName); break;}
-#endif
-
-                        shader->AddParent(shaderParent);
-                        break;
-                    }
+                    break;
                 }
 
+                case spv::Op::OpDecorate:
+                {
+                    const spv::Id targetId = asId(start + 1);
+                    const spv::Decoration dec = asDecoration(start + 2);
+
+                    if (targetId < 0 || targetId >= vectorIdsToDecorate.size()) return true;
+                    if (!vectorIdsToDecorate[targetId]) return true;
+
+                    switch (dec)
+                    {
+                        case spv::DecorationShaderDeclareArrayComposition:
+                        case spv::DecorationShaderDeclareComposition:
+                        {
+                            bool isArray = dec == spv::DecorationShaderDeclareArrayComposition? true: false;
+                            ShaderClassData* shaderCompositionOwner = GetShaderById(targetId);
+                            if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
+
+                            int compositionId = asId(start + 3);
+
+                            const std::string shaderCompositionName = literalString(start + 4);
+                            ShaderClassData* compositionOriginalShader = GetShaderByName(shaderCompositionName);
+                            if (compositionOriginalShader == nullptr) { error(string("undeclared shader name:") + shaderCompositionName); break; }
+
+                            int stringWord = literalStringWords(shaderCompositionName);
+                            const std::string compositionVariableName = literalString(start + 4 + stringWord);
+
+                            ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, compositionOriginalShader, compositionVariableName, isArray);
+                            shaderCompositionOwner->AddComposition(shaderComposition);
+                            break;
+                        }
+
+                        case spv::DecorationMethodOverride:
+                        {
+                            //a function is defined with an override attribute
+                            FunctionInstruction* function = GetFunctionById(targetId);
+                            if (function == nullptr) {error(string("undeclared function id:") + to_string(targetId)); break;}
+                            function->ParsedOverrideAttribute();
+                            break;
+                        }
+
+                        case spv::DecorationShaderInheritFromParent:
+                        {
+                            //A shader inherits from a parent
+                            ShaderClassData* shader = GetShaderById(targetId);
+                            const std::string parentName = literalString(start + 3);
+                            ShaderClassData* shaderParent = GetShaderByName(parentName);
+
+                            if (shader == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
+                            if (shaderParent == nullptr) { error(string("undeclared parent shader:") + parentName); break; }
+#ifdef XKSLANG_DEBUG_MODE
+                            if (shader->HasParent(shaderParent)) {error(string("shader:") + shader->GetName() + string(" already inherits from parent:") + parentName); break;}
+#endif
+
+                            shader->AddParent(shaderParent);
+                            break;
+                        }
+                    }
+
+                    break;
+                }
             }
+
             return true;
         },
         spx_op_fn_nop

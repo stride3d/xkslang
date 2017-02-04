@@ -211,6 +211,9 @@ public:
     void addDecoration(Id, Decoration, int index, const char* str1, const char* str2);
     void addMemberDecoration(Id, unsigned int member, Decoration, int num = -1);
 
+    //XKSL Extensions
+    void addBelongToShaderDecoration(Id, Id);
+
     // At the end of what block do the next create*() instructions go?
     void setBuildPoint(Block* bp) { buildPoint = bp; }
     Block* getBuildPoint() const { return buildPoint; }

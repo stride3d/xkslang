@@ -950,7 +950,8 @@ void TGlslangToSpvTraverser::visitSymbol(glslang::TIntermSymbol* symbol)
         std::string strName = symbol->getType().getUserIdentifierName() == nullptr? "": symbol->getType().getUserIdentifierName()->c_str();
         if (shaderClassMap.find(strName) == shaderClassMap.end())
         {
-            if (logger) logger->error(std::string("The EbtShaderClass Types has not been created") + strName);
+            if (logger)
+                logger->error(std::string("The EbtShaderClass Types has not been created") + strName);
         }
 
         //XKSL extensions: we don't add a variable for EbtShaderClass types (such variables will never be used), we just define the type
@@ -1367,16 +1368,17 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
             --sequenceDepth;
 
         if (sequenceDepth == 1) {
-            // If this is the parent node of all the functions, we want to see them
-            // early, so all call points have actual SPIR-V functions to reference.
-            // In all cases, still let the traverser visit the children for us.
-            makeFunctions(node->getAsAggregate()->getSequence());
 
             //We create the SPV type for all XKSL shader classes, so that we will have their IDs available
             if (!makeShaderClassesType(node->getAsAggregate()->getSequence()))
             {
                 return false;
             }
+
+            // If this is the parent node of all the functions, we want to see them
+            // early, so all call points have actual SPIR-V functions to reference.
+            // In all cases, still let the traverser visit the children for us.
+            makeFunctions(node->getAsAggregate()->getSequence());
 
             // Also, we want all globals initializers to go into the beginning of the entry point, before
             // anything else gets there, so visit out of order, doing them all now.
@@ -2396,7 +2398,16 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 
         if (type.getOwnerClassName() != nullptr)
         {
-            builder.addDecoration(spvType, spv::DecorationBelongsToShader, type.getOwnerClassName()->c_str());
+            std::string shaderName(type.getOwnerClassName()->c_str());
+            auto fit = shaderClassMap.find(shaderName);
+            if (fit == shaderClassMap.end())
+            {
+                if (logger)
+                    logger->error(std::string("The type shader owner has not been created: ") + shaderName);
+            }
+            else
+                builder.addBelongToShaderDecoration(fit->second, spvType);
+                
         }
     }
     //========================================================================================================
@@ -2688,13 +2699,15 @@ bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequenc
                     spv::Id spvType = convertGlslangToSpvType(symbol->getType());
                     const glslang::TString* pname = symbol->getType().getUserIdentifierName();
                     if (pname == nullptr || pname->size() == 0){
-                        if (logger) logger->error("EbtShaderClass Type has no valid name");
+                        if (logger)
+                            logger->error("EbtShaderClass Type has no valid name");
                         return false;
                     }
                     std::string strName(pname->c_str());
                     if (shaderClassMap.find(strName) != shaderClassMap.end())
                     {
-                        if (logger) logger->error(std::string("2 EbtShaderClass Types has the same name: ") + strName);
+                        if (logger)
+                            logger->error(std::string("2 EbtShaderClass Types has the same name: ") + strName);
                         return false;
                     }
                     shaderClassMap[strName] = spvType;
@@ -2769,7 +2782,15 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
             }
             if (functionType.getOwnerClassName() != nullptr)
             {
-                builder.addDecoration(function->getId(), spv::DecorationBelongsToShader, functionType.getOwnerClassName()->c_str());
+                std::string shaderName(functionType.getOwnerClassName()->c_str());
+                auto fit = shaderClassMap.find(shaderName);
+                if (fit == shaderClassMap.end())
+                {
+                    if (logger)
+                        logger->error(std::string("The function shader owner has not been created: ") + shaderName);
+                }
+                else
+                    builder.addBelongToShaderDecoration(fit->second, function->getId());
             }
             if (functionType.getQualifier().isStage)
             {
@@ -3282,7 +3303,8 @@ spv::Id TGlslangToSpvTraverser::handleUserFunctionCall(const glslang::TIntermAgg
         auto fit = shaderClassMap.find(shaderCompositionOwnerName);
         if (fit == shaderClassMap.end())
         {
-            if (logger) logger->error(std::string("The composition variable shader owner has not been created: ") + shaderCompositionOwnerName);
+            if (logger)
+                logger->error(std::string("The composition variable shader owner has not been created: ") + shaderCompositionOwnerName);
         }
         else 
             shaderCompositionVariableOwnerId = fit->second;

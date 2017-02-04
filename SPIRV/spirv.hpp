@@ -384,11 +384,11 @@ enum Decoration {
 	//Specify that a defined structure (OpTypeStruct) is actually a shader class, and specify its name (we could eventually remove the name, there is a rededundancy with OpName)
 	//syntax: OpDecorate <id> DecorationShaderClassType <Literal String: shader name>
     //WARNING: the range [DecorationDeclarationName, DecorationMethodClone] is used to check XKSl decorations (cf SpxStreamRemapper)
-	DecorationDeclarationName = 1000,
+	//DecorationDeclarationName = 1000,
 
 	//Specify that a shader inherits from another shader, the order of inheritance is defined by the order of declaration of InheritFromShaderClass decoration
 	DecorationShaderInheritFromParent = 1001,
-    DecorationBelongsToShader = 1002,
+    //DecorationBelongsToShader = 1002,
     DecorationShaderDeclareComposition = 1003,
     DecorationShaderDeclareArrayComposition = 1004,
 
@@ -946,10 +946,15 @@ enum Op {
     OpSubgroupAllEqualKHR = 4430,
 
     //XKSL extensions
-    OpFunctionCallBaseUnresolved = 4600, //an unresolved function call with base accessor
-    OpFunctionCallBaseResolved = 4601, //a resolved function call with base accessor
-    OpFunctionCallThroughCompositionVariable = 4602,  //a function is called through a composition variable
-    
+    OpDeclarationName = 4600,                         //declaration name for shader, shaders' functions and shaders' block types
+    OpShaderInheritance = 4601,                       //List of a shader inheritance
+    OpBelongsToShader = 4602,                         //Link the functions and types with the shader that created them
+    OpShaderComposition = 4603,                       //Declare a composition within a shader
+    OpShaderArrayComposition = 4604,                  //Declare an array composition within a shader
+    OpFunctionCallBaseUnresolved = 4620,              //an unresolved function call with base accessor
+    OpFunctionCallBaseResolved = 4621,                //a resolved function call with base accessor
+    OpFunctionCallThroughCompositionVariable = 4622,  //a function is called through a composition variable
+
     OpMax = 0x7fffffff,
 };
 

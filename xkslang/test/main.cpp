@@ -82,7 +82,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge12_Pixel.rv.glsl"}} },
 
     //{ "TestCompose01", {{"TestComposeDeclaration.xksl"}},{} },
-    { "TestCompose02",{ { "TestCompose02.xksl" } }, {{"main", ShadingStageEnum::Pixel, ""}} },
+    //{ "TestCompose02",{ { "TestCompose02.xksl" } }, {{"main", ShadingStageEnum::Pixel, ""}} },
         //{ "",{ { "TestComposeShaderWithParents.xksl" } },{} },
         //{ "",{ { "TestCompose.xksl" } },{} },
 
@@ -279,36 +279,35 @@ void main(int argc, char** argv)
                     time_before = GetTickCount();
                     success = mixer.Mixin(spirXBytecode, errorMsgs);    //Add mixin files
                     time_after = GetTickCount();
-
-                    if (!success){
-                        cout << "Mixin failed !!" << endl;
-                        break;
-                    }
-
                     mixinTotalTime += (time_after - time_before);
-                    if (success) cout << " OK. Time:  " << (time_after - time_before) << " ms" << endl;
-                    else{
-                        cout << " mixin FAILED" << endl;
-                        break;
+
+                    {
+                        //Save the mixin resulting SPIRX bytecode (HR form), whether it was a success or not
+                        SpxBytecode mixinBytecode;
+                        bool canGetBytecode = mixer.GetCurrentMixinBytecode(mixinBytecode, errorMsgs);
+                        if (!canGetBytecode) {
+                            cout << " Failed to get the mixin bytecode" << endl;
+                        }
+                        else
+                        {
+                            const vector<uint32_t>& bytecodeList = mixinBytecode.getBytecodeStream();
+                            ostringstream disassembly_stream;
+                            spv::Parameterize();
+                            spv::Disassemble(disassembly_stream, bytecodeList);
+
+                            const string newOutputFname = outputDir + effectName + "_mixin_" + to_string(i) + "_" + spirXBytecode.GetName() + ".hr.spv";
+                            xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                        }
                     }
 
                     if (success)
                     {
-                        //Save the mixin resulting SPIRX bytecode (HR form)
-                        SpxBytecode mixinBytecode;
-                        success = mixer.GetCurrentMixinBytecode(mixinBytecode, errorMsgs);
-                        if (!success){
-                            cout << " Failed to get the mixin bytecode" << endl;
-                            break;
-                        }
-
-                        const vector<uint32_t>& bytecodeList = mixinBytecode.getBytecodeStream();
-                        ostringstream disassembly_stream;
-                        spv::Parameterize();
-                        spv::Disassemble(disassembly_stream, bytecodeList);
-
-                        const string newOutputFname = outputDir + effectName + "_mixin_" + to_string(i) + "_" + spirXBytecode.GetName() + ".hr.spv";
-                        xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                        cout << " OK. Time:  " << (time_after - time_before) << " ms" << endl;
+                    }
+                    else
+                    {
+                        cout << "Mixin failed !!" << endl;
+                        break;
                     }
                 }
                 
