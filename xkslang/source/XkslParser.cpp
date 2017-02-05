@@ -92,6 +92,7 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
         spirXBytecode.clear();
         spirXBytecode.SetBytecode(bytecodeList);
         spirXBytecode.SetName(shaderFileName);
+        if (logger.hasAnyError()) success = false;
     }
     
     //output debug and error messages

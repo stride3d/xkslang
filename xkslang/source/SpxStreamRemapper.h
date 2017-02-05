@@ -205,17 +205,12 @@ public:
     public:
         int compositionShaderId;
         ShaderClassData* compositionOwnerShader;
-        ShaderClassData* originalShader;
-        ShaderClassData* instantiatedShader;
+        ShaderClassData* shaderType;
         std::string variableName;
         bool isArray;
 
-        ShaderComposition(int compositionShaderId, ShaderClassData* compositionOwnerShader, ShaderClassData* originalShader, const std::string& variableName, bool isArray)
-            :compositionShaderId(compositionShaderId), compositionOwnerShader(compositionOwnerShader), originalShader(originalShader),
-            instantiatedShader(nullptr), variableName(variableName), isArray(isArray){}
-        ShaderComposition(int compositionShaderId, ShaderClassData* compositionOwnerShader, ShaderClassData* originalShader, ShaderClassData* instantiatedShader, const std::string& variableName, bool isArray)
-            :compositionShaderId(compositionShaderId), compositionOwnerShader(compositionOwnerShader), originalShader(originalShader),
-            instantiatedShader(instantiatedShader), variableName(variableName), isArray(isArray) {}
+        ShaderComposition(int compositionShaderId, ShaderClassData* compositionOwnerShader, ShaderClassData* shaderType, const std::string& variableName, bool isArray)
+            :compositionShaderId(compositionShaderId), compositionOwnerShader(compositionOwnerShader), shaderType(shaderType), variableName(variableName), isArray(isArray){}
     };
 
     class ShaderClassData : public ObjectInstructionBase

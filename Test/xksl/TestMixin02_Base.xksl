@@ -1,9 +1,9 @@
-// mixin TestMixin01_Base;
-// mixin TestMixin01_OverrideA;
-// mixin TestMixin01_OverrideB;
+// mixin Base;
+// mixin OverrideA;
+// mixin OverrideB;
 // expected result: 6
 
-shader TestMixin01_Base
+shader Base
 {
 	stream int ColorTarget;
 
@@ -18,7 +18,7 @@ shader TestMixin01_Base
     }
 }
 
-shader TestMixin01_OverrideB : TestMixin01_OverrideA
+shader OverrideB : OverrideA
 {
     override int Compute()
     {
@@ -32,7 +32,7 @@ shader TestMixin01_OverrideB : TestMixin01_OverrideA
     }
 }
 
-shader TestMixin01_OverrideA : TestMixin01_Base
+shader OverrideA : Base
 {
     override int Compute()
     {

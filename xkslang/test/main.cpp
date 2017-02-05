@@ -62,11 +62,11 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "", {{"methodsWithSimpleClassAccessor.xksl"}},{} },
     //{ "", {{"cbuffers.xksl"}},{} },
 
-    //{ "", {{"TestMixin01_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin01_Base_Pixel.rv.glsl"}} },
-    //{ "", {{"TestMixin01_Override.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin01_Override_Pixel.rv.glsl"}} },
-    //{ "", {{"TestMixin01_OverridePlusCallBase.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin01_OverridePlusCallBase_Pixel.rv.glsl"}} },
-    //{ "", {{"TestMixin01_OverridePlusCallBase2.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin01_OverridePlusCallBase2_Pixel.rv.glsl"}} },
-    //{ "", {{"TestMixin01_OverridePlusCallBase3.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin01_OverridePlusCallBase3_Pixel.rv.glsl"}} },
+    //{ "TestMixin01", {{"TestMixin01_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin01_Pixel.rv.glsl"}} },
+    //{ "TestMixin02", {{"TestMixin02_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin02_Pixel.rv.glsl"}} },
+    //{ "TestMixin03", {{"TestMixin03_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin03_Pixel.rv.glsl"}} },
+    //{ "TestMixin04", {{"TestMixin04_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin04_Pixel.rv.glsl"}} },
+    //{ "TestMixin05", {{"TestMixin05_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMixin05_Pixel.rv.glsl"}} },
 
     //{ "TestMerge01", {{"TestMerge01_Base.xksl"}, {"TestMerge01_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMerge01_Pixel.rv.glsl" } } },
     //{ "TestMerge02", {{"TestMerge02_Base.xksl"}, {"TestMerge02_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestMerge02_Pixel.rv.glsl"}} },
@@ -79,7 +79,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestMerge09", {{"TestMerge09_ShaderA.xksl"}, {"TestMerge09_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge09_Pixel.rv.glsl"}} },
     //{ "TestMerge10", {{"TestMerge10_ShaderA.xksl"}, {"TestMerge10_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge10_Pixel.rv.glsl"}} },
     //{ "TestMerge11", {{"TestMerge11_Base.xksl"}, {"TestMerge11_ShaderA.xksl"}, {"TestMerge11_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge11_Pixel.rv.glsl"}} },
-    //{ "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge12_Pixel.rv.glsl"}} },
+    { "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge12_Pixel.rv.glsl"}} },
 
     //{ "TestCompose01", {{"TestComposeDeclaration.xksl"}},{} },
     //{ "TestCompose02",{ { "TestCompose02.xksl" } }, {{"main", ShadingStageEnum::Pixel, ""}} },

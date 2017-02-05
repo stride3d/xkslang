@@ -434,23 +434,6 @@ void SpirvStream::disassembleInstruction(Id resultId, Id /*typeId*/, Op opCode, 
             return;
         case OperandOptionalLiteral:
         case OperandVariableLiterals:
-            if (opCode == OpDecorate)
-            {
-                switch (stream[word - 1])
-                {
-                    case DecorationDeclarationName:
-                    case DecorationShaderInheritFromParent:
-                        numOperands -= disassembleString();
-                        return;
-                    case DecorationShaderDeclareComposition:
-                    case DecorationShaderDeclareArrayComposition:
-                        disassembleImmediates(1);
-                        numOperands--;
-                        numOperands -= disassembleString();
-                        numOperands -= disassembleString();
-                }
-            }
-
             if ((opCode == OpDecorate && stream[word - 1] == DecorationBuiltIn) ||
                 (opCode == OpMemberDecorate && stream[word - 1] == DecorationBuiltIn)) {
                 out << BuiltInString(stream[word++]);

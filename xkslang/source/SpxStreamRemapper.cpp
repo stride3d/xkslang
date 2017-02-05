@@ -156,11 +156,9 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
         for (int i = 0; i < shaderToClone->compositionsList.size(); ++i)
         {
             ShaderComposition& compositionToClone = shaderToClone->compositionsList[i];
-            ShaderClassData* compShaderOriginal = compositionToClone.originalShader == nullptr? nullptr:
-                clonedSpxRemapper->GetShaderById(compositionToClone.originalShader->GetId());
-            ShaderClassData* compShaderInstantiate = compositionToClone.instantiatedShader == nullptr ? nullptr :
-                clonedSpxRemapper->GetShaderById(compositionToClone.instantiatedShader->GetId());
-            ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionOwnerShader, compShaderOriginal, compShaderInstantiate, compositionToClone.variableName, compositionToClone.isArray);
+            ShaderClassData* shaderType = compositionToClone.shaderType == nullptr? nullptr:
+                clonedSpxRemapper->GetShaderById(compositionToClone.shaderType->GetId());
+            ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionOwnerShader, shaderType, compositionToClone.variableName, compositionToClone.isArray);
             clonedShader->AddComposition(clonedComposition);
         }
     }
@@ -329,7 +327,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     int newId = bound();
 
     spirvbin_t vecNamesToMerge;
-    spirvbin_t vecDecoratesToMerge;
+    spirvbin_t vecAllNewDecoratesToMerge;
     spirvbin_t vecTypesConstsAndVariablesToMerge;
     spirvbin_t vecFunctionsToMerge;
 
@@ -437,6 +435,30 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         }
     }
 
+    //Populate vecNewShadersDecorationPossesingIds with some decorate instructions which might contains unmapped IDs
+    spirvbin_t vecXkslDecorationsPossesingIds;
+    bytecodeToMerge.process(
+        [&](spv::Op opCode, unsigned start)
+        {
+            switch (opCode)
+            {
+                case spv::OpShaderInheritance:
+                case spv::OpShaderComposition:
+                case spv::OpShaderArrayComposition:
+                {
+                    const spv::Id id = bytecodeToMerge.asId(start + 1);
+                    if (listAllNewIdMerged[id])
+                    {
+                        bytecodeToMerge.CopyInstructionToVector(vecXkslDecorationsPossesingIds.spv, start);
+                    }
+                    break;
+                }
+            }
+            return true;
+        },
+        spx_op_fn_nop
+    );
+
     //=============================================================================================================
     //=============================================================================================================
     //Check for all unmapped Ids called within the shader types/consts instructions that we have to merge
@@ -446,6 +468,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         spirvbin_t bytecodeToCheckForUnmappedIds;
         bytecodeToCheckForUnmappedIds.spv.insert(bytecodeToCheckForUnmappedIds.spv.end(), vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
         bytecodeToCheckForUnmappedIds.spv.insert(bytecodeToCheckForUnmappedIds.spv.end(), vecFunctionsToMerge.spv.begin(), vecFunctionsToMerge.spv.end());
+        bytecodeToCheckForUnmappedIds.spv.insert(bytecodeToCheckForUnmappedIds.spv.end(), vecXkslDecorationsPossesingIds.spv.begin(), vecXkslDecorationsPossesingIds.spv.end());
         vector<pairIdPos> listUnmappedIdsToProcess;  //unmapped ids and their pos in the bytecode to merge
 
         spv::Op opCode;
@@ -544,6 +567,19 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     break;
                 }
 
+                case ObjectInstructionTypeEnum::Shader:
+                {
+                    //This is a shader from destination bytecode, we simply retrieve its Ids
+                    ShaderClassData* shader = this->GetShaderByName(objectFromUnmappedId->GetName());
+                    if (shader == nullptr)
+                        return error(string("No shader exists in destination bytecode with the name:") + objectFromUnmappedId->GetName());
+
+                    //remap the unmapped ID to the destination variable
+                    mappingResolved = true;
+                    finalRemapTable[unmappedId] = shader->GetId();
+                    break;
+                }
+
                 default:
                     return error(string("Invalid object. unable to remap unmapped id:") + to_string(unmappedId));
             }
@@ -610,6 +646,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             {
                 case spv::OpName:
                 {
+                    //We rename the OpName with the prefix (for debug purposes)
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
                     {
@@ -639,23 +676,27 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     break;
                 }
 
-                case spv::OpBelongsToShader:
-                {
-                    const spv::Id id = bytecodeToMerge.asId(start + 1);
-                    if (listAllNewIdMerged[id])
-                    {
-                        bytecodeToMerge.CopyInstructionToVector(vecDecoratesToMerge.spv, start);
-                    }
-                    break;
-                }
-
                 case spv::OpDecorate:
                 case spv::OpMemberDecorate:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
                     {
-                        bytecodeToMerge.CopyInstructionToVector(vecDecoratesToMerge.spv, start);
+                        bytecodeToMerge.CopyInstructionToVector(vecAllNewDecoratesToMerge.spv, start);
+                    }
+                    break;
+                }
+
+                case spv::OpDeclarationName:
+                case spv::OpBelongsToShader:
+                case spv::OpShaderInheritance:
+                case spv::OpShaderComposition:
+                case spv::OpShaderArrayComposition:
+                {
+                    const spv::Id id = bytecodeToMerge.asId(start + 1);
+                    if (listAllNewIdMerged[id])
+                    {
+                        bytecodeToMerge.CopyInstructionToVector(vecAllNewDecoratesToMerge.spv, start);
                     }
                     break;
                 }
@@ -677,7 +718,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             else id = newId;
         }
     );
-    vecDecoratesToMerge.processOnFullBytecode(
+    vecAllNewDecoratesToMerge.processOnFullBytecode(
         spx_inst_fn_nop,
         [&](spv::Id& id)
         {
@@ -741,7 +782,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //Merge types and variables
     spv.insert(spv.begin() + firstFunctionPos, vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
     //Merge names and decorates
-    spv.insert(spv.begin() + firstTypeOrConstPos, vecDecoratesToMerge.spv.begin(), vecDecoratesToMerge.spv.end());
+    spv.insert(spv.begin() + firstTypeOrConstPos, vecAllNewDecoratesToMerge.spv.begin(), vecAllNewDecoratesToMerge.spv.end());
     spv.insert(spv.begin() + firstTypeOrConstPos, vecNamesToMerge.spv.begin(), vecNamesToMerge.spv.end());
 
     //destination bytecode has been updated: reupdate all maps
@@ -844,7 +885,7 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
     for (auto itc = listCompositions.begin(); itc != listCompositions.end(); itc++)
     {
         ShaderComposition* composition = *itc;
-        ShaderClassData* shaderToClone = composition->originalShader;
+        ShaderClassData* shaderToClone = composition->shaderType;
 
         //prefix to rename the shader, its variables and functions
         string namePrefix = string("comp") + composition->compositionOwnerShader->GetName() + composition->variableName + string("_");
@@ -936,7 +977,11 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
                     break;
                 }
                 case spv::OpBelongsToShader:
+                case spv::OpDeclarationName:
                 case spv::OpTypeXlslShaderClass:
+                case spv::OpShaderInheritance:
+                case spv::OpShaderComposition:
+                case spv::OpShaderArrayComposition:
                 {
                     stripInst(start, vecStripRanges);
                     break;
@@ -949,7 +994,7 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
 
                     //remove all XKSL decoration
                     const spv::Decoration dec = asDecoration(start + 2);
-                    if (dec >= spv::DecorationDeclarationName && dec <= spv::DecorationMethodClone)
+                    if (dec >= spv::DecorationAttributeStage && dec <= spv::DecorationMethodClone)
                         stripInst(start, vecStripRanges);
                     break;
                 }
@@ -1507,6 +1552,57 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     break;
                 }
 
+                case spv::OpShaderInheritance:
+                {
+                    //A shader inherits from some shader parents
+                    const spv::Id shaderId = asId(start + 1);
+
+                    if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) return true;
+                    if (!vectorIdsToDecorate[shaderId]) return true;
+
+                    ShaderClassData* shader = GetShaderById(shaderId);
+                    if (shader == nullptr) { error(string("undeclared shader for Id:") + to_string(shaderId)); break; }
+
+                    int countParents = asWordCount(start) - 2;
+                    for (int p = 0; p < countParents; ++p)
+                    {
+                        const spv::Id parentShaderId = asId(start + 2 + p);
+                        ShaderClassData* shaderParent = GetShaderById(parentShaderId);
+                        if (shaderParent == nullptr) { error(string("undeclared parent shader for Id:") + to_string(parentShaderId)); break; }
+
+#ifdef XKSLANG_DEBUG_MODE
+                        if (shader->HasParent(shaderParent)) { error(string("shader:") + shader->GetName() + string(" already inherits from parent:") + shaderParent->GetName()); break; }
+#endif
+                        shader->AddParent(shaderParent);
+                    }
+                    break;
+                }
+
+                case spv::OpShaderComposition:
+                case spv::OpShaderArrayComposition:
+                {
+                    const spv::Id shaderId = asId(start + 1);
+
+                    if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) return true;
+                    if (!vectorIdsToDecorate[shaderId]) return true;
+
+                    bool isArray = opCode == spv::OpShaderArrayComposition ? true : false;
+                    ShaderClassData* shaderCompositionOwner = GetShaderById(shaderId);
+                    if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id:") + to_string(shaderId)); break; }
+
+                    int compositionId = asId(start + 2);
+
+                    const spv::Id shaderCompositionTypeId = asId(start + 3);
+                    ShaderClassData* shaderCompositionType = GetShaderById(shaderCompositionTypeId);
+                    if (shaderCompositionType == nullptr) { error(string("undeclared shader type id:") + to_string(shaderCompositionTypeId)); break; }
+
+                    const std::string compositionVariableName = literalString(start + 4);
+
+                    ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName, isArray);
+                    shaderCompositionOwner->AddComposition(shaderComposition);
+                    break;
+                }
+
                 case spv::Op::OpDecorate:
                 {
                     const spv::Id targetId = asId(start + 1);
@@ -1517,50 +1613,12 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
                     switch (dec)
                     {
-                        case spv::DecorationShaderDeclareArrayComposition:
-                        case spv::DecorationShaderDeclareComposition:
-                        {
-                            bool isArray = dec == spv::DecorationShaderDeclareArrayComposition? true: false;
-                            ShaderClassData* shaderCompositionOwner = GetShaderById(targetId);
-                            if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
-
-                            int compositionId = asId(start + 3);
-
-                            const std::string shaderCompositionName = literalString(start + 4);
-                            ShaderClassData* compositionOriginalShader = GetShaderByName(shaderCompositionName);
-                            if (compositionOriginalShader == nullptr) { error(string("undeclared shader name:") + shaderCompositionName); break; }
-
-                            int stringWord = literalStringWords(shaderCompositionName);
-                            const std::string compositionVariableName = literalString(start + 4 + stringWord);
-
-                            ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, compositionOriginalShader, compositionVariableName, isArray);
-                            shaderCompositionOwner->AddComposition(shaderComposition);
-                            break;
-                        }
-
                         case spv::DecorationMethodOverride:
                         {
                             //a function is defined with an override attribute
                             FunctionInstruction* function = GetFunctionById(targetId);
                             if (function == nullptr) {error(string("undeclared function id:") + to_string(targetId)); break;}
                             function->ParsedOverrideAttribute();
-                            break;
-                        }
-
-                        case spv::DecorationShaderInheritFromParent:
-                        {
-                            //A shader inherits from a parent
-                            ShaderClassData* shader = GetShaderById(targetId);
-                            const std::string parentName = literalString(start + 3);
-                            ShaderClassData* shaderParent = GetShaderByName(parentName);
-
-                            if (shader == nullptr) { error(string("undeclared shader id:") + to_string(targetId)); break; }
-                            if (shaderParent == nullptr) { error(string("undeclared parent shader:") + parentName); break; }
-#ifdef XKSLANG_DEBUG_MODE
-                            if (shader->HasParent(shaderParent)) {error(string("shader:") + shader->GetName() + string(" already inherits from parent:") + parentName); break;}
-#endif
-
-                            shader->AddParent(shaderParent);
                             break;
                         }
                     }
@@ -1768,20 +1826,11 @@ bool SpxStreamRemapper::BuildDeclarationNameMapsAndObjectsDataList(vector<Parsed
                     mapDeclarationName[target] = name;
 #endif*/
             }
-            else if (opCode == spv::Op::OpDecorate)
+            else if (opCode == spv::Op::OpDeclarationName)
             {
                 const spv::Id target = asId(start + 1);
-                const spv::Decoration dec = asDecoration(start + 2);
-
-                switch (dec)
-                {
-                    case spv::DecorationDeclarationName:
-                    {
-                        const std::string  name = literalString(start + 3);
-                        mapDeclarationName[target] = name;
-                        break;
-                    }
-                }
+                const std::string  name = literalString(start + 2);
+                mapDeclarationName[target] = name;
             }
             else if (isConstOp(opCode))
             {

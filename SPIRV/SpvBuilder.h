@@ -207,12 +207,13 @@ public:
     void addMemberName(Id, int member, const char* name);
     void addLine(Id target, Id fileName, int line, int column);
     void addDecoration(Id, Decoration, int num = -1);
-	void addDecoration(Id, Decoration, const char* str);
-    void addDecoration(Id, Decoration, int index, const char* str1, const char* str2);
     void addMemberDecoration(Id, unsigned int member, Decoration, int num = -1);
 
     //XKSL Extensions
     void addBelongToShaderDecoration(Id, Id);
+    void addDeclarationNameDecoration(Id, const char* name);
+    void addShaderInheritanceDecoration(Id, std::vector<spv::Id>&);
+    void addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isArray);
 
     // At the end of what block do the next create*() instructions go?
     void setBuildPoint(Block* bp) { buildPoint = bp; }

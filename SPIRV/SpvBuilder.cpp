@@ -961,32 +961,31 @@ void Builder::addBelongToShaderDecoration(Id shaderId, Id objectId)
     decorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
-void Builder::addDecoration(Id id, Decoration decoration, int index, const char* str1, const char* str2)
+void Builder::addDeclarationNameDecoration(Id id, const char* name)
 {
-    //TOTO REMOVE HERE
-    if (decoration == spv::DecorationMax)
-        return;
-    Instruction* dec = new Instruction(OpDecorate);
+    Instruction* dec = new Instruction(OpDeclarationName);
     dec->addIdOperand(id);
-    dec->addImmediateOperand(decoration);
-    dec->addImmediateOperand(index);
-    dec->addStringOperand(str1);
-    dec->addStringOperand(str2);
-
+    dec->addStringOperand(name);
     decorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
-void Builder::addDecoration(Id id, Decoration decoration, const char* str)
+void Builder::addShaderInheritanceDecoration(Id shaderId, std::vector<spv::Id>& parentsId)
 {
-    //TOTO REMOVE HERE
-	if (decoration == spv::DecorationMax)
-		return;
-	Instruction* dec = new Instruction(OpDecorate);
-	dec->addIdOperand(id);
-	dec->addImmediateOperand(decoration);
-	dec->addStringOperand(str);
+    Instruction* dec = new Instruction(OpShaderInheritance);
+    dec->addIdOperand(shaderId);
+    for (int a = 0; a < (int)parentsId.size(); ++a)
+        dec->addIdOperand(parentsId[a]);
+    decorations.push_back(std::unique_ptr<Instruction>(dec));
+}
 
-	decorations.push_back(std::unique_ptr<Instruction>(dec));
+void Builder::addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isArray)
+{
+    Instruction* dec = isArray? new Instruction(OpShaderArrayComposition): new Instruction(OpShaderComposition);
+    dec->addIdOperand(shaderId);
+    dec->addImmediateOperand(index);
+    dec->addIdOperand(shaderTypeId);
+    dec->addStringOperand(variableName);
+    decorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
 void Builder::addDecoration(Id id, Decoration decoration, int num)

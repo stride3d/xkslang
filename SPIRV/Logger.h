@@ -56,6 +56,8 @@ public:
     // Logs an error.
     void error(const std::string& e) { errors.push_back(e); }
 
+    bool hasAnyError() { return errors.size() > 0; }
+
     // Returns all messages accumulated in the order of:
     // TBD functionalities, missing functionalities, warnings, errors.
     std::string getAllMessages() const;

@@ -1971,7 +1971,7 @@ spv::Id TGlslangToSpvTraverser::createSpvVariable(const glslang::TIntermSymbol* 
 
     if (node->GetUserDefinedName() != nullptr)
     {
-        builder.addDecoration(variableId, spv::DecorationDeclarationName, node->GetUserDefinedName()->c_str());
+        builder.addDeclarationNameDecoration(variableId, node->GetUserDefinedName()->c_str());
     }
 
     return variableId;
@@ -2318,29 +2318,6 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             spv::BuiltIn builtIn = TranslateBuiltInDecoration(glslangMember.getQualifier().builtIn, true);
             if (builtIn != spv::BuiltInMax)
                 addMemberDecoration(spvType, member, spv::DecorationBuiltIn, (int)builtIn);
-
-            /**********************************************************************************************/
-            //XKSL extensions: decorate EbtShaderClass members
-            /*if (type.getBasicType() == glslang::EbtShaderClass)
-            {
-                //Decorate if the member is a stage attribute
-                if (glslangMember.getQualifier().isStage) addMemberDecoration(spvType, member, spv::DecorationAttributeStage, 1);
-                //Decorate if the member is a stream attribute
-                if (glslangMember.getQualifier().isStream) addMemberDecoration(spvType, member, spv::DecorationAttributeStream, 1);
-
-                if (glslangMember.getQualifier().storage == glslang::EvqConst)  //const or "static const" or "const static"
-                {
-                    //We decorate the member if it's a const (we consider const or static const to be equivalent to static const)
-                    //and we attribute it an ID refering to the resolution of its default value (we have some cases where we can't resolve a const until final compilation stage)
-                    addMemberDecoration(spvType, member, spv::DecorationMemberConst, 9999);
-                }
-                else if (glslangMember.getQualifier().storage == glslang::EvqGlobal) //static
-                {
-                    //We decorate the member if it's a static member
-                    addMemberDecoration(spvType, member, spv::DecorationAttributeStatic, 8888);
-                }
-            }*/
-            /**********************************************************************************************/
         }
     }
 
@@ -2360,40 +2337,11 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     }
 
     //========================================================================================================
-    //========================================================================================================
-    //XKSL extensions: Add info (as decorate) to the shader class
-    if (type.getBasicType() == glslang::EbtShaderClass)
-    {
-        //builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getTypeName().c_str());
-        const glslang::TIdentifierList* parentsName = type.getParentsName();
-        if (parentsName != nullptr)
-        {
-            for (int i=0; i<parentsName->size(); ++i)
-            {
-                builder.addDecoration(spvType, spv::DecorationShaderInheritFromParent, parentsName->at(i)->c_str());
-            }
-        }
-
-        const glslang::TVector<glslang::TShaderCompositionVariable>* compositionsList = type.getCompositionsList();
-        if (compositionsList != nullptr)
-        {
-            for (int index = 0; index<compositionsList->size(); ++index)
-            {
-                const glslang::TShaderCompositionVariable& composition = compositionsList->at(index);
-                if (composition.isArray)
-                    builder.addDecoration(spvType, spv::DecorationShaderDeclareArrayComposition, composition.shaderCompositionId, composition.shaderTypeName.c_str(), composition.variableName.c_str());
-                else
-                    builder.addDecoration(spvType, spv::DecorationShaderDeclareComposition, composition.shaderCompositionId, composition.shaderTypeName.c_str(), composition.variableName.c_str());
-            }
-        }
-    }
-
-    // obsolete: if (type.getBasicType() == glslang::EbtBlock)
-    // Now add info to all type defined within a shader
+    // XKSL extensions: add info to all type defined within a shader
     {
         if (type.getUserIdentifierName() != nullptr)
         {
-            builder.addDecoration(spvType, spv::DecorationDeclarationName, type.getUserIdentifierName()->c_str());
+            builder.addDeclarationNameDecoration(spvType, type.getUserIdentifierName()->c_str());
         }
 
         if (type.getOwnerClassName() != nullptr)
@@ -2684,6 +2632,9 @@ bool TGlslangToSpvTraverser::isShaderEntryPoint(const glslang::TIntermAggregate*
 
 bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequence& glslFunctions)
 {
+    //========================================================================================================
+    //We first declare and store all shader types
+    std::unordered_map<spv::Id, glslang::TType*> listShaderType;
     for (int f = 0; f < (int)glslFunctions.size(); ++f) {
         glslang::TIntermAggregate* node = glslFunctions[f]->getAsAggregate();
         if (node && (node->getOp() == glslang::EOpLinkerObjects))
@@ -2695,8 +2646,10 @@ bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequenc
                 glslang::TIntermSymbol* symbol = nodeSequence[a]->getAsSymbolNode();
                 if (symbol != nullptr && symbol->getType().getBasicType() == glslang::EbtShaderClass)
                 {
-                    //XKSL extensions: we don't add a variable for EbtShaderClass types (such variables will never be used), we just define the type
-                    spv::Id spvType = convertGlslangToSpvType(symbol->getType());
+                    //XKSL extensions: we add a spvType for each EbtShaderClass types
+                    glslang::TType* shaderType = &(symbol->getWritableType());
+
+                    spv::Id spvType = convertGlslangToSpvType(*shaderType);
                     const glslang::TString* pname = symbol->getType().getUserIdentifierName();
                     if (pname == nullptr || pname->size() == 0){
                         if (logger)
@@ -2711,8 +2664,64 @@ bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequenc
                         return false;
                     }
                     shaderClassMap[strName] = spvType;
+                    listShaderType[spvType] = shaderType;
                 }
             }
+        }
+    }
+
+
+    //========================================================================================================
+    //We can now add decorations to all shader types
+    for (auto its = listShaderType.begin(); its != listShaderType.end(); its++)
+    {
+        spv::Id spvType = its->first;
+        glslang::TType* shaderType = its->second;
+
+        const glslang::TIdentifierList* parentsName = shaderType->getParentsName();
+        if (parentsName != nullptr)
+        {
+            if (parentsName->size() > 0)
+            {
+                std::vector<spv::Id> vectorParents;
+                for (int i = 0; i<parentsName->size(); ++i)
+                {
+                    std::string parentName(parentsName->at(i)->c_str());
+                    auto fit = shaderClassMap.find(parentName);
+                    if (fit == shaderClassMap.end())
+                    {
+                        if (logger)
+                            logger->error(std::string("Cannot find the shader parent: ") + parentName);
+                    }
+                    else
+                        vectorParents.push_back(fit->second);
+                }
+                builder.addShaderInheritanceDecoration(spvType, vectorParents);
+            }
+        }
+
+        const glslang::TVector<glslang::TShaderCompositionVariable>* compositionsList = shaderType->getCompositionsList();
+        if (compositionsList != nullptr)
+        {
+            for (int index = 0; index<compositionsList->size(); ++index)
+            {
+                const glslang::TShaderCompositionVariable& composition = compositionsList->at(index);
+
+                std::string shaderTypeName(composition.shaderTypeName.c_str());
+                auto fit = shaderClassMap.find(shaderTypeName);
+                if (fit == shaderClassMap.end())
+                {
+                    if (logger)
+                        logger->error(std::string("The type shader owner has not been created: ") + shaderTypeName);
+                }
+                else
+                    builder.addShaderCompositionDecoration(spvType, composition.shaderCompositionId, fit->second, composition.variableName.c_str(), composition.isArray);
+            }
+        }
+
+        if (shaderType->getUserIdentifierName() != nullptr)
+        {
+            builder.addDeclarationNameDecoration(spvType, shaderType->getUserIdentifierName()->c_str());
         }
     }
 
@@ -2778,7 +2787,7 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
             const glslang::TType &functionType = glslFunction->getType();
             if (functionType.getUserIdentifierName() != nullptr)
             {
-                builder.addDecoration(function->getId(), spv::DecorationDeclarationName, functionType.getUserIdentifierName()->c_str());
+                builder.addDeclarationNameDecoration(function->getId(), functionType.getUserIdentifierName()->c_str());
             }
             if (functionType.getOwnerClassName() != nullptr)
             {

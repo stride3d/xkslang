@@ -1,4 +1,4 @@
-shader TestMixin01_Base
+shader Base
 {
 	static const int constBase = 1;
 
@@ -12,7 +12,7 @@ shader TestMixin01_Base
     }
 }
 
-shader TestMixin01_A : TestMixin01_Base
+shader ShaderA : Base
 {
     static const int constA = 2;
 
