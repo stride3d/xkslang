@@ -958,7 +958,8 @@ void Builder::addBelongToShaderDecoration(Id shaderId, Id objectId)
     Instruction* dec = new Instruction(OpBelongsToShader);
     dec->addIdOperand(shaderId);
     dec->addIdOperand(objectId);
-    decorations.push_back(std::unique_ptr<Instruction>(dec));
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
+    jhgjhgjh;
 }
 
 void Builder::addDeclarationNameDecoration(Id id, const char* name)
@@ -966,7 +967,17 @@ void Builder::addDeclarationNameDecoration(Id id, const char* name)
     Instruction* dec = new Instruction(OpDeclarationName);
     dec->addIdOperand(id);
     dec->addStringOperand(name);
-    decorations.push_back(std::unique_ptr<Instruction>(dec));
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
+}
+
+void Builder::addMethodPropertyList(Id id, std::vector<int>& attributes)
+{
+    if (attributes.size() == 0) return;
+    Instruction* dec = new Instruction(OpMethodProperties);
+    dec->addIdOperand(id);
+    for (int a = 0; a < (int)attributes.size(); ++a)
+        dec->addImmediateOperand(attributes[a]);
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
 void Builder::addShaderInheritanceDecoration(Id shaderId, std::vector<spv::Id>& parentsId)
@@ -975,7 +986,7 @@ void Builder::addShaderInheritanceDecoration(Id shaderId, std::vector<spv::Id>& 
     dec->addIdOperand(shaderId);
     for (int a = 0; a < (int)parentsId.size(); ++a)
         dec->addIdOperand(parentsId[a]);
-    decorations.push_back(std::unique_ptr<Instruction>(dec));
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
 void Builder::addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isArray)
@@ -985,7 +996,7 @@ void Builder::addShaderCompositionDecoration(Id shaderId, int index, Id shaderTy
     dec->addImmediateOperand(index);
     dec->addIdOperand(shaderTypeId);
     dec->addStringOperand(variableName);
-    decorations.push_back(std::unique_ptr<Instruction>(dec));
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
 void Builder::addDecoration(Id id, Decoration decoration, int num)

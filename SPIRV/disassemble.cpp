@@ -109,9 +109,11 @@ protected:
     void outputResultId(Id id);
     void outputTypeId(Id id);
     void outputId(Id id);
+    void outputProperty(int propId);
     void outputMask(OperandClass operandClass, unsigned mask);
     void disassembleImmediates(int numOperands);
     void disassembleIds(int numOperands);
+    void disassembleProperties(int numOperands);
     int disassembleString();
     void disassembleInstruction(Id resultId, Id typeId, Op opCode, int numOperands);
 
@@ -262,6 +264,11 @@ void SpirvStream::outputTypeId(Id id)
     out << std::setw(width) << std::right << idStream.str() << " ";
 }
 
+void SpirvStream::outputProperty(int propId)
+{
+    out << XkslPropertyString(propId);
+}
+
 void SpirvStream::outputId(Id id)
 {
     if (id >= bound)
@@ -288,6 +295,15 @@ void SpirvStream::disassembleImmediates(int numOperands)
 {
     for (int i = 0; i < numOperands; ++i) {
         out << stream[word++];
+        if (i < numOperands - 1)
+            out << " ";
+    }
+}
+
+void SpirvStream::disassembleProperties(int numOperands)
+{
+    for (int i = 0; i < numOperands; ++i) {
+        outputProperty(stream[word++]);
         if (i < numOperands - 1)
             out << " ";
     }
@@ -509,6 +525,10 @@ void SpirvStream::disassembleInstruction(Id resultId, Id /*typeId*/, Op opCode, 
         case OperandOptionalLiteralString:
         case OperandLiteralString:
             numOperands -= disassembleString();
+            break;
+        case OperandProperties:
+            disassembleProperties(numOperands);
+            return;
             break;
         default:
             assert(operandClass >= OperandSource && operandClass < OperandOpcode);

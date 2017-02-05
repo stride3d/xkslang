@@ -53,6 +53,7 @@ const char* ExecutionModelString(int);
 const char* ExecutionModeString(int);
 const char* StorageClassString(int);
 const char* DecorationString(int);
+const char* XkslPropertyString(int);
 const char* BuiltInString(int);
 const char* DimensionString(int);
 const char* SelectControlString(int);
@@ -155,6 +156,8 @@ enum OperandClass {
     OperandCapability,
 
     OperandOpcode,
+
+    OperandProperties,
 
     OperandCount
 };

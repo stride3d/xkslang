@@ -202,7 +202,20 @@ const char* StorageClassString(int StorageClass)
     }
 }
 
-const int DecorationCeiling = 1020;  //Warning: Bad code (legacy)!
+const int DecorationCeiling = 45;
+
+const char* XkslPropertyString(int prop)
+{
+    switch (prop)
+    {
+        case (PropertyStage):	       return "Stage";
+        case (PropertyStream):         return "Stream";
+        case (PropertyMethodOverride): return "Override";
+        case (PropertyMethodAbstract): return "Abstract";
+        case (PropertyMethodClone):    return "Clone";
+        default:  return "Bad";
+    }
+}
 
 const char* DecorationString(int decoration)
 {
@@ -253,15 +266,6 @@ const char* DecorationString(int decoration)
     case 43: return "InputAttachmentIndex";
     case 44: return "Alignment";
     
-    //XKSL extensions
-    case (DecorationAttributeStage):	             return "Stage";
-    case (DecorationAttributeStream):                return "Stream";
-    case (DecorationAttributeStatic):		         return "Static";
-    case (DecorationMemberConst):                    return "Const";
-    case (DecorationMethodOverride):                 return "Override";
-    case (DecorationMethodAbstract):                 return "Abstract";
-    case (DecorationMethodClone):                    return "Clone";
-
     case DecorationCeiling:
     default:  return "Bad";
 
@@ -1189,6 +1193,7 @@ const char* OpcodeString(int op)
     case (OpBelongsToShader):        return "OpBelongsToShader";
     case (OpShaderComposition):      return "OpShaderComposition";
     case (OpShaderArrayComposition): return "OpShaderArrayComposition";
+    case (OpMethodProperties):       return "OpMethodProperties";
     case (OpFunctionCallBaseUnresolved): return "OpFunctionCallBaseUnres";
     case (OpFunctionCallBaseResolved):   return "OpFunctionCallBaseRes";
     case (OpFunctionCallThroughCompositionVariable):  return "OpFunctionCallThroughCompositionVar";
@@ -1321,15 +1326,19 @@ void Parameterize()
     InstructionDesc[OpGroupWaitEvents].setResultAndType(false, false);
     InstructionDesc[OpAtomicFlagClear].setResultAndType(false, false);
 
+    //=======================================================================================
     //XKSL extensions
     InstructionDesc[OpDeclarationName].setResultAndType(false, false);
     InstructionDesc[OpShaderInheritance].setResultAndType(false, false);
     InstructionDesc[OpBelongsToShader].setResultAndType(false, false);
     InstructionDesc[OpShaderComposition].setResultAndType(false, false);
     InstructionDesc[OpShaderArrayComposition].setResultAndType(false, false);
+    InstructionDesc[OpMethodProperties].setResultAndType(false, false);
+
     InstructionDesc[OpFunctionCallBaseUnresolved].setResultAndType(true, true);
     InstructionDesc[OpFunctionCallBaseResolved].setResultAndType(true, true);
     InstructionDesc[OpFunctionCallThroughCompositionVariable].setResultAndType(true, true);
+    //=======================================================================================
 
     // Specific additional context-dependent operands
 
@@ -1400,7 +1409,6 @@ void Parameterize()
     OperandClassParams[OperandKernelProfilingInfo].set(KernelProfilingInfoCeiling, KernelProfilingInfoString, KernelProfilingInfoParams, true);
     OperandClassParams[OperandCapability].set(CapabilityCeiling, CapabilityString, CapabilityParams);
     OperandClassParams[OperandOpcode].set(OpcodeCeiling, OpcodeString, 0);
-
     CapabilityParams[CapabilityShader].caps.push_back(CapabilityMatrix);
     CapabilityParams[CapabilityGeometry].caps.push_back(CapabilityShader);
     CapabilityParams[CapabilityTessellation].caps.push_back(CapabilityShader);
@@ -1857,6 +1865,9 @@ void Parameterize()
     InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralNumber, "'CompId'");
     InstructionDesc[OpShaderArrayComposition].operands.push(OperandId, "'ShaderType'");
     InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralString, "'VariableName'");
+
+    InstructionDesc[OpMethodProperties].operands.push(OperandId, "'Function'");
+    InstructionDesc[OpMethodProperties].operands.push(OperandProperties, "'Property 0', +\n'Property 1', +\n...");
 
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");

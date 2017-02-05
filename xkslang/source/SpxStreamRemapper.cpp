@@ -692,6 +692,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpShaderInheritance:
                 case spv::OpShaderComposition:
                 case spv::OpShaderArrayComposition:
+                case spv::OpMethodProperties:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
@@ -982,20 +983,9 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
                 case spv::OpShaderInheritance:
                 case spv::OpShaderComposition:
                 case spv::OpShaderArrayComposition:
+                case spv::OpMethodProperties:
                 {
                     stripInst(start, vecStripRanges);
-                    break;
-                }
-                case spv::OpDecorate:
-                {
-                    //id = asId(start + 1);
-                    //if (id != spv::NoResult && isXkslShaderClassType[id] == 1)
-                    //    stripInst(start);
-
-                    //remove all XKSL decoration
-                    const spv::Decoration dec = asDecoration(start + 2);
-                    if (dec >= spv::DecorationAttributeStage && dec <= spv::DecorationMethodClone)
-                        stripInst(start, vecStripRanges);
                     break;
                 }
             }
@@ -1603,26 +1593,28 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     break;
                 }
 
-                case spv::Op::OpDecorate:
+                case spv::Op::OpMethodProperties:
                 {
-                    const spv::Id targetId = asId(start + 1);
-                    const spv::Decoration dec = asDecoration(start + 2);
+                    //a function is defined with some properties
+                    const spv::Id functionId = asId(start + 1);
 
-                    if (targetId < 0 || targetId >= vectorIdsToDecorate.size()) return true;
-                    if (!vectorIdsToDecorate[targetId]) return true;
+                    if (functionId < 0 || functionId >= vectorIdsToDecorate.size()) return true;
+                    if (!vectorIdsToDecorate[functionId]) return true;
 
-                    switch (dec)
+                    FunctionInstruction* function = GetFunctionById(functionId);
+                    if (function == nullptr) { error(string("undeclared function id:") + to_string(functionId)); break; }
+
+                    int countProperties = asWordCount(start) - 2;
+                    for (int a = 0; a < countProperties; ++a)
                     {
-                        case spv::DecorationMethodOverride:
+                        int prop = asId(start + 2 + a);
+                        switch (prop)
                         {
-                            //a function is defined with an override attribute
-                            FunctionInstruction* function = GetFunctionById(targetId);
-                            if (function == nullptr) {error(string("undeclared function id:") + to_string(targetId)); break;}
+                        case spv::XkslPropertyEnum::PropertyMethodOverride:
                             function->ParsedOverrideAttribute();
                             break;
                         }
                     }
-
                     break;
                 }
             }

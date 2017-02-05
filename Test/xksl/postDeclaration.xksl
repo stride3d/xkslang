@@ -53,6 +53,8 @@ shader TestShaderMethod
 	override void overrideMethod() {}
 	
 	clone void cloneMethod() {}
+	
+	clone override abstract stage void cloneMethodB() {}
 };
 
 

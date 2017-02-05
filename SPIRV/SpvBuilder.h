@@ -214,6 +214,7 @@ public:
     void addDeclarationNameDecoration(Id, const char* name);
     void addShaderInheritanceDecoration(Id, std::vector<spv::Id>&);
     void addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isArray);
+    void addMethodPropertyList(Id id, std::vector<int>&);
 
     // At the end of what block do the next create*() instructions go?
     void setBuildPoint(Block* bp) { buildPoint = bp; }
@@ -584,6 +585,7 @@ public:
     std::vector<std::unique_ptr<Instruction> > names;
     std::vector<std::unique_ptr<Instruction> > lines;
     std::vector<std::unique_ptr<Instruction> > decorations;
+    std::vector<std::unique_ptr<Instruction> > xkslDecorations;  //xksl extensions
     std::vector<std::unique_ptr<Instruction> > constantsTypesGlobals;
     std::vector<std::unique_ptr<Instruction> > externals;
     std::vector<std::unique_ptr<Function> > functions;

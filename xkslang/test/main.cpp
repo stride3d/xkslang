@@ -50,7 +50,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "", {{"declarationMixOfFunctionsAndVariables.xksl"}},{} },
     //{ "", {{"2ShaderWithSameFunctionNames.xksl"}},{} },
     //{ "", {{"shaderInheritance.xksl"}},{} },
-    //{ "", {{"postDeclaration.xksl"}},{} },
+    { "", {{"postDeclaration.xksl"}},{} },
     //{ "", {{"classAccessor.xksl"}},{} },
     //{ "", {{"typeDeclarationOnly.xksl"}},{} },
     //{ "", {{"streamsSimple.xksl"}},{} },
@@ -79,7 +79,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestMerge09", {{"TestMerge09_ShaderA.xksl"}, {"TestMerge09_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge09_Pixel.rv.glsl"}} },
     //{ "TestMerge10", {{"TestMerge10_ShaderA.xksl"}, {"TestMerge10_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge10_Pixel.rv.glsl"}} },
     //{ "TestMerge11", {{"TestMerge11_Base.xksl"}, {"TestMerge11_ShaderA.xksl"}, {"TestMerge11_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge11_Pixel.rv.glsl"}} },
-    { "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge12_Pixel.rv.glsl"}} },
+    //{ "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge12_Pixel.rv.glsl"}} },
 
     //{ "TestCompose01", {{"TestComposeDeclaration.xksl"}},{} },
     //{ "TestCompose02",{ { "TestCompose02.xksl" } }, {{"main", ShadingStageEnum::Pixel, ""}} },

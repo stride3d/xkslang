@@ -376,30 +376,6 @@ enum Decoration {
     DecorationInputAttachmentIndex = 43,
     DecorationAlignment = 44,
 
-	//**********************************************************************
-	//New decoration for XKSL extensions
-	//We use these decorations to add specific properties to our types or functions
-	//The IDs arbitrary start at 1000
-
-	//Specify that a defined structure (OpTypeStruct) is actually a shader class, and specify its name (we could eventually remove the name, there is a rededundancy with OpName)
-	//syntax: OpDecorate <id> DecorationShaderClassType <Literal String: shader name>
-    //WARNING: the range [DecorationDeclarationName, DecorationMethodClone] is used to check XKSl decorations (cf SpxStreamRemapper)
-	//DecorationDeclarationName = 1000,
-
-	//Specify that a shader inherits from another shader, the order of inheritance is defined by the order of declaration of InheritFromShaderClass decoration
-
-	//Member/method Qualifiers
-	DecorationAttributeStage  = 1010,  //member or method is a stage
-	DecorationAttributeStream = 1011,  //member or method is a stream
-	DecorationAttributeStatic = 1012,  //member or method is static
-
-	DecorationMemberConst    = 1015,   //const member
-	DecorationMethodAbstract = 1016,   //abstract method
-	DecorationMethodOverride = 1017,   //override method
-	DecorationMethodClone    = 1018,   //clone method
-    //WARNING: the range [DecorationDeclarationName, DecorationMethodClone] is used to check XKSl decorations (cf SpxStreamRemapper)
-	//**********************************************************************
-
     DecorationMax = 0x7fffffff,
 };
 
@@ -632,6 +608,14 @@ enum Capability {
     CapabilityDrawParameters = 4427,
     CapabilitySubgroupVoteKHR = 4431,
     CapabilityMax = 0x7fffffff,
+};
+
+enum XkslPropertyEnum {
+    PropertyStage = 1,            //member or method is a stage
+    PropertyStream = 2,           //member or method is a stream
+    PropertyMethodAbstract = 3,   //abstract method
+    PropertyMethodOverride = 4,   //override method
+    PropertyMethodClone = 5,      //clone method
 };
 
 enum Op {
@@ -941,15 +925,19 @@ enum Op {
     OpSubgroupAnyKHR = 4429,
     OpSubgroupAllEqualKHR = 4430,
 
+    //================================================================================================
     //XKSL extensions
-    OpDeclarationName = 4600,                         //declaration name for shader, shaders' functions and shaders' block types
-    OpShaderInheritance = 4601,                       //List of a shader inheritance
-    OpBelongsToShader = 4602,                         //Link the functions and types with the shader that created them
-    OpShaderComposition = 4603,                       //Declare a composition within a shader
-    OpShaderArrayComposition = 4604,                  //Declare an array composition within a shader
+    OpDeclarationName = 4600,           //declaration name for shader, shaders' functions and shaders' block types
+    OpShaderInheritance = 4601,         //List of a shader inheritance
+    OpBelongsToShader = 4602,           //Link the functions and types with the shader that created them
+    OpShaderComposition = 4603,         //Declare a composition within a shader
+    OpShaderArrayComposition = 4604,    //Declare an array composition within a shader
+    OpMethodProperties = 4605,          //Add XKSL properties to a method: cf XkslPropertyEnum
+
     OpFunctionCallBaseUnresolved = 4620,              //an unresolved function call with base accessor
     OpFunctionCallBaseResolved = 4621,                //a resolved function call with base accessor
     OpFunctionCallThroughCompositionVariable = 4622,  //a function is called through a composition variable
+    //================================================================================================
 
     OpMax = 0x7fffffff,
 };

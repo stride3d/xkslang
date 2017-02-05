@@ -2801,21 +2801,22 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
                 else
                     builder.addBelongToShaderDecoration(fit->second, function->getId());
             }
-            if (functionType.getQualifier().isStage)
-            {
-                builder.addDecoration(function->getId(), spv::DecorationAttributeStage, 1);
+            std::vector<int> vecAttributes;
+            if (functionType.getQualifier().isStage){
+                vecAttributes.push_back(spv::PropertyStage);
             }
-            if (functionType.getQualifier().isOverride)
-            {
-                builder.addDecoration(function->getId(), spv::DecorationMethodOverride, 1);
+            if (functionType.getQualifier().isOverride){
+                vecAttributes.push_back(spv::PropertyMethodOverride);
             }
-            if (functionType.getQualifier().isAbstract)
-            {
-                builder.addDecoration(function->getId(), spv::DecorationMethodAbstract, 1);
+            if (functionType.getQualifier().isAbstract){
+                vecAttributes.push_back(spv::PropertyMethodAbstract);
             }
-            if (functionType.getQualifier().isClone)
+            if (functionType.getQualifier().isClone){
+                vecAttributes.push_back(spv::PropertyMethodClone);
+            }
+            if (vecAttributes.size() > 0)
             {
-                builder.addDecoration(function->getId(), spv::DecorationMethodClone, 1);
+                builder.addMethodPropertyList(function->getId(), vecAttributes);
             }
         }
     }
