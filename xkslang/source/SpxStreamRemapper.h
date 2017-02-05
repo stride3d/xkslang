@@ -209,8 +209,12 @@ public:
         std::string variableName;
         bool isArray;
 
+        ShaderClassData* instantiatedShader;  //resulting shader instance from the composition
+
         ShaderComposition(int compositionShaderId, ShaderClassData* compositionOwnerShader, ShaderClassData* shaderType, const std::string& variableName, bool isArray)
-            :compositionShaderId(compositionShaderId), compositionOwnerShader(compositionOwnerShader), shaderType(shaderType), variableName(variableName), isArray(isArray){}
+            :compositionShaderId(compositionShaderId), compositionOwnerShader(compositionOwnerShader), shaderType(shaderType),
+            variableName(variableName), isArray(isArray), instantiatedShader(nullptr){}
+
     };
 
     class ShaderClassData : public ObjectInstructionBase

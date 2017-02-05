@@ -761,6 +761,9 @@ namespace spv {
                 ++word;
                 break;
 
+            case spv::OperandProperties:
+                return nextInst;
+
             default:
                 assert(0 && "Unhandled Operand Class");
                 break;

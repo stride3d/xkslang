@@ -959,7 +959,6 @@ void Builder::addBelongToShaderDecoration(Id shaderId, Id objectId)
     dec->addIdOperand(shaderId);
     dec->addIdOperand(objectId);
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
-    jhgjhgjh;
 }
 
 void Builder::addDeclarationNameDecoration(Id id, const char* name)
@@ -2461,6 +2460,7 @@ void Builder::dump(std::vector<unsigned int>& out) const
 
     // Annotation instructions
     dumpInstructions(out, decorations);
+    dumpInstructions(out, xkslDecorations);
 
     dumpInstructions(out, constantsTypesGlobals);
     dumpInstructions(out, externals);

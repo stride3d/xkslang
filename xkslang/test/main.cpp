@@ -43,6 +43,7 @@ static string outputDir;
 static string expectedOutputDir;
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
+    //{ "", {{"shaderOnly.xksl"}}, {} },
     //{ "", {{"shaderWithVariable.xksl"}}, {} },
     //{ "", {{"shaderWithManyVariables.xksl"}},{} },
     //{ "", {{"manySimpleShaders.xksl"}},{} },
@@ -50,7 +51,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "", {{"declarationMixOfFunctionsAndVariables.xksl"}},{} },
     //{ "", {{"2ShaderWithSameFunctionNames.xksl"}},{} },
     //{ "", {{"shaderInheritance.xksl"}},{} },
-    { "", {{"postDeclaration.xksl"}},{} },
+    //{ "", {{"postDeclaration.xksl"}},{} },
     //{ "", {{"classAccessor.xksl"}},{} },
     //{ "", {{"typeDeclarationOnly.xksl"}},{} },
     //{ "", {{"streamsSimple.xksl"}},{} },
@@ -81,8 +82,8 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestMerge11", {{"TestMerge11_Base.xksl"}, {"TestMerge11_ShaderA.xksl"}, {"TestMerge11_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge11_Pixel.rv.glsl"}} },
     //{ "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge12_Pixel.rv.glsl"}} },
 
-    //{ "TestCompose01", {{"TestComposeDeclaration.xksl"}},{} },
-    //{ "TestCompose02",{ { "TestCompose02.xksl" } }, {{"main", ShadingStageEnum::Pixel, ""}} },
+    //{ "TestCompose01", {{"TestCompose01.xksl"}},{} },
+    { "TestCompose02",{ { "TestCompose02.xksl" } }, {{"main", ShadingStageEnum::Pixel, ""}} },
         //{ "",{ { "TestComposeShaderWithParents.xksl" } },{} },
         //{ "",{ { "TestCompose.xksl" } },{} },
 
@@ -315,13 +316,14 @@ void main(int argc, char** argv)
                 if (success && outputs.size() > 0)
                 {
                     SpvBytecode compiledSpv;
+                    SpvBytecode finalizedSpv;
                     vector<XkslMixer::XkslMixerOutputStage> outputStages;
                     for (int i = 0; i<outputs.size(); ++i)
                         outputStages.push_back(XkslMixer::XkslMixerOutputStage(outputs[i].stage, outputs[i].entryPoint));
 
                     cout << " Compile Mixin: ";
                     time_before = GetTickCount();
-                    success = mixer.Compile(outputStages, compiledSpv, errorMsgs);
+                    success = mixer.Compile(outputStages, errorMsgs, &compiledSpv, &finalizedSpv);
                     time_after = GetTickCount();
 
                     mixinTotalTime += (time_after - time_before);
@@ -334,13 +336,26 @@ void main(int argc, char** argv)
                     if (success)
                     {
                         //output compiled spirv
-                        const vector<uint32_t>& bytecodeList = compiledSpv.getBytecodeStream();
-                        ostringstream disassembly_stream;
-                        spv::Parameterize();
-                        spv::Disassemble(disassembly_stream, bytecodeList);
+                        {
+                            const vector<uint32_t>& bytecodeList = compiledSpv.getBytecodeStream();
+                            ostringstream disassembly_stream;
+                            spv::Parameterize();
+                            spv::Disassemble(disassembly_stream, bytecodeList);
 
-                        const string newOutputFname = outputDir + effectName + "_mixin_compiled_" + ".hr.spv";
-                        xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                            const string newOutputFname = outputDir + effectName + "_mixin_compiled_" + ".hr.spv";
+                            xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                        }
+
+                        //output finalized spirv
+                        {
+                            const vector<uint32_t>& bytecodeList = finalizedSpv.getBytecodeStream();
+                            ostringstream disassembly_stream;
+                            spv::Parameterize();
+                            spv::Disassemble(disassembly_stream, bytecodeList);
+
+                            const string newOutputFname = outputDir + effectName + "_mixin_finalized_" + ".hr.spv";
+                            xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                        }
 
                         //convert and output every stages
                         for (int i = 0; i<outputStages.size(); ++i)

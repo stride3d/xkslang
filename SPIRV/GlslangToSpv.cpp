@@ -2718,11 +2718,6 @@ bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequenc
                     builder.addShaderCompositionDecoration(spvType, composition.shaderCompositionId, fit->second, composition.variableName.c_str(), composition.isArray);
             }
         }
-
-        if (shaderType->getUserIdentifierName() != nullptr)
-        {
-            builder.addDeclarationNameDecoration(spvType, shaderType->getUserIdentifierName()->c_str());
-        }
     }
 
     return true;

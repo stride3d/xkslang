@@ -13,7 +13,6 @@ shader ShaderA
 	int varA;
 	
 	compose ShaderComp colorA;
-	compose ShaderComp colorB;
 	
 	float Compute(){return 5;}
 	

@@ -156,9 +156,9 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
         for (int i = 0; i < shaderToClone->compositionsList.size(); ++i)
         {
             ShaderComposition& compositionToClone = shaderToClone->compositionsList[i];
-            ShaderClassData* shaderType = compositionToClone.shaderType == nullptr? nullptr:
-                clonedSpxRemapper->GetShaderById(compositionToClone.shaderType->GetId());
+            ShaderClassData* shaderType = compositionToClone.shaderType == nullptr? nullptr: clonedSpxRemapper->GetShaderById(compositionToClone.shaderType->GetId());
             ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionOwnerShader, shaderType, compositionToClone.variableName, compositionToClone.isArray);
+            clonedComposition.instantiatedShader = compositionToClone.instantiatedShader == nullptr ? nullptr : clonedSpxRemapper->GetShaderById(compositionToClone.instantiatedShader->GetId());
             clonedShader->AddComposition(clonedComposition);
         }
     }
@@ -644,6 +644,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         {
             switch (opCode)
             {
+                case spv::OpDeclarationName:
                 case spv::OpName:
                 {
                     //We rename the OpName with the prefix (for debug purposes)
@@ -666,16 +667,8 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     }
                     break;
                 }
+                
                 case spv::OpMemberName:
-                {
-                    const spv::Id id = bytecodeToMerge.asId(start + 1);
-                    if (listAllNewIdMerged[id])
-                    {
-                        bytecodeToMerge.CopyInstructionToVector(vecNamesToMerge.spv, start);
-                    }
-                    break;
-                }
-
                 case spv::OpDecorate:
                 case spv::OpMemberDecorate:
                 {
@@ -687,7 +680,6 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     break;
                 }
 
-                case spv::OpDeclarationName:
                 case spv::OpBelongsToShader:
                 case spv::OpShaderInheritance:
                 case spv::OpShaderComposition:
@@ -894,6 +886,8 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
         {
             return error(string("failed to clone the composition targeting shader: ") + shaderToClone->GetName());
         }
+
+        composition->instantiatedShader = gsdfgdfsg;
     }
     delete clonedSpxStream;
 
@@ -903,18 +897,15 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
     process(
         [&](spv::Op opCode, unsigned start)
         {
-            switch (opCode) {
-                case spv::OpFunctionCallBaseResolved:
-                {
-                    break;
-                }
+            switch (opCode)
+            {
                 case spv::OpFunctionCallThroughCompositionVariable:
                 {
                     // change OpFunctionCallThroughCompositionVariable to OpFunctionCall
                     int wordCount = asWordCount(start);
                     vecStripRanges.push_back(range_t(start + 4, start + 5 + 1)); //remove composition variable identification
                     setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 2);
-                    wordCount = asWordCount(start);
+                    break;
                 }
             }
             return true;
