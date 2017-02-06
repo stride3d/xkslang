@@ -11,6 +11,4 @@ Test/singleThread.out
 Test/vert.spv
 Test/frag.spv
 External/googletest
-*.spv
-*.hr.spv
-*.rv.glsl
+Test/xksl/outputs

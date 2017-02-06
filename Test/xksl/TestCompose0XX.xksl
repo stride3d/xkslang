@@ -1,0 +1,36 @@
+shader ShaderComp
+{
+	float varC = 10;
+	
+	float Compute()
+	{
+		return varC;
+	}
+}
+
+shader ShaderA
+{
+	int varA;
+	
+	compose ShaderComp colorA;
+	
+	float Compute(){return 5;}
+	
+	float main()
+	{
+		float f = Compute();
+		return f + colorA.Compute();
+	}
+}
+
+//Overriding ?
+//Compositions within compositions?
+shader ShaderCompB: ShaderCompB
+{
+	float varCC = 20;
+	
+	override float Compute()
+	{
+		return varCC;
+	}
+}

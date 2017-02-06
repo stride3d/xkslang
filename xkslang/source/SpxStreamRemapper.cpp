@@ -63,7 +63,7 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
     clonedSpxRemapper->spv = this->spv;
     clonedSpxRemapper->listAllObjects.resize(listAllObjects.size(), nullptr);
 
-    for (int i=0; i<listAllObjects.size(); ++i)
+    for (unsigned int i=0; i<listAllObjects.size(); ++i)
     {
         ObjectInstructionBase* obj = listAllObjects[i];
         if (obj != nullptr)
@@ -73,7 +73,7 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
         }
     }
 
-    for (int i = 0; i < listAllObjects.size(); ++i)
+    for (unsigned int i = 0; i < listAllObjects.size(); ++i)
     {
         ObjectInstructionBase* obj = listAllObjects[i];
         if (obj == nullptr) continue;
@@ -106,11 +106,16 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
             case ObjectInstructionTypeEnum::Function:
             {
                 FunctionInstruction* function = dynamic_cast<FunctionInstruction*>(obj);
+                FunctionInstruction* clonedFunction = dynamic_cast<FunctionInstruction*>(clonedObj);
                 if (function->GetOverridingFunction() != nullptr)
                 {
-                    FunctionInstruction* clonedFunction = dynamic_cast<FunctionInstruction*>(clonedObj);
                     FunctionInstruction* pointedFunction = clonedSpxRemapper->GetFunctionById(function->GetOverridingFunction()->GetId());
                     clonedFunction->SetOverridingFunction(pointedFunction);
+                }
+                if (function->GetShaderOwner() != nullptr)
+                {
+                    ShaderClassData* shaderOwner = clonedSpxRemapper->GetShaderById(function->GetShaderOwner()->GetId());
+                    clonedFunction->SetShaderOwner(shaderOwner);
                 }
                 break;
             }
@@ -118,6 +123,7 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
             {
                 ShaderClassData* shader = dynamic_cast<ShaderClassData*>(obj);
                 ShaderClassData* clonedShader = dynamic_cast<ShaderClassData*>(clonedObj);
+                shader->tmpClonedShader = clonedShader;
                 for (auto it = shader->parentsList.begin(); it != shader->parentsList.end(); it++)
                 {
                     ShaderClassData* parent = clonedSpxRemapper->GetShaderById((*it)->GetId());
@@ -153,12 +159,12 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
         ShaderClassData* clonedShader = clonedSpxRemapper->GetShaderById(shaderToClone->GetId());
         clonedSpxRemapper->vecAllShaders.push_back(clonedShader);
 
-        for (int i = 0; i < shaderToClone->compositionsList.size(); ++i)
+        for (unsigned int i = 0; i < shaderToClone->compositionsList.size(); ++i)
         {
             ShaderComposition& compositionToClone = shaderToClone->compositionsList[i];
             ShaderClassData* shaderType = compositionToClone.shaderType == nullptr? nullptr: clonedSpxRemapper->GetShaderById(compositionToClone.shaderType->GetId());
-            ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionOwnerShader, shaderType, compositionToClone.variableName, compositionToClone.isArray);
-            clonedComposition.instantiatedShader = compositionToClone.instantiatedShader == nullptr ? nullptr : clonedSpxRemapper->GetShaderById(compositionToClone.instantiatedShader->GetId());
+            ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionShaderOwner, shaderType, compositionToClone.variableName, compositionToClone.isArray);
+            //clonedComposition.instantiatedShader = compositionToClone.instantiatedShader == nullptr ? nullptr : clonedSpxRemapper->GetShaderById(compositionToClone.instantiatedShader->GetId());
             clonedShader->AddComposition(clonedComposition);
         }
     }
@@ -218,7 +224,7 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     else
     {
         //merge the new bytecode into current one
-        if (!MergeShadersFromBytecode(bytecode, listShadersMerged))
+        if (!MergeAllNewShadersFromBytecode(bytecode, listShadersMerged))
             return error(string("Error merging the shaders from the bytecode: ") + bytecode.GetName());
     }
 
@@ -255,7 +261,7 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     return true;
 }
 
-bool SpxStreamRemapper::MergeShadersFromBytecode(const SpxBytecode& bytecode, vector<ShaderClassData*>& listShadersMerged)
+bool SpxStreamRemapper::MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, vector<ShaderClassData*>& listShadersMerged)
 {
     listShadersMerged.clear();
     int maxCountIds = bound();
@@ -294,7 +300,7 @@ bool SpxStreamRemapper::MergeShadersFromBytecode(const SpxBytecode& bytecode, ve
 
     //=============================================================================================================
     //retrieve the merged shaders from the destination bytecode
-    for (int is = 0; is<listShadersToMerge.size(); ++is)
+    for (unsigned int is = 0; is<listShadersToMerge.size(); ++is)
     {
         ShaderClassData* shaderToMerge = listShadersToMerge[is];
         ShaderClassData* shaderMerged = GetShaderByName(shaderToMerge->GetName());
@@ -339,14 +345,15 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     listAllNewIdMerged.resize(bytecodeToMerge.bound(), false);
     listIdsWhereToAddNamePrefix.resize(bytecodeToMerge.bound(), false);
 
-    for (int is=0; is<listShadersToMerge.size(); ++is)
+    for (unsigned int is=0; is<listShadersToMerge.size(); ++is)
     {
         ShaderClassData* shaderToMerge = listShadersToMerge[is];
+        shaderToMerge->tmpClonedShader = nullptr;
 
         //=============================================================================================================
         //=============================================================================================================
         //merge all types and variables declared by the shader
-        for (int t = 0; t < shaderToMerge->shaderTypesList.size(); ++t)
+        for (unsigned int t = 0; t < shaderToMerge->shaderTypesList.size(); ++t)
         {
             ShaderTypeData* shaderTypeToMerge = shaderToMerge->shaderTypesList[t];
 
@@ -383,7 +390,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         //=============================================================================================================
         //=============================================================================================================
         //add all functions' instructions declared by the shader
-        for (int t = 0; t < shaderToMerge->functionsList.size(); ++t)
+        for (unsigned int t = 0; t < shaderToMerge->functionsList.size(); ++t)
         {
             FunctionInstruction* functionToMerge = shaderToMerge->functionsList[t];
             //finalRemapTable[functionToMerge->id] = newId++; //done below
@@ -472,12 +479,12 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         vector<pairIdPos> listUnmappedIdsToProcess;  //unmapped ids and their pos in the bytecode to merge
 
         spv::Op opCode;
-        unsigned wordCount;
+        unsigned int wordCount;
         std::vector<spv::Id> listIds;
         spv::Id typeId, resultId;
-        unsigned listIdsLen;
-        unsigned pos = 0;
-        const unsigned end = bytecodeToCheckForUnmappedIds.spv.size();
+        unsigned int listIdsLen;
+        unsigned int pos = 0;
+        const unsigned int end = bytecodeToCheckForUnmappedIds.spv.size();
         while (pos < end)
         {
             listIds.clear();
@@ -486,7 +493,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
             if (typeId != unused) listIds.push_back(typeId);
             listIdsLen = listIds.size();
-            for (int i = 0; i < listIdsLen; ++i)
+            for (unsigned int i = 0; i < listIdsLen; ++i)
             {
                 const spv::Id id = listIds[i];
                 if (finalRemapTable[id] == unused)
@@ -602,7 +609,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     if (typeId != unused) listIds.push_back(typeId);
                     listIdsLen = listIds.size();
                     bool canAddTheInstruction = true;
-                    for (int i = 0; i < listIdsLen; ++i)
+                    for (unsigned int i = 0; i < listIdsLen; ++i)
                     {
                         const spv::Id anotherId = listIds[i];
 #ifdef XKSLANG_DEBUG_MODE
@@ -638,13 +645,12 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
     //=============================================================================================================
     //=============================================================================================================
-    // get all name and decoration for the new IDs we need to merge
+    // get all name, decoration and XKSL data for the new IDs we need to merge
     bytecodeToMerge.process(
         [&](spv::Op opCode, unsigned start)
         {
             switch (opCode)
             {
-                case spv::OpDeclarationName:
                 case spv::OpName:
                 {
                     //We rename the OpName with the prefix (for debug purposes)
@@ -680,6 +686,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     break;
                 }
 
+                case spv::OpDeclarationName:
                 case spv::OpBelongsToShader:
                 case spv::OpShaderInheritance:
                 case spv::OpShaderComposition:
@@ -781,6 +788,16 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //destination bytecode has been updated: reupdate all maps
     UpdateAllMaps();
 
+    //Set reference between shaders merged and the clone shaders from destination bytecode
+    for (unsigned int is = 0; is<listShadersToMerge.size(); ++is)
+    {
+        ShaderClassData* shaderToMerge = listShadersToMerge[is];
+        spv::Id clonedShaderId = finalRemapTable[shaderToMerge->GetId()];
+        ShaderClassData* clonedShader = this->GetShaderById(clonedShaderId);
+        if (clonedShader == nullptr) return error(string("Cannot retrieve the cloned shader:") + to_string(clonedShaderId));
+        shaderToMerge->tmpClonedShader = clonedShader;
+    }
+
     if (errorMessages.size() > 0) return false;
     return true;
 }
@@ -860,39 +877,66 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
     if (!anyCompositions) return true; //no composition, can immediatly return
 
     //==============================================================================================================
-    //We clone the bytecode before instantiating the shaders
+    //We clone the bytecode before merging / instantiating the shaders
     SpxStreamRemapper* clonedSpxStream = this->Clone();
     if (clonedSpxStream == nullptr) return error("Failed to clone the SpxStreamRemapper");
 
     //List all the compositions
-    vector<ShaderComposition*> listCompositions;
+    vector<ShaderComposition*> listCompositionsInClonedBytecode;
     for (auto itsh = clonedSpxStream->vecAllShaders.begin(); itsh != clonedSpxStream->vecAllShaders.end(); itsh++)
     {
         ShaderClassData* aShader = *itsh;
-        for (int ic = 0; ic < aShader->compositionsList.size(); ic++)
-            listCompositions.push_back(&(aShader->compositionsList[ic]));
+        for (unsigned int ic = 0; ic < aShader->compositionsList.size(); ic++)
+            listCompositionsInClonedBytecode.push_back(&(aShader->compositionsList[ic]));
     }
 
+    //===================================================================================================================
     //==============================================================================================================
-    //Instantiate the shader for each composition
-    for (auto itc = listCompositions.begin(); itc != listCompositions.end(); itc++)
+    //Instantiate the shader listCompositionsInClonedBytecode for each composition
+    for (auto itc = listCompositionsInClonedBytecode.begin(); itc != listCompositionsInClonedBytecode.end(); itc++)
     {
-        ShaderComposition* composition = *itc;
-        ShaderClassData* shaderToClone = composition->shaderType;
+        ShaderComposition* compositionToInstantiate = *itc;
+        pair<spv::Id, int> compositionToInstantiateId = pair<spv::Id, int>(compositionToInstantiate->compositionShaderOwner->GetId(), compositionToInstantiate->compositionShaderId);
+
+        //Get the list of all shaders to clone
+        vector<ShaderClassData*> listShadersFromCompositionToClone;
+        GetShaderFamilyTree(compositionToInstantiate->shaderType, listShadersFromCompositionToClone);
 
         //prefix to rename the shader, its variables and functions
-        string namePrefix = string("comp") + composition->compositionOwnerShader->GetName() + composition->variableName + string("_");
-        if (!MergeShaderIntoBytecode(*clonedSpxStream, shaderToClone, namePrefix))
+        string namePrefix = string("comp") + compositionToInstantiate->compositionShaderOwner->GetName() + compositionToInstantiate->variableName + string("_");
+
+        //===================================================================================================================
+        //Merge (duplicate) all shaders targeted by by the composition into the current bytecode
+        if (!MergeShadersIntoBytecode(*clonedSpxStream, listShadersFromCompositionToClone, namePrefix))
         {
-            return error(string("failed to clone the composition targeting shader: ") + shaderToClone->GetName());
+            error(string("failed to clone the shader from the composition: ") + namePrefix);
+            break;
         }
 
-        composition->instantiatedShader = gsdfgdfsg;
+        //===================================================================================================================
+        //Map the list of targeted shaders with the cloned shader (so that we can update the links later on)
+        //unordered_map<spv::Id, spv::Id> mapCompositionShaderTargetedWithClonedShader;
+        CompositionProcessingData* compositionProcessingData = new CompositionProcessingData();
+        for (auto its = listShadersFromCompositionToClone.begin(); its != listShadersFromCompositionToClone.end(); its++)
+        {
+            ShaderClassData* shaderCloned = *its;
+            ShaderClassData* clonedShader = shaderCloned->tmpClonedShader;
+            compositionProcessingData->mapCompositionShaderTargetedWithClonedShader[shaderCloned->GetId()] = clonedShader->GetId();
+        }
+        compositionToInstantiate->processingData = compositionProcessingData;
     }
-    delete clonedSpxStream;
 
-    //==============================================================================================================
-    //Replace all OpInstructions related to composition
+    if (errorMessages.size() > 0) {
+        for (auto itc = listCompositionsInClonedBytecode.begin(); itc != listCompositionsInClonedBytecode.end(); itc++){
+            if ((*itc)->processingData != nullptr){ delete (*itc)->processingData; (*itc)->processingData = nullptr; }
+        }
+        delete clonedSpxStream;
+        return error("failed to instantiate the shader compositions");
+    }
+
+    //===================================================================================================================
+    //===================================================================================================================
+    //update all OpFunctionCallThroughCompositionVariable instructions with call to the corresponding cloned functions
     std::vector<range_t> vecStripRanges;
     process(
         [&](spv::Op opCode, unsigned start)
@@ -901,10 +945,63 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
             {
                 case spv::OpFunctionCallThroughCompositionVariable:
                 {
-                    // change OpFunctionCallThroughCompositionVariable to OpFunctionCall
+                    spv::Id shaderId = asId(start + 4);
+                    int compositionId = asId(start + 5);
+
+                    //retrieve the composition matching the function's composition Id
+                    ShaderComposition* compositionInstantiated = nullptr;
+                    for (auto itc = listCompositionsInClonedBytecode.begin(); itc != listCompositionsInClonedBytecode.end(); itc++)
+                    {
+                        ShaderComposition* composition = *itc;
+                        if (composition->compositionShaderOwner->GetId() == shaderId && composition->compositionShaderId == compositionId)
+                        {
+                            compositionInstantiated = composition;
+                            break;
+                        }
+                    }
+
+                    if (compositionInstantiated == nullptr) {
+                        error(string("OpFunctionCallThroughCompositionVariable: Cannot retrieve the composition for (shaderId, compID)=(") + to_string(shaderId) + string(", ") + to_string(compositionId) + string(")"));
+                        return true;
+                    }
+
+                    spv::Id originalFunctionId = asId(start + 3);
+                    FunctionInstruction* functionToReplace = GetFunctionById(originalFunctionId);
+                    if (functionToReplace == nullptr){
+                        error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known function. Id:") + to_string(originalFunctionId));
+                        return true;
+                    }
+                    ShaderClassData* shaderOwningTheFunction = functionToReplace->GetShaderOwner();
+                    if (shaderOwningTheFunction == nullptr) {
+                        error(string("OpFunctionCallThroughCompositionVariable: function to replace has no shader owner:") + functionToReplace->GetName());
+                        return true;
+                    }
+                    
+                    //look for the cloned shader in the composition processing data
+                    auto itmap = compositionInstantiated->processingData->mapCompositionShaderTargetedWithClonedShader.find(shaderOwningTheFunction->GetId());
+                    if (itmap == compositionInstantiated->processingData->mapCompositionShaderTargetedWithClonedShader.end())
+                    {
+                        error(string("OpFunctionCallThroughCompositionVariable: failed to find the shader target in the composition processing data. Shader name:") + shaderOwningTheFunction->GetName());
+                        return true;
+                    }
+
+                    spv::Id clonedShaderId = itmap->second;
+                    ShaderClassData* clonedShader = GetShaderById(clonedShaderId);
+                    if (clonedShader == nullptr) {
+                        error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known shader. Id:") + to_string(clonedShaderId));
+                        return true;
+                    }
+
+                    FunctionInstruction* functionTarget = clonedShader->GetFunctionByName(functionToReplace->GetName());
+                    if (functionTarget == nullptr) {
+                        error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function within the duplicated shader. Function name:") + functionToReplace->GetName());
+                        return true;
+                    }
+
                     int wordCount = asWordCount(start);
-                    vecStripRanges.push_back(range_t(start + 4, start + 5 + 1)); //remove composition variable identification
-                    setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 2);
+                    vecStripRanges.push_back(range_t(start + 4, start + 5 + 1));   //will remove composition variable ids from the bytecode
+                    setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 2);  //change instruction OpFunctionCallThroughCompositionVariable to OpFunctionCall
+                    setId(start + 3, functionTarget->GetId());                     //replace the function called id
                     break;
                 }
             }
@@ -912,11 +1009,19 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
         },
         spx_op_fn_nop
     );
-    if (errorMessages.size() > 0) return false;
 
+    //remove strip bytecode
     stripBytecode(vecStripRanges);
 
-    if (errorMessages.size() > 0) return false;
+    for (auto itc = listCompositionsInClonedBytecode.begin(); itc != listCompositionsInClonedBytecode.end(); itc++) {
+        if ((*itc)->processingData != nullptr) { delete (*itc)->processingData; (*itc)->processingData = nullptr; }
+    }
+    delete clonedSpxStream;
+
+    if (errorMessages.size() > 0){
+        return error("failed to update the composition references for");
+    }
+
     return true;
 }
 
@@ -960,7 +1065,7 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
                 }
                 case spv::OpFunctionCallThroughCompositionVariable:
                 {
-                    error(string("PROUT OpFunctionCallThroughCompositionVariable. pos=") + to_string(start));
+                    error(string("Found unresolved OpFunctionCallThroughCompositionVariable. pos=") + to_string(start));
                     break;
                 }
                 case spv::OpFunctionCallBaseUnresolved:
@@ -1387,7 +1492,7 @@ bool SpxStreamRemapper::UpdateAllMaps()
     }
 
     //Resize our vector of ALL objects
-    int maxResultId = bound();
+    uint32_t maxResultId = bound();
     if (maxResultId < listAllObjects.size()){
         return error("We lost some objects since last update");
     }
@@ -1743,7 +1848,7 @@ bool SpxStreamRemapper::ComputeShadersLevel()
             }
 
             int maxParentLevel = -1;
-            for (int p = 0; p<shader->parentsList.size(); ++p)
+            for (unsigned int p = 0; p<shader->parentsList.size(); ++p)
             {
                 int parentLevel = shader->parentsList[p]->level;
                 if (parentLevel == -1)

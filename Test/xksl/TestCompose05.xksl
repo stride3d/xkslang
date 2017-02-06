@@ -1,0 +1,29 @@
+shader CompA
+{
+	float varCA;
+	
+	float Compute()
+	{
+		return varCA;
+	}
+}
+
+shader CompB: CompA
+{
+	float varCB;
+	
+	override float Compute()
+	{
+		return varCB;
+	}
+}
+
+shader ShaderA
+{
+	compose CompA color;
+	
+	float main()
+	{
+		return color.Compute();
+	}
+}

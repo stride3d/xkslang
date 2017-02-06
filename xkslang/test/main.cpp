@@ -83,7 +83,10 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge12_Pixel.rv.glsl"}} },
 
     //{ "TestCompose01", {{"TestCompose01.xksl"}},{} },
-    { "TestCompose02",{ { "TestCompose02.xksl" } }, {{"main", ShadingStageEnum::Pixel, ""}} },
+    //{ "TestCompose02",{ { "TestCompose02.xksl" } }, {{"main", ShadingStageEnum::Pixel, "TestCompose02_Pixel.rv.glsl"}} },
+    //{ "TestCompose03",{ { "TestCompose03.xksl" } }, {{"main", ShadingStageEnum::Pixel, "TestCompose03_Pixel.rv.glsl"}} },
+    { "TestCompose04",{ { "TestCompose04.xksl" } }, {{"main", ShadingStageEnum::Pixel, "TestCompose04_Pixel.rv.glsl"}} },
+    //{ "TestCompose05",{ { "TestCompose05.xksl" } }, {{"main", ShadingStageEnum::Pixel, "TestCompose05_Pixel.rv.glsl"}} },
         //{ "",{ { "TestComposeShaderWithParents.xksl" } },{} },
         //{ "",{ { "TestCompose.xksl" } },{} },
 

@@ -200,28 +200,36 @@ public:
         virtual ~ShaderTypeData(){}
     };
 
+    class CompositionProcessingData
+    {
+    public:
+        std::unordered_map<spv::Id, spv::Id> mapCompositionShaderTargetedWithClonedShader;
+    };
+
     class ShaderComposition
     {
     public:
         int compositionShaderId;
-        ShaderClassData* compositionOwnerShader;
+        ShaderClassData* compositionShaderOwner;
         ShaderClassData* shaderType;
         std::string variableName;
         bool isArray;
 
-        ShaderClassData* instantiatedShader;  //resulting shader instance from the composition
+        //ShaderClassData* instantiatedShader;  //resulting shader instance from the composition
 
-        ShaderComposition(int compositionShaderId, ShaderClassData* compositionOwnerShader, ShaderClassData* shaderType, const std::string& variableName, bool isArray)
-            :compositionShaderId(compositionShaderId), compositionOwnerShader(compositionOwnerShader), shaderType(shaderType),
-            variableName(variableName), isArray(isArray), instantiatedShader(nullptr){}
+        ShaderComposition(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType, const std::string& variableName, bool isArray)
+            :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
+            variableName(variableName), isArray(isArray), processingData(nullptr){}
 
+    public:
+        CompositionProcessingData* processingData;  //data used when we're processing the composition
     };
 
     class ShaderClassData : public ObjectInstructionBase
     {
     public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name), level(-1), flag(0) {
+            : ObjectInstructionBase(parsedData, name), level(-1), flag(0), tmpClonedShader(nullptr){
         }
         virtual ~ShaderClassData() {
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
@@ -235,13 +243,13 @@ public:
 
         void AddParent(ShaderClassData* parent) { parentsList.push_back(parent); }
         bool HasParent(ShaderClassData* parent) {
-            for (int i = 0; i<parentsList.size(); ++i) if (parentsList[i] == parent) return true;
+            for (unsigned int i = 0; i<parentsList.size(); ++i) if (parentsList[i] == parent) return true;
             return false;
         }
 
         void AddFunction(FunctionInstruction* function) { functionsList.push_back(function); }
         bool HasFunction(FunctionInstruction* function) {
-            for (int i = 0; i<functionsList.size(); ++i) if (functionsList[i] == function) return true;
+            for (unsigned int i = 0; i<functionsList.size(); ++i) if (functionsList[i] == function) return true;
             return false;
         }
         FunctionInstruction* GetFunctionByName(const std::string& name) {
@@ -254,7 +262,7 @@ public:
 
         void AddShaderType(ShaderTypeData* type) { shaderTypesList.push_back(type); }
         bool HasType(TypeInstruction* type) {
-            for (int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->type == type) return true;
+            for (unsigned int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->type == type) return true;
             return false;
         }
 
@@ -269,6 +277,12 @@ public:
         std::vector<ShaderComposition> compositionsList;
 
         int flag;
+
+    private:
+        //When merging/duplicating a shader into a bytecode, this field will hold a temporary reference to its resulting, cloned shader 
+        ShaderClassData* tmpClonedShader;
+
+    friend class SpxStreamRemapper;
     };
     //============================================================================================================================================
     //============================================================================================================================================
@@ -293,7 +307,7 @@ public:
 
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
-    bool MergeShadersFromBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
+    bool MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
     bool MergeShaderIntoBytecode(SpxStreamRemapper& bytecodeToMerge, ShaderClassData* shaderToMerge, std::string namesPrefixToAdd);
     bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderClassData*>& listShadersToMerge, std::string namesPrefixToAdd);
     bool ValidateSpxBytecode();
