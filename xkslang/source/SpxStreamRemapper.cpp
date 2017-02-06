@@ -900,7 +900,7 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
 
         //Get the list of all shaders to clone
         vector<ShaderClassData*> listShadersFromCompositionToClone;
-        GetShaderFamilyTree(compositionToInstantiate->shaderType, listShadersFromCompositionToClone);
+        clonedSpxStream->GetShaderFamilyTree(compositionToInstantiate->shaderType, listShadersFromCompositionToClone);
 
         //prefix to rename the shader, its variables and functions
         string namePrefix = string("comp") + compositionToInstantiate->compositionShaderOwner->GetName() + compositionToInstantiate->variableName + string("_");
@@ -1019,7 +1019,7 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
     delete clonedSpxStream;
 
     if (errorMessages.size() > 0){
-        return error("failed to update the composition references for");
+        return error("Failed to process the compositions");
     }
 
     return true;
@@ -1156,6 +1156,7 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
         {
             switch (opCode) {
                 case spv::OpFunctionCall:
+                case spv::OpFunctionCallThroughCompositionVariable:
                 {
                     spv::Id functionCalledId = asId(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
