@@ -1,0 +1,35 @@
+//Compile a composition of a class having a composition too
+
+shader SubComp
+{
+	int ca;
+	stream int sa;
+	
+	int Compute()
+	{
+		return ca + streams.sa;
+	}
+}
+
+shader Comp
+{
+	int cb;
+	stream int sb;
+	
+	compose SubComp sc;
+	
+	int Compute()
+	{
+		return cb + streams.sb + sc.Compute();
+	}
+}
+
+shader ShaderA
+{
+	compose Comp color;
+	
+	int main()
+	{
+		return color.Compute();
+	}
+}

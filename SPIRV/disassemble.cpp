@@ -693,6 +693,7 @@ static const char* GLSLextNVGetDebugNames(const char* name, unsigned entrypoint)
 
 void Disassemble(std::ostream& out, const std::vector<unsigned int>& stream)
 {
+    if (stream.size() == 0) return;
     SpirvStream SpirvStream(out, stream);
     spv::Parameterize();
     GLSLstd450GetDebugNames(GlslStd450DebugNames);

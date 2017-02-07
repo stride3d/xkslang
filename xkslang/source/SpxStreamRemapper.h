@@ -70,8 +70,7 @@ public:
     {
     public:
         ObjectInstructionBase(const ParsedObjectData& parsedData, std::string name)
-            : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId),
-              bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition), name(name), shaderOwner(nullptr) {}
+            : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId), name(name), shaderOwner(nullptr) {}
         virtual ~ObjectInstructionBase(){}
         virtual ObjectInstructionBase* CloneBasicData() {
             return new ObjectInstructionBase(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
@@ -219,10 +218,13 @@ public:
 
         ShaderComposition(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType, const std::string& variableName, bool isArray)
             :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
-            variableName(variableName), isArray(isArray), processingData(nullptr){}
+            variableName(variableName), isArray(isArray), processingData(nullptr), compositionAlreadyProcessed(false){}
 
-    public:
-        CompositionProcessingData* processingData;  //data used when we're processing the composition
+    private:
+        CompositionProcessingData* processingData; //data used when we're processing the composition
+        bool compositionAlreadyProcessed;  //the composition has already been processed
+
+        friend class SpxStreamRemapper;
     };
 
     class ShaderClassData : public ObjectInstructionBase
@@ -267,6 +269,10 @@ public:
         }
 
         void AddComposition(const ShaderComposition& composition) { compositionsList.push_back(composition); }
+        ShaderComposition* GetShaderComposition(int compositionId) {
+            if (compositionId<0 || compositionId>= compositionsList.size()) return nullptr;
+            return &(compositionsList[compositionId]);
+        }
 
     public:
         int level;
@@ -296,7 +302,7 @@ public:
     bool MixWithSpxBytecode(const SpxBytecode& bytecode);
     bool FinalizeMixin();
 
-    bool GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
+    void GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, SpvBytecode& output);
 
     virtual void error(const std::string& txt) const;
@@ -308,13 +314,13 @@ public:
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
     bool MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
-    bool MergeShaderIntoBytecode(SpxStreamRemapper& bytecodeToMerge, ShaderClassData* shaderToMerge, std::string namesPrefixToAdd);
     bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderClassData*>& listShadersToMerge, std::string namesPrefixToAdd);
     bool ValidateSpxBytecode();
 
     void ReleaseAllMaps();
     bool BuildAllMaps();
     bool UpdateAllMaps();
+    bool UpdateAllObjectsPositionInTheBytecode();
     bool BuildTypesAndConstsHashmap(std::unordered_map<uint32_t, pairIdPos>& mapHashPos);
     bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
     ObjectInstructionBase* CreateAndAddNewObjectFor(ParsedObjectData& parsedData);
@@ -362,6 +368,7 @@ private:
     VariableInstruction* GetVariableByName(const std::string& name);
     TypeInstruction* GetTypePointingTo(TypeInstruction* targetType);
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
+    ShaderComposition* GetCompositionById(spv::Id shaderId, int compositionId);
 
     //ShaderClassData* HasShader(const std::string& name);
     //ShaderClassData* GetShaderById(spv::Id id);

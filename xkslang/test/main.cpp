@@ -83,11 +83,14 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel, "TestMerge12_Pixel.rv.glsl"}} },
 
     //{ "TestCompose01", {{"TestCompose01.xksl"}},{} },
-    //{ "TestCompose02",{ { "TestCompose02.xksl" } }, {{"main", ShadingStageEnum::Pixel, "TestCompose02_Pixel.rv.glsl"}} },
-    //{ "TestCompose03",{ { "TestCompose03.xksl" } }, {{"main", ShadingStageEnum::Pixel, "TestCompose03_Pixel.rv.glsl"}} },
-    //{ "TestCompose04",{ { "TestCompose04.xksl" } }, {{"main", ShadingStageEnum::Pixel, "TestCompose04_Pixel.rv.glsl"}} },
-    //{ "TestCompose05",{ { "TestCompose05.xksl" } }, {{"main", ShadingStageEnum::Pixel, "TestCompose05_Pixel.rv.glsl"}} },
-    { "TestCompose06",{ { "TestCompose06.xksl" } }, {{"main", ShadingStageEnum::Pixel, "TestCompose06_Pixel.rv.glsl"}} },
+    //{ "TestCompose02", {{"TestCompose02.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestCompose02_Pixel.rv.glsl"}} },
+    //{ "TestCompose03", {{"TestCompose03.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestCompose03_Pixel.rv.glsl"}} },
+    //{ "TestCompose04", {{"TestCompose04.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestCompose04_Pixel.rv.glsl"}} },
+    //{ "TestCompose05", {{"TestCompose05.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestCompose05_Pixel.rv.glsl"}} },
+    //{ "TestCompose06", {{"TestCompose06.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestCompose06_Pixel.rv.glsl"}} },
+    //{ "TestCompose07", {{"TestCompose07.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestCompose07_Pixel.rv.glsl"}} },
+    //{ "TestCompose08", {{"TestCompose08.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestCompose08_Pixel.rv.glsl"}} },
+    { "TestCompose09", {{"TestCompose09.xksl"}}, {{"main", ShadingStageEnum::Pixel, "TestCompose09_Pixel.rv.glsl"}} },
 
     //{{"textureAndSampler.xksl"}, {"", nullptr}},
     //{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -100,6 +103,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
 
 #ifdef _DEBUG
 static string spirvCrossExe = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe";
+//static string spirvCrossExe = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe --hlsl";
 #else
 static string spirvCrossExe = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross.exe";
 #endif
@@ -133,8 +137,9 @@ int ConvertSpvToGlsl(string spvFile, string glslFile)
         &pi)                     // Pointer to PROCESS_INFORMATION structure
         )
     {
-        printf("CreateProcess failed (%d).\n", GetLastError());
-        return GetLastError();
+        int error = GetLastError();
+        printf("CreateProcess failed (%d).\n", error);
+        return error;
     }
 
     // Wait until child process exits.
@@ -319,13 +324,14 @@ void main(int argc, char** argv)
                 {
                     SpvBytecode compiledSpv;
                     SpvBytecode finalizedSpv;
+                    SpvBytecode errorSpv;
                     vector<XkslMixer::XkslMixerOutputStage> outputStages;
                     for (int i = 0; i<outputs.size(); ++i)
                         outputStages.push_back(XkslMixer::XkslMixerOutputStage(outputs[i].stage, outputs[i].entryPoint));
 
                     cout << " Compile Mixin: ";
                     time_before = GetTickCount();
-                    success = mixer.Compile(outputStages, errorMsgs, &compiledSpv, &finalizedSpv);
+                    success = mixer.Compile(outputStages, errorMsgs, &compiledSpv, &finalizedSpv, &errorSpv);
                     time_after = GetTickCount();
 
                     mixinTotalTime += (time_after - time_before);
@@ -333,11 +339,24 @@ void main(int argc, char** argv)
                         cout << "OK. time: " << (time_after - time_before) << " ms" << endl;
                         cout << "Mixin done. total time: " << mixinTotalTime << " ms" << endl;
                     }
-                    else cout << "Compilation Failed" << endl;
+                    else
+                    {
+                        cout << "Compilation Failed" << endl;
+                        //Try to output the latest SPV bytecode
+                        {
+                            const vector<uint32_t>& bytecodeList = errorSpv.getBytecodeStream();
+                            ostringstream disassembly_stream;
+                            spv::Parameterize();
+                            spv::Disassemble(disassembly_stream, bytecodeList);
+
+                            const string newOutputFname = outputDir + effectName + "_mixin_error_" + ".hr.spv";
+                            xkslangtest::Utils::WriteFile(newOutputFname, disassembly_stream.str());
+                        }
+                    }
 
                     if (success)
                     {
-                        //output compiled spirv
+                        //output compiled spirv whtether compilation succeded or not
                         {
                             const vector<uint32_t>& bytecodeList = compiledSpv.getBytecodeStream();
                             ostringstream disassembly_stream;
@@ -389,9 +408,10 @@ void main(int argc, char** argv)
                                 time_before = GetTickCount();
                                 int result = ConvertSpvToGlsl(outputNameSpv, outputNameGlsl);
                                 time_after = GetTickCount();
+                                if (result != 0) success = false;
 
                                 if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
-                                else cout << " Fail to convert the SPIRV file to GLSL" << endl;
+                                else cout << " Failed to convert the SPIRV file to GLSL" << endl;
 
                                 //======================================================================================================
                                 //compare the glsl output with the expected output

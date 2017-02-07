@@ -1,0 +1,29 @@
+//Compile a composition having a composition on itself
+
+shader Comp
+{
+	int Compute()
+	{
+		return 5;
+	}
+}
+
+shader CompA: Comp
+{
+	compose Comp c;
+	
+	override int Compute()
+	{
+		return c.Compute();
+	}
+}
+
+shader ShaderA
+{
+	compose Comp color;
+	
+	int main()
+	{
+		return color.Compute();
+	}
+}

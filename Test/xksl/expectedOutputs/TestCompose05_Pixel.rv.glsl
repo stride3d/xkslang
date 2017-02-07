@@ -10,23 +10,23 @@ layout(std140) uniform CompB_globalCBuffer
     float varCB;
 } CompB_globalCBuffer_var;
 
-layout(std140) uniform compShaderAcolor_CompA_globalCBuffer
+layout(std140) uniform compS8C0_CompA_globalCBuffer
 {
     float varCA;
-} compShaderAcolor_CompA_globalCBuffer_var;
+} compS8C0_CompA_globalCBuffer_var;
 
-layout(std140) uniform compShaderAcolor_CompB_globalCBuffer
+layout(std140) uniform compS8C0_CompB_globalCBuffer
 {
     float varCB;
-} compShaderAcolor_CompB_globalCBuffer_var;
+} compS8C0_CompB_globalCBuffer_var;
 
-float compShaderAcolor_CompB_Compute()
+float compS8C0_CompB_Compute()
 {
-    return compShaderAcolor_CompB_globalCBuffer_var.varCB;
+    return compS8C0_CompB_globalCBuffer_var.varCB;
 }
 
 float main()
 {
-    return compShaderAcolor_CompB_Compute();
+    return compS8C0_CompB_Compute();
 }
 
