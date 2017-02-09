@@ -20,12 +20,12 @@ using namespace xkslang;
 
 //===================================================================================================//
 static vector<string> staticErrorMessages;
-static void copyStaticErrorMessagesTo(std::vector<std::string>& list)
+static void copyStaticErrorMessagesTo(vector<string>& list)
 {
     list.insert(list.end(), staticErrorMessages.begin(), staticErrorMessages.end());
 }
 
-void SpxStreamRemapper::copyMessagesTo(std::vector<std::string>& list)
+void SpxStreamRemapper::copyMessagesTo(vector<string>& list)
 {
     list.insert(list.end(), errorMessages.begin(), errorMessages.end());
 }
@@ -36,7 +36,7 @@ void SpxStreamRemapper::error(const string& txt) const
     staticErrorMessages.push_back(txt);
 }
 
-bool SpxStreamRemapper::error(const std::string& txt)
+bool SpxStreamRemapper::error(const string& txt)
 {
     errorMessages.push_back(txt);
     return false;
@@ -442,6 +442,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     spirvbin_t vecAllNewDecoratesToMerge;
     spirvbin_t vecTypesConstsAndVariablesToMerge;
     spirvbin_t vecFunctionsToMerge;
+    spirvbin_t vecExtInstImportToMerge;
 
     vector<spv::Id> finalRemapTable;
     finalRemapTable.resize(bytecodeToMerge.bound(), unused);
@@ -586,7 +587,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
         spv::Op opCode;
         unsigned int wordCount;
-        std::vector<spv::Id> listIds;
+        vector<spv::Id> listIds;
         spv::Id typeId, resultId;
         unsigned int listIdsLen;
         unsigned int pos = 0;
@@ -622,11 +623,6 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             {
                 listUnmappedIdsToProcess.pop_back();
                 continue;
-            }
-
-            if (unmappedId == 2)
-            {
-                int lgkfsdjlgj = 54545;
             }
 
             //Find the position in the code to merge where the unmapped IDs is defined
@@ -702,6 +698,23 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     //remap the unmapped ID to the destination variable
                     mappingResolved = true;
                     finalRemapTable[unmappedId] = shader->GetId();
+                    break;
+                }
+
+                case ObjectInstructionTypeEnum::ExtInstImport:
+                {
+                    //import an external lib if we don't already have it
+                    ExtImportInstruction* externalImport = this->GetExtImportInstructionByName(objectFromUnmappedId->GetName());
+                    if (externalImport != nullptr)
+                        finalRemapTable[unmappedId] = externalImport->GetId();
+                    else
+                    {
+                        bytecodeToMerge.CopyInstructionToVector(vecExtInstImportToMerge.spv, objectFromUnmappedId->GetBytecodeStartPosition());
+                        finalRemapTable[unmappedId] = newId++;
+                        listAllNewIdMerged[unmappedId] = true;
+                    }
+
+                    mappingResolved = true;
                     break;
                 }
 
@@ -855,7 +868,24 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
     //=============================================================================================================
     //=============================================================================================================
-    //remap IDs for all mergable types / variables / consts / functions
+    //remap IDs for all mergable types / variables / consts / functions / extImport
+    if (vecExtInstImportToMerge.spv.size() > 0)
+    {
+        if (!vecExtInstImportToMerge.remapAllIds(0, vecExtInstImportToMerge.spv.size(), finalRemapTable))
+            return error("remapAllIds failed on vecExtInstImportToMerge");
+
+        fsdfsdf;
+
+        /*vecExtInstImportToMerge.processOnFullBytecode(
+            spx_inst_fn_nop,
+            [&](spv::Id& id)
+            {
+                spv::Id newId = finalRemapTable[id];
+                if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
+                else id = newId;
+            }
+        );*/
+    }
     vecTypesConstsAndVariablesToMerge.processOnFullBytecode(
         spx_inst_fn_nop,
         [&](spv::Id& id)
@@ -901,6 +931,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //get the best positions where we can merge
     unsigned int firstTypeOrConstPos = 0;
     unsigned int firstFunctionPos = 0;
+    unsigned int endOfHeaderPos = header_size;
     process(
         [&](spv::Op opCode, unsigned start)
         {
@@ -931,6 +962,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //Merge names and decorates
     spv.insert(spv.begin() + firstTypeOrConstPos, vecAllNewDecoratesToMerge.spv.begin(), vecAllNewDecoratesToMerge.spv.end());
     spv.insert(spv.begin() + firstTypeOrConstPos, vecNamesToMerge.spv.begin(), vecNamesToMerge.spv.end());
+    spv.insert(spv.begin() + endOfHeaderPos, vecExtInstImportToMerge.spv.begin(), vecExtInstImportToMerge.spv.end());
 
     //destination bytecode has been updated: reupdate all maps
     UpdateAllMaps();
@@ -951,7 +983,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
 bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
 {
-    const std::vector<uint32_t>& spx = bytecode.getBytecodeStream();
+    const vector<uint32_t>& spx = bytecode.getBytecodeStream();
     spv.clear();
     spv.insert(spv.end(), spx.begin(), spx.end());
 
@@ -968,9 +1000,9 @@ bool SpxStreamRemapper::ValidateSpxBytecode()
 
 #ifdef XKSLANG_DEBUG_MODE
     //Debug sanity check: make sure that 2 shaders or 2 variables does not share the same name
-    std::unordered_map<string, int> shaderVariablesDeclarationName;
-    std::unordered_map<string, int> shadersFunctionsDeclarationName;
-    std::unordered_map<string, int> shadersDeclarationName;
+    unordered_map<string, int> shaderVariablesDeclarationName;
+    unordered_map<string, int> shadersFunctionsDeclarationName;
+    unordered_map<string, int> shadersDeclarationName;
 
     for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
     {
@@ -1093,7 +1125,7 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
         //===================================================================================================================
         //update all OpFunctionCallThroughCompositionVariable instructions with call to the corresponding cloned functions
         bool gotUnresolvedComposotions = false;
-        std::vector<range_t> vecStripRanges;
+        vector<range_t> vecStripRanges;
         process(
             [&](spv::Op opCode, unsigned start)
             {
@@ -1253,7 +1285,7 @@ bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
     //Convert OpIntructions
     // - OpFunctionCallBaseResolved --> OpFunctionCall (remapping of override functions has been completed)
 
-    std::vector<range_t> vecStripRanges;
+    vector<range_t> vecStripRanges;
     process(
         [&](spv::Op opCode, unsigned start)
         {
@@ -1337,7 +1369,7 @@ bool SpxStreamRemapper::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
 
 bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
 {
-    std::vector<FunctionInstruction*> vecFunctionIdBeingOverriden;
+    vector<FunctionInstruction*> vecFunctionIdBeingOverriden;
     vecFunctionIdBeingOverriden.resize(bound(), nullptr);
     bool anyOverridingFunction = false;
     for (auto itfn = vecAllShaderFunctions.begin(); itfn != vecAllShaderFunctions.end(); itfn++)
@@ -1397,7 +1429,7 @@ void SpxStreamRemapper::GetShaderChildrenList(ShaderClassData* shader, vector<Sh
     }
 }
 
-void SpxStreamRemapper::GetShaderFamilyTreeWithParentAndCompositionType(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree)
+void SpxStreamRemapper::GetShaderFamilyTreeWithParentAndCompositionType(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)
 {
     shaderFamilyTree.clear();
 
@@ -1425,7 +1457,7 @@ void SpxStreamRemapper::GetShaderFamilyTreeWithParentAndCompositionType(ShaderCl
     }
 }
 
-void SpxStreamRemapper::GetShaderFamilyTreeWithParentOnly(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree)
+void SpxStreamRemapper::GetShaderFamilyTreeWithParentOnly(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)
 {
     shaderFamilyTree.clear();
 
@@ -1492,7 +1524,7 @@ bool SpxStreamRemapper::UpdateOverridenFunctionMap(vector<ShaderClassData*>& lis
         return error(string("Failed to build the shader level"));
 
     //sort the shaders according to their level
-    std::sort(listShadersMerged.begin(), listShadersMerged.end(), shaderLevelSortFunction);
+    sort(listShadersMerged.begin(), listShadersMerged.end(), shaderLevelSortFunction);
 
     for (auto itshaderMerged = listShadersMerged.begin(); itshaderMerged != listShadersMerged.end(); itshaderMerged++)
     {
@@ -1547,7 +1579,7 @@ void SpxStreamRemapper::GetMixinBytecode(vector<uint32_t>& bytecodeStream)
     bytecodeStream.insert(bytecodeStream.end(), spv.begin(), spv.end());
 }
 
-bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, SpvBytecode& output)
+bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string entryPointName, SpvBytecode& output)
 {
     if (status != SpxRemapperStatusEnum::MixinFinalized)
     {
@@ -1579,7 +1611,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, std::st
     //==========================================================================================
     //==========================================================================================
     //save the current bytecode
-    std::vector<uint32_t> bytecodeBackup;// = output.getWritableBytecodeStream();
+    vector<uint32_t> bytecodeBackup;// = output.getWritableBytecodeStream();
     bytecodeBackup.insert(bytecodeBackup.end(), spv.begin(), spv.end());
 
     //==========================================================================================
@@ -1615,7 +1647,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, std::st
     applyMap();     // Now remap each shader to the new IDs we've come up with
 
     //copy the spv bytecode into the output
-    std::vector<uint32_t>& outputSpv = output.getWritableBytecodeStream();
+    vector<uint32_t>& outputSpv = output.getWritableBytecodeStream();
     outputSpv.clear();
     outputSpv.insert(outputSpv.end(), spv.begin(), spv.end());
 
@@ -1681,7 +1713,7 @@ bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStageEnum stage, Fun
 
     //remove all current entry points
     {
-        std::vector<range_t> vecStripRanges;
+        vector<range_t> vecStripRanges;
         process(
             [&](spv::Op opCode, unsigned start)
             {
@@ -1762,7 +1794,7 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
 bool SpxStreamRemapper::UpdateAllObjectsPositionInTheBytecode()
 {
     //Parse the list of all object data
-    std::vector<ParsedObjectData> listParsedObjectsData;
+    vector<ParsedObjectData> listParsedObjectsData;
     bool res = BuildDeclarationNameMapsAndObjectsDataList(listParsedObjectsData);
     if (!res) {
         return error("Failed to build maps");
@@ -1789,7 +1821,7 @@ bool SpxStreamRemapper::UpdateAllObjectsPositionInTheBytecode()
 bool SpxStreamRemapper::UpdateAllMaps()
 {
     //Parse the list of all object data
-    std::vector<ParsedObjectData> listParsedObjectsData;
+    vector<ParsedObjectData> listParsedObjectsData;
     bool res = BuildDeclarationNameMapsAndObjectsDataList(listParsedObjectsData);
     if (!res) {
         return error("Failed to build maps");
@@ -1841,7 +1873,7 @@ bool SpxStreamRemapper::BuildAllMaps()
     ReleaseAllMaps();
     
     //Parse the list of all object data
-    std::vector<ParsedObjectData> listParsedObjectsData;
+    vector<ParsedObjectData> listParsedObjectsData;
     bool res = BuildDeclarationNameMapsAndObjectsDataList(listParsedObjectsData);
     if (!res) {
         return error("Failed to build maps");
@@ -1986,7 +2018,7 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     ShaderClassData* shaderCompositionType = GetShaderById(shaderCompositionTypeId);
                     if (shaderCompositionType == nullptr) { error(string("undeclared shader type id: ") + to_string(shaderCompositionTypeId)); break; }
 
-                    const std::string compositionVariableName = literalString(start + 4);
+                    const string compositionVariableName = literalString(start + 4);
 
                     ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName, isArray);
                     shaderCompositionOwner->AddComposition(shaderComposition);
@@ -2047,6 +2079,13 @@ SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObje
     ObjectInstructionBase* newObject = nullptr;
     switch (parsedData.kind)
     {
+        case ObjectInstructionTypeEnum::ExtInstImport:
+        {
+            declarationNameRequired = false;
+            string extImportname = literalString(parsedData.bytecodeStartPosition + 2);
+            newObject = new ExtImportInstruction(parsedData, extImportname);
+            break;
+        }
         case ObjectInstructionTypeEnum::Const:
         {
             declarationNameRequired = false;
@@ -2212,7 +2251,7 @@ bool SpxStreamRemapper::BuildDeclarationNameMapsAndObjectsDataList(vector<Parsed
             /*
 #ifdef XKSLANG_DEBUG_MODE
                 const spv::Id target = asId(start + 1);
-                const std::string name = literalString(start + 2);
+                const string name = literalString(start + 2);
 
                 if (mapDeclarationName.find(target) == mapDeclarationName.end())
                     mapDeclarationName[target] = name;
@@ -2221,7 +2260,7 @@ bool SpxStreamRemapper::BuildDeclarationNameMapsAndObjectsDataList(vector<Parsed
             else if (opCode == spv::Op::OpDeclarationName)
             {
                 const spv::Id target = asId(start + 1);
-                const std::string  name = literalString(start + 2);
+                const string  name = literalString(start + 2);
                 mapDeclarationName[target] = name;
             }
             else if (isConstOp(opCode))
@@ -2264,6 +2303,10 @@ bool SpxStreamRemapper::BuildDeclarationNameMapsAndObjectsDataList(vector<Parsed
                 listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Function, fnOpCode, fnResId, fnTypeId, fnStart, end));
                 fnStart = 0;
             }
+            else if (opCode == spv::Op::OpExtInstImport)
+            {
+                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::ExtInstImport, opCode, resultId, typeId, start, end));
+            }
             return true;
         },
         spx_op_fn_nop
@@ -2296,7 +2339,23 @@ bool SpxStreamRemapper::GetDeclarationNameForId(spv::Id id, string& name)
     return true;
 }
 
-SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const std::string& name)
+SpxStreamRemapper::ExtImportInstruction* SpxStreamRemapper::GetExtImportInstructionByName(const string& name)
+{
+    if (name.size() == 0) return nullptr;
+
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::ExtInstImport && obj->GetName() == name)
+        {
+            ExtImportInstruction* extImportInst = dynamic_cast<ExtImportInstruction*>(obj);
+            return extImportInst;
+        }
+    }
+    return nullptr;
+}
+
+SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const string& name)
 {
     if (name.size() == 0) return nullptr;
 
@@ -2331,11 +2390,10 @@ SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)
     return nullptr;
 }
 
-SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableByName(const std::string& name)
+SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableByName(const string& name)
 {
     if (name.size() == 0) return nullptr;
 
-    int size = listAllObjects.size();
     for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
     {
         ObjectInstructionBase* obj = *it;
@@ -2438,7 +2496,7 @@ void SpxStreamRemapper::stripBytecode(vector<range_t>& ranges)
         return;
 
     // Sort strip ranges in order of traversal
-    std::sort(ranges.begin(), ranges.end());
+    sort(ranges.begin(), ranges.end());
 
     // Allocate a new binary big enough to hold old binary
     // We'll step this iterator through the strip ranges as we go through the binary

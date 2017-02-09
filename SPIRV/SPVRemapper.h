@@ -247,6 +247,8 @@ private:
    spirvbin_t& process(instfn_t, idfn_t, unsigned begin = 0, unsigned end = 0);
    int         processInstruction(unsigned word, instfn_t, idfn_t);
    bool parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds);
+   void remapAllInstructionIds(unsigned word, unsigned& wordCount, const std::vector<spv::Id>& remapTable);
+   bool remapAllIds(unsigned begin, unsigned end, const std::vector<spv::Id>& remapTable);
 
    void        validate() const;
    void        mapTypeConst();

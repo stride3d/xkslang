@@ -482,6 +482,170 @@ namespace spv {
             error("bad schema, must be 0");
     }
 
+    bool spirvbin_t::remapAllIds(unsigned begin, unsigned end, const std::vector<spv::Id>& remapTable)
+    {
+        unsigned int pos = begin;
+        unsigned int wordCount = 0;
+        while (pos < end)
+        {
+            remapAllInstructionIds(pos, wordCount, remapTable);
+            pos += wordCount;
+        }
+
+        return true;
+    }
+
+    void spirvbin_t::remapAllInstructionIds(unsigned word, unsigned& wordCount, const std::vector<spv::Id>& remapTable)
+    {
+        const auto instructionStart = word;
+        wordCount = asWordCount(instructionStart);
+        spv::Op opCode = asOpCode(instructionStart);
+        const int nextInst = word++ + wordCount;
+
+        if (nextInst > int(spv.size()))
+            return;
+
+        // Base for computing number of operands; will be updated as more is learned
+        unsigned numOperands = wordCount - 1;
+
+        //if (instFn(opCode, instructionStart))
+        //    return nextInst;
+
+        // Read type and result ID from instruction desc table
+        if (spv::InstructionDesc[opCode].hasType()) {
+            //listIds.push_back(asId(word++));
+            //type = asId(word++);
+            spv[word] = remapTable[spv[word]];
+            word++;
+            --numOperands;
+        }
+
+        if (spv::InstructionDesc[opCode].hasResult()) {
+            //listIds.push_back(asId(word++));
+            //result = asId(word++);
+            spv[word] = remapTable[spv[word]];
+            word++;
+            --numOperands;
+        }
+
+        // Extended instructions: currently, assume everything is an ID.
+        // TODO: add whatever data we need for exceptions to that
+        if (opCode == spv::OpExtInst) {
+            //listIds.push_back(asId(word));  //Add ExtInstImport Id
+            spv[word] = remapTable[spv[word]];
+
+            word += 2; // instruction set, and instruction from set
+            numOperands -= 2;
+
+            for (unsigned op = 0; op < numOperands; ++op)
+            { spv[word] = remapTable[spv[word]]; word++; }
+
+            return;
+        }
+
+        // Circular buffer so we can look back at previous unmapped values during the mapping pass.
+        static const unsigned idBufferSize = 4;
+        spv::Id idBuffer[idBufferSize];
+        unsigned idBufferPos = 0;
+
+        // Store IDs from instruction in our map
+        for (int op = 0; numOperands > 0; ++op, --numOperands) {
+            switch (spv::InstructionDesc[opCode].operands.getClass(op)) {
+            case spv::OperandId:
+            case spv::OperandScope:
+            case spv::OperandMemorySemantics:
+                idBuffer[idBufferPos] = asId(word);
+                idBufferPos = (idBufferPos + 1) % idBufferSize;
+                spv[word] = remapTable[spv[word]];
+                word++;
+                break;
+
+            case spv::OperandVariableIds:
+                for (unsigned i = 0; i < numOperands; ++i)
+                { spv[word] = remapTable[spv[word]]; word++; }
+                return;
+
+            case spv::OperandVariableLiterals:
+                // for clarity
+                // if (opCode == spv::OpDecorate && asDecoration(word - 1) == spv::DecorationBuiltIn) {
+                //     ++word;
+                //     --numOperands;
+                // }
+                // word += numOperands;
+                return;
+
+            case spv::OperandVariableLiteralId: {
+                if (opCode == OpSwitch) {
+                    // word-2 is the position of the selector ID.  OpSwitch Literals match its type.
+                    // In case the IDs are currently being remapped, we get the word[-2] ID from
+                    // the circular idBuffer.
+                    const unsigned literalSizePos = (idBufferPos + idBufferSize - 2) % idBufferSize;
+                    const unsigned literalSize = idTypeSizeInWords(idBuffer[literalSizePos]);
+                    const unsigned numLiteralIdPairs = (nextInst - word) / (1 + literalSize);
+
+                    for (unsigned arg = 0; arg<numLiteralIdPairs; ++arg) {
+                        word += literalSize;  // literal
+                        spv[word] = remapTable[spv[word]];   // label
+                        word++;
+                    }
+                }
+                else {
+                    assert(0); // currentely, only OpSwitch uses OperandVariableLiteralId
+                }
+
+                return;
+            }
+
+            case spv::OperandLiteralString: {
+                const int stringWordCount = literalStringWords(literalString(word));
+                word += stringWordCount;
+                numOperands -= (stringWordCount - 1); // -1 because for() header post-decrements
+                break;
+            }
+
+            // Execution mode might have extra literal operands.  Skip them.
+            case spv::OperandExecutionMode:
+                return;
+
+            // Single word operands we simply ignore, as they hold no IDs
+            case spv::OperandLiteralNumber:
+            case spv::OperandSource:
+            case spv::OperandExecutionModel:
+            case spv::OperandAddressing:
+            case spv::OperandMemory:
+            case spv::OperandStorage:
+            case spv::OperandDimensionality:
+            case spv::OperandSamplerAddressingMode:
+            case spv::OperandSamplerFilterMode:
+            case spv::OperandSamplerImageFormat:
+            case spv::OperandImageChannelOrder:
+            case spv::OperandImageChannelDataType:
+            case spv::OperandImageOperands:
+            case spv::OperandFPFastMath:
+            case spv::OperandFPRoundingMode:
+            case spv::OperandLinkageType:
+            case spv::OperandAccessQualifier:
+            case spv::OperandFuncParamAttr:
+            case spv::OperandDecoration:
+            case spv::OperandBuiltIn:
+            case spv::OperandSelect:
+            case spv::OperandLoop:
+            case spv::OperandFunction:
+            case spv::OperandMemoryAccess:
+            case spv::OperandGroupOperation:
+            case spv::OperandKernelEnqueueFlags:
+            case spv::OperandKernelProfilingInfo:
+            case spv::OperandCapability:
+                ++word;
+                break;
+
+            default:
+                assert(0 && "Unhandled Operand Class");
+                break;
+            }
+        }
+    }
+
     bool spirvbin_t::parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds)
     {
         const auto instructionStart = word;
@@ -516,6 +680,8 @@ namespace spv {
         // Extended instructions: currently, assume everything is an ID.
         // TODO: add whatever data we need for exceptions to that
         if (opCode == spv::OpExtInst) {
+            listIds.push_back(asId(word));  //Add ExtInstImport Id
+
             word += 2; // instruction set, and instruction from set
             numOperands -= 2;
 
@@ -1394,7 +1560,7 @@ namespace spv {
             }
 
         case spv::OpTypeOpaque:         return 6000 + spv[typeStart+2];
-        case spv::OpTypePointer:        return 100000  + hashType(idPos(spv[typeStart+3]));
+        case spv::OpTypePointer:        return 100000 + spv[typeStart + 2] + hashType(idPos(spv[typeStart+3]));
         case spv::OpTypeFunction:
             {
                 std::uint32_t hash = 200000;

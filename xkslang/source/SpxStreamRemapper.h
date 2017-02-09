@@ -47,6 +47,7 @@ public:
         Type,
         Variable,
         Function,
+        ExtInstImport,
     };
 
     //Generic, simplified data type that we build while parsing the bytecode
@@ -106,6 +107,18 @@ public:
         //those fields can change when we mix bytecodes
         uint32_t bytecodeStartPosition;
         uint32_t bytecodeEndPosition;
+    };
+
+    class ExtImportInstruction : public ObjectInstructionBase
+    {
+    public:
+        ExtImportInstruction(const ParsedObjectData& parsedData, std::string name)
+            : ObjectInstructionBase(parsedData, name) {}
+        virtual ~ExtImportInstruction() {}
+        virtual ObjectInstructionBase* CloneBasicData() {
+            ExtImportInstruction* obj = new ExtImportInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            return obj;
+        }
     };
 
     class ConstInstruction : public ObjectInstructionBase
@@ -387,6 +400,7 @@ private:
     VariableInstruction* GetVariableByName(const std::string& name);
     TypeInstruction* GetTypePointingTo(TypeInstruction* targetType);
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
+    ExtImportInstruction* GetExtImportInstructionByName(const std::string& name);
     ShaderComposition* GetCompositionById(spv::Id shaderId, int compositionId);
 
     //ShaderClassData* HasShader(const std::string& name);

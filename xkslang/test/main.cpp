@@ -107,12 +107,12 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 
     //{ "TestMerge01", "TestMerge01.xkfx" },
     //{ "TestMerge02", "TestMerge02.xkfx" },
-    ////{ "TestMerge03", "TestMerge03.xkfx" },
+    //{ "TestMerge03b", "TestMerge03.xkfx" },
     //{ "TestMerge04", "TestMerge04.xkfx" },
     //{ "TestMerge05", "TestMerge05.xkfx" },
     //{ "TestMerge06", "TestMerge06.xkfx" },
   
-    //{ "TestMerge07B", "TestMerge07.xkfx" },
+    { "TestMerge07B", "TestMerge07.xkfx" },
     //{ "TestMerge08", "TestMerge08.xkfx" },
     //{ "TestMerge09", "TestMerge09.xkfx" },
     //{ "TestMerge10", "TestMerge10.xkfx" },
@@ -473,7 +473,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
             mixerName = Utils::trim(mixerName, '\"');
 
             if (mixerMap.find(mixerName) != mixerMap.end()) {
-                cout << "mixer: a mixer already exists with the name:" << mixerName;
+                cout << "mixer: a mixer already exists with the name:" << mixerName << endl;
                 success = false; break;
             }
 
@@ -493,7 +493,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
             }
 
             if (mixerMap.find(mixerName) == mixerMap.end()) {
-                cout << lineItem << ": no mixer found with the name:" << mixerName;
+                cout << lineItem << ": no mixer found with the name:" << mixerName << endl;
                 success = false; break;
             }
             EffectMixerObject* mixerObj = mixerMap[mixerName];
@@ -667,7 +667,7 @@ void main(int argc, char** argv)
                 {
                     const SpxBytecode& spirXBytecode = listInputBytecodes[i];
                     
-                    cout << " Mixin " << spirXBytecode.GetName() << ": ";
+                    cout << " Mixin " << spirXBytecode.GetName() << ": " << endl;
 
                     time_before = GetTickCount();
                     success = mixer.Mixin(spirXBytecode, errorMsgs);    //Add mixin files
