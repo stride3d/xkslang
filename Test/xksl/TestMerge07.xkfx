@@ -1,0 +1,12 @@
+//Test merging shader types only (no function declaration)
+
+load "TestMerge07_ShaderA.xksl"
+
+mixer A
+A.mixin Base
+A.mixin shaderA
+
+A.setStageEntryPoint Pixel "main"
+A.compile
+
+

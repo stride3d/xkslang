@@ -1346,7 +1346,10 @@ namespace spv {
     {
         const auto tid_it = idPosR.find(id);
         if (tid_it == idPosR.end())
-            error("ID not found");
+        {
+            error((std::string("ID not found: ") + std::to_string(id)).c_str());
+            return 0;
+        }
 
         return tid_it->second;
     }

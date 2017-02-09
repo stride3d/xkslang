@@ -1,0 +1,10 @@
+//Test
+load "TestMixin02_Base.xksl"
+
+mixer A
+A.mixin Base
+//A.mixin OverrideA
+A.mixin OverrideB
+
+A.setStageEntryPoint Pixel "main"
+A.compile

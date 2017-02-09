@@ -1,0 +1,8 @@
+//Test
+load "TestMixin01_Base.xksl"
+
+mixer A
+A.mixin Base
+
+A.setStageEntryPoint Pixel "main"
+A.compile

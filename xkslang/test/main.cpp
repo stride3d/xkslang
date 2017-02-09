@@ -99,7 +99,25 @@ struct XkfxEffectsToProcess {
     string input;
 };
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
-    { "TestMixin05", "TestMixin05.xkfx" },
+    //{ "TestMixin01", "TestMixin01.xkfx" },
+    //{ "TestMixin02", "TestMixin02.xkfx" },
+    //{ "TestMixin03", "TestMixin03.xkfx" },
+    //{ "TestMixin04", "TestMixin04.xkfx" },
+    //{ "TestMixin05", "TestMixin05.xkfx" },
+
+    //{ "TestMerge01", "TestMerge01.xkfx" },
+    //{ "TestMerge02", "TestMerge02.xkfx" },
+    ////{ "TestMerge03", "TestMerge03.xkfx" },
+    //{ "TestMerge04", "TestMerge04.xkfx" },
+    //{ "TestMerge05", "TestMerge05.xkfx" },
+    //{ "TestMerge06", "TestMerge06.xkfx" },
+  
+    //{ "TestMerge07B", "TestMerge07.xkfx" },
+    //{ "TestMerge08", "TestMerge08.xkfx" },
+    //{ "TestMerge09", "TestMerge09.xkfx" },
+    //{ "TestMerge10", "TestMerge10.xkfx" },
+    //{ "TestMerge11", "TestMerge11.xkfx" },
+    //{ "TestMerge12", "TestMerge12.xkfx" },
 
     //{ "TestCompose02", "TestCompose02.xkfx" },
     //{ "TestCompose02", {{"TestCompose02.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
@@ -194,9 +212,11 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixer::XkslMix
     if (!success)
     {
         cout << "Compilation Failed" << endl;
+
         //Try to output the latest SPV bytecode
+        const vector<uint32_t>& bytecodeList = errorSpv.getBytecodeStream();
+        if (bytecodeList.size() > 0)
         {
-            const vector<uint32_t>& bytecodeList = errorSpv.getBytecodeStream();
             ostringstream disassembly_stream;
             spv::Parameterize();
             spv::Disassemble(disassembly_stream, bytecodeList);
@@ -206,10 +226,11 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixer::XkslMix
             xkslangtest::Utils::WriteFile(outputFileFullName, disassembly_stream.str());
             cout << " output: \"" << outputFileName << "\"" << endl;
         }
-        return false;
     }
-
-    cout << "OK. time: " << (time_after - time_before) << " ms" << endl;
+    else
+    {
+        cout << "OK. time: " << (time_after - time_before) << " ms" << endl;
+    }
 
     //output compiled spirv whtether compilation succeded or not
     {
@@ -236,6 +257,8 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixer::XkslMix
         xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
         cout << " output: \"" << outputFileName << "\"" << endl;
     }
+
+    if (!success) return false;
 
     //convert and output every stages
     for (int i = 0; i<outputStages.size(); ++i)
@@ -292,6 +315,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixer::XkslMix
                             cout << "expected output:" << endl << glslExpectedOutput;
                             cout << "output:" << endl << glslConvertedOutput;
                             cout << " Glsl output and expected output are different !!!" << endl;
+                            success = false;
                         }
                         else {
                             cout << " GLSL output VS expected output: OK" << endl;
@@ -595,7 +619,7 @@ void main(int argc, char** argv)
     }
 
     cout << "___________________________________________________________________________________" << endl;
-    cout << "Process XKSL Files:" << endl;
+    cout << "Process XKSL Files:" << endl << endl;
     //Parse the shaders using XkslParser library
     {
         int countTestProcessed = 0;
@@ -722,33 +746,32 @@ void main(int argc, char** argv)
 
     cout << endl;
     cout << "___________________________________________________________________________________" << endl;
-    cout << "Process XKFX Files:" << endl;
+    cout << "Process XKFX Effect  Files:" << endl << endl;
     //Parse the effects
     {
+        int countTestProcessed = 0;
+        int countTestSuccessful = 0;
+        vector<string> listFailedTest;
         for (int n = 0; n < vecXkfxEffectToProcess.size(); ++n)
         {
-            int countTestProcessed = 0;
-            int countTestSuccessful = 0;
-            vector<string> listFailedTest;
-            for (int n = 0; n < vecXkfxEffectToProcess.size(); ++n)
-            {
-                XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
-                countTestProcessed++;
-                bool success = ProcessEffect(&parser, effect);
+            XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
+            countTestProcessed++;
+            bool success = ProcessEffect(&parser, effect);
 
-                if (success) countTestSuccessful++;
-                else listFailedTest.push_back(effect.effectName);
-            }
+            if (success) countTestSuccessful++;
+            else listFailedTest.push_back(effect.effectName);
 
-            cout << "Count tests processed: " << countTestProcessed << endl;
-            cout << "Count tests successful: " << countTestSuccessful << endl;
-            if (listFailedTest.size() > 0)
-            {
-                cout << endl;
-                cout << "<======================  Failed tests ======================>" << endl;
-                for (int i = 0; i<listFailedTest.size(); ++i) cout << listFailedTest[i] << endl;
-                cout << endl;
-            }
+            cout << endl;
+        }
+
+        cout << "Count tests processed: " << countTestProcessed << endl;
+        cout << "Count tests successful: " << countTestSuccessful << endl;
+        if (listFailedTest.size() > 0)
+        {
+            cout << endl;
+            cout << "<======================  Failed tests ======================>" << endl;
+            for (int i = 0; i<listFailedTest.size(); ++i) cout << listFailedTest[i] << endl;
+            cout << endl;
         }
     }
 

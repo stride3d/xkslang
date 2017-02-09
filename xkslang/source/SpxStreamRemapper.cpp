@@ -624,6 +624,11 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 continue;
             }
 
+            if (unmappedId == 2)
+            {
+                int lgkfsdjlgj = 54545;
+            }
+
             //Find the position in the code to merge where the unmapped IDs is defined
             ObjectInstructionBase* objectFromUnmappedId = bytecodeToMerge.GetObjectById(unmappedId);
             if (objectFromUnmappedId == nullptr) return error(string("No object is defined for the unmapped id: ") + to_string(unmappedId));
@@ -641,9 +646,16 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     auto hashTypePosIt = destinationBytecodeTypeHashMap.find(typeHash);
                     if (hashTypePosIt != destinationBytecodeTypeHashMap.end())
                     {
+                        spv::Id idOfSameTypeFromDestinationBytecode = hashTypePosIt->second.first;
+
+                        if (idOfSameTypeFromDestinationBytecode == unused)
+                        {
+                            return error(string("hashmap refers to an invalid Id"));
+                        }
+
                         //The type already exists in the destination bytecode, we can simply remap to it
                         mappingResolved = true;
-                        finalRemapTable[unmappedId] = hashTypePosIt->second.first;
+                        finalRemapTable[unmappedId] = idOfSameTypeFromDestinationBytecode;
                     }
                     break;
                 }
@@ -908,13 +920,13 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         spx_op_fn_nop
     );
     if (firstTypeOrConstPos == 0) firstTypeOrConstPos = header_size;
-    if (firstFunctionPos == 0 || firstFunctionPos < firstTypeOrConstPos) firstFunctionPos = firstTypeOrConstPos;
+    if (firstFunctionPos == 0 || firstFunctionPos < firstTypeOrConstPos) firstFunctionPos = spv.size();
 
     //=============================================================================================================
     // merge all data in the destination bytecode
     //merge functions
     spv.insert(spv.end(), vecFunctionsToMerge.spv.begin(), vecFunctionsToMerge.spv.end());
-    //Merge types and variables
+    //Merge types and variables (we need to merge new types AFTER all previous types)
     spv.insert(spv.begin() + firstFunctionPos, vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
     //Merge names and decorates
     spv.insert(spv.begin() + firstTypeOrConstPos, vecAllNewDecoratesToMerge.spv.begin(), vecAllNewDecoratesToMerge.spv.end());
@@ -1707,22 +1719,35 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
 {
     mapHashPos.clear();
 
+    //We build hashmap table for all types and consts
+    //except for OpTypeXlslShaderClass types: (this type is only informational, never used as a type or result)
     process(
         [&](spv::Op opCode, unsigned start)
         {
             spv::Id id = unused;
-            if (isConstOp(opCode))
+            if (opCode != spv::OpTypeXlslShaderClass)
             {
-                id = asId(start + 2);
-            }
-            else if (isTypeOp(opCode))
-            {
-                id = asId(start + 1);
+                if (isConstOp(opCode))
+                {
+                    id = asId(start + 2);
+                }
+                else if (isTypeOp(opCode))
+                {
+                    id = asId(start + 1);
+                }
             }
 
             if (id != unused)
             {
                 const uint32_t hashval = hashType(start);
+#ifdef XKSLANG_DEBUG_MODE
+                if (mapHashPos.find(hashval) != mapHashPos.end())
+                {
+                    // Warning: might cause some conflicts sometimes?
+                    //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
+                    id = unused;  //by precaution we invalidate the id: we should not choose between them
+                }
+#endif
                 mapHashPos[hashval] = pairIdPos(id, start);
             }
             return true;
