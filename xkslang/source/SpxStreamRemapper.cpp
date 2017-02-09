@@ -165,7 +165,7 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
             ShaderClassData* shaderType = compositionToClone.shaderType == nullptr? nullptr: clonedSpxRemapper->GetShaderById(compositionToClone.shaderType->GetId());
             ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionShaderOwner, shaderType, compositionToClone.variableName, compositionToClone.isArray);
             //clonedComposition.instantiatedShader = compositionToClone.instantiatedShader == nullptr ? nullptr : clonedSpxRemapper->GetShaderById(compositionToClone.instantiatedShader->GetId());
-            clonedComposition.compositionAlreadyProcessed = compositionToClone.compositionAlreadyProcessed;
+            clonedComposition.status = compositionToClone.status;
             clonedShader->AddComposition(clonedComposition);
         }
     }
@@ -199,7 +199,102 @@ void SpxStreamRemapper::ReleaseAllMaps()
     mapDeclarationName.clear();
 }
 
-bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
+bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const vector<string>& shaders)
+{
+    if (status != SpxRemapperStatusEnum::WaitingForMixin) {
+        return error("Invalid remapper status");
+    }
+    status = SpxRemapperStatusEnum::MixinInProgress;
+
+    if (shaders.size() == 0) {
+        return error("List of shader is empty");
+    }
+
+    //=============================================================================================================
+    // Init the bytecode with a default header
+    if (spv.size() == 0)
+    {
+        //Initialize a default header
+        if (!InitDefaultHeader()) {
+            return error("Failed to initialize a default header");
+        }
+    }
+
+    //=============================================================================================================
+    //parse the bytecode to merge
+    SpxStreamRemapper bytecodeToMerge;
+    if (!bytecodeToMerge.SetBytecode(sourceBytecode)) return false;
+    bool res = bytecodeToMerge.BuildAllMaps();
+
+    if (!res) {
+        bytecodeToMerge.copyMessagesTo(errorMessages);
+        return error(string("Error parsing the bytecode: ") + sourceBytecode.GetName());
+    }
+
+    for (auto itsh = bytecodeToMerge.vecAllShaders.begin(); itsh != bytecodeToMerge.vecAllShaders.end(); itsh++)
+        (*itsh)->flag1 = 0;
+
+    //=============================================================================================================
+    //=============================================================================================================
+    //Get the list of all shaders we want to merge
+    vector<ShaderClassData*> listShadersToMerge;
+    for (int is = 0; is < shaders.size(); ++is)
+    {
+        const string& shaderName = shaders[is];
+        ShaderClassData* shaderToMerge = bytecodeToMerge.GetShaderByName(shaderName);
+        if (shaderToMerge == nullptr) {
+            return error(string("Shader not found: ") + shaderName);
+        }
+
+        //Get the shader parents
+        vector<ShaderClassData*> listShadersFromSameFamily;
+        bytecodeToMerge.GetShaderFamilyTreeWithParentAndCompositionType(shaderToMerge, listShadersFromSameFamily);
+
+        for (int i = 0; i < listShadersFromSameFamily.size(); ++i)
+        {
+            ShaderClassData* shaderFromFamily = listShadersFromSameFamily[i];
+            if (shaderFromFamily->flag1 == 0)
+            {
+                shaderFromFamily->flag1 = 1;
+
+                //We don't add a shader if it already exists in the destination bytecode
+                if (this->GetShaderByName(shaderFromFamily->GetName()) == nullptr)
+                {
+                    listShadersToMerge.push_back(shaderFromFamily);
+                }
+            }
+        }
+    }
+    if (listShadersToMerge.size() == 0){
+        status = SpxRemapperStatusEnum::WaitingForMixin;
+        return true;
+    }
+
+    if (!MergeShadersIntoBytecode(bytecodeToMerge, listShadersToMerge, ""))
+    {
+        return false;
+    }
+
+    //=============================================================================================================
+    //retrieve the merged shaders from the destination bytecode
+    vector<ShaderClassData*> listShadersMerged;
+    for (unsigned int is = 0; is<listShadersToMerge.size(); ++is)
+    {
+        ShaderClassData* shaderToMerge = listShadersToMerge[is];
+        ShaderClassData* shaderMerged = GetShaderByName(shaderToMerge->GetName());
+        if (shaderMerged == nullptr) return error(string("Cannot retrieve the shader: ") + shaderToMerge->GetName());
+        listShadersMerged.push_back(shaderMerged);
+    }
+
+    if (!ProcessOverrideAfterMixingNewShaders(listShadersMerged))
+    {
+        return error("Failed to process overrides after mixin new shaders");
+    }
+    status = SpxRemapperStatusEnum::WaitingForMixin;
+    return true;
+}
+
+bool SpxStreamRemapper::MixWithBytecode(const SpxBytecode& bytecode)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
@@ -229,6 +324,16 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
             return error(string("Error merging the shaders from the bytecode: ") + bytecode.GetName());
     }
 
+    if (!ProcessOverrideAfterMixingNewShaders(listShadersMerged))
+    {
+        return error("Failed to process overrides after mixin new shaders");
+    }
+    status = SpxRemapperStatusEnum::WaitingForMixin;
+    return true;
+}
+
+bool SpxStreamRemapper::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassData*>& listNewShaders)
+{
     if (!ValidateSpxBytecode())
     {
         return error("Error validating the bytecode");
@@ -245,7 +350,7 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     }
 
     //Update the list of overriding methods
-    if (!UpdateOverridenFunctionMap(listShadersMerged))
+    if (!UpdateOverridenFunctionMap(listNewShaders))
     {
         return error("Updating overriding functions failed");
     }
@@ -257,8 +362,6 @@ bool SpxStreamRemapper::MixWithSpxBytecode(const SpxBytecode& bytecode)
     }
 
     if (errorMessages.size() > 0) return false;
-
-    status = SpxRemapperStatusEnum::WaitingForMixin;
     return true;
 }
 
@@ -275,7 +378,7 @@ bool SpxStreamRemapper::MergeAllNewShadersFromBytecode(const SpxBytecode& byteco
 
     if (!res) {
         bytecodeToMerge.copyMessagesTo(errorMessages);
-        return error(string("Error building XKSL shaders data map from bytecode:") + bytecode.GetName());
+        return error(string("Error building XKSL shaders data map from bytecode: ") + bytecode.GetName());
     }
 
     //=============================================================================================================
@@ -305,7 +408,7 @@ bool SpxStreamRemapper::MergeAllNewShadersFromBytecode(const SpxBytecode& byteco
     {
         ShaderClassData* shaderToMerge = listShadersToMerge[is];
         ShaderClassData* shaderMerged = GetShaderByName(shaderToMerge->GetName());
-        if (shaderMerged == nullptr) return error(string("Cannot retrieve the shader:") + shaderToMerge->GetName());
+        if (shaderMerged == nullptr) return error(string("Cannot retrieve the shader: ") + shaderToMerge->GetName());
         listShadersMerged.push_back(shaderMerged);
     }
 
@@ -314,9 +417,9 @@ bool SpxStreamRemapper::MergeAllNewShadersFromBytecode(const SpxBytecode& byteco
 
 bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const vector<ShaderClassData*>& listShadersToMerge, string namesPrefixToAdd)
 {
-    if (&bytecodeToMerge == this) {
-        return error("Cannot merge a bytecode into its own code");
-    }
+    //if (&bytecodeToMerge == this) {
+    //    return error("Cannot merge a bytecode into its own code");
+    //}
 
     //=============================================================================================================
     //Init destination bytecode hashmap (to compare types and consts hashmap id)
@@ -365,9 +468,9 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             VariableInstruction* variable = shaderTypeToMerge->variable;
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (finalRemapTable[type->GetId()] != unused) error(string("id:") + to_string(type->GetId()) + string(" has already been remapped"));
-            if (finalRemapTable[pointerToType->GetId()] != unused) error(string("id:") + to_string(pointerToType->GetId()) + string(" has already been remapped"));
-            if (finalRemapTable[variable->GetId()] != unused) error(string("id:") + to_string(variable->GetId()) + string(" has already been remapped"));
+            if (finalRemapTable[type->GetId()] != unused) error(string("id: ") + to_string(type->GetId()) + string(" has already been remapped"));
+            if (finalRemapTable[pointerToType->GetId()] != unused) error(string("id: ") + to_string(pointerToType->GetId()) + string(" has already been remapped"));
+            if (finalRemapTable[variable->GetId()] != unused) error(string("id: ") + to_string(variable->GetId()) + string(" has already been remapped"));
 #endif
 
             finalRemapTable[type->GetId()] = newId++;
@@ -383,7 +486,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             const spv::Id resultId = shaderToMerge->GetId();
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (finalRemapTable[resultId] != unused) error(string("id:") + to_string(resultId) + string(" has already been remapped"));
+            if (finalRemapTable[resultId] != unused) error(string("id: ") + to_string(resultId) + string(" has already been remapped"));
 #endif
 
             finalRemapTable[resultId] = newId++;
@@ -412,7 +515,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     if (spv::InstructionDesc[opCode].hasResult()) {
                         spv::Id resultId = bytecodeToMerge.asId(word++);
 #ifdef XKSLANG_DEBUG_MODE
-                        if (finalRemapTable[resultId] != unused) error(string("id:") + to_string(resultId) + string(" has already been remapped"));
+                        if (finalRemapTable[resultId] != unused) error(string("id: ") + to_string(resultId) + string(" has already been remapped"));
 #endif
                         finalRemapTable[resultId] = newId++;
                     }
@@ -523,7 +626,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
             //Find the position in the code to merge where the unmapped IDs is defined
             ObjectInstructionBase* objectFromUnmappedId = bytecodeToMerge.GetObjectById(unmappedId);
-            if (objectFromUnmappedId == nullptr) return error(string("No object is defined for the unmapped id:") + to_string(unmappedId));
+            if (objectFromUnmappedId == nullptr) return error(string("No object is defined for the unmapped id: ") + to_string(unmappedId));
 
             bool mappingResolved = false;
             bool mergeTypeOrConst = false;
@@ -550,7 +653,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     //this is a variable from destination bytecode, we retrieve its id in the destination bytecode using its declaration name
                     VariableInstruction* variable = this->GetVariableByName(objectFromUnmappedId->GetName());
                     if (variable == nullptr)
-                        return error(string("No variable exists in destination bytecode with the name:") + objectFromUnmappedId->GetName());
+                        return error(string("No variable exists in destination bytecode with the name: ") + objectFromUnmappedId->GetName());
 
                     //remap the unmapped ID to the destination variable
                     mappingResolved = true;
@@ -562,11 +665,11 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 {
                     //this is a function from destination bytecode, we retrieve its id in the destination bytecode using its declaration name and shader owner
                     if (objectFromUnmappedId->GetShaderOwner() == nullptr)
-                        return error(string("The function does not have a shader owner:") + objectFromUnmappedId->GetName());
+                        return error(string("The function does not have a shader owner: ") + objectFromUnmappedId->GetName());
 
                     ShaderClassData* shader = this->GetShaderByName(objectFromUnmappedId->GetShaderOwner()->GetName());
                     if (shader == nullptr)
-                        return error(string("No shader exists in destination bytecode with the name:") + objectFromUnmappedId->GetShaderOwner()->GetName());
+                        return error(string("No shader exists in destination bytecode with the name: ") + objectFromUnmappedId->GetShaderOwner()->GetName());
                     FunctionInstruction* function = shader->GetFunctionByName(objectFromUnmappedId->GetName());
                     if (function == nullptr)
                         return error(string("Shader \"") + shader->GetName() + string("\" does not have a function named \"") + objectFromUnmappedId->GetName() + string("\""));
@@ -582,7 +685,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     //This is a shader from destination bytecode, we simply retrieve its Ids
                     ShaderClassData* shader = this->GetShaderByName(objectFromUnmappedId->GetName());
                     if (shader == nullptr)
-                        return error(string("No shader exists in destination bytecode with the name:") + objectFromUnmappedId->GetName());
+                        return error(string("No shader exists in destination bytecode with the name: ") + objectFromUnmappedId->GetName());
 
                     //remap the unmapped ID to the destination variable
                     mappingResolved = true;
@@ -591,7 +694,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 }
 
                 default:
-                    return error(string("Invalid object. unable to remap unmapped id:") + to_string(unmappedId));
+                    return error(string("Invalid object. unable to remap unmapped id: ") + to_string(unmappedId));
             }
 
             if (mappingResolved)
@@ -616,7 +719,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     {
                         const spv::Id anotherId = listIds[i];
 #ifdef XKSLANG_DEBUG_MODE
-                        if (anotherId == unmappedId) return error(string("anotherId == unmappedId:") + to_string(anotherId) + string(". This should be impossible (bytecode is invalid)"));
+                        if (anotherId == unmappedId) return error(string("anotherId == unmappedId: ") + to_string(anotherId) + string(". This should be impossible (bytecode is invalid)"));
 #endif
                         if (finalRemapTable[anotherId] == unused)
                         {
@@ -746,7 +849,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         [&](spv::Id& id)
         {
             spv::Id newId = finalRemapTable[id];
-            if (newId == unused) error(string("Invalid remapper Id:") + to_string(id));
+            if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
             else id = newId;
         }
     );
@@ -755,7 +858,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         [&](spv::Id& id)
         {
             spv::Id newId = finalRemapTable[id];
-            if (newId == unused) error(string("Invalid remapper Id:") + to_string(id));
+            if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
             else id = newId;
         }
     );
@@ -764,7 +867,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         [&](spv::Id& id)
         {
             spv::Id newId = finalRemapTable[id];
-            if (newId == unused) error(string("Invalid remapper Id:") + to_string(id));
+            if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
             else id = newId;
         }
     );
@@ -773,7 +876,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         [&](spv::Id& id)
         {
             spv::Id newId = finalRemapTable[id];
-            if (newId == unused) error(string("Invalid remapper Id:") + to_string(id));
+            if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
             else id = newId;
         }
     );
@@ -805,7 +908,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         spx_op_fn_nop
     );
     if (firstTypeOrConstPos == 0) firstTypeOrConstPos = header_size;
-    if (firstFunctionPos == 0) spv.size();
+    if (firstFunctionPos == 0 || firstFunctionPos < firstTypeOrConstPos) firstFunctionPos = firstTypeOrConstPos;
 
     //=============================================================================================================
     // merge all data in the destination bytecode
@@ -826,7 +929,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         ShaderClassData* shaderToMerge = listShadersToMerge[is];
         spv::Id clonedShaderId = finalRemapTable[shaderToMerge->GetId()];
         ShaderClassData* clonedShader = this->GetShaderById(clonedShaderId);
-        if (clonedShader == nullptr) return error(string("Cannot retrieve the cloned shader:") + to_string(clonedShaderId));
+        if (clonedShader == nullptr) return error(string("Cannot retrieve the cloned shader: ") + to_string(clonedShaderId));
         shaderToMerge->tmpClonedShader = clonedShader;
     }
 
@@ -913,45 +1016,34 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
     int loopCount = 0;
     while (true)
     {
-        //==============================================================================================================
-        //We clone the bytecode before merging / instantiating the shaders
-        SpxStreamRemapper* clonedSpxStream = this->Clone();
-        if (clonedSpxStream == nullptr) return error("Failed to clone the SpxStreamRemapper");
-
         //Get the list of all unprocessed compositions from clonedSpxStream
-        vector<ShaderComposition*> listUnprocessedCompositionsInClonedBytecode;
+        vector<ShaderComposition*> listUnprocessedCompositions;
         for (auto itsh = this->vecAllShaders.begin(); itsh != this->vecAllShaders.end(); itsh++)
         {
             ShaderClassData* aShader = *itsh;
             for (int ic = 0; ic < aShader->compositionsList.size(); ++ic)
             {
                 ShaderComposition* aComposition = &(aShader->compositionsList[ic]);
-                if (aComposition->compositionAlreadyProcessed == false)
+                if (aComposition->status == ShaderComposition::ShaderCompositionStatusEnum::Undefined)
                 {
-                    aComposition->compositionAlreadyProcessed = true;
-                    ShaderComposition* unprocessedCompositionFromClonedBytecode = clonedSpxStream->GetCompositionById(aShader->GetId(), aComposition->compositionShaderId);
-                    if (unprocessedCompositionFromClonedBytecode == nullptr) return error("Failed to retrieve the composition from SpxStreamRemapper");
-                    listUnprocessedCompositionsInClonedBytecode.push_back(unprocessedCompositionFromClonedBytecode);
+                    aComposition->status = ShaderComposition::ShaderCompositionStatusEnum::Defined;
+                    listUnprocessedCompositions.push_back(aComposition);
                 }
             }
         }
-        if (listUnprocessedCompositionsInClonedBytecode.size() == 0)
-        {
-            delete clonedSpxStream;
-            break;
-        }
+        if (listUnprocessedCompositions.size() == 0) break;
 
         //===================================================================================================================
         //==============================================================================================================
-        //Instantiate the shader listUnprocessedCompositionsInClonedBytecode for each composition
-        for (auto itc = listUnprocessedCompositionsInClonedBytecode.begin(); itc != listUnprocessedCompositionsInClonedBytecode.end(); itc++)
+        //Instantiate the shader listUnprocessedCompositions for each composition
+        for (auto itc = listUnprocessedCompositions.begin(); itc != listUnprocessedCompositions.end(); itc++)
         {
             ShaderComposition* compositionToInstantiate = *itc;
             pair<spv::Id, int> compositionToInstantiateId = pair<spv::Id, int>(compositionToInstantiate->compositionShaderOwner->GetId(), compositionToInstantiate->compositionShaderId);
 
             //Get the list of all shaders to clone
             vector<ShaderClassData*> listShadersFromCompositionToClone;
-            clonedSpxStream->GetShaderFamilyTree(compositionToInstantiate->shaderType, listShadersFromCompositionToClone);
+            this->GetShaderFamilyTree(compositionToInstantiate->shaderType, listShadersFromCompositionToClone);
 
             //prefix to rename the shader, its variables and functions
             //string namePrefix = string("c") + compositionToInstantiate->compositionShaderOwner->GetName() + compositionToInstantiate->variableName + string("_");
@@ -959,7 +1051,7 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
 
             //===================================================================================================================
             //Merge (duplicate) all shaders targeted by by the composition into the current bytecode
-            if (!MergeShadersIntoBytecode(*clonedSpxStream, listShadersFromCompositionToClone, namePrefix))
+            if (!MergeShadersIntoBytecode(*this, listShadersFromCompositionToClone, namePrefix))
             {
                 error(string("failed to clone the shader from the composition: ") + namePrefix);
                 break;
@@ -979,10 +1071,9 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
         }
 
         if (errorMessages.size() > 0) {
-            for (auto itc = listUnprocessedCompositionsInClonedBytecode.begin(); itc != listUnprocessedCompositionsInClonedBytecode.end(); itc++){
+            for (auto itc = listUnprocessedCompositions.begin(); itc != listUnprocessedCompositions.end(); itc++){
                 if ((*itc)->processingData != nullptr){ delete (*itc)->processingData; (*itc)->processingData = nullptr; }
             }
-            delete clonedSpxStream;
             return error("failed to instantiate the shader compositions");
         }
 
@@ -1003,7 +1094,7 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
 
                         //retrieve the composition matching the function's composition Id
                         ShaderComposition* compositionInstantiated = nullptr;
-                        for (auto itc = listUnprocessedCompositionsInClonedBytecode.begin(); itc != listUnprocessedCompositionsInClonedBytecode.end(); itc++)
+                        for (auto itc = listUnprocessedCompositions.begin(); itc != listUnprocessedCompositions.end(); itc++)
                         {
                             ShaderComposition* composition = *itc;
                             if (composition->compositionShaderOwner->GetId() == shaderId && composition->compositionShaderId == compositionId)
@@ -1021,12 +1112,12 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
                         spv::Id originalFunctionId = asId(start + 3);
                         FunctionInstruction* functionToReplace = GetFunctionById(originalFunctionId);
                         if (functionToReplace == nullptr){
-                            error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known function. Id:") + to_string(originalFunctionId));
+                            error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known function. Id: ") + to_string(originalFunctionId));
                             return true;
                         }
                         ShaderClassData* shaderOwningTheFunction = functionToReplace->GetShaderOwner();
                         if (shaderOwningTheFunction == nullptr) {
-                            error(string("OpFunctionCallThroughCompositionVariable: function to replace has no shader owner:") + functionToReplace->GetName());
+                            error(string("OpFunctionCallThroughCompositionVariable: function to replace has no shader owner: ") + functionToReplace->GetName());
                             return true;
                         }
                     
@@ -1034,20 +1125,20 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
                         auto itmap = compositionInstantiated->processingData->mapCompositionShaderTargetedWithClonedShader.find(shaderOwningTheFunction->GetId());
                         if (itmap == compositionInstantiated->processingData->mapCompositionShaderTargetedWithClonedShader.end())
                         {
-                            error(string("OpFunctionCallThroughCompositionVariable: failed to find the shader target in the composition processing data. Shader name:") + shaderOwningTheFunction->GetName());
+                            error(string("OpFunctionCallThroughCompositionVariable: failed to find the shader target in the composition processing data. Shader name: ") + shaderOwningTheFunction->GetName());
                             return true;
                         }
 
                         spv::Id clonedShaderId = itmap->second;
                         ShaderClassData* clonedShader = GetShaderById(clonedShaderId);
                         if (clonedShader == nullptr) {
-                            error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known shader. Id:") + to_string(clonedShaderId));
+                            error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known shader. Id: ") + to_string(clonedShaderId));
                             return true;
                         }
 
                         FunctionInstruction* functionTarget = clonedShader->GetFunctionByName(functionToReplace->GetName());
                         if (functionTarget == nullptr) {
-                            error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function within the duplicated shader. Function name:") + functionToReplace->GetName());
+                            error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function within the duplicated shader. Function name: ") + functionToReplace->GetName());
                             return true;
                         }
 
@@ -1064,18 +1155,16 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
         );
 
         if (errorMessages.size() > 0) {
-            for (auto itc = listUnprocessedCompositionsInClonedBytecode.begin(); itc != listUnprocessedCompositionsInClonedBytecode.end(); itc++) {
+            for (auto itc = listUnprocessedCompositions.begin(); itc != listUnprocessedCompositions.end(); itc++) {
                 if ((*itc)->processingData != nullptr) { delete (*itc)->processingData; (*itc)->processingData = nullptr; }
             }
-            delete clonedSpxStream;
             return error("failed to process the cloned compositions");
         }
 
         //release all allocated stuff
-        for (auto itc = listUnprocessedCompositionsInClonedBytecode.begin(); itc != listUnprocessedCompositionsInClonedBytecode.end(); itc++) {
+        for (auto itc = listUnprocessedCompositions.begin(); itc != listUnprocessedCompositions.end(); itc++) {
             if ((*itc)->processingData != nullptr) { delete (*itc)->processingData; (*itc)->processingData = nullptr; }
         }
-        delete clonedSpxStream;
 
         //remove strip bytecode
         stripBytecode(vecStripRanges);
@@ -1101,22 +1190,49 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
 //Mixin is finalized: no more updates will be brought to the mixin bytecode after
 bool SpxStreamRemapper::FinalizeMixin()
 {
-    if (status != SpxRemapperStatusEnum::MixinBeingFinalized) {
+    if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
     }
 
-    validate();  //validate the header
+    //==============================================================
+    //validate the header
+    validate();
     if (staticErrorMessages.size() > 0) {
         copyStaticErrorMessagesTo(errorMessages);
         return false;
     }
+
+    if (!ValidateIfBytecodeIsReadyForCompilation()) {
+        return error("Bytecode is not valid for compilation");
+    }
+
+    status = SpxRemapperStatusEnum::MixinFinalized;
 
     //Convert SPIRX extensions to SPIRV
     if (!ConvertSpirxToSpirVBytecode()) {
         return error("Failed to convert SPIRX to SPIRV");
     }
 
-    status = SpxRemapperStatusEnum::MixinFinalized;
+    return true;
+}
+
+bool SpxStreamRemapper::ValidateIfBytecodeIsReadyForCompilation()
+{
+    //Have we defined all compositions?
+    for (auto its = vecAllShaders.begin(); its != vecAllShaders.end(); its++)
+    {
+        ShaderClassData* aShader = *its;
+        for (auto itsc = aShader->compositionsList.begin(); itsc != aShader->compositionsList.end(); itsc++)
+        {
+            const ShaderComposition& aComposition = *itsc;
+            if (aComposition.status == ShaderComposition::ShaderCompositionStatusEnum::Undefined)
+            {
+                error(string("Composition \"") + aComposition.GetVariableName() + string("\" from shader \"") + aShader->GetName() + string("\" has not been set"));
+            }
+        }
+    }
+
+    if (errorMessages.size() > 0) return false;
     return true;
 }
 
@@ -1193,7 +1309,7 @@ bool SpxStreamRemapper::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
                         }
                     }
                     else
-                        error(string("OpFunctionCallBaseUnresolved: targeted Id is not a known function. Id:") + to_string(functionCalledId));
+                        error(string("OpFunctionCallBaseUnresolved: targeted Id is not a known function. Id: ") + to_string(functionCalledId));
 
                     break;
                 }
@@ -1234,7 +1350,7 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
                     spv::Id functionCalledId = asId(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
                     if (functionCalledId < 0 || functionCalledId >= vecFunctionIdBeingOverriden.size()){
-                        error(string("function call Id is out of bound. Id:") + to_string(functionCalledId));
+                        error(string("function call Id is out of bound. Id: ") + to_string(functionCalledId));
                         return true;
                     }
 #endif
@@ -1266,6 +1382,58 @@ void SpxStreamRemapper::GetShaderChildrenList(ShaderClassData* shader, vector<Sh
         if (aShader == shader) continue;
 
         if (aShader->HasParent(shader)) children.push_back(aShader);
+    }
+}
+
+void SpxStreamRemapper::GetShaderFamilyTreeWithParentAndCompositionType(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree)
+{
+    shaderFamilyTree.clear();
+
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) (*itsh)->flag = 0;
+
+    vector<ShaderClassData*> children;
+    vector<ShaderClassData*> listShaderToValidate;
+    listShaderToValidate.push_back(shaderFromFamily);
+    while (listShaderToValidate.size() > 0)
+    {
+        ShaderClassData* aShader = listShaderToValidate.back();
+        listShaderToValidate.pop_back();
+
+        if (aShader->flag != 0) continue;  //the shader has already been added
+        shaderFamilyTree.push_back(aShader);
+        aShader->flag = 1;
+
+        //Add all parents
+        for (auto itsh = aShader->parentsList.begin(); itsh != aShader->parentsList.end(); itsh++)
+            listShaderToValidate.push_back(*itsh);
+
+        //Add all compositions
+        for (auto itc = aShader->compositionsList.begin(); itc != aShader->compositionsList.end(); itc++)
+            listShaderToValidate.push_back(itc->shaderType);
+    }
+}
+
+void SpxStreamRemapper::GetShaderFamilyTreeWithParentOnly(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree)
+{
+    shaderFamilyTree.clear();
+
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) (*itsh)->flag = 0;
+
+    vector<ShaderClassData*> children;
+    vector<ShaderClassData*> listShaderToValidate;
+    listShaderToValidate.push_back(shaderFromFamily);
+    while (listShaderToValidate.size() > 0)
+    {
+        ShaderClassData* aShader = listShaderToValidate.back();
+        listShaderToValidate.pop_back();
+
+        if (aShader->flag != 0) continue;  //the shader has already been added
+        shaderFamilyTree.push_back(aShader);
+        aShader->flag = 1;
+
+        //Add all parents
+        for (auto itsh = aShader->parentsList.begin(); itsh != aShader->parentsList.end(); itsh++)
+            listShaderToValidate.push_back(*itsh);
     }
 }
 
@@ -1446,6 +1614,22 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, std::st
     return true;
 }
 
+bool SpxStreamRemapper::SpxStreamRemapper::InitDefaultHeader()
+{
+    if (spv.size() > 0) {
+        return error("Bytecode must by empty");
+    }
+
+    int IdsBounds = 1;
+    spv.push_back(MagicNumber);
+    spv.push_back(Version);
+    spv.push_back(builderNumber);
+    spv.push_back(IdsBounds);
+    spv.push_back(0);
+
+    return true;
+}
+
 bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStageEnum stage, FunctionInstruction* entryFunction, string unmangledFunctionName)
 {
     /*
@@ -1465,8 +1649,7 @@ bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStageEnum stage, Fun
     import->addStringOperand(name);
     */
 
-    if (entryFunction == nullptr)
-    {
+    if (entryFunction == nullptr){
         return error("Unknown entry function");
     }
 
@@ -1524,11 +1707,6 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
 {
     mapHashPos.clear();
 
-    if (idPosR.size() == 0)
-    {
-        return error("Fail to execute BuildTypesAndConstsHashmap: call BuildAllMaps first");
-    }
-
     process(
         [&](spv::Op opCode, unsigned start)
         {
@@ -1573,9 +1751,9 @@ bool SpxStreamRemapper::UpdateAllObjectsPositionInTheBytecode()
         spv::Id resultId = parsedData.resultId;
 
         if (resultId <= 0 || resultId == spv::NoResult || resultId >= maxResultId)
-            return error(string("The parsed object has an invalid resultId:") + to_string(resultId));
+            return error(string("The parsed object has an invalid resultId: ") + to_string(resultId));
         if (listAllObjects[resultId] == nullptr)
-            return error(string("The parsed object is not registerd in the list of all objects. ResultId:") + to_string(resultId));
+            return error(string("The parsed object is not registerd in the list of all objects. ResultId: ") + to_string(resultId));
 
         listAllObjects[resultId]->SetBytecodeRangePositions(parsedData.bytecodeStartPosition, parsedData.bytecodeEndPosition);
     }
@@ -1611,7 +1789,7 @@ bool SpxStreamRemapper::UpdateAllMaps()
         spv::Id resultId = parsedData.resultId;
 
         if (resultId <= 0 || resultId == spv::NoResult || resultId >= maxResultId)
-            return error(string("The parsed object has an invalid resultId:") + to_string(resultId));
+            return error(string("The parsed object has an invalid resultId: ") + to_string(resultId));
         if (listAllObjects[resultId] != nullptr) continue;  //the object already exist
 
         ObjectInstructionBase* newObject = CreateAndAddNewObjectFor(parsedData);
@@ -1694,16 +1872,16 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     if (!vectorIdsToDecorate[shaderId]) return true;
 
                     ShaderClassData* shaderOwner = GetShaderById(shaderId);
-                    if (shaderOwner == nullptr) { error(string("undeclared shader owner for Id:") + to_string(shaderId)); break; }
+                    if (shaderOwner == nullptr) { error(string("undeclared shader owner for Id: ") + to_string(shaderId)); break; }
 
                     FunctionInstruction* function = GetFunctionById(objectId);
                     if (function != nullptr) {
                         //a function is defined as being owned by a shader
 #ifdef XKSLANG_DEBUG_MODE
-                        if (function->GetShaderOwner() != nullptr) { error(string("The function already has a shader owner:") + function->GetMangledName()); break; }
+                        if (function->GetShaderOwner() != nullptr) { error(string("The function already has a shader owner: ") + function->GetMangledName()); break; }
                         if (shaderOwner->HasFunction(function))
                         {
-                            error(string("The shader:") + shaderOwner->GetName() + string(" already possesses the function:") + function->GetMangledName()); break;
+                            error(string("The shader: ") + shaderOwner->GetName() + string(" already possesses the function: ") + function->GetMangledName()); break;
                         }
                         function->SetFullName(shaderOwner->GetName() + string(".") + function->GetMangledName());
 #endif
@@ -1721,11 +1899,11 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                             TypeInstruction* typePointer = GetTypePointingTo(type);
                             VariableInstruction* variable = GetVariablePointingTo(typePointer);
 
-                            if (typePointer == nullptr) { error(string("cannot find the pointer type to the shader type:") + type->GetName()); break; }
-                            if (variable == nullptr) { error(string("cannot find the variable for shader type:") + type->GetName()); break; }
+                            if (typePointer == nullptr) { error(string("cannot find the pointer type to the shader type: ") + type->GetName()); break; }
+                            if (variable == nullptr) { error(string("cannot find the variable for shader type: ") + type->GetName()); break; }
 #ifdef XKSLANG_DEBUG_MODE
-                            if (type->GetShaderOwner() != nullptr) { error(string("The type already has a shader owner:") + type->GetName()); break; }
-                            if (shaderOwner->HasType(type)) { error(string("The shader:") + shaderOwner->GetName() + string(" already possesses the type:") + type->GetName()); break; }
+                            if (type->GetShaderOwner() != nullptr) { error(string("The type already has a shader owner: ") + type->GetName()); break; }
+                            if (shaderOwner->HasType(type)) { error(string("The shader: ") + shaderOwner->GetName() + string(" already possesses the type: ") + type->GetName()); break; }
 #endif
                             ShaderTypeData* shaderType = new ShaderTypeData(type, typePointer, variable);
                             type->SetShaderOwner(shaderOwner);
@@ -1733,7 +1911,7 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                         }
                         else
                         {
-                            error(string("unprocessed OpBelongsToShader instruction, invalid objectId:") + to_string(objectId));
+                            error(string("unprocessed OpBelongsToShader instruction, invalid objectId: ") + to_string(objectId));
                         }
                     }
                     break;
@@ -1748,17 +1926,17 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     if (!vectorIdsToDecorate[shaderId]) return true;
 
                     ShaderClassData* shader = GetShaderById(shaderId);
-                    if (shader == nullptr) { error(string("undeclared shader for Id:") + to_string(shaderId)); break; }
+                    if (shader == nullptr) { error(string("undeclared shader for Id: ") + to_string(shaderId)); break; }
 
                     int countParents = asWordCount(start) - 2;
                     for (int p = 0; p < countParents; ++p)
                     {
                         const spv::Id parentShaderId = asId(start + 2 + p);
                         ShaderClassData* shaderParent = GetShaderById(parentShaderId);
-                        if (shaderParent == nullptr) { error(string("undeclared parent shader for Id:") + to_string(parentShaderId)); break; }
+                        if (shaderParent == nullptr) { error(string("undeclared parent shader for Id: ") + to_string(parentShaderId)); break; }
 
 #ifdef XKSLANG_DEBUG_MODE
-                        if (shader->HasParent(shaderParent)) { error(string("shader:") + shader->GetName() + string(" already inherits from parent:") + shaderParent->GetName()); break; }
+                        if (shader->HasParent(shaderParent)) { error(string("shader: ") + shader->GetName() + string(" already inherits from parent: ") + shaderParent->GetName()); break; }
 #endif
                         shader->AddParent(shaderParent);
                     }
@@ -1775,13 +1953,13 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
                     bool isArray = opCode == spv::OpShaderArrayComposition ? true : false;
                     ShaderClassData* shaderCompositionOwner = GetShaderById(shaderId);
-                    if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id:") + to_string(shaderId)); break; }
+                    if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id: ") + to_string(shaderId)); break; }
 
                     int compositionId = asId(start + 2);
 
                     const spv::Id shaderCompositionTypeId = asId(start + 3);
                     ShaderClassData* shaderCompositionType = GetShaderById(shaderCompositionTypeId);
-                    if (shaderCompositionType == nullptr) { error(string("undeclared shader type id:") + to_string(shaderCompositionTypeId)); break; }
+                    if (shaderCompositionType == nullptr) { error(string("undeclared shader type id: ") + to_string(shaderCompositionTypeId)); break; }
 
                     const std::string compositionVariableName = literalString(start + 4);
 
@@ -1799,7 +1977,7 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     if (!vectorIdsToDecorate[functionId]) return true;
 
                     FunctionInstruction* function = GetFunctionById(functionId);
-                    if (function == nullptr) { error(string("undeclared function id:") + to_string(functionId)); break; }
+                    if (function == nullptr) { error(string("undeclared function id: ") + to_string(functionId)); break; }
 
                     int countProperties = asWordCount(start) - 2;
                     for (int a = 0; a < countProperties; ++a)
@@ -1829,11 +2007,11 @@ SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObje
 {
     spv::Id resultId = parsedData.resultId;
     if (resultId <= 0 || resultId == spv::NoResult || resultId >= listAllObjects.size()) {
-        error(string("The object has an invalid resultId:") + to_string(resultId));
+        error(string("The object has an invalid resultId: ") + to_string(resultId));
         return nullptr;
     }
     if (listAllObjects[resultId] != nullptr) {
-        error(string("An object with the same resultId already exists. resultId:") + to_string(resultId));
+        error(string("An object with the same resultId already exists. resultId: ") + to_string(resultId));
         return nullptr;
     }
 
@@ -1867,7 +2045,7 @@ SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObje
                 //create the link to the type pointed by the pointer (already created at this stage)
                 TypeInstruction* pointedType = GetTypeById(parsedData.targetId);
                 if (pointedType == nullptr) {
-                    error(string("Cannot find the typeId:") + to_string(parsedData.targetId) + string(", pointed by pointer Id:") + to_string(resultId));
+                    error(string("Cannot find the typeId: ") + to_string(parsedData.targetId) + string(", pointed by pointer Id: ") + to_string(resultId));
                     delete type;
                     return nullptr;
                 }
@@ -1884,7 +2062,7 @@ SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObje
             //create the link to the type pointed by the variable (already created at this stage)
             TypeInstruction* pointedType = GetTypeById(parsedData.typeId);
             if (pointedType == nullptr) {
-                error(string("Cannot find the typeId:") + to_string(parsedData.typeId) + string(", pointed by variable Id:") + to_string(resultId));
+                error(string("Cannot find the typeId: ") + to_string(parsedData.typeId) + string(", pointed by variable Id: ") + to_string(resultId));
                 return nullptr;
             }
 
@@ -2077,7 +2255,7 @@ string SpxStreamRemapper::GetDeclarationNameForId(spv::Id id)
     auto it = mapDeclarationName.find(id);
     if (it == mapDeclarationName.end())
     {
-        error(string("Id:") + to_string(id) + string(" has no declaration name"));
+        error(string("Id: ") + to_string(id) + string(" has no declaration name"));
         return string("");
     }
     return it->second;

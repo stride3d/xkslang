@@ -33,7 +33,12 @@ public:
     XkslMixer();
     virtual ~XkslMixer();
 
+    //Mix all shaders from spirXBytecode
     bool Mixin(const SpxBytecode& spirXBytecode, std::vector<std::string>& messages);
+    //Mix shaders linked to shaderName
+    bool Mixin(const SpxBytecode& spirXBytecode, const std::string& shaderName, std::vector<std::string>& messages);
+    bool Mixin(const SpxBytecode& spirXBytecode, const std::vector<std::string>& shaders, std::vector<std::string>& messages);
+
     bool GetCurrentMixinBytecode(SpxBytecode& output, std::vector<std::string>& messages);
 
     //bool GenerateStageBytecode(ShadingStage stage, std::string entryPoint, SpvBytecode& output, std::vector<std::string>& messages);

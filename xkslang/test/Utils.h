@@ -23,6 +23,10 @@ namespace xkslangtest
 class Utils
 {
 public:
+    //string utils
+    static std::string trim(const std::string& str);
+    static std::string trim(const std::string& str, char c);
+
     //Files IO
     // Reads the content of the file at the given |path|. On success, returns true
     // and the contents; otherwise, returns false and an empty string.

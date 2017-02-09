@@ -20,6 +20,11 @@ namespace xkslang
 //===========================================  SpxStreamRemapper  ==============================================//
 //==============================================================================================================//
 
+static const unsigned int MagicNumber = 0x07230203;
+static const unsigned int Version = 0x00010000;
+static const unsigned int Revision = 8;
+static const unsigned int builderNumber = 0x00080001;
+
 enum class SpxRemapperStatusEnum
 {
     WaitingForMixin,
@@ -208,21 +213,29 @@ public:
     class ShaderComposition
     {
     public:
+        enum class ShaderCompositionStatusEnum
+        {
+            Undefined,
+            Defined,
+        };
+
         int compositionShaderId;
         ShaderClassData* compositionShaderOwner;
         ShaderClassData* shaderType;
         std::string variableName;
         bool isArray;
 
+        const std::string& GetVariableName() const {return variableName;}
+
         //ShaderClassData* instantiatedShader;  //resulting shader instance from the composition
 
         ShaderComposition(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType, const std::string& variableName, bool isArray)
             :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
-            variableName(variableName), isArray(isArray), processingData(nullptr), compositionAlreadyProcessed(false){}
+            variableName(variableName), isArray(isArray), processingData(nullptr), status(ShaderCompositionStatusEnum::Undefined){}
 
     private:
         CompositionProcessingData* processingData; //data used when we're processing the composition
-        bool compositionAlreadyProcessed;  //the composition has already been processed
+        ShaderCompositionStatusEnum status;
 
         friend class SpxStreamRemapper;
     };
@@ -231,7 +244,7 @@ public:
     {
     public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name), level(-1), flag(0), tmpClonedShader(nullptr){
+            : ObjectInstructionBase(parsedData, name), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
         }
         virtual ~ShaderClassData() {
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
@@ -282,11 +295,10 @@ public:
 
         std::vector<ShaderComposition> compositionsList;
 
-        int flag;
-
     private:
         //When merging/duplicating a shader into a bytecode, this field will hold a temporary reference to its resulting, cloned shader 
         ShaderClassData* tmpClonedShader;
+        int flag, flag1;  //to simplify some algo
 
     friend class SpxStreamRemapper;
     };
@@ -299,8 +311,8 @@ public:
 
     SpxStreamRemapper* Clone();
 
-    bool MixWithSpxBytecode(const SpxBytecode& bytecode);
-    bool FinalizeMixin();
+    bool MixWithBytecode(const SpxBytecode& bytecode);
+    bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& shaders);
 
     void GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, SpvBytecode& output);
@@ -317,6 +329,9 @@ private:
     bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderClassData*>& listShadersToMerge, std::string namesPrefixToAdd);
     bool ValidateSpxBytecode();
 
+    bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
+    bool FinalizeMixin();
+
     void ReleaseAllMaps();
     bool BuildAllMaps();
     bool UpdateAllMaps();
@@ -332,11 +347,15 @@ private:
 
     bool InstantiateAllCompositions();
 
+    bool ValidateIfBytecodeIsReadyForCompilation();
+    bool InitDefaultHeader();
     bool BuildAndSetShaderStageHeader(ShadingStageEnum stage, FunctionInstruction* entryFunction, std::string unmangledFunctionName);
     bool ConvertSpirxToSpirVBytecode();
-
+    
     bool ComputeShadersLevel();
     void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
+    void GetShaderFamilyTreeWithParentOnly(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
+    void GetShaderFamilyTreeWithParentAndCompositionType(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
     void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);
 
 private:

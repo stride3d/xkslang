@@ -15,6 +15,22 @@ using namespace std;
 
 //========================================================================================
 //========================================================================================
+//string utils
+string Utils::trim(const string& str)
+{
+    return trim(str, ' ');
+}
+
+string Utils::trim(const string& str, char c)
+{
+    size_t first = str.find_first_not_of(c);
+    if (first == string::npos) return str;
+    size_t last = str.find_last_not_of(c);
+    return str.substr(first, (last - first + 1));
+}
+
+//========================================================================================
+//========================================================================================
 //files IO
 bool Utils::ReadFile(const string& path, string& output)
 {

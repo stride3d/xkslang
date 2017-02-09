@@ -13,12 +13,12 @@ namespace xkslang
 {
     enum class ShadingStageEnum
     {
-        Vertex,
-        Pixel,
-        TessControl,
-        TessEvaluation,
-        Geometry,
-        Compute,
+        Vertex = 0,
+        Pixel = 1,
+        TessControl = 2,
+        TessEvaluation = 3,
+        Geometry = 4,
+        Compute = 5,
     };
 
     std::string GetShadingStageLabel(ShadingStageEnum stage);

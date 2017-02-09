@@ -44,13 +44,13 @@ XkslMixer::~XkslMixer()
     if (spxStreamRemapper != nullptr) delete spxStreamRemapper;
 }
 
-bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, std::vector<std::string>& msgs)
+bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, vector<string>& msgs)
 {
     //listMixins.push_back(spirXBytecode);
 
     if (spxStreamRemapper == nullptr) spxStreamRemapper = new SpxStreamRemapper();
 
-    if (!spxStreamRemapper->MixWithSpxBytecode(spirXBytecode))
+    if (!spxStreamRemapper->MixWithBytecode(spirXBytecode))
     {
         spxStreamRemapper->copyMessagesTo(msgs);
         return error(msgs, string("Fail to mix the bytecode:" + spirXBytecode.GetName()) );
@@ -59,7 +59,28 @@ bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, std::vector<std::string>
     return true;
 }
 
-bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, std::vector<std::string>& messages)
+bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName, vector<string>& msgs)
+{
+    vector<string> shaders;
+    shaders.push_back(shaderName);
+    return Mixin(spirXBytecode, shaderName, msgs);
+}
+
+bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& shaders, vector<string>& msgs)
+{
+    if (spxStreamRemapper == nullptr) spxStreamRemapper = new SpxStreamRemapper();
+
+    if (!spxStreamRemapper->MixWithShadersFromBytecode(spirXBytecode, shaders))
+    {
+        spxStreamRemapper->copyMessagesTo(msgs);
+        return error(msgs, string("Fail to mix the shaders from bytecode: " + spirXBytecode.GetName()));
+    }
+
+    return true;
+}
+
+
+bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& messages)
 {
     if (spxStreamRemapper == nullptr)
         return error(messages, "you must process some mixin first");
@@ -69,7 +90,7 @@ bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, std::vector<std::st
     return true;
 }
 
-bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, std::vector<std::string>& messages, SpvBytecode* compiledSpv, SpvBytecode* finalizedSpv, SpvBytecode* errorLatestSpv)
+bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<string>& messages, SpvBytecode* compiledSpv, SpvBytecode* finalizedSpv, SpvBytecode* errorLatestSpv)
 {
     if (spxStreamRemapper == nullptr)
         return error(messages, "you must process some mixin first");
@@ -83,13 +104,14 @@ bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, std::vector<
     SpxStreamRemapper* clonedSpxStream = spxStreamRemapper->Clone();
     if (clonedSpxStream == nullptr) return error(messages, "Failed to clone the SpxStreamRemapper");
 
-    if (!clonedSpxStream->InstantiateAllCompositions()) {
+    /*if (!clonedSpxStream->InstantiateAllCompositions())
+    {
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr)
             clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
         delete clonedSpxStream;
         return error(messages, "Fail to instantiate the compositions");
-    }
+    }*/
 
     //TODO
     /*if (!clonedSpxStream->Compile())
