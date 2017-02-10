@@ -6,7 +6,7 @@ A.mixin ShaderComp
 
 mixer B
 B.mixin ShaderA
-//B.addComposition "colorA" A
+B.addComposition ShaderA.colorA A
 
 B.setStageEntryPoint Pixel "main"
 B.compile

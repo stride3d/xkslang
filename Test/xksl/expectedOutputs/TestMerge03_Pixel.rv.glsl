@@ -6,16 +6,16 @@ struct Base_streamBuffer
     int Base_sbase2;
 };
 
-layout(std140) uniform Base__0
-{
-    float Var2;
-} Base__0_var;
-
 layout(std140) uniform Base_globalCBuffer
 {
     int Var0;
     int Var1;
 } Base_globalCBuffer_var;
+
+layout(std140) uniform Base__0
+{
+    float Var2;
+} Base__0_var;
 
 Base_streamBuffer Base_streamBuffer_var;
 

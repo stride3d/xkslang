@@ -22,8 +22,8 @@ layout(std140) uniform shaderA_C1_0
     int Var1;
 } shaderA_C1_0_var;
 
-Base_streamBuffer Base_streamBuffer_var;
 shaderA_streamBuffer shaderA_streamBuffer_var;
+Base_streamBuffer Base_streamBuffer_var;
 
 int main()
 {

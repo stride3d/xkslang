@@ -116,6 +116,28 @@ bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& sh
     return true;
 }
 
+bool XkslMixer::AddComposition(const string& shaderName, const string& variableName, XkslMixer* mixerSource, vector<string>& msgs)
+{
+    if (spxStreamRemapper == nullptr) {
+        return error(msgs, "mixer is empty");
+    }
+    if (mixerSource == nullptr || mixerSource->spxStreamRemapper == nullptr) {
+        return error(msgs, "mixerSource is null");
+    }
+    if (shaderName.size() == 0) {
+        return error(msgs, "shaderName is invalid");
+    }
+    if (variableName.size() == 0) {
+        return error(msgs, "variableName is invalid");
+    }
+
+    if (!spxStreamRemapper->AddComposition(shaderName, variableName, mixerSource->spxStreamRemapper, msgs))
+    {
+        spxStreamRemapper->copyMessagesTo(msgs);
+        return error(msgs, "Failed to add the comnposition to the mixer");
+    }
+    return true;
+}
 
 bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& messages)
 {

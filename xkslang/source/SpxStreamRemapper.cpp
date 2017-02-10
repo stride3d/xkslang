@@ -1035,6 +1035,32 @@ bool SpxStreamRemapper::ValidateSpxBytecode()
     return true;
 }
 
+bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& variableName, SpxStreamRemapper* source, vector<string>& msgs)
+{
+    if (status != SpxRemapperStatusEnum::WaitingForMixin) {
+        return error("Invalid remapper status");
+    }
+    status = SpxRemapperStatusEnum::MixinInProgress;
+
+    //Find the shader target
+    ShaderClassData* shaderTarget = GetShaderByName(shaderName);
+    if (shaderTarget == nullptr)
+        return error(string("No shader exists in destination bytecode with the name: ") + shaderName);
+
+    //find the target composition
+    ShaderComposition* compositionTarget = shaderTarget->GetShaderCompositionByName(variableName);
+    if (compositionTarget == nullptr)
+        return error(string("No composition exists in shader \"") + shaderName + string("\" with the name: ") + variableName);
+
+    fasdfdsaf;
+    //Get the list of all shaders to clone
+    vector<ShaderClassData*> listShadersFromCompositionToClone;
+    this->GetShaderFamilyTree(compositionToInstantiate->shaderType, listShadersFromCompositionToClone);
+
+    status = SpxRemapperStatusEnum::WaitingForMixin;
+    return true;
+}
+
 //Instantiate all compositions
 bool SpxStreamRemapper::InstantiateAllCompositions()
 {

@@ -296,9 +296,14 @@ public:
         }
 
         void AddComposition(const ShaderComposition& composition) { compositionsList.push_back(composition); }
-        ShaderComposition* GetShaderComposition(int compositionId) {
+        ShaderComposition* GetShaderCompositionById(int compositionId) {
             if (compositionId<0 || compositionId>= (int)compositionsList.size()) return nullptr;
             return &(compositionsList[compositionId]);
+        }
+        ShaderComposition* GetShaderCompositionByName(const std::string variableName) {
+            for (unsigned int i=0; i<compositionsList.size(); ++i)
+                if (compositionsList[i].variableName == variableName) return &(compositionsList[i]);
+            return nullptr;
         }
 
     public:
@@ -327,6 +332,8 @@ public:
 
     //bool MixWithBytecode(const SpxBytecode& bytecode);
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& shaders);
+
+    bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxStreamRemapper* source, std::vector<std::string>& messages);
 
     void GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, SpvBytecode& output);

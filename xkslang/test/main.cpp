@@ -33,25 +33,26 @@ static string outputDir;
 static string expectedOutputDir;
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
-    { "shaderOnly.xksl" },
-    { "shaderWithVariable.xksl" },
-    { "shaderWithManyVariables.xksl" },
-    { "manySimpleShaders.xksl" },
-    { "simpleShaderWithFunction.xksl" },
-    { "declarationMixOfFunctionsAndVariables.xksl" },
-    { "2ShaderWithSameFunctionNames.xksl" },
-    { "shaderInheritance.xksl" },
-    { "postDeclaration.xksl" },
-    { "classAccessor.xksl" },
-    { "typeDeclarationOnly.xksl" },
-    { "streamsSimple.xksl" },
-    { "streamsWithClassAccessor.xksl" },
-    { "shaderWithDefinedConsts.xksl" },
-    { "shaderWithUnresolvedConsts.xksl" },
-    { "intrisicsHlslFunctions.xksl" },
-    { "methodReferingToShaderVariable.xksl" },
-    { "methodsWithSimpleClassAccessor.xksl" },
-    { "cbuffers.xksl" },
+    //{ "shaderOnly.xksl" },
+    //{ "shaderWithVariable.xksl" },
+    //{ "shaderWithManyVariables.xksl" },
+    //{ "manySimpleShaders.xksl" },
+    //{ "simpleShaderWithFunction.xksl" },
+    //{ "declarationMixOfFunctionsAndVariables.xksl" },
+    //{ "2ShaderWithSameFunctionNames.xksl" },
+    //{ "shaderInheritance.xksl" },
+    //{ "postDeclaration.xksl" },
+    //{ "classAccessor.xksl" },
+    //{ "typeDeclarationOnly.xksl" },
+    //{ "streamsSimple.xksl" },
+    //{ "streamsWithClassAccessor.xksl" },
+    //{ "shaderWithDefinedConsts.xksl" },
+    //{ "shaderWithUnresolvedConsts.xksl" },
+    //{ "intrisicsHlslFunctions.xksl" },
+    //{ "methodReferingToShaderVariable.xksl" },
+    //{ "methodsWithSimpleClassAccessor.xksl" },
+    //{ "cbuffers.xksl" },
+    //{ "TestCompose01.xksl" },
 
     //{{"textureAndSampler.xksl"}, {"", nullptr}},
     //{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -75,8 +76,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 
     //{ "TestMerge01", "TestMerge01.xkfx" },
     //{ "TestMerge02", "TestMerge02.xkfx" },
-    //{ "TestMerge03b", "TestMerge03.xkfx" },
-    //{ "TestMerge04b", "TestMerge04.xkfx" },
+    //{ "TestMerge03", "TestMerge03.xkfx" },
+    //{ "TestMerge04", "TestMerge04.xkfx" },
     //{ "TestMerge05", "TestMerge05.xkfx" },
     //{ "TestMerge06", "TestMerge06.xkfx" },
     //{ "TestMerge07", "TestMerge07.xkfx" },
@@ -86,7 +87,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge11", "TestMerge11.xkfx" },
     //{ "TestMerge12", "TestMerge12.xkfx" },
 
-    //{ "TestCompose02", "TestCompose02.xkfx" },
+    { "TestCompose02", "TestCompose02.xkfx" },
     //{ "TestCompose02", {{"TestCompose02.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
     //{ "TestCompose03", {{"TestCompose03.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
     //{ "TestCompose04", {{"TestCompose04.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
@@ -357,12 +358,12 @@ bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, SpxBytec
     }
 }
 
-bool SeparateNameAndInstuction(const string str, string& name, string& instruction)
+bool SeparateAdotB(const string str, string& A, string& B)
 {
     size_t pdot = str.find_first_of('.');
     if (pdot == string::npos) return false;
-    name = str.substr(0, pdot);
-    instruction = str.substr(pdot + 1);
+    A = str.substr(0, pdot);
+    B = str.substr(pdot + 1);
 }
 
 bool GetShadingStageForString(string& str, ShadingStageEnum& stage)
@@ -470,7 +471,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         else
         {
             string mixerName, instruction;
-            if (!SeparateNameAndInstuction(lineItem, mixerName, instruction)) {
+            if (!SeparateAdotB(lineItem, mixerName, instruction)) {
                 cout << "Unknown instruction: " << lineItem << endl;
                 success = false; break;
             }
@@ -479,7 +480,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
                 cout << lineItem << ": no mixer found with the name:" << mixerName << endl;
                 success = false; break;
             }
-            EffectMixerObject* mixerObj = mixerMap[mixerName];
+            EffectMixerObject* mixerTarget = mixerMap[mixerName];
 
             if (instruction.compare("mixin") == 0)
             {
@@ -514,13 +515,13 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 
                 cout << "mixin: " << line << endl;
                 time_before = GetTickCount();
-                success = mixerObj->mixer->Mixin(*spxBytecode, listShaderToMix, errorMsgs);
+                success = mixerTarget->mixer->Mixin(*spxBytecode, listShaderToMix, errorMsgs);
                 time_after = GetTickCount();
 
                 {
                     //Save the mixin resulting SPIRX bytecode (HR form), whether it was a success or not
                     SpxBytecode mixinBytecode;
-                    bool canGetBytecode = mixerObj->mixer->GetCurrentMixinBytecode(mixinBytecode, errorMsgs);
+                    bool canGetBytecode = mixerTarget->mixer->GetCurrentMixinBytecode(mixinBytecode, errorMsgs);
                     if (!canGetBytecode) {
                         cout << " Failed to get the mixin bytecode" << endl;
                     }
@@ -545,7 +546,35 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
             }
             else if (instruction.compare("addComposition") == 0)
             {
-                cout << "Not implemented yet: " << instruction << endl;
+                string compositionTargetStr;
+                if (!getline(lineSs, compositionTargetStr, ' ')) {
+                    cout << "Expecting composition target" << endl;
+                    success = false; break;
+                }
+
+                string shaderName, variableName;
+                if (!SeparateAdotB(compositionTargetStr, shaderName, variableName)) {
+                    cout << "Unknown instruction: " << compositionTargetStr << endl;
+                    success = false; break;
+                }
+
+                string mixerSourceName;
+                if (!getline(lineSs, mixerSourceName, ' ')) {
+                    cout << "Expecting mixer composition source" << endl;
+                    success = false; break;
+                }
+
+                if (mixerMap.find(mixerSourceName) == mixerMap.end()) {
+                    cout << lineItem << ": no mixer found with the name:" << mixerSourceName << endl;
+                    success = false; break;
+                }
+                EffectMixerObject* mixerSource = mixerMap[mixerSourceName];
+
+                cout << "Adding composition: " << line << endl;
+                time_before = GetTickCount();
+                success = mixerTarget->mixer->AddComposition(shaderName, variableName, mixerSource->mixer, errorMsgs);
+                time_after = GetTickCount();
+
                 success = false; break;
             }
             else if (instruction.compare("setStageEntryPoint") == 0)
@@ -563,23 +592,23 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 
                 string entryPoint;
                 if (!getline(lineSs, entryPoint, ' ')) {
-                    mixerObj->stagesEntryPoints[(int)stage] = "";
+                    mixerTarget->stagesEntryPoints[(int)stage] = "";
                 }
                 else
                 {
                     entryPoint = Utils::trim(entryPoint, '\"');
-                    mixerObj->stagesEntryPoints[(int)stage] = entryPoint;
+                    mixerTarget->stagesEntryPoints[(int)stage] = entryPoint;
                 }
             }
             else if (instruction.compare("compile") == 0)
             {
                 vector<XkslMixer::XkslMixerOutputStage> outputStages;
-                for (auto its = mixerObj->stagesEntryPoints.begin(); its != mixerObj->stagesEntryPoints.end(); its++){
+                for (auto its = mixerTarget->stagesEntryPoints.begin(); its != mixerTarget->stagesEntryPoints.end(); its++){
                     if (its->second.size() > 0)
                         outputStages.push_back(XkslMixer::XkslMixerOutputStage(ShadingStageEnum(its->first), its->second));
                 }
 
-                success = CompileMixer(effectName, mixerObj->mixer, outputStages, errorMsgs);
+                success = CompileMixer(effectName, mixerTarget->mixer, outputStages, errorMsgs);
                 if (!success)
                 {
                     cout << "Failed to compile the mixer: " << effectName << endl;
