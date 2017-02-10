@@ -44,19 +44,56 @@ XkslMixer::~XkslMixer()
     if (spxStreamRemapper != nullptr) delete spxStreamRemapper;
 }
 
+bool XkslMixer::GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, vector<string>& vecShaderName, vector<string>& msgs)
+{
+    vecShaderName.clear();
+    SpxStreamRemapper bytecodeStream;
+    if (!bytecodeStream.SetBytecode(spxBytecode)) {
+        bytecodeStream.copyMessagesTo(msgs);
+        return false;
+    }
+
+    vector<SpxStreamRemapper::ParsedObjectData> listParsedObjectsData;
+    bool res = bytecodeStream.BuildDeclarationNameMapsAndObjectsDataList(listParsedObjectsData);
+    if (!res) {
+        msgs.push_back("Failed to build the bytecode declaration map");
+        bytecodeStream.copyMessagesTo(msgs);
+        return false;
+    }
+
+    int countParsedObjects = listParsedObjectsData.size();
+    for (int i = 0; i < countParsedObjects; ++i)
+    {
+        SpxStreamRemapper::ParsedObjectData& parsedData = listParsedObjectsData[i];
+        if (parsedData.kind == SpxStreamRemapper::ObjectInstructionTypeEnum::Shader)
+        {
+            string declarationName;
+            bool hasDeclarationName = bytecodeStream.GetDeclarationNameForId(parsedData.resultId, declarationName);
+            if (!hasDeclarationName) {
+                msgs.push_back(string("The XkslShader has no declaration name. Id: ") + to_string(parsedData.resultId));
+                return false;
+            }
+            vecShaderName.push_back(declarationName);
+        }
+    }
+
+    return true;
+}
+
 bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, vector<string>& msgs)
 {
     //listMixins.push_back(spirXBytecode);
 
     if (spxStreamRemapper == nullptr) spxStreamRemapper = new SpxStreamRemapper();
 
-    if (!spxStreamRemapper->MixWithBytecode(spirXBytecode))
-    {
-        spxStreamRemapper->copyMessagesTo(msgs);
-        return error(msgs, string("Fail to mix the bytecode:" + spirXBytecode.GetName()) );
-    }
+    return false;
 
-    return true;
+    //if (!spxStreamRemapper->MixWithBytecode(spirXBytecode))
+    //{
+    //    spxStreamRemapper->copyMessagesTo(msgs);
+    //    return error(msgs, string("Fail to mix the bytecode:" + spirXBytecode.GetName()) );
+    //}
+    //return true;
 }
 
 bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName, vector<string>& msgs)

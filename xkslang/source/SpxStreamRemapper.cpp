@@ -218,14 +218,18 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
         if (!InitDefaultHeader()) {
             return error("Failed to initialize a default header");
         }
+
+        if (!this->BuildAllMaps()){
+            return error("Error parsing the bytecode after having initialized the default header");
+        }
     }
 
     //=============================================================================================================
     //parse the bytecode to merge
     SpxStreamRemapper bytecodeToMerge;
     if (!bytecodeToMerge.SetBytecode(sourceBytecode)) return false;
-    bool res = bytecodeToMerge.BuildAllMaps();
 
+    bool res = bytecodeToMerge.BuildAllMaps();
     if (!res) {
         bytecodeToMerge.copyMessagesTo(errorMessages);
         return error(string("Error parsing the bytecode: ") + sourceBytecode.GetName());
@@ -238,7 +242,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
     //=============================================================================================================
     //Get the list of all shaders we want to merge
     vector<ShaderClassData*> listShadersToMerge;
-    for (int is = 0; is < shaders.size(); ++is)
+    for (unsigned int is = 0; is < shaders.size(); ++is)
     {
         const string& shaderName = shaders[is];
         ShaderClassData* shaderToMerge = bytecodeToMerge.GetShaderByName(shaderName);
@@ -250,7 +254,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
         vector<ShaderClassData*> listShadersFromSameFamily;
         bytecodeToMerge.GetShaderFamilyTreeWithParentAndCompositionType(shaderToMerge, listShadersFromSameFamily);
 
-        for (int i = 0; i < listShadersFromSameFamily.size(); ++i)
+        for (unsigned int i = 0; i < listShadersFromSameFamily.size(); ++i)
         {
             ShaderClassData* shaderFromFamily = listShadersFromSameFamily[i];
             if (shaderFromFamily->flag1 == 0)
@@ -294,6 +298,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
     return true;
 }
 
+/*
 bool SpxStreamRemapper::MixWithBytecode(const SpxBytecode& bytecode)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
@@ -331,6 +336,7 @@ bool SpxStreamRemapper::MixWithBytecode(const SpxBytecode& bytecode)
     status = SpxRemapperStatusEnum::WaitingForMixin;
     return true;
 }
+*/
 
 bool SpxStreamRemapper::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassData*>& listNewShaders)
 {
@@ -365,6 +371,7 @@ bool SpxStreamRemapper::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassD
     return true;
 }
 
+/*
 bool SpxStreamRemapper::MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, vector<ShaderClassData*>& listShadersMerged)
 {
     listShadersMerged.clear();
@@ -414,6 +421,7 @@ bool SpxStreamRemapper::MergeAllNewShadersFromBytecode(const SpxBytecode& byteco
 
     return true;
 }
+*/
 
 bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const vector<ShaderClassData*>& listShadersToMerge, string namesPrefixToAdd)
 {
@@ -429,20 +437,20 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     }
 
     //Init the positions of all objects from the bytecode to merge
-    if (!bytecodeToMerge.UpdateAllObjectsPositionInTheBytecode()) {
-        return error("Error updating the position for all objects");
-    }
+    //if (!bytecodeToMerge.UpdateAllObjectsPositionInTheBytecode()) {
+    //    return error("Error updating the position for all objects");
+    //}
 
     //=============================================================================================================
     //=============================================================================================================
     //Merge all the shaders
     int newId = bound();
 
-    spirvbin_t vecNamesToMerge;
-    spirvbin_t vecAllNewDecoratesToMerge;
+    spirvbin_t vecNamesAndDecorateToMerge;
+    spirvbin_t vecXkslDecoratesToMerge;
     spirvbin_t vecTypesConstsAndVariablesToMerge;
     spirvbin_t vecFunctionsToMerge;
-    spirvbin_t vecExtInstImportToMerge;
+    spirvbin_t vecHeaderPropertiesToMerge;
 
     vector<spv::Id> finalRemapTable;
     finalRemapTable.resize(bytecodeToMerge.bound(), unused);
@@ -701,15 +709,15 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     break;
                 }
 
-                case ObjectInstructionTypeEnum::ExtInstImport:
+                case ObjectInstructionTypeEnum::HeaderProperty:
                 {
                     //import an external lib if we don't already have it
-                    ExtImportInstruction* externalImport = this->GetExtImportInstructionByName(objectFromUnmappedId->GetName());
-                    if (externalImport != nullptr)
-                        finalRemapTable[unmappedId] = externalImport->GetId();
+                    HeaderPropertyInstruction* hearderProp = this->GetHeaderPropertyInstructionByOpCodeAndName(objectFromUnmappedId->GetOpCode(), objectFromUnmappedId->GetName());
+                    if (hearderProp != nullptr)
+                        finalRemapTable[unmappedId] = hearderProp->GetId();
                     else
                     {
-                        bytecodeToMerge.CopyInstructionToVector(vecExtInstImportToMerge.spv, objectFromUnmappedId->GetBytecodeStartPosition());
+                        bytecodeToMerge.CopyInstructionToVector(vecHeaderPropertiesToMerge.spv, objectFromUnmappedId->GetBytecodeStartPosition());
                         finalRemapTable[unmappedId] = newId++;
                         listAllNewIdMerged[unmappedId] = true;
                     }
@@ -795,11 +803,11 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                             spv::Instruction nameInstr(opCode);
                             nameInstr.addIdOperand(id);
                             nameInstr.addStringOperand(strUpdatedName.c_str());
-                            nameInstr.dump(vecNamesToMerge.spv);
+                            nameInstr.dump(vecNamesAndDecorateToMerge.spv);
                         }
                         else
                         {
-                            bytecodeToMerge.CopyInstructionToVector(vecNamesToMerge.spv, start);
+                            bytecodeToMerge.CopyInstructionToVector(vecNamesAndDecorateToMerge.spv, start);
                         }
                     }
                     break;
@@ -812,11 +820,11 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
                     {
-                        bytecodeToMerge.CopyInstructionToVector(vecAllNewDecoratesToMerge.spv, start);
+                        bytecodeToMerge.CopyInstructionToVector(vecNamesAndDecorateToMerge.spv, start);
                     }
                     break;
                 }
-
+                
                 case spv::OpDeclarationName:
                 {
                     //We update the declaration name only for shader classes
@@ -837,11 +845,11 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                             spv::Instruction nameInstr(opCode);
                             nameInstr.addIdOperand(id);
                             nameInstr.addStringOperand(strUpdatedName.c_str());
-                            nameInstr.dump(vecNamesToMerge.spv);
+                            nameInstr.dump(vecXkslDecoratesToMerge.spv);
                         }
                         else
                         {
-                            bytecodeToMerge.CopyInstructionToVector(vecNamesToMerge.spv, start);
+                            bytecodeToMerge.CopyInstructionToVector(vecXkslDecoratesToMerge.spv, start);
                         }
                     }
                     break;
@@ -856,7 +864,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
                     {
-                        bytecodeToMerge.CopyInstructionToVector(vecAllNewDecoratesToMerge.spv, start);
+                        bytecodeToMerge.CopyInstructionToVector(vecXkslDecoratesToMerge.spv, start);
                     }
                     break;
                 }
@@ -869,100 +877,91 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //=============================================================================================================
     //=============================================================================================================
     //remap IDs for all mergable types / variables / consts / functions / extImport
-    if (vecExtInstImportToMerge.spv.size() > 0)
+    if (vecHeaderPropertiesToMerge.spv.size() > 0)
     {
-        if (!vecExtInstImportToMerge.remapAllIds(0, vecExtInstImportToMerge.spv.size(), finalRemapTable))
-            return error("remapAllIds failed on vecExtInstImportToMerge");
-
-        fsdfsdf;
-
-        /*vecExtInstImportToMerge.processOnFullBytecode(
-            spx_inst_fn_nop,
-            [&](spv::Id& id)
-            {
-                spv::Id newId = finalRemapTable[id];
-                if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
-                else id = newId;
-            }
-        );*/
+        if (!vecHeaderPropertiesToMerge.remapAllIds(0, vecHeaderPropertiesToMerge.spv.size(), finalRemapTable))
+            return error("remapAllIds failed on vecHeaderPropertiesToMerge");
     }
-    vecTypesConstsAndVariablesToMerge.processOnFullBytecode(
-        spx_inst_fn_nop,
-        [&](spv::Id& id)
-        {
-            spv::Id newId = finalRemapTable[id];
-            if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
-            else id = newId;
-        }
-    );
-    vecAllNewDecoratesToMerge.processOnFullBytecode(
-        spx_inst_fn_nop,
-        [&](spv::Id& id)
-        {
-            spv::Id newId = finalRemapTable[id];
-            if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
-            else id = newId;
-        }
-    );
-    vecNamesToMerge.processOnFullBytecode(
-        spx_inst_fn_nop,
-        [&](spv::Id& id)
-        {
-            spv::Id newId = finalRemapTable[id];
-            if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
-            else id = newId;
-        }
-    );
-    vecFunctionsToMerge.processOnFullBytecode(
-        spx_inst_fn_nop,
-        [&](spv::Id& id)
-        {
-            spv::Id newId = finalRemapTable[id];
-            if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
-            else id = newId;
-        }
-    );
+    if (!vecTypesConstsAndVariablesToMerge.remapAllIds(0, vecTypesConstsAndVariablesToMerge.spv.size(), finalRemapTable))
+        return error("remapAllIds failed on vecTypesConstsAndVariablesToMerge");
+    if (!vecXkslDecoratesToMerge.remapAllIds(0, vecXkslDecoratesToMerge.spv.size(), finalRemapTable))
+        return error("remapAllIds failed on vecXkslDecoratesToMerge");
+    if (!vecNamesAndDecorateToMerge.remapAllIds(0, vecNamesAndDecorateToMerge.spv.size(), finalRemapTable))
+        return error("remapAllIds failed on vecNamesAndDecorateToMerge");
+    if (!vecFunctionsToMerge.remapAllIds(0, vecFunctionsToMerge.spv.size(), finalRemapTable))
+        return error("remapAllIds failed on vecFunctionsToMerge");
+    //vecFunctionsToMerge.processOnFullBytecode(
+    //    spx_inst_fn_nop,
+    //    [&](spv::Id& id)
+    //    {
+    //        spv::Id newId = finalRemapTable[id];
+    //        if (newId == unused) error(string("Invalid remapper Id: ") + to_string(id));
+    //        else id = newId;
+    //    }
+    //);
 
     //=============================================================================================================
     //=============================================================================================================
     //merge all types / variables / consts in the current bytecode
-    bound(newId);
+    setBound(newId);
 
-    //get the best positions where we can merge
-    unsigned int firstTypeOrConstPos = 0;
-    unsigned int firstFunctionPos = 0;
-    unsigned int endOfHeaderPos = header_size;
-    process(
-        [&](spv::Op opCode, unsigned start)
+    //Find the best positions in the bytecode where to merge the new stuff
+    unsigned int posToInsertNewHeaderProrerties = header_size;
+    unsigned int posToInsertNewNamesAndDecorates = header_size;
+    unsigned int posToInsertNewTypesAndConsts = header_size;
+    unsigned int posToInsertNewFunctions = spv.size();
+    bool firstFunc = true;
+    bool firstType = true;
+    for (auto ito = listAllObjects.begin(); ito != listAllObjects.end(); ito++)
+    {
+        ObjectInstructionBase* obj = *ito;
+        if (obj == nullptr) continue;
+
+        switch (obj->GetKind())
         {
-            if (firstTypeOrConstPos == 0)
-            {
-                if (isConstOp(opCode) || isTypeOp(opCode))
+            case ObjectInstructionTypeEnum::HeaderProperty:
+                if (posToInsertNewHeaderProrerties < obj->GetBytecodeEndPosition())
                 {
-                    firstTypeOrConstPos = start;
+                    posToInsertNewHeaderProrerties = obj->GetBytecodeEndPosition();
+                    if (posToInsertNewTypesAndConsts < posToInsertNewHeaderProrerties) posToInsertNewTypesAndConsts = posToInsertNewHeaderProrerties;
+                    if (posToInsertNewNamesAndDecorates < posToInsertNewHeaderProrerties) posToInsertNewNamesAndDecorates = posToInsertNewHeaderProrerties;
                 }
-            }
-            if (opCode == spv::OpFunction)
-            {
-                if (firstFunctionPos == 0) firstFunctionPos = start;
-            }
-            return true;
-        },
-        spx_op_fn_nop
-    );
-    if (firstTypeOrConstPos == 0) firstTypeOrConstPos = header_size;
-    if (firstFunctionPos == 0 || firstFunctionPos < firstTypeOrConstPos) firstFunctionPos = spv.size();
+                break;
+            case ObjectInstructionTypeEnum::Type:
+            case ObjectInstructionTypeEnum::Variable:
+            case ObjectInstructionTypeEnum::Shader:
+            case ObjectInstructionTypeEnum::Const:
+                if (firstType || posToInsertNewNamesAndDecorates > obj->GetBytecodeStartPosition())
+                {
+                    posToInsertNewNamesAndDecorates = obj->GetBytecodeStartPosition();
+                    if (posToInsertNewTypesAndConsts < posToInsertNewNamesAndDecorates) posToInsertNewTypesAndConsts = posToInsertNewNamesAndDecorates;
+                }
+                firstType = false;
+                break;
+            case ObjectInstructionTypeEnum::Function:
+                if (firstFunc || posToInsertNewTypesAndConsts > obj->GetBytecodeStartPosition())
+                {
+                    posToInsertNewTypesAndConsts = obj->GetBytecodeStartPosition();
+                }
+                firstFunc = false;
+                break;
+        }
+    }
+    if (posToInsertNewTypesAndConsts > posToInsertNewFunctions) posToInsertNewTypesAndConsts = posToInsertNewFunctions;
+    if (posToInsertNewNamesAndDecorates > posToInsertNewTypesAndConsts) posToInsertNewNamesAndDecorates = posToInsertNewTypesAndConsts;
+    if (posToInsertNewHeaderProrerties > posToInsertNewNamesAndDecorates) posToInsertNewHeaderProrerties = posToInsertNewNamesAndDecorates;
 
     //=============================================================================================================
     // merge all data in the destination bytecode
     //merge functions
-    spv.insert(spv.end(), vecFunctionsToMerge.spv.begin(), vecFunctionsToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewFunctions, vecFunctionsToMerge.spv.begin(), vecFunctionsToMerge.spv.end());
     //Merge types and variables (we need to merge new types AFTER all previous types)
-    spv.insert(spv.begin() + firstFunctionPos, vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewTypesAndConsts, vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
     //Merge names and decorates
-    spv.insert(spv.begin() + firstTypeOrConstPos, vecAllNewDecoratesToMerge.spv.begin(), vecAllNewDecoratesToMerge.spv.end());
-    spv.insert(spv.begin() + firstTypeOrConstPos, vecNamesToMerge.spv.begin(), vecNamesToMerge.spv.end());
-    spv.insert(spv.begin() + endOfHeaderPos, vecExtInstImportToMerge.spv.begin(), vecExtInstImportToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewNamesAndDecorates, vecXkslDecoratesToMerge.spv.begin(), vecXkslDecoratesToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewNamesAndDecorates, vecNamesAndDecorateToMerge.spv.begin(), vecNamesAndDecorateToMerge.spv.end());
+    //merge ext import
+    spv.insert(spv.begin() + posToInsertNewHeaderProrerties, vecHeaderPropertiesToMerge.spv.begin(), vecHeaderPropertiesToMerge.spv.end());
 
     //destination bytecode has been updated: reupdate all maps
     UpdateAllMaps();
@@ -986,6 +985,9 @@ bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
     const vector<uint32_t>& spx = bytecode.getBytecodeStream();
     spv.clear();
     spv.insert(spv.end(), spx.begin(), spx.end());
+
+    if (!ValidateSpxBytecode())
+        return error(string("Invalid bytecode: ") + bytecode.GetName());
 
     return true;
 }
@@ -1065,7 +1067,7 @@ bool SpxStreamRemapper::InstantiateAllCompositions()
         for (auto itsh = this->vecAllShaders.begin(); itsh != this->vecAllShaders.end(); itsh++)
         {
             ShaderClassData* aShader = *itsh;
-            for (int ic = 0; ic < aShader->compositionsList.size(); ++ic)
+            for (unsigned int ic = 0; ic < aShader->compositionsList.size(); ++ic)
             {
                 ShaderComposition* aComposition = &(aShader->compositionsList[ic]);
                 if (aComposition->status == ShaderComposition::ShaderCompositionStatusEnum::Undefined)
@@ -1664,12 +1666,25 @@ bool SpxStreamRemapper::SpxStreamRemapper::InitDefaultHeader()
         return error("Bytecode must by empty");
     }
 
-    int IdsBounds = 1;
+    int uniqueId = 1;
     spv.push_back(MagicNumber);
     spv.push_back(Version);
     spv.push_back(builderNumber);
-    spv.push_back(IdsBounds);
     spv.push_back(0);
+    spv.push_back(0);
+
+    //default memory model
+    spv::Instruction memInst(0, 0, spv::OpMemoryModel);
+    memInst.addImmediateOperand(spv::AddressingModelLogical);
+    memInst.addImmediateOperand(spv::MemoryModelGLSL450);
+    memInst.dump(spv);
+
+    //default imports
+    spv::Instruction defaultImport(uniqueId++, spv::NoType, spv::OpExtInstImport);
+    defaultImport.addStringOperand("GLSL.std.450");
+    defaultImport.dump(spv);
+
+    setBound(uniqueId);
 
     return true;
 }
@@ -1847,13 +1862,20 @@ bool SpxStreamRemapper::UpdateAllMaps()
 
         if (resultId <= 0 || resultId == spv::NoResult || resultId >= maxResultId)
             return error(string("The parsed object has an invalid resultId: ") + to_string(resultId));
-        if (listAllObjects[resultId] != nullptr) continue;  //the object already exist
 
-        ObjectInstructionBase* newObject = CreateAndAddNewObjectFor(parsedData);
-        if (newObject == nullptr) {
-            return error("Failed to create the PSX objects from parsed data");
+        if (listAllObjects[resultId] != nullptr)
+        {
+            //the object already exist, we just update its position in the bytecode
+            listAllObjects[resultId]->SetBytecodeRangePositions(parsedData.bytecodeStartPosition, parsedData.bytecodeEndPosition);
         }
-        vectorIdsToDecorate[resultId] = true;
+        else
+        {
+            ObjectInstructionBase* newObject = CreateAndAddNewObjectFor(parsedData);
+            if (newObject == nullptr) {
+                return error("Failed to create the PSX objects from parsed data");
+            }
+            vectorIdsToDecorate[resultId] = true;
+        }
     }
 
     //decorate all objects
@@ -2079,11 +2101,20 @@ SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObje
     ObjectInstructionBase* newObject = nullptr;
     switch (parsedData.kind)
     {
-        case ObjectInstructionTypeEnum::ExtInstImport:
+        case ObjectInstructionTypeEnum::HeaderProperty:
         {
             declarationNameRequired = false;
-            string extImportname = literalString(parsedData.bytecodeStartPosition + 2);
-            newObject = new ExtImportInstruction(parsedData, extImportname);
+            string headerPropName = "";
+            switch (parsedData.opCode)
+            {
+            case spv::Op::OpExtInstImport:
+                headerPropName = literalString(parsedData.bytecodeStartPosition + 2);
+                break;
+            default:
+                error(string("HeaderProperty has an unknown OpCode: ") + to_string(parsedData.opCode));
+                return nullptr;
+            }
+            newObject = new HeaderPropertyInstruction(parsedData, headerPropName);
             break;
         }
         case ObjectInstructionTypeEnum::Const:
@@ -2305,7 +2336,7 @@ bool SpxStreamRemapper::BuildDeclarationNameMapsAndObjectsDataList(vector<Parsed
             }
             else if (opCode == spv::Op::OpExtInstImport)
             {
-                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::ExtInstImport, opCode, resultId, typeId, start, end));
+                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::HeaderProperty, opCode, resultId, typeId, start, end));
             }
             return true;
         },
@@ -2339,17 +2370,17 @@ bool SpxStreamRemapper::GetDeclarationNameForId(spv::Id id, string& name)
     return true;
 }
 
-SpxStreamRemapper::ExtImportInstruction* SpxStreamRemapper::GetExtImportInstructionByName(const string& name)
+SpxStreamRemapper::HeaderPropertyInstruction* SpxStreamRemapper::GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const string& name)
 {
     if (name.size() == 0) return nullptr;
 
     for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
     {
         ObjectInstructionBase* obj = *it;
-        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::ExtInstImport && obj->GetName() == name)
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::HeaderProperty && obj->GetOpCode() == opCode && obj->GetName() == name)
         {
-            ExtImportInstruction* extImportInst = dynamic_cast<ExtImportInstruction*>(obj);
-            return extImportInst;
+            HeaderPropertyInstruction* headerProp = dynamic_cast<HeaderPropertyInstruction*>(obj);
+            return headerProp;
         }
     }
     return nullptr;

@@ -47,7 +47,7 @@ public:
         Type,
         Variable,
         Function,
-        ExtInstImport,
+        HeaderProperty,
     };
 
     //Generic, simplified data type that we build while parsing the bytecode
@@ -76,7 +76,8 @@ public:
     {
     public:
         ObjectInstructionBase(const ParsedObjectData& parsedData, std::string name)
-            : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId), name(name), shaderOwner(nullptr) {}
+            : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId), name(name), shaderOwner(nullptr),
+            bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition) {}
         virtual ~ObjectInstructionBase(){}
         virtual ObjectInstructionBase* CloneBasicData() {
             return new ObjectInstructionBase(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
@@ -109,14 +110,14 @@ public:
         uint32_t bytecodeEndPosition;
     };
 
-    class ExtImportInstruction : public ObjectInstructionBase
+    class HeaderPropertyInstruction : public ObjectInstructionBase
     {
     public:
-        ExtImportInstruction(const ParsedObjectData& parsedData, std::string name)
+        HeaderPropertyInstruction(const ParsedObjectData& parsedData, std::string name)
             : ObjectInstructionBase(parsedData, name) {}
-        virtual ~ExtImportInstruction() {}
+        virtual ~HeaderPropertyInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
-            ExtImportInstruction* obj = new ExtImportInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            HeaderPropertyInstruction* obj = new HeaderPropertyInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
             return obj;
         }
     };
@@ -296,7 +297,7 @@ public:
 
         void AddComposition(const ShaderComposition& composition) { compositionsList.push_back(composition); }
         ShaderComposition* GetShaderComposition(int compositionId) {
-            if (compositionId<0 || compositionId>= compositionsList.size()) return nullptr;
+            if (compositionId<0 || compositionId>= (int)compositionsList.size()) return nullptr;
             return &(compositionsList[compositionId]);
         }
 
@@ -324,7 +325,7 @@ public:
 
     SpxStreamRemapper* Clone();
 
-    bool MixWithBytecode(const SpxBytecode& bytecode);
+    //bool MixWithBytecode(const SpxBytecode& bytecode);
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& shaders);
 
     void GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
@@ -338,7 +339,7 @@ public:
 
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
-    bool MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
+    //bool MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
     bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderClassData*>& listShadersToMerge, std::string namesPrefixToAdd);
     bool ValidateSpxBytecode();
 
@@ -400,7 +401,7 @@ private:
     VariableInstruction* GetVariableByName(const std::string& name);
     TypeInstruction* GetTypePointingTo(TypeInstruction* targetType);
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
-    ExtImportInstruction* GetExtImportInstructionByName(const std::string& name);
+    HeaderPropertyInstruction* GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const std::string& name);
     ShaderComposition* GetCompositionById(spv::Id shaderId, int compositionId);
 
     //ShaderClassData* HasShader(const std::string& name);

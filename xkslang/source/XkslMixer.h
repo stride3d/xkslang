@@ -33,8 +33,13 @@ public:
     XkslMixer();
     virtual ~XkslMixer();
 
+    //static bool MergeBytecodes(SpxBytecode& bytecodeDestination, const SpxBytecode& bytecodeToMerge, std::vector<std::string>& messages);
+
+    static bool GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, std::vector<std::string>& vecShaderName, std::vector<std::string>& messages);
+
     //Mix all shaders from spirXBytecode
     bool Mixin(const SpxBytecode& spirXBytecode, std::vector<std::string>& messages);
+
     //Mix shaders linked to shaderName
     bool Mixin(const SpxBytecode& spirXBytecode, const std::string& shaderName, std::vector<std::string>& messages);
     bool Mixin(const SpxBytecode& spirXBytecode, const std::vector<std::string>& shaders, std::vector<std::string>& messages);

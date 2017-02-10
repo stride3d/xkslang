@@ -1,12 +1,14 @@
 //Test merging shader types only (no function declaration)
 
-load "TestMerge05_ShaderA.xksl"
+load "TestMerge12_B1.xksl"
+load "TestMerge12_B2.xksl"
+load "TestMerge12_C.xksl"
 
 mixer A
-A.mixin Base
-A.mixin shaderA
+A.mixin B1
+A.mixin B2
+A.mixin C
 
 A.setStageEntryPoint Pixel "main"
 A.compile
-
 

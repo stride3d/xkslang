@@ -500,9 +500,9 @@ namespace spv {
         const auto instructionStart = word;
         wordCount = asWordCount(instructionStart);
         spv::Op opCode = asOpCode(instructionStart);
-        const int nextInst = word++ + wordCount;
+        const unsigned int nextInst = word++ + wordCount;
 
-        if (nextInst > int(spv.size()))
+        if (nextInst > spv.size())
             return;
 
         // Base for computing number of operands; will be updated as more is learned
@@ -638,6 +638,9 @@ namespace spv {
             case spv::OperandCapability:
                 ++word;
                 break;
+
+            case spv::OperandProperties:
+                return;
 
             default:
                 assert(0 && "Unhandled Operand Class");

@@ -23,20 +23,9 @@ using namespace std;
 using namespace xkslangtest;
 using namespace xkslang;
 
-struct XkslInput {
-    const char* fileName;
-};
-
-struct MixinOutput {
-    const char* entryPoint;
-    ShadingStageEnum stage;
-};
-
 //To test single file parsing and convertion
 struct XkslFilesToParseAndConvert {
-    string effectName;
-    vector<XkslInput> inputs;
-    vector<MixinOutput> outputs;
+    const char* fileName;
 };
 
 static string inputDir = "glslang\\source\\Test\\xksl\\";
@@ -44,46 +33,25 @@ static string outputDir;
 static string expectedOutputDir;
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
-    //{ "", {{"shaderOnly.xksl"}}, {} },
-    //{ "", {{"shaderWithVariable.xksl"}}, {} },
-    //{ "", {{"shaderWithManyVariables.xksl"}},{} },
-    //{ "", {{"manySimpleShaders.xksl"}},{} },
-    //{ "", {{"simpleShaderWithFunction.xksl"}},{} },
-    //{ "", {{"declarationMixOfFunctionsAndVariables.xksl"}},{} },
-    //{ "", {{"2ShaderWithSameFunctionNames.xksl"}},{} },
-    //{ "", {{"shaderInheritance.xksl"}},{} },
-    //{ "", {{"postDeclaration.xksl"}},{} },
-    //{ "", {{"classAccessor.xksl"}},{} },
-    //{ "", {{"typeDeclarationOnly.xksl"}},{} },
-    //{ "", {{"streamsSimple.xksl"}},{} },
-    //{ "", {{"streamsWithClassAccessor.xksl"}},{} },
-    //{ "", {{"shaderWithDefinedConsts.xksl"}},{} },
-    //{ "", {{"shaderWithUnresolvedConsts.xksl"}},{} },
-    //{ "", {{"intrisicsHlslFunctions.xksl"}},{} },
-    //{ "", {{"methodReferingToShaderVariable.xksl"}},{} },
-    //{ "", {{"methodsWithSimpleClassAccessor.xksl"}},{} },
-    //{ "", {{"cbuffers.xksl"}},{} },
-
-    //{ "TestMixin01", {{"TestMixin01_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMixin02", {{"TestMixin02_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMixin03", {{"TestMixin03_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMixin04", {{"TestMixin04_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMixin05", {{"TestMixin05_Base.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-
-    //{ "TestMerge01", {{"TestMerge01_Base.xksl"}, {"TestMerge01_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge02", {{"TestMerge02_Base.xksl"}, {"TestMerge02_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge03", {{"TestMerge03_Base.xksl"}, {"TestMerge03_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge04", {{"TestMerge04_Base.xksl"}, {"TestMerge04_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge05", {{"TestMerge05_Base.xksl"}, {"TestMerge05_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge06", {{"TestMerge06_Base.xksl"}, {"TestMerge06_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge07", {{"TestMerge07_Base.xksl"}, {"TestMerge07_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge08", {{"TestMerge08_Base.xksl"}, {"TestMerge08_ShaderA.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge09", {{"TestMerge09_ShaderA.xksl"}, {"TestMerge09_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge10", {{"TestMerge10_ShaderA.xksl"}, {"TestMerge10_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge11", {{"TestMerge11_Base.xksl"}, {"TestMerge11_ShaderA.xksl"}, {"TestMerge11_ShaderB.xksl" }}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestMerge12", {{"TestMerge12_B1.xksl"}, {"TestMerge12_B2.xksl"}, {"TestMerge12_C.xksl" }}, {{"main", ShadingStageEnum::Pixel}} },
-
-    //{ "TestCompose01", {{"TestCompose01.xksl"}},{} },
+    { "shaderOnly.xksl" },
+    { "shaderWithVariable.xksl" },
+    { "shaderWithManyVariables.xksl" },
+    { "manySimpleShaders.xksl" },
+    { "simpleShaderWithFunction.xksl" },
+    { "declarationMixOfFunctionsAndVariables.xksl" },
+    { "2ShaderWithSameFunctionNames.xksl" },
+    { "shaderInheritance.xksl" },
+    { "postDeclaration.xksl" },
+    { "classAccessor.xksl" },
+    { "typeDeclarationOnly.xksl" },
+    { "streamsSimple.xksl" },
+    { "streamsWithClassAccessor.xksl" },
+    { "shaderWithDefinedConsts.xksl" },
+    { "shaderWithUnresolvedConsts.xksl" },
+    { "intrisicsHlslFunctions.xksl" },
+    { "methodReferingToShaderVariable.xksl" },
+    { "methodsWithSimpleClassAccessor.xksl" },
+    { "cbuffers.xksl" },
 
     //{{"textureAndSampler.xksl"}, {"", nullptr}},
     //{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -108,11 +76,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge01", "TestMerge01.xkfx" },
     //{ "TestMerge02", "TestMerge02.xkfx" },
     //{ "TestMerge03b", "TestMerge03.xkfx" },
-    //{ "TestMerge04", "TestMerge04.xkfx" },
+    //{ "TestMerge04b", "TestMerge04.xkfx" },
     //{ "TestMerge05", "TestMerge05.xkfx" },
     //{ "TestMerge06", "TestMerge06.xkfx" },
-  
-    { "TestMerge07B", "TestMerge07.xkfx" },
+    //{ "TestMerge07", "TestMerge07.xkfx" },
     //{ "TestMerge08", "TestMerge08.xkfx" },
     //{ "TestMerge09", "TestMerge09.xkfx" },
     //{ "TestMerge10", "TestMerge10.xkfx" },
@@ -434,7 +401,8 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 
     vector<string> errorMsgs;
     DWORD time_before, time_after;
-    SpxBytecode spirxShaderLibrary;
+    vector<SpxBytecode*> listAllParsedBytecode;
+    unordered_map<string, SpxBytecode*> mapShaderWithBytecode;
     unordered_map<string, EffectMixerObject*> mixerMap;
     int mixinNum = 0;
 
@@ -457,10 +425,25 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
             }
             xkslInputFile = Utils::trim(xkslInputFile, '\"');
 
-            success = ParseAndConvertXkslFile(parser, xkslInputFile, spirxShaderLibrary, true);
+            SpxBytecode* spxBytecode = new SpxBytecode;
+            listAllParsedBytecode.push_back(spxBytecode);
+            success = ParseAndConvertXkslFile(parser, xkslInputFile, *spxBytecode, true);
             if (!success) {
-                cout << "load: failed to convert the xksl file name" << endl;
+                cout << "load: failed to convert the xksl file name: " << xkslInputFile << endl;
                 success = false; break;
+            }
+            
+            vector<string> vecShaderName;
+            if (!XkslMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShaderName, errorMsgs))
+            {
+                cout << "load: failed to get the list of shader names from: " << xkslInputFile << endl;
+                success = false; break;
+            }
+
+            for (int is = 0; is < vecShaderName.size(); ++is)
+            {
+                string shaderName = vecShaderName[is];
+                mapShaderWithBytecode[shaderName] = spxBytecode;
             }
         }
         else if (lineItem.compare("mixer") == 0)
@@ -500,15 +483,38 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 
             if (instruction.compare("mixin") == 0)
             {
+                //Find the bytecode for the shader we want to mix
+                SpxBytecode* spxBytecode = nullptr;
                 vector<string> listShaderToMix;
                 string shaderName;
                 while (getline(lineSs, shaderName, ' ')) {
                     listShaderToMix.push_back(shaderName);
+
+                    auto it = mapShaderWithBytecode.find(shaderName);
+                    if (it == mapShaderWithBytecode.end())
+                    {
+                        cout << "No spxBytecode found in the librady for the shader: " << shaderName << endl;
+                        success = false; break;
+                    }
+                    SpxBytecode* aShaderBytecode = it->second;
+                    if (spxBytecode == nullptr) spxBytecode = aShaderBytecode;
+                    else
+                    {
+                        if (spxBytecode != aShaderBytecode) {
+                            cout << "2 shader to mix are defined in different bytecode (we could merge them)" << endl;
+                            success = false; break;
+                        }
+                    }
+                }
+                if (spxBytecode == nullptr)
+                {
+                    cout << "No spxBytecode found for the mixin instruction" << endl;
+                    success = false; break;
                 }
 
                 cout << "mixin: " << line << endl;
                 time_before = GetTickCount();
-                success = mixerObj->mixer->Mixin(spirxShaderLibrary, listShaderToMix, errorMsgs);
+                success = mixerObj->mixer->Mixin(*spxBytecode, listShaderToMix, errorMsgs);
                 time_after = GetTickCount();
 
                 {
@@ -591,6 +597,9 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     for (auto itm = mixerMap.begin(); itm != mixerMap.end(); itm++)
         delete (*itm).second;
 
+    for (auto itv = listAllParsedBytecode.begin(); itv != listAllParsedBytecode.end(); itv++)
+        delete (*itv);
+
     if (errorMsgs.size() > 0)
     {
         cout << "   Messages:" << endl;
@@ -619,7 +628,7 @@ void main(int argc, char** argv)
     }
 
     cout << "___________________________________________________________________________________" << endl;
-    cout << "Process XKSL Files:" << endl << endl;
+    cout << "Parse and convert XKSL Files:" << endl << endl;
     //Parse the shaders using XkslParser library
     {
         int countTestProcessed = 0;
@@ -627,108 +636,19 @@ void main(int argc, char** argv)
         vector<string> listFailedTest;
         for (int n = 0; n < vecXkslFilesToConvert.size(); ++n)
         {
-            XkslFilesToParseAndConvert& xkslFilesToParseAndConvert = vecXkslFilesToConvert[n];
-            vector<XkslInput>& inputs = xkslFilesToParseAndConvert.inputs;
-            vector<MixinOutput>& outputs = xkslFilesToParseAndConvert.outputs;
-            if (inputs.size() == 0) continue;
-
-            string effectName = xkslFilesToParseAndConvert.effectName;
-            if (effectName.size() == 0){
-                effectName = inputs[0].fileName;
-                effectName = Utils::RemoveSuffix(effectName);
-            }
             countTestProcessed++;
             bool success = true;
 
-            vector<SpxBytecode> listInputBytecodes;
-
-            for (int i=0; i<inputs.size(); ++i)
-            {
-                // parse and convert all xksl files
-                string xkslShaderInputFile = inputs[i].fileName;
-                SpxBytecode spirXBytecode;
-                bool success = ParseAndConvertXkslFile(&parser, xkslShaderInputFile, spirXBytecode, true);
-                if (!success) break;
-
-                listInputBytecodes.push_back(spirXBytecode);
-            }
-
-            //======================================================================================================
-            //======================================================================================================
-            // Mixin all inputs
-            if (success)
-            {
-                cout << "Mixin SPIRX shaders" << endl;
-
-                XkslMixer mixer;
-                vector<string> errorMsgs;
-                DWORD mixinTotalTime = 0;
-                for (int i=0; i<listInputBytecodes.size(); ++i)
-                {
-                    const SpxBytecode& spirXBytecode = listInputBytecodes[i];
-                    
-                    cout << " Mixin " << spirXBytecode.GetName() << ": " << endl;
-
-                    time_before = GetTickCount();
-                    success = mixer.Mixin(spirXBytecode, errorMsgs);    //Add mixin files
-                    time_after = GetTickCount();
-                    mixinTotalTime += (time_after - time_before);
-
-                    {
-                        //Save the mixin resulting SPIRX bytecode (HR form), whether it was a success or not
-                        SpxBytecode mixinBytecode;
-                        bool canGetBytecode = mixer.GetCurrentMixinBytecode(mixinBytecode, errorMsgs);
-                        if (!canGetBytecode) {
-                            cout << " Failed to get the mixin bytecode" << endl;
-                        }
-                        else
-                        {
-                            const vector<uint32_t>& bytecodeList = mixinBytecode.getBytecodeStream();
-                            ostringstream disassembly_stream;
-                            spv::Parameterize();
-                            spv::Disassemble(disassembly_stream, bytecodeList);
-
-                            const string outputFileName = effectName + "_mixin_" + to_string(i) + "_" + spirXBytecode.GetName() + ".hr.spv";
-                            const string outputFullName = outputDir + outputFileName;
-                            xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
-                            cout << " output: \"" << outputFileName << "\"" << endl;
-                        }
-                    }
-
-                    if (success)
-                    {
-                        cout << " OK. Time:  " << (time_after - time_before) << " ms" << endl;
-                    }
-                    else
-                    {
-                        cout << "Mixin failed !!" << endl;
-                        break;
-                    }
-                }
-                
-                //compile the mixin
-                if (success && outputs.size() > 0)
-                {
-                    vector<XkslMixer::XkslMixerOutputStage> outputStages;
-                    for (int i = 0; i<outputs.size(); ++i)
-                        outputStages.push_back(XkslMixer::XkslMixerOutputStage(outputs[i].stage, outputs[i].entryPoint));
-
-                    success = CompileMixer(effectName, &mixer, outputStages, errorMsgs);
-                    if (!success)
-                    {
-                        cout << "Failed to compile the mixer: " << effectName << endl;
-                    }
-                }
-
-                if (errorMsgs.size() > 0)
-                {
-                    cout << "   Messages:" << endl;
-                    for (int m=0; m<errorMsgs.size(); m++) cout << "   " << errorMsgs[m] << "" << endl;
-                }
-            }
+            XkslFilesToParseAndConvert& xkslFilesToParseAndConvert = vecXkslFilesToConvert[n];
+            string xkslShaderInputFile = xkslFilesToParseAndConvert.fileName;
+            
+            // parse and convert all xksl files
+            SpxBytecode spirXBytecode;
+            success = ParseAndConvertXkslFile(&parser, xkslShaderInputFile, spirXBytecode, true);
+            if (!success) break;
 
             if (success) countTestSuccessful++;
-            else listFailedTest.push_back(effectName);
+            else listFailedTest.push_back(xkslShaderInputFile);
 
             cout << endl;
         }
