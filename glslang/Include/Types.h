@@ -414,8 +414,23 @@ public:
     // drop qualifiers that don't belong in a temporary variable
     void makeTemporary()
     {
-        storage      = EvqTemporary;
-        builtIn      = EbvNone;
+        storage = EvqTemporary;
+        builtIn = EbvNone;
+        clearInterstage();
+        clearMemory();
+        specConstant = false;
+        clearLayout();
+    }
+
+    void clearInterstage()
+    {
+        clearInterpolation();
+        patch = false;
+        sample = false;
+    }
+
+    void clearInterpolation()
+    {
         centroid     = false;
         smooth       = false;
         flat         = false;
@@ -423,20 +438,20 @@ public:
 #ifdef AMD_EXTENSIONS
         explicitInterp = false;
 #endif
-        patch        = false;
-        sample       = false;
+    }
+
+    void clearMemory()
+    {
         coherent     = false;
         volatil      = false;
         restrict     = false;
         readonly     = false;
         writeonly    = false;
-        specConstant = false;
 		isStage      = false;
 		isStream     = false;
 		isOverride   = false;
 		isAbstract   = false;
 		isClone      = false;
-        clearLayout();
     }
 
     // Drop just the storage qualification, which perhaps should
@@ -600,39 +615,47 @@ public:
     }
 
     // Implementing an embedded layout-qualifier class here, since C++ can't have a real class bitfield
-    void clearLayout()
+    void clearLayout()  // all layout
     {
-        layoutMatrix = ElmNone;
-        layoutPacking = ElpNone;
-        layoutOffset = layoutNotSet;
-        layoutAlign = layoutNotSet;
-
-        layoutLocation = layoutLocationEnd;
-        layoutComponent = layoutComponentEnd;
-        layoutSet = layoutSetEnd;
-        layoutBinding = layoutBindingEnd;
-        layoutIndex = layoutIndexEnd;
-
-        layoutStream = layoutStreamEnd;
-
-        layoutXfbBuffer = layoutXfbBufferEnd;
-        layoutXfbStride = layoutXfbStrideEnd;
-        layoutXfbOffset = layoutXfbOffsetEnd;
-        layoutAttachment = layoutAttachmentEnd;
-        layoutSpecConstantId = layoutSpecConstantIdEnd;
-
-        layoutFormat = ElfNone;
+        clearUniformLayout();
 
         layoutPushConstant = false;
 #ifdef NV_EXTENSIONS
         layoutPassthrough = false;
+        layoutViewportRelative = false;
+        // -2048 as the default value indicating layoutSecondaryViewportRelative is not set
+        layoutSecondaryViewportRelativeOffset = -2048;
 #endif
+
+        clearInterstageLayout();
+
+        layoutSpecConstantId = layoutSpecConstantIdEnd;
+
+        layoutFormat = ElfNone;
     }
+    void clearInterstageLayout()
+    {
+        layoutLocation = layoutLocationEnd;
+        layoutComponent = layoutComponentEnd;
+        layoutIndex = layoutIndexEnd;
+        clearStreamLayout();
+        clearXfbLayout();
+    }
+    void clearStreamLayout()
+    {
+        layoutStream = layoutStreamEnd;
+    }
+    void clearXfbLayout()
+    {
+        layoutXfbBuffer = layoutXfbBufferEnd;
+        layoutXfbStride = layoutXfbStrideEnd;
+        layoutXfbOffset = layoutXfbOffsetEnd;
+    }
+
     bool hasLayout() const
     {
         return hasUniformLayout() ||
                hasAnyLocation() ||
-               hasBinding() ||
                hasStream() ||
                hasXfb() ||
                hasFormat() ||
@@ -682,6 +705,8 @@ public:
 
 #ifdef NV_EXTENSIONS
     bool layoutPassthrough;
+    bool layoutViewportRelative;
+    int layoutSecondaryViewportRelativeOffset;
 #endif
 
     bool hasUniformLayout() const
@@ -690,8 +715,21 @@ public:
                hasPacking() ||
                hasOffset() ||
                hasBinding() ||
+               hasSet() ||
                hasAlign();
     }
+    void clearUniformLayout() // only uniform specific
+    {
+        layoutMatrix = ElmNone;
+        layoutPacking = ElpNone;
+        layoutOffset = layoutNotSet;
+        layoutAlign = layoutNotSet;
+
+        layoutSet = layoutSetEnd;
+        layoutBinding = layoutBindingEnd;
+        layoutAttachment = layoutAttachmentEnd;
+    }
+
     bool hasMatrix() const
     {
         return layoutMatrix != ElmNone;
@@ -1242,26 +1280,11 @@ public:
         compositionsList = copyOf.compositionsList;
     }
 
+    // Make complete copy of the whole type graph rooted at 'copyOf'.
     void deepCopy(const TType& copyOf)
     {
-        shallowCopy(copyOf);
-
-        if (copyOf.arraySizes) {
-            arraySizes = new TArraySizes;
-            *arraySizes = *copyOf.arraySizes;
-        }
-
-        if (copyOf.structure) {
-            structure = new TTypeList;
-            for (unsigned int i = 0; i < copyOf.structure->size(); ++i) {
-                TTypeLoc typeLoc;
-                typeLoc.loc = (*copyOf.structure)[i].loc;
-                typeLoc.type = new TType();
-                typeLoc.type->deepCopy(*(*copyOf.structure)[i].type);
-                structure->push_back(typeLoc);
-            }
-        }
-
+        TMap<TTypeList*,TTypeList*> copied;  // to enable copying a type graph as a graph, not a tree
+        deepCopy(copyOf, copied);
 		if (copyOf.ownerClassName) {
 			ownerClassName = NewPoolTString(copyOf.ownerClassName->c_str());
 		}
@@ -1279,10 +1302,6 @@ public:
             *compositionsList = *copyOf.compositionsList;
         }
 
-        if (copyOf.fieldName)
-            fieldName = NewPoolTString(copyOf.fieldName->c_str());
-        if (copyOf.typeName)
-            typeName = NewPoolTString(copyOf.typeName->c_str());
         if (copyOf.userIdentifierName)
             userIdentifierName = NewPoolTString(copyOf.userIdentifierName->c_str());
     }
@@ -1415,6 +1434,12 @@ public:
         case EbvPointSize:
         case EbvClipDistance:
         case EbvCullDistance:
+#ifdef NV_EXTENSIONS
+        case EbvLayer:
+        case EbvViewportMaskNV:
+        case EbvSecondaryPositionNV:
+        case EbvSecondaryViewportMaskNV:
+#endif
             return true;
         default:
             return false;
@@ -1695,6 +1720,10 @@ public:
 #ifdef NV_EXTENSIONS
                 if (qualifier.layoutPassthrough)
                     p += snprintf(p, end - p, "passthrough ");
+                if (qualifier.layoutViewportRelative)
+                    p += snprintf(p, end - p, "layoutViewportRelative ");
+                if (qualifier.layoutSecondaryViewportRelativeOffset != -2048)
+                    p += snprintf(p, end - p, "layoutSecondaryViewportRelativeOffset=%d ", qualifier.layoutSecondaryViewportRelativeOffset);
 #endif
 
                 p += snprintf(p, end - p, ") ");
@@ -1831,6 +1860,7 @@ public:
     const char* getBuiltInVariableString() const { return GetBuiltInVariableString(qualifier.builtIn); }
     const char* getPrecisionQualifierString() const { return GetPrecisionQualifierString(qualifier.precision); }
     const TTypeList* getStruct() const { return structure; }
+    void setStruct(TTypeList* s) { structure = s; }
     TTypeList* getWritableStruct() const { return structure; }  // This should only be used when known to not be sharing with other threads
 
 	const TIdentifierList* getParentsName() const { return parentsName; }
@@ -1968,6 +1998,42 @@ protected:
     // Require consumer to pick between deep copy and shallow copy.
     TType(const TType& type);
     TType& operator=(const TType& type);
+
+    // Recursively copy a type graph, while preserving the graph-like
+    // quality. That is, don't make more than one copy of a structure that
+    // gets reused multiple times in the type graph.
+    void deepCopy(const TType& copyOf, TMap<TTypeList*,TTypeList*>& copiedMap)
+    {
+        shallowCopy(copyOf);
+
+        if (copyOf.arraySizes) {
+            arraySizes = new TArraySizes;
+            *arraySizes = *copyOf.arraySizes;
+        }
+
+        if (copyOf.structure) {
+            auto prevCopy = copiedMap.find(copyOf.structure);
+            if (prevCopy != copiedMap.end())
+                structure = prevCopy->second;
+            else {
+                structure = new TTypeList;
+                copiedMap[copyOf.structure] = structure;
+                for (unsigned int i = 0; i < copyOf.structure->size(); ++i) {
+                    TTypeLoc typeLoc;
+                    typeLoc.loc = (*copyOf.structure)[i].loc;
+                    typeLoc.type = new TType();
+                    typeLoc.type->deepCopy(*(*copyOf.structure)[i].type, copiedMap);
+                    structure->push_back(typeLoc);
+                }
+            }
+        }
+
+        if (copyOf.fieldName)
+            fieldName = NewPoolTString(copyOf.fieldName->c_str());
+        if (copyOf.typeName)
+            typeName = NewPoolTString(copyOf.typeName->c_str());
+    }
+
 
     void buildMangledName(TString&);
 

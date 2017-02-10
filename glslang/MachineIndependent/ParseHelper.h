@@ -79,9 +79,7 @@ public:
             symbolTable(symbolTable),
             parsingBuiltins(parsingBuiltins), scanContext(nullptr), ppContext(nullptr),
             globalUniformBlock(nullptr)
-    {
-        linkage = new TIntermAggregate;
-    }
+    { }
     virtual ~TParseContextBase() { }
 
     virtual void C_DECL   error(const TSourceLoc&, const char* szReason, const char* szToken,
@@ -141,7 +139,7 @@ public:
     // TODO: This could perhaps get its own object, but the current design doesn't work
     // yet when new uniform variables are declared between function definitions, so
     // this is pending getting a fully functional design.
-    virtual void growGlobalUniformBlock(TSourceLoc&, TType&, TString& memberName);
+    virtual void growGlobalUniformBlock(TSourceLoc&, TType&, TString& memberName, TTypeList* typeList = nullptr);
     virtual bool insertGlobalUniformBlock();
     virtual bool insertUniformBlock(TVariable* uniformBlock);
 
@@ -184,14 +182,10 @@ protected:
                                const char* szExtraInfoFormat, TPrefixType prefix,
                                va_list args);
     virtual void trackLinkage(TSymbol& symbol);
-    virtual void trackLinkageDeferred(TSymbol& symbol);
     virtual void untrackLinkageDeferred(TSymbol& symbol);
     virtual void makeEditable(TSymbol*&);
     virtual TVariable* getEditableVariable(const char* name);
     virtual void finish();
-
-private:
-    TIntermAggregate* linkage;
 };
 
 //

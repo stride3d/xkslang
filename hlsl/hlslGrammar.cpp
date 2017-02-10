@@ -282,15 +282,15 @@ bool HlslGrammar::acceptCompilationUnit()
             continue;
 
         // externalDeclaration
-        TIntermNode* declarationNode;
-        if (! acceptDeclaration(declarationNode))
+        TIntermNode* declarationNode1;
+        TIntermNode* declarationNode2 = nullptr;  // sometimes the grammar for a single declaration creates two
+        if (! acceptDeclaration(declarationNode1, declarationNode2))
             return false;
-
-        if (declarationNode != nullptr)
-        {
-            // hook it up
-            unitNode = intermediate.growAggregate(unitNode, declarationNode);
-        }
+            
+        // hook it up
+        unitNode = intermediate.growAggregate(unitNode, declarationNode1);
+        if (declarationNode2 != nullptr)
+            unitNode = intermediate.growAggregate(unitNode, declarationNode2);
     }
 
     // set root of AST
@@ -446,9 +446,18 @@ bool HlslGrammar::acceptSamplerDeclarationDX9(TType& /*type*/)
 // 'node' could get populated if the declaration creates code, like an initializer
 // or a function body.
 //
+// 'node2' could get populated with a second decoration tree if a single source declaration
+// leads to two subtrees that need to be peers higher up.
+//
 bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
 {
+    TIntermNode* node2;
+    return acceptDeclaration(node, node2);
+}
+bool HlslGrammar::acceptDeclaration(TIntermNode*& node, TIntermNode*& node2)
+{
     node = nullptr;
+    node2 = nullptr;
     bool list = false;
 
     // attributes
@@ -512,7 +521,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
                     parseContext.error(idToken.loc, "function body can't be in a declarator list", "{", "");
                 if (typedefDecl)
                     parseContext.error(idToken.loc, "function body can't be in a typedef", "{", "");
-                return acceptFunctionDefinition(function, node, attributes);
+                return acceptFunctionDefinition(function, node, node2, attributes);
             } else {
                 if (typedefDecl)
                     parseContext.error(idToken.loc, "function typedefs not implemented", "{", "");
@@ -2372,11 +2381,17 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
                 shaderClassFunction->token = token;  //in case of the token was those from the function prototype
 
                 TIntermNode* functionNode = nullptr;
+                TIntermNode* functionNode2 = nullptr;
                 TAttributeMap attributes;  // attributes ?
                 //acceptAttributes(attributes);
-                if (!acceptFunctionDefinition(*function, functionNode, attributes))
+                if (!acceptFunctionDefinition(*function, functionNode, functionNode2, attributes))
                 {
                     error("shader: invalid function definition");
+                    return false;
+                }
+
+                if (functionNode2 != nullptr) {
+                    error("The function definitation returns a second node which is not treated (glslang update)");
                     return false;
                 }
 
@@ -2470,14 +2485,7 @@ bool HlslGrammar::acceptStruct(TType& type)
         new(&type) TType(typeList, structName, postDeclQualifier); // sets EbtBlock
     }
 
-    // If it was named, which means the type can be reused later, add
-    // it to the symbol table.  (Unless it's a block, in which
-    // case the name is not a type.)
-    if (type.getBasicType() != EbtBlock && structName.size() > 0) {
-        TVariable* userTypeDef = new TVariable(&structName, type, true);
-        if (! parseContext.symbolTable.insert(*userTypeDef))
-            parseContext.error(token.loc, "redefinition", structName.c_str(), "struct");
-    }
+    parseContext.declareStruct(token.loc, structName, type);
 
     return true;
 }
@@ -2531,6 +2539,16 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList)
                 typeList->back().type->newArraySizes(*arraySizes);
 
             acceptPostDecls(member.type->getQualifier());
+
+            // EQUAL assignment_expression
+            if (acceptTokenClass(EHTokAssign)) {
+                parseContext.warn(idToken.loc, "struct-member initializers ignored", "typedef", "");
+                TIntermTyped* expressionNode = nullptr;
+                if (! acceptAssignmentExpression(expressionNode)) {
+                    expected("initializer");
+                    return false;
+                }
+            }
 
             // success on seeing the SEMICOLON coming up
             if (peekTokenClass(EHTokSemicolon))
@@ -2680,22 +2698,22 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
 
 // Do the work to create the function definition in addition to
 // parsing the body (compound_statement).
-bool HlslGrammar::acceptFunctionDefinition(TFunction& function, TIntermNode*& node, const TAttributeMap& attributes)
+bool HlslGrammar::acceptFunctionDefinition(TFunction& function, TIntermNode*& node, TIntermNode*& node2, const TAttributeMap& attributes)
 {
     TFunction& functionDeclarator = parseContext.handleFunctionDeclarator(token.loc, function, false /* not prototype */);
     TSourceLoc loc = token.loc;
 
     // This does a pushScope()
-    node = parseContext.handleFunctionDefinition(loc, functionDeclarator, attributes);
+    node = parseContext.handleFunctionDefinition(loc, functionDeclarator, attributes, node2);
 
     // compound_statement
     TIntermNode* functionBody = nullptr;
-    if (acceptCompoundStatement(functionBody)) {
-        parseContext.handleFunctionBody(loc, functionDeclarator, functionBody, node);
-        return true;
-    }
+    if (! acceptCompoundStatement(functionBody))
+        return false;
 
-    return false;
+    parseContext.handleFunctionBody(loc, functionDeclarator, functionBody, node);
+
+    return true;
 }
 
 // Accept an expression with parenthesis around it, where
@@ -3466,7 +3484,10 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
     struct tFinalize {
         tFinalize(HlslParseContext& p) : parseContext(p) { }
         ~tFinalize() { parseContext.finalizeFlattening(); }
-       HlslParseContext& parseContext;
+        HlslParseContext& parseContext;
+    private:
+        const tFinalize& operator=(const tFinalize& f);
+        tFinalize(const tFinalize& f);
     } finalize(parseContext);
 
     // Initialize the flattening accumulation data, so we can track data across multiple bracket or

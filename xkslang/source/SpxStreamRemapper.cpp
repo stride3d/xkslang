@@ -1052,10 +1052,9 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     if (compositionTarget == nullptr)
         return error(string("No composition exists in shader \"") + shaderName + string("\" with the name: ") + variableName);
 
-    fasdfdsaf;
     //Get the list of all shaders to clone
-    vector<ShaderClassData*> listShadersFromCompositionToClone;
-    this->GetShaderFamilyTree(compositionToInstantiate->shaderType, listShadersFromCompositionToClone);
+    //vector<ShaderClassData*> listShadersFromCompositionToClone;
+    //this->GetShaderFamilyTree(compositionToInstantiate->shaderType, listShadersFromCompositionToClone);
 
     status = SpxRemapperStatusEnum::WaitingForMixin;
     return true;
@@ -2431,7 +2430,7 @@ SpxStreamRemapper::ShaderComposition* SpxStreamRemapper::GetCompositionById(spv:
 {
     ShaderClassData* shader = GetShaderById(shaderId);
     if (shader == nullptr) return nullptr;
-    return shader->GetShaderComposition(compositionId);
+    return shader->GetShaderCompositionById(compositionId);
 }
 
 SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)
