@@ -1,4 +1,3 @@
-//Test
 load "TestCompose02.xksl"
 
 mixer A
@@ -7,33 +6,7 @@ A.mixin ShaderComp
 mixer B
 B.mixin ShaderA
 B.addComposition ShaderA.colorA A
+B.addComposition ShaderA.colorB A
 
 B.setStageEntryPoint Pixel "main"
 B.compile
-
-
-//  shader ShaderComp
-//  {
-//  	float varC;
-//  	
-//  	float Compute()
-//  	{
-//  		return varC;
-//  	}
-//  }
-//  
-//  shader ShaderA
-//  {
-//  	int varA;
-//  	
-//  	compose ShaderComp colorA;
-//  	compose ShaderComp colorB;
-//  	
-//  	float Compute(){return 5;}
-//  	
-//  	float main()
-//  	{
-//  		float f = Compute();
-//  		return f + colorA.Compute() + colorB.Compute();
-//  	}
-//  }

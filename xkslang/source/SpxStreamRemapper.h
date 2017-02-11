@@ -75,12 +75,12 @@ public:
     class ObjectInstructionBase
     {
     public:
-        ObjectInstructionBase(const ParsedObjectData& parsedData, std::string name)
+        ObjectInstructionBase(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
             : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId), name(name), shaderOwner(nullptr),
-            bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition) {}
+            bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition), bytecodeSource(source){}
         virtual ~ObjectInstructionBase(){}
         virtual ObjectInstructionBase* CloneBasicData() {
-            return new ObjectInstructionBase(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            return new ObjectInstructionBase(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
         }
 
         ObjectInstructionTypeEnum GetKind() const {return kind;}
@@ -104,20 +104,23 @@ public:
         spv::Id resultId;
         spv::Id typeId;
         ShaderClassData* shaderOwner;  //some object can belong to a shader
+        SpxStreamRemapper* bytecodeSource;
 
         //those fields can change when we mix bytecodes
         uint32_t bytecodeStartPosition;
         uint32_t bytecodeEndPosition;
+
+        friend class SpxStreamRemapper;
     };
 
     class HeaderPropertyInstruction : public ObjectInstructionBase
     {
     public:
-        HeaderPropertyInstruction(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name) {}
+        HeaderPropertyInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+            : ObjectInstructionBase(parsedData, name, source) {}
         virtual ~HeaderPropertyInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
-            HeaderPropertyInstruction* obj = new HeaderPropertyInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            HeaderPropertyInstruction* obj = new HeaderPropertyInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             return obj;
         }
     };
@@ -125,11 +128,11 @@ public:
     class ConstInstruction : public ObjectInstructionBase
     {
     public:
-        ConstInstruction(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name) {}
+        ConstInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+            : ObjectInstructionBase(parsedData, name, source) {}
         virtual ~ConstInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
-            ConstInstruction* obj = new ConstInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            ConstInstruction* obj = new ConstInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             return obj;
         }
     };
@@ -137,11 +140,11 @@ public:
     class TypeInstruction : public ObjectInstructionBase
     {
     public:
-        TypeInstruction(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name), pointerTo(nullptr){}
+        TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr){}
         virtual ~TypeInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
-            TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             return obj;
         }
 
@@ -155,11 +158,11 @@ public:
     class VariableInstruction : public ObjectInstructionBase
     {
     public:
-        VariableInstruction(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name), variableTo(nullptr) {}
+        VariableInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+            : ObjectInstructionBase(parsedData, name, source), variableTo(nullptr) {}
         virtual ~VariableInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
-            VariableInstruction* obj = new VariableInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            VariableInstruction* obj = new VariableInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             return obj;
         }
 
@@ -180,11 +183,11 @@ public:
             Processed,
         };
 
-        FunctionInstruction(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name){}
+        FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+            : ObjectInstructionBase(parsedData, name, source), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name){}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
-            FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->overrideAttributeState = overrideAttributeState;
             obj->fullName = fullName;
             return obj;
@@ -218,19 +221,13 @@ public:
         virtual ~ShaderTypeData(){}
     };
 
-    class CompositionProcessingData
-    {
-    public:
-        std::unordered_map<spv::Id, spv::Id> mapCompositionShaderTargetedWithClonedShader;
-    };
-
     class ShaderComposition
     {
     public:
         enum class ShaderCompositionStatusEnum
         {
-            Undefined,
-            Defined,
+            Unresolved,
+            Resolved,
         };
 
         int compositionShaderId;
@@ -245,10 +242,9 @@ public:
 
         ShaderComposition(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType, const std::string& variableName, bool isArray)
             :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
-            variableName(variableName), isArray(isArray), processingData(nullptr), status(ShaderCompositionStatusEnum::Undefined){}
+            variableName(variableName), isArray(isArray), status(ShaderCompositionStatusEnum::Unresolved){}
 
     private:
-        CompositionProcessingData* processingData; //data used when we're processing the composition
         ShaderCompositionStatusEnum status;
 
         friend class SpxStreamRemapper;
@@ -257,14 +253,14 @@ public:
     class ShaderClassData : public ObjectInstructionBase
     {
     public:
-        ShaderClassData(const ParsedObjectData& parsedData, std::string name)
-            : ObjectInstructionBase(parsedData, name), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
+        ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+            : ObjectInstructionBase(parsedData, name, source), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
         }
         virtual ~ShaderClassData() {
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
         }
         virtual ObjectInstructionBase* CloneBasicData() {
-            ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name);
+            ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->level = level;
             obj->flag = flag;
             return obj;
@@ -304,6 +300,11 @@ public:
             for (unsigned int i=0; i<compositionsList.size(); ++i)
                 if (compositionsList[i].variableName == variableName) return &(compositionsList[i]);
             return nullptr;
+        }
+        int HasAnyUnresolvedCompositions() {
+            for (unsigned int i = 0; i<compositionsList.size(); ++i)
+                if (compositionsList[i].status == ShaderComposition::ShaderCompositionStatusEnum::Unresolved) return true;
+            return false;
         }
 
     public:
@@ -365,8 +366,6 @@ private:
     bool UpdateOverridenFunctionMap(std::vector<ShaderClassData*>& listShadersMerged);
     bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
     bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
-
-    bool InstantiateAllCompositions();
 
     bool ValidateIfBytecodeIsReadyForCompilation();
     bool InitDefaultHeader();

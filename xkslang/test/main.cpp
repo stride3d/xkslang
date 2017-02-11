@@ -164,6 +164,27 @@ void SetupTestDirectories()
     expectedOutputDir = inputDir + string("expectedOutputs\\");
 }
 
+void SaveCurrentMixerBytecode(XkslMixer* mixer, string outputDirPath, string outputFileName)
+{
+    vector<string> errorMsgs;
+    SpxBytecode mixinBytecode;
+    bool canGetBytecode = mixer->GetCurrentMixinBytecode(mixinBytecode, errorMsgs);
+    if (!canGetBytecode) {
+        cout << " Failed to get the mixin bytecode" << endl;
+    }
+    else
+    {
+        const vector<uint32_t>& bytecodeList = mixinBytecode.getBytecodeStream();
+        ostringstream disassembly_stream;
+        spv::Parameterize();
+        spv::Disassemble(disassembly_stream, bytecodeList);
+
+        const string outputFullName = outputDirPath + outputFileName;
+        xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
+        cout << " output: \"" << outputFileName << "\"" << endl;
+    }
+}
+
 bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixer::XkslMixerOutputStage>& outputStages, vector<string>& errorMsgs)
 {
     DWORD time_before, time_after;
@@ -406,6 +427,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     unordered_map<string, SpxBytecode*> mapShaderWithBytecode;
     unordered_map<string, EffectMixerObject*> mixerMap;
     int mixinNum = 0;
+    int composeNum = 0;
 
     string line, lineItem;
     stringstream ss(effectCmdLines);
@@ -518,26 +540,9 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
                 success = mixerTarget->mixer->Mixin(*spxBytecode, listShaderToMix, errorMsgs);
                 time_after = GetTickCount();
 
-                {
-                    //Save the mixin resulting SPIRX bytecode (HR form), whether it was a success or not
-                    SpxBytecode mixinBytecode;
-                    bool canGetBytecode = mixerTarget->mixer->GetCurrentMixinBytecode(mixinBytecode, errorMsgs);
-                    if (!canGetBytecode) {
-                        cout << " Failed to get the mixin bytecode" << endl;
-                    }
-                    else
-                    {
-                        const vector<uint32_t>& bytecodeList = mixinBytecode.getBytecodeStream();
-                        ostringstream disassembly_stream;
-                        spv::Parameterize();
-                        spv::Disassemble(disassembly_stream, bytecodeList);
-
-                        const string outputFileName = effectName + "_mixin_" + to_string(mixinNum++) + ".hr.spv";
-                        const string outputFullName = outputDir + outputFileName;
-                        xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
-                        cout << " output: \"" << outputFileName << "\"" << endl;
-                    }
-                }
+                //write the current bytecode
+                const string outputFileName = effectName + "_mixin" + to_string(mixinNum++) + ".hr.spv";
+                SaveCurrentMixerBytecode(mixerTarget->mixer, outputDir, outputFileName);
 
                 if (success)
                     cout << " OK. Time:  " << (time_after - time_before) << " ms" << endl;
@@ -575,7 +580,14 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
                 success = mixerTarget->mixer->AddComposition(shaderName, variableName, mixerSource->mixer, errorMsgs);
                 time_after = GetTickCount();
 
-                success = false; break;
+                //write the current bytecode
+                const string outputFileName = effectName + "_compose" + to_string(composeNum++) + "_" + compositionTargetStr + ".hr.spv";
+                SaveCurrentMixerBytecode(mixerTarget->mixer, outputDir, outputFileName);
+
+                if (success)
+                    cout << " OK. Time:  " << (time_after - time_before) << " ms" << endl;
+                else
+                    cout << "Failed to add the composition to the mixer" << endl;
             }
             else if (instruction.compare("setStageEntryPoint") == 0)
             {
