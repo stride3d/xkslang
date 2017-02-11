@@ -2,25 +2,23 @@
 
 shader SubComp
 {
-	int ca;
-	stream int sa;
+	const int cSubConst = 2;
 	
 	int Compute()
 	{
-		return ca + streams.sa;
+		return cSubConst;
 	}
 }
 
 shader Comp
 {
-	int cb;
-	stream int sb;
+	const int cComp = 3;
 	
-	compose SubComp sc;
+	compose SubComp sb;
 	
 	int Compute()
 	{
-		return cb + streams.sb + sc.Compute();
+		return cComp + sb.Compute();
 	}
 }
 

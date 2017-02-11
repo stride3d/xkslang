@@ -207,6 +207,8 @@ public:
         OverrideAttributeStateEnum overrideAttributeState;
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
         std::string fullName;  //name only use for debug purpose
+
+        friend class SpxStreamRemapper;
     };
 
     //This is a type declared by a shader: we store the type definition, plus the variable and pointer to access it

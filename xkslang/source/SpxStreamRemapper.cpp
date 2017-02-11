@@ -460,6 +460,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     vector<bool> listIdsWhereToAddNamePrefix;
     listAllNewIdMerged.resize(bytecodeToMerge.bound(), false);
     listIdsWhereToAddNamePrefix.resize(bytecodeToMerge.bound(), false);
+    vector<pair<spv::Id, spv::Id>> listOverridenFunctionMergedToBeRemappedWithMergedFunctions;
 
     for (unsigned int is=0; is<listShadersToMerge.size(); ++is)
     {
@@ -517,6 +518,12 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             FunctionInstruction* functionToMerge = shaderToMerge->functionsList[t];
             //finalRemapTable[functionToMerge->id] = newId++; //done below
 
+            //If the function is already overriden by another function: we'll update the link in the cloned functions as well
+            if (functionToMerge->GetOverridingFunction() != nullptr)
+            {
+                listOverridenFunctionMergedToBeRemappedWithMergedFunctions.push_back(pair<spv::Id, spv::Id>(functionToMerge->GetId(), functionToMerge->GetOverridingFunction()->GetId()));
+            }
+            
             //For each instructions within the functions bytecode: Remap their results IDs
             bytecodeToMerge.process(
                 [&](spv::Op opCode, unsigned start)
@@ -554,7 +561,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         {
             if (finalRemapTable[i] != unused) listAllNewIdMerged[i] = true;
         }
-        //this list defines id for which we update the names and labels with a prefix
+        //this list defines ids for which we update the names and labels with a prefix
         if (namesPrefixToAdd.size() > 0)
         {
             for (int i = 0; i < len; ++i)
@@ -841,7 +848,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                         bool addPrefix = false;
                         if (listIdsWhereToAddNamePrefix[id])
                         {
-                            ShaderClassData* shader = this->GetShaderById(id);
+                            ShaderClassData* shader = bytecodeToMerge.GetShaderById(id);
                             if (shader != nullptr) addPrefix = true;
                         }
 
@@ -979,8 +986,20 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         ShaderClassData* shaderToMerge = listShadersToMerge[is];
         spv::Id clonedShaderId = finalRemapTable[shaderToMerge->GetId()];
         ShaderClassData* clonedShader = this->GetShaderById(clonedShaderId);
-        if (clonedShader == nullptr) return error(string("Cannot retrieve the cloned shader: ") + to_string(clonedShaderId));
+        if (clonedShader == nullptr) return error(string("Cannot retrieve the merged shader: ") + to_string(clonedShaderId));
         shaderToMerge->tmpClonedShader = clonedShader;
+    }
+
+    //update overriden references to merged functions
+    for (unsigned int i = 0; i < listOverridenFunctionMergedToBeRemappedWithMergedFunctions.size(); ++i)
+    {
+        spv::Id functionOverridenId = finalRemapTable[listOverridenFunctionMergedToBeRemappedWithMergedFunctions[i].first];
+        spv::Id functionOverridingId = finalRemapTable[listOverridenFunctionMergedToBeRemappedWithMergedFunctions[i].second];
+        FunctionInstruction* functionOverriden = this->GetFunctionById(functionOverridenId);
+        FunctionInstruction* functionOverriding = this->GetFunctionById(functionOverridingId);
+        if (functionOverriden == nullptr) return error(string("Cannot retrieve the merged function: ") + to_string(functionOverridenId));
+        if (functionOverriding == nullptr) return error(string("Cannot retrieve the merged function: ") + to_string(functionOverridingId));
+        functionOverriden->SetOverridingFunction(functionOverriding);
     }
 
     if (errorMessages.size() > 0) return false;
@@ -1169,6 +1188,9 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
                             error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function in the cloned shader. Function name: ") + functionToReplace->GetName());
                             return true;
                         }
+
+                        //If the function is overriden by another, change the target
+                        if (functionTarget->GetOverridingFunction() != nullptr) functionTarget = functionTarget->GetOverridingFunction();
     
                         int wordCount = asWordCount(start);
                         vecStripRanges.push_back(range_t(start + 4, start + 5 + 1));   //will remove composition variable ids from the bytecode

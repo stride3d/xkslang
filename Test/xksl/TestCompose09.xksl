@@ -1,20 +1,26 @@
-//Compile a composition having a composition on itself
+//Compile a composition of a class having a composition too
 
-shader Comp
+shader SubComp
 {
+	int ca;
+	stream int sa;
+	
 	int Compute()
 	{
-		return 5;
+		return ca + streams.sa;
 	}
 }
 
-shader CompA: Comp
+shader Comp
 {
-	compose Comp c;
+	int cb;
+	stream int sb;
 	
-	override int Compute()
+	compose SubComp sc;
+	
+	int Compute()
 	{
-		return c.Compute();
+		return cb + streams.sb + sc.Compute();
 	}
 }
 

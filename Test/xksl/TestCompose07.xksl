@@ -1,33 +1,30 @@
-//Compile a composition of a class having a composition too
-
-shader SubComp
+shader CompA
 {
-	const int cSubConst = 2;
+	float varCA;
 	
-	int Compute()
+	float Compute()
 	{
-		return cSubConst;
+		return varCA;
 	}
 }
 
-shader Comp
+shader CompB: CompA
 {
-	const int cComp = 3;
+	float varCB;
 	
-	compose SubComp sb;
-	
-	int Compute()
+	override float Compute()
 	{
-		return cComp + sb.Compute();
+		return varCB + base.Compute();
 	}
 }
 
 shader ShaderA
 {
-	compose Comp color;
+	compose CompA color1;
+	compose CompA color2;
 	
-	int main()
+	float main()
 	{
-		return color.Compute();
+		return color1.Compute() + color2.Compute();
 	}
 }

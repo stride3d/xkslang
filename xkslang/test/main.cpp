@@ -87,15 +87,15 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge11", "TestMerge11.xkfx" },
     //{ "TestMerge12", "TestMerge12.xkfx" },
 
-    { "TestCompose02", "TestCompose02.xkfx" },
-    //{ "TestCompose02", {{"TestCompose02.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestCompose03", {{"TestCompose03.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestCompose04", {{"TestCompose04.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestCompose05", {{"TestCompose05.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestCompose06", {{"TestCompose06.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestCompose07", {{"TestCompose07.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestCompose08", {{"TestCompose08.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
-    //{ "TestCompose09", {{"TestCompose09.xksl"}}, {{"main", ShadingStageEnum::Pixel}} },
+    //{ "TestCompose02", "TestCompose02.xkfx" },
+    //{ "TestCompose03", "TestCompose03.xkfx" },
+    //{ "TestCompose04", "TestCompose04.xkfx" },
+    //{ "TestCompose05", "TestCompose05.xkfx" },
+    //{ "TestCompose06", "TestCompose06.xkfx" },
+    { "TestCompose07", "TestCompose07.xkfx" },
+    //{ "TestCompose08", "TestCompose08.xkfx" },
+    //{ "TestCompose09", "TestCompose09.xkfx" },
+    //{ "TestCompose10", "TestCompose10.xkfx" },
 };
 
 #ifdef _DEBUG
