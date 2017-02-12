@@ -1,37 +1,37 @@
 #version 450
 
-layout(std140) uniform CompA_globalCBuffer
-{
-    float varCA;
-} CompA_globalCBuffer_var;
-
 layout(std140) uniform CompB_globalCBuffer
 {
     float varCB;
 } CompB_globalCBuffer_var;
 
-layout(std140) uniform compS8C0_CompA_globalCBuffer
+layout(std140) uniform CompA_globalCBuffer
 {
     float varCA;
-} compS8C0_CompA_globalCBuffer_var;
+} CompA_globalCBuffer_var;
 
-layout(std140) uniform compS8C1_CompB_globalCBuffer
+layout(std140) uniform cS5C0_CompA_globalCBuffer
+{
+    float varCA;
+} cS5C0_CompA_globalCBuffer_var;
+
+layout(std140) uniform cS5C1_CompB_globalCBuffer
 {
     float varCB;
-} compS8C1_CompB_globalCBuffer_var;
+} cS5C1_CompB_globalCBuffer_var;
 
-float compS8C0_CompA_Compute()
+float cS5C0_CompA_Compute()
 {
-    return compS8C0_CompA_globalCBuffer_var.varCA;
+    return cS5C0_CompA_globalCBuffer_var.varCA;
 }
 
-float compS8C1_CompB_Compute()
+float cS5C1_CompB_Compute()
 {
-    return compS8C1_CompB_globalCBuffer_var.varCB;
+    return cS5C1_CompB_globalCBuffer_var.varCB;
 }
 
 float main()
 {
-    return compS8C0_CompA_Compute() + compS8C1_CompB_Compute();
+    return cS5C0_CompA_Compute() + cS5C1_CompB_Compute();
 }
 

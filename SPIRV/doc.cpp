@@ -1870,10 +1870,12 @@ void Parameterize()
     InstructionDesc[OpShaderComposition].operands.push(OperandId, "'Shader'");
     InstructionDesc[OpShaderComposition].operands.push(OperandLiteralNumber, "'CompId'");
     InstructionDesc[OpShaderComposition].operands.push(OperandId, "'ShaderType'");
+    InstructionDesc[OpShaderComposition].operands.push(OperandLiteralNumber, "'Status'");
     InstructionDesc[OpShaderComposition].operands.push(OperandLiteralString, "'VariableName'");
     InstructionDesc[OpShaderArrayComposition].operands.push(OperandId, "'Shader'");
     InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralNumber, "'CompId'");
     InstructionDesc[OpShaderArrayComposition].operands.push(OperandId, "'ShaderType'");
+    InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralNumber, "'Status'");
     InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralString, "'VariableName'");
 
     InstructionDesc[OpMethodProperties].operands.push(OperandId, "'Function'");

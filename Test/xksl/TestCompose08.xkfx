@@ -1,11 +1,15 @@
-load "TestCompose07.xksl"
+load "TestCompose08.xksl"
 
 mixer A
-A.mixin CompB
+A.mixin SubComp
 
 mixer B
-B.mixin ShaderA
-B.addComposition ShaderA.color A
+B.mixin Comp
+B.addComposition Comp.sb A
 
-B.setStageEntryPoint Pixel "main"
-B.compile
+mixer C
+C.mixin ShaderA
+C.addComposition ShaderA.color B
+
+C.setStageEntryPoint Pixel "main"
+C.compile

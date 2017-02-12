@@ -1,17 +1,42 @@
 #version 450
 
-int compS31C0_SubComp_Compute()
+layout(std140) uniform CompA_globalCBuffer
 {
-    return 2;
+    float varCA;
+} CompA_globalCBuffer_var;
+
+layout(std140) uniform cS2C0_CompA_globalCBuffer
+{
+    float varCA;
+} cS2C0_CompA_globalCBuffer_var;
+
+layout(std140) uniform cS2C1_CompA_globalCBuffer
+{
+    float varCA;
+} cS2C1_CompA_globalCBuffer_var;
+
+layout(std140) uniform cS2C1_CompB_globalCBuffer
+{
+    float varCB;
+} cS2C1_CompB_globalCBuffer_var;
+
+float cS2C0_CompA_Compute()
+{
+    return cS2C0_CompA_globalCBuffer_var.varCA;
 }
 
-int compS8C0_Comp_Compute()
+float cS2C1_CompA_Compute()
 {
-    return 3 + compS31C0_SubComp_Compute();
+    return cS2C1_CompA_globalCBuffer_var.varCA;
 }
 
-int main()
+float cS2C1_CompB_Compute()
 {
-    return compS8C0_Comp_Compute();
+    return cS2C1_CompB_globalCBuffer_var.varCB + cS2C1_CompA_Compute();
+}
+
+float main()
+{
+    return cS2C0_CompA_Compute() + cS2C1_CompB_Compute();
 }
 

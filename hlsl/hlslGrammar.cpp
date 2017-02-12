@@ -2087,6 +2087,16 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
                 return false;
             }
             composition.shaderCompositionId = shader->listCompositions.size();
+            
+            //Make sure the shader does not already declared a composition with the same variable name
+            for (int i = 0; i < shader->listCompositions.size(); ++i)
+            {
+                if (shader->listCompositions[i].variableName == composition.variableName)
+                {
+                    error((TString("A composition already exist with the variable name: ") + composition.variableName).c_str());
+                    return false;
+                }
+            }
             shader->listCompositions.push_back(composition);
 
             continue;

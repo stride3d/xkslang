@@ -164,9 +164,9 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
         {
             ShaderComposition& compositionToClone = shaderToClone->compositionsList[i];
             ShaderClassData* shaderType = compositionToClone.shaderType == nullptr? nullptr: clonedSpxRemapper->GetShaderById(compositionToClone.shaderType->GetId());
-            ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionShaderOwner, shaderType, compositionToClone.variableName, compositionToClone.isArray);
+            ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionShaderOwner, shaderType, compositionToClone.variableName,
+                compositionToClone.isArray, compositionToClone.status);
             //clonedComposition.instantiatedShader = compositionToClone.instantiatedShader == nullptr ? nullptr : clonedSpxRemapper->GetShaderById(compositionToClone.instantiatedShader->GetId());
-            clonedComposition.status = compositionToClone.status;
             clonedShader->AddComposition(clonedComposition);
         }
     }
@@ -434,7 +434,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //Init destination bytecode hashmap (to compare types and consts hashmap id)
     unordered_map<uint32_t, pairIdPos> destinationBytecodeTypeHashMap;
     if (!this->BuildTypesAndConstsHashmap(destinationBytecodeTypeHashMap)) {
-        return error("Error building type and const hashmap");
+        return error("Merge shaders. Error building type and const hashmap");
     }
 
     //Init the positions of all objects from the bytecode to merge
@@ -618,7 +618,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         {
             listIds.clear();
             if (!bytecodeToCheckForUnmappedIds.parseInstruction(pos, opCode, wordCount, typeId, resultId, listIds))
-                return error("Error parsing bytecodeToCheckForUnmappedIds");
+                return error("Merge shaders. Error parsing bytecodeToCheckForUnmappedIds");
 
             if (typeId != unused) listIds.push_back(typeId);
             listIdsLen = listIds.size();
@@ -649,7 +649,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
             //Find the position in the code to merge where the unmapped IDs is defined
             ObjectInstructionBase* objectFromUnmappedId = bytecodeToMerge.GetObjectById(unmappedId);
-            if (objectFromUnmappedId == nullptr) return error(string("No object is defined for the unmapped id: ") + to_string(unmappedId));
+            if (objectFromUnmappedId == nullptr) return error(string("Merge shaders. No object is defined for the unmapped id: ") + to_string(unmappedId));
 
             bool mappingResolved = false;
             bool mergeTypeOrConst = false;
@@ -668,7 +668,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
                         if (idOfSameTypeFromDestinationBytecode == unused)
                         {
-                            return error(string("hashmap refers to an invalid Id"));
+                            return error(string("Merge shaders. hashmap refers to an invalid Id"));
                         }
 
                         //The type already exists in the destination bytecode, we can simply remap to it
@@ -683,7 +683,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     //this is a variable from destination bytecode, we retrieve its id in the destination bytecode using its declaration name
                     VariableInstruction* variable = this->GetVariableByName(objectFromUnmappedId->GetName());
                     if (variable == nullptr)
-                        return error(string("No variable exists in destination bytecode with the name: ") + objectFromUnmappedId->GetName());
+                        return error(string("Merge shaders. No variable exists in destination bytecode with the name: ") + objectFromUnmappedId->GetName());
 
                     //remap the unmapped ID to the destination variable
                     mappingResolved = true;
@@ -715,7 +715,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     //This is a shader from destination bytecode, we simply retrieve its Ids
                     ShaderClassData* shader = this->GetShaderByName(objectFromUnmappedId->GetName());
                     if (shader == nullptr)
-                        return error(string("No shader exists in destination bytecode with the name: ") + objectFromUnmappedId->GetName());
+                        return error(string("Merge shaders. No shader exists in destination bytecode with the name: ") + objectFromUnmappedId->GetName());
 
                     //remap the unmapped ID to the destination variable
                     mappingResolved = true;
@@ -741,7 +741,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 }
 
                 default:
-                    return error(string("Invalid object. unable to remap unmapped id: ") + to_string(unmappedId));
+                    return error(string("Merge shaders. Invalid object. unable to remap unmapped id: ") + to_string(unmappedId));
             }
 
             if (mappingResolved)
@@ -921,7 +921,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
     //Find the best positions in the bytecode where to merge the new stuff
     unsigned int posToInsertNewHeaderProrerties = header_size;
-    unsigned int posToInsertNewNamesAndDecorates = header_size;
+    unsigned int posToInsertNewNamesAndXkslDecorates = header_size;
     unsigned int posToInsertNewTypesAndConsts = header_size;
     unsigned int posToInsertNewFunctions = spv.size();
     bool firstFunc = true;
@@ -938,17 +938,17 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 {
                     posToInsertNewHeaderProrerties = obj->GetBytecodeEndPosition();
                     if (posToInsertNewTypesAndConsts < posToInsertNewHeaderProrerties) posToInsertNewTypesAndConsts = posToInsertNewHeaderProrerties;
-                    if (posToInsertNewNamesAndDecorates < posToInsertNewHeaderProrerties) posToInsertNewNamesAndDecorates = posToInsertNewHeaderProrerties;
+                    if (posToInsertNewNamesAndXkslDecorates < posToInsertNewHeaderProrerties) posToInsertNewNamesAndXkslDecorates = posToInsertNewHeaderProrerties;
                 }
                 break;
             case ObjectInstructionTypeEnum::Type:
             case ObjectInstructionTypeEnum::Variable:
             case ObjectInstructionTypeEnum::Shader:
             case ObjectInstructionTypeEnum::Const:
-                if (firstType || posToInsertNewNamesAndDecorates > obj->GetBytecodeStartPosition())
+                if (firstType || posToInsertNewNamesAndXkslDecorates > obj->GetBytecodeStartPosition())
                 {
-                    posToInsertNewNamesAndDecorates = obj->GetBytecodeStartPosition();
-                    if (posToInsertNewTypesAndConsts < posToInsertNewNamesAndDecorates) posToInsertNewTypesAndConsts = posToInsertNewNamesAndDecorates;
+                    posToInsertNewNamesAndXkslDecorates = obj->GetBytecodeStartPosition();
+                    if (posToInsertNewTypesAndConsts < posToInsertNewNamesAndXkslDecorates) posToInsertNewTypesAndConsts = posToInsertNewNamesAndXkslDecorates;
                 }
                 firstType = false;
                 break;
@@ -962,8 +962,36 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         }
     }
     if (posToInsertNewTypesAndConsts > posToInsertNewFunctions) posToInsertNewTypesAndConsts = posToInsertNewFunctions;
-    if (posToInsertNewNamesAndDecorates > posToInsertNewTypesAndConsts) posToInsertNewNamesAndDecorates = posToInsertNewTypesAndConsts;
-    if (posToInsertNewHeaderProrerties > posToInsertNewNamesAndDecorates) posToInsertNewHeaderProrerties = posToInsertNewNamesAndDecorates;
+    if (posToInsertNewNamesAndXkslDecorates > posToInsertNewTypesAndConsts) posToInsertNewNamesAndXkslDecorates = posToInsertNewTypesAndConsts;
+    if (posToInsertNewHeaderProrerties > posToInsertNewNamesAndXkslDecorates) posToInsertNewHeaderProrerties = posToInsertNewNamesAndXkslDecorates;
+
+    unsigned int posToInsertNewNames = posToInsertNewNamesAndXkslDecorates;
+    unsigned int posToInsertNewXkslDecorates = posToInsertNewNamesAndXkslDecorates;
+    //We can refine posToInsertNewNames to put it behind all previous XkslDecorate, as long as we leave it between [posToInsertNewHeaderProrerties, posToInsertNewXkslDecorates]
+    {
+        unsigned int start = posToInsertNewHeaderProrerties;
+        const unsigned int end = posToInsertNewXkslDecorates;
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode) {
+                case spv::OpDeclarationName:
+                case spv::OpShaderInheritance:
+                case spv::OpBelongsToShader:
+                case spv::OpShaderComposition:
+                case spv::OpShaderArrayComposition:
+                case spv::OpMethodProperties:
+                {
+                    posToInsertNewNames = start;
+                    start = end;
+                    break;
+                }
+            }
+            start += wordCount;
+        }
+    }
 
     //=============================================================================================================
     // merge all data in the destination bytecode
@@ -972,8 +1000,8 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //Merge types and variables (we need to merge new types AFTER all previous types)
     spv.insert(spv.begin() + posToInsertNewTypesAndConsts, vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
     //Merge names and decorates
-    spv.insert(spv.begin() + posToInsertNewNamesAndDecorates, vecXkslDecoratesToMerge.spv.begin(), vecXkslDecoratesToMerge.spv.end());
-    spv.insert(spv.begin() + posToInsertNewNamesAndDecorates, vecNamesAndDecorateToMerge.spv.begin(), vecNamesAndDecorateToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewXkslDecorates, vecXkslDecoratesToMerge.spv.begin(), vecXkslDecoratesToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewNames, vecNamesAndDecorateToMerge.spv.begin(), vecNamesAndDecorateToMerge.spv.end());
     //merge ext import
     spv.insert(spv.begin() + posToInsertNewHeaderProrerties, vecHeaderPropertiesToMerge.spv.begin(), vecHeaderPropertiesToMerge.spv.end());
 
@@ -1071,51 +1099,82 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     //===================================================================================================================
     //===================================================================================================================
     //Find the shader target
-    ShaderClassData* shaderCompositionTarget = GetShaderByName(shaderName);
+    ShaderClassData* shaderCompositionTarget = this->GetShaderByName(shaderName);
     if (shaderCompositionTarget == nullptr) return error(string("No shader exists in destination bytecode with the name: ") + shaderName);
 
     //find the shader's composition target
     ShaderComposition* compositionTarget = shaderCompositionTarget->GetShaderCompositionByName(variableName);
     if (compositionTarget == nullptr) return error(string("No composition exists in shader \"") + shaderName + string("\" with the name: ") + variableName);
-    if (compositionTarget->status == ShaderComposition::ShaderCompositionStatusEnum::Resolved)
-        return error(string("The composition has already been set"));
-    compositionTarget->status = ShaderComposition::ShaderCompositionStatusEnum::Resolved;
+    if (compositionTarget->status == ShaderComposition::ShaderCompositionStatusEnum::Resolved) return error(string("The composition has already been resolved"));
+    int compositionTargetId = compositionTarget->compositionShaderId;
 
     ShaderClassData* shaderTypeToInstantiate = compositionTarget->shaderType;
     if (shaderTypeToInstantiate == nullptr) return error("The composition does not define any shader type");
 
-    ShaderClassData* shaderToInstantiate = source->GetShaderByName(shaderTypeToInstantiate->GetName());
-    if (shaderToInstantiate == nullptr) return error(string("No shader exists in the source bytecode with the name: ") + shaderTypeToInstantiate->GetName());
+    ShaderClassData* mainShaderTypeMergedToMergeFromSource = source->GetShaderByName(shaderTypeToInstantiate->GetName());
+    if (mainShaderTypeMergedToMergeFromSource == nullptr) return error(string("No shader exists in the source bytecode with the name: ") + shaderTypeToInstantiate->GetName());
 
+    //===================================================================================================================
+    //===================================================================================================================
     //Get the list of all shaders belonging to shaderToInstantiate's family tree
-    vector<ShaderClassData*> listShadersToInstantiate;
-    source->GetShaderFamilyTree(shaderToInstantiate, listShadersToInstantiate);
-    if (listShadersToInstantiate.size() == 0) return error(string("Failed to find the family of shader: ") + shaderTypeToInstantiate->GetName());
+    for (auto itsh = source->vecAllShaders.begin(); itsh != source->vecAllShaders.end(); itsh++) (*itsh)->flag1 = 0;
 
-    //For all shaders to instantiate: check that they don't have any unresolved composition
-    for (auto it = listShadersToInstantiate.begin(); it != listShadersToInstantiate.end(); it++)
+    vector<ShaderClassData*> listAllShadersToInstantiate;
+    vector<ShaderClassData*> listShadersToInvestigate;
+    listShadersToInvestigate.push_back(mainShaderTypeMergedToMergeFromSource);
+    while (listShadersToInvestigate.size() > 0)
     {
-        if ((*it)->HasAnyUnresolvedCompositions())
-            return error(string("A shader to instantiate has some unresolved composition variables. Shader name:") + (*it)->GetName());
+        ShaderClassData* aShaderToInstantiate = listShadersToInvestigate.back();
+        listShadersToInvestigate.pop_back();
+        
+        vector<ShaderClassData*> shaderFamilyTree;
+        source->GetShaderFamilyTree(aShaderToInstantiate, shaderFamilyTree);
+
+        for (auto its = shaderFamilyTree.begin(); its != shaderFamilyTree.end(); its++)
+        {
+            ShaderClassData* aShaderFromFamily = *its;
+            if (aShaderFromFamily->flag1 == 1)
+                return error(string("A shader is being investigated after having already been treated"));  //safety check
+            aShaderFromFamily->flag1 = 1;
+
+            listAllShadersToInstantiate.push_back(aShaderFromFamily);
+
+            //For all shaders to instantiate: we recursively add all shaders from their resolved compositions, and their full family tree
+            int countCompositions = aShaderFromFamily->GetCountShaderComposition();
+            for (int ic = 0; ic < countCompositions; ++ic)
+            {
+                ShaderComposition& aShaderComposition = aShaderFromFamily->compositionsList[ic];
+                if (aShaderComposition.status == ShaderComposition::ShaderCompositionStatusEnum::Unresolved)
+                    return error(string("A shader to instantiate has some unresolved composition variables. Shader name:") + aShaderFromFamily->GetName());
+
+                listShadersToInvestigate.push_back(aShaderComposition.shaderType);
+            }
+        }
     }
+
+    if (listAllShadersToInstantiate.size() == 0)
+        return error(string("Failed to find some shaders to instantiate for the family of shader:") + mainShaderTypeMergedToMergeFromSource->GetName());
 
     //===================================================================================================================
     //===================================================================================================================
     //prefix to rename the shader, its variables and functions (useful in debug to check what's going on into the byteconde)
     //string namePrefix = string("c") + compositionToInstantiate->compositionShaderOwner->GetName() + compositionToInstantiate->variableName + string("_");
-    string namePrefix = string("compS") + to_string(compositionTarget->compositionShaderOwner->GetId()) + string("C") + to_string(compositionTarget->compositionShaderId) + string("_");
+    string namePrefix = string("cS") + to_string(compositionTarget->compositionShaderOwner->GetId()) + string("C") + to_string(compositionTargetId) + string("_");
 
     //Merge (duplicate) all shaders targeted by by the composition into the current bytecode
-    if (!MergeShadersIntoBytecode(*source, listShadersToInstantiate, namePrefix))
+    if (!MergeShadersIntoBytecode(*source, listAllShadersToInstantiate, namePrefix))
     {
         error(string("failed to clone the shader for the composition: ") + namePrefix);
         return false;
     }
-    
+    ShaderClassData* mainShaderTypeMerged = mainShaderTypeMergedToMergeFromSource->tmpClonedShader;
+    if (mainShaderTypeMerged == nullptr)
+        return error(string("Merge shader function is expected to return a reference on the merged shader"));
+
     //===================================================================================================================
     //Map the list of targeted shaders with the cloned shader (so that we can update the links later on)
     unordered_map<spv::Id, spv::Id> mapCompositionShaderTargetedWithClonedShader;
-    for (auto its = listShadersToInstantiate.begin(); its != listShadersToInstantiate.end(); its++)
+    for (auto its = listAllShadersToInstantiate.begin(); its != listAllShadersToInstantiate.end(); its++)
     {
         ShaderClassData* shaderCloned = *its;
         ShaderClassData* clonedShader = shaderCloned->tmpClonedShader;
@@ -1124,7 +1183,8 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 
     //===================================================================================================================
     //===================================================================================================================
-    //update all OpFunctionCallThroughCompositionVariable instructions with call to the composition we're instancing
+    // - update all OpFunctionCallThroughCompositionVariable instructions calling through the composition that we're instancing
+    // - update our composition data
     bool gotUnresolvedComposotions = false;
     vector<range_t> vecStripRanges;
     process(
@@ -1132,12 +1192,36 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
         {
             switch (opCode)
             {
+                case spv::OpShaderComposition:
+                {
+                    //set shaderType Id to the merged type id
+                    spv::Id shaderId = asId(start + 1);
+                    int compositionId = asId(start + 2);
+
+                    if (shaderId == shaderCompositionTarget->GetId() && compositionId == compositionTargetId)
+                    {
+                        //===================================================================================================================
+                        //update the composition type referenced by the new merged shader
+                        compositionTarget->status = ShaderComposition::ShaderCompositionStatusEnum::Resolved;
+                        compositionTarget->shaderType = mainShaderTypeMerged;
+                        spv::Id mergedShaderTypeId = mainShaderTypeMerged->GetId();
+                        
+                        setId(start + 3, mergedShaderTypeId);
+                        setId(start + 4, 1);  //set status to resolved
+                    }
+                    break;
+                }
+
+                case spv::OpShaderArrayComposition:
+                    return error("not implemented yet");
+                    break;
+
                 case spv::OpFunctionCallThroughCompositionVariable:
                 {
                     spv::Id shaderId = asId(start + 4);
                     int compositionId = asId(start + 5);
     
-                    if (shaderId == shaderCompositionTarget->GetId() && compositionId == compositionTarget->compositionShaderId)
+                    if (shaderId == shaderCompositionTarget->GetId() && compositionId == compositionTargetId)
                     {
                         //Get function and shader reference in the destination bytecode
                         spv::Id originalFunctionId = asId(start + 3);
@@ -1155,10 +1239,10 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 
                         //Find this shader in the list of shader we cloned from the source bytecode
                         ShaderClassData* shaderClonedOwningTheFunction = nullptr;
-                        for (int i = 0; i < listShadersToInstantiate.size(); ++i)
+                        for (int i = 0; i < listAllShadersToInstantiate.size(); ++i)
                         {
-                            if (listShadersToInstantiate[i]->GetName() == shaderName) {
-                                shaderClonedOwningTheFunction = listShadersToInstantiate[i];
+                            if (listAllShadersToInstantiate[i]->GetName() == shaderName) {
+                                shaderClonedOwningTheFunction = listAllShadersToInstantiate[i];
                                 break;
                             }
                         }
@@ -1217,6 +1301,10 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     //So we could optimize this by simply updating the start-end position for all objects
     UpdateAllMaps();
 
+    if (compositionTarget->status != ShaderComposition::ShaderCompositionStatusEnum::Resolved)
+        return error("The composition has not been set to resolved");
+
+    if (errorMessages.size() > 0) return false;
     status = SpxRemapperStatusEnum::WaitingForMixin;
     return true;
 }
@@ -2028,9 +2116,14 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     ShaderClassData* shaderCompositionType = GetShaderById(shaderCompositionTypeId);
                     if (shaderCompositionType == nullptr) { error(string("undeclared shader type id: ") + to_string(shaderCompositionTypeId)); break; }
 
-                    const string compositionVariableName = literalString(start + 4);
+                    int status = asId(start + 4);
+                    ShaderComposition::ShaderCompositionStatusEnum compstatus = status == 0?
+                        ShaderComposition::ShaderCompositionStatusEnum::Unresolved :
+                        ShaderComposition::ShaderCompositionStatusEnum::Resolved;
 
-                    ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName, isArray);
+                    const string compositionVariableName = literalString(start + 5);
+
+                    ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName, isArray, compstatus);
                     shaderCompositionOwner->AddComposition(shaderComposition);
                     break;
                 }

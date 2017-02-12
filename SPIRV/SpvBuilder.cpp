@@ -994,6 +994,7 @@ void Builder::addShaderCompositionDecoration(Id shaderId, int index, Id shaderTy
     dec->addIdOperand(shaderId);
     dec->addImmediateOperand(index);
     dec->addIdOperand(shaderTypeId);
+    dec->addImmediateOperand(0); //0 = unresolved
     dec->addStringOperand(variableName);
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }

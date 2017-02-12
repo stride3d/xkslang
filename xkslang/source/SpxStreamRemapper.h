@@ -242,9 +242,10 @@ public:
 
         //ShaderClassData* instantiatedShader;  //resulting shader instance from the composition
 
-        ShaderComposition(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType, const std::string& variableName, bool isArray)
-            :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
-            variableName(variableName), isArray(isArray), status(ShaderCompositionStatusEnum::Unresolved){}
+        ShaderComposition(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType,
+            const std::string& variableName, bool isArray, ShaderCompositionStatusEnum status)
+                :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
+                variableName(variableName), isArray(isArray), status(status){}
 
     private:
         ShaderCompositionStatusEnum status;
@@ -293,6 +294,7 @@ public:
             return false;
         }
 
+        unsigned int GetCountShaderComposition() { return compositionsList.size(); }
         void AddComposition(const ShaderComposition& composition) { compositionsList.push_back(composition); }
         ShaderComposition* GetShaderCompositionById(int compositionId) {
             if (compositionId<0 || compositionId>= (int)compositionsList.size()) return nullptr;
