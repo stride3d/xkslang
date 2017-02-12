@@ -1046,13 +1046,29 @@ bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
     return true;
 }
 
+bool SpxStreamRemapper::ValidateHeader()
+{
+    if (spv.size() < header_size) {
+        return error("file too short");
+    }
+
+    if (magic() != spv::MagicNumber)
+        error("bad magic number");
+
+    // field 1 = version
+    // field 2 = generator magic
+    // field 3 = result <id> bound
+
+    if (schemaNum() != 0)
+        error("bad schema, must be 0");
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
 bool SpxStreamRemapper::ValidateSpxBytecode()
 {
-    validate();  //validate the header
-    if (staticErrorMessages.size() > 0) {
-        copyStaticErrorMessagesTo(errorMessages);
-        return false;
-    }
+    if (!ValidateHeader()) return error("Failed to validate the header");
 
 #ifdef XKSLANG_DEBUG_MODE
     //Debug sanity check: make sure that 2 shaders or 2 variables does not share the same name
@@ -1310,31 +1326,85 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 }
 
 //Mixin is finalized: no more updates will be brought to the mixin bytecode after
-bool SpxStreamRemapper::FinalizeMixin()
+bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outputStages)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
     }
 
-    //==============================================================
-    //validate the header
-    validate();
-    if (staticErrorMessages.size() > 0) {
-        copyStaticErrorMessagesTo(errorMessages);
-        return false;
+    if (outputStages.size() == 0) return error("no output stages defined");
+    if (!ValidateHeader()) return error("Failed to validate the header");
+
+    //===================================================================================================================
+    //===================================================================================================================
+    //For each output stages, we search the entryPoint function in the bytecode
+    vector<FunctionInstruction*> listEntryPointFunction;
+    for (int i = 0; i<outputStages.size(); ++i)
+    {
+        FunctionInstruction* entryFunction = GetFunctionForEntryPoint(outputStages[i].entryPointName);
+        if (entryFunction == nullptr) error(string("Entry point not found: ") + outputStages[i].entryPointName);
+        listEntryPointFunction.push_back(entryFunction);
+    }
+    if (errorMessages.size() > 0) return false;
+
+    status = SpxRemapperStatusEnum::MixinFinalized;
+
+    //===================================================================================================================
+    //===================================================================================================================
+    //Remove all unused classes and functions from the bytecode, depending on the outStages called functions
+
+    //Set all flag to 0
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+        ShaderClassData* shader = *itsh;
+        shader->flag1 = 0;
+        for (auto itsf = shader->functionsList.begin(); itsf != shader->functionsList.end(); itsf++) {
+            FunctionInstruction* aFunction = *itsf;
+            aFunction->flag1 = 0;
+        }
     }
 
+    //Go through the code of all functions set as entryPoint
+    vector<FunctionInstruction*> vectorFunctionsToParse;
+    vectorFunctionsToParse.insert(vectorFunctionsToParse.end(), listEntryPointFunction.begin(), listEntryPointFunction.end());
+    while (vectorFunctionsToParse.size() > 0)
+    {
+        FunctionInstruction* aFunction = vectorFunctionsToParse.back();
+        vectorFunctionsToParse.pop_back();
+        if (aFunction->flag1 == 1) continue; //we already processed this function
+
+        //Flag the function and the shader declaring it
+        aFunction->flag1 = 1;
+        aFunction->shaderOwner->flag1 = 1;
+        //Flag all shader parents
+        GetShaderFamilyTreeWithParentOnly();
+    }
+
+    //===================================================================================================================
+    //===================================================================================================================
     if (!ValidateIfBytecodeIsReadyForCompilation()) {
         return error("Bytecode is not valid for compilation");
     }
-
-    status = SpxRemapperStatusEnum::MixinFinalized;
 
     //Convert SPIRX extensions to SPIRV
     if (!ConvertSpirxToSpirVBytecode()) {
         return error("Failed to convert SPIRX to SPIRV");
     }
 
+    //===================================================================================================================
+    //===================================================================================================================
+    // Generate the SPIRV bytecode for all stages
+    for (int i = 0; i<outputStages.size(); ++i)
+    {
+        XkslMixerOutputStage& outputStage = outputStages[i];
+        FunctionInstruction* entryFunction = listEntryPointFunction[i];
+        bool success = this->GenerateSpvStageBytecode(outputStage.stage, outputStage.entryPointName, entryFunction, outputStage.resultingBytecode);
+        if (!success)
+        {
+            error(string("Fail to generate SPV stage bytecode for the stage: ") + GetShadingStageLabel(outputStage.stage));
+        }
+    }
+
+    if (errorMessages.size() > 0) return false;
     return true;
 }
 
@@ -1657,16 +1727,9 @@ void SpxStreamRemapper::GetMixinBytecode(vector<uint32_t>& bytecodeStream)
     bytecodeStream.insert(bytecodeStream.end(), spv.begin(), spv.end());
 }
 
-bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string entryPointName, SpvBytecode& output)
+SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetFunctionForEntryPoint(std::string entryPointName)
 {
-    if (status != SpxRemapperStatusEnum::MixinFinalized)
-    {
-        return error("Invalid remapper status");
-    }
-    
-    //==========================================================================================
-    //==========================================================================================
-    // Search for the shader entry point
+    // Search for the entry point function (assume the first function with the name is the one)
     FunctionInstruction* entryPointFunction = nullptr;
     for (auto it = vecAllShaderFunctions.begin(); it != vecAllShaderFunctions.end(); it++)
     {
@@ -1681,10 +1744,14 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string 
             break;
         }
     }
-    if (entryPointFunction == nullptr)
-    {
-        return error(string("Entry point not found: ") + entryPointName);
-    }
+
+    return entryPointFunction;
+}
+
+bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string entryPointName, FunctionInstruction* entryPointFunction, SpvBytecode& output)
+{
+    if (status != SpxRemapperStatusEnum::MixinFinalized) return error("Invalid remapper status");
+    if (entryPointFunction == nullptr) return error("Invalid entryPoint function");
 
     //==========================================================================================
     //==========================================================================================
@@ -1704,8 +1771,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string 
 
     //==========================================================================================
     //==========================================================================================
-    //Clean and generate SPIRV bytecode
-
+    //Clean and generate SPIRV bytecode using spirvbin_t class method
     buildLocalMaps();
     if (staticErrorMessages.size() > 0) {
         copyStaticErrorMessagesTo(errorMessages);

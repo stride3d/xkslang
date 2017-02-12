@@ -155,7 +155,7 @@ bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<strin
         return error(messages, "you must process some mixin first");
 
     if (outputStages.size() == 0)
-        return error(messages, "you must define some stage outputs");
+        return error(messages, "no output stages defined");
 
     //=============================================================================================================================================
     //=============================================================================================================================================
@@ -163,26 +163,11 @@ bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<strin
     SpxStreamRemapper* clonedSpxStream = spxStreamRemapper->Clone();
     if (clonedSpxStream == nullptr) return error(messages, "Failed to clone the SpxStreamRemapper");
 
-    /*if (!clonedSpxStream->InstantiateAllCompositions())
-    {
-        clonedSpxStream->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr)
-            clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
-        delete clonedSpxStream;
-        return error(messages, "Fail to instantiate the compositions");
-    }*/
-
-    //TODO
-    /*if (!clonedSpxStream->Compile())
-    {
-        clonedSpxStream->copyMessagesTo(messages);
-        return error(messages, "Fail to compile the mixin");
-    }*/
-
     if (compiledSpv != nullptr)
         clonedSpxStream->GetMixinBytecode(compiledSpv->getWritableBytecodeStream());
 
-    if (!clonedSpxStream->FinalizeMixin()){
+    if (!clonedSpxStream->CompileMixinForStages(outputStages))
+    {
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr)
             clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
@@ -192,19 +177,7 @@ bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<strin
 
     if (finalizedSpv != nullptr)
         clonedSpxStream->GetMixinBytecode(finalizedSpv->getWritableBytecodeStream());
-        
-    for (int i=0; i<outputStages.size(); ++i)
-    {
-        XkslMixerOutputStage& outputStage = outputStages[i];
-        bool success = clonedSpxStream->GenerateSpvStageBytecode(outputStage.stage, outputStage.entryPoint, outputStage.resultingBytecode);
-        if (!success)
-        {
-            clonedSpxStream->copyMessagesTo(messages);
-            delete clonedSpxStream;
-            return error(messages, string("Fail to generate SPV stage bytecode for stage=\"") + GetShadingStageLabel(outputStage.stage) + string("\""));
-        }
-    }
-
+    
     delete clonedSpxStream;
     //=============================================================================================================================================
     //=============================================================================================================================================

@@ -9,6 +9,7 @@
 
 #include "define.h"
 #include "SpxBytecode.h"
+#include "XkslMixerOutputStage.h"
 
 namespace xkslang
 {
@@ -20,16 +21,6 @@ class SpxStreamRemapper;
 class XkslMixer
 {
 public:
-    class XkslMixerOutputStage
-    {
-    public:
-        ShadingStageEnum stage;
-        std::string entryPoint;
-        SpvBytecode resultingBytecode;
-
-        XkslMixerOutputStage(ShadingStageEnum stage, std::string entryPoint) : stage(stage), entryPoint(entryPoint){}
-    };
-
     XkslMixer();
     virtual ~XkslMixer();
 

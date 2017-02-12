@@ -185,7 +185,7 @@ void SaveCurrentMixerBytecode(XkslMixer* mixer, string outputDirPath, string out
     }
 }
 
-bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixer::XkslMixerOutputStage>& outputStages, vector<string>& errorMsgs)
+bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputStage>& outputStages, vector<string>& errorMsgs)
 {
     DWORD time_before, time_after;
     bool success = true;
@@ -253,7 +253,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixer::XkslMix
     for (int i = 0; i<outputStages.size(); ++i)
     {
         string labelStage = GetShadingStageLabel(outputStages[i].stage);
-        cout << "Convert SPIRV bytecode for entry point=\"" << outputStages[i].entryPoint << "\" stage=\"" << labelStage << "\"" << endl;
+        cout << "Convert SPIRV bytecode for entry point=\"" << outputStages[i].entryPointName << "\" stage=\"" << labelStage << "\"" << endl;
 
         ///Save the SPIRV bytecode (and its HR form)
         //output the binary
@@ -614,10 +614,10 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
             }
             else if (instruction.compare("compile") == 0)
             {
-                vector<XkslMixer::XkslMixerOutputStage> outputStages;
+                vector<XkslMixerOutputStage> outputStages;
                 for (auto its = mixerTarget->stagesEntryPoints.begin(); its != mixerTarget->stagesEntryPoints.end(); its++){
                     if (its->second.size() > 0)
-                        outputStages.push_back(XkslMixer::XkslMixerOutputStage(ShadingStageEnum(its->first), its->second));
+                        outputStages.push_back(XkslMixerOutputStage(ShadingStageEnum(its->first), its->second));
                 }
 
                 success = CompileMixer(effectName, mixerTarget->mixer, outputStages, errorMsgs);

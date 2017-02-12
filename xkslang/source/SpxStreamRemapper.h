@@ -13,6 +13,7 @@
 
 #include "define.h"
 #include "SpxBytecode.h"
+#include "XkslMixerOutputStage.h"
 
 namespace xkslang
 {
@@ -184,7 +185,7 @@ public:
         };
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name){}
+            : ObjectInstructionBase(parsedData, name, source), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name), flag1(0){}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -207,6 +208,7 @@ public:
         OverrideAttributeStateEnum overrideAttributeState;
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
         std::string fullName;  //name only use for debug purpose
+        int flag1;  //to simplify some algo
 
         friend class SpxStreamRemapper;
     };
@@ -339,9 +341,7 @@ public:
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& shaders);
 
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxStreamRemapper* source, std::vector<std::string>& messages);
-
     void GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
-    bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, SpvBytecode& output);
 
     virtual void error(const std::string& txt) const;
     bool error(const std::string& txt);
@@ -354,9 +354,12 @@ private:
     //bool MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
     bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderClassData*>& listShadersToMerge, std::string namesPrefixToAdd);
     bool ValidateSpxBytecode();
+    bool ValidateHeader();
 
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
-    bool FinalizeMixin();
+    bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
+    bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
+    FunctionInstruction* GetFunctionForEntryPoint(std::string entryPointName);
 
     void ReleaseAllMaps();
     bool BuildAllMaps();
@@ -393,13 +396,7 @@ private:
     std::vector<ShaderClassData*> vecAllShaders;
     std::vector<FunctionInstruction*> vecAllShaderFunctions;  //vec of all functions declared by a shader
 
-    //std::unordered_map<spv::Id, ShaderClassData*> mapShadersById;
-    //
-    //
-    //std::unordered_map<spv::Id, TypeData*> mapTypeById;
-    //std::unordered_map<spv::Id, ConstData*> mapConstById;
-    //std::unordered_map<spv::Id, VariableData*> mapVariablesById;
-
+private:
     ObjectInstructionBase* GetObjectById(spv::Id id);
     std::string GetDeclarationNameForId(spv::Id id);
     bool GetDeclarationNameForId(spv::Id id, std::string& name);
@@ -413,15 +410,6 @@ private:
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
     HeaderPropertyInstruction* GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const std::string& name);
     ShaderComposition* GetCompositionById(spv::Id shaderId, int compositionId);
-
-    //ShaderClassData* HasShader(const std::string& name);
-    //ShaderClassData* GetShaderById(spv::Id id);
-    //TypeData* HasATypeForId(spv::Id id);
-    //
-    //VariableData* HasVariableForType(TypeData* type);
-    //VariableData* HasVariableForId(spv::Id id);
-    //ConstData* HasAConstForId(spv::Id id);
-
 
     void stripBytecode(std::vector<range_t>& ranges);
 
