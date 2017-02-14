@@ -75,6 +75,7 @@ namespace glslang {
         void expected(const char*);
         void unimplemented(const char*);
         void error(const char*);
+        void error(const TString&);
         bool acceptIdentifier(HlslToken&);
         bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStreams, int& compositionShaderIdTargeted);
         bool acceptCompilationUnit();
@@ -143,7 +144,7 @@ namespace glslang {
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName);
         bool isRecordedAsAShaderName(const TString& name);
-        bool isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, int& compositionShaderIdTargeted);
+        bool isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, int& compositionShaderIdTargeted, TString& compositionShaderClassOwner);
 
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST

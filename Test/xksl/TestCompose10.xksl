@@ -1,4 +1,4 @@
-//Compile a composition having a composition on itself
+//We inherits from a shader using a composition
 
 shader Comp
 {
@@ -8,20 +8,13 @@ shader Comp
 	}
 }
 
-shader CompA: Comp
-{
-	compose Comp c;
-	
-	override int Compute()
-	{
-		return c.Compute();
-	}
-}
-
 shader ShaderA
 {
 	compose Comp color;
-	
+}
+
+shader ShaderB: ShaderA
+{
 	int main()
 	{
 		return color.Compute();

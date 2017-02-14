@@ -159,12 +159,18 @@ void HlslGrammar::error(const char* error)
     parseContext.error(token.loc, "Error", error, "");
 }
 
+void HlslGrammar::error(const TString& str)
+{
+    error(str.c_str());
+}
+
 //Process class accessor: this, base, Knwon ClassName, composition variable name, ...
 bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStream, int& compositionShaderIdTargeted)
 {
     if (className == nullptr) className = getCurrentShaderName();
     if (className == nullptr) return false;
 
+    TString compositionShaderClassOwner;
     switch (peek())
     {
         case EHTokThis:
@@ -198,15 +204,17 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
 
         case EHTokIdentifier:
         {
-            //The token can be a known shader class
             if (isRecordedAsAShaderName(*token.string))
             {
+                //The token is a known shader class (ShaderA.XXX)
                 className = NewPoolTString(token.string->c_str());
                 advanceToken();
                 break;
             }
-            else if (isIdentifierRecordedAsACompositionVariableName(*className, *token.string, compositionShaderIdTargeted))
+            else if (isIdentifierRecordedAsACompositionVariableName(*className, *token.string, compositionShaderIdTargeted, compositionShaderClassOwner))
             {
+                //The token is a composition that belongs to the shader class or its parents (Comp.XXX)
+                className = NewPoolTString(compositionShaderClassOwner.c_str());
                 advanceToken();
                 break;
             }
@@ -3138,7 +3146,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
     return identifierLocation;
 }
 
-bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, int& compositionShaderIdTargeted)
+bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, int& compositionShaderIdTargeted, TString& compositionShaderClassOwner)
 {
     compositionShaderIdTargeted = -1;
     XkslShaderDefinition* shader = getShaderClassDefinition(shaderClassName);
@@ -3164,6 +3172,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& 
             {
                 compositionShaderIdTargeted = shader->listCompositions[i].shaderCompositionId;
                 //compositionTargetShaderName = &(shader->listCompositions[i].shaderName);
+                compositionShaderClassOwner = shader->shaderName;
                 return true;
             }
         }
@@ -3173,7 +3182,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& 
     int countParents = shader->shaderparentsName.size();
     for (int p = 0; p < countParents; p++)
     {
-        if (isIdentifierRecordedAsACompositionVariableName(*(shader->shaderparentsName[p]), identifierName, compositionShaderIdTargeted)) return true;
+        if (isIdentifierRecordedAsACompositionVariableName(*(shader->shaderparentsName[p]), identifierName, compositionShaderIdTargeted, compositionShaderClassOwner)) return true;
     }
 
     return false;
@@ -3662,13 +3671,13 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, bool callToFu
         //we're calling a method through a composition, get the composition
         XkslShaderDefinition* shader = getShaderClassDefinition(shaderClassName);
         if (shader == nullptr) {
-            error((TString("undeclared class:\"") + shaderClassName + TString("\"")).c_str());
+            error(TString("undeclared class:\"") + shaderClassName + TString("\""));
             return false;
         }
 
         pcompositionVariable = shader->GetCompositionVariableForId(shaderCompositionIdTargeted);
         if (pcompositionVariable == nullptr) {
-            error("invalid composition id");
+            error(TString("invalid composition id for shader:\"") + shaderClassName + TString("\""));
             return false;
         }
 

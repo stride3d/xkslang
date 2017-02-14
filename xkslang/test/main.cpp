@@ -94,7 +94,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose06", "TestCompose06.xkfx" },
     //{ "TestCompose07", "TestCompose07.xkfx" },
     //{ "TestCompose08", "TestCompose08.xkfx" },
-    { "TestCompose09", "TestCompose09.xkfx" },
+    //{ "TestCompose09", "TestCompose09.xkfx" },
+    { "TestCompose10", "TestCompose10.xkfx" },
 };
 
 #ifdef _DEBUG
