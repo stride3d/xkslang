@@ -287,7 +287,8 @@ private:
    // Add a strip range for a given instruction starting at 'start'
    // Note: avoiding brace initializers to please older versions os MSVC.
    void stripInst(unsigned start) { stripRange.push_back(range_t(start, start + asWordCount(start))); }
-   void stripInst(unsigned start, std::vector<range_t>& ranges) { ranges.push_back(range_t(start, start + asWordCount(start))); }
+   void stripInst(std::vector<range_t>& ranges, unsigned start) { ranges.push_back(range_t(start, start + asWordCount(start))); }
+   void stripInst(std::vector<range_t>& ranges, unsigned start, unsigned end) { ranges.push_back(range_t(start, end)); }
 
    // Function start and end.  use unordered_map because we'll have
    // many fewer functions than IDs.

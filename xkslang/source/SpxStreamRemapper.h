@@ -289,6 +289,7 @@ public:
             }
             return nullptr;
         }
+        unsigned int GetCountFunctions() { return functionsList.size(); }
 
         void AddShaderType(ShaderTypeData* type) { shaderTypesList.push_back(type); }
         bool HasType(TypeInstruction* type) {
@@ -360,6 +361,7 @@ private:
     bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
     FunctionInstruction* GetFunctionForEntryPoint(std::string entryPointName);
+    bool RemoveShaderAndAllData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
 
     void ReleaseAllMaps();
     bool BuildAllMaps();
@@ -374,14 +376,11 @@ private:
     bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
     bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
 
-    bool ValidateIfBytecodeIsReadyForCompilation();
     bool InitDefaultHeader();
     bool BuildAndSetShaderStageHeader(ShadingStageEnum stage, FunctionInstruction* entryFunction, std::string unmangledFunctionName);
-    bool ConvertSpirxToSpirVBytecode();
     
     bool ComputeShadersLevel();
     void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
-    void GetShaderFamilyTreeWithParentOnly(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
     void GetShaderFamilyTreeWithParentAndCompositionType(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
     void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);
 

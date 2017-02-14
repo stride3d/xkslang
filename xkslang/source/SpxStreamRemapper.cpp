@@ -186,6 +186,85 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
     return clonedSpxRemapper;
 }
 
+bool SpxStreamRemapper::RemoveShaderAndAllData(ShaderClassData* shaderToRemove, vector<range_t>& vecStripRanges)
+{
+    bool shaderFound = false;
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+    {
+        ShaderClassData* shader = *itsh;
+        if (shader == shaderToRemove)
+        {
+            shaderFound = true;
+            iter_swap(itsh, vecAllShaders.end() - 1);
+            vecAllShaders.pop_back();
+            break;
+        }
+    }
+    if (!shaderFound) return error(string("Failed to find the shader to remove: ") + shaderToRemove->GetName());
+
+    //remove all functions belonging to the shader
+    {
+        unsigned int countFunctionsRemoved = 0;
+        for (int i = 0; i < vecAllShaderFunctions.size(); ++i)
+        {
+            FunctionInstruction* function = vecAllShaderFunctions[i];
+            if (function->shaderOwner == shaderToRemove)
+            {
+                countFunctionsRemoved++;
+
+                if (i < vecAllShaderFunctions.size() - 1)
+                    vecAllShaderFunctions[i] = vecAllShaderFunctions[vecAllShaderFunctions.size() - 1];
+                vecAllShaderFunctions.pop_back();
+
+                stripInst(vecStripRanges, function->GetBytecodeStartPosition(), function->GetBytecodeEndPosition());
+                spv::Id id = function->GetId();
+                delete listAllObjects[id];
+                listAllObjects[id] = nullptr;
+            }
+        }
+        if (countFunctionsRemoved != shaderToRemove->GetCountFunctions())
+            return error(string("Discrepancy between shader list of functions and list of all shader functions for shader: ") + shaderToRemove->GetName());
+    }
+
+    //remove all types belonging to the shader
+    {
+        for (unsigned int t = 0; t < shaderToRemove->shaderTypesList.size(); ++t)
+        {
+            ShaderTypeData* shaderTypeToMerge = shaderToRemove->shaderTypesList[t];
+
+            spv::Id id;
+            TypeInstruction* type = shaderTypeToMerge->type;
+            TypeInstruction* pointerToType = shaderTypeToMerge->pointerToType;
+            VariableInstruction* variable = shaderTypeToMerge->variable;
+
+            stripInst(vecStripRanges, type->GetBytecodeStartPosition(), type->GetBytecodeEndPosition());
+            id = type->GetId();
+            delete listAllObjects[id];
+            listAllObjects[id] = nullptr;
+
+            stripInst(vecStripRanges, pointerToType->GetBytecodeStartPosition(), pointerToType->GetBytecodeEndPosition());
+            id = pointerToType->GetId();
+            delete listAllObjects[id];
+            listAllObjects[id] = nullptr;
+
+            stripInst(vecStripRanges, variable->GetBytecodeStartPosition(), variable->GetBytecodeEndPosition());
+            id = variable->GetId();
+            delete listAllObjects[id];
+            listAllObjects[id] = nullptr;
+        }
+    }
+
+    //remove the shader's bytecode and object
+    {
+        stripInst(vecStripRanges, shaderToRemove->GetBytecodeStartPosition());
+        spv::Id id = shaderToRemove->GetId();
+        delete listAllObjects[id];
+        listAllObjects[id] = nullptr;
+    }
+
+    return true;
+}
+
 void SpxStreamRemapper::ReleaseAllMaps()
 {
     int size = listAllObjects.size();
@@ -1092,14 +1171,6 @@ bool SpxStreamRemapper::ValidateSpxBytecode()
             shaderVariablesDeclarationName[type->variable->GetName()] = 1;
         }
     }
-    /*
-    for (auto itf = vecAllShaderFunctions.begin(); itf != vecAllShaderFunctions.end(); itf++)
-    {
-        FunctionInstruction* function = *itf;
-        if (shadersFunctionsDeclarationName.find(function->GetName()) != shadersFunctionsDeclarationName.end())
-            return error(string("A shader function already exists with the name: ") + function->GetName());
-        shadersFunctionsDeclarationName[function->GetName()] = 1;
-    }*/
 #endif
 
     return true;
@@ -1201,7 +1272,6 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     //===================================================================================================================
     // - update all OpFunctionCallThroughCompositionVariable instructions calling through the composition that we're instancing
     // - update our composition data
-    bool gotUnresolvedComposotions = false;
     vector<range_t> vecStripRanges;
     process(
         [&](spv::Op opCode, unsigned start)
@@ -1318,7 +1388,7 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     UpdateAllMaps();
 
     if (compositionTarget->status != ShaderComposition::ShaderCompositionStatusEnum::Resolved)
-        return error("The composition has not been set to resolved");
+        return error("The composition has not been resolved");
 
     if (errorMessages.size() > 0) return false;
     status = SpxRemapperStatusEnum::WaitingForMixin;
@@ -1351,43 +1421,180 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
 
     //===================================================================================================================
     //===================================================================================================================
-    //Remove all unused classes and functions from the bytecode, depending on the outStages called functions
-
-    //Set all flag to 0
-    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
-        ShaderClassData* shader = *itsh;
-        shader->flag1 = 0;
-        for (auto itsf = shader->functionsList.begin(); itsf != shader->functionsList.end(); itsf++) {
-            FunctionInstruction* aFunction = *itsf;
-            aFunction->flag1 = 0;
-        }
-    }
-
-    //Go through the code of all functions set as entryPoint
-    vector<FunctionInstruction*> vectorFunctionsToParse;
-    vectorFunctionsToParse.insert(vectorFunctionsToParse.end(), listEntryPointFunction.begin(), listEntryPointFunction.end());
-    while (vectorFunctionsToParse.size() > 0)
+    //Find all unused shader classes from the bytecode, depending on the outputStages entryPoint functions
     {
-        FunctionInstruction* aFunction = vectorFunctionsToParse.back();
-        vectorFunctionsToParse.pop_back();
-        if (aFunction->flag1 == 1) continue; //we already processed this function
+        //Set all shaders and functions flag to 0
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+            ShaderClassData* shader = *itsh;
+            shader->flag1 = 0;
+            for (auto itsf = shader->functionsList.begin(); itsf != shader->functionsList.end(); itsf++) {
+                FunctionInstruction* aFunction = *itsf;
+                aFunction->flag1 = 0;
+            }
+        }
 
-        //Flag the function and the shader declaring it
-        aFunction->flag1 = 1;
-        aFunction->shaderOwner->flag1 = 1;
-        //Flag all shader parents
-        GetShaderFamilyTreeWithParentOnly();
+        //====================================================================
+        //Analyse all functions called, starting from all entryPoint functions
+        vector<FunctionInstruction*> vectorFunctionsCalled;
+        vector<FunctionInstruction*> vectorAllFunctionsCalled;
+        vector<ShaderClassData*> vectorShadersOwningAllFunctionsCalled;
+        vectorFunctionsCalled.insert(vectorFunctionsCalled.end(), listEntryPointFunction.begin(), listEntryPointFunction.end());
+        while (vectorFunctionsCalled.size() > 0)
+        {
+            FunctionInstruction* aFunctionCalled = vectorFunctionsCalled.back();
+            vectorFunctionsCalled.pop_back();
+            if (aFunctionCalled->flag1 == 1) continue; //we already processed this function
+            vectorAllFunctionsCalled.push_back(aFunctionCalled);
+
+            //Flag the function and the shader owning it
+            aFunctionCalled->flag1 = 1;
+            if (aFunctionCalled->shaderOwner->flag1 == 0)
+                vectorShadersOwningAllFunctionsCalled.push_back(aFunctionCalled->shaderOwner);
+            aFunctionCalled->shaderOwner->flag1 = 1;
+
+            //Analyse the function's bytecode, to add all new functions called
+            unsigned int start = aFunctionCalled->bytecodeStartPosition;
+            const unsigned int end = aFunctionCalled->bytecodeEndPosition;
+            while (start < end)
+            {
+                unsigned int wordCount = asWordCount(start);
+                spv::Op opCode = asOpCode(start);
+
+                switch (opCode)
+                {
+                    case spv::OpFunctionCall:
+                    case spv::OpFunctionCallBaseResolved:
+                    {
+                        spv::Id functionCalledId = asId(start + 3);
+                        FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+                        if (anotherFunctionCalled->flag1 == 0) vectorFunctionsCalled.push_back(anotherFunctionCalled); //we'll ananlyse the function later
+                        break;
+                    }
+
+                    case spv::OpFunctionCallBaseUnresolved:
+                    {
+                        error(string("An unresolved function base call has been found in function: ") + aFunctionCalled->GetName());
+                        break;
+                    }
+
+                    case spv::OpFunctionCallThroughCompositionVariable:
+                    {
+                        error(string("An unresolved function call through composition has been found in function: ") + aFunctionCalled->GetName());
+                        break;
+                    }
+                }
+                start += wordCount;
+            }
+        }
+        if (errorMessages.size() > 0) return false;
+
+        //====================================================================
+        //For all shader flagged, flag their whole family (compositions and parents) as well
+        vector<ShaderClassData*> vectorAllShadersInvolved;
+        while (vectorShadersOwningAllFunctionsCalled.size() > 0)
+        {
+            ShaderClassData* aShaderInvolved = vectorShadersOwningAllFunctionsCalled.back();
+            vectorShadersOwningAllFunctionsCalled.pop_back();
+            if (aShaderInvolved->flag1 == 2) continue;
+            
+            aShaderInvolved->flag1 = 2;
+            vectorAllShadersInvolved.push_back(aShaderInvolved);
+
+            //add the shader parents
+            for (auto itsh = aShaderInvolved->parentsList.begin(); itsh != aShaderInvolved->parentsList.end(); itsh++)
+            {
+                ShaderClassData* aShaderParentInvolved = *itsh;
+                if (aShaderParentInvolved->flag1 != 2) vectorShadersOwningAllFunctionsCalled.push_back(aShaderParentInvolved);
+            }
+            
+            //add the compositions' shader target, check that they've been resolved
+            for (auto itc = aShaderInvolved->compositionsList.begin(); itc != aShaderInvolved->compositionsList.end(); itc++)
+            {
+                const ShaderComposition& aComposition = *itc;
+                if (aComposition.status == ShaderComposition::ShaderCompositionStatusEnum::Unresolved)
+                {
+                    error(string("Composition \"") + aComposition.GetVariableName() + string("\" from shader \"") + aShaderInvolved->GetName() + string("\" has not been set"));
+                }
+                else
+                {
+                    ShaderClassData* aShaderCompositionInvolved = itc->shaderType;
+                    if (aShaderCompositionInvolved->flag1 != 2) vectorShadersOwningAllFunctionsCalled.push_back(aShaderCompositionInvolved);
+                }
+            }
+        }
+        if (errorMessages.size() > 0) return false;
     }
 
     //===================================================================================================================
     //===================================================================================================================
-    if (!ValidateIfBytecodeIsReadyForCompilation()) {
-        return error("Bytecode is not valid for compilation");
-    }
+    //Remove unused shaders
+    {
+        //Get the list of all unused (unflagged) shaders
+        vector<ShaderClassData*> listUnusedShaders;
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+            ShaderClassData* shader = *itsh;
+            if (shader->flag1 != 2) listUnusedShaders.push_back(shader);
+        }
 
+        //remove all unused shaders from the bytecode and the data structure
+        vector<range_t> vecStripRanges;
+        for (auto itsh = listUnusedShaders.begin(); itsh != listUnusedShaders.end(); itsh++) {
+            ShaderClassData* unusedShader = *itsh;
+            if (!RemoveShaderAndAllData(unusedShader, vecStripRanges))
+            {
+                return error(string("Failed to remove the unused shader: ") + unusedShader->GetName());
+            }
+        }
+
+        //warning: objects bytecode position is not correct anymore after this 
+        stripBytecode(vecStripRanges);
+    }
+    
+    //===================================================================================================================
+    //===================================================================================================================
     //Convert SPIRX extensions to SPIRV
-    if (!ConvertSpirxToSpirVBytecode()) {
-        return error("Failed to convert SPIRX to SPIRV");
+    {
+        vector<range_t> vecStripRanges;
+        process(
+            [&](spv::Op opCode, unsigned start)
+            {
+                switch (opCode) {
+                    case spv::OpFunctionCallBaseResolved:
+                    {
+                        //change OpFunctionCallBaseResolved to OpFunctionCall
+                        setOpCode(start, spv::OpFunctionCall);
+                        break;
+                    }
+                    case spv::OpFunctionCallThroughCompositionVariable:
+                    {
+                        error(string("Found unresolved OpFunctionCallThroughCompositionVariable. pos=") + to_string(start));
+                        break;
+                    }
+                    case spv::OpFunctionCallBaseUnresolved:
+                    {
+                        error(string("A function base call has an unresolved state. Pos=") + to_string(start));
+                        break;
+                    }
+                    case spv::OpBelongsToShader:
+                    case spv::OpDeclarationName:
+                    case spv::OpTypeXlslShaderClass:
+                    case spv::OpShaderInheritance:
+                    case spv::OpShaderComposition:
+                    case spv::OpShaderArrayComposition:
+                    case spv::OpMethodProperties:
+                    {
+                        stripInst(vecStripRanges, start);
+                        break;
+                    }
+                }
+                return true;
+            },
+            spx_op_fn_nop
+        );
+        if (errorMessages.size() > 0) return false;
+
+        //warning: objects bytecode position is not correct anymore after this 
+        stripBytecode(vecStripRanges);
     }
 
     //===================================================================================================================
@@ -1403,76 +1610,6 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
             error(string("Fail to generate SPV stage bytecode for the stage: ") + GetShadingStageLabel(outputStage.stage));
         }
     }
-
-    if (errorMessages.size() > 0) return false;
-    return true;
-}
-
-bool SpxStreamRemapper::ValidateIfBytecodeIsReadyForCompilation()
-{
-    //Have we defined all compositions?
-    for (auto its = vecAllShaders.begin(); its != vecAllShaders.end(); its++)
-    {
-        ShaderClassData* aShader = *its;
-        for (auto itsc = aShader->compositionsList.begin(); itsc != aShader->compositionsList.end(); itsc++)
-        {
-            const ShaderComposition& aComposition = *itsc;
-            if (aComposition.status == ShaderComposition::ShaderCompositionStatusEnum::Unresolved)
-            {
-                error(string("Composition \"") + aComposition.GetVariableName() + string("\" from shader \"") + aShader->GetName() + string("\" has not been set"));
-            }
-        }
-    }
-
-    if (errorMessages.size() > 0) return false;
-    return true;
-}
-
-bool SpxStreamRemapper::ConvertSpirxToSpirVBytecode()
-{
-    //Convert OpIntructions
-    // - OpFunctionCallBaseResolved --> OpFunctionCall (remapping of override functions has been completed)
-
-    vector<range_t> vecStripRanges;
-    process(
-        [&](spv::Op opCode, unsigned start)
-        {
-            switch (opCode) {
-                case spv::OpFunctionCallBaseResolved:
-                {
-                    // change OpFunctionCallBaseResolved to OpFunctionCall
-                    setOpCode(start, spv::OpFunctionCall);
-                    break;
-                }
-                case spv::OpFunctionCallThroughCompositionVariable:
-                {
-                    error(string("Found unresolved OpFunctionCallThroughCompositionVariable. pos=") + to_string(start));
-                    break;
-                }
-                case spv::OpFunctionCallBaseUnresolved:
-                {
-                    error(string("A function base call has an unresolved state. Pos=") + to_string(start));
-                    break;
-                }
-                case spv::OpBelongsToShader:
-                case spv::OpDeclarationName:
-                case spv::OpTypeXlslShaderClass:
-                case spv::OpShaderInheritance:
-                case spv::OpShaderComposition:
-                case spv::OpShaderArrayComposition:
-                case spv::OpMethodProperties:
-                {
-                    stripInst(start, vecStripRanges);
-                    break;
-                }
-            }
-            return true;
-        },
-        spx_op_fn_nop
-    );
-    if (errorMessages.size() > 0) return false;
-
-    stripBytecode(vecStripRanges);
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -1602,30 +1739,6 @@ void SpxStreamRemapper::GetShaderFamilyTreeWithParentAndCompositionType(ShaderCl
         //Add all compositions
         for (auto itc = aShader->compositionsList.begin(); itc != aShader->compositionsList.end(); itc++)
             listShaderToValidate.push_back(itc->shaderType);
-    }
-}
-
-void SpxStreamRemapper::GetShaderFamilyTreeWithParentOnly(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)
-{
-    shaderFamilyTree.clear();
-
-    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) (*itsh)->flag = 0;
-
-    vector<ShaderClassData*> children;
-    vector<ShaderClassData*> listShaderToValidate;
-    listShaderToValidate.push_back(shaderFromFamily);
-    while (listShaderToValidate.size() > 0)
-    {
-        ShaderClassData* aShader = listShaderToValidate.back();
-        listShaderToValidate.pop_back();
-
-        if (aShader->flag != 0) continue;  //the shader has already been added
-        shaderFamilyTree.push_back(aShader);
-        aShader->flag = 1;
-
-        //Add all parents
-        for (auto itsh = aShader->parentsList.begin(); itsh != aShader->parentsList.end(); itsh++)
-            listShaderToValidate.push_back(*itsh);
     }
 }
 
@@ -1875,7 +1988,7 @@ bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStageEnum stage, Fun
             [&](spv::Op opCode, unsigned start)
             {
                 if (opCode == spv::OpEntryPoint)
-                    stripInst(start, vecStripRanges);
+                    stripInst(vecStripRanges, start);
                 return true;
             },
             spx_op_fn_nop

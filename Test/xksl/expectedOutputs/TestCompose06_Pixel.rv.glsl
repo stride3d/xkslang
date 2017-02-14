@@ -1,10 +1,5 @@
 #version 450
 
-layout(std140) uniform CompA_globalCBuffer
-{
-    float varCA;
-} CompA_globalCBuffer_var;
-
 layout(std140) uniform cS2C0_CompA_globalCBuffer
 {
     float varCA;

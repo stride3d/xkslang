@@ -2,34 +2,35 @@
 
 shader SubComp
 {
-	int ca;
-	stream int sa;
+	int var1;
+	stream int s1;
 	
 	int Compute()
 	{
-		return ca + streams.sa;
+		return var1 + streams.s1;
 	}
 }
 
 shader Comp
 {
-	int cb;
-	stream int sb;
+	int var1;
+	stream int s1;
 	
-	compose SubComp sc;
+	compose SubComp sb;
 	
 	int Compute()
 	{
-		return cb + streams.sb + sc.Compute();
+		return var1 + streams.s1 + sb.Compute();
 	}
 }
 
 shader ShaderA
 {
 	compose Comp color;
+	compose SubComp sb;
 	
 	int main()
 	{
-		return color.Compute();
+		return color.Compute() + sb.Compute();
 	}
 }

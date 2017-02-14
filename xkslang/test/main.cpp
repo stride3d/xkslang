@@ -93,9 +93,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose05", "TestCompose05.xkfx" },
     //{ "TestCompose06", "TestCompose06.xkfx" },
     //{ "TestCompose07", "TestCompose07.xkfx" },
-    { "TestCompose08", "TestCompose08.xkfx" },
-    //{ "TestCompose09", "TestCompose09.xkfx" },
-    //{ "TestCompose10", "TestCompose10.xkfx" },
+    //{ "TestCompose08", "TestCompose08.xkfx" },
+    { "TestCompose09", "TestCompose09.xkfx" },
 };
 
 #ifdef _DEBUG
@@ -190,12 +189,11 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputSta
     DWORD time_before, time_after;
     bool success = true;
 
-    SpvBytecode compiledSpv;
     SpvBytecode finalizedSpv;
     SpvBytecode errorSpv;
     cout << "Compile Mixin: ";
     time_before = GetTickCount();
-    success = mixer->Compile(outputStages, errorMsgs, &compiledSpv, &finalizedSpv, &errorSpv);
+    success = mixer->Compile(outputStages, errorMsgs, &finalizedSpv, &errorSpv);
     time_after = GetTickCount();
 
     if (!success)
@@ -219,19 +217,6 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputSta
     else
     {
         cout << "OK. time: " << (time_after - time_before) << " ms" << endl;
-    }
-
-    //output compiled spirv whtether compilation succeded or not
-    {
-        const vector<uint32_t>& bytecodeList = compiledSpv.getBytecodeStream();
-        ostringstream disassembly_stream;
-        spv::Parameterize();
-        spv::Disassemble(disassembly_stream, bytecodeList);
-
-        const string outputFileName = effectName + "_mixin_compiled_" + ".hr.spv";
-        const string outputFullName = outputDir + outputFileName;
-        xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
-        cout << " output: \"" << outputFileName << "\"" << endl;
     }
 
     //output finalized spirv

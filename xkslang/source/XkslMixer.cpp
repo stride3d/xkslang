@@ -149,7 +149,7 @@ bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& mes
     return true;
 }
 
-bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<string>& messages, SpvBytecode* compiledSpv, SpvBytecode* finalizedSpv, SpvBytecode* errorLatestSpv)
+bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<string>& messages, SpvBytecode* finalizedSpv, SpvBytecode* errorLatestSpv)
 {
     if (spxStreamRemapper == nullptr)
         return error(messages, "you must process some mixin first");
@@ -162,9 +162,6 @@ bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<strin
     //We clone the stream before compiling it: we want to keep the original stream as it is, so that user can keep mixin and updating it if need
     SpxStreamRemapper* clonedSpxStream = spxStreamRemapper->Clone();
     if (clonedSpxStream == nullptr) return error(messages, "Failed to clone the SpxStreamRemapper");
-
-    if (compiledSpv != nullptr)
-        clonedSpxStream->GetMixinBytecode(compiledSpv->getWritableBytecodeStream());
 
     if (!clonedSpxStream->CompileMixinForStages(outputStages))
     {

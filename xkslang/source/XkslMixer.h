@@ -42,7 +42,7 @@ public:
     //bool GenerateStageBytecode(ShadingStage stage, std::string entryPoint, SpvBytecode& output, std::vector<std::string>& messages);
     //bool FinalizeMixin(std::vector<std::string>& messages);
 
-    bool Compile(std::vector<XkslMixerOutputStage>& outputStages, std::vector<std::string>& messages, SpvBytecode* compiledSpv, SpvBytecode* finalizedSpv, SpvBytecode* errorLatestSpv);
+    bool Compile(std::vector<XkslMixerOutputStage>& outputStages, std::vector<std::string>& messages, SpvBytecode* finalizedSpv, SpvBytecode* errorLatestSpv);
 
 private:
     SpxStreamRemapper* spxStreamRemapper;

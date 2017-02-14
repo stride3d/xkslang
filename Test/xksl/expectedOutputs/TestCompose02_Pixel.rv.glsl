@@ -1,10 +1,5 @@
 #version 450
 
-layout(std140) uniform ShaderComp_globalCBuffer
-{
-    float varC;
-} ShaderComp_globalCBuffer_var;
-
 layout(std140) uniform cS5C0_ShaderComp_globalCBuffer
 {
     float varC;
