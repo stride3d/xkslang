@@ -4172,7 +4172,7 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
         //we define the statement as a forEach loop, so that we can add xksl extended info in the bytecode
         statement = intermediate.growAggregate(statement, nullptr);
         statement->getAsAggregate()->setOperator(EOpSequence);
-        statement->getAsAggregate()->SetIsAForEachLoopBlockStatement(true);
+        statement->getAsAggregate()->SetIsAForEachLoopBlockStatement(true, compositionTargeted);
 
         //unpile the variable
         this->listForeachArrayCompositionVariable.pop_back();

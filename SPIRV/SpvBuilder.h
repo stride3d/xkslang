@@ -209,7 +209,7 @@ public:
     void addMemberDecoration(Id, unsigned int member, Decoration, int num = -1);
 
     //XKSL Extensions
-    void createForEachStartLoopLabel();
+    void createForEachStartLoopLabel(Id shaderId, int compositionIndex);
     void createForEachEndLoopLabel();
     void addBelongToShaderDecoration(Id, Id);
     void addDeclarationNameDecoration(Id, const char* name);

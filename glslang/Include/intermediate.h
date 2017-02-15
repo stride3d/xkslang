@@ -1109,13 +1109,15 @@ public:
     void addToPragmaTable(const TPragmaTable& pTable);
     const TPragmaTable& getPragmaTable() const { return *pragmaTable; }
 
-    void SetIsAForEachLoopBlockStatement(bool b) { isAForEachLoopBlockStatement = b; }
-    bool IsAForEachLoopBlockStatement() const { return isAForEachLoopBlockStatement; }
     void SetTargetBaseShaderClass(bool b) { targetBaseShaderClass = b; }
     bool GetTargetBaseShaderClass() const { return targetBaseShaderClass; }
     TShaderCompositionVariable& GetWritableCompositionVariable() { return functionCalledThroughComposition; }
     TShaderCompositionVariable GetCompositionVariable() const { return functionCalledThroughComposition; }
     bool IsAFunctionCallThroughCompositionVariable() const { return functionCalledThroughComposition.shaderCompositionId != -1; }
+
+    void SetIsAForEachLoopBlockStatement(bool b, const TShaderCompositionVariable& compositionTargeted) { isAForEachLoopBlockStatement = b; forEachLoopCompositionTargeted = compositionTargeted; }
+    bool IsAForEachLoopBlockStatement() const { return isAForEachLoopBlockStatement; }
+    TShaderCompositionVariable GetForEachLoopCompositionTargeted() const { return forEachLoopCompositionTargeted; }
 
 protected:
     TIntermAggregate(const TIntermAggregate&); // disallow copy constructor
@@ -1128,10 +1130,13 @@ protected:
     bool debug;
     TPragmaTable* pragmaTable;
 
+    //======================================================================================
     //xksl extensions
     bool targetBaseShaderClass; //if we call a method with base accessor, we need to record this information (to make sure the function call can't get overriden)
     TShaderCompositionVariable functionCalledThroughComposition;  //the method has been called though a composition variable
+
     bool isAForEachLoopBlockStatement;
+    TShaderCompositionVariable forEachLoopCompositionTargeted;
 };
 
 //

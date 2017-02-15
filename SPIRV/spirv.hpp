@@ -934,7 +934,7 @@ enum Op {
     OpShaderArrayComposition = 4604,         //Declare an array composition within a shader
     OpMethodProperties = 4605,               //Add XKSL properties to a method: cf XkslPropertyEnum
 
-    OpForEachCompositionStartLoop = 4606,
+    OpForEachCompositionStartLoop = 4606,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 4607,
 
     OpFunctionCallBaseUnresolved = 4620,              //an unresolved function call with base accessor

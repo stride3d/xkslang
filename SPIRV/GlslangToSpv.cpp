@@ -1429,7 +1429,18 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
 
         if (node->IsAForEachLoopBlockStatement())
         {
-            if (visit == glslang::EvPreVisit) builder.createForEachStartLoopLabel();
+            if (visit == glslang::EvPreVisit){
+                glslang::TShaderCompositionVariable compositionTargeted = node->GetForEachLoopCompositionTargeted();
+                std::string shaderOwnerName(compositionTargeted.shaderOwnerName.c_str());
+                auto fit = shaderClassMap.find(shaderOwnerName);
+                if (fit == shaderClassMap.end())
+                {
+                    if (logger) logger->error(std::string("The type shader owner has not been created: ") + shaderOwnerName);
+                    return false;
+                }
+                spv::Id shaderOwnerId = fit->second;
+                builder.createForEachStartLoopLabel(shaderOwnerId, compositionTargeted.shaderCompositionId);
+            }
             else if (visit == glslang::EvPostVisit) builder.createForEachEndLoopLabel();
         }
 

@@ -3,5 +3,7 @@ load "TestForEach01.xksl"
 mixer A
 A.mixin ShaderA
 
+A.addComposition ShaderA.SubComputes A
+
 A.setStageEntryPoint Pixel "main"
 A.compile

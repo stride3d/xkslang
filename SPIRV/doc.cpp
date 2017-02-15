@@ -1882,6 +1882,9 @@ void Parameterize()
     InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralNumber, "'Status'");
     InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralString, "'VariableName'");
 
+    InstructionDesc[OpForEachCompositionStartLoop].operands.push(OperandId, "'Shader'");
+    InstructionDesc[OpForEachCompositionStartLoop].operands.push(OperandLiteralNumber, "'CompId'");
+
     InstructionDesc[OpMethodProperties].operands.push(OperandId, "'Function'");
     InstructionDesc[OpMethodProperties].operands.push(OperandProperties, "'Property 0', +\n'Property 1', +\n...");
 

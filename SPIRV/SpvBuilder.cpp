@@ -999,10 +999,12 @@ void Builder::addShaderCompositionDecoration(Id shaderId, int index, Id shaderTy
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
-void Builder::createForEachStartLoopLabel()
+void Builder::createForEachStartLoopLabel(Id shaderId, int compositionIndex)
 {
-    Instruction* branch = new Instruction(OpForEachCompositionStartLoop);
-    buildPoint->addInstruction(std::unique_ptr<Instruction>(branch));
+    Instruction* op = new Instruction(OpForEachCompositionStartLoop);
+    op->addIdOperand(shaderId);
+    op->addImmediateOperand(compositionIndex);
+    buildPoint->addInstruction(std::unique_ptr<Instruction>(op));
 }
 
 void Builder::createForEachEndLoopLabel()
