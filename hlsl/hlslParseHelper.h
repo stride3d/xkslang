@@ -44,7 +44,7 @@ namespace glslang {
 class TAttributeMap; // forward declare
 class XkslShaderDefinition;
 class XkslShaderLibrary;
-class HlslToken;
+struct HlslToken;
 
 class HlslParseContext : public TParseContextBase {
 public:

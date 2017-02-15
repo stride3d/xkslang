@@ -1582,6 +1582,8 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
                     case spv::OpShaderComposition:
                     case spv::OpShaderArrayComposition:
                     case spv::OpMethodProperties:
+                    case spv::OpForEachCompositionStartLoop:
+                    case spv::OpForEachCompositionEndLoop:
                     {
                         stripInst(vecStripRanges, start);
                         break;

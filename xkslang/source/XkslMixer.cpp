@@ -134,7 +134,7 @@ bool XkslMixer::AddComposition(const string& shaderName, const string& variableN
     if (!spxStreamRemapper->AddComposition(shaderName, variableName, mixerSource->spxStreamRemapper, msgs))
     {
         spxStreamRemapper->copyMessagesTo(msgs);
-        return error(msgs, "Failed to add the comnposition to the mixer");
+        return error(msgs, "Failed to add the composition to the mixer");
     }
     return true;
 }

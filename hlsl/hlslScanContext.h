@@ -165,7 +165,7 @@ public:
     TVector<TShaderClassFunction> listMethods;
 
     TShaderCompositionVariable* GetCompositionVariableForId(int id){
-        for (int i=0; i<listCompositions.size(); ++i) if (listCompositions[i].shaderCompositionId == id) return &listCompositions[i];
+        for (unsigned int i=0; i<listCompositions.size(); ++i) if (listCompositions[i].shaderCompositionId == id) return &listCompositions[i];
         return nullptr;
     }
 };

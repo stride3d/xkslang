@@ -1427,6 +1427,12 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
             return false;
         }
 
+        if (node->IsAForEachLoopBlockStatement())
+        {
+            if (visit == glslang::EvPreVisit) builder.createForEachStartLoopLabel();
+            else if (visit == glslang::EvPostVisit) builder.createForEachEndLoopLabel();
+        }
+
         return true;
     }
     case glslang::EOpLinkerObjects:

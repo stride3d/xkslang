@@ -1087,8 +1087,8 @@ typedef TVector<int> TQualifierList;
 //
 class TIntermAggregate : public TIntermOperator {
 public:
-    TIntermAggregate() : TIntermOperator(EOpNull), userDefined(false), pragmaTable(0), targetBaseShaderClass(false){ }
-    TIntermAggregate(TOperator o) : TIntermOperator(o), pragmaTable(0), targetBaseShaderClass(false) { }
+    TIntermAggregate() : TIntermOperator(EOpNull), userDefined(false), pragmaTable(0), targetBaseShaderClass(false), isAForEachLoopBlockStatement(false){ }
+    TIntermAggregate(TOperator o) : TIntermOperator(o), pragmaTable(0), targetBaseShaderClass(false), isAForEachLoopBlockStatement(false) { }
     ~TIntermAggregate() { delete pragmaTable; }
     virtual       TIntermAggregate* getAsAggregate()       { return this; }
     virtual const TIntermAggregate* getAsAggregate() const { return this; }
@@ -1109,6 +1109,8 @@ public:
     void addToPragmaTable(const TPragmaTable& pTable);
     const TPragmaTable& getPragmaTable() const { return *pragmaTable; }
 
+    void SetIsAForEachLoopBlockStatement(bool b) { isAForEachLoopBlockStatement = b; }
+    bool IsAForEachLoopBlockStatement() const { return isAForEachLoopBlockStatement; }
     void SetTargetBaseShaderClass(bool b) { targetBaseShaderClass = b; }
     bool GetTargetBaseShaderClass() const { return targetBaseShaderClass; }
     TShaderCompositionVariable& GetWritableCompositionVariable() { return functionCalledThroughComposition; }
@@ -1129,6 +1131,7 @@ protected:
     //xksl extensions
     bool targetBaseShaderClass; //if we call a method with base accessor, we need to record this information (to make sure the function call can't get overriden)
     TShaderCompositionVariable functionCalledThroughComposition;  //the method has been called though a composition variable
+    bool isAForEachLoopBlockStatement;
 };
 
 //

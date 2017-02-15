@@ -144,7 +144,7 @@ namespace glslang {
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName);
         bool isRecordedAsAShaderName(const TString& name);
-        bool isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, int& compositionShaderIdTargeted, TString& compositionShaderClassOwner);
+        bool isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, bool lookForArraycomposition, TShaderCompositionVariable& compositionTargeted);
 
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
@@ -153,6 +153,7 @@ namespace glslang {
         XkslShaderParsingOperationEnum xkslShaderParsingOperation;
         XkslShaderDefinition* xkslShaderCurrentlyParsed;
         XkslShaderLibrary* xkslShaderLibrary;
+        TVector<TShaderVariableTargetingACompositionVariable> listForeachArrayCompositionVariable;  //if we parse a foreach loop: we pile (we can have nested foreach) the temporary variable composition name
     };
 
 } // end namespace glslang

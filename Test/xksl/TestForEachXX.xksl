@@ -1,0 +1,30 @@
+shader ComputeColor
+{
+	int Compute(int i)
+	{
+		return i;
+	}
+}
+
+shader ShaderA
+{
+	compose ComputeColor comps1[];
+	compose ComputeColor comps2[];
+	
+	int main()
+	{
+		int res = 0;
+		foreach(var subCompute in comps1)
+		{
+			res += 1;
+			
+			foreach(var subCompute in comps2)
+			{
+				bghgdfghd;
+			}
+		}
+		
+		return res;
+	}
+}
+

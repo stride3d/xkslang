@@ -1,0 +1,7 @@
+load "TestForEach01.xksl"
+
+mixer A
+A.mixin ShaderA
+
+A.setStageEntryPoint Pixel "main"
+A.compile

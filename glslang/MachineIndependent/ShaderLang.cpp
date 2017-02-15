@@ -612,7 +612,7 @@ bool DeduceVersionProfile(TInfoSink& infoSink, EShLanguage stage, bool versionNo
 
 void ClearShaderLibrary(XkslShaderLibrary& shaderLibrary)
 {
-    for (int s = 0; s < shaderLibrary.listShaders.size(); s++)
+    for (unsigned int s = 0; s < shaderLibrary.listShaders.size(); s++)
     {
         XkslShaderDefinition* shader = shaderLibrary.listShaders[s];
         delete shader;
@@ -690,10 +690,10 @@ bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary
     //find all unresolved members from the shader library
     std::list<XkslShaderDefinition::XkslShaderMember*> listUnresolvedMembers;
 
-    for (int s = 0; s < shaderLibrary.listShaders.size(); s++)
+    for (unsigned int s = 0; s < shaderLibrary.listShaders.size(); s++)
     {
         XkslShaderDefinition* shader = shaderLibrary.listShaders[s];
-        for (int i = 0; i < shader->listAllDeclaredMembers.size(); ++i)
+        for (unsigned int i = 0; i < shader->listAllDeclaredMembers.size(); ++i)
         {
             XkslShaderDefinition::XkslShaderMember& member = shader->listAllDeclaredMembers[i];
             if (member.memberLocation.memberLocationType == XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst)
@@ -766,7 +766,7 @@ bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary
 XkslShaderDefinition* GetShaderDefinition(XkslShaderLibrary& shaderLibrary, const TString& shaderName)
 {
     TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
-    for (int s = 0; s < listShaderParsed.size(); s++)
+    for (unsigned int s = 0; s < listShaderParsed.size(); s++)
     {
         XkslShaderDefinition* shader = listShaderParsed[s];
         if (shader->shaderName.compare(shaderName) == 0) return shader;
@@ -781,7 +781,7 @@ bool ParseXkslShaderFile(
     const TBuiltInResource* resources,
     EShMessages messages,
     const char* shaderStrings,
-    const int inputLengths)
+    const unsigned int inputLengths)
 {
     const char* t_strings[] = { shaderStrings };
     size_t t_length[] = { inputLengths };
@@ -868,13 +868,13 @@ bool ParseXkslShaderFile(
         if (success)
         {
             TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
-            for (int s = 0; s < listShaderParsed.size(); s++)
+            for (unsigned int s = 0; s < listShaderParsed.size(); s++)
             {
                 XkslShaderDefinition* shader = listShaderParsed[s];
 
                 //======================================================================================
                 //Method declaration: add the shader methods prototype in the table of symbol
-                for (int i = 0; i < shader->listMethods.size(); ++i)
+                for (unsigned int i = 0; i < shader->listMethods.size(); ++i)
                 {
                     TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
                     parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
@@ -893,7 +893,7 @@ bool ParseXkslShaderFile(
                 TString* streamBufferVarName = NewPoolTString((*streamBufferStructName + TString("_var")).c_str());
                 TTypeList* streambufferStructTypeList = new TTypeList();
 
-                for (int i = 0; i < shader->listParsedMembers.size(); ++i)
+                for (unsigned int i = 0; i < shader->listParsedMembers.size(); ++i)
                 {
                     XkslShaderDefinition::XkslShaderMember& member = shader->listParsedMembers[i];
                     //member.type->setUserIdentifierName(member.type->getFieldName().c_str()); //declaration name is the field name
@@ -1157,7 +1157,7 @@ bool ParseXkslShaderFile(
             TIntermNode* treeRootNode = intermediate->getTreeRoot();
 
             //Add all shader functions nodes as node aggregator
-            for (int s = 0; s < listShaderParsed.size(); s++)
+            for (unsigned int s = 0; s < listShaderParsed.size(); s++)
             {
                 XkslShaderDefinition* shader = listShaderParsed[s];
             

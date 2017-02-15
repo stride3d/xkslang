@@ -1207,6 +1207,8 @@ const char* OpcodeString(int op)
     case (OpFunctionCallBaseUnresolved): return "OpFunctionCallBaseUnres";
     case (OpFunctionCallBaseResolved):   return "OpFunctionCallBaseRes";
     case (OpFunctionCallThroughCompositionVariable):  return "OpFunctionCallThroughCompositionVar";
+    case (OpForEachCompositionStartLoop):             return "OpForEachCompositionStartLoop";
+    case (OpForEachCompositionEndLoop):               return "OpForEachCompositionEndLoop";
     }
 }
 
@@ -1344,6 +1346,8 @@ void Parameterize()
     InstructionDesc[OpShaderComposition].setResultAndType(false, false);
     InstructionDesc[OpShaderArrayComposition].setResultAndType(false, false);
     InstructionDesc[OpMethodProperties].setResultAndType(false, false);
+    InstructionDesc[OpForEachCompositionStartLoop].setResultAndType(false, false);
+    InstructionDesc[OpForEachCompositionEndLoop].setResultAndType(false, false);
 
     InstructionDesc[OpFunctionCallBaseUnresolved].setResultAndType(true, true);
     InstructionDesc[OpFunctionCallBaseResolved].setResultAndType(true, true);

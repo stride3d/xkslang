@@ -52,7 +52,11 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "methodReferingToShaderVariable.xksl" },
     //{ "methodsWithSimpleClassAccessor.xksl" },
     //{ "cbuffers.xksl" },
-    //{ "TestCompose01.xksl" },
+    //{ "shaderWithForLoop.xksl" },
+    //{ "shaderWithLoops.xksl" },
+    //{ "TestComposeSimple.xksl" },
+    
+    //{ "TestComposeForEachSimple01.xksl" },
 
     //{{"textureAndSampler.xksl"}, {"", nullptr}},
     //{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -67,6 +71,7 @@ struct XkfxEffectsToProcess {
     string effectName;
     string input;
 };
+
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin01", "TestMixin01.xkfx" },
     //{ "TestMixin02", "TestMixin02.xkfx" },
@@ -95,7 +100,16 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose07", "TestCompose07.xkfx" },
     //{ "TestCompose08", "TestCompose08.xkfx" },
     //{ "TestCompose09", "TestCompose09.xkfx" },
-    { "TestCompose10", "TestCompose10.xkfx" },
+    //{ "TestCompose10", "TestCompose10.xkfx" },
+
+    //{ "TestForLoop", "TestForLoop.xkfx" },
+    { "TestForEach01", "TestForEach01.xkfx" },
+
+    //{ "TestForEachXX", "TestForEachXX.xkfx" },
+};
+
+vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlsl = {
+    //{ "TestGlsl01", "TestForEach01_Pixel.spv" },
 };
 
 #ifdef _DEBUG
@@ -209,7 +223,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputSta
             spv::Parameterize();
             spv::Disassemble(disassembly_stream, bytecodeList);
 
-            const string outputFileName = effectName + "_mixin_error_" + ".hr.spv";
+            const string outputFileName = effectName + "_mixin_error" + ".hr.spv";
             const string outputFileFullName = outputDir + outputFileName;
             xkslangtest::Utils::WriteFile(outputFileFullName, disassembly_stream.str());
             cout << " output: \"" << outputFileName << "\"" << endl;
@@ -223,11 +237,17 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputSta
     //output finalized spirv
     {
         const vector<uint32_t>& bytecodeList = finalizedSpv.getBytecodeStream();
+
+        //spv
+        //string outputNameSpv = effectName + "_mixin_finalized" + ".spv";
+        //glslang::OutputSpvBin(bytecodeList, (outputDir + outputNameSpv).c_str());
+
+        //hr spv
         ostringstream disassembly_stream;
         spv::Parameterize();
         spv::Disassemble(disassembly_stream, bytecodeList);
 
-        const string outputFileName = effectName + "_mixin_finalized_" + ".hr.spv";
+        const string outputFileName = effectName + "_mixin_finalized" + ".hr.spv";
         const string outputFullName = outputDir + outputFileName;
         xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
         cout << " output: \"" << outputFileName << "\"" << endl;
@@ -236,7 +256,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputSta
     if (!success) return false;
 
     //convert and output every stages
-    for (int i = 0; i<outputStages.size(); ++i)
+    for (unsigned int i = 0; i<outputStages.size(); ++i)
     {
         string labelStage = GetShadingStageLabel(outputStages[i].stage);
         cout << "Convert SPIRV bytecode for entry point=\"" << outputStages[i].entryPointName << "\" stage=\"" << labelStage << "\"" << endl;
@@ -363,6 +383,8 @@ bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, SpxBytec
             cout << " output: \"" << outputFileName << "\"" << endl;
         }
     }
+
+    return success;
 }
 
 bool SeparateAdotB(const string str, string& A, string& B)
@@ -371,6 +393,7 @@ bool SeparateAdotB(const string str, string& A, string& B)
     if (pdot == string::npos) return false;
     A = str.substr(0, pdot);
     B = str.substr(pdot + 1);
+    return true;
 }
 
 bool GetShadingStageForString(string& str, ShadingStageEnum& stage)
@@ -449,7 +472,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
                 success = false; break;
             }
 
-            for (int is = 0; is < vecShaderName.size(); ++is)
+            for (unsigned int is = 0; is < vecShaderName.size(); ++is)
             {
                 string shaderName = vecShaderName[is];
                 mapShaderWithBytecode[shaderName] = spxBytecode;
@@ -630,7 +653,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     if (errorMsgs.size() > 0)
     {
         cout << "   Messages:" << endl;
-        for (int m = 0; m<errorMsgs.size(); m++) cout << "   " << errorMsgs[m] << "" << endl;
+        for (unsigned int m = 0; m<errorMsgs.size(); m++) cout << "   " << errorMsgs[m] << "" << endl;
     }
 
     return success;
@@ -645,7 +668,6 @@ void main(int argc, char** argv)
 #endif
 
     SetupTestDirectories();
-    DWORD time_before, time_after;
 
     XkslParser parser;
     if (!parser.InitialiseXkslang())
@@ -661,7 +683,7 @@ void main(int argc, char** argv)
         int countTestProcessed = 0;
         int countTestSuccessful = 0;
         vector<string> listFailedTest;
-        for (int n = 0; n < vecXkslFilesToConvert.size(); ++n)
+        for (unsigned int n = 0; n < vecXkslFilesToConvert.size(); ++n)
         {
             countTestProcessed++;
             bool success = true;
@@ -686,7 +708,7 @@ void main(int argc, char** argv)
         {
             cout << endl;
             cout << "<======================  Failed tests ======================>" << endl;
-            for (int i=0; i<listFailedTest.size(); ++i) cout << listFailedTest[i] << endl;
+            for (unsigned int i=0; i<listFailedTest.size(); ++i) cout << listFailedTest[i] << endl;
             cout << endl;
         }
     }
@@ -699,7 +721,7 @@ void main(int argc, char** argv)
         int countTestProcessed = 0;
         int countTestSuccessful = 0;
         vector<string> listFailedTest;
-        for (int n = 0; n < vecXkfxEffectToProcess.size(); ++n)
+        for (unsigned int n = 0; n < vecXkfxEffectToProcess.size(); ++n)
         {
             XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
             countTestProcessed++;
@@ -717,10 +739,30 @@ void main(int argc, char** argv)
         {
             cout << endl;
             cout << "<======================  Failed tests ======================>" << endl;
-            for (int i = 0; i<listFailedTest.size(); ++i) cout << listFailedTest[i] << endl;
+            for (unsigned int i = 0; i<listFailedTest.size(); ++i) cout << listFailedTest[i] << endl;
             cout << endl;
         }
     }
+
+    if (vecSpvFileToConvertToGlsl.size() > 0)
+    {
+        for (unsigned int n = 0; n < vecSpvFileToConvertToGlsl.size(); ++n)
+        {
+            bool success = true;
+            XkfxEffectsToProcess effect = vecSpvFileToConvertToGlsl[n];
+
+            string outputNameGlsl = effect.input + ".glsl";
+            string outputFullNameGlsl = outputDir + outputNameGlsl;
+
+            cout << "Convert into GLSL: " << effect.input << endl;
+            int result = ConvertSpvToGlsl(outputDir + effect.input, outputFullNameGlsl);
+            if (result != 0) success = false;
+
+            if (success) cout << " OK." << endl;
+            else cout << " Failed to convert the SPIRV file to GLSL" << endl;
+        }
+    }
+    
 
     parser.Finalize();
 

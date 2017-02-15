@@ -170,7 +170,7 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
     if (className == nullptr) className = getCurrentShaderName();
     if (className == nullptr) return false;
 
-    TString compositionShaderClassOwner;
+    TShaderCompositionVariable compositionTargeted;
     switch (peek())
     {
         case EHTokThis:
@@ -211,10 +211,11 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
                 advanceToken();
                 break;
             }
-            else if (isIdentifierRecordedAsACompositionVariableName(*className, *token.string, compositionShaderIdTargeted, compositionShaderClassOwner))
+            else if (isIdentifierRecordedAsACompositionVariableName(*className, *token.string, false, compositionTargeted))
             {
                 //The token is a composition that belongs to the shader class or its parents (Comp.XXX)
-                className = NewPoolTString(compositionShaderClassOwner.c_str());
+                className = NewPoolTString(compositionTargeted.shaderOwnerName.c_str());
+                compositionShaderIdTargeted = compositionTargeted.shaderCompositionId;
                 advanceToken();
                 break;
             }
@@ -2331,7 +2332,7 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
         // check the type (plus any post-declaration qualifiers)
         TType declaredType;
         if (!acceptFullySpecifiedType(nullptr, declaredType)) {
-            error((TString("invalid keyword, member or function type: ") + *token.string).c_str());
+            error("invalid keyword, member or function type");
             return false;
         }
 
@@ -2402,10 +2403,16 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
                 TIntermNode* functionNode2 = nullptr;
                 TAttributeMap attributes;  // attributes ?
                 //acceptAttributes(attributes);
+                if (listForeachArrayCompositionVariable.size() > 0) {
+                    error("shader: list of foreach array composition variable should be empty"); return false;
+                }
                 if (!acceptFunctionDefinition(*function, functionNode, functionNode2, attributes))
                 {
                     error("shader: invalid function definition");
                     return false;
+                }
+                if (listForeachArrayCompositionVariable.size() > 0){
+                    error("shader: list of foreach array composition variable should be empty"); return false;
                 }
 
                 if (functionNode2 != nullptr) {
@@ -3146,9 +3153,8 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
     return identifierLocation;
 }
 
-bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, int& compositionShaderIdTargeted, TString& compositionShaderClassOwner)
+bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, bool lookForArraycomposition, TShaderCompositionVariable& compositionTargeted)
 {
-    compositionShaderIdTargeted = -1;
     XkslShaderDefinition* shader = getShaderClassDefinition(shaderClassName);
     if (shader == nullptr) {
         if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations ||
@@ -3166,13 +3172,13 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& 
     int countCompositions = shader->listCompositions.size();
     for (int i = 0; i < countCompositions; ++i)
     {
-        if (shader->listCompositions[i].isArray == false)
+        if (shader->listCompositions[i].isArray == lookForArraycomposition)
         {
             if (shader->listCompositions[i].variableName.compare(identifierName) == 0)
             {
-                compositionShaderIdTargeted = shader->listCompositions[i].shaderCompositionId;
-                //compositionTargetShaderName = &(shader->listCompositions[i].shaderName);
-                compositionShaderClassOwner = shader->shaderName;
+                //compositionShaderIdTargeted = shader->listCompositions[i].shaderCompositionId;
+                //compositionShaderClassOwner = shader->shaderName;
+                compositionTargeted = shader->listCompositions[i];
                 return true;
             }
         }
@@ -3182,7 +3188,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& 
     int countParents = shader->shaderparentsName.size();
     for (int p = 0; p < countParents; p++)
     {
-        if (isIdentifierRecordedAsACompositionVariableName(*(shader->shaderparentsName[p]), identifierName, compositionShaderIdTargeted, compositionShaderClassOwner)) return true;
+        if (isIdentifierRecordedAsACompositionVariableName(*(shader->shaderparentsName[p]), identifierName, lookForArraycomposition, compositionTargeted)) return true;
     }
 
     return false;
@@ -3883,6 +3889,7 @@ bool HlslGrammar::acceptStatement(TIntermNode*& statement)
     case EHTokFor:
     case EHTokDo:
     case EHTokWhile:
+    case EHTokForEach:
         return acceptIterationStatement(statement);
 
     case EHTokContinue:
@@ -4095,12 +4102,84 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
     TIntermTyped* condition = nullptr;
 
     EHlslTokenClass loop = peek();
-    assert(loop == EHTokDo || loop == EHTokFor || loop == EHTokWhile);
+    assert(loop == EHTokDo || loop == EHTokFor || loop == EHTokWhile || loop == EHTokForEach);
 
     //  WHILE or DO or FOR
     advanceToken();
 
     switch (loop) {
+
+    case EHTokForEach:
+    {
+        TString *currentShadercName = getCurrentShaderName();
+        if (currentShadercName == nullptr) {
+            error("We can only parse a foreach expression within a shader class");
+            return false;
+        }
+
+        if (!acceptTokenClass(EHTokLeftParen)) expected("foreach: (");
+
+        //type
+        TString compositionVariableType = *token.string;
+        if (!acceptTokenClass(EHTokIdentifier)) expected("foreach: variable type");
+        
+        //variable name
+        TString variableNameTargetingTheComposition = *token.string;
+        if (!acceptTokenClass(EHTokIdentifier)) expected("foreach: variable name");
+        
+        //in
+        if (!acceptTokenClass(EHTokForEachIn)) expected("foreach in");
+
+        //name of the composition targeted
+        TString compositionArrayVariableName = *token.string;
+        if (!acceptTokenClass(EHTokIdentifier)) expected("foreach: composition variable name");
+        
+        //Check if we can find the composition targeted
+        TShaderCompositionVariable compositionTargeted;
+        bool findCompositionVariable = isIdentifierRecordedAsACompositionVariableName(*currentShadercName, compositionArrayVariableName, true, compositionTargeted);
+        if (!findCompositionVariable)
+        {
+            error(TString("foreach: Cannot find the array composition named: ") + compositionArrayVariableName + TString(" within the shader: ") + (*currentShadercName));
+            return false;
+        }
+
+        //douyble check the type (var is ignored)
+        if (compositionVariableType.compare("var") != 0) {
+            if (compositionVariableType.compare(compositionTargeted.shaderTypeName) != 0) {
+                error(TString("foreach: the variable type: ") + compositionVariableType + TString(" is not matching the composition type: ") + compositionTargeted.shaderTypeName);
+                return false;
+            }
+        }
+
+        //pile the variable
+        TShaderVariableTargetingACompositionVariable variableTargetingACompositionVariable(compositionTargeted, variableNameTargetingTheComposition);
+        this->listForeachArrayCompositionVariable.push_back(variableTargetingACompositionVariable);
+
+        if (!acceptTokenClass(EHTokRightParen)) expected("foreach )");
+        if (!acceptTokenClass(EHTokLeftBrace)) expected("{");
+
+        parseContext.nestLooping();
+
+        // foreach statement
+        if (!acceptScopedStatement(statement)) {
+            expected("foreach sub-statement");
+            return false;
+        }
+
+        parseContext.unnestLooping();
+        if (!acceptTokenClass(EHTokRightBrace)) expected("}");
+
+        //we define the statement as a forEach loop, so that we can add xksl extended info in the bytecode
+        statement = intermediate.growAggregate(statement, nullptr);
+        statement->getAsAggregate()->setOperator(EOpSequence);
+        statement->getAsAggregate()->SetIsAForEachLoopBlockStatement(true);
+
+        //unpile the variable
+        this->listForeachArrayCompositionVariable.pop_back();
+
+        return true;
+    }
+
     case EHTokWhile:
         // so that something declared in the condition is scoped to the lifetime
         // of the while sub-statement

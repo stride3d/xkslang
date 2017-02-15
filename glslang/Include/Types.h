@@ -386,18 +386,32 @@ enum TBlendEquationShift {
     EBlendCount
 };
 
-//for XKSL extensions
+//======================================================================================
+//XKSL extensions
 class TShaderCompositionVariable {
 public:
-    int shaderCompositionId;  //composition id for a given shader. -1 = invalid id
-    TSourceLoc location;
     TString shaderOwnerName;
+    int shaderCompositionId;  //composition id for a given shader. -1 = invalid id
     TString shaderTypeName;
     TString variableName;
     bool isArray;
+    TSourceLoc location;
 
     TShaderCompositionVariable() : shaderCompositionId(-1){}
+    TShaderCompositionVariable(const TString& shaderOwnerName, int shaderCompositionId, const TString& shaderTypeName, const TString& variableName, bool isArray) :
+        shaderOwnerName(shaderOwnerName), shaderCompositionId(shaderCompositionId), shaderTypeName(shaderTypeName), variableName(variableName), isArray(isArray) {}
 };
+
+class TShaderVariableTargetingACompositionVariable {
+public:
+    TShaderCompositionVariable compositionTargeted;
+    TString variableName;
+
+    TShaderVariableTargetingACompositionVariable() {}
+    TShaderVariableTargetingACompositionVariable(const TShaderCompositionVariable& compositionTargeted, const TString& variableName) :
+        compositionTargeted(compositionTargeted), variableName(variableName) {}
+};
+//======================================================================================
 
 class TQualifier {
 public:
@@ -1805,7 +1819,7 @@ public:
 			if (parentsName != nullptr)
 			{
 				p += snprintf(p, end - p, " Parents={");
-				for (int i = 0; i<parentsName->size(); ++i)
+				for (unsigned int i = 0; i<parentsName->size(); ++i)
 				{
 					if (i > 0) p += snprintf(p, end - p, ", ");
 					p += snprintf(p, end - p, "\"%s\"", parentsName->at(i)->c_str());

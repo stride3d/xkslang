@@ -353,6 +353,8 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["base"]      =               EHTokBase;
     (*KeywordMap)["streams"]   =               EHTokStreams;
     (*KeywordMap)["compose"]   =               EHTokCompose;
+    (*KeywordMap)["foreach"]   =               EHTokForEach;
+    (*KeywordMap)["in"]        =               EHTokForEachIn;
 
     // TODO: get correct set here
     ReservedSet = new std::unordered_set<const char*, str_hash, str_eq>;
@@ -557,6 +559,8 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokBase:
     case EHTokStreams:
     case EHTokCompose:
+    case EHTokForEach:
+    case EHTokForEachIn:
         return keyword;
 
     // primitive types

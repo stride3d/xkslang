@@ -999,6 +999,18 @@ void Builder::addShaderCompositionDecoration(Id shaderId, int index, Id shaderTy
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
+void Builder::createForEachStartLoopLabel()
+{
+    Instruction* branch = new Instruction(OpForEachCompositionStartLoop);
+    buildPoint->addInstruction(std::unique_ptr<Instruction>(branch));
+}
+
+void Builder::createForEachEndLoopLabel()
+{
+    Instruction* branch = new Instruction(OpForEachCompositionEndLoop);
+    buildPoint->addInstruction(std::unique_ptr<Instruction>(branch));
+}
+
 void Builder::addDecoration(Id id, Decoration decoration, int num)
 {
     if (decoration == spv::DecorationMax)

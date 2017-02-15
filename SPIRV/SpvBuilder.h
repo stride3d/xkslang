@@ -95,7 +95,6 @@ public:
     // For creating new types (will return old type if the requested one was already made).
     Id makeVoidType();
     Id makeBoolType();
-	Id makeUnresolvedType();  //for XKSL extensions
     Id makePointer(StorageClass, Id type);
     Id makeIntegerType(int width, bool hasSign);   // generic
     Id makeIntType(int width) { return makeIntegerType(width, true); }
@@ -210,6 +209,8 @@ public:
     void addMemberDecoration(Id, unsigned int member, Decoration, int num = -1);
 
     //XKSL Extensions
+    void createForEachStartLoopLabel();
+    void createForEachEndLoopLabel();
     void addBelongToShaderDecoration(Id, Id);
     void addDeclarationNameDecoration(Id, const char* name);
     void addShaderInheritanceDecoration(Id, std::vector<spv::Id>&);

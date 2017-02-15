@@ -927,12 +927,15 @@ enum Op {
 
     //================================================================================================
     //XKSL extensions
-    OpDeclarationName = 4600,           //declaration name for shader, shaders' functions and shaders' block types
-    OpShaderInheritance = 4601,         //List of a shader inheritance
-    OpBelongsToShader = 4602,           //Link the functions and types with the shader that created them
-    OpShaderComposition = 4603,         //Declare a composition within a shader
-    OpShaderArrayComposition = 4604,    //Declare an array composition within a shader
-    OpMethodProperties = 4605,          //Add XKSL properties to a method: cf XkslPropertyEnum
+    OpDeclarationName = 4600,                //declaration name for shader, shaders' functions and shaders' block types
+    OpShaderInheritance = 4601,              //List of a shader inheritance
+    OpBelongsToShader = 4602,                //Link the functions and types with the shader that created them
+    OpShaderComposition = 4603,              //Declare a composition within a shader
+    OpShaderArrayComposition = 4604,         //Declare an array composition within a shader
+    OpMethodProperties = 4605,               //Add XKSL properties to a method: cf XkslPropertyEnum
+
+    OpForEachCompositionStartLoop = 4606,
+    OpForEachCompositionEndLoop = 4607,
 
     OpFunctionCallBaseUnresolved = 4620,              //an unresolved function call with base accessor
     OpFunctionCallBaseResolved = 4621,                //a resolved function call with base accessor
