@@ -26,7 +26,7 @@
     <ClInclude Include="..\..\..\source\SpxStreamRemapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\XkslMixerOutputStage.h">
+    <ClInclude Include="..\..\..\source\OutputStageBytecode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

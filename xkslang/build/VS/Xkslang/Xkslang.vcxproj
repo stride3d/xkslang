@@ -30,7 +30,7 @@
     <ClInclude Include="..\..\..\source\SpxBytecode.h" />
     <ClInclude Include="..\..\..\source\SpxStreamRemapper.h" />
     <ClInclude Include="..\..\..\source\XkslMixer.h" />
-    <ClInclude Include="..\..\..\source\XkslMixerOutputStage.h" />
+    <ClInclude Include="..\..\..\source\OutputStageBytecode.h" />
     <ClInclude Include="..\..\..\source\XkslParser.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

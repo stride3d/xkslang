@@ -13,7 +13,7 @@
 
 #include "define.h"
 #include "SpxBytecode.h"
-#include "XkslMixerOutputStage.h"
+#include "OutputStageBytecode.h"
 
 namespace xkslang
 {
@@ -30,10 +30,14 @@ enum class SpxRemapperStatusEnum
 {
     WaitingForMixin,
     MixinInProgress,
-    MixinBeingFinalized,
+
+    //define the order of compilation
+    MixinBeingCompiled_UnusedShaderRemoved,
+    MixinBeingCompiled_CompositionInstancesProcessed,
     MixinFinalized
 };
 
+class XkslMixerOutputStage;
 class SpxStreamRemapper : public spv::spirvbin_t
 {
 public:
@@ -346,12 +350,14 @@ private:
     bool ValidateHeader();
 
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
+
+    bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
+    bool ApplyCompositionInstancesToBytecode();
     bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
+
     FunctionInstruction* GetFunctionForEntryPoint(std::string entryPointName);
     bool RemoveShaderAndAllData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
-
-    bool ApplyResolvedCompositionsToBytecode();
 
     void ReleaseAllMaps();
     bool BuildAllMaps();
@@ -416,6 +422,16 @@ private:
     }
 
     friend class XkslMixer;
+};
+
+//Contains output stage info (stage + entrypoint), bytecode, plus additionnal data processed by the mixer during compilation
+class XkslMixerOutputStage
+{
+public:
+    OutputStageBytecode* outputStage;
+    SpxStreamRemapper::FunctionInstruction* entryFunction;
+
+    XkslMixerOutputStage(OutputStageBytecode* outputStage) : outputStage(outputStage) {}
 };
 
 }  // namespace xkslang

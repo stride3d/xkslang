@@ -1,0 +1,50 @@
+//We inherits from a shader using a composition
+
+shader Comp1
+{
+	int Compute(int i, int j)
+	{
+		return i + j;
+	}
+	
+	int Compute(int i)
+	{
+		return i;
+	}
+	
+	int Compute()
+	{
+		return 10;
+	}
+}
+
+shader Comp2
+{
+	int Compute(int i, int j)
+	{
+		return i * j;
+	}
+	
+	int Compute(int i)
+	{
+		return -i;
+	}
+	
+	int Compute()
+	{
+		return 20;
+	}
+}
+
+shader ShaderA
+{
+	compose Comp1 color1;
+	compose Comp2 color2;
+	
+	int main()
+	{
+		int i1 = color1.Compute(0, 1) + color1.Compute(2) + color1.Compute();
+		int i2 = color2.Compute(0, 1) + color2.Compute(2) + color2.Compute();
+		return i1 + i2;
+	}
+}

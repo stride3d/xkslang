@@ -1,0 +1,12 @@
+load "TestCompose11.xksl"
+
+mixer A
+A.mixin Comp1 Comp2
+
+mixer B
+B.mixin ShaderA
+B.addComposition ShaderA.color1 A
+B.addComposition ShaderA.color2 A
+
+B.setStageEntryPoint Pixel "main"
+B.compile

@@ -149,13 +149,21 @@ bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& mes
     return true;
 }
 
-bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<string>& messages, SpvBytecode* preCompiledSpx, SpvBytecode* compiledSpv, SpvBytecode* errorLatestSpv)
+bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>& messages, SpvBytecode* compiledSpv, SpvBytecode* finalSpv, SpvBytecode* errorLatestSpv)
 {
     if (spxStreamRemapper == nullptr)
         return error(messages, "you must process some mixin first");
 
     if (outputStages.size() == 0)
         return error(messages, "no output stages defined");
+
+    vector<XkslMixerOutputStage> vecMixerOutputStages;
+    for (int i=0; i < outputStages.size(); ++i)
+    {
+        OutputStageBytecode* pOutputStage = &(outputStages[i]);
+        XkslMixerOutputStage xkslOutputStage(pOutputStage);
+        vecMixerOutputStages.push_back(xkslOutputStage);
+    }
 
     //=============================================================================================================================================
     //=============================================================================================================================================
@@ -165,31 +173,41 @@ bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<strin
 
     //===================================================================================================================
     //===================================================================================================================
-    if (!clonedSpxStream->ApplyResolvedCompositionsToBytecode())
+    // apply all composition instances
+    if (!clonedSpxStream->ApplyCompositionInstancesToBytecode())
     {
         clonedSpxStream->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr)
-            clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
         delete clonedSpxStream;
         return error(messages, "Failed to apply all compositions to the bytecode");
     }
 
-    if (preCompiledSpx != nullptr)
-        clonedSpxStream->GetMixinBytecode(preCompiledSpx->getWritableBytecodeStream());
+    if (compiledSpv != nullptr)
+        clonedSpxStream->GetMixinBytecode(compiledSpv->getWritableBytecodeStream());
 
     //===================================================================================================================
     //===================================================================================================================
-    if (!clonedSpxStream->CompileMixinForStages(outputStages))
+    // remove unused shaders
+    if (!clonedSpxStream->RemoveAllUnusedShaders(vecMixerOutputStages))
     {
         clonedSpxStream->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr)
-            clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        delete clonedSpxStream;
+        return error(messages, "Fail to remova all unused shaders");
+    }
+
+    //===================================================================================================================
+    //===================================================================================================================
+    if (!clonedSpxStream->CompileMixinForStages(vecMixerOutputStages))
+    {
+        clonedSpxStream->copyMessagesTo(messages);
+        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
         delete clonedSpxStream;
         return error(messages, "Fail to finalize the mixin");
     }
 
-    if (compiledSpv != nullptr)
-        clonedSpxStream->GetMixinBytecode(compiledSpv->getWritableBytecodeStream());
+    if (finalSpv != nullptr)
+        clonedSpxStream->GetMixinBytecode(finalSpv->getWritableBytecodeStream());
     
     delete clonedSpxStream;
     //=============================================================================================================================================

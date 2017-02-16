@@ -378,46 +378,6 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
     return true;
 }
 
-/*
-bool SpxStreamRemapper::MixWithBytecode(const SpxBytecode& bytecode)
-{
-    if (status != SpxRemapperStatusEnum::WaitingForMixin) {
-        return error("Invalid remapper status");
-    }
-    status = SpxRemapperStatusEnum::MixinInProgress;
-
-    //=============================================================================================================
-    //=============================================================================================================
-    //Merge or set the bytecode
-    vector<ShaderClassData*> listShadersMerged;
-    if (spv.size() == 0)
-    {
-        //just copy the full code into the remapper
-        if (!SetBytecode(bytecode))
-            return error(string("Error setting the bytecode: ") + bytecode.GetName());
-
-        if (!BuildAllMaps())
-            return error("Error building the bytecode data map");
-
-        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
-            listShadersMerged.push_back(*itsh);
-    }
-    else
-    {
-        //merge the new bytecode into current one
-        if (!MergeAllNewShadersFromBytecode(bytecode, listShadersMerged))
-            return error(string("Error merging the shaders from the bytecode: ") + bytecode.GetName());
-    }
-
-    if (!ProcessOverrideAfterMixingNewShaders(listShadersMerged))
-    {
-        return error("Failed to process overrides after mixin new shaders");
-    }
-    status = SpxRemapperStatusEnum::WaitingForMixin;
-    return true;
-}
-*/
-
 bool SpxStreamRemapper::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassData*>& listNewShaders)
 {
     if (!ValidateSpxBytecode())
@@ -1205,7 +1165,7 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 
     //find the shader's composition target
     ShaderComposition* compositionTarget = shaderCompositionTarget->GetShaderCompositionByName(variableName);
-    if (compositionTarget == nullptr) return error(string("No composition exists in shader \"") + shaderName + string("\" with the name: ") + variableName);
+    if (compositionTarget == nullptr) return error(string("No composition exists in shader: ") + shaderName + string(", with the name: ") + variableName);
 
     if (!compositionTarget->isArray && compositionTarget->countInstances > 0) return error(string("The composition has already been instanciated"));
 
@@ -1215,7 +1175,7 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     if (shaderTypeToInstantiate == nullptr) return error("The composition does not define any shader type");
 
     ShaderClassData* mainShaderTypeMergedToMergeFromSource = source->GetShaderByName(shaderTypeToInstantiate->GetName());
-    if (mainShaderTypeMergedToMergeFromSource == nullptr) return error(string("No shader exists in the source bytecode with the name: ") + shaderTypeToInstantiate->GetName());
+    if (mainShaderTypeMergedToMergeFromSource == nullptr) return error(string("No shader exists in the source mixer with the name: ") + shaderTypeToInstantiate->GetName());
 
     //===================================================================================================================
     //===================================================================================================================
@@ -1346,114 +1306,10 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     return true;
 }
 
-bool SpxStreamRemapper::ApplyResolvedCompositionsToBytecode()
+bool SpxStreamRemapper::RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages)
 {
-    if (status != SpxRemapperStatusEnum::WaitingForMixin) {
-        return error("Invalid remapper status");
-    }
-
-    //===================================================================================================================
-    //===================================================================================================================
-    //Duplicate all foreach loops with the composition instances
-    {
-
-    }
-
-    //===================================================================================================================
-    //===================================================================================================================
-    //updates all OpFunctionCallThroughCompositionVariable instructions calling through the composition that we're instancing   
-    {
-        vector<range_t> vecStripRanges;
-        unsigned int start = header_size;
-        const unsigned int end = spv.size();
-        while (start < end)
-        {
-            unsigned int wordCount = asWordCount(start);
-            spv::Op opCode = asOpCode(start);
-
-            switch (opCode)
-            {
-                case spv::OpFunctionCallThroughCompositionVariable:
-                {
-                    spv::Id shaderId = asId(start + 4);
-                    int compositionId = asId(start + 5);
-    
-                    //===================================================
-                    //Find the composition data
-                    ShaderClassData* compositionShaderOwner = this->GetShaderById(shaderId);
-                    if (compositionShaderOwner == nullptr){ error(string("No shader exists with the Id: ") + to_string(shaderId)); break; }
-                    
-                    ShaderComposition* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
-                    if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
-
-                    if (composition->isArray) { error("Only works with non-array compositions for now"); break; }
-
-                    // If an OpFunctionCallThroughCompositionVariable instructions has no composition instance we ignore it
-                    // (it won't generate an error as long as the instruction is not called by any compilation output functions)
-                    if (composition->countInstances != 1) break;
-
-                    vector<ShaderClassData*> vecCompositionShaderInstances;
-                    if (!GetAllShaderInstancesForComposition(composition, vecCompositionShaderInstances)) {
-                        return error(string("Failed to retrieve the instances for the composition: ") + composition->variableName + string(" from shader: ") + composition->compositionShaderOwner->GetName());
-                    }
-                    ShaderClassData* clonedShader = vecCompositionShaderInstances[0];
-
-                    //===================================================
-                    //Get the original function called
-                    spv::Id originalFunctionId = asId(start + 3);
-                    FunctionInstruction* functionToReplace = GetFunctionById(originalFunctionId);
-                    if (functionToReplace == nullptr){
-                        error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known function. Id: ") + to_string(originalFunctionId));
-                        return true;
-                    }
-
-                    //We retrieve the cloned function using the function name
-                    FunctionInstruction* functionTarget = GetTargetedFunctionByNameWithinShaderAndItsFamily(clonedShader, functionToReplace->GetName());
-                    if (functionTarget == nullptr) {
-                        error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function in the cloned shader. Function name: ") + functionToReplace->GetName());
-                        return true;
-                    }
-
-                    //If the function is overriden by another, change the target
-                    if (functionTarget->GetOverridingFunction() != nullptr) functionTarget = functionTarget->GetOverridingFunction();
-    
-                    int wordCount = asWordCount(start);
-                    vecStripRanges.push_back(range_t(start + 4, start + 5 + 1));   //will remove composition variable ids from the bytecode
-                    setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 2);  //change instruction OpFunctionCallThroughCompositionVariable to OpFunctionCall
-                    setId(start + 3, functionTarget->GetId());                     //replace the function called id
-
-                    break;
-                }
-            }
-            start += wordCount;
-        }
-
-        if (vecStripRanges.size() > 0)
-        {
-            //remove the stripped bytecode first (to have a consistent bytecode)
-            stripBytecode(vecStripRanges);
-
-            if (errorMessages.size() > 0) {
-                return error("ApplyAllCompositions: failed to retarget the functions called by the compositions");
-            }
-
-            //Update all maps (update objects position in the bytecode)
-            if (!UpdateAllMaps()) {
-                return error("ApplyAllCompositions: failed to update all maps");
-            }
-        }
-    }
-
-    if (errorMessages.size() > 0) return false;
-    return true;
-}
-
-//Mixin is finalized: no more updates will be brought to the mixin bytecode after
-bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outputStages)
-{
-    if (status != SpxRemapperStatusEnum::WaitingForMixin) {
-        return error("Invalid remapper status");
-    }
+    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved;
 
     if (outputStages.size() == 0) return error("no output stages defined");
     if (!ValidateHeader()) return error("Failed to validate the header");
@@ -1461,16 +1317,13 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
     //===================================================================================================================
     //===================================================================================================================
     //For each output stages, we search the entryPoint function in the bytecode
-    vector<FunctionInstruction*> listEntryPointFunction;
     for (int i = 0; i<outputStages.size(); ++i)
     {
-        FunctionInstruction* entryFunction = GetFunctionForEntryPoint(outputStages[i].entryPointName);
-        if (entryFunction == nullptr) error(string("Entry point not found: ") + outputStages[i].entryPointName);
-        listEntryPointFunction.push_back(entryFunction);
+        FunctionInstruction* entryFunction = GetFunctionForEntryPoint(outputStages[i].outputStage->entryPointName);
+        if (entryFunction == nullptr) error(string("Entry point not found: ") + outputStages[i].outputStage->entryPointName);
+        outputStages[i].entryFunction = entryFunction;
     }
     if (errorMessages.size() > 0) return false;
-
-    status = SpxRemapperStatusEnum::MixinFinalized;
 
     //===================================================================================================================
     //===================================================================================================================
@@ -1491,7 +1344,7 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
         vector<FunctionInstruction*> vectorFunctionsCalled;
         vector<FunctionInstruction*> vectorAllFunctionsCalled;
         vector<ShaderClassData*> vectorShadersOwningAllFunctionsCalled;
-        vectorFunctionsCalled.insert(vectorFunctionsCalled.end(), listEntryPointFunction.begin(), listEntryPointFunction.end());
+        for (int i = 0; i<outputStages.size(); ++i) vectorFunctionsCalled.push_back(outputStages[i].entryFunction);
         while (vectorFunctionsCalled.size() > 0)
         {
             FunctionInstruction* aFunctionCalled = vectorFunctionsCalled.back();
@@ -1549,7 +1402,7 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
             ShaderClassData* aShaderInvolved = vectorShadersOwningAllFunctionsCalled.back();
             vectorShadersOwningAllFunctionsCalled.pop_back();
             if (aShaderInvolved->flag1 == 2) continue;
-            
+
             aShaderInvolved->flag1 = 2;
             vectorAllShadersInvolved.push_back(aShaderInvolved);
 
@@ -1559,7 +1412,7 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
                 ShaderClassData* aShaderParentInvolved = *itsh;
                 if (aShaderParentInvolved->flag1 != 2) vectorShadersOwningAllFunctionsCalled.push_back(aShaderParentInvolved);
             }
-            
+
             //add the composition shader instances
             for (auto itc = aShaderInvolved->compositionsList.begin(); itc != aShaderInvolved->compositionsList.end(); itc++)
             {
@@ -1605,10 +1458,144 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
             }
         }
 
-        //warning: objects bytecode position is not correct anymore after this 
         stripBytecode(vecStripRanges);
+        if (!UpdateAllMaps()) return error("failed to update all maps");
     }
-    
+
+    return true;
+}
+
+bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
+{
+    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_CompositionInstancesProcessed;
+
+    //===================================================================================================================
+    //===================================================================================================================
+    //Duplicate all foreach loops depending on the composition instances
+
+    vector<>;
+    //get the list of all foreach loops
+    {
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
+            {
+                case spv::OpForEachCompositionStartLoop:
+                {
+                    break;
+                }
+                case spv::OpForEachCompositionEndLoop:
+                {
+                    break;
+                }
+            }
+            start += wordCount;
+        }
+        if (errorMessages.size() > 0) return false;
+    }
+
+    //===================================================================================================================
+    //===================================================================================================================
+    //updates all OpFunctionCallThroughCompositionVariable instructions calling through the composition that we're instancing   
+    {
+        vector<range_t> vecStripRanges;
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
+            {
+            case spv::OpFunctionCallThroughCompositionVariable:
+            {
+                spv::Id shaderId = asId(start + 4);
+                int compositionId = asId(start + 5);
+
+                //===================================================
+                //Find the composition data
+                ShaderClassData* compositionShaderOwner = this->GetShaderById(shaderId);
+                if (compositionShaderOwner == nullptr) { error(string("No shader exists with the Id: ") + to_string(shaderId)); break; }
+
+                ShaderComposition* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
+                if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
+
+                if (composition->isArray) { error("Only works with non-array compositions for now"); break; }
+
+                // If an OpFunctionCallThroughCompositionVariable instructions has no composition instance we ignore it
+                // (it won't generate an error as long as the instruction is not called by any compilation output functions)
+                if (composition->countInstances != 1) break;
+
+                vector<ShaderClassData*> vecCompositionShaderInstances;
+                if (!GetAllShaderInstancesForComposition(composition, vecCompositionShaderInstances)) {
+                    return error(string("Failed to retrieve the instances for the composition: ") + composition->variableName + string(" from shader: ") + composition->compositionShaderOwner->GetName());
+                }
+                ShaderClassData* clonedShader = vecCompositionShaderInstances[0];
+
+                //===================================================
+                //Get the original function called
+                spv::Id originalFunctionId = asId(start + 3);
+                FunctionInstruction* functionToReplace = GetFunctionById(originalFunctionId);
+                if (functionToReplace == nullptr) {
+                    error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known function. Id: ") + to_string(originalFunctionId));
+                    return true;
+                }
+
+                //We retrieve the cloned function using the function name
+                FunctionInstruction* functionTarget = GetTargetedFunctionByNameWithinShaderAndItsFamily(clonedShader, functionToReplace->GetName());
+                if (functionTarget == nullptr) {
+                    error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function in the cloned shader. Function name: ") + functionToReplace->GetName());
+                    return true;
+                }
+
+                //If the function is overriden by another, change the target
+                if (functionTarget->GetOverridingFunction() != nullptr) functionTarget = functionTarget->GetOverridingFunction();
+
+                int wordCount = asWordCount(start);
+                vecStripRanges.push_back(range_t(start + 4, start + 5 + 1));   //will remove composition variable ids from the bytecode
+                setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 2);  //change instruction OpFunctionCallThroughCompositionVariable to OpFunctionCall
+                setId(start + 3, functionTarget->GetId());                     //replace the function called id
+
+                break;
+            }
+            }
+            start += wordCount;
+        }
+
+        if (vecStripRanges.size() > 0)
+        {
+            //remove the stripped bytecode first (to have a consistent bytecode)
+            stripBytecode(vecStripRanges);
+
+            if (errorMessages.size() > 0) {
+                return error("ApplyAllCompositions: failed to retarget the functions called by the compositions");
+            }
+
+            //Update all maps (update objects position in the bytecode)
+            if (!UpdateAllMaps()) return error("ApplyAllCompositions: failed to update all maps");
+        }
+    }
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+//Mixin is finalized: no more updates will be brought to the mixin bytecode after
+bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outputStages)
+{
+    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinFinalized;
+
+    if (outputStages.size() == 0) return error("no output stages defined");
+    if (!ValidateHeader()) return error("Failed to validate the header");
+
     //===================================================================================================================
     //===================================================================================================================
     //Convert SPIRX extensions to SPIRV: remove SPIRX extended instructions
@@ -1631,12 +1618,22 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
                 }
                 case spv::OpFunctionCallThroughCompositionVariable:
                 {
-                    error(string("Found unresolved OpFunctionCallThroughCompositionVariable. pos=") + to_string(start));
+                    error(string("Found unresolved OpFunctionCallThroughCompositionVariable at: ") + to_string(start));
                     break;
                 }
                 case spv::OpFunctionCallBaseUnresolved:
                 {
-                    error(string("A function base call has an unresolved state. Pos=") + to_string(start));
+                    error(string("A function base call has an unresolved state at: ") + to_string(start));
+                    break;
+                }
+                case spv::OpForEachCompositionStartLoop:
+                {
+                    error(string("A foreach start loop has not been processed at: ") + to_string(start));
+                    break;
+                }
+                case spv::OpForEachCompositionEndLoop:
+                {
+                    error(string("A foreach end loop has not been processed at: ") + to_string(start));
                     break;
                 }
                 case spv::OpBelongsToShader:
@@ -1646,8 +1643,6 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
-                case spv::OpForEachCompositionStartLoop:
-                case spv::OpForEachCompositionEndLoop:
                 {
                     stripInst(vecStripRanges, start);
                     break;
@@ -1667,11 +1662,11 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
     for (int i = 0; i<outputStages.size(); ++i)
     {
         XkslMixerOutputStage& outputStage = outputStages[i];
-        FunctionInstruction* entryFunction = listEntryPointFunction[i];
-        bool success = this->GenerateSpvStageBytecode(outputStage.stage, outputStage.entryPointName, entryFunction, outputStage.resultingBytecode);
+        FunctionInstruction* entryFunction = outputStages[i].entryFunction;
+        bool success = this->GenerateSpvStageBytecode(outputStage.outputStage->stage, outputStage.outputStage->entryPointName, entryFunction, outputStage.outputStage->resultingBytecode);
         if (!success)
         {
-            error(string("Fail to generate SPV stage bytecode for the stage: ") + GetShadingStageLabel(outputStage.stage));
+            error(string("Fail to generate SPV stage bytecode for the stage: ") + GetShadingStageLabel(outputStage.outputStage->stage));
         }
     }
 

@@ -16,6 +16,7 @@
 
 #include "Utils.h"
 #include "../source/SpxBytecode.h"
+#include "../source/OutputStageBytecode.h"
 #include "../source/XkslParser.h"
 #include "../source/XkslMixer.h"
 
@@ -73,34 +74,35 @@ struct XkfxEffectsToProcess {
 };
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
-    { "TestMixin01", "TestMixin01.xkfx" },
-    { "TestMixin02", "TestMixin02.xkfx" },
-    { "TestMixin03", "TestMixin03.xkfx" },
-    { "TestMixin04", "TestMixin04.xkfx" },
-    { "TestMixin05", "TestMixin05.xkfx" },
+    //{ "TestMixin01", "TestMixin01.xkfx" },
+    //{ "TestMixin02", "TestMixin02.xkfx" },
+    //{ "TestMixin03", "TestMixin03.xkfx" },
+    //{ "TestMixin04", "TestMixin04.xkfx" },
+    //{ "TestMixin05", "TestMixin05.xkfx" },
 
-    { "TestMerge01", "TestMerge01.xkfx" },
-    { "TestMerge02", "TestMerge02.xkfx" },
-    { "TestMerge03", "TestMerge03.xkfx" },
-    { "TestMerge04", "TestMerge04.xkfx" },
-    { "TestMerge05", "TestMerge05.xkfx" },
-    { "TestMerge06", "TestMerge06.xkfx" },
-    { "TestMerge07", "TestMerge07.xkfx" },
-    { "TestMerge08", "TestMerge08.xkfx" },
-    { "TestMerge09", "TestMerge09.xkfx" },
-    { "TestMerge10", "TestMerge10.xkfx" },
-    { "TestMerge11", "TestMerge11.xkfx" },
-    { "TestMerge12", "TestMerge12.xkfx" },
+    //{ "TestMerge01", "TestMerge01.xkfx" },
+    //{ "TestMerge02", "TestMerge02.xkfx" },
+    //{ "TestMerge03", "TestMerge03.xkfx" },
+    //{ "TestMerge04", "TestMerge04.xkfx" },
+    //{ "TestMerge05", "TestMerge05.xkfx" },
+    //{ "TestMerge06", "TestMerge06.xkfx" },
+    //{ "TestMerge07", "TestMerge07.xkfx" },
+    //{ "TestMerge08", "TestMerge08.xkfx" },
+    //{ "TestMerge09", "TestMerge09.xkfx" },
+    //{ "TestMerge10", "TestMerge10.xkfx" },
+    //{ "TestMerge11", "TestMerge11.xkfx" },
+    //{ "TestMerge12", "TestMerge12.xkfx" },
 
-    { "TestCompose02", "TestCompose02.xkfx" },
-    { "TestCompose03", "TestCompose03.xkfx" },
-    { "TestCompose04", "TestCompose04.xkfx" },
-    { "TestCompose05", "TestCompose05.xkfx" },
-    { "TestCompose06", "TestCompose06.xkfx" },
-    { "TestCompose07", "TestCompose07.xkfx" },
-    { "TestCompose08", "TestCompose08.xkfx" },
-    { "TestCompose09", "TestCompose09.xkfx" },
-    { "TestCompose10", "TestCompose10.xkfx" },
+    //{ "TestCompose02", "TestCompose02.xkfx" },
+    //{ "TestCompose03", "TestCompose03.xkfx" },
+    //{ "TestCompose04", "TestCompose04.xkfx" },
+    //{ "TestCompose05", "TestCompose05.xkfx" },
+    //{ "TestCompose06", "TestCompose06.xkfx" },
+    //{ "TestCompose07", "TestCompose07.xkfx" },
+    //{ "TestCompose08", "TestCompose08.xkfx" },
+    //{ "TestCompose09", "TestCompose09.xkfx" },
+    //{ "TestCompose10", "TestCompose10.xkfx" },
+    //{ "TestCompose11", "TestCompose11.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     { "TestForEach01", "TestForEach01.xkfx" },
@@ -199,17 +201,17 @@ void SaveCurrentMixerBytecode(XkslMixer* mixer, string outputDirPath, string out
     }
 }
 
-bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputStage>& outputStages, vector<string>& errorMsgs)
+bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
 {
     DWORD time_before, time_after;
     bool success = true;
 
-    SpvBytecode preCompiledSpx;
     SpvBytecode compiledSpv;
+    SpvBytecode finalSpv;
     SpvBytecode errorSpv;
     cout << "Compile Mixin: ";
     time_before = GetTickCount();
-    success = mixer->Compile(outputStages, errorMsgs, &preCompiledSpx, &compiledSpv, &errorSpv);
+    success = mixer->Compile(outputStages, errorMsgs, &compiledSpv, &finalSpv, &errorSpv);
     time_after = GetTickCount();
 
     if (!success)
@@ -235,28 +237,6 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputSta
         cout << "OK. time: " << (time_after - time_before) << " ms" << endl;
     }
 
-    //output preCompiledSpx spirv
-    {
-        const vector<uint32_t>& bytecodeList = preCompiledSpx.getBytecodeStream();
-
-        if (bytecodeList.size() > 0)
-        {
-            //spv
-            //string outputNameSpv = effectName + "_mixin_finalized" + ".spv";
-            //glslang::OutputSpvBin(bytecodeList, (outputDir + outputNameSpv).c_str());
-
-            //hr spv
-            ostringstream disassembly_stream;
-            spv::Parameterize();
-            spv::Disassemble(disassembly_stream, bytecodeList);
-
-            const string outputFileName = effectName + "_preCompiled" + ".hr.spv";
-            const string outputFullName = outputDir + outputFileName;
-            xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
-            cout << " output: \"" << outputFileName << "\"" << endl;
-        }
-    }
-
     //output compiledSpv spirv
     {
         const vector<uint32_t>& bytecodeList = compiledSpv.getBytecodeStream();
@@ -273,6 +253,28 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputSta
             spv::Disassemble(disassembly_stream, bytecodeList);
 
             const string outputFileName = effectName + "_compiled" + ".hr.spv";
+            const string outputFullName = outputDir + outputFileName;
+            xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
+            cout << " output: \"" << outputFileName << "\"" << endl;
+        }
+    }
+
+    //output finalSpv spirv
+    {
+        const vector<uint32_t>& bytecodeList = finalSpv.getBytecodeStream();
+
+        if (bytecodeList.size() > 0)
+        {
+            //spv
+            //string outputNameSpv = effectName + "_mixin_finalized" + ".spv";
+            //glslang::OutputSpvBin(bytecodeList, (outputDir + outputNameSpv).c_str());
+
+            //hr spv
+            ostringstream disassembly_stream;
+            spv::Parameterize();
+            spv::Disassemble(disassembly_stream, bytecodeList);
+
+            const string outputFileName = effectName + "_finalized" + ".hr.spv";
             const string outputFullName = outputDir + outputFileName;
             xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
             cout << " output: \"" << outputFileName << "\"" << endl;
@@ -649,10 +651,10 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
             }
             else if (instruction.compare("compile") == 0)
             {
-                vector<XkslMixerOutputStage> outputStages;
+                vector<OutputStageBytecode> outputStages;
                 for (auto its = mixerTarget->stagesEntryPoints.begin(); its != mixerTarget->stagesEntryPoints.end(); its++){
                     if (its->second.size() > 0)
-                        outputStages.push_back(XkslMixerOutputStage(ShadingStageEnum(its->first), its->second));
+                        outputStages.push_back(OutputStageBytecode(ShadingStageEnum(its->first), its->second));
                 }
 
                 success = CompileMixer(effectName, mixerTarget->mixer, outputStages, errorMsgs);

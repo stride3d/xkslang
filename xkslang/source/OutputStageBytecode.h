@@ -13,14 +13,14 @@
 namespace xkslang
 {
 
-class XkslMixerOutputStage
+class OutputStageBytecode
 {
 public:
     ShadingStageEnum stage;
     std::string entryPointName;
     SpvBytecode resultingBytecode;
 
-    XkslMixerOutputStage(ShadingStageEnum stage, std::string entryPointName) : stage(stage), entryPointName(entryPointName) {}
+    OutputStageBytecode(ShadingStageEnum stage, std::string entryPointName) : stage(stage), entryPointName(entryPointName) {}
 };
 
 }  // namespace xkslang
