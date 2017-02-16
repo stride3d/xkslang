@@ -1340,10 +1340,16 @@ bool SpxStreamRemapper::ApplyResolvedCompositionsToBytecode()
 
     //===================================================================================================================
     //===================================================================================================================
-    // - update all OpFunctionCallThroughCompositionVariable instructions calling through the composition that we're instancing
-    vector<range_t> vecStripRanges;
+    //Duplicate all foreach loops with the composition instances
     {
-        //Analyse the function's bytecode, to add all new functions called
+
+    }
+
+    //===================================================================================================================
+    //===================================================================================================================
+    //updates all OpFunctionCallThroughCompositionVariable instructions calling through the composition that we're instancing   
+    {
+        vector<range_t> vecStripRanges;
         unsigned int start = header_size;
         const unsigned int end = spv.size();
         while (start < end)
@@ -1367,7 +1373,10 @@ bool SpxStreamRemapper::ApplyResolvedCompositionsToBytecode()
                     if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
 
                     if (composition->isArray) { error("Only works with non-array compositions for now"); break; }
-                    if (composition->countInstances != 1) break;  //ignore unresolved composition
+
+                    // If an OpFunctionCallThroughCompositionVariable instructions has no composition instance we ignore it
+                    // (it won't generate an error as long as the instruction is not called by any compilation output functions)
+                    if (composition->countInstances != 1) break;
 
                     vector<ShaderClassData*> vecCompositionShaderInstances;
                     if (!GetAllShaderInstancesForComposition(composition, vecCompositionShaderInstances)) {
@@ -1404,20 +1413,20 @@ bool SpxStreamRemapper::ApplyResolvedCompositionsToBytecode()
             }
             start += wordCount;
         }
-    }
 
-    if (vecStripRanges.size() > 0)
-    {
-        //remove strip bytecode
-        stripBytecode(vecStripRanges);
+        if (vecStripRanges.size() > 0)
+        {
+            //remove the stripped bytecode first (to have a consistent bytecode)
+            stripBytecode(vecStripRanges);
 
-        if (errorMessages.size() > 0) {
-            return error("ApplyAllCompositions: failed to retarget the functions called by the compositions");
-        }
+            if (errorMessages.size() > 0) {
+                return error("ApplyAllCompositions: failed to retarget the functions called by the compositions");
+            }
 
-        //Update all maps (update objects position in the bytecode)
-        if (!UpdateAllMaps()) {
-            return error("ApplyAllCompositions: failed to update all maps");
+            //Update all maps (update objects position in the bytecode)
+            if (!UpdateAllMaps()) {
+                return error("ApplyAllCompositions: failed to update all maps");
+            }
         }
     }
 
@@ -1588,47 +1597,50 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
     
     //===================================================================================================================
     //===================================================================================================================
-    //Convert SPIRX extensions to SPIRV
+    //Convert SPIRX extensions to SPIRV: remove SPIRX extended instructions
     {
         vector<range_t> vecStripRanges;
-        process(
-            [&](spv::Op opCode, unsigned start)
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
             {
-                switch (opCode) {
-                    case spv::OpFunctionCallBaseResolved:
-                    {
-                        //change OpFunctionCallBaseResolved to OpFunctionCall
-                        setOpCode(start, spv::OpFunctionCall);
-                        break;
-                    }
-                    case spv::OpFunctionCallThroughCompositionVariable:
-                    {
-                        error(string("Found unresolved OpFunctionCallThroughCompositionVariable. pos=") + to_string(start));
-                        break;
-                    }
-                    case spv::OpFunctionCallBaseUnresolved:
-                    {
-                        error(string("A function base call has an unresolved state. Pos=") + to_string(start));
-                        break;
-                    }
-                    case spv::OpBelongsToShader:
-                    case spv::OpDeclarationName:
-                    case spv::OpTypeXlslShaderClass:
-                    case spv::OpShaderInheritance:
-                    case spv::OpShaderCompositionDeclaration:
-                    case spv::OpShaderCompositionInstance:
-                    case spv::OpMethodProperties:
-                    case spv::OpForEachCompositionStartLoop:
-                    case spv::OpForEachCompositionEndLoop:
-                    {
-                        stripInst(vecStripRanges, start);
-                        break;
-                    }
+                case spv::OpFunctionCallBaseResolved:
+                {
+                    //change OpFunctionCallBaseResolved to OpFunctionCall
+                    setOpCode(start, spv::OpFunctionCall);
+                    break;
                 }
-                return true;
-            },
-            spx_op_fn_nop
-        );
+                case spv::OpFunctionCallThroughCompositionVariable:
+                {
+                    error(string("Found unresolved OpFunctionCallThroughCompositionVariable. pos=") + to_string(start));
+                    break;
+                }
+                case spv::OpFunctionCallBaseUnresolved:
+                {
+                    error(string("A function base call has an unresolved state. Pos=") + to_string(start));
+                    break;
+                }
+                case spv::OpBelongsToShader:
+                case spv::OpDeclarationName:
+                case spv::OpTypeXlslShaderClass:
+                case spv::OpShaderInheritance:
+                case spv::OpShaderCompositionDeclaration:
+                case spv::OpShaderCompositionInstance:
+                case spv::OpMethodProperties:
+                case spv::OpForEachCompositionStartLoop:
+                case spv::OpForEachCompositionEndLoop:
+                {
+                    stripInst(vecStripRanges, start);
+                    break;
+                }
+            }
+            start += wordCount;
+        }
         if (errorMessages.size() > 0) return false;
 
         //warning: objects bytecode position is not correct anymore after this 
@@ -1656,35 +1668,38 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
 //For every call to a function using base accessor (base.function()), we check if we need to redirect to another overriding method
 bool SpxStreamRemapper::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
 {
-    process(
-        [&](spv::Op opCode, unsigned start)
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        switch (opCode)
         {
-            switch (opCode) {
-                case spv::OpFunctionCallBaseUnresolved:
+            case spv::OpFunctionCallBaseUnresolved:
+            {
+                setOpCode(start, spv::OpFunctionCallBaseResolved); // change OpFunctionCallBaseUnresolved to OpFunctionCallBaseResolved
+
+                spv::Id functionCalledId = asId(start + 3);
+
+                FunctionInstruction* functionCalled = GetFunctionById(functionCalledId);
+                if (functionCalled != nullptr)
                 {
-                    setOpCode(start, spv::OpFunctionCallBaseResolved); // change OpFunctionCallBaseUnresolved to OpFunctionCallBaseResolved
-
-                    spv::Id functionCalledId = asId(start + 3);
-
-                    FunctionInstruction* functionCalled = GetFunctionById(functionCalledId);
-                    if (functionCalled != nullptr)
+                    if (functionCalled->GetOverridingFunction() != nullptr)
                     {
-                        if (functionCalled->GetOverridingFunction() != nullptr)
-                        {
-                            spv::Id overridingFunctionId = functionCalled->GetOverridingFunction()->GetResultId();
-                            spv[start + 3] = overridingFunctionId;
-                        }
+                        spv::Id overridingFunctionId = functionCalled->GetOverridingFunction()->GetResultId();
+                        spv[start + 3] = overridingFunctionId;
                     }
-                    else
-                        error(string("OpFunctionCallBaseUnresolved: targeted Id is not a known function. Id: ") + to_string(functionCalledId));
-
-                    break;
                 }
+                else
+                    error(string("OpFunctionCallBaseUnresolved: targeted Id is not a known function. Id: ") + to_string(functionCalledId));
+
+                break;
             }
-            return true;
-        },
-        spx_op_fn_nop
-        );
+        }
+        start += wordCount;
+    }
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -1707,34 +1722,37 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
 
     if (!anyOverridingFunction) return true; //nothing to override
 
-    process(
-        [&](spv::Op opCode, unsigned start)
-        {
-            switch (opCode) {
-                case spv::OpFunctionCall:
-                case spv::OpFunctionCallThroughCompositionVariable:
-                {
-                    spv::Id functionCalledId = asId(start + 3);
-#ifdef XKSLANG_DEBUG_MODE
-                    if (functionCalledId < 0 || functionCalledId >= vecFunctionIdBeingOverriden.size()){
-                        error(string("function call Id is out of bound. Id: ") + to_string(functionCalledId));
-                        return true;
-                    }
-#endif
-                    FunctionInstruction* overridingFunction = vecFunctionIdBeingOverriden[functionCalledId];
-                    if (overridingFunction != nullptr)
-                    {
-                        spv::Id overridingFunctionId = overridingFunction->GetResultId();
-                        spv[start + 3] = overridingFunctionId;
-                    }
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
 
+        switch (opCode)
+        {
+            case spv::OpFunctionCall:
+            case spv::OpFunctionCallThroughCompositionVariable:
+            {
+                spv::Id functionCalledId = asId(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                if (functionCalledId < 0 || functionCalledId >= vecFunctionIdBeingOverriden.size()){
+                    error(string("function call Id is out of bound. Id: ") + to_string(functionCalledId));
                     break;
                 }
+#endif
+                FunctionInstruction* overridingFunction = vecFunctionIdBeingOverriden[functionCalledId];
+                if (overridingFunction != nullptr)
+                {
+                    spv::Id overridingFunctionId = overridingFunction->GetResultId();
+                    spv[start + 3] = overridingFunctionId;
+                }
+
+                break;
             }
-            return true;
-        },
-        spx_op_fn_nop
-    );
+        }
+        start += wordCount;
+    }
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -2019,18 +2037,35 @@ bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStageEnum stage, Fun
     entryPointInstr.addStringOperand(unmangledFunctionName.c_str());
     entryPointInstr.dump(stageHeader);
 
-    //remove all current entry points
+    //remove the current entry points (if any)
     {
         vector<range_t> vecStripRanges;
-        process(
-            [&](spv::Op opCode, unsigned start)
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
             {
-                if (opCode == spv::OpEntryPoint)
+                case spv::OpEntryPoint:
+                {
                     stripInst(vecStripRanges, start);
-                return true;
-            },
-            spx_op_fn_nop
-        );
+                    break;
+                }
+
+                case spv::OpTypeXlslShaderClass:
+                case spv::OpDeclarationName:
+                {
+                    //all entry points are set before those declarations: we can stop parsing the rest of the bytecode
+                    start = end;
+                    break;
+                }
+            }
+            start += wordCount;
+        }
+
         stripBytecode(vecStripRanges);
     }
 
@@ -2059,41 +2094,44 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
 {
     mapHashPos.clear();
 
-    //We build hashmap table for all types and consts
+    //We build the hashmap table for all types and consts
     //except for OpTypeXlslShaderClass types: (this type is only informational, never used as a type or result)
-    process(
-        [&](spv::Op opCode, unsigned start)
-        {
-            spv::Id id = unused;
-            if (opCode != spv::OpTypeXlslShaderClass)
-            {
-                if (isConstOp(opCode))
-                {
-                    id = asId(start + 2);
-                }
-                else if (isTypeOp(opCode))
-                {
-                    id = asId(start + 1);
-                }
-            }
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
 
-            if (id != unused)
+        spv::Id id = unused;
+        if (opCode != spv::OpTypeXlslShaderClass)
+        {
+            if (isConstOp(opCode))
             {
-                const uint32_t hashval = hashType(start);
-#ifdef XKSLANG_DEBUG_MODE
-                if (mapHashPos.find(hashval) != mapHashPos.end())
-                {
-                    // Warning: might cause some conflicts sometimes?
-                    //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
-                    id = unused;  //by precaution we invalidate the id: we should not choose between them
-                }
-#endif
-                mapHashPos[hashval] = pairIdPos(id, start);
+                id = asId(start + 2);
             }
-            return true;
-        },
-        spx_op_fn_nop
-    );
+            else if (isTypeOp(opCode))
+            {
+                id = asId(start + 1);
+            }
+        }
+
+        if (id != unused)
+        {
+            const uint32_t hashval = hashType(start);
+#ifdef XKSLANG_DEBUG_MODE
+            if (mapHashPos.find(hashval) != mapHashPos.end())
+            {
+                // Warning: might cause some conflicts sometimes?
+                //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
+                id = unused;  //by precaution we invalidate the id: we should not choose between them
+            }
+#endif
+            mapHashPos[hashval] = pairIdPos(id, start);
+        }
+
+        start += wordCount;
+    }
 
     return true;
 }
@@ -2230,148 +2268,151 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 {
     //======================================================================================================
     // Decorate objects attributes and relations
-    process(
-        [&](spv::Op opCode, unsigned start)
+
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        switch (opCode)
         {
-            switch (opCode)
+            case spv::Op::OpBelongsToShader:
             {
-                case spv::Op::OpBelongsToShader:
-                {
-                    const spv::Id shaderId = asId(start + 1);
-                    const spv::Id objectId = asId(start + 2);
+                const spv::Id shaderId = asId(start + 1);
+                const spv::Id objectId = asId(start + 2);
 
-                    if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) return true;
-                    if (!vectorIdsToDecorate[shaderId]) return true;
+                if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) break;
+                if (!vectorIdsToDecorate[shaderId]) break;
 
-                    ShaderClassData* shaderOwner = GetShaderById(shaderId);
-                    if (shaderOwner == nullptr) { error(string("undeclared shader owner for Id: ") + to_string(shaderId)); break; }
+                ShaderClassData* shaderOwner = GetShaderById(shaderId);
+                if (shaderOwner == nullptr) { error(string("undeclared shader owner for Id: ") + to_string(shaderId)); break; }
 
-                    FunctionInstruction* function = GetFunctionById(objectId);
-                    if (function != nullptr) {
-                        //a function is defined as being owned by a shader
+                FunctionInstruction* function = GetFunctionById(objectId);
+                if (function != nullptr) {
+                    //a function is defined as being owned by a shader
 #ifdef XKSLANG_DEBUG_MODE
-                        if (function->GetShaderOwner() != nullptr) { error(string("The function already has a shader owner: ") + function->GetMangledName()); break; }
-                        if (shaderOwner->HasFunction(function))
-                        {
-                            error(string("The shader: ") + shaderOwner->GetName() + string(" already possesses the function: ") + function->GetMangledName()); break;
-                        }
-                        function->SetFullName(shaderOwner->GetName() + string(".") + function->GetMangledName());
+                    if (function->GetShaderOwner() != nullptr) { error(string("The function already has a shader owner: ") + function->GetMangledName()); break; }
+                    if (shaderOwner->HasFunction(function))
+                    {
+                        error(string("The shader: ") + shaderOwner->GetName() + string(" already possesses the function: ") + function->GetMangledName()); break;
+                    }
+                    function->SetFullName(shaderOwner->GetName() + string(".") + function->GetMangledName());
 #endif
-                        function->SetShaderOwner(shaderOwner);
-                        shaderOwner->AddFunction(function);
+                    function->SetShaderOwner(shaderOwner);
+                    shaderOwner->AddFunction(function);
+                }
+                else
+                {
+                    //a type is defined as being owned by a shader
+                    TypeInstruction* type = GetTypeById(objectId);
+                    if (type != nullptr)
+                    {
+                        //A type belongs to a shader, we fetch the necessary data
+                        //A shader type is defined by: the type, a pointer type to it, and a variable to access it
+                        TypeInstruction* typePointer = GetTypePointingTo(type);
+                        VariableInstruction* variable = GetVariablePointingTo(typePointer);
+
+                        if (typePointer == nullptr) { error(string("cannot find the pointer type to the shader type: ") + type->GetName()); break; }
+                        if (variable == nullptr) { error(string("cannot find the variable for shader type: ") + type->GetName()); break; }
+#ifdef XKSLANG_DEBUG_MODE
+                        if (type->GetShaderOwner() != nullptr) { error(string("The type already has a shader owner: ") + type->GetName()); break; }
+                        if (shaderOwner->HasType(type)) { error(string("The shader: ") + shaderOwner->GetName() + string(" already possesses the type: ") + type->GetName()); break; }
+#endif
+                        ShaderTypeData* shaderType = new ShaderTypeData(type, typePointer, variable);
+                        type->SetShaderOwner(shaderOwner);
+                        shaderOwner->AddShaderType(shaderType);
                     }
                     else
                     {
-                        //a type is defined as being owned by a shader
-                        TypeInstruction* type = GetTypeById(objectId);
-                        if (type != nullptr)
-                        {
-                            //A type belongs to a shader, we fetch the necessary data
-                            //A shader type is defined by: the type, a pointer type to it, and a variable to access it
-                            TypeInstruction* typePointer = GetTypePointingTo(type);
-                            VariableInstruction* variable = GetVariablePointingTo(typePointer);
-
-                            if (typePointer == nullptr) { error(string("cannot find the pointer type to the shader type: ") + type->GetName()); break; }
-                            if (variable == nullptr) { error(string("cannot find the variable for shader type: ") + type->GetName()); break; }
-#ifdef XKSLANG_DEBUG_MODE
-                            if (type->GetShaderOwner() != nullptr) { error(string("The type already has a shader owner: ") + type->GetName()); break; }
-                            if (shaderOwner->HasType(type)) { error(string("The shader: ") + shaderOwner->GetName() + string(" already possesses the type: ") + type->GetName()); break; }
-#endif
-                            ShaderTypeData* shaderType = new ShaderTypeData(type, typePointer, variable);
-                            type->SetShaderOwner(shaderOwner);
-                            shaderOwner->AddShaderType(shaderType);
-                        }
-                        else
-                        {
-                            error(string("unprocessed OpBelongsToShader instruction, invalid objectId: ") + to_string(objectId));
-                        }
+                        error(string("unprocessed OpBelongsToShader instruction, invalid objectId: ") + to_string(objectId));
                     }
-                    break;
                 }
-
-                case spv::OpShaderInheritance:
-                {
-                    //A shader inherits from some shader parents
-                    const spv::Id shaderId = asId(start + 1);
-
-                    if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) return true;
-                    if (!vectorIdsToDecorate[shaderId]) return true;
-
-                    ShaderClassData* shader = GetShaderById(shaderId);
-                    if (shader == nullptr) { error(string("undeclared shader for Id: ") + to_string(shaderId)); break; }
-
-                    int countParents = asWordCount(start) - 2;
-                    for (int p = 0; p < countParents; ++p)
-                    {
-                        const spv::Id parentShaderId = asId(start + 2 + p);
-                        ShaderClassData* shaderParent = GetShaderById(parentShaderId);
-                        if (shaderParent == nullptr) { error(string("undeclared parent shader for Id: ") + to_string(parentShaderId)); break; }
-
-#ifdef XKSLANG_DEBUG_MODE
-                        if (shader->HasParent(shaderParent)) { error(string("shader: ") + shader->GetName() + string(" already inherits from parent: ") + shaderParent->GetName()); break; }
-#endif
-                        shader->AddParent(shaderParent);
-                    }
-                    break;
-                }
-
-                case spv::OpShaderCompositionDeclaration:
-                {
-                    const spv::Id shaderId = asId(start + 1);
-
-                    if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) return true;
-                    if (!vectorIdsToDecorate[shaderId]) return true;
-
-                    ShaderClassData* shaderCompositionOwner = GetShaderById(shaderId);
-                    if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id: ") + to_string(shaderId)); break; }
-
-                    int compositionId = asId(start + 2);
-
-                    const spv::Id shaderCompositionTypeId = asId(start + 3);
-                    ShaderClassData* shaderCompositionType = GetShaderById(shaderCompositionTypeId);
-                    if (shaderCompositionType == nullptr) { error(string("undeclared shader type id: ") + to_string(shaderCompositionTypeId)); break; }
-
-                    bool isArray = asId(start + 4) == 0? false: true;
-
-                    int count = asId(start + 5);
-
-                    const string compositionVariableName = literalString(start + 6);
-
-                    ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName, isArray, count);
-                    shaderCompositionOwner->AddComposition(shaderComposition);
-                    break;
-                }
-
-                case spv::Op::OpMethodProperties:
-                {
-                    //a function is defined with some properties
-                    const spv::Id functionId = asId(start + 1);
-
-                    if (functionId < 0 || functionId >= vectorIdsToDecorate.size()) return true;
-                    if (!vectorIdsToDecorate[functionId]) return true;
-
-                    FunctionInstruction* function = GetFunctionById(functionId);
-                    if (function == nullptr) { error(string("undeclared function id: ") + to_string(functionId)); break; }
-
-                    int countProperties = asWordCount(start) - 2;
-                    for (int a = 0; a < countProperties; ++a)
-                    {
-                        int prop = asId(start + 2 + a);
-                        switch (prop)
-                        {
-                        case spv::XkslPropertyEnum::PropertyMethodOverride:
-                            function->ParsedOverrideAttribute();
-                            break;
-                        }
-                    }
-                    break;
-                }
+                break;
             }
 
-            return true;
-        },
-        spx_op_fn_nop
-    );
+            case spv::OpShaderInheritance:
+            {
+                //A shader inherits from some shader parents
+                const spv::Id shaderId = asId(start + 1);
+
+                if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) break;
+                if (!vectorIdsToDecorate[shaderId]) break;
+
+                ShaderClassData* shader = GetShaderById(shaderId);
+                if (shader == nullptr) { error(string("undeclared shader for Id: ") + to_string(shaderId)); break; }
+
+                int countParents = wordCount - 2;
+                for (int p = 0; p < countParents; ++p)
+                {
+                    const spv::Id parentShaderId = asId(start + 2 + p);
+                    ShaderClassData* shaderParent = GetShaderById(parentShaderId);
+                    if (shaderParent == nullptr) { error(string("undeclared parent shader for Id: ") + to_string(parentShaderId)); break; }
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (shader->HasParent(shaderParent)) { error(string("shader: ") + shader->GetName() + string(" already inherits from parent: ") + shaderParent->GetName()); break; }
+#endif
+                    shader->AddParent(shaderParent);
+                }
+                break;
+            }
+
+            case spv::OpShaderCompositionDeclaration:
+            {
+                const spv::Id shaderId = asId(start + 1);
+
+                if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) break;
+                if (!vectorIdsToDecorate[shaderId]) break;
+
+                ShaderClassData* shaderCompositionOwner = GetShaderById(shaderId);
+                if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id: ") + to_string(shaderId)); break; }
+
+                int compositionId = asId(start + 2);
+
+                const spv::Id shaderCompositionTypeId = asId(start + 3);
+                ShaderClassData* shaderCompositionType = GetShaderById(shaderCompositionTypeId);
+                if (shaderCompositionType == nullptr) { error(string("undeclared shader type id: ") + to_string(shaderCompositionTypeId)); break; }
+
+                bool isArray = asId(start + 4) == 0? false: true;
+
+                int count = asId(start + 5);
+
+                const string compositionVariableName = literalString(start + 6);
+
+                ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName, isArray, count);
+                shaderCompositionOwner->AddComposition(shaderComposition);
+                break;
+            }
+
+            case spv::Op::OpMethodProperties:
+            {
+                //a function is defined with some properties
+                const spv::Id functionId = asId(start + 1);
+
+                if (functionId < 0 || functionId >= vectorIdsToDecorate.size()) break;
+                if (!vectorIdsToDecorate[functionId]) break;
+
+                FunctionInstruction* function = GetFunctionById(functionId);
+                if (function == nullptr) { error(string("undeclared function id: ") + to_string(functionId)); break; }
+
+                int countProperties = wordCount - 2;
+                for (int a = 0; a < countProperties; ++a)
+                {
+                    int prop = asId(start + 2 + a);
+                    switch (prop)
+                    {
+                    case spv::XkslPropertyEnum::PropertyMethodOverride:
+                        function->ParsedOverrideAttribute();
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+
+        start += wordCount;
+    }
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -2556,87 +2597,91 @@ bool SpxStreamRemapper::BuildDeclarationNameMapsAndObjectsDataList(vector<Parsed
     spv::Id fnResId = spv::NoResult;
     spv::Id fnTypeId = spv::NoResult;
     spv::Op fnOpCode;
-    process(
-        [&](spv::Op opCode, unsigned start)
+
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        unsigned end = start + wordCount;
+
+        //Fill idPosR map (used by hashType)
+        unsigned word = start+1;
+        spv::Id typeId = spv::NoType;
+        spv::Id resultId = spv::NoResult;
+        if (spv::InstructionDesc[opCode].hasType())
+            typeId = asId(word++);
+        if (spv::InstructionDesc[opCode].hasResult()) {
+            resultId = asId(word++);
+            idPosR[resultId] = start;
+        }
+
+        if (opCode == spv::Op::OpName)
         {
-            unsigned end = start + asWordCount(start);
-
-            //Fill idPosR map (used by hashType)
-            unsigned word = start+1;
-            spv::Id typeId = spv::NoType;
-            spv::Id resultId = spv::NoResult;
-            if (spv::InstructionDesc[opCode].hasType())
-                typeId = asId(word++);
-            if (spv::InstructionDesc[opCode].hasResult()) {
-                resultId = asId(word++);
-                idPosR[resultId] = start;
-            }
-
-            if (opCode == spv::Op::OpName)
-            {
-            /*
+        /*
 #ifdef XKSLANG_DEBUG_MODE
-                const spv::Id target = asId(start + 1);
-                const string name = literalString(start + 2);
+            const spv::Id target = asId(start + 1);
+            const string name = literalString(start + 2);
 
-                if (mapDeclarationName.find(target) == mapDeclarationName.end())
-                    mapDeclarationName[target] = name;
-#endif*/
-            }
-            else if (opCode == spv::Op::OpDeclarationName)
-            {
-                const spv::Id target = asId(start + 1);
-                const string  name = literalString(start + 2);
+            if (mapDeclarationName.find(target) == mapDeclarationName.end())
                 mapDeclarationName[target] = name;
-            }
-            else if (isConstOp(opCode))
+#endif*/
+        }
+        else if (opCode == spv::Op::OpDeclarationName)
+        {
+            const spv::Id target = asId(start + 1);
+            const string  name = literalString(start + 2);
+            mapDeclarationName[target] = name;
+        }
+        else if (isConstOp(opCode))
+        {
+            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Const, opCode, resultId, typeId, start, end));
+        }
+        else if (isTypeOp(opCode))
+        {
+            if (opCode == spv::OpTypeXlslShaderClass)
             {
-                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Const, opCode, resultId, typeId, start, end));
+                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Shader, opCode, resultId, typeId, start, end));
             }
-            else if (isTypeOp(opCode))
+            else
             {
-                if (opCode == spv::OpTypeXlslShaderClass)
+                ParsedObjectData data = ParsedObjectData(ObjectInstructionTypeEnum::Type, opCode, resultId, typeId, start, end);
+                if (isPointerTypeOp(opCode))
                 {
-                    listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Shader, opCode, resultId, typeId, start, end));
+                    spv::Id targetId = asId(start + 3);
+                    data.SetTargetId(targetId);
                 }
-                else
-                {
-                    ParsedObjectData data = ParsedObjectData(ObjectInstructionTypeEnum::Type, opCode, resultId, typeId, start, end);
-                    if (isPointerTypeOp(opCode))
-                    {
-                        spv::Id targetId = asId(start + 3);
-                        data.SetTargetId(targetId);
-                    }
-                    listParsedObjectsData.push_back(data);
-                }
+                listParsedObjectsData.push_back(data);
             }
-            else if (isVariableOp(opCode))
-            {
-                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Variable, opCode, resultId, typeId, start, end));
-            }
-            else if (opCode == spv::Op::OpFunction)
-            {
-                if (fnStart != 0) error("nested function found");
-                fnStart = start;
-                fnTypeId = typeId;
-                fnResId = resultId;
-                fnOpCode = opCode;
-            }
-            else if (opCode == spv::Op::OpFunctionEnd)
-            {
-                if (fnStart == 0) error("function end without function start");
-                if (fnResId == spv::NoResult) error("function has no result iD");
-                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Function, fnOpCode, fnResId, fnTypeId, fnStart, end));
-                fnStart = 0;
-            }
-            else if (opCode == spv::Op::OpExtInstImport)
-            {
-                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::HeaderProperty, opCode, resultId, typeId, start, end));
-            }
-            return true;
-        },
-        spx_op_fn_nop
-    );
+        }
+        else if (isVariableOp(opCode))
+        {
+            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Variable, opCode, resultId, typeId, start, end));
+        }
+        else if (opCode == spv::Op::OpFunction)
+        {
+            if (fnStart != 0) error("nested function found");
+            fnStart = start;
+            fnTypeId = typeId;
+            fnResId = resultId;
+            fnOpCode = opCode;
+        }
+        else if (opCode == spv::Op::OpFunctionEnd)
+        {
+            if (fnStart == 0) error("function end without function start");
+            if (fnResId == spv::NoResult) error("function has no result iD");
+            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Function, fnOpCode, fnResId, fnTypeId, fnStart, end));
+            fnStart = 0;
+        }
+        else if (opCode == spv::Op::OpExtInstImport)
+        {
+            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::HeaderProperty, opCode, resultId, typeId, start, end));
+        }
+
+        start += wordCount;
+    }
 
     if (errorMessages.size() > 0) return false;
     return true;
