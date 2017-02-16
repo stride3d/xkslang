@@ -42,8 +42,8 @@ bool SpxStreamRemapper::error(const string& txt)
     return false;
 }
 
-static const auto spx_inst_fn_nop = [](spv::Op, unsigned) { return false; };
-static const auto spx_op_fn_nop = [](spv::Id&) {};
+//static const auto spx_inst_fn_nop = [](spv::Op, unsigned) { return false; };
+//static const auto spx_op_fn_nop = [](spv::Id&) {};
 //===================================================================================================//
 
 SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
@@ -604,9 +604,14 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             }
             
             //For each instructions within the functions bytecode: Remap their results IDs
-            bytecodeToMerge.process(
-                [&](spv::Op opCode, unsigned start)
+            {
+                unsigned int start = functionToMerge->GetBytecodeStartPosition();
+                const unsigned int end = functionToMerge->GetBytecodeEndPosition();
+                while (start < end)
                 {
+                    unsigned int wordCount = bytecodeToMerge.asWordCount(start);
+                    spv::Op opCode = bytecodeToMerge.asOpCode(start);
+
                     unsigned word = start + 1;
 
                     // Read type and result ID from instruction desc table
@@ -614,7 +619,8 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                         word++;  //spv::Id typeId = bytecodeToMerge.asId(word++);
                     }
 
-                    if (spv::InstructionDesc[opCode].hasResult()) {
+                    if (spv::InstructionDesc[opCode].hasResult())
+                    {
                         spv::Id resultId = bytecodeToMerge.asId(word++);
 #ifdef XKSLANG_DEBUG_MODE
                         if (finalRemapTable[resultId] != unused) error(string("id: ") + to_string(resultId) + string(" has already been remapped"));
@@ -622,11 +628,9 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                         finalRemapTable[resultId] = newId++;
                     }
 
-                    return true;
-                },
-                spx_op_fn_nop,
-                functionToMerge->GetBytecodeStartPosition(), functionToMerge->GetBytecodeEndPosition()
-            );
+                    start += wordCount;
+                }
+            }
 
             //Copy all bytecode instructions from the function
             bytecodeToMerge.CopyInstructionToVector(vecFunctionsToMerge.spv, functionToMerge->GetBytecodeStartPosition(), functionToMerge->GetBytecodeEndPosition());
@@ -652,9 +656,14 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
     //Populate vecNewShadersDecorationPossesingIds with some decorate instructions which might contains unmapped IDs
     spirvbin_t vecXkslDecorationsPossesingIds;
-    bytecodeToMerge.process(
-        [&](spv::Op opCode, unsigned start)
+    {
+        unsigned int start = bytecodeToMerge.header_size;
+        const unsigned int end = bytecodeToMerge.spv.size();
+        while (start < end)
         {
+            unsigned int wordCount = bytecodeToMerge.asWordCount(start);
+            spv::Op opCode = bytecodeToMerge.asOpCode(start);
+
             switch (opCode)
             {
                 case spv::OpShaderInheritance:
@@ -669,10 +678,10 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     break;
                 }
             }
-            return true;
-        },
-        spx_op_fn_nop
-    );
+
+            start += wordCount;
+        }
+    }
 
     //=============================================================================================================
     //=============================================================================================================
@@ -878,9 +887,14 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //=============================================================================================================
     //=============================================================================================================
     // get all name, decoration and XKSL data for the new IDs we need to merge
-    bytecodeToMerge.process(
-        [&](spv::Op opCode, unsigned start)
+    {
+        unsigned int start = bytecodeToMerge.header_size;
+        const unsigned int end = bytecodeToMerge.spv.size();
+        while (start < end)
         {
+            unsigned int wordCount = bytecodeToMerge.asWordCount(start);
+            spv::Op opCode = bytecodeToMerge.asOpCode(start);
+
             switch (opCode)
             {
                 case spv::OpName:
@@ -962,10 +976,10 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     break;
                 }
             }
-            return true;
-        },
-        spx_op_fn_nop
-    );
+
+            start += wordCount;
+        }
+    }
 
     //=============================================================================================================
     //=============================================================================================================
