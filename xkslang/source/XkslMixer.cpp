@@ -149,7 +149,7 @@ bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& mes
     return true;
 }
 
-bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<string>& messages, SpvBytecode* finalizedSpv, SpvBytecode* errorLatestSpv)
+bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<string>& messages, SpvBytecode* preCompiledSpx, SpvBytecode* compiledSpv, SpvBytecode* errorLatestSpv)
 {
     if (spxStreamRemapper == nullptr)
         return error(messages, "you must process some mixin first");
@@ -163,6 +163,22 @@ bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<strin
     SpxStreamRemapper* clonedSpxStream = spxStreamRemapper->Clone();
     if (clonedSpxStream == nullptr) return error(messages, "Failed to clone the SpxStreamRemapper");
 
+    //===================================================================================================================
+    //===================================================================================================================
+    if (!clonedSpxStream->ApplyResolvedCompositionsToBytecode())
+    {
+        clonedSpxStream->copyMessagesTo(messages);
+        if (errorLatestSpv != nullptr)
+            clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        delete clonedSpxStream;
+        return error(messages, "Failed to apply all compositions to the bytecode");
+    }
+
+    if (preCompiledSpx != nullptr)
+        clonedSpxStream->GetMixinBytecode(preCompiledSpx->getWritableBytecodeStream());
+
+    //===================================================================================================================
+    //===================================================================================================================
     if (!clonedSpxStream->CompileMixinForStages(outputStages))
     {
         clonedSpxStream->copyMessagesTo(messages);
@@ -172,8 +188,8 @@ bool XkslMixer::Compile(vector<XkslMixerOutputStage>& outputStages, vector<strin
         return error(messages, "Fail to finalize the mixin");
     }
 
-    if (finalizedSpv != nullptr)
-        clonedSpxStream->GetMixinBytecode(finalizedSpv->getWritableBytecodeStream());
+    if (compiledSpv != nullptr)
+        clonedSpxStream->GetMixinBytecode(compiledSpv->getWritableBytecodeStream());
     
     delete clonedSpxStream;
     //=============================================================================================================================================

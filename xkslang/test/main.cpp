@@ -98,12 +98,12 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose05", "TestCompose05.xkfx" },
     //{ "TestCompose06", "TestCompose06.xkfx" },
     //{ "TestCompose07", "TestCompose07.xkfx" },
-    //{ "TestCompose08", "TestCompose08.xkfx" },
+    { "TestCompose08", "TestCompose08.xkfx" },
     //{ "TestCompose09", "TestCompose09.xkfx" },
     //{ "TestCompose10", "TestCompose10.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
-    { "TestForEach01", "TestForEach01.xkfx" },
+    //{ "TestForEach01", "TestForEach01.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },
 };
@@ -204,11 +204,12 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputSta
     DWORD time_before, time_after;
     bool success = true;
 
-    SpvBytecode finalizedSpv;
+    SpvBytecode preCompiledSpx;
+    SpvBytecode compiledSpv;
     SpvBytecode errorSpv;
     cout << "Compile Mixin: ";
     time_before = GetTickCount();
-    success = mixer->Compile(outputStages, errorMsgs, &finalizedSpv, &errorSpv);
+    success = mixer->Compile(outputStages, errorMsgs, &preCompiledSpx, &compiledSpv, &errorSpv);
     time_after = GetTickCount();
 
     if (!success)
@@ -234,23 +235,48 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<XkslMixerOutputSta
         cout << "OK. time: " << (time_after - time_before) << " ms" << endl;
     }
 
-    //output finalized spirv
+    //output preCompiledSpx spirv
     {
-        const vector<uint32_t>& bytecodeList = finalizedSpv.getBytecodeStream();
+        const vector<uint32_t>& bytecodeList = preCompiledSpx.getBytecodeStream();
 
-        //spv
-        //string outputNameSpv = effectName + "_mixin_finalized" + ".spv";
-        //glslang::OutputSpvBin(bytecodeList, (outputDir + outputNameSpv).c_str());
+        if (bytecodeList.size() > 0)
+        {
+            //spv
+            //string outputNameSpv = effectName + "_mixin_finalized" + ".spv";
+            //glslang::OutputSpvBin(bytecodeList, (outputDir + outputNameSpv).c_str());
 
-        //hr spv
-        ostringstream disassembly_stream;
-        spv::Parameterize();
-        spv::Disassemble(disassembly_stream, bytecodeList);
+            //hr spv
+            ostringstream disassembly_stream;
+            spv::Parameterize();
+            spv::Disassemble(disassembly_stream, bytecodeList);
 
-        const string outputFileName = effectName + "_mixin_finalized" + ".hr.spv";
-        const string outputFullName = outputDir + outputFileName;
-        xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
-        cout << " output: \"" << outputFileName << "\"" << endl;
+            const string outputFileName = effectName + "_preCompiled" + ".hr.spv";
+            const string outputFullName = outputDir + outputFileName;
+            xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
+            cout << " output: \"" << outputFileName << "\"" << endl;
+        }
+    }
+
+    //output compiledSpv spirv
+    {
+        const vector<uint32_t>& bytecodeList = compiledSpv.getBytecodeStream();
+
+        if (bytecodeList.size() > 0)
+        {
+            //spv
+            //string outputNameSpv = effectName + "_mixin_finalized" + ".spv";
+            //glslang::OutputSpvBin(bytecodeList, (outputDir + outputNameSpv).c_str());
+
+            //hr spv
+            ostringstream disassembly_stream;
+            spv::Parameterize();
+            spv::Disassemble(disassembly_stream, bytecodeList);
+
+            const string outputFileName = effectName + "_compiled" + ".hr.spv";
+            const string outputFullName = outputDir + outputFileName;
+            xkslangtest::Utils::WriteFile(outputFullName, disassembly_stream.str());
+            cout << " output: \"" << outputFileName << "\"" << endl;
+        }
     }
 
     if (!success) return false;

@@ -179,6 +179,12 @@ void SpirvStream::processInstructions()
         // Instruction wordCount and opcode
         unsigned int firstWord = stream[word];
         unsigned wordCount = firstWord >> WordCountShift;
+        if (wordCount == 0){
+            out << "ERROR: wordCount == 0: invalid stream" << std::endl;
+            word = size;
+            continue;
+        }
+
         Op opCode = (Op)(firstWord & OpCodeMask);
         int nextInst = word + wordCount;
         ++word;

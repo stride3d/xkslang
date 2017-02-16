@@ -228,30 +228,23 @@ public:
     class ShaderComposition
     {
     public:
-        enum class ShaderCompositionStatusEnum
-        {
-            Unresolved,
-            Resolved,
-        };
-
         int compositionShaderId;
         ShaderClassData* compositionShaderOwner;
         ShaderClassData* shaderType;
         std::string variableName;
         bool isArray;
+        int countInstances;
 
         const std::string& GetVariableName() const {return variableName;}
 
         //ShaderClassData* instantiatedShader;  //resulting shader instance from the composition
 
         ShaderComposition(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType,
-            const std::string& variableName, bool isArray, ShaderCompositionStatusEnum status)
+            const std::string& variableName, bool isArray, int countInstances)
                 :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
-                variableName(variableName), isArray(isArray), status(status){}
+                variableName(variableName), isArray(isArray), countInstances(countInstances){}
 
     private:
-        ShaderCompositionStatusEnum status;
-
         friend class SpxStreamRemapper;
     };
 
@@ -308,11 +301,6 @@ public:
                 if (compositionsList[i].variableName == variableName) return &(compositionsList[i]);
             return nullptr;
         }
-        int HasAnyUnresolvedCompositions() {
-            for (unsigned int i = 0; i<compositionsList.size(); ++i)
-                if (compositionsList[i].status == ShaderComposition::ShaderCompositionStatusEnum::Unresolved) return true;
-            return false;
-        }
 
     public:
         int level;
@@ -363,6 +351,8 @@ private:
     FunctionInstruction* GetFunctionForEntryPoint(std::string entryPointName);
     bool RemoveShaderAndAllData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
 
+    bool ApplyResolvedCompositionsToBytecode();
+
     void ReleaseAllMaps();
     bool BuildAllMaps();
     bool UpdateAllMaps();
@@ -409,6 +399,8 @@ private:
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
     HeaderPropertyInstruction* GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const std::string& name);
     ShaderComposition* GetCompositionById(spv::Id shaderId, int compositionId);
+    bool GetAllShaderInstancesForComposition(const ShaderComposition* composition, std::vector<ShaderClassData*>& instances);
+    FunctionInstruction* GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name);
 
     void stripBytecode(std::vector<range_t>& ranges);
 

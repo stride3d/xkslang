@@ -165,7 +165,7 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
             ShaderComposition& compositionToClone = shaderToClone->compositionsList[i];
             ShaderClassData* shaderType = compositionToClone.shaderType == nullptr? nullptr: clonedSpxRemapper->GetShaderById(compositionToClone.shaderType->GetId());
             ShaderComposition clonedComposition(compositionToClone.compositionShaderId, compositionToClone.compositionShaderOwner, shaderType, compositionToClone.variableName,
-                compositionToClone.isArray, compositionToClone.status);
+                compositionToClone.isArray, compositionToClone.countInstances);
             //clonedComposition.instantiatedShader = compositionToClone.instantiatedShader == nullptr ? nullptr : clonedSpxRemapper->GetShaderById(compositionToClone.instantiatedShader->GetId());
             clonedShader->AddComposition(clonedComposition);
         }
@@ -658,8 +658,8 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             switch (opCode)
             {
                 case spv::OpShaderInheritance:
-                case spv::OpShaderComposition:
-                case spv::OpShaderArrayComposition:
+                case spv::OpShaderCompositionDeclaration:
+                case spv::OpShaderCompositionInstance:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
@@ -950,8 +950,8 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 
                 case spv::OpBelongsToShader:
                 case spv::OpShaderInheritance:
-                case spv::OpShaderComposition:
-                case spv::OpShaderArrayComposition:
+                case spv::OpShaderCompositionDeclaration:
+                case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
@@ -1059,8 +1059,8 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpDeclarationName:
                 case spv::OpShaderInheritance:
                 case spv::OpBelongsToShader:
-                case spv::OpShaderComposition:
-                case spv::OpShaderArrayComposition:
+                case spv::OpShaderCompositionDeclaration:
+                case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
                 {
                     posToInsertNewNames = start;
@@ -1192,7 +1192,9 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     //find the shader's composition target
     ShaderComposition* compositionTarget = shaderCompositionTarget->GetShaderCompositionByName(variableName);
     if (compositionTarget == nullptr) return error(string("No composition exists in shader \"") + shaderName + string("\" with the name: ") + variableName);
-    if (compositionTarget->status == ShaderComposition::ShaderCompositionStatusEnum::Resolved) return error(string("The composition has already been resolved"));
+
+    if (!compositionTarget->isArray && compositionTarget->countInstances > 0) return error(string("The composition has already been instanciated"));
+
     int compositionTargetId = compositionTarget->compositionShaderId;
 
     ShaderClassData* shaderTypeToInstantiate = compositionTarget->shaderType;
@@ -1226,15 +1228,20 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 
             listAllShadersToInstantiate.push_back(aShaderFromFamily);
 
-            //For all shaders to instantiate: we recursively add all shaders from their resolved compositions, and their full family tree
+            //For all shaders to instantiate: we all shaders from their compositions declaration and instances
             int countCompositions = aShaderFromFamily->GetCountShaderComposition();
             for (int ic = 0; ic < countCompositions; ++ic)
             {
                 ShaderComposition& aShaderComposition = aShaderFromFamily->compositionsList[ic];
-                if (aShaderComposition.status == ShaderComposition::ShaderCompositionStatusEnum::Unresolved)
-                    return error(string("A shader to instantiate has some unresolved composition variables. Shader name:") + aShaderFromFamily->GetName());
-
+                if (!aShaderComposition.isArray && aShaderComposition.countInstances == 0)
+                    return error(string("The composition: ") + aShaderComposition.variableName + string(" has not been instanciated for Shader: ") + aShaderFromFamily->GetName());
                 listShadersToInvestigate.push_back(aShaderComposition.shaderType);
+
+                vector<ShaderClassData*> vecCompositionShaderInstances;
+                if (!source->GetAllShaderInstancesForComposition(&aShaderComposition, vecCompositionShaderInstances)) {
+                    return error(string("Failed to retrieve the instances for the composition: ") + aShaderComposition.variableName + string(" from shader: ") + aShaderComposition.compositionShaderOwner->GetName());
+                }
+                listShadersToInvestigate.insert(listShadersToInvestigate.end(), vecCompositionShaderInstances.begin(), vecCompositionShaderInstances.end());
             }
         }
     }
@@ -1260,138 +1267,161 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 
     //===================================================================================================================
     //Map the list of targeted shaders with the cloned shader (so that we can update the links later on)
-    unordered_map<spv::Id, spv::Id> mapCompositionShaderTargetedWithClonedShader;
+    /*unordered_map<spv::Id, spv::Id> mapCompositionShaderTargetedWithClonedShader;
     for (auto its = listAllShadersToInstantiate.begin(); its != listAllShadersToInstantiate.end(); its++)
     {
         ShaderClassData* shaderCloned = *its;
         ShaderClassData* clonedShader = shaderCloned->tmpClonedShader;
         mapCompositionShaderTargetedWithClonedShader[shaderCloned->GetId()] = clonedShader->GetId();
-    }
+    }*/
 
     //===================================================================================================================
     //===================================================================================================================
-    // - update all OpFunctionCallThroughCompositionVariable instructions calling through the composition that we're instancing
-    // - update our composition data
-    vector<range_t> vecStripRanges;
-    process(
-        [&](spv::Op opCode, unsigned start)
+    // - update our composition data, and add the instances instruction
+    {
+        //Analyse the function's bytecode, to add all new functions called
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        bool compositionUpdated = false;
+        while (start < end)
         {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
             switch (opCode)
             {
-                case spv::OpShaderComposition:
+                case spv::OpShaderCompositionDeclaration:
                 {
-                    //set shaderType Id to the merged type id
                     spv::Id shaderId = asId(start + 1);
                     int compositionId = asId(start + 2);
 
                     if (shaderId == shaderCompositionTarget->GetId() && compositionId == compositionTargetId)
                     {
-                        //===================================================================================================================
-                        //update the composition type referenced by the new merged shader
-                        compositionTarget->status = ShaderComposition::ShaderCompositionStatusEnum::Resolved;
-                        compositionTarget->shaderType = mainShaderTypeMerged;
+                        //increase number of instances
+                        compositionTarget->countInstances++;
+                        setId(start + 5, compositionTarget->countInstances);  
+
+                        //Add the instance information in the bytecode
                         spv::Id mergedShaderTypeId = mainShaderTypeMerged->GetId();
-                        
-                        setId(start + 3, mergedShaderTypeId);
-                        setId(start + 4, 1);  //set status to resolved
+                        spv::Instruction compInstanceInstr(spv::OpShaderCompositionInstance);
+                        compInstanceInstr.addIdOperand(shaderId);
+                        compInstanceInstr.addImmediateOperand(compositionId);
+                        compInstanceInstr.addImmediateOperand(compositionTarget->countInstances - 1);
+                        compInstanceInstr.addIdOperand(mergedShaderTypeId);
+
+                        vector<unsigned int> instructionBytecode;
+                        compInstanceInstr.dump(instructionBytecode);
+                        spv.insert(spv.begin() + (start + wordCount), instructionBytecode.begin(), instructionBytecode.end());
+
+                        compositionUpdated = true;
+                        start = end;  //can stop here: there is only one composition to update
                     }
                     break;
                 }
+            }
+            start += wordCount;
+        }
 
-                case spv::OpShaderArrayComposition:
-                    return error("not implemented yet");
-                    break;
+        if (!compositionUpdated) return error("The composition has not been updated");
 
+        if (!UpdateAllMaps()) return error("Failed to update all maps");
+    }
+
+    if (errorMessages.size() > 0) return false;
+    status = SpxRemapperStatusEnum::WaitingForMixin;
+    return true;
+}
+
+bool SpxStreamRemapper::ApplyResolvedCompositionsToBytecode()
+{
+    if (status != SpxRemapperStatusEnum::WaitingForMixin) {
+        return error("Invalid remapper status");
+    }
+
+    //===================================================================================================================
+    //===================================================================================================================
+    // - update all OpFunctionCallThroughCompositionVariable instructions calling through the composition that we're instancing
+    vector<range_t> vecStripRanges;
+    {
+        //Analyse the function's bytecode, to add all new functions called
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
+            {
                 case spv::OpFunctionCallThroughCompositionVariable:
                 {
                     spv::Id shaderId = asId(start + 4);
                     int compositionId = asId(start + 5);
     
-                    if (shaderId == shaderCompositionTarget->GetId() && compositionId == compositionTargetId)
-                    {
-                        //Get function and shader reference in the destination bytecode
-                        spv::Id originalFunctionId = asId(start + 3);
-                        FunctionInstruction* functionToReplace = GetFunctionById(originalFunctionId);
-                        if (functionToReplace == nullptr){
-                            error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known function. Id: ") + to_string(originalFunctionId));
-                            return true;
-                        }
-                        ShaderClassData* shaderOwningTheFunction = functionToReplace->GetShaderOwner();
-                        if (shaderOwningTheFunction == nullptr) {
-                            error(string("OpFunctionCallThroughCompositionVariable: function to replace has no shader owner: ") + functionToReplace->GetName());
-                            return true;
-                        }
-                        const string& shaderName = shaderOwningTheFunction->GetName();
+                    //===================================================
+                    //Find the composition data
+                    ShaderClassData* compositionShaderOwner = this->GetShaderById(shaderId);
+                    if (compositionShaderOwner == nullptr){ error(string("No shader exists with the Id: ") + to_string(shaderId)); break; }
+                    
+                    ShaderComposition* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
+                    if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
 
-                        //Find this shader in the list of shader we cloned from the source bytecode
-                        ShaderClassData* shaderClonedOwningTheFunction = nullptr;
-                        for (int i = 0; i < listAllShadersToInstantiate.size(); ++i)
-                        {
-                            if (listAllShadersToInstantiate[i]->GetName() == shaderName) {
-                                shaderClonedOwningTheFunction = listAllShadersToInstantiate[i];
-                                break;
-                            }
-                        }
+                    if (composition->isArray) { error("Only works with non-array compositions for now"); break; }
+                    if (composition->countInstances != 1) break;  //ignore unresolved composition
 
-                        if (shaderClonedOwningTheFunction == nullptr) {
-                            error(string("We cannot find back the composition shader type from the list of shader cloned. Name: ") + shaderName);
-                            return true;
-                        }
-
-                        //look for the cloned shader
-                        auto itmap = mapCompositionShaderTargetedWithClonedShader.find(shaderClonedOwningTheFunction->GetId());
-                        if (itmap == mapCompositionShaderTargetedWithClonedShader.end())
-                        {
-                            error(string("OpFunctionCallThroughCompositionVariable: failed to find the shader cloned named: ") + shaderName);
-                            return true;
-                        }
-
-                        spv::Id clonedShaderId = itmap->second;
-                        ShaderClassData* clonedShader = GetShaderById(clonedShaderId);
-                        if (clonedShader == nullptr) {
-                            error(string("OpFunctionCallThroughCompositionVariable: cloned shader Id cannotbe retrieve in the destination bytecode. Id: ") + to_string(clonedShaderId));
-                            return true;
-                        }
-    
-                        FunctionInstruction* functionTarget = clonedShader->GetFunctionByName(functionToReplace->GetName());
-                        if (functionTarget == nullptr) {
-                            error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function in the cloned shader. Function name: ") + functionToReplace->GetName());
-                            return true;
-                        }
-
-                        //If the function is overriden by another, change the target
-                        if (functionTarget->GetOverridingFunction() != nullptr) functionTarget = functionTarget->GetOverridingFunction();
-    
-                        int wordCount = asWordCount(start);
-                        vecStripRanges.push_back(range_t(start + 4, start + 5 + 1));   //will remove composition variable ids from the bytecode
-                        setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 2);  //change instruction OpFunctionCallThroughCompositionVariable to OpFunctionCall
-                        setId(start + 3, functionTarget->GetId());                     //replace the function called id
+                    vector<ShaderClassData*> vecCompositionShaderInstances;
+                    if (!GetAllShaderInstancesForComposition(composition, vecCompositionShaderInstances)) {
+                        return error(string("Failed to retrieve the instances for the composition: ") + composition->variableName + string(" from shader: ") + composition->compositionShaderOwner->GetName());
                     }
+                    ShaderClassData* clonedShader = vecCompositionShaderInstances[0];
+
+                    //===================================================
+                    //Get the original function called
+                    spv::Id originalFunctionId = asId(start + 3);
+                    FunctionInstruction* functionToReplace = GetFunctionById(originalFunctionId);
+                    if (functionToReplace == nullptr){
+                        error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known function. Id: ") + to_string(originalFunctionId));
+                        return true;
+                    }
+
+                    //We retrieve the cloned function using the function name
+                    FunctionInstruction* functionTarget = GetTargetedFunctionByNameWithinShaderAndItsFamily(clonedShader, functionToReplace->GetName());
+                    if (functionTarget == nullptr) {
+                        error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function in the cloned shader. Function name: ") + functionToReplace->GetName());
+                        return true;
+                    }
+
+                    //If the function is overriden by another, change the target
+                    if (functionTarget->GetOverridingFunction() != nullptr) functionTarget = functionTarget->GetOverridingFunction();
+    
+                    int wordCount = asWordCount(start);
+                    vecStripRanges.push_back(range_t(start + 4, start + 5 + 1));   //will remove composition variable ids from the bytecode
+                    setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 2);  //change instruction OpFunctionCallThroughCompositionVariable to OpFunctionCall
+                    setId(start + 3, functionTarget->GetId());                     //replace the function called id
+
                     break;
                 }
             }
-            return true;
-        },
-        spx_op_fn_nop
-    );
-
-    if (errorMessages.size() > 0) {
-        return error("failed to retarget the functions called by the compositions");
+            start += wordCount;
+        }
     }
 
-    //remove strip bytecode
-    stripBytecode(vecStripRanges);
+    if (vecStripRanges.size() > 0)
+    {
+        //remove strip bytecode
+        stripBytecode(vecStripRanges);
 
-    //Update all maps
-    //TODO: We're not removing any instructions or objects (only reducing instruction for FunctionCallThroughCompositionVar)
-    //So we could optimize this by simply updating the start-end position for all objects
-    UpdateAllMaps();
+        if (errorMessages.size() > 0) {
+            return error("ApplyAllCompositions: failed to retarget the functions called by the compositions");
+        }
 
-    if (compositionTarget->status != ShaderComposition::ShaderCompositionStatusEnum::Resolved)
-        return error("The composition has not been resolved");
+        //Update all maps (update objects position in the bytecode)
+        if (!UpdateAllMaps()) {
+            return error("ApplyAllCompositions: failed to update all maps");
+        }
+    }
 
     if (errorMessages.size() > 0) return false;
-    status = SpxRemapperStatusEnum::WaitingForMixin;
     return true;
 }
 
@@ -1489,7 +1519,7 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
         if (errorMessages.size() > 0) return false;
 
         //====================================================================
-        //For all shader flagged, flag their whole family (compositions and parents) as well
+        //For all shader flagged, flag their whole family (composition instances and parents) as well
         vector<ShaderClassData*> vectorAllShadersInvolved;
         while (vectorShadersOwningAllFunctionsCalled.size() > 0)
         {
@@ -1507,18 +1537,24 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
                 if (aShaderParentInvolved->flag1 != 2) vectorShadersOwningAllFunctionsCalled.push_back(aShaderParentInvolved);
             }
             
-            //add the compositions' shader target, check that they've been resolved
+            //add the composition shader instances
             for (auto itc = aShaderInvolved->compositionsList.begin(); itc != aShaderInvolved->compositionsList.end(); itc++)
             {
                 const ShaderComposition& aComposition = *itc;
-                if (aComposition.status == ShaderComposition::ShaderCompositionStatusEnum::Unresolved)
+                if (aComposition.countInstances > 0)
                 {
-                    error(string("Composition \"") + aComposition.GetVariableName() + string("\" from shader \"") + aShaderInvolved->GetName() + string("\" has not been set"));
-                }
-                else
-                {
-                    ShaderClassData* aShaderCompositionInvolved = itc->shaderType;
-                    if (aShaderCompositionInvolved->flag1 != 2) vectorShadersOwningAllFunctionsCalled.push_back(aShaderCompositionInvolved);
+                    vector<ShaderClassData*> vecCompositionShaderInstances;
+                    if (!GetAllShaderInstancesForComposition(&aComposition, vecCompositionShaderInstances)) {
+                        error(string("Failed to retrieve the instances for the composition: ") + aComposition.variableName + string(" from shader: ") + aComposition.compositionShaderOwner->GetName());
+                    }
+                    else
+                    {
+                        for (int ii = 0; ii < vecCompositionShaderInstances.size(); ii++)
+                        {
+                            ShaderClassData* aShaderCompositionInstanced = vecCompositionShaderInstances[ii];
+                            if (aShaderCompositionInstanced->flag1 != 2) vectorShadersOwningAllFunctionsCalled.push_back(aShaderCompositionInstanced);
+                        }
+                    }
                 }
             }
         }
@@ -1579,8 +1615,8 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
                     case spv::OpDeclarationName:
                     case spv::OpTypeXlslShaderClass:
                     case spv::OpShaderInheritance:
-                    case spv::OpShaderComposition:
-                    case spv::OpShaderArrayComposition:
+                    case spv::OpShaderCompositionDeclaration:
+                    case spv::OpShaderCompositionInstance:
                     case spv::OpMethodProperties:
                     case spv::OpForEachCompositionStartLoop:
                     case spv::OpForEachCompositionEndLoop:
@@ -2279,15 +2315,13 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     break;
                 }
 
-                case spv::OpShaderComposition:
-                case spv::OpShaderArrayComposition:
+                case spv::OpShaderCompositionDeclaration:
                 {
                     const spv::Id shaderId = asId(start + 1);
 
                     if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) return true;
                     if (!vectorIdsToDecorate[shaderId]) return true;
 
-                    bool isArray = opCode == spv::OpShaderArrayComposition ? true : false;
                     ShaderClassData* shaderCompositionOwner = GetShaderById(shaderId);
                     if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id: ") + to_string(shaderId)); break; }
 
@@ -2297,14 +2331,13 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     ShaderClassData* shaderCompositionType = GetShaderById(shaderCompositionTypeId);
                     if (shaderCompositionType == nullptr) { error(string("undeclared shader type id: ") + to_string(shaderCompositionTypeId)); break; }
 
-                    int status = asId(start + 4);
-                    ShaderComposition::ShaderCompositionStatusEnum compstatus = status == 0?
-                        ShaderComposition::ShaderCompositionStatusEnum::Unresolved :
-                        ShaderComposition::ShaderCompositionStatusEnum::Resolved;
+                    bool isArray = asId(start + 4) == 0? false: true;
 
-                    const string compositionVariableName = literalString(start + 5);
+                    int count = asId(start + 5);
 
-                    ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName, isArray, compstatus);
+                    const string compositionVariableName = literalString(start + 6);
+
+                    ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName, isArray, count);
                     shaderCompositionOwner->AddComposition(shaderComposition);
                     break;
                 }
@@ -2648,6 +2681,23 @@ SpxStreamRemapper::HeaderPropertyInstruction* SpxStreamRemapper::GetHeaderProper
     return nullptr;
 }
 
+SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name)
+{
+    FunctionInstruction* function = shader->GetFunctionByName(name);
+    if (function != nullptr) {
+        if (function->GetOverridingFunction() != nullptr) return function->GetOverridingFunction();
+        return function;
+    }
+
+    //Look for the function within the shader parents
+    for (unsigned int i = 0; i < shader->parentsList.size(); ++i)
+    {
+        function = GetTargetedFunctionByNameWithinShaderAndItsFamily(shader->parentsList[i], name);
+        if (function != nullptr) return function;
+    }
+    return nullptr;
+}
+
 SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const string& name)
 {
     if (name.size() == 0) return nullptr;
@@ -2668,6 +2718,57 @@ SpxStreamRemapper::ShaderComposition* SpxStreamRemapper::GetCompositionById(spv:
     ShaderClassData* shader = GetShaderById(shaderId);
     if (shader == nullptr) return nullptr;
     return shader->GetShaderCompositionById(compositionId);
+}
+
+bool SpxStreamRemapper::GetAllShaderInstancesForComposition(const ShaderComposition* composition, vector<ShaderClassData*>& instances)
+{
+    instances.clear();
+    spv::Id compositionShaderOwnerId = composition->compositionShaderOwner->GetId();
+    int compositionShaderId = composition->compositionShaderId;
+
+    //look for the instances in the bytecode
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        switch (opCode)
+        {
+            case spv::OpShaderCompositionInstance:
+            {
+                const spv::Id shaderOwnerId = asId(start + 1);
+                const int compositionId = asId(start + 2);
+
+                if (shaderOwnerId == compositionShaderOwnerId && compositionId == compositionShaderId)
+                {
+                    int num = asId(start + 3);
+                    const spv::Id shaderInstanceId = asId(start + 4);
+                    ShaderClassData* shaderInstance = GetShaderById(shaderInstanceId);
+                    if (shaderInstance == nullptr)
+                        return error(string("unfound shader instance for id: ") + to_string(shaderInstanceId));
+                    instances.push_back(shaderInstance);
+                }
+
+                break;
+            }
+
+            case spv::OpTypeXlslShaderClass:
+            {
+                //all declaration must be set before type declaration: we can stop parsing the rest of the bytecode
+                start = end;
+                break;
+            }
+        }
+        start += wordCount;
+    }
+
+    if (instances.size() != composition->countInstances) {
+        return error(string("Invalid number of instances found. Expected number: ") + to_string(composition->countInstances) + string(". Instances found: ") + to_string(instances.size()));
+    }
+
+    return true;
 }
 
 SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)

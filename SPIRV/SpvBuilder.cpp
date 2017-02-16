@@ -990,11 +990,12 @@ void Builder::addShaderInheritanceDecoration(Id shaderId, std::vector<spv::Id>& 
 
 void Builder::addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isArray)
 {
-    Instruction* dec = isArray? new Instruction(OpShaderArrayComposition): new Instruction(OpShaderComposition);
+    Instruction* dec = new Instruction(OpShaderCompositionDeclaration);
     dec->addIdOperand(shaderId);
     dec->addImmediateOperand(index);
     dec->addIdOperand(shaderTypeId);
-    dec->addImmediateOperand(0); //0 = unresolved
+    dec->addImmediateOperand(isArray? 1:0);
+    dec->addImmediateOperand(0); //count
     dec->addStringOperand(variableName);
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }

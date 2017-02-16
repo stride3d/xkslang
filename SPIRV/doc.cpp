@@ -1201,11 +1201,11 @@ const char* OpcodeString(int op)
     case (OpDeclarationName):        return "OpDeclarationName";
     case (OpShaderInheritance):      return "OpShaderInheritance";
     case (OpBelongsToShader):        return "OpBelongsToShader";
-    case (OpShaderComposition):      return "OpShaderComposition";
-    case (OpShaderArrayComposition): return "OpShaderArrayComposition";
     case (OpMethodProperties):       return "OpMethodProperties";
     case (OpFunctionCallBaseUnresolved): return "OpFunctionCallBaseUnres";
     case (OpFunctionCallBaseResolved):   return "OpFunctionCallBaseRes";
+    case (OpShaderCompositionDeclaration):            return "OpShaderCompositionDeclaration";
+    case (OpShaderCompositionInstance):               return "OpShaderCompositionInstance";
     case (OpFunctionCallThroughCompositionVariable):  return "OpFunctionCallThroughCompositionVar";
     case (OpForEachCompositionStartLoop):             return "OpForEachCompositionStartLoop";
     case (OpForEachCompositionEndLoop):               return "OpForEachCompositionEndLoop";
@@ -1343,8 +1343,8 @@ void Parameterize()
     InstructionDesc[OpDeclarationName].setResultAndType(false, false);
     InstructionDesc[OpShaderInheritance].setResultAndType(false, false);
     InstructionDesc[OpBelongsToShader].setResultAndType(false, false);
-    InstructionDesc[OpShaderComposition].setResultAndType(false, false);
-    InstructionDesc[OpShaderArrayComposition].setResultAndType(false, false);
+    InstructionDesc[OpShaderCompositionDeclaration].setResultAndType(false, false);
+    InstructionDesc[OpShaderCompositionInstance].setResultAndType(false, false);
     InstructionDesc[OpMethodProperties].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionStartLoop].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionEndLoop].setResultAndType(false, false);
@@ -1871,16 +1871,18 @@ void Parameterize()
     InstructionDesc[OpBelongsToShader].operands.push(OperandId, "'Shader'");
     InstructionDesc[OpBelongsToShader].operands.push(OperandId, "'Object'");
     
-    InstructionDesc[OpShaderComposition].operands.push(OperandId, "'Shader'");
-    InstructionDesc[OpShaderComposition].operands.push(OperandLiteralNumber, "'CompId'");
-    InstructionDesc[OpShaderComposition].operands.push(OperandId, "'ShaderType'");
-    InstructionDesc[OpShaderComposition].operands.push(OperandLiteralNumber, "'Status'");
-    InstructionDesc[OpShaderComposition].operands.push(OperandLiteralString, "'VariableName'");
-    InstructionDesc[OpShaderArrayComposition].operands.push(OperandId, "'Shader'");
-    InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralNumber, "'CompId'");
-    InstructionDesc[OpShaderArrayComposition].operands.push(OperandId, "'ShaderType'");
-    InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralNumber, "'Status'");
-    InstructionDesc[OpShaderArrayComposition].operands.push(OperandLiteralString, "'VariableName'");
+    InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandId, "'ShaderOwnerId'");
+    InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralNumber, "'CompNum'");
+    InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandId, "'ShaderTypeId'");
+    InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralNumber, "'isArray'");
+    InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralNumber, "'Count'");
+    InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralString, "'VariableName'");
+    InstructionDesc[OpShaderCompositionInstance].operands.push(OperandId, "'ShaderOwnerId'");
+    InstructionDesc[OpShaderCompositionInstance].operands.push(OperandLiteralNumber, "'CompId'");
+    InstructionDesc[OpShaderCompositionInstance].operands.push(OperandLiteralNumber, "'InstanceNum'");
+    InstructionDesc[OpShaderCompositionInstance].operands.push(OperandId, "'InstanceShaderId'");
+    //InstructionDesc[OpShaderCompositionInstance].operands.push(OperandLiteralNumber, "'Status'");
+    //InstructionDesc[OpShaderCompositionInstance].operands.push(OperandLiteralString, "'VariableName'");
 
     InstructionDesc[OpForEachCompositionStartLoop].operands.push(OperandId, "'Shader'");
     InstructionDesc[OpForEachCompositionStartLoop].operands.push(OperandLiteralNumber, "'CompId'");
