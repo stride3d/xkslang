@@ -333,6 +333,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
         //Get the shader parents
         vector<ShaderClassData*> listShadersFromSameFamily;
         bytecodeToMerge.GetShaderFamilyTreeWithParentAndCompositionType(shaderToMerge, listShadersFromSameFamily);
+        dsgdsfgdfgdsfg;
 
         for (unsigned int i = 0; i < listShadersFromSameFamily.size(); ++i)
         {
@@ -530,10 +531,13 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 #endif
 
             finalRemapTable[type->GetId()] = newId++;
+            listIdsWhereToAddNamePrefix[type->GetId()] = true;
             bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, type->GetBytecodeStartPosition());
             finalRemapTable[pointerToType->GetId()] = newId++;
+            listIdsWhereToAddNamePrefix[pointerToType->GetId()] = true;
             bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, pointerToType->GetBytecodeStartPosition());
             finalRemapTable[variable->GetId()] = newId++;
+            listIdsWhereToAddNamePrefix[variable->GetId()] = true;
             bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, variable->GetBytecodeStartPosition());
         }
 
@@ -546,6 +550,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 #endif
 
             finalRemapTable[resultId] = newId++;
+            listIdsWhereToAddNamePrefix[resultId] = true;
             bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, shaderToMerge->GetBytecodeStartPosition());
         }
 
@@ -556,6 +561,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         {
             FunctionInstruction* functionToMerge = shaderToMerge->functionsList[t];
             //finalRemapTable[functionToMerge->id] = newId++; //done below
+            listIdsWhereToAddNamePrefix[functionToMerge->GetId()] = true;
 
             //If the function is already overriden by another function: we'll update the link in the cloned functions as well
             if (functionToMerge->GetOverridingFunction() != nullptr)
@@ -603,14 +609,6 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         for (int i = 0; i < len; ++i)
         {
             if (finalRemapTable[i] != unused) listAllNewIdMerged[i] = true;
-        }
-        //this list defines ids for which we update the names and labels with a prefix
-        if (namesPrefixToAdd.size() > 0)
-        {
-            for (int i = 0; i < len; ++i)
-            {
-                if (finalRemapTable[i] != unused) listIdsWhereToAddNamePrefix[i] = true;
-            }
         }
     }
 
@@ -1179,7 +1177,7 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 
     //===================================================================================================================
     //===================================================================================================================
-    //Get the list of all shaders belonging to shaderToInstantiate's family tree
+    //Get the list of all shaders to instantiate
     for (auto itsh = source->vecAllShaders.begin(); itsh != source->vecAllShaders.end(); itsh++) (*itsh)->flag1 = 0;
 
     vector<ShaderClassData*> listAllShadersToInstantiate;
@@ -1474,7 +1472,8 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
     //===================================================================================================================
     //Duplicate all foreach loops depending on the composition instances
 
-    vector<>;
+    vector<CompositionForEachLoopData> vecAllForeachLoops;
+    vector<CompositionForEachLoopData> pileForeachLoopsCurrentlyParsed;
     //get the list of all foreach loops
     {
         unsigned int start = header_size;
@@ -1488,15 +1487,35 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
             {
                 case spv::OpForEachCompositionStartLoop:
                 {
+                    spv::Id shaderId = asId(start + 1);
+                    int compositionId = asId(start + 2);
+
+                    ShaderClassData* compositionShaderOwner = GetShaderById(shaderId);
+                    if (compositionShaderOwner == nullptr) { error(string("undeclared shader id: ") + to_string(shaderId)); break; }
+                    ShaderComposition* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
+                    if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
+
+                    if (!composition->isArray) { error("Foreach loop only works with array compositions."); break; }
+
+                    pileForeachLoopsCurrentlyParsed.push_back(CompositionForEachLoopData(composition, start, 0));
+
                     break;
                 }
                 case spv::OpForEachCompositionEndLoop:
                 {
+                    if (pileForeachLoopsCurrentlyParsed.size() == 0) { error("A foreach end loop instruction is missing a start instruction"); break; }
+                    CompositionForEachLoopData compositionForEachLoop = pileForeachLoopsCurrentlyParsed.back();
+                    pileForeachLoopsCurrentlyParsed.pop_back();
+
+                    compositionForEachLoop.posEnd = start;
+                    vecAllForeachLoops.push_back(compositionForEachLoop);
+
                     break;
                 }
             }
             start += wordCount;
         }
+
         if (errorMessages.size() > 0) return false;
     }
 

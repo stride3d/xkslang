@@ -422,6 +422,17 @@ private:
     }
 
     friend class XkslMixer;
+
+    class CompositionForEachLoopData
+    {
+    public:
+        ShaderComposition* composition;
+        unsigned int posStart;
+        unsigned int posEnd;
+
+        CompositionForEachLoopData(ShaderComposition* composition, unsigned int posStart, unsigned int end) :
+            composition(composition), posStart(posStart), posEnd(posEnd) {}
+    };
 };
 
 //Contains output stage info (stage + entrypoint), bytecode, plus additionnal data processed by the mixer during compilation

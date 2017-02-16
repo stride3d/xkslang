@@ -1,0 +1,26 @@
+shader Utils
+{
+	static int Add(int i, int j)
+	{
+		return i + j;
+	}
+}
+
+shader ShaderComputeColor
+{
+	int Compute(int i, int j)
+	{
+		return Utils.Add(i, j);
+	}
+}
+
+shader ShaderA
+{
+	compose ShaderComputeColor comp;
+	
+	int main()
+	{
+		return comp.Compute(0, 1);
+	}
+}
+

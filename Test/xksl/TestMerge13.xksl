@@ -1,0 +1,45 @@
+shader SConsts
+{
+	static const float offset = 1;
+}
+
+shader Utils
+{
+	static int DoSomething(float i, float j)
+	{
+		return i + j;
+	}
+}
+
+shader Math
+{
+	static const float PI = 3.14;
+
+	static int Add(int i, int j)
+	{
+		return i + j;
+	}
+}
+
+shader ShaderA
+{
+	float compute()
+	{
+		return Math.PI + Math.Add((int)Math.PI, 2);
+	}
+	
+	float main()
+	{
+		return compute();
+	}
+}
+
+shader ShaderB : ShaderA
+{
+	override float compute()
+	{
+		float f = base.compute();
+		f += Utils.DoSomething(f, SConsts.offset);
+		return f;
+	}
+}

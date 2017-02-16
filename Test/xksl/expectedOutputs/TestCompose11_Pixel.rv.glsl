@@ -1,13 +1,13 @@
 #version 450
 
-int cS2C0_Comp1_Compute(int cS2C0_i, int cS2C0_j)
+int cS2C0_Comp1_Compute(int i, int j)
 {
-    return cS2C0_i + cS2C0_j;
+    return i + j;
 }
 
-int cS2C0_Comp1_Compute(int cS2C0_i)
+int cS2C0_Comp1_Compute(int i)
 {
-    return cS2C0_i;
+    return i;
 }
 
 int cS2C0_Comp1_Compute()
@@ -15,14 +15,14 @@ int cS2C0_Comp1_Compute()
     return 10;
 }
 
-int cS2C1_Comp2_Compute(int cS2C1_i, int cS2C1_j)
+int cS2C1_Comp2_Compute(int i, int j)
 {
-    return cS2C1_i * cS2C1_j;
+    return i * j;
 }
 
-int cS2C1_Comp2_Compute(int cS2C1_i)
+int cS2C1_Comp2_Compute(int i)
 {
-    return -cS2C1_i;
+    return -i;
 }
 
 int cS2C1_Comp2_Compute()

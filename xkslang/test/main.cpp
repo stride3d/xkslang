@@ -92,6 +92,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge10", "TestMerge10.xkfx" },
     //{ "TestMerge11", "TestMerge11.xkfx" },
     //{ "TestMerge12", "TestMerge12.xkfx" },
+    { "TestMerge13", "TestMerge13.xkfx" },
 
     //{ "TestCompose02", "TestCompose02.xkfx" },
     //{ "TestCompose03", "TestCompose03.xkfx" },
@@ -103,9 +104,11 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose09", "TestCompose09.xkfx" },
     //{ "TestCompose10", "TestCompose10.xkfx" },
     //{ "TestCompose11", "TestCompose11.xkfx" },
+    //{ "TestCompose12", "TestCompose12.xkfx" },
+    //{ "TestCompose13", "TestCompose13.xkfx" },   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
-    { "TestForEach01", "TestForEach01.xkfx" },
+    //{ "TestForEach01", "TestForEach01.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },
 };
