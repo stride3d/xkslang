@@ -94,6 +94,7 @@ TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslConstStatements;
     this->xkslShaderLibrary = shaderLibrary;
     this->xkslShaderCurrentlyParsed = currentShader;
+    this->functionCurrentlyParsed = nullptr;
 
     while (!peekTokenClass(EHTokAssign))
     {
@@ -739,6 +740,7 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
     do {
         switch (peek()) {
         case EHTokStatic:
+            qualifier.isStatic = true;
             if (qualifier.storage != EvqConst)  //to avoid a "const static" declaration to move back the storage from const to global
             {
                 qualifier.storage = parseContext.symbolTable.atGlobalLevel() ? EvqGlobal : EvqTemporary;
@@ -2403,14 +2405,24 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
                 TIntermNode* functionNode2 = nullptr;
                 TAttributeMap attributes;  // attributes ?
                 //acceptAttributes(attributes);
+
+                //==============================================================================================================
+                //==============================================================================================================
+                // start parsing a shader class method
+
                 if (listForeachArrayCompositionVariable.size() > 0) {
                     error("shader: list of foreach array composition variable should be empty"); return false;
                 }
+
+                this->functionCurrentlyParsed = function;
                 if (!acceptFunctionDefinition(*function, functionNode, functionNode2, attributes))
                 {
                     error("shader: invalid function definition");
+                    this->functionCurrentlyParsed = nullptr;
                     return false;
                 }
+                this->functionCurrentlyParsed = nullptr;
+
                 if (listForeachArrayCompositionVariable.size() > 0){
                     error("shader: list of foreach array composition variable should be empty"); return false;
                 }
@@ -2421,6 +2433,8 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
                 }
 
                 shaderClassFunction->bodyNode = functionNode;
+                //==============================================================================================================
+                //==============================================================================================================
             }
         }
         else 
@@ -3194,6 +3208,25 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(const TString& 
     return false;
 }
 
+bool HlslGrammar::IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslShaderDefinition* maybeParent)
+{
+    if (shader == nullptr || maybeParent == nullptr) {
+        error("null parameters");
+        return false;
+    }
+
+    if (shader == maybeParent) return true;
+
+    int countParents = shader->shaderparentsName.size();
+    for (int p = 0; p < countParents; p++)
+    {
+        XkslShaderDefinition* parentShader = getShaderClassDefinition(*(shader->shaderparentsName[p]));
+        if (IsShaderEqualOrSubClassOf(parentShader, maybeParent)) return true;
+    }
+
+    return false;
+}
+
 XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName)
 {
     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
@@ -3237,6 +3270,16 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
     }
 
     return identifierLocation;
+}
+
+TFunction* HlslGrammar::getFunctionCurrentlyParsed()
+{
+    return functionCurrentlyParsed;
+}
+
+XkslShaderDefinition* HlslGrammar::getShaderCurrentlyParsed()
+{
+    return xkslShaderCurrentlyParsed;
 }
 
 TString* HlslGrammar::getCurrentShaderName()
@@ -3656,7 +3699,7 @@ bool HlslGrammar::acceptXkslShaderComposition(TShaderCompositionVariable& compos
     return true;
 }
 
-bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, bool callToFunctionFromBaseShaderClass, int shaderCompositionIdTargeted,
+bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, int shaderCompositionIdTargeted,
     HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
 {
     // arguments
@@ -3670,37 +3713,83 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& shaderClassName, bool callToFu
     if (!acceptArguments(function, arguments))
         return false;
     
-    TString classOwningTheFunction = shaderClassName;
-    TShaderCompositionVariable* pcompositionVariable = nullptr;;
+    TString nameShaderOwningTheFunction = functionClassAccessorName;
+    TShaderCompositionVariable* pcompositionVariable = nullptr;
     if (shaderCompositionIdTargeted >= 0)
     {
         //we're calling a method through a composition, get the composition
-        XkslShaderDefinition* shader = getShaderClassDefinition(shaderClassName);
+        XkslShaderDefinition* shader = getShaderClassDefinition(functionClassAccessorName);
         if (shader == nullptr) {
-            error(TString("undeclared class:\"") + shaderClassName + TString("\""));
+            error(TString("undeclared class:\"") + functionClassAccessorName + TString("\""));
             return false;
         }
 
         pcompositionVariable = shader->GetCompositionVariableForId(shaderCompositionIdTargeted);
         if (pcompositionVariable == nullptr) {
-            error(TString("invalid composition id for shader:\"") + shaderClassName + TString("\""));
+            error(TString("invalid composition id for shader:\"") + functionClassAccessorName + TString("\""));
             return false;
         }
 
-        classOwningTheFunction = pcompositionVariable->shaderTypeName;
+        nameShaderOwningTheFunction = pcompositionVariable->shaderTypeName;
     }
 
     // We now have the method mangled name, find the corresponding method in the shader library
     const TString& methodMangledName = function->getDeclaredMangledName();
-    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(classOwningTheFunction, methodMangledName);
+    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(nameShaderOwningTheFunction, methodMangledName);
 
     if (identifierLocation.isMethod())
     {
+        //check if the function call is permitted!
+        TFunction* currentFunctionBeingParsed = getFunctionCurrentlyParsed();
+        XkslShaderDefinition* shaderBeingParsed = getShaderCurrentlyParsed();
+        if (currentFunctionBeingParsed == nullptr || shaderBeingParsed == nullptr){
+            //Maybe we can have a method call while we're not parsing a function, to initialize consts variables?
+            if (currentFunctionBeingParsed == nullptr) error(TString("We should be parsing a method"));
+            if (shaderBeingParsed == nullptr) error(TString("We should be parsing a shader"));
+            return false;
+        }
+
+        //============================================================================
+        //XKSL RULES
+        //Check the validity of the function call
+        if (currentFunctionBeingParsed->getType().getQualifier().isStatic)
+        {
+            //we're currently parsing a static method, we can only call another static method
+            if (!identifierLocation.method->getType().getQualifier().isStatic)
+            {
+                error(TString("A static method: " + currentFunctionBeingParsed->getName() + TString(" is calling a non-static method: ") + identifierLocation.method->getName()));
+                return false;
+            }
+        }
+        else
+        {
+            //otherwise: if we're calling a non-static method: the caller and called shaders have to be related (the child calling a parent method)
+            //unless we call a method through a composition of course...
+            if (!identifierLocation.method->getType().getQualifier().isStatic)
+            {
+                if (pcompositionVariable == nullptr)
+                {
+                    XkslShaderDefinition* shaderOwningTheFunction = getShaderClassDefinition(nameShaderOwningTheFunction);
+                    if (shaderOwningTheFunction == nullptr) {
+                        error(TString("undeclared class:\"") + nameShaderOwningTheFunction + TString("\""));
+                        return false;
+                    }
+
+                    if (!IsShaderEqualOrSubClassOf(shaderBeingParsed, shaderOwningTheFunction)) {
+                        error(TString("invalid function call. Shader: ") + shaderBeingParsed->shaderName + TString(" is not related to shader: ") + shaderOwningTheFunction->shaderName);
+                        return false;
+                    }
+                }
+            }
+        }
+        //============================================================================
+
         node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments, callToFunctionFromBaseShaderClass, pcompositionVariable);
     }
     else
     {
         //function not found as a method from our shader library, so we look in the global list of method
+        //could be a call to instrisic functions
         node = parseContext.handleFunctionCall(idToken.loc, function, arguments, false, nullptr);
     }
 

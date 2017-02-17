@@ -2477,6 +2477,9 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     case spv::XkslPropertyEnum::PropertyMethodOverride:
                         function->ParsedOverrideAttribute();
                         break;
+                    case spv::XkslPropertyEnum::PropertyMethodStatic:
+                        function->ParsedStaticAttribute();
+                        break;
                     }
                 }
                 break;

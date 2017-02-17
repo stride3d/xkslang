@@ -466,6 +466,7 @@ public:
 		isOverride   = false;
 		isAbstract   = false;
 		isClone      = false;
+        isStatic     = false;
     }
 
     // Drop just the storage qualification, which perhaps should
@@ -508,6 +509,7 @@ public:
 	bool isOverride   : 1;
 	bool isAbstract   : 1;
 	bool isClone      : 1;
+    bool isStatic     : 1;
 
     bool isMemory() const
     {

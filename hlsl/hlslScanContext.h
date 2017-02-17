@@ -129,6 +129,7 @@ public:
         void SetMethodLocation(XkslShaderDefinition* shader, TFunction* method)
         {
             this->identifierType = ShaderIdentifierTypeEnum::Method;
+            this->shader = shader;
             this->method = method;
         }
     };

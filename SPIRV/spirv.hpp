@@ -616,6 +616,7 @@ enum XkslPropertyEnum {
     PropertyMethodAbstract = 3,   //abstract method
     PropertyMethodOverride = 4,   //override method
     PropertyMethodClone = 5,      //clone method
+    PropertyMethodStatic = 6,     //static method
 };
 
 enum Op {

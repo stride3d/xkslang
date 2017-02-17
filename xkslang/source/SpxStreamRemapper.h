@@ -189,10 +189,11 @@ public:
         };
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name), flag1(0){}
+            : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name), flag1(0){}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
+            obj->isStatic = isStatic;
             obj->overrideAttributeState = overrideAttributeState;
             obj->fullName = fullName;
             return obj;
@@ -204,11 +205,15 @@ public:
         FunctionInstruction* GetOverridingFunction() const { return overridenBy; }
         void SetFullName(const std::string& str) { fullName = str; }
 
+        void ParsedStaticAttribute(){isStatic = true;}
+        bool IsStatic(){return isStatic;}
+
         void ParsedOverrideAttribute(){if (overrideAttributeState == OverrideAttributeStateEnum::Undefined) overrideAttributeState = OverrideAttributeStateEnum::Defined; }
         OverrideAttributeStateEnum GetOverrideAttributeState() const { return overrideAttributeState; }
         void SetOverrideAttributeState(OverrideAttributeStateEnum state) { overrideAttributeState = state; }
 
     private:
+        bool isStatic;
         OverrideAttributeStateEnum overrideAttributeState;
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
         std::string fullName;  //name only use for debug purpose

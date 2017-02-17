@@ -1,0 +1,64 @@
+//Test calling static and non-static methods
+
+shader Utils
+{
+	void notStaticUtils(){}
+	static void staticUtils(){}
+}
+
+shader BaseShader
+{
+	void notStaticBase(){}
+	static void staticBase(){}
+}
+
+shader Shader : BaseShader
+{
+	static void aStaticFunction()
+    {
+		///A static method can only call another static method
+		
+		///Not-related classes
+		//Utils.notStaticUtils();      //not valid
+		Utils.staticUtils();           //valid
+		
+		///Related classes
+		//base.notStaticBase();  		//not valid
+		//this.notStaticBase();  		//not valid
+		//BaseShader.notStaticBase();   //not valid
+		base.staticBase();     	        //valid
+		this.staticBase();		        //valid
+		BaseShader.staticBase();        //valid
+		
+		///Related classes (but wrong way)
+		//ShaderSup.notStaticSup();	 //not valid
+		ShaderSup.staticSup();	     //valid (but weird)
+    }
+	
+    void aNonStaticFunction()
+    {
+		///A Not-static method can only call another not-static method if the classes are related (child calling a parent method)
+		
+		///Not-related classes
+		//Utils.notStaticUtils();      //not valid (used to be valid in xksl)
+		Utils.staticUtils();         //valid
+		
+		///Related classes
+		base.notStaticBase();  		 //valid
+		this.notStaticBase();  		 //valid
+		BaseShader.notStaticBase();  //valid
+		base.staticBase();     	     //valid
+		this.staticBase();		     //valid
+		BaseShader.staticBase();     //valid
+		
+		///Related classes (but wrong way)
+		//ShaderSup.notStaticSup();	 //not valid
+		ShaderSup.staticSup();	     //valid (but weird)
+    }
+};
+
+shader ShaderSup : Shader
+{
+	void notStaticSup(){}
+	static void staticSup(){}
+}

@@ -59,7 +59,7 @@ namespace glslang {
     public:
         HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
-            xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr){ }
+            xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr){ }
         virtual ~HlslGrammar() { }
 
         bool parse();
@@ -115,7 +115,7 @@ namespace glslang {
         bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor = false, bool hasStreamAccessor = false, const char* classAccessor = nullptr, int shaderCompositionIdTargeted = -1);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
-        bool acceptXkslFunctionCall(TString& shaderClassName, bool callToFunctionFromBaseShaderClass, int shaderCompositionIdTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
+        bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, int shaderCompositionIdTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
         bool acceptLiteral(TIntermTyped*&);
@@ -138,11 +138,14 @@ namespace glslang {
         //XKSL extensions
         void acceptShaderClassPostDecls(TIdentifierList*& parents);
         TString* getCurrentShaderName();
+        TFunction* getFunctionCurrentlyParsed();
+        XkslShaderDefinition* getShaderCurrentlyParsed();
         int getCurrentShaderCountParents();
         TString* getCurrentShaderParentName(int index);
         XkslShaderDefinition* getShaderClassDefinition(const TString& shaderClassName);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName);
+        bool IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslShaderDefinition* maybeParent);
         bool isRecordedAsAShaderName(const TString& name);
         bool isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, bool lookForArraycomposition, TShaderCompositionVariable& compositionTargeted);
 
@@ -152,6 +155,7 @@ namespace glslang {
         //XKSL extensions
         XkslShaderParsingOperationEnum xkslShaderParsingOperation;
         XkslShaderDefinition* xkslShaderCurrentlyParsed;
+        TFunction* functionCurrentlyParsed;
         XkslShaderLibrary* xkslShaderLibrary;
         TVector<TShaderVariableTargetingACompositionVariable> listForeachArrayCompositionVariable;  //if we parse a foreach loop: we pile (we can have nested foreach) the temporary variable composition name
     };

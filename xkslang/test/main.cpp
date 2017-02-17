@@ -50,6 +50,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "shaderWithDefinedConsts.xksl" },
     //{ "shaderWithUnresolvedConsts.xksl" },
     //{ "intrisicsHlslFunctions.xksl" },
+    { "callToShaderStaticFunctions.xksl" },
     //{ "methodReferingToShaderVariable.xksl" },
     //{ "methodsWithSimpleClassAccessor.xksl" },
     //{ "cbuffers.xksl" },
@@ -57,6 +58,9 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "shaderWithLoops.xksl" },
     //{ "TestComposeSimple.xksl" },
     
+    //sdfdsafdsafs; //add static in bytecode
+    //implement rules: static functions cannot access any shader variable: static function cannot call non-static function
+
     //{ "TestComposeForEachSimple01.xksl" },
 
     //{{"textureAndSampler.xksl"}, {"", nullptr}},
@@ -106,7 +110,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose11", "TestCompose11.xkfx" },
     //{ "TestCompose12", "TestCompose12.xkfx" },
     //{ "TestCompose13", "TestCompose13.xkfx" },
-    { "TestCompose14", "TestCompose14.xkfx" },
+    ///////////////////////{ "TestCompose14", "TestCompose14.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },

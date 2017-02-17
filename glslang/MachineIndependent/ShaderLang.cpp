@@ -621,62 +621,6 @@ void ClearShaderLibrary(XkslShaderLibrary& shaderLibrary)
     shaderLibrary.listShaders.clear();
 }
 
-/*
-//A shader is declared as a composition: we duplicate the shader members and functions
-XkslShaderDefinition* CloneShaderForComposition(HlslParseContext* parseContext, XkslShaderDefinition* shaderToClone, XkslShaderDefinition::XkslCompositionDeclaration& composition)
-{
-    if (shaderToClone->shaderparentsName.size() > 0) {
-        parseContext->infoSink.info.message(EPrefixError, (TString("Unimplemented yet: The shader has some parents: ") + shaderToClone->shaderName).c_str());
-        return nullptr;
-    }
-
-    XkslShaderDefinition* clonedShader = new XkslShaderDefinition();
-
-    clonedShader->location = composition.location;
-    clonedShader->shaderName = TString("TOTOTOTOTOTOTO_") + shaderToClone->shaderName;
-
-    //TOTO
-    for (int i = 0; i < shaderToClone->listParsedMembers.size(); ++i)
-    {
-        XkslShaderDefinition::XkslShaderMember& memberToClone = shaderToClone->listParsedMembers[i];
-
-        XkslShaderDefinition::XkslShaderMember clonedMember;
-
-        switch (memberToClone.memberLocation.memberLocationType)
-        {
-            case XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst:
-            {
-                parseContext->infoSink.info.message(EPrefixError, (TString("A const member from a shader to be cloned is unresolved: ") + memberToClone.type->getFieldName()).c_str());
-                delete clonedShader;
-                return nullptr;
-            }
-
-            case XkslShaderDefinition::MemberLocationTypeEnum::Const:
-            {
-                //a const variable will simply redirect to its original definition
-                clonedMember.memberLocation = memberToClone.memberLocation;
-                clonedShader->listAllDeclaredMembers.push_back(clonedMember);
-                break;
-            }
-
-            default:
-            {
-                parseContext->infoSink.info.message(EPrefixError, "Unknown member locationType");
-                delete clonedShader;
-                return nullptr;
-            }
-        }
-    }
-
-    //int countParents = parentsName == nullptr ? 0 : parentsName->size();
-    //for (int i = 0; i < countParents; ++i)
-    //    shaderDefinition->shaderparentsName.push_back(parentsName->at(i));
-    //this->xkslShaderCurrentlyParsed = shaderDefinition;
-
-    return clonedShader;
-}
-*/
-
 //Resolve unresolved consts:
 // const depending on other const variables could not have been assignem with the expression during the shader declaration
 //While parsing them, we stored the token list describing their assignment expression

@@ -2936,6 +2936,9 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
             if (functionType.getQualifier().isOverride){
                 vecAttributes.push_back(spv::PropertyMethodOverride);
             }
+            if (functionType.getQualifier().isStatic) {
+                vecAttributes.push_back(spv::PropertyMethodStatic);
+            }
             if (functionType.getQualifier().isAbstract){
                 vecAttributes.push_back(spv::PropertyMethodAbstract);
             }

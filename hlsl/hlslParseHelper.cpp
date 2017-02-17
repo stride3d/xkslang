@@ -4336,6 +4336,7 @@ void HlslParseContext::mergeQualifiers(TQualifier& dst, const TQualifier& src)
     MERGE_SINGLETON(isOverride);
     MERGE_SINGLETON(isAbstract);
     MERGE_SINGLETON(isClone);
+    MERGE_SINGLETON(isStatic);
 }
 
 // used to flatten the sampler type space into a single dimension

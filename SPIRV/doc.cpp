@@ -213,6 +213,7 @@ const char* XkslPropertyString(int prop)
         case (PropertyMethodOverride): return "Override";
         case (PropertyMethodAbstract): return "Abstract";
         case (PropertyMethodClone):    return "Clone";
+        case (PropertyMethodStatic):   return "Static";
         default:  return "Bad";
     }
 }
