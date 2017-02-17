@@ -1,12 +1,12 @@
 #version 450
 
-int cS6C0_Comp_Compute()
+int o0S9C0_Comp_Compute()
 {
     return 5;
 }
 
 int main()
 {
-    return cS6C0_Comp_Compute();
+    return o0S9C0_Comp_Compute();
 }
 

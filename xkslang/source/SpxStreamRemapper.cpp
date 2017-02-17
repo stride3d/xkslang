@@ -42,8 +42,21 @@ bool SpxStreamRemapper::error(const string& txt)
     return false;
 }
 
+//===================================================================================================//
 //static const auto spx_inst_fn_nop = [](spv::Op, unsigned) { return false; };
 //static const auto spx_op_fn_nop = [](spv::Id&) {};
+
+unsigned int SpxStreamRemapper::currentMergeOperationId = 0;
+
+unsigned int SpxStreamRemapper::GetUniqueMergeOperationId()
+{
+    return SpxStreamRemapper::currentMergeOperationId++;
+}
+
+void SpxStreamRemapper::ResetMergeOperationId()
+{
+    SpxStreamRemapper::currentMergeOperationId = 0;
+}
 //===================================================================================================//
 
 SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
@@ -279,19 +292,19 @@ void SpxStreamRemapper::ReleaseAllMaps()
     mapDeclarationName.clear();
 }
 
-bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const vector<string>& shaders)
+bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const vector<string>& nameOfShadersToMix)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
     }
     status = SpxRemapperStatusEnum::MixinInProgress;
 
-    if (shaders.size() == 0) {
+    if (nameOfShadersToMix.size() == 0) {
         return error("List of shader is empty");
     }
 
     //=============================================================================================================
-    // Init the bytecode with a default header
+    // First mixin: set a default header to the bytecode
     if (spv.size() == 0)
     {
         //Initialize a default header
@@ -304,69 +317,73 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
         }
     }
 
-    //=============================================================================================================
-    //parse the bytecode to merge
+    //===============================================================================================================================================
+    //===============================================================================================================================================
+    //parse and init the bytecode to merge
     SpxStreamRemapper bytecodeToMerge;
     if (!bytecodeToMerge.SetBytecode(sourceBytecode)) return false;
 
-    bool res = bytecodeToMerge.BuildAllMaps();
-    if (!res) {
+    if (!bytecodeToMerge.BuildAllMaps()) {
         bytecodeToMerge.copyMessagesTo(errorMessages);
         return error(string("Error parsing the bytecode: ") + sourceBytecode.GetName());
     }
-
     for (auto itsh = bytecodeToMerge.vecAllShaders.begin(); itsh != bytecodeToMerge.vecAllShaders.end(); itsh++)
         (*itsh)->flag1 = 0;
 
-    //=============================================================================================================
-    //=============================================================================================================
-    //Get the list of all shaders we want to merge
-    vector<ShaderClassData*> listShadersToMerge;
-    for (unsigned int is = 0; is < shaders.size(); ++is)
+    //===============================================================================================================================================
+    //===============================================================================================================================================
+    // Build the list of all shaders we want to merge
+
+    //retrieve the shader object from source bytecode
+    vector<ShaderClassData*> listShader;
+    for (unsigned int is = 0; is < nameOfShadersToMix.size(); ++is)
     {
-        const string& shaderName = shaders[is];
-        ShaderClassData* shaderToMerge = bytecodeToMerge.GetShaderByName(shaderName);
+        const string& nameShaderToMix = nameOfShadersToMix[is];
+        ShaderClassData* shaderToMerge = bytecodeToMerge.GetShaderByName(nameShaderToMix);
         if (shaderToMerge == nullptr) {
-            return error(string("Shader not found: ") + shaderName);
+            return error(string("Shader not found in source bytecode: ") + nameShaderToMix);
         }
+        listShader.push_back(shaderToMerge);
+    }
 
-        //Get the shader parents
-        vector<ShaderClassData*> listShadersFromSameFamily;
-        bytecodeToMerge.GetShaderFamilyTreeWithParentAndCompositionType(shaderToMerge, listShadersFromSameFamily);
-        dsgdsfgdfgdsfg;
+    vector<ShaderClassData*> shadersFullDependencies;
+    if (!SpxStreamRemapper::GetShadersFullDependencies(&bytecodeToMerge, listShader, shadersFullDependencies)){
+        bytecodeToMerge.copyMessagesTo(errorMessages);
+        return error(string("Failed to get the shaders dependencies"));
+    }
 
-        for (unsigned int i = 0; i < listShadersFromSameFamily.size(); ++i)
+    //We won't add a shader if it already exists in the destination bytecode
+    vector<ShaderClassData*> listOfShadersToMerge;
+    for (auto its = shadersFullDependencies.begin(); its != shadersFullDependencies.end(); its++)
+    {
+        ShaderClassData* aShaderToMerge = *its;
+        if (this->GetShaderByName(aShaderToMerge->GetName()) == nullptr)
         {
-            ShaderClassData* shaderFromFamily = listShadersFromSameFamily[i];
-            if (shaderFromFamily->flag1 == 0)
-            {
-                shaderFromFamily->flag1 = 1;
-
-                //We don't add a shader if it already exists in the destination bytecode
-                if (this->GetShaderByName(shaderFromFamily->GetName()) == nullptr)
-                {
-                    listShadersToMerge.push_back(shaderFromFamily);
-                }
-            }
+            listOfShadersToMerge.push_back(aShaderToMerge);
         }
     }
-    if (listShadersToMerge.size() == 0){
+
+    if (listOfShadersToMerge.size() == 0){
+        //no new shader to merge, can quit there
         status = SpxRemapperStatusEnum::WaitingForMixin;
         return true;
     }
 
-    if (!MergeShadersIntoBytecode(bytecodeToMerge, listShadersToMerge, ""))
-    {
-        return false;
+    //===============================================================================================================================================
+    //===============================================================================================================================================
+    // Merge the shaders
+    if (!MergeShadersIntoBytecode(bytecodeToMerge, listOfShadersToMerge, "")){
+        return error("Failed tomerge the shaders");
     }
 
-    //=============================================================================================================
+    //===============================================================================================================================================
+    //===============================================================================================================================================
     //retrieve the merged shaders from the destination bytecode
     vector<ShaderClassData*> listShadersMerged;
-    for (unsigned int is = 0; is<listShadersToMerge.size(); ++is)
+    for (unsigned int is = 0; is<listOfShadersToMerge.size(); ++is)
     {
-        ShaderClassData* shaderToMerge = listShadersToMerge[is];
-        ShaderClassData* shaderMerged = GetShaderByName(shaderToMerge->GetName());
+        ShaderClassData* shaderToMerge = listOfShadersToMerge[is];
+        ShaderClassData* shaderMerged = shaderToMerge->tmpClonedShader; //GetShaderByName(shaderToMerge->GetName());
         if (shaderMerged == nullptr) return error(string("Cannot retrieve the shader: ") + shaderToMerge->GetName());
         listShadersMerged.push_back(shaderMerged);
     }
@@ -412,58 +429,6 @@ bool SpxStreamRemapper::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassD
     return true;
 }
 
-/*
-bool SpxStreamRemapper::MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, vector<ShaderClassData*>& listShadersMerged)
-{
-    listShadersMerged.clear();
-    int maxCountIds = bound();
-
-    //=============================================================================================================
-    //Init bytecode to merge
-    SpxStreamRemapper bytecodeToMerge;
-    if (!bytecodeToMerge.SetBytecode(bytecode)) return false;
-    bool res = bytecodeToMerge.BuildAllMaps();
-
-    if (!res) {
-        bytecodeToMerge.copyMessagesTo(errorMessages);
-        return error(string("Error building XKSL shaders data map from bytecode: ") + bytecode.GetName());
-    }
-
-    //=============================================================================================================
-    //=============================================================================================================
-    //Get the list of new shaders we want to merge (shaders not already in the destination bytecode)    
-    vector<ShaderClassData*> listShadersToMerge;
-    for (auto itsh = bytecodeToMerge.vecAllShaders.begin(); itsh != bytecodeToMerge.vecAllShaders.end(); itsh++)
-    {
-        ShaderClassData* shaderToMerge = *itsh;
-        if (!GetShaderByName(shaderToMerge->GetName()))
-        {
-            listShadersToMerge.push_back(shaderToMerge);
-        }
-    }
-
-    if (errorMessages.size() > 0) return false;
-    if (listShadersToMerge.size() == 0) return true;  //no new shaders to merge
-
-    if (!MergeShadersIntoBytecode(bytecodeToMerge, listShadersToMerge, ""))
-    {
-        return false;
-    }
-
-    //=============================================================================================================
-    //retrieve the merged shaders from the destination bytecode
-    for (unsigned int is = 0; is<listShadersToMerge.size(); ++is)
-    {
-        ShaderClassData* shaderToMerge = listShadersToMerge[is];
-        ShaderClassData* shaderMerged = GetShaderByName(shaderToMerge->GetName());
-        if (shaderMerged == nullptr) return error(string("Cannot retrieve the shader: ") + shaderToMerge->GetName());
-        listShadersMerged.push_back(shaderMerged);
-    }
-
-    return true;
-}
-*/
-
 bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const vector<ShaderClassData*>& listShadersToMerge, string namesPrefixToAdd)
 {
     //if (&bytecodeToMerge == this) {
@@ -507,7 +472,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         ShaderClassData* shaderToMerge = listShadersToMerge[is];
         if (shaderToMerge->bytecodeSource != &bytecodeToMerge)
         {
-            error(string("Shader \"") + shaderToMerge->GetName() + string("\" does not belong to the source to merge"));
+            error(string("Shader: ") + shaderToMerge->GetName() + string(" does not belong to the source to merge"));
             return false;
         }
 
@@ -658,12 +623,12 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         vector<spv::Id> listIds;
         spv::Id typeId, resultId;
         unsigned int listIdsLen;
-        unsigned int pos = 0;
+        unsigned int start = 0;
         const unsigned int end = bytecodeToCheckForUnmappedIds.spv.size();
-        while (pos < end)
+        while (start < end)
         {
             listIds.clear();
-            if (!bytecodeToCheckForUnmappedIds.parseInstruction(pos, opCode, wordCount, typeId, resultId, listIds))
+            if (!bytecodeToCheckForUnmappedIds.parseInstruction(start, opCode, wordCount, typeId, resultId, listIds))
                 return error("Merge shaders. Error parsing bytecodeToCheckForUnmappedIds");
 
             if (typeId != unused) listIds.push_back(typeId);
@@ -677,7 +642,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 }
             }
 
-            pos += wordCount;
+            start += wordCount;
         }
 
         //TypeData* typeToMerge;
@@ -1179,6 +1144,12 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     //===================================================================================================================
     //Get the list of all shaders to instantiate
     for (auto itsh = source->vecAllShaders.begin(); itsh != source->vecAllShaders.end(); itsh++) (*itsh)->flag1 = 0;
+    
+    //Get list using dependencies functions?
+    //TOTO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //TOTO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //TOTO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //TOTO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     vector<ShaderClassData*> listAllShadersToInstantiate;
     vector<ShaderClassData*> listShadersToInvestigate;
@@ -1223,9 +1194,11 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 
     //===================================================================================================================
     //===================================================================================================================
-    //prefix to rename the shader, its variables and functions (useful in debug to check what's going on into the byteconde)
-    //string namePrefix = string("c") + compositionToInstantiate->compositionShaderOwner->GetName() + compositionToInstantiate->variableName + string("_");
-    string namePrefix = string("cS") + to_string(compositionTarget->compositionShaderOwner->GetId()) + string("C") + to_string(compositionTargetId) + string("_");
+    //prefix to rename the shader, its variables and functions
+    //Since we're using the shader name to identify them and retrieve them throughout mixin,
+    //we need to make sure that the new instances will have a unique name and can't conflict with existing shader or previously created instances
+    unsigned int prefixId = GetUniqueMergeOperationId();
+    string namePrefix = string("o") + to_string(prefixId) + string("S") + to_string(compositionTarget->compositionShaderOwner->GetId()) + string("C") + to_string(compositionTargetId) + string("_");
 
     //Merge (duplicate) all shaders targeted by by the composition into the current bytecode
     if (!MergeShadersIntoBytecode(*source, listAllShadersToInstantiate, namePrefix))
@@ -1759,6 +1732,8 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
 
         switch (opCode)
         {
+            // call to base function (OpFunctionCallBaseResolved, OpFunctionCallBaseUnresolved) are ignored
+
             case spv::OpFunctionCall:
             case spv::OpFunctionCallThroughCompositionVariable:
             {
@@ -1798,32 +1773,101 @@ void SpxStreamRemapper::GetShaderChildrenList(ShaderClassData* shader, vector<Sh
     }
 }
 
-void SpxStreamRemapper::GetShaderFamilyTreeWithParentAndCompositionType(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)
+//Return the full dependency of the shader from 
+// - the complete family tree (parents of all shaders)
+// - the composition type and instances of all shaders
+// - for all shaders: parse the function's bytecode and detect if they're calling any other shaders
+bool SpxStreamRemapper::GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const vector<ShaderClassData*> listShaders, vector<ShaderClassData*>& fullDependencies)
 {
-    shaderFamilyTree.clear();
+    fullDependencies.clear();
 
-    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) (*itsh)->flag = 0;
+    for (auto itsh = bytecodeSource->vecAllShaders.begin(); itsh != bytecodeSource->vecAllShaders.end(); itsh++) (*itsh)->flag = 0;
 
-    vector<ShaderClassData*> children;
+    vector<ShaderClassData*> vecCompositionShaderInstances;
     vector<ShaderClassData*> listShaderToValidate;
-    listShaderToValidate.push_back(shaderFromFamily);
+    listShaderToValidate.insert(listShaderToValidate.end(), listShaders.begin(), listShaders.end());
     while (listShaderToValidate.size() > 0)
     {
         ShaderClassData* aShader = listShaderToValidate.back();
         listShaderToValidate.pop_back();
 
-        if (aShader->flag != 0) continue;  //the shader has already been added
-        shaderFamilyTree.push_back(aShader);
+#ifdef XKSLANG_DEBUG_MODE
+        if (aShader->bytecodeSource != bytecodeSource){
+            return bytecodeSource->error(string("Shader: ") + aShader->GetName() + string(" does not belong to the bytecode source"));
+        }
+#endif
+
+        if (aShader->flag != 0) continue;  //the shader has already been treated
         aShader->flag = 1;
-
-        //Add all parents
+        fullDependencies.push_back(aShader);
+        
+        //add all parents
         for (auto itsh = aShader->parentsList.begin(); itsh != aShader->parentsList.end(); itsh++)
-            listShaderToValidate.push_back(*itsh);
+        {
+            ShaderClassData* aShaderParent = *itsh;
+            if (aShaderParent->flag == 0) listShaderToValidate.push_back(aShaderParent);
+        }
 
-        //Add all compositions
+        //add all compositions type
         for (auto itc = aShader->compositionsList.begin(); itc != aShader->compositionsList.end(); itc++)
-            listShaderToValidate.push_back(itc->shaderType);
+        {
+            const ShaderComposition& aComposition = *itc;
+            if (aComposition.shaderType->flag == 0) listShaderToValidate.push_back(aComposition.shaderType);
+
+            //add the composition instances
+            if (aComposition.countInstances > 0)
+            {
+                if (!bytecodeSource->GetAllShaderInstancesForComposition(&aComposition, vecCompositionShaderInstances)) {
+                    return bytecodeSource->error(string("Failed to retrieve the instances for the composition: ") + aComposition.variableName +
+                        string(" from shader: ") + aComposition.compositionShaderOwner->GetName());
+                }
+
+                for (unsigned int i = 0; i < vecCompositionShaderInstances.size(); ++i)
+                {
+                    ShaderClassData* aShaderCompositionInstance = vecCompositionShaderInstances[i];
+                    if (aShaderCompositionInstance->flag == 0) listShaderToValidate.push_back(aShaderCompositionInstance);
+                }
+            }
+        }
+
+        //check the functions's bytecode, looking for function calls to static class
+        for (auto itf = aShader->functionsList.begin(); itf != aShader->functionsList.end(); itf++)
+        {
+            FunctionInstruction* aFunctionFromShader = *itf;
+            
+            unsigned int start = aFunctionFromShader->bytecodeStartPosition;
+            const unsigned int end = aFunctionFromShader->bytecodeEndPosition;
+            while (start < end)
+            {
+                unsigned int wordCount = bytecodeSource->asWordCount(start);
+                spv::Op opCode = bytecodeSource->asOpCode(start);
+
+                switch (opCode)
+                {
+                    case spv::OpFunctionCall:
+                    case spv::OpFunctionCallBaseResolved:
+                    case spv::OpFunctionCallBaseUnresolved:
+                    case spv::OpFunctionCallThroughCompositionVariable:
+                    {
+                        spv::Id functionCalledId = bytecodeSource->asId(start + 3);
+                        FunctionInstruction* anotherFunctionCalled = bytecodeSource->GetFunctionById(functionCalledId);
+                        if (anotherFunctionCalled == nullptr) {
+                            return bytecodeSource->error(string("Failed to retrieve the function for Id: ") + to_string(functionCalledId));
+                        }
+
+                        ShaderClassData* functionShaderOwner = anotherFunctionCalled->shaderOwner;
+                        if (functionShaderOwner != nullptr && functionShaderOwner->flag == 0)
+                            listShaderToValidate.push_back(functionShaderOwner);
+
+                        break;
+                    }
+                }
+                start += wordCount;
+            }
+        }
     }
+
+    return true;
 }
 
 void SpxStreamRemapper::GetShaderFamilyTree(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)

@@ -33,6 +33,16 @@ static void warning(vector<string>& msgs, string msg)
 //=============================================================================================================//
 //=============================================================================================================//
 
+void XkslMixer::StartMixin()
+{
+    SpxStreamRemapper::ResetMergeOperationId();
+}
+
+void XkslMixer::ReleaseMixin()
+{
+
+}
+
 XkslMixer::XkslMixer()
 {
     spxStreamRemapper = nullptr;

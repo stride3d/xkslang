@@ -24,6 +24,10 @@ public:
     XkslMixer();
     virtual ~XkslMixer();
 
+    //TMP?
+    static void StartMixin();
+    static void ReleaseMixin();
+
     //static bool MergeBytecodes(SpxBytecode& bytecodeDestination, const SpxBytecode& bytecodeToMerge, std::vector<std::string>& messages);
 
     static bool GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, std::vector<std::string>& vecShaderName, std::vector<std::string>& messages);

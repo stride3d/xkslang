@@ -1,0 +1,34 @@
+shader Utils
+{
+	static int Negate(int i)
+	{
+		return -i;
+	}
+}
+
+shader CompA
+{
+	int Compute(int i)
+	{
+		return 0;
+	}
+}
+
+shader CompB : CompA
+{
+	override int Compute(int i)
+	{
+		return Utils.Negate(i);
+	}
+}
+
+shader ShaderA
+{
+	compose CompA comp;
+	
+	int main()
+	{
+		return comp.Compute(1);
+	}
+}
+

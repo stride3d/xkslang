@@ -13,7 +13,7 @@ shader Utils
 
 shader Math
 {
-	static const float PI = 3.14;
+	static const int PI = 314;
 
 	static int Add(int i, int j)
 	{

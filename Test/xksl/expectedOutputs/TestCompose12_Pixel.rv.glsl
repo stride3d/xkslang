@@ -1,6 +1,6 @@
 #version 450
 
-int cS2C0_ShaderComputeColor_Compute(int i)
+int o0S2C0_ShaderComputeColor_Compute(int i)
 {
     return i;
 }
@@ -8,6 +8,6 @@ int cS2C0_ShaderComputeColor_Compute(int i)
 int main()
 {
     int param = 5;
-    return cS2C0_ShaderComputeColor_Compute(param);
+    return o0S2C0_ShaderComputeColor_Compute(param);
 }
 

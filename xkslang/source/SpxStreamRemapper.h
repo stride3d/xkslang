@@ -331,7 +331,7 @@ public:
     SpxStreamRemapper* Clone();
 
     //bool MixWithBytecode(const SpxBytecode& bytecode);
-    bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& shaders);
+    bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& nameOfShadersToMix);
 
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxStreamRemapper* source, std::vector<std::string>& messages);
     void GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
@@ -348,6 +348,9 @@ private:
     bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderClassData*>& listShadersToMerge, std::string namesPrefixToAdd);
     bool ValidateSpxBytecode();
     bool ValidateHeader();
+
+    unsigned int GetUniqueMergeOperationId();
+    static void ResetMergeOperationId();
 
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
 
@@ -376,11 +379,15 @@ private:
     bool BuildAndSetShaderStageHeader(ShadingStageEnum stage, FunctionInstruction* entryFunction, std::string unmangledFunctionName);
     
     bool ComputeShadersLevel();
+
     void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
-    void GetShaderFamilyTreeWithParentAndCompositionType(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
     void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);
+    static bool GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const std::vector<ShaderClassData*> listShaders, std::vector<ShaderClassData*>& fullDependencies);
 
 private:
+    //static variable share between all SpxStreamRemapper instances
+    static unsigned int currentMergeOperationId;
+
     SpxRemapperStatusEnum status;
 
     std::vector<std::string> errorMessages;
