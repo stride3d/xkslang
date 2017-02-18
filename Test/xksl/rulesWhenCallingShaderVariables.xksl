@@ -1,0 +1,90 @@
+//Test xksl rules when accessing variables
+
+shader Comp
+{
+	void Compute();
+}
+
+shader Utils
+{
+	int cbufferVar;
+	stream int streamVar;
+	compose Comp compVar;
+	static const int constVar = 0;
+}
+
+shader BaseShader
+{
+	int cbufferVar;
+	stream int streamVar;
+	compose Comp compVar;
+	static const int constVar = 0;
+}
+
+shader Shader : BaseShader
+{
+	int cbufferVar;
+	stream int streamVar;
+	compose Comp compVar;
+	static const int constVar = 0;
+
+	void aNonStaticFunction()
+    {
+		/// Shader and Utils are not related: we can only access const variables
+		//Utils.cbufferVar;         //not valid
+		//streams.Utils.streamVar;  //not valid
+		//Utils.compVar.Compute();  //not valid
+		Utils.constVar;
+		
+		cbufferVar;
+		streams.streamVar;
+		compVar.Compute();
+		constVar;
+
+		this.cbufferVar;
+		streams.this.streamVar;
+		this.compVar.Compute();
+		this.constVar;
+		
+		base.cbufferVar;
+		streams.base.streamVar;
+		base.compVar.Compute();
+		base.constVar;
+		
+		/// Related but wrong way
+		//ShaderSup.cbufferVar;			 //not valid
+		//streams.ShaderSup.streamVar;	 //not valid
+		//ShaderSup.compVar.Compute();	 //not valid
+		ShaderSup.constVar;
+    }  
+
+	static void aStaticFunction()
+    {
+		///A static method can only access consts
+		
+		///valid
+		Utils.constVar;
+		BaseShader.constVar;
+		constVar;
+		
+		///not valid
+		//Utils.cbufferVar;
+		//streams.Utils.streamVar;
+		//Utils.compVar.Compute();
+		//BaseShader.cbufferVar;
+		//streams.BaseShader.streamVar;
+		//BaseShader.compVar.Compute();
+		//cbufferVar;
+		//streams.streamVar;
+		//compVar.Compute();		
+    }
+};      
+
+
+shader ShaderSup : Shader
+{
+	int cbufferVar;
+	stream int streamVar;
+	compose Comp compVar;
+	static const int constVar = 0;
+}

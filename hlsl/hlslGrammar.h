@@ -112,7 +112,7 @@ namespace glslang {
         bool acceptConditionalExpression(TIntermTyped*&);
         bool acceptBinaryExpression(TIntermTyped*&, PrecedenceLevel);
         bool acceptUnaryExpression(TIntermTyped*&);
-        bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor = false, bool hasStreamAccessor = false, const char* classAccessor = nullptr, int shaderCompositionIdTargeted = -1);
+        bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor = false, bool hasStreamAccessor = false, TString* classAccessor = nullptr, int shaderCompositionIdTargeted = -1);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
         bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, int shaderCompositionIdTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
@@ -147,7 +147,7 @@ namespace glslang {
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName);
         bool IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslShaderDefinition* maybeParent);
         bool isRecordedAsAShaderName(const TString& name);
-        bool isIdentifierRecordedAsACompositionVariableName(const TString& shaderClassName, const TString& identifierName, bool lookForArraycomposition, TShaderCompositionVariable& compositionTargeted);
+        bool isIdentifierRecordedAsACompositionVariableName(TString* accessorClassName, const TString& identifierName, bool lookForArraycomposition, TShaderCompositionVariable& compositionTargeted);
 
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST

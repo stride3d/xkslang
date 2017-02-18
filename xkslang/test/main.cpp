@@ -50,18 +50,15 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "shaderWithDefinedConsts.xksl" },
     //{ "shaderWithUnresolvedConsts.xksl" },
     //{ "intrisicsHlslFunctions.xksl" },
-    { "callToShaderStaticFunctions.xksl" },
+    //{ "rulesWhenCallingShaderFunctions.xksl" },
+    //{ "rulesWhenCallingShaderVariables.xksl" },
     //{ "methodReferingToShaderVariable.xksl" },
     //{ "methodsWithSimpleClassAccessor.xksl" },
     //{ "cbuffers.xksl" },
     //{ "shaderWithForLoop.xksl" },
     //{ "shaderWithLoops.xksl" },
     //{ "TestComposeSimple.xksl" },
-    
-    //sdfdsafdsafs; //add static in bytecode
-    //implement rules: static functions cannot access any shader variable: static function cannot call non-static function
-
-    //{ "TestComposeForEachSimple01.xksl" },
+    //{ "TestForEach01.xksl" },
 
     //{{"textureAndSampler.xksl"}, {"", nullptr}},
     //{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -83,7 +80,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin03", "TestMixin03.xkfx" },
     //{ "TestMixin04", "TestMixin04.xkfx" },
     //{ "TestMixin05", "TestMixin05.xkfx" },
-
+    
     //{ "TestMerge01", "TestMerge01.xkfx" },
     //{ "TestMerge02", "TestMerge02.xkfx" },
     //{ "TestMerge03", "TestMerge03.xkfx" },
@@ -97,7 +94,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge11", "TestMerge11.xkfx" },
     //{ "TestMerge12", "TestMerge12.xkfx" },
     //{ "TestMerge13", "TestMerge13.xkfx" },
-
+    
     //{ "TestCompose02", "TestCompose02.xkfx" },
     //{ "TestCompose03", "TestCompose03.xkfx" },
     //{ "TestCompose04", "TestCompose04.xkfx" },
@@ -106,11 +103,11 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose07", "TestCompose07.xkfx" },
     //{ "TestCompose08", "TestCompose08.xkfx" },
     //{ "TestCompose09", "TestCompose09.xkfx" },
-    //{ "TestCompose10", "TestCompose10.xkfx" },
+    { "TestCompose10", "TestCompose10.xkfx" },
     //{ "TestCompose11", "TestCompose11.xkfx" },
     //{ "TestCompose12", "TestCompose12.xkfx" },
     //{ "TestCompose13", "TestCompose13.xkfx" },
-    ///////////////////////{ "TestCompose14", "TestCompose14.xkfx" },
+    ////{ "TestCompose14", "TestCompose14.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -714,14 +711,14 @@ void main(int argc, char** argv)
 
     cout << "___________________________________________________________________________________" << endl;
     cout << "Parse and convert XKSL Files:" << endl << endl;
+    int countParsingProcessed = 0;
+    int countParsingSuccessful = 0;
+    vector<string> listXkslParsingFailed;
     //Parse the shaders using XkslParser library
     {
-        int countTestProcessed = 0;
-        int countTestSuccessful = 0;
-        vector<string> listFailedTest;
         for (unsigned int n = 0; n < vecXkslFilesToConvert.size(); ++n)
         {
-            countTestProcessed++;
+            countParsingProcessed++;
             bool success = true;
 
             XkslFilesToParseAndConvert& xkslFilesToParseAndConvert = vecXkslFilesToConvert[n];
@@ -730,21 +727,10 @@ void main(int argc, char** argv)
             // parse and convert all xksl files
             SpxBytecode spirXBytecode;
             success = ParseAndConvertXkslFile(&parser, xkslShaderInputFile, spirXBytecode, true);
-            if (!success) break;
 
-            if (success) countTestSuccessful++;
-            else listFailedTest.push_back(xkslShaderInputFile);
+            if (success) countParsingSuccessful++;
+            else listXkslParsingFailed.push_back(xkslShaderInputFile);
 
-            cout << endl;
-        }
-
-        cout << "Count tests processed: " << countTestProcessed << endl;
-        cout << "Count tests successful: " << countTestSuccessful << endl;
-        if (listFailedTest.size() > 0)
-        {
-            cout << endl;
-            cout << "<======================  Failed tests ======================>" << endl;
-            for (unsigned int i=0; i<listFailedTest.size(); ++i) cout << listFailedTest[i] << endl;
             cout << endl;
         }
     }
@@ -752,33 +738,25 @@ void main(int argc, char** argv)
     cout << endl;
     cout << "___________________________________________________________________________________" << endl;
     cout << "Process XKFX Effect  Files:" << endl << endl;
+
+    int countEffectsProcessed = 0;
+    int countEffectsSuccessful = 0;
+    vector<string> listEffectsFailed;
     //Parse the effects
     {
-        int countTestProcessed = 0;
-        int countTestSuccessful = 0;
-        vector<string> listFailedTest;
+        
         for (unsigned int n = 0; n < vecXkfxEffectToProcess.size(); ++n)
         {
             XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
-            countTestProcessed++;
+            countEffectsProcessed++;
 
             XkslMixer::StartMixin();
             bool success = ProcessEffect(&parser, effect);
             XkslMixer::ReleaseMixin();
 
-            if (success) countTestSuccessful++;
-            else listFailedTest.push_back(effect.effectName);
+            if (success) countEffectsSuccessful++;
+            else listEffectsFailed.push_back(effect.effectName);
 
-            cout << endl;
-        }
-
-        cout << "Count tests processed: " << countTestProcessed << endl;
-        cout << "Count tests successful: " << countTestSuccessful << endl;
-        if (listFailedTest.size() > 0)
-        {
-            cout << endl;
-            cout << "<======================  Failed tests ======================>" << endl;
-            for (unsigned int i = 0; i<listFailedTest.size(); ++i) cout << listFailedTest[i] << endl;
             cout << endl;
         }
     }
@@ -802,6 +780,28 @@ void main(int argc, char** argv)
         }
     }
     
+    cout << endl;
+    cout << "___________________________________________________________________________________" << endl;
+    cout << "Results:" << endl << endl;
+
+    cout << "Count xksl parsing processed: " << countParsingProcessed << endl;
+    cout << "Count xksl parsing successful: " << countParsingSuccessful << endl;
+    if (listXkslParsingFailed.size() > 0)
+    {
+        cout << endl;
+        cout << "Failed Xksl Parsing:" << endl;
+        for (unsigned int i = 0; i<listXkslParsingFailed.size(); ++i) cout << listXkslParsingFailed[i] << endl;
+    }
+    cout << endl;
+
+    cout << "Count effects processed: " << countEffectsProcessed << endl;
+    cout << "Count effects successful: " << countEffectsSuccessful << endl;
+    if (listEffectsFailed.size() > 0)
+    {
+        cout << "Failed effects:" << endl;
+        for (unsigned int i = 0; i<listEffectsFailed.size(); ++i) cout << listEffectsFailed[i] << endl;
+    }
+    cout << endl;
 
     parser.Finalize();
 

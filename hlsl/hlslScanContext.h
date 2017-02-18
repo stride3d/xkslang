@@ -107,21 +107,23 @@ public:
         int memberIndex;
         MemberLocationTypeEnum memberLocationType;
         TString* symbolName;
+        TString* memberName;
 
         //for methods
         TFunction* method;
 
-        ShaderIdentifierLocation(): shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1) {}
+        ShaderIdentifierLocation(): shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1), method(nullptr), memberName(nullptr){}
 
         bool isUnknown() { return identifierType == ShaderIdentifierTypeEnum::Unknown; }
         bool isMember() { return identifierType == ShaderIdentifierTypeEnum::Member; }
         bool isMethod() { return identifierType == ShaderIdentifierTypeEnum::Method; }
 
-        void SetMemberLocation(XkslShaderDefinition* shader, MemberLocationTypeEnum locationType, TString* symbolName, int index)
+        void SetMemberLocation(XkslShaderDefinition* shader, TString* memberName, MemberLocationTypeEnum locationType, TString* symbolName, int index)
         {
             this->identifierType = ShaderIdentifierTypeEnum::Member;
-            this->memberLocationType = locationType;
             this->shader = shader;
+            this->memberName = memberName;
+            this->memberLocationType = locationType;
             this->symbolName = symbolName;
             this->memberIndex = index;
         }

@@ -882,9 +882,9 @@ bool ParseXkslShaderFile(
                             }
 
                             if (constIsResolved)
-                                identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
+                                identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
                             else
-                                identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst, variableName, -1);
+                                identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst, variableName, -1);
 
                             member.memberLocation = identifierLocation;
                             shader->listAllDeclaredMembers.push_back(member);
@@ -900,7 +900,7 @@ bool ParseXkslShaderFile(
                         TTypeLoc typeLoc = {member.type, member.loc};
                         streambufferStructTypeList->push_back(typeLoc);
                         int indexInStruct = streambufferStructTypeList->size() - 1;
-                        identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer, streamBufferVarName, indexInStruct);
+                        identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer, streamBufferVarName, indexInStruct);
 
                         member.memberLocation = identifierLocation;
                         shader->listAllDeclaredMembers.push_back(member);
@@ -913,7 +913,7 @@ bool ParseXkslShaderFile(
                             TTypeLoc typeLoc = { member.type, member.loc };
                             cbufferStructTypeList->push_back(typeLoc);
                             int indexInStruct = cbufferStructTypeList->size() - 1;
-                            identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferGlobalBlockVarName, indexInStruct);
+                            identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferGlobalBlockVarName, indexInStruct);
 
                             member.memberLocation = identifierLocation;
                             shader->listAllDeclaredMembers.push_back(member);
@@ -958,7 +958,7 @@ bool ParseXkslShaderFile(
                                 newShaderMember.type->shallowCopy(blockMemberType);
                                 newShaderMember.loc = typeList->at(indexInBlock).loc;
 
-                                identifierLocation.SetMemberLocation(shader, XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, blockVarName, indexInBlock);
+                                identifierLocation.SetMemberLocation(shader, blockMemberType.getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, blockVarName, indexInBlock);
                                 newShaderMember.memberLocation = identifierLocation;
                                 shader->listAllDeclaredMembers.push_back(newShaderMember);
                             }

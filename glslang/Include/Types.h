@@ -1393,7 +1393,7 @@ public:
         return *fieldName;
     }
 
-    const TString* getUserIdentifierName() const { return userIdentifierName; }
+    TString* getUserIdentifierName() const { return userIdentifierName; }
 
     virtual TBasicType getBasicType() const { return basicType; }
     virtual const TSampler& getSampler() const { return sampler; }
