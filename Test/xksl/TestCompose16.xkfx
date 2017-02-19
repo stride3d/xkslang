@@ -1,14 +1,15 @@
 //Test "importing" a static lib when adding a composition
 
-load "TestCompose14.xksl"
+load "TestCompose16.xksl"
 
 mixer A
 A.mixin ShaderA
 
 mixer B
-B.mixin CompB
+B.mixin CompA
 
 A.addComposition ShaderA.comp B
+A.mixin ShaderB
 
 A.setStageEntryPoint Pixel "main"
 A.compile

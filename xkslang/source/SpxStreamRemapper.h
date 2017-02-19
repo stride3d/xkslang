@@ -260,6 +260,14 @@ public:
     class ShaderClassData : public ObjectInstructionBase
     {
     public:
+        enum class ShaderDependencyTypeEnum
+        {
+            Undefined = 0,
+            StaticFunctionCall = 1 << 0,
+            Other = 1 << 1,
+        };
+
+    public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
             : ObjectInstructionBase(parsedData, name, source), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
         }
@@ -323,8 +331,19 @@ public:
         //When merging/duplicating a shader into a bytecode, this field will hold a temporary reference to its resulting, cloned shader 
         ShaderClassData* tmpClonedShader;
         int flag, flag1;  //to simplify some algo
+        ShaderDependencyTypeEnum dependencyType;  //dependency type, set by GetShadersFullDependencies algorithm.
 
     friend class SpxStreamRemapper;
+    };
+
+    class ShaderToMergeData
+    {
+    public:
+        ShaderClassData* shader;
+        bool instantiateShader;
+
+        ShaderToMergeData(ShaderClassData* shaderToMerge): shader(shaderToMerge), instantiateShader(false) {}
+        ShaderToMergeData(ShaderClassData* shader, bool instantiateShader) : shader(shader), instantiateShader(instantiateShader) {}
     };
     //============================================================================================================================================
     //============================================================================================================================================
@@ -350,7 +369,7 @@ public:
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
     //bool MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
-    bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderClassData*>& listShadersToMerge, std::string namesPrefixToAdd);
+    bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
     bool ValidateSpxBytecode();
     bool ValidateHeader();
 

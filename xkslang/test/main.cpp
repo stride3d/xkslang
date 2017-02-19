@@ -108,6 +108,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose12", "TestCompose12.xkfx" },
     //{ "TestCompose13", "TestCompose13.xkfx" },
     //{ "TestCompose14", "TestCompose14.xkfx" },
+    //{ "TestCompose15", "TestCompose15.xkfx" },
+    { "TestCompose16", "TestCompose16.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -468,8 +470,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     vector<SpxBytecode*> listAllParsedBytecode;
     unordered_map<string, SpxBytecode*> mapShaderWithBytecode;
     unordered_map<string, EffectMixerObject*> mixerMap;
-    int mixinNum = 0;
-    int composeNum = 0;
+    int operationNum = 0;
 
     string line, lineItem;
     stringstream ss(effectCmdLines);
@@ -558,7 +559,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
                     auto it = mapShaderWithBytecode.find(shaderName);
                     if (it == mapShaderWithBytecode.end())
                     {
-                        cout << "No spxBytecode found in the librady for the shader: " << shaderName << endl;
+                        cout << "cannot find a bytecode in the shader librady for shader named: " << shaderName << endl;
                         success = false; break;
                     }
                     SpxBytecode* aShaderBytecode = it->second;
@@ -583,7 +584,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
                 time_after = GetTickCount();
 
                 //write the current bytecode
-                const string outputFileName = effectName + "_mixin" + to_string(mixinNum++) + ".hr.spv";
+                const string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
                 SaveCurrentMixerBytecode(mixerTarget->mixer, outputDir, outputFileName);
 
                 if (success)
@@ -623,7 +624,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
                 time_after = GetTickCount();
 
                 //write the current bytecode
-                const string outputFileName = effectName + "_compose" + to_string(composeNum++) + "_" + compositionTargetStr + ".hr.spv";
+                const string outputFileName = effectName + "_op" + to_string(operationNum++) + "_compose" + "_" + compositionTargetStr + ".hr.spv";
                 SaveCurrentMixerBytecode(mixerTarget->mixer, outputDir, outputFileName);
 
                 if (success)

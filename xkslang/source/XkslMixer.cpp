@@ -110,7 +110,7 @@ bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName
 {
     vector<string> shaders;
     shaders.push_back(shaderName);
-    return Mixin(spirXBytecode, shaderName, msgs);
+    return Mixin(spirXBytecode, shaders, msgs);
 }
 
 bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& shaders, vector<string>& msgs)
@@ -168,7 +168,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
         return error(messages, "no output stages defined");
 
     vector<XkslMixerOutputStage> vecMixerOutputStages;
-    for (int i=0; i < outputStages.size(); ++i)
+    for (unsigned int i=0; i < outputStages.size(); ++i)
     {
         OutputStageBytecode* pOutputStage = &(outputStages[i]);
         XkslMixerOutputStage xkslOutputStage(pOutputStage);

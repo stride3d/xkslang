@@ -153,7 +153,7 @@ private:
    // Special Values for ID map:
    static const spv::Id unmapped;     // unchanged from default value
    static const spv::Id unused;       // unused ID
-   static const int     header_size;  // SPIR header = 5 words
+   static const unsigned int header_size;  // SPIR header = 5 words
 
    class id_iterator_t;
 

@@ -253,7 +253,7 @@ namespace spv {
     // Defining them externally seems to please both compilers, so, here they are.
     const spv::Id spirvbin_t::unmapped    = spv::Id(-10000);
     const spv::Id spirvbin_t::unused      = spv::Id(-10001);
-    const int     spirvbin_t::header_size = 5;
+    const unsigned int spirvbin_t::header_size = 5;
 
     spv::Id spirvbin_t::nextUnusedId(spv::Id id)
     {
