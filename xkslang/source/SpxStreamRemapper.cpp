@@ -201,6 +201,13 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
 
 bool SpxStreamRemapper::RemoveShaderAndAllData(ShaderClassData* shaderToRemove, vector<range_t>& vecStripRanges)
 {
+    spv::Id shaderId = shaderToRemove->GetId();
+    if (GetShaderById(shaderId) != shaderToRemove) return error(string("Failed to find the shader to remove: ") + shaderToRemove->GetName());
+
+    vector<bool> listIdsRemoved;
+    listIdsRemoved.resize(bound(), false);
+
+    //remove the shader from vecAllShaders: swap the shader with the latest elements (to remove it without cost, and to check if it does belong in the list)
     bool shaderFound = false;
     for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
     {
@@ -233,6 +240,7 @@ bool SpxStreamRemapper::RemoveShaderAndAllData(ShaderClassData* shaderToRemove, 
                 spv::Id id = function->GetId();
                 delete listAllObjects[id];
                 listAllObjects[id] = nullptr;
+                listIdsRemoved[id] = true;
             }
         }
         if (countFunctionsRemoved != shaderToRemove->GetCountFunctions())
@@ -254,16 +262,19 @@ bool SpxStreamRemapper::RemoveShaderAndAllData(ShaderClassData* shaderToRemove, 
             id = type->GetId();
             delete listAllObjects[id];
             listAllObjects[id] = nullptr;
+            listIdsRemoved[id] = true;
 
             stripInst(vecStripRanges, pointerToType->GetBytecodeStartPosition(), pointerToType->GetBytecodeEndPosition());
             id = pointerToType->GetId();
             delete listAllObjects[id];
             listAllObjects[id] = nullptr;
+            listIdsRemoved[id] = true;
 
             stripInst(vecStripRanges, variable->GetBytecodeStartPosition(), variable->GetBytecodeEndPosition());
             id = variable->GetId();
             delete listAllObjects[id];
             listAllObjects[id] = nullptr;
+            listIdsRemoved[id] = true;
         }
     }
 
@@ -273,7 +284,48 @@ bool SpxStreamRemapper::RemoveShaderAndAllData(ShaderClassData* shaderToRemove, 
         spv::Id id = shaderToRemove->GetId();
         delete listAllObjects[id];
         listAllObjects[id] = nullptr;
+        listIdsRemoved[id] = true;
     }
+
+    //remove all decorates related to the objects we removed
+    {
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
+            {
+                //case spv::OpTypeXlslShaderClass:  //already removed above
+                case spv::OpName:
+                case spv::OpMemberName:
+                case spv::OpDecorate:
+                case spv::OpMemberDecorate:
+                case spv::OpDeclarationName:
+                case spv::OpShaderInheritance:
+                case spv::OpShaderCompositionDeclaration:
+                case spv::OpShaderCompositionInstance:
+                case spv::OpBelongsToShader:
+                case spv::OpMethodProperties:
+                {
+                    const spv::Id id = asId(start + 1);
+                    if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
+                    break;
+                }
+
+                case spv::OpTypeXlslShaderClass:
+                {
+                    //every decorate and previous Op have been declared before type declaration, we can stop here
+                    start = end;
+                    break;
+                }
+            }
+            start += wordCount;
+        }
+    }
+
 
     return true;
 }
@@ -1344,13 +1396,13 @@ bool SpxStreamRemapper::RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>
 
                     case spv::OpFunctionCallBaseUnresolved:
                     {
-                        error(string("An unresolved function base call has been found in function: ") + aFunctionCalled->GetName());
+                        error(string("An unresolved function base call has been found in function: ") + aFunctionCalled->GetFullName());
                         break;
                     }
 
                     case spv::OpFunctionCallThroughCompositionVariable:
                     {
-                        error(string("An unresolved function call through composition has been found in function: ") + aFunctionCalled->GetName());
+                        error(string("An unresolved function call through composition has been found in function: ") + aFunctionCalled->GetFullName());
                         break;
                     }
                 }
@@ -1439,10 +1491,13 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
     //===================================================================================================================
     //Duplicate all foreach loops depending on the composition instances
 
+    //Build the list of all foreach loops, plus the list of all composition instances data
     vector<CompositionForEachLoopData> vecAllForeachLoops;
     vector<CompositionForEachLoopData> pileForeachLoopsCurrentlyParsed;
-    //get the list of all foreach loops
+    vector<CompositionInstanceData> vecAllCompositionInstances;
+    int forEachLoopsMaxNestedLevel = -1;
     {
+        int currentForEachLoopNestedLevel = -1;
         unsigned int start = header_size;
         const unsigned int end = spv.size();
         while (start < end)
@@ -1452,38 +1507,91 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
 
             switch (opCode)
             {
+                case spv::OpShaderCompositionInstance:
+                {
+                    const spv::Id shaderId = asId(start + 1);
+                    const int compositionId = asId(start + 2);
+
+                    ShaderComposition* composition = GetCompositionById(shaderId, compositionId);
+                    if (composition == nullptr) {
+                        error(string("Composition not found for ShaderId: ") + to_string(shaderId) + string(" with composition id: ") + to_string(compositionId));
+                        break;
+                    }
+
+                    int num = asId(start + 3);
+                    const spv::Id compositionShaderInstanceId = asId(start + 4);
+                    ShaderClassData* compositionShaderInstance = GetShaderById(compositionShaderInstanceId);
+                    if (compositionShaderInstance == nullptr) {
+                        error(string("Shader instance not found for id: ") + to_string(compositionShaderInstanceId));
+                        break;
+                    }
+                    vecAllCompositionInstances.push_back(CompositionInstanceData(composition, start, start + wordCount));
+
+                    break;
+                }
+
                 case spv::OpForEachCompositionStartLoop:
                 {
                     spv::Id shaderId = asId(start + 1);
                     int compositionId = asId(start + 2);
 
-                    ShaderClassData* compositionShaderOwner = GetShaderById(shaderId);
-                    if (compositionShaderOwner == nullptr) { error(string("undeclared shader id: ") + to_string(shaderId)); break; }
-                    ShaderComposition* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
-                    if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
-
+                    ShaderComposition* composition = GetCompositionById(shaderId, compositionId);
+                    if (composition == nullptr) {
+                        error(string("Composition not found for ShaderId: ") + to_string(shaderId) + string(" with composition id: ") + to_string(compositionId));
+                        break;
+                    }
                     if (!composition->isArray) { error("Foreach loop only works with array compositions."); break; }
 
-                    pileForeachLoopsCurrentlyParsed.push_back(CompositionForEachLoopData(composition, start, 0));
+                    currentForEachLoopNestedLevel++;
+                    if (forEachLoopsMaxNestedLevel < currentForEachLoopNestedLevel) forEachLoopsMaxNestedLevel = currentForEachLoopNestedLevel;
+                    pileForeachLoopsCurrentlyParsed.push_back(CompositionForEachLoopData(composition, currentForEachLoopNestedLevel, start, 0));
 
                     break;
                 }
                 case spv::OpForEachCompositionEndLoop:
                 {
-                    if (pileForeachLoopsCurrentlyParsed.size() == 0) { error("A foreach end loop instruction is missing a start instruction"); break; }
+                    if (currentForEachLoopNestedLevel < 0) { error("A foreach end loop instruction is missing a start instruction"); break; }
+                    currentForEachLoopNestedLevel--;
+
                     CompositionForEachLoopData compositionForEachLoop = pileForeachLoopsCurrentlyParsed.back();
                     pileForeachLoopsCurrentlyParsed.pop_back();
 
-                    compositionForEachLoop.posEnd = start;
+                    compositionForEachLoop.posEnd = start + wordCount;
                     vecAllForeachLoops.push_back(compositionForEachLoop);
 
                     break;
                 }
             }
+
             start += wordCount;
         }
 
+        if (currentForEachLoopNestedLevel >= 0) error("A foreach start loop instruction is missing an end instruction");
         if (errorMessages.size() > 0) return false;
+    }
+
+    //duplicate foreach loops for all instances
+    {
+        hgjghjghj;
+    }
+
+    //remove all foreach loops
+    if (vecAllForeachLoops.size() > 0)
+    {
+        vector<range_t> vecStripRanges;
+        for (auto itfe = vecAllForeachLoops.begin(); itfe != vecAllForeachLoops.end(); itfe++)
+        {
+            const CompositionForEachLoopData& forEachLoop = *itfe;
+            if (forEachLoop.nestedLevel == 0)  //nested level > 0 are included inside level 0
+            {
+                vecStripRanges.push_back(range_t(forEachLoop.posStart, forEachLoop.posEnd));
+            }
+        }
+
+        stripBytecode(vecStripRanges);
+        if (errorMessages.size() > 0) return error("ApplyAllCompositions: failed to remove the foreach loops");
+        //Update all maps (update objects position in the bytecode)
+        if (!UpdateAllMaps()) return error("ApplyAllCompositions: failed to update all maps");
     }
 
     //===================================================================================================================

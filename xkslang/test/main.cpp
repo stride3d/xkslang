@@ -109,10 +109,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose13", "TestCompose13.xkfx" },
     //{ "TestCompose14", "TestCompose14.xkfx" },
     //{ "TestCompose15", "TestCompose15.xkfx" },
-    { "TestCompose16", "TestCompose16.xkfx" },
+    //{ "TestCompose16", "TestCompose16.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
-    //{ "TestForEach01", "TestForEach01.xkfx" },
+    { "TestForEach01", "TestForEach01.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },
 };
@@ -624,7 +624,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
                 time_after = GetTickCount();
 
                 //write the current bytecode
-                const string outputFileName = effectName + "_op" + to_string(operationNum++) + "_compose" + "_" + compositionTargetStr + ".hr.spv";
+                const string outputFileName = effectName + "_op" + to_string(operationNum++) + "_compose" + ".hr.spv";
                 SaveCurrentMixerBytecode(mixerTarget->mixer, outputDir, outputFileName);
 
                 if (success)
