@@ -257,6 +257,34 @@ public:
         friend class SpxStreamRemapper;
     };
 
+    class CompositionInstanceData
+    {
+    public:
+        ShaderComposition* composition;
+        unsigned int posStart;
+        unsigned int posEnd;
+
+        CompositionInstanceData(ShaderComposition* composition, unsigned int posStart, unsigned int end) :
+            composition(composition), posStart(posStart), posEnd(posEnd) {}
+    };
+
+    class CompositionForEachLoopData
+    {
+    public:
+        ShaderComposition* composition;
+        unsigned int nestedLevel;
+        unsigned int foreachLoopStart;
+        unsigned int foreachLoopEnd;
+        unsigned int firstLoopInstuctionStart;
+        unsigned int lastLoopInstuctionEnd;
+
+        //duplicated bytecode after we clone (unroll) each forlopp compositions
+        std::vector<spirword_t> foreachDuplicatedBytecode;
+
+        CompositionForEachLoopData(ShaderComposition* composition, unsigned int nestedLevel, unsigned int foreachLoopStart, unsigned int foreachLoopEnd, unsigned int firstLoopInstuctionStart, unsigned int lastLoopInstuctionEnd) :
+            composition(composition), nestedLevel(nestedLevel), foreachLoopStart(foreachLoopStart), foreachLoopEnd(foreachLoopEnd), firstLoopInstuctionStart(firstLoopInstuctionStart), lastLoopInstuctionEnd(lastLoopInstuctionEnd) {}
+    };
+
     class ShaderClassData : public ObjectInstructionBase
     {
     public:
@@ -436,8 +464,9 @@ private:
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
     HeaderPropertyInstruction* GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const std::string& name);
     ShaderComposition* GetCompositionById(spv::Id shaderId, int compositionId);
-    bool GetAllShaderInstancesForComposition(const ShaderComposition* composition, std::vector<ShaderClassData*>& instances);
     FunctionInstruction* GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name);
+    bool GetAllShaderInstancesForComposition(const ShaderComposition* composition, std::vector<ShaderClassData*>& instances);
+    bool GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel);
 
     void stripBytecode(std::vector<range_t>& ranges);
 
@@ -453,29 +482,6 @@ private:
     }
 
     friend class XkslMixer;
-
-    class CompositionInstanceData
-    {
-    public:
-        ShaderComposition* composition;
-        unsigned int posStart;
-        unsigned int posEnd;
-
-        CompositionInstanceData(ShaderComposition* composition, unsigned int posStart, unsigned int end) :
-            composition(composition), posStart(posStart), posEnd(posEnd) {}
-    };
-
-    class CompositionForEachLoopData
-    {
-    public:
-        ShaderComposition* composition;
-        unsigned int nestedLevel;
-        unsigned int posStart;
-        unsigned int posEnd;
-
-        CompositionForEachLoopData(ShaderComposition* composition, unsigned int nestedLevel, unsigned int posStart, unsigned int end) :
-            composition(composition), nestedLevel(nestedLevel), posStart(posStart), posEnd(posEnd) {}
-    };
 };
 
 //Contains output stage info (stage + entrypoint), bytecode, plus additionnal data processed by the mixer during compilation

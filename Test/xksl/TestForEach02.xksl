@@ -1,0 +1,27 @@
+shader ComputeColor
+{
+	int Compute(int i)
+	{
+		return i;
+	}
+}
+
+shader ShaderA
+{
+	compose ComputeColor SubComputes[];
+	
+	stream int svar;
+	
+	int main()
+	{
+		int res = 0;
+		foreach(var subCompute in SubComputes)
+		{
+			res += 1;
+			streams.svar = res;
+		}
+
+		return res;
+	}
+}
+

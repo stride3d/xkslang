@@ -789,7 +789,7 @@ namespace spv {
                 break;
 
             default:
-                assert(0 && "Unhandled Operand Class");
+                //assert(0 && "Unhandled Operand Class");
                 return false;
                 break;
             }

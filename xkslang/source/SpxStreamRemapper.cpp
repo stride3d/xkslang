@@ -1491,90 +1491,134 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
     //===================================================================================================================
     //Duplicate all foreach loops depending on the composition instances
 
+    //======================================================================================
     //Build the list of all foreach loops, plus the list of all composition instances data
+    int maxForEachLoopsNestedLevel;
     vector<CompositionForEachLoopData> vecAllForeachLoops;
-    vector<CompositionForEachLoopData> pileForeachLoopsCurrentlyParsed;
-    vector<CompositionInstanceData> vecAllCompositionInstances;
-    int forEachLoopsMaxNestedLevel = -1;
+    if (!GetAllCompositionForEachLoops(vecAllForeachLoops, maxForEachLoopsNestedLevel)) {
+        return error(string("Failed to retrieve all composition foreach loops for the composition: "));
+    }
+
+    //======================================================================================
+    //duplicate the foreach loops for all instances
     {
-        int currentForEachLoopNestedLevel = -1;
-        unsigned int start = header_size;
-        const unsigned int end = spv.size();
-        while (start < end)
+        for (int nestedLevelToProcess = maxForEachLoopsNestedLevel; nestedLevelToProcess >= 0; nestedLevelToProcess--)
         {
-            unsigned int wordCount = asWordCount(start);
-            spv::Op opCode = asOpCode(start);
+            list<CompositionForEachLoopData*> listForeachLoopsToMergeIntoBytecode;
 
-            switch (opCode)
+            int maxId = bound();
+            vector<bool> IdsToRemapTable;
+            IdsToRemapTable.resize(bound(), false);
+
+            for (auto itfe = vecAllForeachLoops.begin(); itfe != vecAllForeachLoops.end(); itfe++)
             {
-                case spv::OpShaderCompositionInstance:
-                {
-                    const spv::Id shaderId = asId(start + 1);
-                    const int compositionId = asId(start + 2);
+                CompositionForEachLoopData* forEachLoopToUnroll = &(*itfe);
+                if (forEachLoopToUnroll->nestedLevel != nestedLevelToProcess) continue;
 
-                    ShaderComposition* composition = GetCompositionById(shaderId, compositionId);
-                    if (composition == nullptr) {
-                        error(string("Composition not found for ShaderId: ") + to_string(shaderId) + string(" with composition id: ") + to_string(compositionId));
-                        break;
+                ShaderComposition* compositionToUnroll = forEachLoopToUnroll->composition;
+                
+                bool anythingToUnroll = true;
+                if (compositionToUnroll->countInstances <= 0) anythingToUnroll = false;  //if no instances set, nothing to unroll
+                if (forEachLoopToUnroll->firstLoopInstuctionStart >= forEachLoopToUnroll->lastLoopInstuctionEnd) anythingToUnroll = false;  //if no bytecode within the forloop, nothing to unroll
+
+                if (anythingToUnroll)
+                {
+                    spirvbin_t duplicatedBytecode;
+                    std::vector<spirword_t> foreachLoopBytecode;
+                    foreachLoopBytecode.insert(foreachLoopBytecode.end(), spv.begin() + forEachLoopToUnroll->firstLoopInstuctionStart, spv.begin() + forEachLoopToUnroll->lastLoopInstuctionEnd);
+
+                    //get the list of all resultIds to remapp from the foreach loop bytecode
+                    {
+                        unsigned int start = 0;
+                        const unsigned int end = foreachLoopBytecode.size();
+                        while (start < end)
+                        {
+                            spv::Op opCode = spirvbin_t::opOpCode(foreachLoopBytecode[start]);
+                            unsigned int wordCount = spirvbin_t::opWordCount(foreachLoopBytecode[start]);
+                            unsigned int word = start + 1;
+                        
+                            // any type?
+                            if (spv::InstructionDesc[opCode].hasType()) {
+                                word++;
+                            }
+
+                            // any result id to remap?
+                            if (spv::InstructionDesc[opCode].hasResult()) {
+                                spv::Id resultId = foreachLoopBytecode[word];
+    #ifdef XKSLANG_DEBUG_MODE
+                                if (resultId < 0 || resultId >= IdsToRemapTable.size())
+                                { error(string("unroll foreach composition: result id is out of bound. Id: ") + to_string(resultId)); break; }
+    #endif
+                                IdsToRemapTable[resultId] = true;
+                            }
+
+                            start += wordCount;
+                        }
                     }
 
-                    int num = asId(start + 3);
-                    const spv::Id compositionShaderInstanceId = asId(start + 4);
-                    ShaderClassData* compositionShaderInstance = GetShaderById(compositionShaderInstanceId);
-                    if (compositionShaderInstance == nullptr) {
-                        error(string("Shader instance not found for id: ") + to_string(compositionShaderInstanceId));
-                        break;
+                    //Get all instances set for the composition
+                    vector<ShaderClassData*> vecCompositionShaderInstances;
+                    if (!GetAllShaderInstancesForComposition(compositionToUnroll, vecCompositionShaderInstances)) {
+                        return error(string("Failed to retrieve the instances for the composition: ") + compositionToUnroll->variableName + string(" from shader: ") + compositionToUnroll->compositionShaderOwner->GetName());
                     }
-                    vecAllCompositionInstances.push_back(CompositionInstanceData(composition, start, start + wordCount));
 
-                    break;
-                }
+                    //duplicate the foreach loop bytecode for all instances (compositions are already sorted by their num)
+                    unsigned int countInstances = vecCompositionShaderInstances.size();
+                    for (unsigned int instanceNum = 0; instanceNum < countInstances; ++instanceNum)
+                    {
+                        ShaderClassData* compositionShaderInstance = vecCompositionShaderInstances[instanceNum];
 
-                case spv::OpForEachCompositionStartLoop:
-                {
-                    spv::Id shaderId = asId(start + 1);
-                    int compositionId = asId(start + 2);
+                        //Clone the loop bytecode at the end of the duplicated bytecode
+                        {
+                            vector<spv::Id> remapTable;
+                            remapTable.resize(bound(), unused);
+                            for (unsigned int id=0; id<IdsToRemapTable.size(); ++id) {
+                                if (IdsToRemapTable[id]) remapTable[id] = maxId++;
+                                else remapTable[id] = id;
+                            }
 
-                    ShaderComposition* composition = GetCompositionById(shaderId, compositionId);
-                    if (composition == nullptr) {
-                        error(string("Composition not found for ShaderId: ") + to_string(shaderId) + string(" with composition id: ") + to_string(compositionId));
-                        break;
+                            unsigned int start = duplicatedBytecode.spv.size();
+                            duplicatedBytecode.spv.insert(duplicatedBytecode.spv.end(), foreachLoopBytecode.begin(), foreachLoopBytecode.end());
+                            const unsigned int end = duplicatedBytecode.spv.size();
+
+                            duplicatedBytecode.remapAllIds(start, end, remapTable);
+                        }
                     }
-                    if (!composition->isArray) { error("Foreach loop only works with array compositions."); break; }
 
-                    currentForEachLoopNestedLevel++;
-                    if (forEachLoopsMaxNestedLevel < currentForEachLoopNestedLevel) forEachLoopsMaxNestedLevel = currentForEachLoopNestedLevel;
-                    pileForeachLoopsCurrentlyParsed.push_back(CompositionForEachLoopData(composition, currentForEachLoopNestedLevel, start, 0));
+                    forEachLoopToUnroll->foreachDuplicatedBytecode = duplicatedBytecode.spv;
 
-                    break;
-                }
-                case spv::OpForEachCompositionEndLoop:
-                {
-                    if (currentForEachLoopNestedLevel < 0) { error("A foreach end loop instruction is missing a start instruction"); break; }
-                    currentForEachLoopNestedLevel--;
+                    //insert the foreach loop, sorted by their reversed apparition in the bytecode
+                    auto itList = listForeachLoopsToMergeIntoBytecode.begin();
+                    while (itList != listForeachLoopsToMergeIntoBytecode.end())
+                    {
+                        if (forEachLoopToUnroll->foreachLoopStart > (*itList)->foreachLoopStart) break;
+                    }
+                    listForeachLoopsToMergeIntoBytecode.insert(itList, forEachLoopToUnroll);
 
-                    CompositionForEachLoopData compositionForEachLoop = pileForeachLoopsCurrentlyParsed.back();
-                    pileForeachLoopsCurrentlyParsed.pop_back();
+                }  //end of if (anythingToUnroll)
+            } //for (auto itfe = vecAllForeachLoops.begin(); itfe != vecAllForeachLoops.end(); itfe++)
 
-                    compositionForEachLoop.posEnd = start + wordCount;
-                    vecAllForeachLoops.push_back(compositionForEachLoop);
-
-                    break;
-                }
+            //we finished unrolling all foreach loops for the nested level, we can apply them to the bytecode
+            unsigned int insertionPos = spv.size();
+            for (auto itfe = listForeachLoopsToMergeIntoBytecode.begin(); itfe != listForeachLoopsToMergeIntoBytecode.end(); itfe++)
+            {
+                CompositionForEachLoopData* forEachLoopToMerge = *itfe;
+                if (forEachLoopToMerge->foreachLoopEnd > insertionPos) return error("foreach loops are not sorted correctly");
+                insertionPos = forEachLoopToMerge->foreachLoopEnd;
+                
+                spv.insert(spv.begin() + insertionPos, forEachLoopToMerge->foreachDuplicatedBytecode.begin(), forEachLoopToMerge->foreachDuplicatedBytecode.end());
             }
 
-            start += wordCount;
-        }
+            //we updated the bytecode, so refetch all foreach loops
+            setBound(maxId);
+            if (!GetAllCompositionForEachLoops(vecAllForeachLoops, maxForEachLoopsNestedLevel)) {
+                return error(string("Failed to retrieve all composition foreach loops for the composition: "));
+            }
 
-        if (currentForEachLoopNestedLevel >= 0) error("A foreach start loop instruction is missing an end instruction");
-        if (errorMessages.size() > 0) return false;
-    }
+        } //end for (int nestedLevelToProcess = maxForEachLoopsNestedLevel; nestedLevelToProcess >= 0; nestedLevelToProcess--)
+    } 
 
-    //duplicate foreach loops for all instances
-    {
-        hgjghjghj;
-    }
-
+    //======================================================================================
     //remove all foreach loops
     if (vecAllForeachLoops.size() > 0)
     {
@@ -1584,7 +1628,7 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
             const CompositionForEachLoopData& forEachLoop = *itfe;
             if (forEachLoop.nestedLevel == 0)  //nested level > 0 are included inside level 0
             {
-                vecStripRanges.push_back(range_t(forEachLoop.posStart, forEachLoop.posEnd));
+                vecStripRanges.push_back(range_t(forEachLoop.foreachLoopStart, forEachLoop.foreachLoopEnd));
             }
         }
 
@@ -2977,11 +3021,73 @@ SpxStreamRemapper::ShaderComposition* SpxStreamRemapper::GetCompositionById(spv:
     return shader->GetShaderCompositionById(compositionId);
 }
 
+bool SpxStreamRemapper::GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel)
+{
+    vecForEachLoops.clear();
+    maxForEachLoopsNestedLevel = -1;
+
+    int currentForEachLoopNestedLevel = -1;
+    vector<CompositionForEachLoopData> pileForeachLoopsCurrentlyParsed;
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        switch (opCode)
+        {
+            case spv::OpForEachCompositionStartLoop:
+            {
+                spv::Id shaderId = asId(start + 1);
+                int compositionId = asId(start + 2);
+
+                ShaderComposition* composition = GetCompositionById(shaderId, compositionId);
+                if (composition == nullptr) {
+                    error(string("Composition not found for ShaderId: ") + to_string(shaderId) + string(" with composition id: ") + to_string(compositionId));
+                    break;
+                }
+                if (!composition->isArray) { error("Foreach loop only works with array compositions."); break; }
+
+                currentForEachLoopNestedLevel++;
+                if (currentForEachLoopNestedLevel > maxForEachLoopsNestedLevel) maxForEachLoopsNestedLevel = currentForEachLoopNestedLevel;
+                pileForeachLoopsCurrentlyParsed.push_back(CompositionForEachLoopData(composition, currentForEachLoopNestedLevel, start, 0, start + wordCount, 0));
+
+                break;
+            }
+
+            case spv::OpForEachCompositionEndLoop:
+            {
+                if (currentForEachLoopNestedLevel < 0) { error("A foreach end loop instruction is missing a start instruction"); break; }
+                currentForEachLoopNestedLevel--;
+
+                CompositionForEachLoopData compositionForEachLoop = pileForeachLoopsCurrentlyParsed.back();
+                pileForeachLoopsCurrentlyParsed.pop_back();
+
+                compositionForEachLoop.lastLoopInstuctionEnd = start;
+                compositionForEachLoop.foreachLoopEnd = start + wordCount;
+                vecForEachLoops.push_back(compositionForEachLoop);
+
+                break;
+            }
+        }
+
+        start += wordCount;
+    }
+
+    if (currentForEachLoopNestedLevel >= 0) error("A foreach start loop instruction is missing an end instruction");
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
 bool SpxStreamRemapper::GetAllShaderInstancesForComposition(const ShaderComposition* composition, vector<ShaderClassData*>& instances)
 {
-    instances.clear();
     spv::Id compositionShaderOwnerId = composition->compositionShaderOwner->GetId();
     int compositionShaderId = composition->compositionShaderId;
+
+    int countInstancesExpected = composition->countInstances;
+    instances.resize(countInstancesExpected, nullptr);
+    int countInstancesFound = 0;
 
     //look for the instances in the bytecode
     unsigned int start = header_size;
@@ -3000,12 +3106,18 @@ bool SpxStreamRemapper::GetAllShaderInstancesForComposition(const ShaderComposit
 
                 if (shaderOwnerId == compositionShaderOwnerId && compositionId == compositionShaderId)
                 {
-                    int num = asId(start + 3);
+                    int instanceNum = asId(start + 3);
+                    if (instanceNum < 0 || instanceNum >= countInstancesExpected)
+                        return error(string("composition instance has an invalid num: ") + to_string(instanceNum));
+                    if (instances[instanceNum] != nullptr)
+                        return error(string("Found 2 instances for the same composition having the same num: ") + to_string(instanceNum));
+
                     const spv::Id shaderInstanceId = asId(start + 4);
                     ShaderClassData* shaderInstance = GetShaderById(shaderInstanceId);
                     if (shaderInstance == nullptr)
-                        return error(string("unfound shader instance for id: ") + to_string(shaderInstanceId));
-                    instances.push_back(shaderInstance);
+                        return error(string("unfound composition shader instance for id: ") + to_string(shaderInstanceId));
+                    instances[instanceNum] = shaderInstance;
+                    countInstancesFound++;
                 }
 
                 break;
@@ -3021,8 +3133,8 @@ bool SpxStreamRemapper::GetAllShaderInstancesForComposition(const ShaderComposit
         start += wordCount;
     }
 
-    if (instances.size() != composition->countInstances) {
-        return error(string("Invalid number of instances found. Expected number: ") + to_string(composition->countInstances) + string(". Instances found: ") + to_string(instances.size()));
+    if (countInstancesExpected != countInstancesFound) {
+        return error(string("Invalid number of instances found. Expected number: ") + to_string(countInstancesExpected) + string(". Instances found: ") + to_string(countInstancesFound));
     }
 
     return true;

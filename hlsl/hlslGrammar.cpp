@@ -4318,8 +4318,8 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
         this->listForeachArrayCompositionVariable.push_back(variableTargetingACompositionVariable);
 
         if (!acceptTokenClass(EHTokRightParen)) expected("foreach )");
-        if (!acceptTokenClass(EHTokLeftBrace)) expected("{");
 
+        //parseContext.pushScope();
         parseContext.nestLooping();
 
         // foreach statement
@@ -4329,7 +4329,7 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
         }
 
         parseContext.unnestLooping();
-        if (!acceptTokenClass(EHTokRightBrace)) expected("}");
+        //parseContext.popScope();
 
         //we define the statement as a forEach loop, so that we can add xksl extended info in the bytecode
         statement = intermediate.growAggregate(statement, nullptr);
