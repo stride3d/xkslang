@@ -113,8 +113,11 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
-    { "TestForEach02", "TestForEach02.xkfx" },
-    { "TestForEach03", "TestForEach03.xkfx" },
+    //{ "TestForEach02", "TestForEach02.xkfx" },
+    //{ "TestForEach03", "TestForEach03.xkfx" },
+
+    //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
+    { "TestForEachCompose02", "TestForEachCompose02.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },
 };

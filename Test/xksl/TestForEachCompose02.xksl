@@ -1,0 +1,43 @@
+shader ComputeColor
+{
+	int Compute(int i)
+	{
+		return i;
+	}
+}
+
+shader ComputeColorA : ComputeColor
+{
+	override int Compute(int i)
+	{
+		return 1;
+	}
+}
+
+shader ComputeColorB : ComputeColor
+{
+	override int Compute(int i)
+	{
+		return 2;
+	}
+}
+
+shader ShaderA
+{
+	compose ComputeColor colorsA[];
+	compose ComputeColor colorsB[];
+	
+	int main()
+	{
+		int res = 0;
+		foreach(var colora in colorsA)
+		{
+			foreach(var colorb in colorsB)
+			{
+				res = colora.Compute(colorb.Compute(res));
+			}
+		}
+		
+		return res;
+	}
+}

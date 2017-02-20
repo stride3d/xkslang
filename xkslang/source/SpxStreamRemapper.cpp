@@ -1581,7 +1581,32 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
                             duplicatedBytecode.spv.insert(duplicatedBytecode.spv.end(), foreachLoopBytecode.begin(), foreachLoopBytecode.end());
                             const unsigned int end = duplicatedBytecode.spv.size();
 
+                            //remap all Ids
                             duplicatedBytecode.remapAllIds(start, end, remapTable);
+
+                            //for all call to a function through the composition variable we're instancing, update the instance num
+                            while (start < end)
+                            {
+                                unsigned int wordCount = duplicatedBytecode.asWordCount(start);
+                                spv::Op opCode = duplicatedBytecode.asOpCode(start);
+                                switch (opCode)
+                                {
+                                    case spv::OpFunctionCallThroughCompositionVariable:
+                                    {
+                                        spv::Id shaderId = duplicatedBytecode.asId(start + 4);
+                                        int compositionId = duplicatedBytecode.asId(start + 5);
+                                        int initialInstanceNum = duplicatedBytecode.asId(start + 6);
+
+                                        if (compositionToUnroll->compositionShaderOwner->GetId() == shaderId && compositionToUnroll->compositionShaderId == compositionId)
+                                        {
+                                            duplicatedBytecode.setId(start + 6, instanceNum);
+                                        }
+
+                                        break;
+                                    }
+                                }
+                                start += wordCount;
+                            }
                         }
                     }
 
@@ -1652,57 +1677,58 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
 
             switch (opCode)
             {
-            case spv::OpFunctionCallThroughCompositionVariable:
-            {
-                spv::Id shaderId = asId(start + 4);
-                int compositionId = asId(start + 5);
+                case spv::OpFunctionCallThroughCompositionVariable:
+                {
+                    spv::Id shaderId = asId(start + 4);
+                    int compositionId = asId(start + 5);
+                    int instancesNum = asId(start + 6);
 
-                //===================================================
-                //Find the composition data
-                ShaderClassData* compositionShaderOwner = this->GetShaderById(shaderId);
-                if (compositionShaderOwner == nullptr) { error(string("No shader exists with the Id: ") + to_string(shaderId)); break; }
+                    //===================================================
+                    //Find the composition data
+                    ShaderClassData* compositionShaderOwner = this->GetShaderById(shaderId);
+                    if (compositionShaderOwner == nullptr) { error(string("No shader exists with the Id: ") + to_string(shaderId)); break; }
 
-                ShaderComposition* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
-                if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
+                    ShaderComposition* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
+                    if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
 
-                if (composition->isArray) { error("Only works with non-array compositions for now"); break; }
+                    // If an OpFunctionCallThroughCompositionVariable instructions has no composition instance we ignore it
+                    // (it won't generate an error as long as the instruction is not called by any compilation output functions)
+                    if (composition->countInstances == 0) break;
 
-                // If an OpFunctionCallThroughCompositionVariable instructions has no composition instance we ignore it
-                // (it won't generate an error as long as the instruction is not called by any compilation output functions)
-                if (composition->countInstances != 1) break;
+                    vector<ShaderClassData*> vecCompositionShaderInstances;
+                    if (!GetAllShaderInstancesForComposition(composition, vecCompositionShaderInstances)) {
+                        return error(string("Failed to retrieve the instances for the composition: ") + composition->variableName + string(" from shader: ") + composition->compositionShaderOwner->GetName());
+                    }
 
-                vector<ShaderClassData*> vecCompositionShaderInstances;
-                if (!GetAllShaderInstancesForComposition(composition, vecCompositionShaderInstances)) {
-                    return error(string("Failed to retrieve the instances for the composition: ") + composition->variableName + string(" from shader: ") + composition->compositionShaderOwner->GetName());
+                    if (instancesNum < 0 || instancesNum >= vecCompositionShaderInstances.size()) { error(string("Invalid instanceNum number: ") + to_string(instancesNum)); break; }
+                    ShaderClassData* clonedShader = vecCompositionShaderInstances[instancesNum];
+
+                    //===================================================
+                    //Get the original function called
+                    spv::Id originalFunctionId = asId(start + 3);
+                    FunctionInstruction* functionToReplace = GetFunctionById(originalFunctionId);
+                    if (functionToReplace == nullptr) {
+                        error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known function. Id: ") + to_string(originalFunctionId));
+                        return true;
+                    }
+
+                    //We retrieve the cloned function using the function name
+                    FunctionInstruction* functionTarget = GetTargetedFunctionByNameWithinShaderAndItsFamily(clonedShader, functionToReplace->GetName());
+                    if (functionTarget == nullptr) {
+                        error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function in the cloned shader. Function name: ") + functionToReplace->GetName());
+                        return true;
+                    }
+
+                    //If the function is overriden by another, change the target
+                    if (functionTarget->GetOverridingFunction() != nullptr) functionTarget = functionTarget->GetOverridingFunction();
+
+                    int wordCount = asWordCount(start);
+                    vecStripRanges.push_back(range_t(start + 4, start + 6 + 1));   //will remove composition variable ids from the bytecode
+                    setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 3);  //change instruction OpFunctionCallThroughCompositionVariable to OpFunctionCall
+                    setId(start + 3, functionTarget->GetId());                     //replace the function called id
+
+                    break;
                 }
-                ShaderClassData* clonedShader = vecCompositionShaderInstances[0];
-
-                //===================================================
-                //Get the original function called
-                spv::Id originalFunctionId = asId(start + 3);
-                FunctionInstruction* functionToReplace = GetFunctionById(originalFunctionId);
-                if (functionToReplace == nullptr) {
-                    error(string("OpFunctionCallThroughCompositionVariable: targeted Id is not a known function. Id: ") + to_string(originalFunctionId));
-                    return true;
-                }
-
-                //We retrieve the cloned function using the function name
-                FunctionInstruction* functionTarget = GetTargetedFunctionByNameWithinShaderAndItsFamily(clonedShader, functionToReplace->GetName());
-                if (functionTarget == nullptr) {
-                    error(string("OpFunctionCallThroughCompositionVariable: cannot retrieve the function in the cloned shader. Function name: ") + functionToReplace->GetName());
-                    return true;
-                }
-
-                //If the function is overriden by another, change the target
-                if (functionTarget->GetOverridingFunction() != nullptr) functionTarget = functionTarget->GetOverridingFunction();
-
-                int wordCount = asWordCount(start);
-                vecStripRanges.push_back(range_t(start + 4, start + 5 + 1));   //will remove composition variable ids from the bytecode
-                setOpAndWordCount(start, spv::OpFunctionCall, wordCount - 2);  //change instruction OpFunctionCallThroughCompositionVariable to OpFunctionCall
-                setId(start + 3, functionTarget->GetId());                     //replace the function called id
-
-                break;
-            }
             }
             start += wordCount;
         }

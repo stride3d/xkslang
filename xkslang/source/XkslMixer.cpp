@@ -203,7 +203,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
         delete clonedSpxStream;
-        return error(messages, "Fail to remova all unused shaders");
+        return error(messages, "Fail to remove all unused shaders");
     }
 
     //===================================================================================================================

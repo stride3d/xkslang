@@ -1898,6 +1898,7 @@ void Parameterize()
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandId, "'Composition Shader owner'");
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandLiteralNumber, "'Composition Id'");
+    InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandLiteralNumber, "'Instance Num'");   //in the case several instances have been added to the composition (for array composition)
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
     //======================================================================================================
 

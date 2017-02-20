@@ -3179,6 +3179,18 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
     TString* className = accessorClassName == nullptr? getCurrentShaderName() : accessorClassName;
     if (className == nullptr) return false;
 
+    //we first look if a foreach loop declare a composition variable
+    int countForEachLoopVariables = this->listForeachArrayCompositionVariable.size();
+    for (int i = countForEachLoopVariables - 1; i >= 0; i--)
+    {
+        const TShaderVariableTargetingACompositionVariable& variableTargetingACompositionVariable = this->listForeachArrayCompositionVariable[i];
+        if (identifierName == variableTargetingACompositionVariable.variableName)
+        {
+            compositionTargeted = variableTargetingACompositionVariable.compositionTargeted;
+            return true;
+        }
+    }
+
     XkslShaderDefinition* shader = getShaderClassDefinition(*className);
     if (shader == nullptr) {
         if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslDeclarations ||

@@ -1,0 +1,39 @@
+shader ComputeColor
+{
+	int Compute(int i)
+	{
+		return i;
+	}
+}
+
+shader ComputeColorA : ComputeColor
+{
+	override int Compute(int i)
+	{
+		return i + 1;
+	}
+}
+
+shader ComputeColorB : ComputeColor
+{
+	override int Compute(int i)
+	{
+		return base.Compute(i) + i;
+	}
+}
+
+shader ShaderA
+{
+	compose ComputeColor colors[];
+	
+	int main()
+	{
+		int res = 0;
+		foreach(var color in colors)
+		{
+			res += color.Compute(res + 1);
+		}
+		
+		return res;
+	}
+}

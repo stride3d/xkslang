@@ -1401,13 +1401,14 @@ Id Builder::createSpecConstantOp(Op opCode, Id typeId, const std::vector<Id>& op
     return op->getResultId();
 }
 
-Id Builder::createFunctionCallThroughCompositionVariable(spv::Function* function, std::vector<spv::Id>& args, spv::Id shaderCompositionVariableOwnerId, int compositionVariableId)
+Id Builder::createFunctionCallThroughCompositionVariable(spv::Function* function, std::vector<spv::Id>& args, spv::Id shaderCompositionOwnerId, int compositionId)
 {
     Instruction* op;
     op = new Instruction(getUniqueId(), function->getReturnType(), OpFunctionCallThroughCompositionVariable);
     op->addIdOperand(function->getId());
-    op->addIdOperand(shaderCompositionVariableOwnerId);
-    op->addImmediateOperand(compositionVariableId);
+    op->addIdOperand(shaderCompositionOwnerId);
+    op->addImmediateOperand(compositionId);
+    op->addImmediateOperand(0);
     for (int a = 0; a < (int)args.size(); ++a)
         op->addIdOperand(args[a]);
     buildPoint->addInstruction(std::unique_ptr<Instruction>(op));
