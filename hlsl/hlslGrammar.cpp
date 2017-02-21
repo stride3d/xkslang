@@ -2220,7 +2220,17 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
                         return false;
                 }
 
-                acceptPostDecls(declaredType.getQualifier());
+                TString userDefinedSemantic;
+                acceptPostDecls(declaredType.getQualifier(), &userDefinedSemantic);
+                if (userDefinedSemantic.length() > 0){
+                    if (!declaredType.getQualifier().isStage){
+                        error(TString("A variable cannot declare a user-defined semantic if it's not a stage variable. Invalid variable: ") + declaredType.getFieldName());
+                        return false;
+                    }
+
+                    //add the semantic with the variable
+                    declaredType.setUserDefinedSemantic(userDefinedSemantic.c_str());
+                }
 
                 // EQUAL assignment_expression
                 TIntermTyped* expressionNode = nullptr;
@@ -4646,7 +4656,9 @@ void HlslGrammar::acceptShaderClassPostDecls(TIdentifierList*& parents)
 //        COLON LAYOUT layout_qualifier_list
 //        annotations // optional
 //
-void HlslGrammar::acceptPostDecls(TQualifier& qualifier)
+// XKSL extensions: if userDefinedSemantic is not null, we assign it with the semantic string value
+// (if more than one semantic is set, return an error)
+void HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSemantic)
 {
     do {
         // COLON
@@ -4733,6 +4745,15 @@ void HlslGrammar::acceptPostDecls(TQualifier& qualifier)
                 parseContext.handleRegister(registerDesc.loc, qualifier, profile.string, *registerDesc.string, subComponent, spaceDesc.string);
             } else {
                 // semantic, in idToken.string
+                if (userDefinedSemantic != nullptr)
+                {
+                    if (userDefinedSemantic->length() > 0){
+                        error("can only accept one user-defined semantic");
+                        return;
+                    }
+                    *userDefinedSemantic = *idToken.string;
+                }
+
                 parseContext.handleSemantic(idToken.loc, qualifier, *idToken.string);
             }
         } else if (peekTokenClass(EHTokLeftAngle))

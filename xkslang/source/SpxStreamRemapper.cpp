@@ -309,6 +309,8 @@ bool SpxStreamRemapper::RemoveShaderAndAllData(ShaderClassData* shaderToRemove, 
                 case spv::OpShaderCompositionInstance:
                 case spv::OpBelongsToShader:
                 case spv::OpMethodProperties:
+                case spv::OpMemberProperties:
+                case spv::OpMemberSemanticName:
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
@@ -958,6 +960,8 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
+                case spv::OpMemberProperties:
+                case spv::OpMemberSemanticName:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
@@ -1067,6 +1071,8 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
+                case spv::OpMemberProperties:
+                case spv::OpMemberSemanticName:
                 {
                     posToInsertNewNames = start;
                     start = end;
@@ -1807,6 +1813,8 @@ bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outp
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
+                case spv::OpMemberProperties:
+                case spv::OpMemberSemanticName:
                 {
                     stripInst(vecStripRanges, start);
                     break;
@@ -2663,6 +2671,12 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 shaderCompositionOwner->AddComposition(shaderComposition);
                 break;
             }
+
+            //case spv::OpMemberSemanticName:
+            //case spv::OpMemberProperties:
+            //{
+            //    return error(string("unprocessed yet"));
+            //}
 
             case spv::Op::OpMethodProperties:
             {

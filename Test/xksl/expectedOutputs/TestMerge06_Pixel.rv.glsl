@@ -2,7 +2,7 @@
 
 struct Base_streamBuffer
 {
-    int Base_sbase1;
+    int sbase1;
 };
 
 layout(std140) uniform Base_globalCBuffer
@@ -14,7 +14,7 @@ Base_streamBuffer Base_streamBuffer_var;
 
 int Base_ComputeBase()
 {
-    return Base_globalCBuffer_var.Var1 + Base_streamBuffer_var.Base_sbase1;
+    return Base_globalCBuffer_var.Var1 + Base_streamBuffer_var.sbase1;
 }
 
 int shaderA_f1()

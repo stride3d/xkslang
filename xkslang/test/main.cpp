@@ -59,6 +59,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "shaderWithLoops.xksl" },
     //{ "TestComposeSimple.xksl" },
     //{ "TestForEach01.xksl" },
+    //{ "TestStreamSemantics.xksl" },
 
     //{{"textureAndSampler.xksl"}, {"", nullptr}},
     //{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -80,7 +81,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin03", "TestMixin03.xkfx" },
     //{ "TestMixin04", "TestMixin04.xkfx" },
     //{ "TestMixin05", "TestMixin05.xkfx" },
-    
+    { "TestMixin06", "TestMixin06.xkfx" },
+
     //{ "TestMerge01", "TestMerge01.xkfx" },
     //{ "TestMerge02", "TestMerge02.xkfx" },
     //{ "TestMerge03", "TestMerge03.xkfx" },
@@ -110,14 +112,14 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose14", "TestCompose14.xkfx" },
     //{ "TestCompose15", "TestCompose15.xkfx" },
     //{ "TestCompose16", "TestCompose16.xkfx" },
-
+    
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
     //{ "TestForEach02", "TestForEach02.xkfx" },
     //{ "TestForEach03", "TestForEach03.xkfx" },
 
     //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
-    { "TestForEachCompose02", "TestForEachCompose02.xkfx" },
+    //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },
 };

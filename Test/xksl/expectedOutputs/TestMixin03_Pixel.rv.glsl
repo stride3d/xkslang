@@ -2,7 +2,7 @@
 
 struct Base_streamBuffer
 {
-    int Base_ColorTarget;
+    int ColorTarget;
 };
 
 Base_streamBuffer Base_streamBuffer_var;
@@ -19,6 +19,6 @@ int ShaderA_Compute()
 
 void main()
 {
-    Base_streamBuffer_var.Base_ColorTarget = ShaderA_Compute();
+    Base_streamBuffer_var.ColorTarget = ShaderA_Compute();
 }
 

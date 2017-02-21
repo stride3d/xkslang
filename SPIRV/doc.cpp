@@ -1203,6 +1203,8 @@ const char* OpcodeString(int op)
     case (OpShaderInheritance):      return "OpShaderInheritance";
     case (OpBelongsToShader):        return "OpBelongsToShader";
     case (OpMethodProperties):       return "OpMethodProperties";
+    case (OpMemberProperties):       return "OpMemberProperties";
+    case (OpMemberSemanticName):     return "OpMemberSemanticName";
     case (OpFunctionCallBaseUnresolved): return "OpFunctionCallBaseUnres";
     case (OpFunctionCallBaseResolved):   return "OpFunctionCallBaseRes";
     case (OpShaderCompositionDeclaration):            return "OpShaderCompositionDeclaration";
@@ -1347,6 +1349,8 @@ void Parameterize()
     InstructionDesc[OpShaderCompositionDeclaration].setResultAndType(false, false);
     InstructionDesc[OpShaderCompositionInstance].setResultAndType(false, false);
     InstructionDesc[OpMethodProperties].setResultAndType(false, false);
+    InstructionDesc[OpMemberProperties].setResultAndType(false, false);
+    InstructionDesc[OpMemberSemanticName].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionStartLoop].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionEndLoop].setResultAndType(false, false);
 
@@ -1890,6 +1894,14 @@ void Parameterize()
 
     InstructionDesc[OpMethodProperties].operands.push(OperandId, "'Function'");
     InstructionDesc[OpMethodProperties].operands.push(OperandProperties, "'Property 0', +\n'Property 1', +\n...");
+
+    InstructionDesc[OpMemberProperties].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpMemberProperties].operands.push(OperandLiteralNumber, "'Member'");
+    InstructionDesc[OpMemberProperties].operands.push(OperandProperties, "'Property 0', +\n'Property 1', +\n...");
+    
+    InstructionDesc[OpMemberSemanticName].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpMemberSemanticName].operands.push(OperandLiteralNumber, "'Member'");
+    InstructionDesc[OpMemberSemanticName].operands.push(OperandLiteralString, "'SemanticName'");
 
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");

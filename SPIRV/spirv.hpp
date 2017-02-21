@@ -934,13 +934,15 @@ enum Op {
     OpShaderCompositionDeclaration = 4603,   //Declare a composition within a shader. [OpShaderCompositionDeclaration shaderOwnerId compositionNum compositionShaderTypeId isArray countInstance name]
     OpShaderCompositionInstance = 4604,      //Declare a composition instance. [OpShaderCompositionInstance shaderOwnerId compositionNum instanceNum instanceShaderId]
     OpMethodProperties = 4605,               //Add XKSL properties to a method: cf XkslPropertyEnum
+    OpMemberProperties = 4606,               //Add XKSL properties to a member: cf XkslPropertyEnum
+    OpMemberSemanticName = 4607,             //Record the semantic name as declared by the user
 
-    OpForEachCompositionStartLoop = 4606,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
-    OpForEachCompositionEndLoop = 4607,
+    OpForEachCompositionStartLoop = 4620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
+    OpForEachCompositionEndLoop = 46021,
 
-    OpFunctionCallBaseUnresolved = 4620,              //an unresolved function call with base accessor
-    OpFunctionCallBaseResolved = 4621,                //a resolved function call with base accessor
-    OpFunctionCallThroughCompositionVariable = 4622,  //a function is called through a composition variable
+    OpFunctionCallBaseUnresolved = 4630,              //an unresolved function call with base accessor
+    OpFunctionCallBaseResolved = 4631,                //a resolved function call with base accessor
+    OpFunctionCallThroughCompositionVariable = 4632,  //a function is called through a composition variable
     //================================================================================================
 
     OpMax = 0x7fffffff,

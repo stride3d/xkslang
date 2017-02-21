@@ -216,6 +216,8 @@ public:
     void addShaderInheritanceDecoration(Id, std::vector<spv::Id>&);
     void addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isArray);
     void addMethodPropertyList(Id id, std::vector<int>&);
+    void addMemberPropertyList(Id id, int num, std::vector<int>&);
+    void addMemberSemanticName(Id id, int num, const char* semantic);
 
     // At the end of what block do the next create*() instructions go?
     void setBuildPoint(Block* bp) { buildPoint = bp; }

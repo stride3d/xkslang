@@ -2,13 +2,13 @@
 
 struct Base_streamBuffer
 {
-    float Base_sbase1;
-    int Base_sbase2;
+    float sbase1;
+    int sbase2;
 };
 
 struct shaderA_streamBuffer
 {
-    int shaderA_sa1;
+    int sa1;
 };
 
 layout(std140) uniform shaderA_globalCBuffer
@@ -20,6 +20,6 @@ shaderA_streamBuffer shaderA_streamBuffer_var;
 
 int main()
 {
-    return ((shaderA_globalCBuffer_var.Var0 + shaderA_streamBuffer_var.shaderA_sa1) + 2) + 3;
+    return ((shaderA_globalCBuffer_var.Var0 + shaderA_streamBuffer_var.sa1) + 2) + 3;
 }
 

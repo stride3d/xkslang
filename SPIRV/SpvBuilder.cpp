@@ -969,6 +969,26 @@ void Builder::addDeclarationNameDecoration(Id id, const char* name)
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
+void Builder::addMemberSemanticName(Id id, int num, const char* semantic)
+{
+    Instruction* dec = new Instruction(OpMemberSemanticName);
+    dec->addIdOperand(id);
+    dec->addImmediateOperand(num);
+    dec->addStringOperand(semantic);
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
+}
+
+void Builder::addMemberPropertyList(Id id, int num, std::vector<int>& attributes)
+{
+    if (attributes.size() == 0) return;
+    Instruction* dec = new Instruction(OpMemberProperties);
+    dec->addIdOperand(id);
+    dec->addImmediateOperand(num);
+    for (int a = 0; a < (int)attributes.size(); ++a)
+        dec->addImmediateOperand(attributes[a]);
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
+}
+
 void Builder::addMethodPropertyList(Id id, std::vector<int>& attributes)
 {
     if (attributes.size() == 0) return;

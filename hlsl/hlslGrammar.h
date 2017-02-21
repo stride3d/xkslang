@@ -133,7 +133,7 @@ namespace glslang {
         bool acceptCaseLabel(TIntermNode*&);
         bool acceptDefaultLabel(TIntermNode*&);
         void acceptArraySpecifier(TArraySizes*&);
-        void acceptPostDecls(TQualifier&);
+        void acceptPostDecls(TQualifier&, TString* userDefinedSemantic = nullptr);
         bool acceptDefaultParameterDeclaration(const TType&, TIntermTyped*&);
 
         //XKSL extensions

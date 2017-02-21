@@ -1,0 +1,11 @@
+shader Test
+{
+	stage stream int toto1 : SV_Position;
+	stage stream int toto2 : SOME_SEMANTICS;
+	stage stream int toto3 : SV_Position;
+	stage stream float toto4 : SOME_SEMANTICS;
+	
+	void main()
+	{
+	}
+}

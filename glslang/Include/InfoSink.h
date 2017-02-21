@@ -107,6 +107,9 @@ public:
         append(s);
         append("\n");
     }
+    void message(TPrefixType msg, const TString& s) {
+        message(msg, s.c_str());
+    }
     void message(TPrefixType message, const char* s, const TSourceLoc& loc) {
         prefix(message);
         location(loc);

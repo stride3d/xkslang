@@ -1,0 +1,19 @@
+shader Base
+{
+	stage stream int streamI: TOTO;
+	stage stream float streamF;
+	
+	stream bool streamB;
+	
+	int var1;
+	
+	cbuffer buf1
+	{
+		int var2;
+	}
+	
+    void main()
+    {
+        streams.streamI = 0;
+    }
+}

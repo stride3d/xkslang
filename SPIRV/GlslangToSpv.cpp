@@ -2430,6 +2430,26 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             if (builtIn != spv::BuiltInMax)
                 addMemberDecoration(spvType, member, spv::DecorationBuiltIn, (int)builtIn);
 
+            //XKSL extensions
+            {
+                std::vector<int> vecAttributes;
+                if (glslangMember.getQualifier().isStage) {
+                    vecAttributes.push_back(spv::PropertyStage);
+                }
+                if (glslangMember.getQualifier().isStream) {
+                    vecAttributes.push_back(spv::PropertyStream);
+                }
+                if (vecAttributes.size() > 0)
+                {
+                    builder.addMemberPropertyList(spvType, member, vecAttributes);
+                }
+
+                if (glslangMember.getUserDefinedSemantic() != nullptr)
+                {
+                    builder.addMemberSemanticName(spvType, member, glslangMember.getUserDefinedSemantic()->c_str());
+                }
+            }
+
 #ifdef NV_EXTENSIONS
             if (builtIn == spv::BuiltInLayer) {
                 // SPV_NV_viewport_array2 extension

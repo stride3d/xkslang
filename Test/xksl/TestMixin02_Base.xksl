@@ -5,7 +5,7 @@
 
 shader Base
 {
-	stream int ColorTarget;
+	stage stream int ColorTarget: TOTO;
 
     abstract int Compute()
     {

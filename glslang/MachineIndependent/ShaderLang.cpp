@@ -893,8 +893,8 @@ bool ParseXkslShaderFile(
                     else if (isStream)
                     {
                         //for stream variables: concatenate the shader class name in front of the variable field name
-                        TString* variableName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName()).c_str());
-                        member.type->setFieldName(*variableName);
+                        //TString* variableName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName()).c_str());
+                        //member.type->setFieldName(*variableName);
 
                         //Add the member in the global stream buffer
                         TTypeLoc typeLoc = {member.type, member.loc};
@@ -936,6 +936,7 @@ bool ParseXkslShaderFile(
                             if (symbol == nullptr || symbol->getAsVariable() == nullptr)
                             {
                                 parseContext->infoSink.info.message(EPrefixError, ("Error creating the block cbuffer variable"));
+                                return false;
                             }
                             else
                             {
@@ -949,6 +950,12 @@ bool ParseXkslShaderFile(
                             TTypeList* typeList = member.type->getWritableStruct();
                             for (unsigned int indexInBlock = 0; indexInBlock < typeList->size(); ++indexInBlock) {
                                 TType& blockMemberType = *(typeList->at(indexInBlock).type);
+
+                                if (blockMemberType.getQualifier().isStream) {
+                                    parseContext->infoSink.info.message(EPrefixError, TString("A stream variable cannot be declared in a cbuffer block. Variable: ") + blockMemberType.getFieldName());
+                                    return false;
+                                }
+
                                 blockMemberType.setUserIdentifierName(blockMemberType.getFieldName().c_str());
                                 blockMemberType.setOwnerClassName(shader->shaderName.c_str());
 
@@ -986,6 +993,7 @@ bool ParseXkslShaderFile(
                     if (symbol == nullptr || symbol->getAsVariable() == nullptr)
                     {
                         parseContext->infoSink.info.message(EPrefixError, ("Error creating the global cbuffer variable"));
+                        return false;
                     }
                     else
                     {
@@ -1013,6 +1021,7 @@ bool ParseXkslShaderFile(
                     if (symbol == nullptr || symbol->getAsVariable() == nullptr)
                     {
                         parseContext->infoSink.info.message(EPrefixError, ("Error creating the stream buffer variable"));
+                        return false;
                     }
                     else
                     {
