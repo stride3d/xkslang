@@ -1,0 +1,13 @@
+load "TestForEach04.xksl"
+
+mixer comp
+comp.mixin ComputeColorA
+
+mixer A
+A.mixin ShaderA
+
+A.addComposition ShaderA.comps1 A
+A.addComposition ShaderA.comps2 comp
+
+A.setStageEntryPoint Pixel "main"
+A.compile

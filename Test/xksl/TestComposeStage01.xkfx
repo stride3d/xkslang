@@ -1,0 +1,15 @@
+//Test instanciating composition shaders where some stage stream variables are defined
+
+load "TestComposeStage01.xksl"
+
+mixer mixerComp
+mixerComp.mixin Color
+
+mixer mixerMain
+mixerMain.mixin ShaderA
+
+mixerMain.addComposition ShaderA.colors mixerComp
+mixerMain.addComposition ShaderA.colors mixerComp
+
+mixerMain.setStageEntryPoint Pixel "main"
+mixerMain.compile

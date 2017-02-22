@@ -142,11 +142,12 @@ public:
         }
     };
 
+    class TypeStructMemberArray;
     class TypeInstruction : public ObjectInstructionBase
     {
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr){}
+            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr){}
         virtual ~TypeInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -158,6 +159,11 @@ public:
 
     private:
         TypeInstruction* pointerTo;
+
+        //used by some algo to fill the type buffer
+        TypeStructMemberArray* streamStructData;
+
+        friend class SpxStreamRemapper;
     };
 
     class VariableInstruction : public ObjectInstructionBase
@@ -220,6 +226,25 @@ public:
         int flag1;  //to simplify some algo
 
         friend class SpxStreamRemapper;
+    };
+
+    class TypeStructMember
+    {
+    public:
+        TypeStructMember() : memberId(-1), isStream(false), isStage(false){}
+
+        spv::Id typeId;
+        int memberId;
+        bool isStream;
+        bool isStage;
+        std::string declarationName;
+        std::string semantic;
+    };
+
+    class TypeStructMemberArray
+    {
+    public:
+        std::vector<TypeStructMember> members;
     };
 
     //This is a type declared by a shader: we store the type definition, plus the variable and pointer to access it
@@ -406,8 +431,9 @@ private:
 
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
 
-    bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
     bool ApplyCompositionInstancesToBytecode();
+    bool ProcessStreams(std::vector<XkslMixerOutputStage>& outputStages);
+    bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
     bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
 

@@ -1,0 +1,24 @@
+
+shader Color
+{
+	stage stream int aStream1;
+	stage stream float4 aStream2: SV_SEMANTIC;
+
+	int Compute(int i)
+	{
+		return streams.aStream1 + i;
+	}
+}
+
+shader ShaderA
+{
+	compose Color colors[];
+	
+	int main()
+	{
+		int res = 0;
+		foreach (var color in colors)
+			res += color.Compute(1);
+		return res;
+	}
+}

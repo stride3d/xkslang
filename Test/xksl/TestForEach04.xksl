@@ -1,8 +1,18 @@
+//Check foreach loop variable having a similar name
+
 shader ComputeColor
 {
 	int Compute(int i)
 	{
 		return i;
+	}
+}
+
+shader ComputeColorA : ComputeColor
+{
+	override int Compute(int i)
+	{
+		return -i;
 	}
 }
 
@@ -15,12 +25,10 @@ shader ShaderA
 	{
 		int res = 0;
 		foreach(var subCompute in comps1)
-		{
-			res += 1;
-			
+		{	
 			foreach(var subCompute in comps2)
 			{
-				bghgdfghd;
+				res += subCompute.Compute(res);
 			}
 		}
 		
