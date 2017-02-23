@@ -143,6 +143,7 @@ public:
     };
 
     class TypeStructMemberArray;
+    class ShaderTypeData;
     class TypeInstruction : public ObjectInstructionBase
     {
     public:
@@ -162,6 +163,7 @@ public:
 
         //used by some algo to fill the type buffer
         TypeStructMemberArray* streamStructData;
+        ShaderTypeData* connectedShaderTypeData;
 
         friend class SpxStreamRemapper;
     };
@@ -231,14 +233,22 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : memberId(-1), isStream(false), isStage(false){}
+        TypeStructMember() : structMemberId(-1), isStream(false), isStage(false), memberTypeId(spv::spirvbin_t::unused) {}
 
-        spv::Id typeId;
-        int memberId;
+        spv::Id structTypeId;  //Id of the struct type containing the member
+        int structMemberId;    //Id of the member within the struct
+        int memberTypeId;      //Type Id of the member
+
         bool isStream;
         bool isStage;
         std::string declarationName;
         std::string semantic;
+
+        //new type and member id for merging variables
+        spv::Id newStructTypeId;
+        int newStructMemberId;
+
+        bool HasSemantic() const { return semantic.size() > 0; }
     };
 
     class TypeStructMemberArray
@@ -359,6 +369,10 @@ public:
             for (unsigned int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->type == type) return true;
             return false;
         }
+        ShaderTypeData* GetShaderTypeDataForType(TypeInstruction* type) {
+            for (unsigned int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->type == type) return shaderTypesList[i];
+            return nullptr;
+        }
 
         unsigned int GetCountShaderComposition() { return compositionsList.size(); }
         void AddComposition(const ShaderComposition& composition) { compositionsList.push_back(composition); }
@@ -432,7 +446,7 @@ private:
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
 
     bool ApplyCompositionInstancesToBytecode();
-    bool ProcessStreams(std::vector<XkslMixerOutputStage>& outputStages);
+    bool MergeStreams(std::vector<XkslMixerOutputStage>& outputStages);
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
     bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
@@ -484,6 +498,7 @@ private:
     ShaderClassData* GetShaderById(spv::Id id);
     FunctionInstruction* GetFunctionById(spv::Id id);
     TypeInstruction* GetTypeById(spv::Id id);
+    ConstInstruction* GetConstById(spv::Id id);
     VariableInstruction* GetVariableById(spv::Id id);
     VariableInstruction* GetVariableByName(const std::string& name);
     TypeInstruction* GetTypePointingTo(TypeInstruction* targetType);

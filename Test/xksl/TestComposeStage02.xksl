@@ -17,8 +17,6 @@ shader Color
 shader ShaderA
 {
 	stage stream float4 outStream: SV_OUTPUT;
-	stage stream float4 sameSemanticWithType1: SV_TOTO;
-	stage stream float2 sameSemanticWithType2: SV_TOTO;
 	compose Color colors[];
 	
 	int main()
@@ -28,6 +26,6 @@ shader ShaderA
 			res += color.Compute(1);
 		}
 		streams.outStream += res;
-		return streams.outStream;
+		return streams.outStream[2];  fgfsdgsdfgsdfgsdf;
 	}
 }

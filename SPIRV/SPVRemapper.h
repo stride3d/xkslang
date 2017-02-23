@@ -185,6 +185,7 @@ private:
 
    spv::Id&        asId(unsigned word)                { return spv[word]; }  
    const spv::Id&  asId(unsigned word)          const { return spv[word]; }
+   int             asLiteralValue(unsigned word) { return spv[word]; }
    spv::Op         asOpCode(unsigned word)      const { return opOpCode(spv[word]); }
    std::uint32_t   asOpCodeHash(unsigned word);
    spv::Decoration asDecoration(unsigned word)  const { return spv::Decoration(spv[word]); }
@@ -195,6 +196,7 @@ private:
    static unsigned opWordCount(spirword_t data) { return data >> spv::WordCountShift; }
    static spv::Op  opOpCode(spirword_t data)    { return spv::Op(data & spv::OpCodeMask); }
 
+   void setLiteralValue(unsigned word, int value) { spv[word] = value; }
    void setId(unsigned word, const spv::Id id) { spv[word] = id; }
    void setOpCode(unsigned word, spv::Op op) {
        unsigned data = spv[word];
