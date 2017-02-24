@@ -1,16 +1,16 @@
 #version 450
 
-struct Base_streamBuffer
+struct globalStreams
 {
-    int streamI;
-    float streamF;
-    bool streamB;
+    int TOTO_s0;
+    float streamF_s1;
+    bool streamB_2;
 };
 
-Base_streamBuffer Base_streamBuffer_var;
+globalStreams globalStreams_var;
 
 void main()
 {
-    Base_streamBuffer_var.streamI = 0;
+    globalStreams_var.TOTO_s0 = 0;
 }
 

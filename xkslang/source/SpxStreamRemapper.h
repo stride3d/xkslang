@@ -32,6 +32,7 @@ enum class SpxRemapperStatusEnum
     MixinInProgress,
 
     //define the order of compilation
+    MixinBeingCompiled_Initialized,
     MixinBeingCompiled_UnusedShaderRemoved,
     MixinBeingCompiled_CompositionInstancesProcessed,
     MixinFinalized
@@ -93,6 +94,7 @@ public:
         spv::Op GetOpCode() const {return opCode;}
         spv::Id GetResultId() const { return resultId; }
         spv::Id GetId() const { return resultId; }
+        spv::Id GetTypeId() const { return typeId; }
         
         uint32_t GetBytecodeStartPosition() const {return bytecodeStartPosition;}
         uint32_t GetBytecodeEndPosition() const { return bytecodeEndPosition; }
@@ -133,13 +135,17 @@ public:
     class ConstInstruction : public ObjectInstructionBase
     {
     public:
-        ConstInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source) {}
+        ConstInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source, bool isS32, int valueS32)
+            : ObjectInstructionBase(parsedData, name, source), isS32(isS32), valueS32(valueS32) {}
         virtual ~ConstInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
-            ConstInstruction* obj = new ConstInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
+            ConstInstruction* obj = new ConstInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr, isS32, valueS32);
             return obj;
         }
+
+        //if the const is a literalValue signed with 32 bits, we pre-fetch its value
+        bool isS32;
+        int valueS32;
     };
 
     class TypeStructMemberArray;
@@ -244,7 +250,7 @@ public:
         std::string declarationName;
         std::string semantic;
 
-        //new type and member id for merging variables
+        //new type and member id used when merging variables
         spv::Id newStructTypeId;
         int newStructMemberId;
 
@@ -255,6 +261,15 @@ public:
     {
     public:
         std::vector<TypeStructMember> members;
+
+        //Id of the type pointing to the list
+        spv::Id structTypeId;
+        spv::Id structPointerTypeId;
+        spv::Id structVariableTypeId;
+
+        TypeStructMemberArray() : structTypeId(spv::spirvbin_t::unused), structPointerTypeId(spv::spirvbin_t::unused), structVariableTypeId(spv::spirvbin_t::unused) {}
+
+        int countMembers() { return members.size(); }
     };
 
     //This is a type declared by a shader: we store the type definition, plus the variable and pointer to access it
@@ -446,13 +461,16 @@ private:
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
 
     bool ApplyCompositionInstancesToBytecode();
-    bool MergeStreams(std::vector<XkslMixerOutputStage>& outputStages);
+    bool InitializeCompilationProcess(std::vector<XkslMixerOutputStage>& outputStages);
+    bool MergeStreamMembers(TypeStructMemberArray& globalListOfMergedStreamVariables);
+    bool AnalyseStreamMembersUsage(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
     bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
 
     FunctionInstruction* GetFunctionForEntryPoint(std::string entryPointName);
-    bool RemoveShaderAndAllData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
+    bool RemoveShaderFromBytecodeAndData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
+    bool RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType, std::vector<range_t>& vecStripRanges);
 
     void ReleaseAllMaps();
     bool BuildAllMaps();
@@ -525,12 +543,39 @@ private:
     friend class XkslMixer;
 };
 
+class MemberAccessDetails
+{
+public:
+    enum class MemberAccessDetailsEnum
+    {
+        Undefined = 0,
+        Read = 1 << 0,
+        Write = 1 << 1,
+    };
+
+public:
+    int memberIndex;
+    int accessDetail;
+
+    MemberAccessDetails() : memberIndex(-1), accessDetail(0){}
+    MemberAccessDetails(int index) : memberIndex(index), accessDetail(0) {}
+    
+    void AddReadAccess() { accessDetail |= ((int)MemberAccessDetailsEnum::Read); }
+    void AddWriteAccess() { accessDetail |= ((int)MemberAccessDetailsEnum::Write); }
+
+    bool HasReadAccess() { return (accessDetail & ((int)MemberAccessDetailsEnum::Read)); }
+    bool HasWriteAccess() { return (accessDetail & ((int)MemberAccessDetailsEnum::Write)); }
+};
+
 //Contains output stage info (stage + entrypoint), bytecode, plus additionnal data processed by the mixer during compilation
 class XkslMixerOutputStage
 {
 public:
-    OutputStageBytecode* outputStage;
-    SpxStreamRemapper::FunctionInstruction* entryFunction;
+    OutputStageBytecode* outputStage; //set by the user
+
+    SpxStreamRemapper::FunctionInstruction* entryFunction;  //set when initializing the compilation process
+
+    std::vector<MemberAccessDetails> listStreamVariablesAccessed;  //list of stream variables accessed by the stage, set by AnalyseStreams method
 
     XkslMixerOutputStage(OutputStageBytecode* outputStage) : outputStage(outputStage) {}
 };

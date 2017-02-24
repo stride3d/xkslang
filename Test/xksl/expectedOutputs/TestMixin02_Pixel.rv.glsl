@@ -1,11 +1,11 @@
 #version 450
 
-struct Base_streamBuffer
+struct globalStreams
 {
-    int ColorTarget;
+    int TOTO_s0;
 };
 
-Base_streamBuffer Base_streamBuffer_var;
+globalStreams globalStreams_var;
 
 int OverrideB_Compute()
 {
@@ -14,6 +14,6 @@ int OverrideB_Compute()
 
 void main()
 {
-    Base_streamBuffer_var.ColorTarget = 1 + OverrideB_Compute();
+    globalStreams_var.TOTO_s0 = 1 + OverrideB_Compute();
 }
 

@@ -1,14 +1,10 @@
 #version 450
 
-struct Base_streamBuffer
+struct globalStreams
 {
-    float sbase1;
-    int sbase2;
-};
-
-struct shaderA_streamBuffer
-{
-    int sa1;
+    float sbase1_0;
+    int sbase2_1;
+    int sa1_2;
 };
 
 layout(std140) uniform Base_globalCBuffer
@@ -22,11 +18,10 @@ layout(std140) uniform shaderA_C1_0
     int Var1;
 } shaderA_C1_0_var;
 
-shaderA_streamBuffer shaderA_streamBuffer_var;
-Base_streamBuffer Base_streamBuffer_var;
+globalStreams globalStreams_var;
 
 int main()
 {
-    return int(((((2.0 + Base_streamBuffer_var.sbase1) + float(shaderA_C1_0_var.Var1)) + float(Base_globalCBuffer_var.Var1)) + 5.0) + float(shaderA_streamBuffer_var.sa1));
+    return int(((((2.0 + globalStreams_var.sbase1_0) + float(shaderA_C1_0_var.Var1)) + float(Base_globalCBuffer_var.Var1)) + 5.0) + float(globalStreams_var.sa1_2));
 }
 

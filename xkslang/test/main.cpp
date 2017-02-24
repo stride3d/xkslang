@@ -120,8 +120,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestForEach04", "TestForEach04.xkfx" },
     //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
     //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
+    //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
 
-    { "TestComposeStage01", "TestComposeStage01.xkfx" },
+    { "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },
 };
@@ -254,12 +255,12 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     bool success = true;
 
     SpvBytecode composedSpv;
-    SpvBytecode streamsSpv;
+    SpvBytecode streamsMergeSpv;
     SpvBytecode finalSpv;
     SpvBytecode errorSpv;
     cout << "Compile Mixin: ";
     time_before = GetTickCount();
-    success = mixer->Compile(outputStages, errorMsgs, &composedSpv, &streamsSpv, &finalSpv, &errorSpv);
+    success = mixer->Compile(outputStages, errorMsgs, &composedSpv, &streamsMergeSpv, &finalSpv, &errorSpv);
     time_after = GetTickCount();
 
     if (!success)
@@ -274,7 +275,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
 
     //output the compiled intermediary bytecodes
     OutputBytecode(composedSpv, outputDir, effectName + "_compile0_composed.hr.spv", BytecodeFileFormat::Text);
-    OutputBytecode(streamsSpv, outputDir, effectName + "_compile1_streams.hr.spv", BytecodeFileFormat::Text);
+    OutputBytecode(streamsMergeSpv, outputDir, effectName + "_compile1_streamsMerge.hr.spv", BytecodeFileFormat::Text);
     OutputBytecode(finalSpv, outputDir, effectName + "_compile2_final.hr.spv", BytecodeFileFormat::Text);
 
     if (!success) return false;

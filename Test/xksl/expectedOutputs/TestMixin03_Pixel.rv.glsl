@@ -1,11 +1,11 @@
 #version 450
 
-struct Base_streamBuffer
+struct globalStreams
 {
-    int ColorTarget;
+    int ColorTarget_0;
 };
 
-Base_streamBuffer Base_streamBuffer_var;
+globalStreams globalStreams_var;
 
 int Base_Compute()
 {
@@ -19,6 +19,6 @@ int ShaderA_Compute()
 
 void main()
 {
-    Base_streamBuffer_var.ColorTarget = ShaderA_Compute();
+    globalStreams_var.ColorTarget_0 = ShaderA_Compute();
 }
 

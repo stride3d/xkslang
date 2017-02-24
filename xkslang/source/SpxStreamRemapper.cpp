@@ -205,7 +205,98 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
     return clonedSpxRemapper;
 }
 
-bool SpxStreamRemapper::RemoveShaderAndAllData(ShaderClassData* shaderToRemove, vector<range_t>& vecStripRanges)
+bool SpxStreamRemapper::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderTypeToRemove, std::vector<range_t>& vecStripRanges)
+{
+    ShaderClassData* shaderOwner = shaderTypeToRemove->type->shaderOwner;
+
+    vector<bool> listIdsRemoved;
+    listIdsRemoved.resize(bound(), false);
+
+    //remove the type belonging to the shader
+    {
+        bool typeFound = false;
+        for (auto itt = shaderOwner->shaderTypesList.begin(); itt != shaderOwner->shaderTypesList.end(); itt++)
+        {
+            ShaderTypeData* aShaderType = *itt;
+            if (shaderTypeToRemove != aShaderType) continue;
+
+            spv::Id id;
+            TypeInstruction* type = shaderTypeToRemove->type;
+            TypeInstruction* pointerToType = shaderTypeToRemove->pointerToType;
+            VariableInstruction* variable = shaderTypeToRemove->variable;
+
+            stripInst(vecStripRanges, type->GetBytecodeStartPosition(), type->GetBytecodeEndPosition());
+            id = type->GetId();
+            delete listAllObjects[id];
+            listAllObjects[id] = nullptr;
+            listIdsRemoved[id] = true;
+
+            stripInst(vecStripRanges, pointerToType->GetBytecodeStartPosition(), pointerToType->GetBytecodeEndPosition());
+            id = pointerToType->GetId();
+            delete listAllObjects[id];
+            listAllObjects[id] = nullptr;
+            listIdsRemoved[id] = true;
+
+            stripInst(vecStripRanges, variable->GetBytecodeStartPosition(), variable->GetBytecodeEndPosition());
+            id = variable->GetId();
+            delete listAllObjects[id];
+            listAllObjects[id] = nullptr;
+            listIdsRemoved[id] = true;
+
+            //remove the element
+            typeFound = true;
+            iter_swap(itt, shaderOwner->shaderTypesList.end() - 1);
+            shaderOwner->shaderTypesList.pop_back();
+            break;
+        }
+        if (!typeFound) return error(string("Failed to find the shaderType to remove: ") + shaderTypeToRemove->type->GetName());
+    }
+
+    //remove all decorates related to the objects we removed
+    {
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
+            {
+                //case spv::OpTypeXlslShaderClass:  //already removed above
+                case spv::OpName:
+                case spv::OpMemberName:
+                case spv::OpDecorate:
+                case spv::OpMemberDecorate:
+                case spv::OpDeclarationName:
+                case spv::OpShaderInheritance:
+                case spv::OpShaderCompositionDeclaration:
+                case spv::OpShaderCompositionInstance:
+                case spv::OpBelongsToShader:
+                case spv::OpMethodProperties:
+                case spv::OpMemberProperties:
+                case spv::OpMemberSemanticName:
+                {
+                    const spv::Id id = asId(start + 1);
+                    if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
+                    break;
+                }
+
+                case spv::OpTypeXlslShaderClass:
+                {
+                    //every decorate and previous Op have been declared before type declaration, we can stop here
+                    start = end;
+                    break;
+                }
+            }
+            start += wordCount;
+        }
+    }
+
+    return true;
+}
+
+bool SpxStreamRemapper::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemove, vector<range_t>& vecStripRanges)
 {
     spv::Id shaderId = shaderToRemove->GetId();
     if (GetShaderById(shaderId) != shaderToRemove) return error(string("Failed to find the shader to remove: ") + shaderToRemove->GetName());
@@ -257,12 +348,12 @@ bool SpxStreamRemapper::RemoveShaderAndAllData(ShaderClassData* shaderToRemove, 
     {
         for (unsigned int t = 0; t < shaderToRemove->shaderTypesList.size(); ++t)
         {
-            ShaderTypeData* shaderTypeToMerge = shaderToRemove->shaderTypesList[t];
+            ShaderTypeData* shaderTypeToRemove = shaderToRemove->shaderTypesList[t];
 
             spv::Id id;
-            TypeInstruction* type = shaderTypeToMerge->type;
-            TypeInstruction* pointerToType = shaderTypeToMerge->pointerToType;
-            VariableInstruction* variable = shaderTypeToMerge->variable;
+            TypeInstruction* type = shaderTypeToRemove->type;
+            TypeInstruction* pointerToType = shaderTypeToRemove->pointerToType;
+            VariableInstruction* variable = shaderTypeToRemove->variable;
 
             stripInst(vecStripRanges, type->GetBytecodeStartPosition(), type->GetBytecodeEndPosition());
             id = type->GetId();
@@ -333,7 +424,6 @@ bool SpxStreamRemapper::RemoveShaderAndAllData(ShaderClassData* shaderToRemove, 
             start += wordCount;
         }
     }
-
 
     return true;
 }
@@ -1335,7 +1425,7 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     return true;
 }
 
-bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputStages)
+bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     vector<TypeInstruction*> listAllShaderTypeHoldingStreamVariables;
     bool success = true;
@@ -1534,7 +1624,7 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
     spv::Id streamPointerStructTypeId = streamStructTypeId + 1;
     spv::Id streamVarStructTypeId = streamStructTypeId + 2;
     spv::Id newBoundId = streamStructTypeId + 3;
-    vector<TypeStructMember> globalListOfMergedStreamVariables;
+    vector<TypeStructMember> listOfMergedStreamVariables;
 
     //===================================================================================================================
     //===================================================================================================================
@@ -1553,16 +1643,16 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
                 {
                     //stage variable are unique, we check if a variable with same semantic or same name already exist
                     if (aStreamMember.HasSemantic()) { //compare semantic name
-                        for (unsigned int i = 0; i < globalListOfMergedStreamVariables.size(); ++i) {
-                            if (globalListOfMergedStreamVariables[i].isStage && globalListOfMergedStreamVariables[i].semantic == aStreamMember.semantic) {
+                        for (unsigned int i = 0; i < listOfMergedStreamVariables.size(); ++i) {
+                            if (listOfMergedStreamVariables[i].isStage && listOfMergedStreamVariables[i].semantic == aStreamMember.semantic) {
                                 mergeWithStreamIndex = (int)i;
                                 break;
                             }
                         }
                     }
                     else { //compare declaration name
-                        for (unsigned int i = 0; i < globalListOfMergedStreamVariables.size(); ++i) {
-                            if (globalListOfMergedStreamVariables[i].isStage && globalListOfMergedStreamVariables[i].declarationName == aStreamMember.declarationName) {
+                        for (unsigned int i = 0; i < listOfMergedStreamVariables.size(); ++i) {
+                            if (listOfMergedStreamVariables[i].isStage && listOfMergedStreamVariables[i].declarationName == aStreamMember.declarationName) {
                                 mergeWithStreamIndex = (int)i;
                                 break;
                             }
@@ -1573,7 +1663,7 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
                 if (mergeWithStreamIndex != -1)
                 {
                     //before merging the 2 stream variables, compare their type
-                    if (aStreamMember.memberTypeId != globalListOfMergedStreamVariables[mergeWithStreamIndex].memberTypeId)
+                    if (aStreamMember.memberTypeId != listOfMergedStreamVariables[mergeWithStreamIndex].memberTypeId)
                     {
                         mergeWithStreamIndex = -1;
                     }
@@ -1583,8 +1673,8 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
                 {
                     //add the new stream
                     aStreamMember.newStructTypeId = streamStructTypeId;
-                    aStreamMember.newStructMemberId = globalListOfMergedStreamVariables.size();
-                    globalListOfMergedStreamVariables.push_back(aStreamMember);
+                    aStreamMember.newStructMemberId = listOfMergedStreamVariables.size();
+                    listOfMergedStreamVariables.push_back(aStreamMember);
                 }
                 else
                 {
@@ -1594,17 +1684,16 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
                 }
             }
         }
-        if (globalListOfMergedStreamVariables.size() == 0) error("No stream variables have been merged");
+        if (listOfMergedStreamVariables.size() == 0) error("No stream variables have been merged");
         if (errorMessages.size() > 0) success = false;
     }
 
     //===================================================================================================================
     //===================================================================================================================
-    //we create the missing constant values so that we can access all members from the global structure
-    //A constant is of style: "OpConstant (typeId) (resultId) value", where typeId: "OpTypeInt (resultId) 32 1"
+    //Build the map of const value with the existing const object Id, for each index of the global stream struct
     vector<spv::Id> mapIndexesWithConstValueId;
-    mapIndexesWithConstValueId.resize(globalListOfMergedStreamVariables.size(), spv::spirvbin_t::unused);
-    spv::Id idOpTypeInt32 = spv::spirvbin_t::unused;
+    mapIndexesWithConstValueId.resize(listOfMergedStreamVariables.size(), spv::spirvbin_t::unused);
+    spv::Id idOpTypeIntS32 = spv::spirvbin_t::unused;
     int posLastConstEnd = 0; 
     if (success)
     {
@@ -1616,37 +1705,13 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
                 ConstInstruction* constObject = dynamic_cast<ConstInstruction*>(obj);
                 if (constObject->bytecodeEndPosition > posLastConstEnd) posLastConstEnd = constObject->bytecodeEndPosition;
 
-                if (idOpTypeInt32 == spv::spirvbin_t::unused)
+                if (constObject->isS32)
                 {
-                    //check if the const used the type we're looking for ("OpTypeInt (resultId) 32 1")
-                    spv::Id constTypeId = asId(constObject->bytecodeStartPosition + 1);
-                    TypeInstruction* type = GetTypeById(constTypeId);
-                    if (type == nullptr) { error(string("Cannot find the const type for Id: ") + to_string(constTypeId)); break; }
-
-                    spv::Op typeOpCode = asOpCode(type->bytecodeStartPosition);
-                    if (typeOpCode == spv::OpTypeInt)
-                    {
-                        int literalNumber = asLiteralValue(type->bytecodeStartPosition + 2);
-                        int sign = asLiteralValue(type->bytecodeStartPosition + 3);
-                        if (literalNumber == 32 && sign == 1) idOpTypeInt32 = type->GetResultId();
-                    }
-                }
-
-                if (idOpTypeInt32 != spv::spirvbin_t::unused)
-                {
-                    //check if the const has the correct type
-                    spv::Id constTypeId = asId(constObject->bytecodeStartPosition + 1);
-                    if (constTypeId == idOpTypeInt32)
-                    {
-                        spv::Id constResultId = asId(constObject->bytecodeStartPosition + 2);
-                        int signedConstValue32 = asLiteralValue(constObject->bytecodeStartPosition + 3);
-
-                        //record the const value if it's one that we need
-                        if (signedConstValue32 >= 0 && signedConstValue32 < mapIndexesWithConstValueId.size())
-                        {
-                            mapIndexesWithConstValueId[signedConstValue32] = constResultId;
-                        }
-                    }
+                    int constValueS32 = constObject->valueS32;
+                    if (constValueS32 >= 0 && constValueS32 < mapIndexesWithConstValueId.size())
+                        mapIndexesWithConstValueId[constValueS32] = constObject->GetId();
+                    if (idOpTypeIntS32 == spv::spirvbin_t::unused)
+                        idOpTypeIntS32 = constObject->GetTypeId();
                 }
             }
         }
@@ -1664,20 +1729,19 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
     //make the missing consts and OpTypeInt
     if (success)
     {
-        if (idOpTypeInt32 == spv::spirvbin_t::unused)
+        if (idOpTypeIntS32 == spv::spirvbin_t::unused)
         {
             spv::Instruction typeInt32(newBoundId++, spv::NoType, spv::OpTypeInt);
             typeInt32.addImmediateOperand(32);
             typeInt32.addImmediateOperand(1);
             typeInt32.dump(vecConstsToAdd);
-
-            idOpTypeInt32 = typeInt32.getResultId();
+            idOpTypeIntS32 = typeInt32.getResultId();
         }
         for (int i = 0; i < mapIndexesWithConstValueId.size(); ++i)
         {
             if (mapIndexesWithConstValueId[i] == spv::spirvbin_t::unused)
             {
-                spv::Instruction constant(newBoundId++, idOpTypeInt32, spv::OpConstant);
+                spv::Instruction constant(newBoundId++, idOpTypeIntS32, spv::OpConstant);
                 constant.addImmediateOperand(i);
                 constant.dump(vecConstsToAdd);
                 mapIndexesWithConstValueId[i] = constant.getResultId();
@@ -1724,11 +1788,10 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
                         //according to specs: index is an OpConstant when indexing into a structure
                         ConstInstruction* constObject = GetConstById(accessChainFirstIndexConstId);
                         if (constObject == nullptr) { error(string("cannot get const object for Id: ") + to_string(accessChainFirstIndexConstId)); break; }
-                        int accessChainIndexValue32 = asLiteralValue(constObject->bytecodeStartPosition + 3);
 
+                        int accessChainIndexValue32 = constObject->valueS32;
 #ifdef XKSLANG_DEBUG_MODE
-                        spv::Id constTypeId = asId(constObject->bytecodeStartPosition + 1); //make sure the const has the correct type
-                        if (constTypeId != idOpTypeInt32) { error(string("the const object has an invalid typeId: ") + to_string(constTypeId)); break; }
+                        if (!constObject->isS32) { error("the const variable uses an invalid type. It should be intS32"); break; }
                         if (accessChainIndexValue32 < 0 || accessChainIndexValue32 >= streamBufferType->streamStructData->members.size()) { error("accessChainIndexValue32 is out of bound"); break; }
 #endif
                         int newAccessChainIndex = streamBufferType->streamStructData->members[accessChainIndexValue32].newStructMemberId;
@@ -1736,7 +1799,6 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
                         if (newAccessChainIndex < 0 || newAccessChainIndex >= mapIndexesWithConstValueId.size()) { error("newAccessChainIndex is out of bound"); break; }
 #endif
                         spv::Id newAccessChainIndexConstId = mapIndexesWithConstValueId[newAccessChainIndex];
-
 #ifdef XKSLANG_DEBUG_MODE
                         if (newAccessChainIndexConstId == spv::spirvbin_t::unused) { error("invalid newAccessChainIndexConstId"); break; }
 #endif
@@ -1757,9 +1819,9 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
         {
             //make the stream struct type
             spv::Instruction streamStructType(streamStructTypeId, spv::NoType, spv::OpTypeStruct);
-            for (unsigned int m = 0; m < globalListOfMergedStreamVariables.size(); ++m)
+            for (unsigned int m = 0; m < listOfMergedStreamVariables.size(); ++m)
             {
-                const TypeStructMember& aStreamMember = globalListOfMergedStreamVariables[m];
+                const TypeStructMember& aStreamMember = listOfMergedStreamVariables[m];
                 streamStructType.addIdOperand(aStreamMember.memberTypeId);
             }
             streamStructType.dump(vecTypesToAdd);
@@ -1786,9 +1848,9 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
             variableName.dump(vecNamesAndDecorate);
 
             //Add the members info
-            for (unsigned int memberIndex = 0; memberIndex < globalListOfMergedStreamVariables.size(); ++memberIndex)
+            for (unsigned int memberIndex = 0; memberIndex < listOfMergedStreamVariables.size(); ++memberIndex)
             {
-                const TypeStructMember& streamMember = globalListOfMergedStreamVariables[memberIndex];
+                const TypeStructMember& streamMember = listOfMergedStreamVariables[memberIndex];
 
                 //member name
                 spv::Instruction memberName(spv::OpMemberName);
@@ -1843,13 +1905,8 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
             }
         }
 
-        //Clean the shaders and data from usused stream buffers
-        //TODO:
-        //RemoveShaderAndAllData();
-
-        //reupdate all maps
-        UpdateAllMaps();
-
+        //Update all maps
+        if (!UpdateAllMaps()) error("failed to update all maps");
         if (errorMessages.size() > 0) success = false;
     }
 
@@ -1865,14 +1922,52 @@ bool SpxStreamRemapper::MergeStreams(std::vector<XkslMixerOutputStage>& outputSt
         }
     }
 
+    //===================================================================================================================
+    //===================================================================================================================
+    //Remove the unused stream buffer types from the bytecode and the data structure
+    //(we could probably leave them there and have them remove later on, but it will make a cleaner bytecode)
+    if (success)
+    {
+        vector<range_t> vecStripRanges;
+        for (auto itt = listAllShaderTypeHoldingStreamVariables.begin(); itt != listAllShaderTypeHoldingStreamVariables.end(); itt++)
+        {
+            TypeInstruction* streamBufferType = *itt;
+            ShaderTypeData* shaderTypeToRemove = streamBufferType->connectedShaderTypeData;
+            if (!RemoveShaderTypeFromBytecodeAndData(shaderTypeToRemove, vecStripRanges))
+            {
+                error(string("Failed to remove the unused shader type: ") + streamBufferType->GetName());
+                break;
+            }
+        }
+
+        stripBytecode(vecStripRanges);
+        if (!UpdateAllMaps()) error("failed to update all maps");
+    }
+
+    //build the stream members struct info
+    globalListOfMergedStreamVariables.members.clear();
+    globalListOfMergedStreamVariables.structTypeId = streamStructTypeId;
+    globalListOfMergedStreamVariables.structPointerTypeId = streamPointerStructTypeId;
+    globalListOfMergedStreamVariables.structVariableTypeId = streamVarStructTypeId;
+    for (unsigned int memberIndex = 0; memberIndex < listOfMergedStreamVariables.size(); ++memberIndex)
+    {
+        TypeStructMember& streamMember = listOfMergedStreamVariables[memberIndex];
+        streamMember.structTypeId = streamMember.newStructTypeId;
+        streamMember.structMemberId = streamMember.newStructMemberId;
+        streamMember.newStructTypeId = 0;
+        streamMember.newStructMemberId = 0;
+
+        globalListOfMergedStreamVariables.members.push_back(streamMember);
+    }
+
     if (errorMessages.size() > 0) success = false;
     return success;
 }
 
-bool SpxStreamRemapper::RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages)
+bool SpxStreamRemapper::InitializeCompilationProcess(std::vector<XkslMixerOutputStage>& outputStages)
 {
     //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
-    status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved;
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_Initialized;
 
     if (outputStages.size() == 0) return error("no output stages defined");
     if (!ValidateHeader()) return error("Failed to validate the header");
@@ -1887,6 +1982,183 @@ bool SpxStreamRemapper::RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>
         outputStages[i].entryFunction = entryFunction;
     }
     if (errorMessages.size() > 0) return false;
+
+    return true;
+}
+
+bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+{
+    if (globalListOfMergedStreamVariables.countMembers() == 0) return true; //nothing to analyse
+    spv::Id globalStreamStructVariableId = globalListOfMergedStreamVariables.structVariableTypeId;
+
+    vector<ShadingStageEnum> stagePipeline = { ShadingStageEnum::Vertex, ShadingStageEnum::TessControl, ShadingStageEnum::TessEvaluation, ShadingStageEnum::Geometry , ShadingStageEnum::Pixel };
+
+    //Analyse from latest stage to first one
+    for (int iStage = stagePipeline.size() - 1; iStage >= 0; iStage--)
+    {
+        //Are we compiling the stage?
+        XkslMixerOutputStage* outputStage = nullptr;
+        for (int io = 0; io < outputStages.size(); io++) {
+            if (outputStages[io].outputStage->stage == stagePipeline[iStage]) {
+                outputStage = &(outputStages[io]);
+                break;
+            }
+        }
+        if (outputStage == nullptr) continue;
+        if (outputStage->entryFunction == nullptr) return error("A stage entry point function is null.");
+
+        //Set all functions flag to 0 (to check a function only once)
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+            ShaderClassData* shader = *itsh;
+            for (auto itsf = shader->functionsList.begin(); itsf != shader->functionsList.end(); itsf++) {
+                FunctionInstruction* aFunction = *itsf;
+                aFunction->flag1 = 0;
+            }
+        }
+
+        //===================================================================================================================
+        //===================================================================================================================
+        //1st pass: go through the stage functions call graph and map all resultIds accessing a stream variable with the index of the stream variables being accessed
+        vector<int> vectorResultIdsAccessingAStreamVariable;
+        vectorResultIdsAccessingAStreamVariable.resize(bound(), -1);
+
+        vector<FunctionInstruction*> vectorAllFunctionsCalledByTheStage;
+        vector<FunctionInstruction*> vectorFunctionsToCheck;
+        vectorFunctionsToCheck.push_back(outputStage->entryFunction);
+        while (vectorFunctionsToCheck.size() > 0)
+        {
+            FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
+            vectorFunctionsToCheck.pop_back();
+            if (aFunctionCalled->flag1 == 1) continue; //we already processed this function
+            aFunctionCalled->flag1 = 1;
+            vectorAllFunctionsCalledByTheStage.push_back(aFunctionCalled);
+            
+            unsigned int start = aFunctionCalled->bytecodeStartPosition;
+            const unsigned int end = aFunctionCalled->bytecodeEndPosition;
+            while (start < end)
+            {
+                unsigned int wordCount = asWordCount(start);
+                spv::Op opCode = asOpCode(start);
+
+                switch (opCode)
+                {
+                    case spv::OpAccessChain:
+                    {
+                        spv::Id structIdAccessed = asId(start + 3);
+
+                        //are we accessing the global stream buffer?
+                        if (structIdAccessed == globalStreamStructVariableId)
+                        {
+                            spv::Id resultId = asId(start + 2);
+                            spv::Id indexConstId= asId(start + 4);
+
+                            ConstInstruction* constObject = GetConstById(indexConstId);
+                            if (constObject == nullptr) return error(string("cannot get const object for Id: ") + to_string(indexConstId));
+                            int streamMemberIndex = constObject->valueS32;
+#ifdef XKSLANG_DEBUG_MODE
+                            if (resultId >= vectorResultIdsAccessingAStreamVariable.size()) return error("resultId out of bound");
+                            if (vectorResultIdsAccessingAStreamVariable[resultId] != -1) return error("resultId is already accessing a stream variable");
+                            if (streamMemberIndex < 0 || streamMemberIndex >= globalListOfMergedStreamVariables.members.size())
+                                return error(string("streamMemberIndex is out of bound: ") + to_string(streamMemberIndex));
+#endif
+                            vectorResultIdsAccessingAStreamVariable[resultId] = streamMemberIndex;
+                        }
+                        break;
+                    }
+
+                    case spv::OpFunctionCall:
+                    case spv::OpFunctionCallBaseResolved:
+                    {
+                        //pile the function to go check it later
+                        spv::Id functionCalledId = asId(start + 3);
+                        FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+                        if (anotherFunctionCalled->flag1 == 0) vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+                        break;
+                    }
+
+                    case spv::OpFunctionCallThroughCompositionVariable:
+                    case spv::OpFunctionCallBaseUnresolved:
+                    {
+                        return error(string("An unresolved function call has been found in function: ") + aFunctionCalled->GetFullName());
+                        break;
+                    }
+                }
+                start += wordCount;
+            }
+        }
+
+        //clear access to the stream members
+        outputStage->listStreamVariablesAccessed.clear();
+        for (int m=0; m<globalListOfMergedStreamVariables.members.size(); ++m)
+            outputStage->listStreamVariablesAccessed.push_back(MemberAccessDetails(m));
+
+        //===================================================================================================================
+        //===================================================================================================================
+        // 2nd pass: go through all functions again to check all accesses to the stream variables
+        for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
+        {
+            FunctionInstruction* aFunctionCalled = *itf;
+
+            unsigned int start = aFunctionCalled->bytecodeStartPosition;
+            const unsigned int end = aFunctionCalled->bytecodeEndPosition;
+            while (start < end)
+            {
+                unsigned int wordCount = asWordCount(start);
+                spv::Op opCode = asOpCode(start);
+
+                switch (opCode)
+                {
+                    case spv::OpStore:
+                    {
+                        //is the stage storing (writing) into a stream variable?
+                        spv::Id targetId = asId(start + 1);
+                        if (vectorResultIdsAccessingAStreamVariable[targetId] != -1)
+                        {
+                            //cout << "write: " << globalListOfMergedStreamVariables.members[vectorResultIdsAccessingAStreamVariable[targetId]].declarationName << endl;
+                            int streamVariableindex = vectorResultIdsAccessingAStreamVariable[targetId];
+#ifdef XKSLANG_DEBUG_MODE
+                            if (streamVariableindex < 0 || streamVariableindex >= outputStage->listStreamVariablesAccessed.size())
+                                return error(string("stream variable index is out of bound. Id: ") + to_string(streamVariableindex));
+#endif
+                            outputStage->listStreamVariablesAccessed[streamVariableindex].AddWriteAccess();
+                        }
+                        break;
+                    }
+
+                    case spv::OpLoad:
+                    {
+                        //is the stage loading (reading) from a stream variable?
+                        spv::Id targetId = asId(start + 3);
+                        if (vectorResultIdsAccessingAStreamVariable[targetId] != -1)
+                        {
+                            //cout << "read: " << globalListOfMergedStreamVariables.members[vectorResultIdsAccessingAStreamVariable[targetId]].declarationName << endl;
+
+                            int streamVariableindex = vectorResultIdsAccessingAStreamVariable[targetId];
+#ifdef XKSLANG_DEBUG_MODE
+                            if (streamVariableindex < 0 || streamVariableindex >= outputStage->listStreamVariablesAccessed.size())
+                                return error(string("stream variable index is out of bound. Id: ") + to_string(streamVariableindex));
+#endif
+                            outputStage->listStreamVariablesAccessed[streamVariableindex].AddReadAccess();
+                        }
+                        break;
+                    }
+                }
+                start += wordCount;
+            }
+        }
+    }
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+bool SpxStreamRemapper::RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages)
+{
+    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved;
+
+    if (outputStages.size() == 0) return error("no output stages defined");
+    if (!ValidateHeader()) return error("Failed to validate the header");
 
     //===================================================================================================================
     //===================================================================================================================
@@ -1907,7 +2179,12 @@ bool SpxStreamRemapper::RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>
         vector<FunctionInstruction*> vectorFunctionsCalled;
         vector<FunctionInstruction*> vectorAllFunctionsCalled;
         vector<ShaderClassData*> vectorShadersOwningAllFunctionsCalled;
-        for (unsigned int i = 0; i<outputStages.size(); ++i) vectorFunctionsCalled.push_back(outputStages[i].entryFunction);
+        for (unsigned int i = 0; i<outputStages.size(); ++i)
+        {
+            if (outputStages[i].entryFunction == nullptr) return error("An entry point function is null.");
+            vectorFunctionsCalled.push_back(outputStages[i].entryFunction);
+        }
+
         while (vectorFunctionsCalled.size() > 0)
         {
             FunctionInstruction* aFunctionCalled = vectorFunctionsCalled.back();
@@ -1936,7 +2213,7 @@ bool SpxStreamRemapper::RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>
                     {
                         spv::Id functionCalledId = asId(start + 3);
                         FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
-                        if (anotherFunctionCalled->flag1 == 0) vectorFunctionsCalled.push_back(anotherFunctionCalled); //we'll ananlyse the function later
+                        if (anotherFunctionCalled->flag1 == 0) vectorFunctionsCalled.push_back(anotherFunctionCalled); //we'll analyse the function later
                         break;
                     }
 
@@ -2015,7 +2292,7 @@ bool SpxStreamRemapper::RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>
         vector<range_t> vecStripRanges;
         for (auto itsh = listUnusedShaders.begin(); itsh != listUnusedShaders.end(); itsh++) {
             ShaderClassData* unusedShader = *itsh;
-            if (!RemoveShaderAndAllData(unusedShader, vecStripRanges))
+            if (!RemoveShaderFromBytecodeAndData(unusedShader, vecStripRanges))
             {
                 return error(string("Failed to remove the unused shader: ") + unusedShader->GetName());
             }
@@ -3306,7 +3583,29 @@ SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObje
         case ObjectInstructionTypeEnum::Const:
         {
             declarationNameRequired = false;
-            newObject = new ConstInstruction(parsedData, declarationName, this);
+            
+            bool isS32 = false; int valueS32 = 0;
+            //if the const if a signed 32 bits, prefetch its numeric value
+            {
+                spv::Id constTypeId = asId(parsedData.bytecodeStartPosition + 1);
+                TypeInstruction* constType = GetTypeById(constTypeId);
+                if (constType == nullptr) {
+                    error(string("no type exist for const typeId: ") + to_string(constTypeId));
+                    return nullptr;
+                }
+                spv::Op typeOpCode = asOpCode(constType->bytecodeStartPosition);
+                if (typeOpCode == spv::OpTypeInt)
+                {
+                    int literalNumber = asLiteralValue(constType->bytecodeStartPosition + 2);
+                    int sign = asLiteralValue(constType->bytecodeStartPosition + 3);
+                    if (literalNumber == 32 && sign == 1) {
+                        isS32 = true;
+                        valueS32 = asLiteralValue(parsedData.bytecodeStartPosition + 3);
+                    }
+                }
+            }
+
+            newObject = new ConstInstruction(parsedData, declarationName, this, isS32, valueS32);
             break;
         }
         case ObjectInstructionTypeEnum::Shader:

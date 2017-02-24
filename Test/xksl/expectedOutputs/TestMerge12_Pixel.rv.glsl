@@ -1,11 +1,11 @@
 #version 450
 
-struct Base_streamBuffer
+struct globalStreams
 {
-    int ColorTarget;
+    int ColorTarget_0;
 };
 
-Base_streamBuffer Base_streamBuffer_var;
+globalStreams globalStreams_var;
 
 int Base_Compute()
 {
@@ -39,6 +39,6 @@ int C_Compute()
 
 void main()
 {
-    Base_streamBuffer_var.ColorTarget = C_Compute();
+    globalStreams_var.ColorTarget_0 = C_Compute();
 }
 

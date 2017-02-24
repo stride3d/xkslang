@@ -1,14 +1,10 @@
 #version 450
 
-struct Base_streamBuffer
+struct globalStreams
 {
-    int baseStreamI0;
-    int baseStreamI1;
-};
-
-struct shaderA_streamBuffer
-{
-    int aStream0;
+    int baseStreamI0_0;
+    int baseStreamI1_1;
+    int aStream0_2;
 };
 
 int main()

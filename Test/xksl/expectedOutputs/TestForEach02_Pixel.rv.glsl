@@ -1,19 +1,19 @@
 #version 450
 
-struct ShaderA_streamBuffer
+struct globalStreams
 {
-    int svar;
+    int svar_0;
 };
 
-ShaderA_streamBuffer ShaderA_streamBuffer_var;
+globalStreams globalStreams_var;
 
 int main()
 {
     int res = 0;
     res++;
-    ShaderA_streamBuffer_var.svar = res;
+    globalStreams_var.svar_0 = res;
     res++;
-    ShaderA_streamBuffer_var.svar = res;
+    globalStreams_var.svar_0 = res;
     return res;
 }
 

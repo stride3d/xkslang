@@ -1,18 +1,13 @@
 #version 450
 
-struct o1S2C0_Comp_streamBuffer
+struct globalStreams
 {
-    int s1;
-};
-
-struct o1S2C0_o0S8C0_SubComp_streamBuffer
-{
-    int s1;
-};
-
-struct o2S2C1_SubComp_streamBuffer
-{
-    int s1;
+    int s1_0;
+    int s1_1;
+    int s1_2;
+    int s1_3;
+    int s1_4;
+    int s1_5;
 };
 
 layout(std140) uniform o1S2C0_Comp_globalCBuffer
@@ -30,23 +25,21 @@ layout(std140) uniform o2S2C1_SubComp_globalCBuffer
     int var1;
 } o2S2C1_SubComp_globalCBuffer_var;
 
-o1S2C0_Comp_streamBuffer o1S2C0_Comp_streamBuffer_var;
-o1S2C0_o0S8C0_SubComp_streamBuffer o1S2C0_o0S8C0_SubComp_streamBuffer_var;
-o2S2C1_SubComp_streamBuffer o2S2C1_SubComp_streamBuffer_var;
+globalStreams globalStreams_var;
 
 int o1S2C0_o0S8C0_SubComp_Compute()
 {
-    return o1S2C0_o0S8C0_SubComp_globalCBuffer_var.var1 + o1S2C0_o0S8C0_SubComp_streamBuffer_var.s1;
+    return o1S2C0_o0S8C0_SubComp_globalCBuffer_var.var1 + globalStreams_var.s1_4;
 }
 
 int o1S2C0_Comp_Compute()
 {
-    return (o1S2C0_Comp_globalCBuffer_var.var1 + o1S2C0_Comp_streamBuffer_var.s1) + o1S2C0_o0S8C0_SubComp_Compute();
+    return (o1S2C0_Comp_globalCBuffer_var.var1 + globalStreams_var.s1_3) + o1S2C0_o0S8C0_SubComp_Compute();
 }
 
 int o2S2C1_SubComp_Compute()
 {
-    return o2S2C1_SubComp_globalCBuffer_var.var1 + o2S2C1_SubComp_streamBuffer_var.s1;
+    return o2S2C1_SubComp_globalCBuffer_var.var1 + globalStreams_var.s1_5;
 }
 
 int main()
