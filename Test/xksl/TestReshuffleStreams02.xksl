@@ -9,8 +9,14 @@ shader ShaderMain
         streams.Position = float2(0.0f, 1.0f);
     }
 
+	float4 Compute()
+	{
+		streams.Position = float2(1, 1);
+		return float4(streams.Position.xy, 0, 0);
+	}
+	
     stage void PSMain() 
     {
-        streams.ColorTarget = float4(streams.Position.xy, 0, 1);
+        streams.ColorTarget = float4(streams.Position.xy, 0, 1) + Compute();
     }
 }

@@ -190,10 +190,10 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
         }
     }
 
-    for (auto it = vecAllShaderFunctions.begin(); it != vecAllShaderFunctions.end(); it++)
+    for (auto it = vecAllFunctions.begin(); it != vecAllFunctions.end(); it++)
     {
         FunctionInstruction* function = clonedSpxRemapper->GetFunctionById((*it)->GetId());
-        clonedSpxRemapper->vecAllShaderFunctions.push_back(function);
+        clonedSpxRemapper->vecAllFunctions.push_back(function);
     }
 
     clonedSpxRemapper->status = status;
@@ -322,16 +322,16 @@ bool SpxStreamRemapper::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderT
     //remove all functions belonging to the shader
     {
         unsigned int countFunctionsRemoved = 0;
-        for (unsigned int i = 0; i < vecAllShaderFunctions.size(); ++i)
+        for (unsigned int i = 0; i < vecAllFunctions.size(); ++i)
         {
-            FunctionInstruction* function = vecAllShaderFunctions[i];
+            FunctionInstruction* function = vecAllFunctions[i];
             if (function->shaderOwner == shaderToRemove)
             {
                 countFunctionsRemoved++;
 
-                if (i < vecAllShaderFunctions.size() - 1)
-                    vecAllShaderFunctions[i] = vecAllShaderFunctions[vecAllShaderFunctions.size() - 1];
-                vecAllShaderFunctions.pop_back();
+                if (i < vecAllFunctions.size() - 1)
+                    vecAllFunctions[i] = vecAllFunctions[vecAllFunctions.size() - 1];
+                vecAllFunctions.pop_back();
 
                 stripInst(vecStripRanges, function->GetBytecodeStartPosition(), function->GetBytecodeEndPosition());
                 spv::Id id = function->GetId();
@@ -438,7 +438,7 @@ void SpxStreamRemapper::ReleaseAllMaps()
 
     listAllObjects.clear();
     vecAllShaders.clear();
-    vecAllShaderFunctions.clear();
+    vecAllFunctions.clear();
     mapDeclarationName.clear();
 }
 
@@ -1977,7 +1977,7 @@ bool SpxStreamRemapper::InitializeCompilationProcess(std::vector<XkslMixerOutput
     //For each output stages, we search the entryPoint function in the bytecode
     for (unsigned int i = 0; i<outputStages.size(); ++i)
     {
-        FunctionInstruction* entryFunction = GetFunctionForEntryPoint(outputStages[i].outputStage->entryPointName);
+        FunctionInstruction* entryFunction = GetShaderFunctionForEntryPoint(outputStages[i].outputStage->entryPointName);
         if (entryFunction == nullptr) error(string("Entry point not found: ") + outputStages[i].outputStage->entryPointName);
         outputStages[i].entryFunction = entryFunction;
     }
@@ -2008,12 +2008,9 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputSta
         if (outputStage->entryFunction == nullptr) return error("A stage entry point function is null.");
 
         //Set all functions flag to 0 (to check a function only once)
-        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
-            ShaderClassData* shader = *itsh;
-            for (auto itsf = shader->functionsList.begin(); itsf != shader->functionsList.end(); itsf++) {
-                FunctionInstruction* aFunction = *itsf;
-                aFunction->flag1 = 0;
-            }
+        for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
+            FunctionInstruction* aFunction = *itsf;
+            aFunction->flag1 = 0;
         }
 
         //===================================================================================================================
@@ -2025,12 +2022,11 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputSta
         vector<FunctionInstruction*> vectorAllFunctionsCalledByTheStage;
         vector<FunctionInstruction*> vectorFunctionsToCheck;
         vectorFunctionsToCheck.push_back(outputStage->entryFunction);
+        outputStage->entryFunction->flag1 = 1;
         while (vectorFunctionsToCheck.size() > 0)
         {
             FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
             vectorFunctionsToCheck.pop_back();
-            if (aFunctionCalled->flag1 == 1) continue; //we already processed this function
-            aFunctionCalled->flag1 = 1;
             vectorAllFunctionsCalledByTheStage.push_back(aFunctionCalled);
             
             unsigned int start = aFunctionCalled->bytecodeStartPosition;
@@ -2072,7 +2068,10 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputSta
                         //pile the function to go check it later
                         spv::Id functionCalledId = asId(start + 3);
                         FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
-                        if (anotherFunctionCalled->flag1 == 0) vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+                        if (anotherFunctionCalled->flag1 == 0){
+                            anotherFunctionCalled->flag1 = 1;
+                            vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+                        }
                         break;
                     }
 
@@ -2087,7 +2086,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputSta
             }
         }
 
-        //clear access to the stream members
+        //reset access data to the stream members
         outputStage->listStreamVariablesAccessed.clear();
         for (int m=0; m<globalListOfMergedStreamVariables.members.size(); ++m)
             outputStage->listStreamVariablesAccessed.push_back(MemberAccessDetails(m));
@@ -2095,11 +2094,22 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputSta
         //===================================================================================================================
         //===================================================================================================================
         // 2nd pass: go through all functions again to check all accesses to the stream variables
+        // Here the order of functions called is important: if there is a function call we interrupt the current one to visit the called one first
         for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
         {
             FunctionInstruction* aFunctionCalled = *itf;
+            aFunctionCalled->currentPosInBytecode = aFunctionCalled->bytecodeStartPosition;
+            aFunctionCalled->flag1 = 0;
+        }
 
-            unsigned int start = aFunctionCalled->bytecodeStartPosition;
+        vectorFunctionsToCheck.push_back(outputStage->entryFunction);
+        outputStage->entryFunction->flag1 = 1;
+        while (vectorFunctionsToCheck.size() > 0)
+        {
+            FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
+            vectorFunctionsToCheck.pop_back();
+
+            unsigned int start = aFunctionCalled->currentPosInBytecode;
             const unsigned int end = aFunctionCalled->bytecodeEndPosition;
             while (start < end)
             {
@@ -2108,10 +2118,30 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputSta
 
                 switch (opCode)
                 {
+                    case spv::OpFunctionCall:
+                    case spv::OpFunctionCallBaseResolved:
+                    {
+                        spv::Id functionCalledId = asId(start + 3);
+                        FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+                        if (anotherFunctionCalled->flag1 == 0)
+                        {
+                            aFunctionCalled->currentPosInBytecode = start + wordCount;  //we will start again at the next function instruction
+                            vectorFunctionsToCheck.push_back(aFunctionCalled);
+
+                            //pile the function and go check it immediatly
+                            anotherFunctionCalled->flag1 = 1;
+                            vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+
+                            start = end;  //to end the loop
+                        }
+                        break;
+                    }
+
                     case spv::OpStore:
+                    case spv::OpLoad:
                     {
                         //is the stage storing (writing) into a stream variable?
-                        spv::Id targetId = asId(start + 1);
+                        spv::Id targetId = (opCode == spv::OpStore)? asId(start + 1) : asId(start + 3);
                         if (vectorResultIdsAccessingAStreamVariable[targetId] != -1)
                         {
                             //cout << "write: " << globalListOfMergedStreamVariables.members[vectorResultIdsAccessingAStreamVariable[targetId]].declarationName << endl;
@@ -2120,25 +2150,8 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputSta
                             if (streamVariableindex < 0 || streamVariableindex >= outputStage->listStreamVariablesAccessed.size())
                                 return error(string("stream variable index is out of bound. Id: ") + to_string(streamVariableindex));
 #endif
-                            outputStage->listStreamVariablesAccessed[streamVariableindex].AddWriteAccess();
-                        }
-                        break;
-                    }
-
-                    case spv::OpLoad:
-                    {
-                        //is the stage loading (reading) from a stream variable?
-                        spv::Id targetId = asId(start + 3);
-                        if (vectorResultIdsAccessingAStreamVariable[targetId] != -1)
-                        {
-                            //cout << "read: " << globalListOfMergedStreamVariables.members[vectorResultIdsAccessingAStreamVariable[targetId]].declarationName << endl;
-
-                            int streamVariableindex = vectorResultIdsAccessingAStreamVariable[targetId];
-#ifdef XKSLANG_DEBUG_MODE
-                            if (streamVariableindex < 0 || streamVariableindex >= outputStage->listStreamVariablesAccessed.size())
-                                return error(string("stream variable index is out of bound. Id: ") + to_string(streamVariableindex));
-#endif
-                            outputStage->listStreamVariablesAccessed[streamVariableindex].AddReadAccess();
+                            if (opCode == spv::OpStore) outputStage->listStreamVariablesAccessed[streamVariableindex].AddWriteAccess();
+                            else outputStage->listStreamVariablesAccessed[streamVariableindex].AddReadAccess();
                         }
                         break;
                     }
@@ -2708,7 +2721,7 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
     vector<FunctionInstruction*> vecFunctionIdBeingOverriden;
     vecFunctionIdBeingOverriden.resize(bound(), nullptr);
     bool anyOverridingFunction = false;
-    for (auto itfn = vecAllShaderFunctions.begin(); itfn != vecAllShaderFunctions.end(); itfn++)
+    for (auto itfn = vecAllFunctions.begin(); itfn != vecAllFunctions.end(); itfn++)
     {
         FunctionInstruction* function = *itfn;
         if (function->GetOverridingFunction() != nullptr)
@@ -3000,13 +3013,15 @@ void SpxStreamRemapper::GetMixinBytecode(vector<uint32_t>& bytecodeStream)
     bytecodeStream.insert(bytecodeStream.end(), spv.begin(), spv.end());
 }
 
-SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetFunctionForEntryPoint(std::string entryPointName)
+SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForEntryPoint(std::string entryPointName)
 {
     // Search for the entry point function (assume the first function with the name is the one)
     FunctionInstruction* entryPointFunction = nullptr;
-    for (auto it = vecAllShaderFunctions.begin(); it != vecAllShaderFunctions.end(); it++)
+    for (auto it = vecAllFunctions.begin(); it != vecAllFunctions.end(); it++)
     {
         FunctionInstruction* func = *it;
+        if (func->shaderOwner == nullptr) continue;  //we're looking for a function owned by a shader
+
         string mangledFunctionName = func->GetMangledName();
         string unmangledFunctionName = mangledFunctionName.substr(0, mangledFunctionName.find('('));
         if (unmangledFunctionName == entryPointName)
@@ -3654,12 +3669,11 @@ SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObje
         case ObjectInstructionTypeEnum::Function:
         {
             declarationNameRequired = false;  //some functions can be declared outside a shader definition, they don't belong to a shader then
-            FunctionInstruction* function = new FunctionInstruction(parsedData, declarationName, this);
+            if (!hasDeclarationName || declarationName.size() == 0)
+                declarationName = "__globalFunction__" + to_string(vecAllFunctions.size());
 
-            if (hasDeclarationName && declarationName.size() > 0)
-            {
-                vecAllShaderFunctions.push_back(function);
-            }
+            FunctionInstruction* function = new FunctionInstruction(parsedData, declarationName, this);
+            vecAllFunctions.push_back(function);
 
             newObject = function;
             break;

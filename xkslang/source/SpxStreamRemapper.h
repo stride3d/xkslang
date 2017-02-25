@@ -203,7 +203,8 @@ public:
         };
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name), flag1(0){}
+            : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
+            flag1(0), currentPosInBytecode(0){}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -231,7 +232,10 @@ public:
         OverrideAttributeStateEnum overrideAttributeState;
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
         std::string fullName;  //name only use for debug purpose
-        int flag1;  //to simplify some algo
+
+        //to help in some algo
+        int flag1;
+        int currentPosInBytecode;
 
         friend class SpxStreamRemapper;
     };
@@ -468,7 +472,7 @@ private:
     bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
 
-    FunctionInstruction* GetFunctionForEntryPoint(std::string entryPointName);
+    FunctionInstruction* GetShaderFunctionForEntryPoint(std::string entryPointName);
     bool RemoveShaderFromBytecodeAndData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
     bool RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType, std::vector<range_t>& vecStripRanges);
 
@@ -506,7 +510,7 @@ private:
 
     std::vector<ObjectInstructionBase*> listAllObjects;
     std::vector<ShaderClassData*> vecAllShaders;
-    std::vector<FunctionInstruction*> vecAllShaderFunctions;  //vec of all functions declared by a shader
+    std::vector<FunctionInstruction*> vecAllFunctions;  //vec of all functions
 
 private:
     ObjectInstructionBase* GetObjectById(spv::Id id);
@@ -555,16 +559,23 @@ public:
 
 public:
     int memberIndex;
-    int accessDetail;
+    int accessesNeeded;
+    MemberAccessDetailsEnum firstAccess;
 
-    MemberAccessDetails() : memberIndex(-1), accessDetail(0){}
-    MemberAccessDetails(int index) : memberIndex(index), accessDetail(0) {}
+    MemberAccessDetails() : memberIndex(-1), accessesNeeded(0), firstAccess(MemberAccessDetailsEnum::Undefined){}
+    MemberAccessDetails(int index) : memberIndex(index), accessesNeeded(0), firstAccess(MemberAccessDetailsEnum::Undefined) {}
     
-    void AddReadAccess() { accessDetail |= ((int)MemberAccessDetailsEnum::Read); }
-    void AddWriteAccess() { accessDetail |= ((int)MemberAccessDetailsEnum::Write); }
+    void AddReadAccess() {
+        accessesNeeded |= ((int)MemberAccessDetailsEnum::Read);
+        if (firstAccess == MemberAccessDetailsEnum::Undefined) firstAccess = MemberAccessDetailsEnum::Read;
+    }
+    void AddWriteAccess() {
+        accessesNeeded |= ((int)MemberAccessDetailsEnum::Write);
+        if (firstAccess == MemberAccessDetailsEnum::Undefined) firstAccess = MemberAccessDetailsEnum::Write;
+    }
 
-    bool HasReadAccess() { return (accessDetail & ((int)MemberAccessDetailsEnum::Read)); }
-    bool HasWriteAccess() { return (accessDetail & ((int)MemberAccessDetailsEnum::Write)); }
+    bool HasReadAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Read)); }
+    bool HasWriteAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Write)); }
 };
 
 //Contains output stage info (stage + entrypoint), bytecode, plus additionnal data processed by the mixer during compilation
