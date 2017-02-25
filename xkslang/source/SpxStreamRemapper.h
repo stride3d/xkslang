@@ -31,10 +31,13 @@ enum class SpxRemapperStatusEnum
     WaitingForMixin,
     MixinInProgress,
 
-    //define the order of compilation
+    //define the order of compilation processes
     MixinBeingCompiled_Initialized,
     MixinBeingCompiled_UnusedShaderRemoved,
     MixinBeingCompiled_CompositionInstancesProcessed,
+    MixinBeingCompiled_StreamsAnalysed,
+    MixinBeingCompiled_StreamFlowValidated,
+    MixinBeingCompiled_StreamReschuffled,
     MixinFinalized
 };
 
@@ -259,6 +262,11 @@ public:
         int newStructMemberId;
 
         bool HasSemantic() const { return semantic.size() > 0; }
+        std::string GetSemanticOrDeclarationName() { return HasSemantic()? semantic: declarationName; }
+        std::string GetNameWithSemantic() {
+            if (HasSemantic()) return declarationName + std::string(": ") + semantic;
+            return declarationName;
+        }
     };
 
     class TypeStructMemberArray
@@ -446,6 +454,8 @@ public:
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxStreamRemapper* source, std::vector<std::string>& messages);
     void GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
 
+    static void GetStagesPipeline(std::vector<ShadingStageEnum>& pipeline);
+
     virtual void error(const std::string& txt) const;
     bool error(const std::string& txt);
     void copyMessagesTo(std::vector<std::string>& list);
@@ -467,7 +477,9 @@ private:
     bool ApplyCompositionInstancesToBytecode();
     bool InitializeCompilationProcess(std::vector<XkslMixerOutputStage>& outputStages);
     bool MergeStreamMembers(TypeStructMemberArray& globalListOfMergedStreamVariables);
-    bool AnalyseStreamMembersUsage(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
+    bool AnalyseStreamMembersUsageForOutputStages(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
+    bool ValidateStagesStreamMembersFlow(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
+    bool ReshuffleStreamVariables(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
     bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
@@ -576,6 +588,8 @@ public:
 
     bool HasReadAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Read)); }
     bool HasWriteAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Write)); }
+    bool IsOutputStream() { return firstAccess == MemberAccessDetailsEnum::Write; }
+    bool IsInputStream() { return firstAccess == MemberAccessDetailsEnum::Read; }
 };
 
 //Contains output stage info (stage + entrypoint), bytecode, plus additionnal data processed by the mixer during compilation

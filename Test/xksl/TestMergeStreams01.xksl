@@ -17,8 +17,10 @@ shader Color
 shader ShaderA
 {
 	stage stream float4 outStream: SV_OUTPUT;
-	stage stream float4 sameSemanticWithType1: SV_TOTO;
-	stage stream float2 sameSemanticWithType2: SV_TOTO;
+	
+	//return an error for now
+	//stage stream float4 sameSemanticWithType1: SV_TOTO;
+	//stage stream float2 sameSemanticWithType2: SV_TOTO;
 	compose Color colors[];
 	
 	int main()

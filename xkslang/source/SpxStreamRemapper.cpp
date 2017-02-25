@@ -430,8 +430,8 @@ bool SpxStreamRemapper::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderT
 
 void SpxStreamRemapper::ReleaseAllMaps()
 {
-    int size = listAllObjects.size();
-    for (int i = 0; i < size; ++i)
+    unsigned int size = listAllObjects.size();
+    for (unsigned int i = 0; i < size; ++i)
     {
         if (listAllObjects[i] != nullptr) delete listAllObjects[i];
     }
@@ -735,9 +735,9 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     } //end shaderToMerge loop
 
     {
-        int len = finalRemapTable.size();
         //update listAllNewIdMerged table (this table defines the name and decorate to fetch and merge)
-        for (int i = 0; i < len; ++i)
+        unsigned int len = finalRemapTable.size();
+        for (unsigned int i = 0; i < len; ++i)
         {
             if (finalRemapTable[i] != spv::spirvbin_t::unused) listAllNewIdMerged[i] = true;
         }
@@ -1628,7 +1628,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
 
     //===================================================================================================================
     //===================================================================================================================
-    //regroup all stream variables in the same struct, merge the stage stream variables having the same semantic (or name if no semantic is set)
+    //regroup all stream variables in the same struct, merge the stage stream variables having the same semantic (or name, if no semantic is set)
     if (success)
     {
         for (auto itt = listAllShaderTypeHoldingStreamVariables.begin(); itt != listAllShaderTypeHoldingStreamVariables.end(); itt++)
@@ -1665,6 +1665,9 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
                     //before merging the 2 stream variables, compare their type
                     if (aStreamMember.memberTypeId != listOfMergedStreamVariables[mergeWithStreamIndex].memberTypeId)
                     {
+                        //same stream but different type: return an error for now
+                        error(string("2 stage stream variables: ") + aStreamMember.GetNameWithSemantic() + string(" and ")
+                            + listOfMergedStreamVariables[mergeWithStreamIndex].GetNameWithSemantic() + string(", have the same semantic (or same name), but a different type"));
                         mergeWithStreamIndex = -1;
                     }
                 }
@@ -1737,7 +1740,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
             typeInt32.dump(vecConstsToAdd);
             idOpTypeIntS32 = typeInt32.getResultId();
         }
-        for (int i = 0; i < mapIndexesWithConstValueId.size(); ++i)
+        for (unsigned int i = 0; i < mapIndexesWithConstValueId.size(); ++i)
         {
             if (mapIndexesWithConstValueId[i] == spv::spirvbin_t::unused)
             {
@@ -1964,6 +1967,11 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
     return success;
 }
 
+void SpxStreamRemapper::GetStagesPipeline(vector<ShadingStageEnum>& pipeline)
+{
+    pipeline = { ShadingStageEnum::Vertex, ShadingStageEnum::TessControl, ShadingStageEnum::TessEvaluation, ShadingStageEnum::Geometry , ShadingStageEnum::Pixel };
+}
+
 bool SpxStreamRemapper::InitializeCompilationProcess(std::vector<XkslMixerOutputStage>& outputStages)
 {
     //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
@@ -1971,6 +1979,29 @@ bool SpxStreamRemapper::InitializeCompilationProcess(std::vector<XkslMixerOutput
 
     if (outputStages.size() == 0) return error("no output stages defined");
     if (!ValidateHeader()) return error("Failed to validate the header");
+
+#ifdef XKSLANG_DEBUG_MODE
+    //check that the output stages are in the correct order
+    vector<ShadingStageEnum> stagePipeline;
+    SpxStreamRemapper::GetStagesPipeline(stagePipeline);
+
+    int lastStageMatched = -1;
+    for (unsigned int i = 0; i<outputStages.size(); ++i)
+    {
+        ShadingStageEnum outputStage = outputStages[i].outputStage->stage;
+
+        lastStageMatched++;
+        while (lastStageMatched < stagePipeline.size())
+        {
+            if (stagePipeline[lastStageMatched] == outputStage) break;
+            lastStageMatched++;
+        }
+
+        if (lastStageMatched == stagePipeline.size())
+            return error(string("The output stage is unknown or not in the correct order: ") + GetShadingStageLabel(outputStage));
+    }
+
+#endif
 
     //===================================================================================================================
     //===================================================================================================================
@@ -1986,25 +2017,93 @@ bool SpxStreamRemapper::InitializeCompilationProcess(std::vector<XkslMixerOutput
     return true;
 }
 
-bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAnalysed) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamFlowValidated;
+
+    if (outputStages.size() == 0) return error("no output stages defined");
+
+    unsigned int countStreamMembers = globalListOfMergedStreamVariables.members.size();
+    if (countStreamMembers == 0) return true; //no stream variables to validate
+
+#ifdef XKSLANG_DEBUG_MODE
+    for (unsigned int ios = 0; ios < outputStages.size(); ++ios)
+    {
+        if (outputStages[ios].listStreamVariablesAccessed.size() != countStreamMembers)
+            return error("size of the stage stream variables accessed list does not match the size of the global stream buffer");
+    }
+#endif
+
+    //A stream variable is required by a stage is this variable is read-first (stream variable accessibility is set in the previous function: AnalyseStreamMembersUsageForOutputStages)
+    //2 cases:
+    //- If some variables are required in the Vertex stage: we assume they are defined from VB, but only if those variables have stage and declare a semantic (otherwise we return an error)
+    //- For the other stages: the previous stage must output it (otherwise we return an error)
+
+    //To check: is this transitive between stages
+
+    //===================================================================================================================
+    //VS stage: we check if the input streams are defined as stage and have a semantic
+    XkslMixerOutputStage& VSOutputStage = outputStages[0];
+    if (VSOutputStage.outputStage->stage != ShadingStageEnum::Vertex) return error("No Vertex Stage sets as output");
+    if (outputStages[outputStages.size() - 1].outputStage->stage != ShadingStageEnum::Pixel) return error("The last stage must be a Pixel stage");
+
+    //For each VS input (from VB), we confim that the stream is stage and has a semantic
+    for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
+    {
+        if (VSOutputStage.listStreamVariablesAccessed[ivs].IsInputStream())
+        {
+            if (!globalListOfMergedStreamVariables.members[ivs].isStage)
+                error(string("Vertex Stage defines a VB input stream which is not set as stage. variable name: ") + globalListOfMergedStreamVariables.members[ivs].GetNameWithSemantic());
+            if (!globalListOfMergedStreamVariables.members[ivs].HasSemantic())
+                error(string("Vertex Stage defines a VB input stream without a semantic. variable name: ") + globalListOfMergedStreamVariables.members[ivs].GetNameWithSemantic());
+        }
+    }
+
+    //===================================================================================================================
+    // For the next stages, check that an input stream receives the output from the previous stages
+    for (unsigned int iStage = outputStages.size() - 1; iStage >= 1; --iStage)
+    {
+        XkslMixerOutputStage& anOutputStage = outputStages[iStage];
+        XkslMixerOutputStage& previousOutputStage = outputStages[iStage - 1];
+
+        for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
+        {
+            if (anOutputStage.listStreamVariablesAccessed[ivs].IsInputStream())
+            {
+                if (!previousOutputStage.listStreamVariablesAccessed[ivs].IsOutputStream())
+                {
+                    error(GetShadingStageLabel(anOutputStage.outputStage->stage) + string(" stage is trying to read the stream variable \"")
+                        + globalListOfMergedStreamVariables.members[ivs].GetNameWithSemantic() + string("\", which is not found as an output in the previous stages"));
+                }
+            }
+        }
+    }
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+bool SpxStreamRemapper::ReshuffleStreamVariables(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+{
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamFlowValidated) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamReschuffled;
+
+    return true;
+}
+
+bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+{
+    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAnalysed;
+
     if (globalListOfMergedStreamVariables.countMembers() == 0) return true; //nothing to analyse
     spv::Id globalStreamStructVariableId = globalListOfMergedStreamVariables.structVariableTypeId;
 
-    vector<ShadingStageEnum> stagePipeline = { ShadingStageEnum::Vertex, ShadingStageEnum::TessControl, ShadingStageEnum::TessEvaluation, ShadingStageEnum::Geometry , ShadingStageEnum::Pixel };
-
-    //Analyse from latest stage to first one
-    for (int iStage = stagePipeline.size() - 1; iStage >= 0; iStage--)
+    //Analyse each stage
+    for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++)
     {
-        //Are we compiling the stage?
-        XkslMixerOutputStage* outputStage = nullptr;
-        for (int io = 0; io < outputStages.size(); io++) {
-            if (outputStages[io].outputStage->stage == stagePipeline[iStage]) {
-                outputStage = &(outputStages[io]);
-                break;
-            }
-        }
-        if (outputStage == nullptr) continue;
+        XkslMixerOutputStage* outputStage = &(outputStages[iStage]);
         if (outputStage->entryFunction == nullptr) return error("A stage entry point function is null.");
 
         //Set all functions flag to 0 (to check a function only once)
@@ -2088,7 +2187,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsage(std::vector<XkslMixerOutputSta
 
         //reset access data to the stream members
         outputStage->listStreamVariablesAccessed.clear();
-        for (int m=0; m<globalListOfMergedStreamVariables.members.size(); ++m)
+        for (unsigned int m=0; m<globalListOfMergedStreamVariables.members.size(); ++m)
             outputStage->listStreamVariablesAccessed.push_back(MemberAccessDetails(m));
 
         //===================================================================================================================
@@ -3266,8 +3365,8 @@ bool SpxStreamRemapper::UpdateAllObjectsPositionInTheBytecode()
     }
 
     uint32_t maxResultId = bound();
-    int countParsedObjects = listParsedObjectsData.size();
-    for (int i = 0; i < countParsedObjects; ++i)
+    unsigned int countParsedObjects = listParsedObjectsData.size();
+    for (unsigned int i = 0; i < countParsedObjects; ++i)
     {
         ParsedObjectData& parsedData = listParsedObjectsData[i];
         spv::Id resultId = parsedData.resultId;
@@ -3304,8 +3403,8 @@ bool SpxStreamRemapper::UpdateAllMaps()
     vector<bool> vectorIdsToDecorate;
     vectorIdsToDecorate.resize(maxResultId, false);
 
-    int countParsedObjects = listParsedObjectsData.size();
-    for (int i = 0; i < countParsedObjects; ++i)
+    unsigned int countParsedObjects = listParsedObjectsData.size();
+    for (unsigned int i = 0; i < countParsedObjects; ++i)
     {
         ParsedObjectData& parsedData = listParsedObjectsData[i];
         spv::Id resultId = parsedData.resultId;
@@ -3358,8 +3457,8 @@ bool SpxStreamRemapper::BuildAllMaps()
     vector<bool> vectorIdsToDecorate;
     vectorIdsToDecorate.resize(maxResultId, false);
 
-    int countParsedObjects = listParsedObjectsData.size();
-    for (int i = 0; i < countParsedObjects; ++i)
+    unsigned int countParsedObjects = listParsedObjectsData.size();
+    for (unsigned int i = 0; i < countParsedObjects; ++i)
     {
         ParsedObjectData& parsedData = listParsedObjectsData[i];
         

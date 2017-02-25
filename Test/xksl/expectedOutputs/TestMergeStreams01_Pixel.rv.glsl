@@ -6,10 +6,8 @@ struct globalStreams
     int aStream2_s1;
     vec4 SV_SEMANTIC_s2;
     vec4 SV_OUTPUT_s3;
-    vec4 SV_TOTO_s4;
-    vec2 SV_TOTO_s5;
-    int aStream1_6;
-    int aStream1_7;
+    int aStream1_4;
+    int aStream1_5;
 };
 
 globalStreams globalStreams_var;
@@ -17,28 +15,28 @@ globalStreams globalStreams_var;
 int o0S5C0_Color_Compute(int i)
 {
     globalStreams_var.SV_OUTPUT_s3 = vec4(float(i));
-    globalStreams_var.aStream1_6 = i + globalStreams_var.aStream2_s1;
-    int _35 = ivec4(globalStreams_var.SV_SEMANTIC_s2 + vec4(float(i)));
-    return _35;
+    globalStreams_var.aStream1_4 = i + globalStreams_var.aStream2_s1;
+    int _34 = ivec4(globalStreams_var.SV_SEMANTIC_s2 + vec4(float(i)));
+    return _34;
 }
 
 int o1S5C0_Color_Compute(int i)
 {
     globalStreams_var.SV_OUTPUT_s3 = vec4(float(i));
-    globalStreams_var.aStream1_7 = i + globalStreams_var.aStream2_s1;
-    int _56 = ivec4(globalStreams_var.SV_SEMANTIC_s2 + vec4(float(i)));
-    return _56;
+    globalStreams_var.aStream1_5 = i + globalStreams_var.aStream2_s1;
+    int _55 = ivec4(globalStreams_var.SV_SEMANTIC_s2 + vec4(float(i)));
+    return _55;
 }
 
 int main()
 {
     int res = 0;
     int param = 1;
-    int _74 = o0S5C0_Color_Compute(param);
-    res += _74;
+    int _73 = o0S5C0_Color_Compute(param);
+    res += _73;
     param = 1;
-    int _77 = o1S5C0_Color_Compute(param);
-    res += _77;
+    int _76 = o1S5C0_Color_Compute(param);
+    res += _76;
     globalStreams_var.SV_OUTPUT_s3 += vec4(float(res));
     int _6 = ivec4(globalStreams_var.SV_OUTPUT_s3);
     return _6;
