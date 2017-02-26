@@ -13,12 +13,13 @@ string xkslang::GetShadingStageLabel(ShadingStageEnum stage)
 {
     switch (stage)
     {
-    case ShadingStageEnum::Vertex:
-        return "Vertex";
-    case ShadingStageEnum::Pixel:
-        return "Pixel";
+        case ShadingStageEnum::Vertex: return "Vertex";
+        case ShadingStageEnum::Pixel: return "Pixel";
+        case ShadingStageEnum::TessControl: return "TessControl";
+        case ShadingStageEnum::TessEvaluation: return "TessEvaluation";
+        case ShadingStageEnum::Geometry: return "Geometry";
+        case ShadingStageEnum::Compute: return "Compute";
     }
-
     return "Undefined";
 }
 

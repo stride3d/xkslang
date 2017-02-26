@@ -2038,43 +2038,86 @@ bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(std::vector<XkslMixerOut
     //A stream variable is required by a stage is this variable is read-first (stream variable accessibility is set in the previous function: AnalyseStreamMembersUsageForOutputStages)
     //2 cases:
     //- If some variables are required in the Vertex stage: we assume they are defined from VB, but only if those variables have stage and declare a semantic (otherwise we return an error)
-    //- For the other stages: the previous stage must output it (otherwise we return an error)
-
-    //To check: is this transitive between stages
+    //- For the other stages: the previous stages must output it
 
     //===================================================================================================================
-    //VS stage: we check if the input streams are defined as stage and have a semantic
-    XkslMixerOutputStage& VSOutputStage = outputStages[0];
-    if (VSOutputStage.outputStage->stage != ShadingStageEnum::Vertex) return error("No Vertex Stage sets as output");
-    if (outputStages[outputStages.size() - 1].outputStage->stage != ShadingStageEnum::Pixel) return error("The last stage must be a Pixel stage");
-
-    //For each VS input (from VB), we confim that the stream is stage and has a semantic
-    for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
+    // For all stages but VS, set that an input stream receives an output from the previous stages
+    for (int iStage = (int)outputStages.size() - 1; iStage >= 0; --iStage)
     {
-        if (VSOutputStage.listStreamVariablesAccessed[ivs].IsInputStream())
-        {
-            if (!globalListOfMergedStreamVariables.members[ivs].isStage)
-                error(string("Vertex Stage defines a VB input stream which is not set as stage. variable name: ") + globalListOfMergedStreamVariables.members[ivs].GetNameWithSemantic());
-            if (!globalListOfMergedStreamVariables.members[ivs].HasSemantic())
-                error(string("Vertex Stage defines a VB input stream without a semantic. variable name: ") + globalListOfMergedStreamVariables.members[ivs].GetNameWithSemantic());
-        }
-    }
+        XkslMixerOutputStage& outputStage = outputStages[iStage];
 
-    //===================================================================================================================
-    // For the next stages, check that an input stream receives the output from the previous stages
-    for (unsigned int iStage = outputStages.size() - 1; iStage >= 1; --iStage)
-    {
-        XkslMixerOutputStage& anOutputStage = outputStages[iStage];
-        XkslMixerOutputStage& previousOutputStage = outputStages[iStage - 1];
-
-        for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
+        if (iStage == outputStages.size() - 1)
         {
-            if (anOutputStage.listStreamVariablesAccessed[ivs].IsInputStream())
+            //pixel stage: defines the final outputs and the required inputs
+            if (outputStage.outputStage->stage != ShadingStageEnum::Pixel) return error("Last output stage must be Pixel Stage");
+            for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
             {
-                if (!previousOutputStage.listStreamVariablesAccessed[ivs].IsOutputStream())
+                if (outputStage.listStreamVariablesAccessed[ivs].IsReadFirstStream())
                 {
-                    error(GetShadingStageLabel(anOutputStage.outputStage->stage) + string(" stage is trying to read the stream variable \"")
-                        + globalListOfMergedStreamVariables.members[ivs].GetNameWithSemantic() + string("\", which is not found as an output in the previous stages"));
+                    outputStage.listStreamVariablesAccessed[ivs].SetAsInput();
+                }
+                else if (outputStage.listStreamVariablesAccessed[ivs].IsWriteFirstStream())
+                {
+                    outputStage.listStreamVariablesAccessed[ivs].SetAsOutput();
+                }
+            }
+        }
+        else
+        {
+            XkslMixerOutputStage& nextOutputStage = outputStages[iStage + 1];
+
+            for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
+            {
+                if (nextOutputStage.listStreamVariablesAccessed[ivs].IsNeededAsInput())
+                {
+                    //we set as output the stream needed by the next stage (the stage output not needed by the next stage are ignored)
+                    //if the stage does not output some streams, we require them as input as well (as passthrough)
+                    if (outputStage.listStreamVariablesAccessed[ivs].IsWriteFirstStream())
+                    {
+                        outputStage.listStreamVariablesAccessed[ivs].SetAsOutput();
+                    }
+                    else
+                    {
+                        outputStage.listStreamVariablesAccessed[ivs].SetAsPassThrough();
+                    }
+                }
+                else
+                {
+                    //if the stage needs some more inputs, we add them
+                    if (outputStage.listStreamVariablesAccessed[ivs].IsReadFirstStream())
+                    {
+                        outputStage.listStreamVariablesAccessed[ivs].SetAsInput();
+                    }
+                }
+            }
+
+            if (iStage == 0)
+            {
+                //vertex stage: check that the input stream are set as stage and have a semantic, otherwise throw an error
+                if (outputStage.outputStage->stage != ShadingStageEnum::Vertex) return error("first output stage must be a Vertex Stage");
+
+                for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
+                {
+                    if (outputStage.listStreamVariablesAccessed[ivs].IsNeededAsInput())
+                    {
+                        if (!globalListOfMergedStreamVariables.members[ivs].isStage || !globalListOfMergedStreamVariables.members[ivs].HasSemantic())
+                        {
+                            //which stage is asking for the stream?
+                            int indexStageAskingForTheInput = -1;
+                            for (int i = 0; i < outputStages.size(); ++i)
+                            {
+                                if (outputStages[i].listStreamVariablesAccessed[ivs].IsInputOnly()) {
+                                    indexStageAskingForTheInput = i;
+                                    break;
+                                }
+                            }
+                            if (indexStageAskingForTheInput == -1) return error("Internal error: indexStageAskingForTheInput == -1");  //should never happen
+                            XkslMixerOutputStage& outputStageAskingTheStream = outputStages[indexStageAskingForTheInput];
+
+                            error("The Vertex stage needs a VB input stream which is not valid (must be set as stage and have a semantic). The variable named \""
+                                + globalListOfMergedStreamVariables.members[ivs].GetNameWithSemantic() + "\" is required by the " + GetShadingStageLabel(outputStageAskingTheStream.outputStage->stage) + " stage");
+                        }
+                    }
                 }
             }
         }
@@ -2100,11 +2143,23 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<Xks
     if (globalListOfMergedStreamVariables.countMembers() == 0) return true; //nothing to analyse
     spv::Id globalStreamStructVariableId = globalListOfMergedStreamVariables.structVariableTypeId;
 
+    //Set all functions stage reserve value to undefine
+    for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
+        FunctionInstruction* aFunction = *itsf;
+        aFunction->stageReservingTheFunction = ShadingStageEnum::Undefined;
+    }
+
     //Analyse each stage
     for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++)
     {
         XkslMixerOutputStage* outputStage = &(outputStages[iStage]);
         if (outputStage->entryFunction == nullptr) return error("A stage entry point function is null.");
+
+        //reset output stage data
+        outputStage->listCalledFunctionsAccessingStreamMembers.clear();
+        outputStage->listStreamVariablesAccessed.clear();
+        for (unsigned int m = 0; m<globalListOfMergedStreamVariables.members.size(); ++m)
+            outputStage->listStreamVariablesAccessed.push_back(MemberAccessDetails(m));
 
         //Set all functions flag to 0 (to check a function only once)
         for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
@@ -2115,6 +2170,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<Xks
         //===================================================================================================================
         //===================================================================================================================
         //1st pass: go through the stage functions call graph and map all resultIds accessing a stream variable with the index of the stream variables being accessed
+        // a function using a stream variable will be owned/reserved by the stage calling it. If another stage calls the same function it will return an error
         vector<int> vectorResultIdsAccessingAStreamVariable;
         vectorResultIdsAccessingAStreamVariable.resize(bound(), -1);
 
@@ -2127,7 +2183,8 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<Xks
             FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
             vectorFunctionsToCheck.pop_back();
             vectorAllFunctionsCalledByTheStage.push_back(aFunctionCalled);
-            
+            bool isFunctionAccessingAStreamVariable = false;
+
             unsigned int start = aFunctionCalled->bytecodeStartPosition;
             const unsigned int end = aFunctionCalled->bytecodeEndPosition;
             while (start < end)
@@ -2157,6 +2214,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<Xks
                                 return error(string("streamMemberIndex is out of bound: ") + to_string(streamMemberIndex));
 #endif
                             vectorResultIdsAccessingAStreamVariable[resultId] = streamMemberIndex;
+                            isFunctionAccessingAStreamVariable = true;
                         }
                         break;
                     }
@@ -2183,12 +2241,19 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<Xks
                 }
                 start += wordCount;
             }
-        }
 
-        //reset access data to the stream members
-        outputStage->listStreamVariablesAccessed.clear();
-        for (unsigned int m=0; m<globalListOfMergedStreamVariables.members.size(); ++m)
-            outputStage->listStreamVariablesAccessed.push_back(MemberAccessDetails(m));
+            if (isFunctionAccessingAStreamVariable)
+            {
+                if (aFunctionCalled->stageReservingTheFunction != ShadingStageEnum::Undefined)
+                {
+                    return error(GetShadingStageLabel(aFunctionCalled->stageReservingTheFunction) + " and " + GetShadingStageLabel(outputStage->outputStage->stage)
+                         + " stages are both calling a function accessing stream members. Function name: " + aFunctionCalled->GetFullName() );
+                }
+
+                aFunctionCalled->stageReservingTheFunction = outputStage->outputStage->stage;
+                outputStage->listCalledFunctionsAccessingStreamMembers.push_back(aFunctionCalled);
+            }
+        }
 
         //===================================================================================================================
         //===================================================================================================================
@@ -2249,8 +2314,8 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<Xks
                             if (streamVariableindex < 0 || streamVariableindex >= outputStage->listStreamVariablesAccessed.size())
                                 return error(string("stream variable index is out of bound. Id: ") + to_string(streamVariableindex));
 #endif
-                            if (opCode == spv::OpStore) outputStage->listStreamVariablesAccessed[streamVariableindex].AddWriteAccess();
-                            else outputStage->listStreamVariablesAccessed[streamVariableindex].AddReadAccess();
+                            if (opCode == spv::OpStore) outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessWrite();
+                            else outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessRead();
                         }
                         break;
                     }

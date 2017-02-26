@@ -13,6 +13,7 @@ namespace xkslang
 {
     enum class ShadingStageEnum
     {
+        Undefined = -1,
         Vertex = 0,
         Pixel = 1,
         TessControl = 2,

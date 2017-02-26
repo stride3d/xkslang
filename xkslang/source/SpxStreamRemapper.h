@@ -207,7 +207,7 @@ public:
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
             : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
-            flag1(0), currentPosInBytecode(0){}
+            flag1(0), currentPosInBytecode(0), stageReservingTheFunction(ShadingStageEnum::Undefined){}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -236,9 +236,10 @@ public:
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
         std::string fullName;  //name only use for debug purpose
 
-        //to help in some algo
+        //some variables used to help some algos
         int flag1;
         int currentPosInBytecode;
+        ShadingStageEnum stageReservingTheFunction;  //when a stage calls a function using stream, the stage will reserves the function (another stage calling the function will return an error)
 
         friend class SpxStreamRemapper;
     };
@@ -562,34 +563,52 @@ private:
 class MemberAccessDetails
 {
 public:
-    enum class MemberAccessDetailsEnum
+    enum class MemberFirstAccessEnum
     {
         Undefined = 0,
-        Read = 1 << 0,
-        Write = 1 << 1,
+        ReadFirst = 1 << 0,
+        WriteFirst = 1 << 1,
+    };
+
+    enum class MemberIOEnum
+    {
+        Undefined = 0,
+        Input = 1 << 0,
+        Output = 1 << 1,
+        PassThrough = 1 << 2,
     };
 
 public:
     int memberIndex;
-    int accessesNeeded;
-    MemberAccessDetailsEnum firstAccess;
+    MemberFirstAccessEnum firstAccess;
+    int stageIONeeded;
 
-    MemberAccessDetails() : memberIndex(-1), accessesNeeded(0), firstAccess(MemberAccessDetailsEnum::Undefined){}
-    MemberAccessDetails(int index) : memberIndex(index), accessesNeeded(0), firstAccess(MemberAccessDetailsEnum::Undefined) {}
+    MemberAccessDetails() : memberIndex(-1), firstAccess(MemberFirstAccessEnum::Undefined), stageIONeeded(0){}
+    MemberAccessDetails(int index) : memberIndex(index), firstAccess(MemberFirstAccessEnum::Undefined), stageIONeeded(0) {}
     
-    void AddReadAccess() {
-        accessesNeeded |= ((int)MemberAccessDetailsEnum::Read);
-        if (firstAccess == MemberAccessDetailsEnum::Undefined) firstAccess = MemberAccessDetailsEnum::Read;
+    void SetFirstAccessRead() {
+        if (firstAccess == MemberFirstAccessEnum::Undefined) firstAccess = MemberFirstAccessEnum::ReadFirst;
     }
-    void AddWriteAccess() {
-        accessesNeeded |= ((int)MemberAccessDetailsEnum::Write);
-        if (firstAccess == MemberAccessDetailsEnum::Undefined) firstAccess = MemberAccessDetailsEnum::Write;
+    void SetFirstAccessWrite() {
+        if (firstAccess == MemberFirstAccessEnum::Undefined) firstAccess = MemberFirstAccessEnum::WriteFirst;
     }
 
-    bool HasReadAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Read)); }
-    bool HasWriteAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Write)); }
-    bool IsOutputStream() { return firstAccess == MemberAccessDetailsEnum::Write; }
-    bool IsInputStream() { return firstAccess == MemberAccessDetailsEnum::Read; }
+    void SetAsInput() {
+        stageIONeeded |= ((int)MemberIOEnum::Input);
+    }
+    void SetAsOutput() {
+        stageIONeeded |= ((int)MemberIOEnum::Output);
+    }
+    void SetAsPassThrough() {
+        stageIONeeded |= (((int)MemberIOEnum::Input) + ((int)MemberIOEnum::Output) + ((int)MemberIOEnum::PassThrough));
+    }
+
+    bool IsNeededAsInput() { return (stageIONeeded & ((int)MemberIOEnum::Input)); }
+    bool IsInputOnly() { return (stageIONeeded == (int)MemberIOEnum::Input); }
+
+    //bool HasWriteAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Write)); }
+    bool IsWriteFirstStream() { return firstAccess == MemberFirstAccessEnum::WriteFirst; }
+    bool IsReadFirstStream() { return firstAccess == MemberFirstAccessEnum::ReadFirst; }
 };
 
 //Contains output stage info (stage + entrypoint), bytecode, plus additionnal data processed by the mixer during compilation
@@ -601,6 +620,7 @@ public:
     SpxStreamRemapper::FunctionInstruction* entryFunction;  //set when initializing the compilation process
 
     std::vector<MemberAccessDetails> listStreamVariablesAccessed;  //list of stream variables accessed by the stage, set by AnalyseStreams method
+    std::vector<SpxStreamRemapper::FunctionInstruction*> listCalledFunctionsAccessingStreamMembers;  //list of functions called by the stage, accessing some stream members
 
     XkslMixerOutputStage(OutputStageBytecode* outputStage) : outputStage(outputStage) {}
 };

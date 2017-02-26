@@ -241,7 +241,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
         delete clonedSpxStream;
-        return error(messages, "Fail to analyse the streams");
+        return error(messages, "Analysing the streams failed");
     }
 
     if (vecMixerOutputStages[0].outputStage->stage != ShadingStageEnum::Vertex)
@@ -255,7 +255,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
             clonedSpxStream->copyMessagesTo(messages);
             if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
             delete clonedSpxStream;
-            return error(messages, "Fail to validate the stages stream members flow");
+            return error(messages, "Validating the stages stream members flow failed");
         }
 
         //===================================================================================================================
