@@ -279,8 +279,8 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     //output the compiled intermediary bytecodes
     OutputBytecode(composedSpv, outputDir, effectName + "_compile0_composed.hr.spv", BytecodeFileFormat::Text);
     OutputBytecode(streamsMergedSpv, outputDir, effectName + "_compile1_streamsMerged.hr.spv", BytecodeFileFormat::Text);
-    OutputBytecode(streamsReshuffledSpv, outputDir, effectName + "_compile1_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
-    OutputBytecode(finalSpv, outputDir, effectName + "_compile2_final.hr.spv", BytecodeFileFormat::Text);
+    OutputBytecode(streamsReshuffledSpv, outputDir, effectName + "_compile2_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
+    OutputBytecode(finalSpv, outputDir, effectName + "_compile3_final.hr.spv", BytecodeFileFormat::Text);
 
     if (!success) return false;
 

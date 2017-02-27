@@ -1,0 +1,17 @@
+
+shader ShaderMain
+{
+	stage stream float2 Position : POSITION;
+	stage stream float4 ColorTarget: SV_OUTPUT;
+	
+	stage void VSMain() 
+    {
+        streams.Position = float2(0.0f, 1.0f);
+    }
+	
+	//Test calling VSMain from another stage?
+    stage void PSMain() 
+    {
+        streams.ColorTarget = Compute() + float4(streams.Position.xy, 0, 1) + VSMain();
+    }
+}

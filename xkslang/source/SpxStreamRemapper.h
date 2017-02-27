@@ -68,11 +68,11 @@ public:
         spv::Id resultId;
         spv::Id typeId;
         spv::Id targetId;  //for some data we already read the target (for example with OpTypePointer)
-        uint32_t bytecodeStartPosition;
-        uint32_t bytecodeEndPosition;
+        unsigned int bytecodeStartPosition;
+        unsigned int bytecodeEndPosition;
 
         ParsedObjectData(){}
-        ParsedObjectData(ObjectInstructionTypeEnum kind, spv::Op op, spv::Id resultId, spv::Id typeId, uint32_t startPos, uint32_t endPos)
+        ParsedObjectData(ObjectInstructionTypeEnum kind, spv::Op op, spv::Id resultId, spv::Id typeId, unsigned int startPos, unsigned int endPos)
             : kind(kind), opCode(op), resultId(resultId), typeId(typeId), bytecodeStartPosition(startPos), bytecodeEndPosition(endPos), targetId(spv::NoResult){}
 
         void SetTargetId(spv::Id id){targetId  = id;}
@@ -99,10 +99,10 @@ public:
         spv::Id GetId() const { return resultId; }
         spv::Id GetTypeId() const { return typeId; }
         
-        uint32_t GetBytecodeStartPosition() const {return bytecodeStartPosition;}
-        uint32_t GetBytecodeEndPosition() const { return bytecodeEndPosition; }
-        void SetBytecodeStartPosition(uint32_t pos) {bytecodeStartPosition = pos;}
-        void SetBytecodeRangePositions(uint32_t start, uint32_t end) {bytecodeStartPosition = start; bytecodeEndPosition = end;}
+        unsigned int GetBytecodeStartPosition() const {return bytecodeStartPosition;}
+        unsigned int GetBytecodeEndPosition() const { return bytecodeEndPosition; }
+        void SetBytecodeStartPosition(unsigned int pos) {bytecodeStartPosition = pos;}
+        void SetBytecodeRangePositions(unsigned int start, unsigned int end) {bytecodeStartPosition = start; bytecodeEndPosition = end;}
 
         void SetShaderOwner(ShaderClassData* owner) { shaderOwner = owner; }
         ShaderClassData* GetShaderOwner() const { return shaderOwner; }
@@ -117,8 +117,8 @@ public:
         SpxStreamRemapper* bytecodeSource;
 
         //those fields can change when we mix bytecodes
-        uint32_t bytecodeStartPosition;
-        uint32_t bytecodeEndPosition;
+        unsigned int bytecodeStartPosition;
+        unsigned int bytecodeEndPosition;
 
         friend class SpxStreamRemapper;
     };
@@ -263,8 +263,8 @@ public:
         int newStructMemberId;
 
         bool HasSemantic() const { return semantic.size() > 0; }
-        std::string GetSemanticOrDeclarationName() { return HasSemantic()? semantic: declarationName; }
-        std::string GetNameWithSemantic() {
+        const std::string& GetSemanticOrDeclarationName() const { return HasSemantic()? semantic: declarationName; }
+        std::string GetNameWithSemantic() const {
             if (HasSemantic()) return declarationName + std::string(": ") + semantic;
             return declarationName;
         }
@@ -342,7 +342,7 @@ public:
         unsigned int lastLoopInstuctionEnd;
 
         //duplicated bytecode after we clone (unroll) each forlopp compositions
-        std::vector<spirword_t> foreachDuplicatedBytecode;
+        std::vector<std::uint32_t> foreachDuplicatedBytecode;
 
         CompositionForEachLoopData(ShaderComposition* composition, unsigned int nestedLevel, unsigned int foreachLoopStart, unsigned int foreachLoopEnd, unsigned int firstLoopInstuctionStart, unsigned int lastLoopInstuctionEnd) :
             composition(composition), nestedLevel(nestedLevel), foreachLoopStart(foreachLoopStart), foreachLoopEnd(foreachLoopEnd), firstLoopInstuctionStart(firstLoopInstuctionStart), lastLoopInstuctionEnd(lastLoopInstuctionEnd) {}
@@ -453,11 +453,10 @@ public:
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& nameOfShadersToMix);
 
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxStreamRemapper* source, std::vector<std::string>& messages);
-    void GetMixinBytecode(std::vector<uint32_t>& bytecodeStream);
+    void GetMixinBytecode(std::vector<std::uint32_t>& bytecodeStream);
 
     static void GetStagesPipeline(std::vector<ShadingStageEnum>& pipeline);
 
-    virtual void error(const std::string& txt) const;
     bool error(const std::string& txt);
     void copyMessagesTo(std::vector<std::string>& list);
 
@@ -493,7 +492,7 @@ private:
     bool BuildAllMaps();
     bool UpdateAllMaps();
     bool UpdateAllObjectsPositionInTheBytecode();
-    bool BuildTypesAndConstsHashmap(std::unordered_map<uint32_t, pairIdPos>& mapHashPos);
+    bool BuildTypesAndConstsHashmap(std::unordered_map<std::uint32_t, pairIdPos>& mapHashPos);
     bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
     ObjectInstructionBase* CreateAndAddNewObjectFor(ParsedObjectData& parsedData);
     bool DecorateObjects(std::vector<bool>& vectorIdsToDecorate);
@@ -510,6 +509,14 @@ private:
     void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
     void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);
     static bool GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const std::vector<ShaderClassData*> listShaders, std::vector<ShaderClassData*>& fullDependencies);
+
+    static bool parseInstruction(const std::vector<std::uint32_t>& bytecode, unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds, std::string& errorMsg);
+    bool parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds);
+    static bool remapAllInstructionIds(std::vector<std::uint32_t>& bytecode, unsigned word, unsigned& wordCount, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
+    static bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned begin, unsigned end, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
+    bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned begin, unsigned end, const std::vector<spv::Id>& remapTable);
+
+    bool CleanBytecodeFromAllUnusedStuff();
 
 private:
     //static variable share between all SpxStreamRemapper instances
@@ -543,21 +550,31 @@ private:
     FunctionInstruction* GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name);
     bool GetAllShaderInstancesForComposition(const ShaderComposition* composition, std::vector<ShaderClassData*>& instances);
     bool GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel);
-
+    
     void stripBytecode(std::vector<range_t>& ranges);
 
-    void CopyInstructionToVector(std::vector<spirword_t>& vec, uint32_t opStart){
+    void CopyInstructionToVector(std::vector<std::uint32_t>& vec, int opStart){
         auto start = spv.begin() + opStart;
         auto end = start + asWordCount(opStart);
         vec.insert(vec.end(), start, end);
     }
-    void CopyInstructionToVector(std::vector<spirword_t>& vec, uint32_t opStart, uint32_t opEnd) {
+    void CopyInstructionToVector(std::vector<std::uint32_t>& vec, int opStart, int opEnd) {
         auto start = spv.begin() + opStart;
         auto end = spv.begin() + opEnd;
         vec.insert(vec.end(), start, end);
     }
 
     friend class XkslMixer;
+};
+
+class BytecodeAdditionContainer
+{
+public:
+    BytecodeAdditionContainer(){}
+    BytecodeAdditionContainer(int insertionPos) : insertionPos(insertionPos){}
+
+    int insertionPos;
+    std::vector<std::uint32_t> bytecode;
 };
 
 class MemberAccessDetails
@@ -603,7 +620,8 @@ public:
         stageIONeeded |= (((int)MemberIOEnum::Input) + ((int)MemberIOEnum::Output) + ((int)MemberIOEnum::PassThrough));
     }
 
-    bool IsNeededAsInput() { return (stageIONeeded & ((int)MemberIOEnum::Input)); }
+    bool IsNeededAsInput() { return (stageIONeeded & ((int)MemberIOEnum::Input)) != 0; }
+    bool IsNeededAsOutput() { return (stageIONeeded & ((int)MemberIOEnum::Output)) != 0; }
     bool IsInputOnly() { return (stageIONeeded == (int)MemberIOEnum::Input); }
 
     //bool HasWriteAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Write)); }

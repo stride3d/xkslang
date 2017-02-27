@@ -22,21 +22,9 @@ static const string globalStreamStructDefaultName = "globalStreams";
 static const string globalVarOnStreamStructDefaultName = "globalStreams_var";
 
 //===================================================================================================//
-static vector<string> staticErrorMessages;
-static void copyStaticErrorMessagesTo(vector<string>& list)
-{
-    list.insert(list.end(), staticErrorMessages.begin(), staticErrorMessages.end());
-}
-
 void SpxStreamRemapper::copyMessagesTo(vector<string>& list)
 {
     list.insert(list.end(), errorMessages.begin(), errorMessages.end());
-}
-
-void SpxStreamRemapper::error(const string& txt) const
-{
-    //we use a static vector first because we override a function defined as const, and parent class is calling this function >_<
-    staticErrorMessages.push_back(txt);
 }
 
 bool SpxStreamRemapper::error(const string& txt)
@@ -64,7 +52,6 @@ void SpxStreamRemapper::ResetMergeOperationId()
 
 SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
 {
-    staticErrorMessages.clear(); //clear the list of error messages that we will receive from the parent class
     status = SpxRemapperStatusEnum::WaitingForMixin;
 }
 
@@ -205,7 +192,7 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
     return clonedSpxRemapper;
 }
 
-bool SpxStreamRemapper::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderTypeToRemove, std::vector<range_t>& vecStripRanges)
+bool SpxStreamRemapper::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderTypeToRemove, vector<range_t>& vecStripRanges)
 {
     ShaderClassData* shaderOwner = shaderTypeToRemove->type->shaderOwner;
 
@@ -599,11 +586,11 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //Merge all the shaders
     int newId = bound();
 
-    spirvbin_t vecNamesAndDecorateToMerge;
-    spirvbin_t vecXkslDecoratesToMerge;
-    spirvbin_t vecTypesConstsAndVariablesToMerge;
-    spirvbin_t vecFunctionsToMerge;
-    spirvbin_t vecHeaderPropertiesToMerge;
+    vector<uint32_t> vecNamesAndDecorateToMerge;
+    vector<uint32_t> vecXkslDecoratesToMerge;
+    vector<uint32_t> vecTypesConstsAndVariablesToMerge;
+    vector<uint32_t> vecFunctionsToMerge;
+    vector<uint32_t> vecHeaderPropertiesToMerge;
 
     vector<spv::Id> finalRemapTable;
     finalRemapTable.resize(bytecodeToMerge.bound(), spv::spirvbin_t::unused);
@@ -653,11 +640,11 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 #endif
 
             finalRemapTable[type->GetId()] = newId++;
-            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, type->GetBytecodeStartPosition());
+            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge, type->GetBytecodeStartPosition());
             finalRemapTable[pointerToType->GetId()] = newId++;
-            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, pointerToType->GetBytecodeStartPosition());
+            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge, pointerToType->GetBytecodeStartPosition());
             finalRemapTable[variable->GetId()] = newId++;
-            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, variable->GetBytecodeStartPosition());
+            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge, variable->GetBytecodeStartPosition());
 
             if (instantiateTheShader) {
                 listIdsWhereToAddNamePrefix[type->GetId()] = true;
@@ -675,7 +662,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
 #endif
 
             finalRemapTable[resultId] = newId++;
-            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge.spv, shaderToMerge->GetBytecodeStartPosition());
+            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge, shaderToMerge->GetBytecodeStartPosition());
 
             if (instantiateTheShader) {
                 listIdsWhereToAddNamePrefix[resultId] = true;
@@ -730,7 +717,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             }
 
             //Copy all bytecode instructions from the function
-            bytecodeToMerge.CopyInstructionToVector(vecFunctionsToMerge.spv, functionToMerge->GetBytecodeStartPosition(), functionToMerge->GetBytecodeEndPosition());
+            bytecodeToMerge.CopyInstructionToVector(vecFunctionsToMerge, functionToMerge->GetBytecodeStartPosition(), functionToMerge->GetBytecodeEndPosition());
         }
     } //end shaderToMerge loop
 
@@ -744,7 +731,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     }
 
     //Populate vecNewShadersDecorationPossesingIds with some decorate instructions which might contains unmapped IDs
-    spirvbin_t vecXkslDecorationsPossesingIds;
+    vector<uint32_t> vecXkslDecorationsPossesingIds;
     {
         unsigned int start = bytecodeToMerge.header_size;
         const unsigned int end = bytecodeToMerge.spv.size();
@@ -762,7 +749,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
                     {
-                        bytecodeToMerge.CopyInstructionToVector(vecXkslDecorationsPossesingIds.spv, start);
+                        bytecodeToMerge.CopyInstructionToVector(vecXkslDecorationsPossesingIds, start);
                     }
                     break;
                 }
@@ -775,13 +762,13 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //=============================================================================================================
     //=============================================================================================================
     //Check for all unmapped Ids called within the shader types/consts instructions that we have to merge
-    spirvbin_t bytecodeWithExtraTypesToMerge;
+    vector<uint32_t> bytecodeWithExtraTypesToMerge;
     {
         //Init by checking all types instructions for unmapped IDs
-        spirvbin_t bytecodeToCheckForUnmappedIds;
-        bytecodeToCheckForUnmappedIds.spv.insert(bytecodeToCheckForUnmappedIds.spv.end(), vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
-        bytecodeToCheckForUnmappedIds.spv.insert(bytecodeToCheckForUnmappedIds.spv.end(), vecFunctionsToMerge.spv.begin(), vecFunctionsToMerge.spv.end());
-        bytecodeToCheckForUnmappedIds.spv.insert(bytecodeToCheckForUnmappedIds.spv.end(), vecXkslDecorationsPossesingIds.spv.begin(), vecXkslDecorationsPossesingIds.spv.end());
+        vector<uint32_t> bytecodeToCheckForUnmappedIds;
+        bytecodeToCheckForUnmappedIds.insert(bytecodeToCheckForUnmappedIds.end(), vecTypesConstsAndVariablesToMerge.begin(), vecTypesConstsAndVariablesToMerge.end());
+        bytecodeToCheckForUnmappedIds.insert(bytecodeToCheckForUnmappedIds.end(), vecFunctionsToMerge.begin(), vecFunctionsToMerge.end());
+        bytecodeToCheckForUnmappedIds.insert(bytecodeToCheckForUnmappedIds.end(), vecXkslDecorationsPossesingIds.begin(), vecXkslDecorationsPossesingIds.end());
         vector<pairIdPos> listUnmappedIdsToProcess;  //unmapped ids and their pos in the bytecode to merge
 
         spv::Op opCode;
@@ -790,12 +777,15 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
         spv::Id typeId, resultId;
         unsigned int listIdsLen;
         unsigned int start = 0;
-        const unsigned int end = bytecodeToCheckForUnmappedIds.spv.size();
+        const unsigned int end = bytecodeToCheckForUnmappedIds.size();
+        string errorMsg;
         while (start < end)
         {
             listIds.clear();
-            if (!bytecodeToCheckForUnmappedIds.parseInstruction(start, opCode, wordCount, typeId, resultId, listIds))
-                return error("Merge shaders. Error parsing bytecodeToCheckForUnmappedIds");
+            if (!parseInstruction(bytecodeToCheckForUnmappedIds, start, opCode, wordCount, typeId, resultId, listIds, errorMsg)){
+                error(errorMsg);
+                return error("Merge shaders. Error parsing bytecodeToCheckForUnmappedIds instructions");
+            }
 
             if (typeId != spv::spirvbin_t::unused) listIds.push_back(typeId);
             listIdsLen = listIds.size();
@@ -908,7 +898,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                         finalRemapTable[unmappedId] = hearderProp->GetId();
                     else
                     {
-                        bytecodeToMerge.CopyInstructionToVector(vecHeaderPropertiesToMerge.spv, objectFromUnmappedId->GetBytecodeStartPosition());
+                        bytecodeToMerge.CopyInstructionToVector(vecHeaderPropertiesToMerge, objectFromUnmappedId->GetBytecodeStartPosition());
                         finalRemapTable[unmappedId] = newId++;
                         listAllNewIdMerged[unmappedId] = true;
                     }
@@ -930,11 +920,13 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 if (mergeTypeOrConst)
                 {
                     //The type doesn't exist yet, we will copy the full instruction, but only after checking that all depending IDs are mapped as well
-                    bytecodeToCheckForUnmappedIds.spv.clear();
-                    bytecodeToMerge.CopyInstructionToVector(bytecodeToCheckForUnmappedIds.spv, objectFromUnmappedId->GetBytecodeStartPosition());
+                    bytecodeToCheckForUnmappedIds.clear();
+                    bytecodeToMerge.CopyInstructionToVector(bytecodeToCheckForUnmappedIds, objectFromUnmappedId->GetBytecodeStartPosition());
                     listIds.clear();
-                    if (!bytecodeToCheckForUnmappedIds.parseInstruction(0, opCode, wordCount, typeId, resultId, listIds))
-                        return error("Error parsing bytecodeToCheckForUnmappedIds");
+                    if (!parseInstruction(bytecodeToCheckForUnmappedIds, 0, opCode, wordCount, typeId, resultId, listIds, errorMsg)){
+                        error(errorMsg);
+                        return error("Error parsing bytecodeToCheckForUnmappedIds instructions");
+                    }
 
                     if (typeId != spv::spirvbin_t::unused) listIds.push_back(typeId);
                     listIdsLen = listIds.size();
@@ -958,7 +950,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                         //the instruction is not depending on another unmapped IDs anymore, we can copy it
                         finalRemapTable[unmappedId] = newId++;
                         listUnmappedIdsToProcess.pop_back();
-                        bytecodeToMerge.CopyInstructionToVector(bytecodeWithExtraTypesToMerge.spv, objectFromUnmappedId->GetBytecodeStartPosition());
+                        bytecodeToMerge.CopyInstructionToVector(bytecodeWithExtraTypesToMerge, objectFromUnmappedId->GetBytecodeStartPosition());
 
                         listAllNewIdMerged[unmappedId] = true;
                     }
@@ -968,9 +960,9 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     }  //end block
 
     //Add the extra types we merged at the beginning of our vec of type/const/variable
-    if (bytecodeWithExtraTypesToMerge.spv.size() > 0)
+    if (bytecodeWithExtraTypesToMerge.size() > 0)
     {
-        vecTypesConstsAndVariablesToMerge.spv.insert(vecTypesConstsAndVariablesToMerge.spv.begin(), bytecodeWithExtraTypesToMerge.spv.begin(), bytecodeWithExtraTypesToMerge.spv.end());       
+        vecTypesConstsAndVariablesToMerge.insert(vecTypesConstsAndVariablesToMerge.begin(), bytecodeWithExtraTypesToMerge.begin(), bytecodeWithExtraTypesToMerge.end());       
     }
 
     //=============================================================================================================
@@ -999,11 +991,11 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                             spv::Instruction nameInstr(opCode);
                             nameInstr.addIdOperand(id);
                             nameInstr.addStringOperand(strUpdatedName.c_str());
-                            nameInstr.dump(vecNamesAndDecorateToMerge.spv);
+                            nameInstr.dump(vecNamesAndDecorateToMerge);
                         }
                         else
                         {
-                            bytecodeToMerge.CopyInstructionToVector(vecNamesAndDecorateToMerge.spv, start);
+                            bytecodeToMerge.CopyInstructionToVector(vecNamesAndDecorateToMerge, start);
                         }
                     }
                     break;
@@ -1016,7 +1008,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
                     {
-                        bytecodeToMerge.CopyInstructionToVector(vecNamesAndDecorateToMerge.spv, start);
+                        bytecodeToMerge.CopyInstructionToVector(vecNamesAndDecorateToMerge, start);
                     }
                     break;
                 }
@@ -1041,11 +1033,11 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                             spv::Instruction nameInstr(opCode);
                             nameInstr.addIdOperand(id);
                             nameInstr.addStringOperand(strUpdatedName.c_str());
-                            nameInstr.dump(vecXkslDecoratesToMerge.spv);
+                            nameInstr.dump(vecXkslDecoratesToMerge);
                         }
                         else
                         {
-                            bytecodeToMerge.CopyInstructionToVector(vecXkslDecoratesToMerge.spv, start);
+                            bytecodeToMerge.CopyInstructionToVector(vecXkslDecoratesToMerge, start);
                         }
                     }
                     break;
@@ -1062,7 +1054,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
                     {
-                        bytecodeToMerge.CopyInstructionToVector(vecXkslDecoratesToMerge.spv, start);
+                        bytecodeToMerge.CopyInstructionToVector(vecXkslDecoratesToMerge, start);
                     }
                     break;
                 }
@@ -1075,18 +1067,18 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //=============================================================================================================
     //=============================================================================================================
     //remap IDs for all mergable types / variables / consts / functions / extImport
-    if (vecHeaderPropertiesToMerge.spv.size() > 0)
+    if (vecHeaderPropertiesToMerge.size() > 0)
     {
-        if (!vecHeaderPropertiesToMerge.remapAllIds(0, vecHeaderPropertiesToMerge.spv.size(), finalRemapTable))
+        if (!remapAllIds(vecHeaderPropertiesToMerge, 0, vecHeaderPropertiesToMerge.size(), finalRemapTable))
             return error("remapAllIds failed on vecHeaderPropertiesToMerge");
     }
-    if (!vecTypesConstsAndVariablesToMerge.remapAllIds(0, vecTypesConstsAndVariablesToMerge.spv.size(), finalRemapTable))
+    if (!remapAllIds(vecTypesConstsAndVariablesToMerge, 0, vecTypesConstsAndVariablesToMerge.size(), finalRemapTable))
         return error("remapAllIds failed on vecTypesConstsAndVariablesToMerge");
-    if (!vecXkslDecoratesToMerge.remapAllIds(0, vecXkslDecoratesToMerge.spv.size(), finalRemapTable))
+    if (!remapAllIds(vecXkslDecoratesToMerge, 0, vecXkslDecoratesToMerge.size(), finalRemapTable))
         return error("remapAllIds failed on vecXkslDecoratesToMerge");
-    if (!vecNamesAndDecorateToMerge.remapAllIds(0, vecNamesAndDecorateToMerge.spv.size(), finalRemapTable))
+    if (!remapAllIds(vecNamesAndDecorateToMerge, 0, vecNamesAndDecorateToMerge.size(), finalRemapTable))
         return error("remapAllIds failed on vecNamesAndDecorateToMerge");
-    if (!vecFunctionsToMerge.remapAllIds(0, vecFunctionsToMerge.spv.size(), finalRemapTable))
+    if (!remapAllIds(vecFunctionsToMerge, 0, vecFunctionsToMerge.size(), finalRemapTable))
         return error("remapAllIds failed on vecFunctionsToMerge");
     //vecFunctionsToMerge.processOnFullBytecode(
     //    spx_inst_fn_nop,
@@ -1182,14 +1174,14 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     //=============================================================================================================
     // merge all data in the destination bytecode
     //merge functions
-    spv.insert(spv.begin() + posToInsertNewFunctions, vecFunctionsToMerge.spv.begin(), vecFunctionsToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewFunctions, vecFunctionsToMerge.begin(), vecFunctionsToMerge.end());
     //Merge types and variables (we need to merge new types AFTER all previous types)
-    spv.insert(spv.begin() + posToInsertNewTypesAndConsts, vecTypesConstsAndVariablesToMerge.spv.begin(), vecTypesConstsAndVariablesToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewTypesAndConsts, vecTypesConstsAndVariablesToMerge.begin(), vecTypesConstsAndVariablesToMerge.end());
     //Merge names and decorates
-    spv.insert(spv.begin() + posToInsertNewXkslDecorates, vecXkslDecoratesToMerge.spv.begin(), vecXkslDecoratesToMerge.spv.end());
-    spv.insert(spv.begin() + posToInsertNewNames, vecNamesAndDecorateToMerge.spv.begin(), vecNamesAndDecorateToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewXkslDecorates, vecXkslDecoratesToMerge.begin(), vecXkslDecoratesToMerge.end());
+    spv.insert(spv.begin() + posToInsertNewNames, vecNamesAndDecorateToMerge.begin(), vecNamesAndDecorateToMerge.end());
     //merge ext import
-    spv.insert(spv.begin() + posToInsertNewHeaderProrerties, vecHeaderPropertiesToMerge.spv.begin(), vecHeaderPropertiesToMerge.spv.end());
+    spv.insert(spv.begin() + posToInsertNewHeaderProrerties, vecHeaderPropertiesToMerge.begin(), vecHeaderPropertiesToMerge.end());
 
     //destination bytecode has been updated: reupdate all maps
     UpdateAllMaps();
@@ -1455,7 +1447,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
                         poslastMemberXkslPropertiesEnd = start + wordCount;
 
                         const spv::Id typeId = asId(start + 1);
-                        const int memberId = asLiteralValue(start + 2);
+                        const unsigned int memberId = asLiteralValue(start + 2);
                         TypeInstruction* type = GetTypeById(typeId);
                         if (type == nullptr) { error(string("Cannot find the type for Id: ") + to_string(typeId)); break;}
 
@@ -1534,13 +1526,13 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
                     case spv::OpMemberSemanticName:
                     {
                         const spv::Id typeId = asId(start + 1);
-                        const int memberId = asLiteralValue(start + 2);
+                        const unsigned int memberId = asLiteralValue(start + 2);
                         TypeInstruction* type = GetTypeById(typeId);
                         if (type == nullptr) { error(string("Cannot find the type for Id: ") + to_string(typeId)); break; }
                         if (type->streamStructData == nullptr) break;  //type has not been detected as holding stream variables in the first pass
 
 #ifdef XKSLANG_DEBUG_MODE
-                        if (memberId < 0 || memberId >= type->streamStructData->members.size()) {error("Invalid member id"); break;}
+                        if (memberId >= type->streamStructData->members.size()) {error("Invalid member id"); break;}
 #endif
 
                         if (opCode == spv::OpMemberSemanticName)
@@ -1697,7 +1689,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
     vector<spv::Id> mapIndexesWithConstValueId;
     mapIndexesWithConstValueId.resize(listOfMergedStreamVariables.size(), spv::spirvbin_t::unused);
     spv::Id idOpTypeIntS32 = spv::spirvbin_t::unused;
-    int posLastConstEnd = 0; 
+    unsigned int posLastConstEnd = 0;
     if (success)
     {
         for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
@@ -1711,7 +1703,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
                 if (constObject->isS32)
                 {
                     int constValueS32 = constObject->valueS32;
-                    if (constValueS32 >= 0 && constValueS32 < mapIndexesWithConstValueId.size())
+                    if (constValueS32 >= 0 && constValueS32 < (int)mapIndexesWithConstValueId.size())
                         mapIndexesWithConstValueId[constValueS32] = constObject->GetId();
                     if (idOpTypeIntS32 == spv::spirvbin_t::unused)
                         idOpTypeIntS32 = constObject->GetTypeId();
@@ -1795,11 +1787,11 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
                         int accessChainIndexValue32 = constObject->valueS32;
 #ifdef XKSLANG_DEBUG_MODE
                         if (!constObject->isS32) { error("the const variable uses an invalid type. It should be intS32"); break; }
-                        if (accessChainIndexValue32 < 0 || accessChainIndexValue32 >= streamBufferType->streamStructData->members.size()) { error("accessChainIndexValue32 is out of bound"); break; }
+                        if (accessChainIndexValue32 < 0 || accessChainIndexValue32 >= (int)streamBufferType->streamStructData->members.size()) { error("accessChainIndexValue32 is out of bound"); break; }
 #endif
                         int newAccessChainIndex = streamBufferType->streamStructData->members[accessChainIndexValue32].newStructMemberId;
 #ifdef XKSLANG_DEBUG_MODE
-                        if (newAccessChainIndex < 0 || newAccessChainIndex >= mapIndexesWithConstValueId.size()) { error("newAccessChainIndex is out of bound"); break; }
+                        if (newAccessChainIndex < 0 || newAccessChainIndex >= (int)mapIndexesWithConstValueId.size()) { error("newAccessChainIndex is out of bound"); break; }
 #endif
                         spv::Id newAccessChainIndexConstId = mapIndexesWithConstValueId[newAccessChainIndex];
 #ifdef XKSLANG_DEBUG_MODE
@@ -1972,7 +1964,7 @@ void SpxStreamRemapper::GetStagesPipeline(vector<ShadingStageEnum>& pipeline)
     pipeline = { ShadingStageEnum::Vertex, ShadingStageEnum::TessControl, ShadingStageEnum::TessEvaluation, ShadingStageEnum::Geometry , ShadingStageEnum::Pixel };
 }
 
-bool SpxStreamRemapper::InitializeCompilationProcess(std::vector<XkslMixerOutputStage>& outputStages)
+bool SpxStreamRemapper::InitializeCompilationProcess(vector<XkslMixerOutputStage>& outputStages)
 {
     //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_Initialized;
@@ -1991,7 +1983,7 @@ bool SpxStreamRemapper::InitializeCompilationProcess(std::vector<XkslMixerOutput
         ShadingStageEnum outputStage = outputStages[i].outputStage->stage;
 
         lastStageMatched++;
-        while (lastStageMatched < stagePipeline.size())
+        while (lastStageMatched < (int)stagePipeline.size())
         {
             if (stagePipeline[lastStageMatched] == outputStage) break;
             lastStageMatched++;
@@ -2017,7 +2009,7 @@ bool SpxStreamRemapper::InitializeCompilationProcess(std::vector<XkslMixerOutput
     return true;
 }
 
-bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAnalysed) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamFlowValidated;
@@ -2104,7 +2096,7 @@ bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(std::vector<XkslMixerOut
                         {
                             //which stage is asking for the stream?
                             int indexStageAskingForTheInput = -1;
-                            for (int i = 0; i < outputStages.size(); ++i)
+                            for (unsigned int i = 0; i < outputStages.size(); ++i)
                             {
                                 if (outputStages[i].listStreamVariablesAccessed[ivs].IsInputOnly()) {
                                     indexStageAskingForTheInput = i;
@@ -2127,15 +2119,180 @@ bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(std::vector<XkslMixerOut
     return true;
 }
 
-bool SpxStreamRemapper::ReshuffleStreamVariables(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamFlowValidated) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamReschuffled;
 
+    //get global stream buffer object
+    if (globalListOfMergedStreamVariables.countMembers() == 0) return true; //nothing to reshuffle
+    TypeInstruction* globalStreamType = GetTypeById(globalListOfMergedStreamVariables.structTypeId);
+    if (globalStreamType == nullptr)
+        return error(string("Cannot retrieve the global stream type. Id: ") + to_string(globalListOfMergedStreamVariables.structTypeId));
+
+    //vectors of new bytecodes to insert
+    spv::Id newId = bound();
+    vector<unsigned int> vecTypesToAdd;
+    vector<unsigned int> vecNamesAndDecorate;
+    list<BytecodeAdditionContainer> listFunctionAdditionnalBytecode;
+
+    //=============================================================================================================
+    //=============================================================================================================
+    //For each stage, create the Input/output/internal struct
+    for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
+    {
+        XkslMixerOutputStage& stage = outputStages[iStage];
+
+        //get which members are needed for which IO
+        vector<unsigned int> vecInputMembersIndex;
+        vector<unsigned int> vecOutputMembersIndex;
+        vector<unsigned int> vecIOMembersIndex;
+        for (unsigned int im = 0; im < stage.listStreamVariablesAccessed.size(); ++im)
+        {
+            int index = stage.listStreamVariablesAccessed[im].memberIndex;
+            if (stage.listStreamVariablesAccessed[im].IsNeededAsInput()) {
+                vecInputMembersIndex.push_back(index);
+                vecIOMembersIndex.push_back(index);
+            }
+            if (stage.listStreamVariablesAccessed[im].IsNeededAsOutput()) {
+                vecOutputMembersIndex.push_back(index);
+                vecIOMembersIndex.push_back(index);
+            }
+        }
+
+        //Add the stage input structure into the stage entry point function
+        if (vecInputMembersIndex.size() > 0)
+        {
+            //make the struct type
+            spv::Instruction inputStructType(newId++, spv::NoType, spv::OpTypeStruct);
+            for (unsigned int k = 0; k < vecInputMembersIndex.size(); ++k)
+            {
+                const unsigned int index = vecInputMembersIndex[k];
+                const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+                inputStructType.addIdOperand(streamMember.memberTypeId);
+            }
+            inputStructType.dump(vecTypesToAdd);
+
+            //make the struct function parameter pointer type
+            spv::Instruction inputStructPointerType(newId++, spv::NoType, spv::OpTypePointer);
+            inputStructPointerType.addImmediateOperand(spv::StorageClass::StorageClassFunction);
+            inputStructPointerType.addIdOperand(inputStructType.getResultId());
+            inputStructPointerType.dump(vecTypesToAdd);
+
+#ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
+            //struct name
+            string stagePrefix = GetShadingStageLabelShort(stage.outputStage->stage) + "_IN";
+            spv::Instruction stageInputStructName(spv::OpName);
+            stageInputStructName.addIdOperand(inputStructType.getResultId());
+            stageInputStructName.addStringOperand(stagePrefix.c_str());
+            stageInputStructName.dump(vecNamesAndDecorate);
+
+            //Add the members name
+            for (unsigned int k = 0; k < vecInputMembersIndex.size(); ++k)
+            {
+                const unsigned int index = vecInputMembersIndex[k];
+                const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+
+                //member name
+                spv::Instruction memberName(spv::OpMemberName);
+                memberName.addIdOperand(inputStructType.getResultId());
+                memberName.addImmediateOperand(k);
+                memberName.addStringOperand((stagePrefix + "_" + streamMember.GetSemanticOrDeclarationName() + "_" + to_string(k)).c_str());
+                memberName.dump(vecNamesAndDecorate);
+            }
+#endif
+
+            //insert the new input type within the entry function bytecode
+            FunctionInstruction* entryFunction = stage.entryFunction;
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (entryFunction == nullptr) return error("Stage as no entry point function");
+            spv::Op opCode = asOpCode(entryFunction->bytecodeStartPosition);
+            if (opCode != spv::OpFunction) return error("Corrupted bytecode: expected OpFunction instruction");
+#endif
+
+            unsigned int wordCount = asWordCount(entryFunction->bytecodeStartPosition);
+            int posToInsertFunctionBytecode = entryFunction->bytecodeStartPosition + wordCount;
+            
+            //sort the bytecode insertion by their starting position (higher to smaller insertion position)
+            auto itListPos = listFunctionAdditionnalBytecode.begin();
+            while (itListPos != listFunctionAdditionnalBytecode.end())
+            {
+                if (posToInsertFunctionBytecode > itListPos->insertionPos) break;
+                itListPos++;
+            }
+            itListPos = listFunctionAdditionnalBytecode.insert(itListPos, BytecodeAdditionContainer(posToInsertFunctionBytecode));
+            BytecodeAdditionContainer& functionEntryBytecode = *itListPos;
+
+            //Add the input struct as a function parameter
+            spv::Instruction functionInputParameter(newId++, inputStructPointerType.getResultId(), spv::OpFunctionParameter);
+            functionInputParameter.addIdOperand(inputStructType.getResultId());
+            functionInputParameter.dump(functionEntryBytecode.bytecode);
+
+        } //end input struct insertion
+
+    }  //end loop for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
+
+    if (listFunctionAdditionnalBytecode.size() == 0) error("No bytecode has been added into any functions");
+    if (errorMessages.size() > 0) return false;
+
+    //=============================================================================================================
+    //=============================================================================================================
+    //Insert the new types and dada into our bytecode
+    {
+        //find the best positions where to insert new stuff
+        int posNewTypesInsertion = globalStreamType->bytecodeStartPosition;
+        int posNamesAndDecoratesInsertion = header_size;
+
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            //we'll insert the new names and decorates before the first name/decorate we find (in the worst case: we are certain to find at least one OpMemberProperties)
+            switch (opCode)
+            {
+                case spv::OpName:
+                case spv::OpMemberName:
+                case spv::OpDeclarationName:
+                case spv::OpMemberProperties:
+                    posNamesAndDecoratesInsertion = start;
+                    start = end;
+                    break;
+            }
+            start += wordCount;
+        }
+
+        if (posNamesAndDecoratesInsertion > posNewTypesInsertion) posNamesAndDecoratesInsertion = posNewTypesInsertion;
+        if (posNewTypesInsertion > listFunctionAdditionnalBytecode.back().insertionPos) return error("New types must be inserted before new function bytecodes");
+
+        //=============================================================================================================
+        // insert all data in the bytecode
+        //merge functions bytecode (already sorted)
+        for (auto itf = listFunctionAdditionnalBytecode.begin(); itf != listFunctionAdditionnalBytecode.end(); itf++)
+        {
+            BytecodeAdditionContainer& functionBytecode = *itf;
+            //spv.insert(spv.begin() + functionBytecode.insertionPos, functionBytecode.bytecode.begin(), functionBytecode.bytecode.end());
+            //TOTOTOTOTO
+        }
+        //Merge types and variables
+        spv.insert(spv.begin() + posNewTypesInsertion, vecTypesToAdd.begin(), vecTypesToAdd.end());
+        //Merge names and decorate
+        spv.insert(spv.begin() + posNamesAndDecoratesInsertion, vecNamesAndDecorate.begin(), vecNamesAndDecorate.end());
+
+        setBound(newId);
+
+        //destination bytecode has been updated: reupdate all maps
+        if (!UpdateAllMaps()) error("failed to update all maps");
+    }
+
+    if (errorMessages.size() > 0) return false;
     return true;
 }
 
-bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAnalysed;
@@ -2210,7 +2367,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<Xks
 #ifdef XKSLANG_DEBUG_MODE
                             if (resultId >= vectorResultIdsAccessingAStreamVariable.size()) return error("resultId out of bound");
                             if (vectorResultIdsAccessingAStreamVariable[resultId] != -1) return error("resultId is already accessing a stream variable");
-                            if (streamMemberIndex < 0 || streamMemberIndex >= globalListOfMergedStreamVariables.members.size())
+                            if (streamMemberIndex < 0 || streamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
                                 return error(string("streamMemberIndex is out of bound: ") + to_string(streamMemberIndex));
 #endif
                             vectorResultIdsAccessingAStreamVariable[resultId] = streamMemberIndex;
@@ -2311,7 +2468,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<Xks
                             //cout << "write: " << globalListOfMergedStreamVariables.members[vectorResultIdsAccessingAStreamVariable[targetId]].declarationName << endl;
                             int streamVariableindex = vectorResultIdsAccessingAStreamVariable[targetId];
 #ifdef XKSLANG_DEBUG_MODE
-                            if (streamVariableindex < 0 || streamVariableindex >= outputStage->listStreamVariablesAccessed.size())
+                            if (streamVariableindex < 0 || streamVariableindex >= (int)outputStage->listStreamVariablesAccessed.size())
                                 return error(string("stream variable index is out of bound. Id: ") + to_string(streamVariableindex));
 #endif
                             if (opCode == spv::OpStore) outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessWrite();
@@ -2329,7 +2486,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(std::vector<Xks
     return true;
 }
 
-bool SpxStreamRemapper::RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages)
+bool SpxStreamRemapper::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputStages)
 {
     //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved;
@@ -2523,8 +2680,8 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
 
                 if (anythingToUnroll)
                 {
-                    spirvbin_t duplicatedBytecode;
-                    std::vector<spirword_t> foreachLoopBytecode;
+                    vector<uint32_t> duplicatedBytecode;
+                    vector<uint32_t> foreachLoopBytecode;
                     foreachLoopBytecode.insert(foreachLoopBytecode.end(), spv.begin() + forEachLoopToUnroll->firstLoopInstuctionStart, spv.begin() + forEachLoopToUnroll->lastLoopInstuctionEnd);
 
                     //get the list of all resultIds to remapp from the foreach loop bytecode
@@ -2577,29 +2734,30 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
                                 else remapTable[id] = id;
                             }
 
-                            unsigned int start = duplicatedBytecode.spv.size();
-                            duplicatedBytecode.spv.insert(duplicatedBytecode.spv.end(), foreachLoopBytecode.begin(), foreachLoopBytecode.end());
-                            const unsigned int end = duplicatedBytecode.spv.size();
+                            unsigned int start = duplicatedBytecode.size();
+                            duplicatedBytecode.insert(duplicatedBytecode.end(), foreachLoopBytecode.begin(), foreachLoopBytecode.end());
+                            const unsigned int end = duplicatedBytecode.size();
 
                             //remap all Ids
-                            duplicatedBytecode.remapAllIds(start, end, remapTable);
+                            if (!remapAllIds(duplicatedBytecode, start, end, remapTable))
+                                return error("remapAllIds failed on duplicatedBytecode");
 
                             //for all call to a function through the composition variable we're instancing, update the instance num
                             while (start < end)
                             {
-                                unsigned int wordCount = duplicatedBytecode.asWordCount(start);
-                                spv::Op opCode = duplicatedBytecode.asOpCode(start);
+                                unsigned int wordCount = opWordCount(duplicatedBytecode[start]);
+                                spv::Op opCode = opOpCode(duplicatedBytecode[start]);
                                 switch (opCode)
                                 {
                                     case spv::OpFunctionCallThroughCompositionVariable:
                                     {
-                                        spv::Id shaderId = duplicatedBytecode.asId(start + 4);
-                                        int compositionId = duplicatedBytecode.asLiteralValue(start + 5);
-                                        int initialInstanceNum = duplicatedBytecode.asLiteralValue(start + 6);
+                                        spv::Id shaderId = duplicatedBytecode[start + 4];
+                                        int compositionId = duplicatedBytecode[start + 5];
+                                        int initialInstanceNum = duplicatedBytecode[start + 6];
 
                                         if (compositionToUnroll->compositionShaderOwner->GetId() == shaderId && compositionToUnroll->compositionShaderId == compositionId)
                                         {
-                                            duplicatedBytecode.setLiteralValue(start + 6, instanceNum);
+                                            duplicatedBytecode[start + 6] = instanceNum;
                                         }
 
                                         break;
@@ -2610,7 +2768,7 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
                         }
                     }
 
-                    forEachLoopToUnroll->foreachDuplicatedBytecode = duplicatedBytecode.spv;
+                    forEachLoopToUnroll->foreachDuplicatedBytecode = duplicatedBytecode;
 
                     //insert the foreach loop, sorted by their reversed apparition in the bytecode
                     auto itList = listForeachLoopsToMergeIntoBytecode.begin();
@@ -2681,7 +2839,7 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
                 {
                     spv::Id shaderId = asId(start + 4);
                     int compositionId = asLiteralValue(start + 5);
-                    int instancesNum = asLiteralValue(start + 6);
+                    unsigned int instancesNum = asLiteralValue(start + 6);
 
                     //===================================================
                     //Find the composition data
@@ -2700,7 +2858,7 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
                         return error(string("Failed to retrieve the instances for the composition: ") + composition->variableName + string(" from shader: ") + composition->compositionShaderOwner->GetName());
                     }
 
-                    if (instancesNum < 0 || instancesNum >= vecCompositionShaderInstances.size()) { error(string("Invalid instanceNum number: ") + to_string(instancesNum)); break; }
+                    if (instancesNum >= vecCompositionShaderInstances.size()) { error(string("Invalid instanceNum number: ") + to_string(instancesNum)); break; }
                     ShaderClassData* clonedShader = vecCompositionShaderInstances[instancesNum];
 
                     //===================================================
@@ -3177,7 +3335,7 @@ void SpxStreamRemapper::GetMixinBytecode(vector<uint32_t>& bytecodeStream)
     bytecodeStream.insert(bytecodeStream.end(), spv.begin(), spv.end());
 }
 
-SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForEntryPoint(std::string entryPointName)
+SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForEntryPoint(string entryPointName)
 {
     // Search for the entry point function (assume the first function with the name is the one)
     FunctionInstruction* entryPointFunction = nullptr;
@@ -3206,12 +3364,10 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string 
     if (entryPointFunction == nullptr) return error("Invalid entryPoint function");
 
     //==========================================================================================
-    //==========================================================================================
     //save the current bytecode
     vector<uint32_t> bytecodeBackup;// = output.getWritableBytecodeStream();
     bytecodeBackup.insert(bytecodeBackup.end(), spv.begin(), spv.end());
 
-    //==========================================================================================
     //==========================================================================================
     // Update the shader stage header
     if (!BuildAndSetShaderStageHeader(stage, entryPointFunction, entryPointName))
@@ -3222,13 +3378,113 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string 
     }
 
     //==========================================================================================
-    //==========================================================================================
-    //Clean and generate SPIRV bytecode using spirvbin_t class method
-    buildLocalMaps();
-    if (staticErrorMessages.size() > 0) {
-        copyStaticErrorMessagesTo(errorMessages);
+    //Clean the bytecode
+    if (!CleanBytecodeFromAllUnusedStuff())
+    {
+        error("Error cleaning the bytecode");
         spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
         return false;
+    }
+
+    //copy the spv bytecode into the output
+    vector<uint32_t>& outputSpv = output.getWritableBytecodeStream();
+    outputSpv.clear();
+    outputSpv.insert(outputSpv.end(), spv.begin(), spv.end());
+
+    //reset the initial spx bytecode
+    spv.clear();
+    spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
+
+    return true;
+}
+
+bool SpxStreamRemapper::CleanBytecodeFromAllUnusedStuff()
+{
+    //buildLocalMaps();
+    //if (staticErrorMessages.size() > 0) {
+    //    copyStaticErrorMessagesTo(errorMessages);
+    //    spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
+    //    return false;
+    //}
+
+    //initially spirvbin_t.buildLocalMaps() function
+    //build the local map, using spirvbin_t maps
+    //TODO: maybe get free from spirvbin_t (we're almost not using it anymore)
+    mapped.clear();
+    idMapL.clear();
+    fnPos.clear();
+    fnCalls.clear();
+    typeConstPos.clear();
+    idPosR.clear();
+    entryPoint = spv::NoResult;
+    largestNewId = 0;
+
+    idMapL.resize(bound(), unused);
+
+    {
+        int         fnStart = 0;
+        spv::Id     fnRes = spv::NoResult;
+
+        spv::Op opCode;
+        unsigned int wordCount;
+        vector<spv::Id> listIds;
+        spv::Id typeId, resultId;
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            listIds.clear();
+            if (!parseInstruction(start, opCode, wordCount, typeId, resultId, listIds)) return error("Error parsing the instruction");
+
+            if (resultId != spv::spirvbin_t::unused)
+            {
+                idPosR[resultId] = start;
+                if (typeId != spv::spirvbin_t::unused) {
+                    const unsigned idTypeSize = typeSizeInWords(typeId);
+                    if (idTypeSize != 0)
+                        idTypeSizeMap[resultId] = idTypeSize;
+                }
+            }
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (opCode == spv::Op::OpFunctionCallBaseUnresolved || opCode == spv::Op::OpFunctionCallBaseResolved || opCode == spv::Op::OpFunctionCallThroughCompositionVariable) {
+                return error("Invalid functionCall opCode");
+            }
+#endif
+
+            if (opCode == spv::Op::OpFunctionCall) {
+                ++fnCalls[asId(start + 3)];
+            }
+            else if (opCode == spv::Op::OpEntryPoint) {
+                entryPoint = asId(start + 2);
+            }
+            else if (opCode == spv::Op::OpFunction) {
+                if (fnStart != 0) return error("nested function found");
+                fnStart = start;
+                fnRes = asId(start + 2);
+            }
+            else if (opCode == spv::Op::OpFunctionEnd) {
+#ifdef XKSLANG_DEBUG_MODE
+                if (fnRes == spv::NoResult) return error("invalid fnRes");
+                if (fnStart == 0) return error("function end without function start");
+#endif
+                fnPos[fnRes] = range_t(fnStart, start + asWordCount(start));
+                fnStart = 0;
+                fnRes = spv::NoResult;
+            }
+            else if (isConstOp(opCode)) {
+                typeConstPos.insert(start);
+            }
+            else if (isTypeOp(opCode)) {
+                typeConstPos.insert(start);
+            }
+
+            if (typeId != spv::spirvbin_t::unused) localId(typeId, unmapped);
+            if (resultId != spv::spirvbin_t::unused) localId(resultId, unmapped);
+            for (unsigned int i = 0; i < listIds.size(); ++i) localId(listIds[i], unmapped);
+
+            start += wordCount;
+        }
     }
 
     dceFuncs(); //dce uncalled functions
@@ -3242,15 +3498,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string 
     mapRemainder(); // map any unmapped IDs
     applyMap();     // Now remap each shader to the new IDs we've come up with
 
-    //copy the spv bytecode into the output
-    vector<uint32_t>& outputSpv = output.getWritableBytecodeStream();
-    outputSpv.clear();
-    outputSpv.insert(outputSpv.end(), spv.begin(), spv.end());
-
-    //reset the initial spx bytecode
-    spv.clear();
-    spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
-
+    if (errorMessages.size() > 0) return false;
     return true;
 }
 
@@ -4053,7 +4301,7 @@ SpxStreamRemapper::HeaderPropertyInstruction* SpxStreamRemapper::GetHeaderProper
     return nullptr;
 }
 
-SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name)
+SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const string& name)
 {
     FunctionInstruction* function = shader->GetFunctionByName(name);
     if (function != nullptr) {
@@ -4092,7 +4340,7 @@ SpxStreamRemapper::ShaderComposition* SpxStreamRemapper::GetCompositionById(spv:
     return shader->GetShaderCompositionById(compositionId);
 }
 
-bool SpxStreamRemapper::GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel)
+bool SpxStreamRemapper::GetAllCompositionForEachLoops(vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel)
 {
     vecForEachLoops.clear();
     maxForEachLoopsNestedLevel = -1;
@@ -4359,4 +4607,358 @@ void SpxStreamRemapper::stripBytecode(vector<range_t>& ranges)
     }
 
     spv.resize(strippedPos);
+}
+
+bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned begin, unsigned end, const vector<spv::Id>& remapTable)
+{
+    string errorMsg;
+    if (!remapAllIds(bytecode, begin, end, remapTable, errorMsg))
+    {
+        error(errorMsg);
+        return false;
+    }
+    return true;
+}
+
+bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned begin, unsigned end, const vector<spv::Id>& remapTable, string& errorMsg)
+{
+    unsigned int pos = begin;
+    unsigned int wordCount = 0;
+    while (pos < end)
+    {
+        if (!remapAllInstructionIds(bytecode, pos, wordCount, remapTable, errorMsg)) return false;
+        pos += wordCount;
+    }
+
+    return true;
+}
+
+// inspired by spirvbin_t::processInstruction. Allow us to remap the instruction Ids
+bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsigned word, unsigned& wordCount, const vector<spv::Id>& remapTable, string& errorMsg)
+{
+    const auto instructionStart = word;
+    wordCount = opWordCount(bytecode[instructionStart]);
+    spv::Op opCode = opOpCode(bytecode[instructionStart]);
+    const unsigned int nextInst = word++ + wordCount;
+
+    if (nextInst > bytecode.size())
+    {
+        errorMsg = "nextInst is out of bound";
+        return false;
+    }
+
+    // Base for computing number of operands; will be updated as more is learned
+    unsigned numOperands = wordCount - 1;
+
+    // Read type and result ID from instruction desc table
+    if (spv::InstructionDesc[opCode].hasType()) {
+        //listIds.push_back(asId(word++));
+        //type = asId(word++);
+        bytecode[word] = remapTable[bytecode[word]];
+        word++;
+        --numOperands;
+    }
+
+    if (spv::InstructionDesc[opCode].hasResult()) {
+        //listIds.push_back(asId(word++));
+        //result = asId(word++);
+        bytecode[word] = remapTable[bytecode[word]];
+        word++;
+        --numOperands;
+    }
+
+    // Extended instructions: currently, assume everything is an ID.
+    // TODO: add whatever data we need for exceptions to that
+    if (opCode == spv::OpExtInst) {
+        //listIds.push_back(asId(word));  //Add ExtInstImport Id
+        bytecode[word] = remapTable[bytecode[word]];
+
+        word += 2; // instruction set, and instruction from set
+        numOperands -= 2;
+
+        for (unsigned op = 0; op < numOperands; ++op)
+        {
+            bytecode[word] = remapTable[bytecode[word]]; word++;
+        }
+
+        return true;
+    }
+
+    // Circular buffer so we can look back at previous unmapped values during the mapping pass.
+    static const unsigned idBufferSize = 4;
+    spv::Id idBuffer[idBufferSize];
+    unsigned idBufferPos = 0;
+
+    // Store IDs from instruction in our map
+    for (int op = 0; numOperands > 0; ++op, --numOperands) {
+        switch (spv::InstructionDesc[opCode].operands.getClass(op)) {
+        case spv::OperandId:
+        case spv::OperandScope:
+        case spv::OperandMemorySemantics:
+            idBuffer[idBufferPos] = bytecode[word];
+            idBufferPos = (idBufferPos + 1) % idBufferSize;
+            bytecode[word] = remapTable[bytecode[word]];
+            word++;
+            break;
+
+        case spv::OperandVariableIds:
+            for (unsigned i = 0; i < numOperands; ++i)
+            {
+                bytecode[word] = remapTable[bytecode[word]]; word++;
+            }
+            return true;
+
+        case spv::OperandVariableLiterals:
+            // for clarity
+            // if (opCode == spv::OpDecorate && asDecoration(word - 1) == spv::DecorationBuiltIn) {
+            //     ++word;
+            //     --numOperands;
+            // }
+            // word += numOperands;
+            return true;
+
+        case spv::OperandVariableLiteralId: {
+            if (opCode == spv::OpSwitch)
+            {
+                /// // word-2 is the position of the selector ID.  OpSwitch Literals match its type.
+                /// // In case the IDs are currently being remapped, we get the word[-2] ID from
+                /// // the circular idBuffer.
+                /// const unsigned literalSizePos = (idBufferPos + idBufferSize - 2) % idBufferSize;
+                /// const unsigned literalSize = idTypeSizeInWords(idBuffer[literalSizePos]);
+                /// const unsigned numLiteralIdPairs = (nextInst - word) / (1 + literalSize);
+                /// 
+                /// for (unsigned arg = 0; arg<numLiteralIdPairs; ++arg) {
+                ///     word += literalSize;  // literal
+                ///     spv[word] = remapTable[spv[word]];   // label
+                ///     word++;
+                /// }
+                errorMsg = "Unplugged operand for now.. to check later";
+                return false;
+            }
+            else {
+                errorMsg = "invalid OperandVariableLiteralId instruction";
+                return false;
+            }
+
+            return true;
+        }
+
+        case spv::OperandLiteralString: {
+            const int stringWordCount = literalStringWords(literalString(bytecode, word));
+            word += stringWordCount;
+            numOperands -= (stringWordCount - 1); // -1 because for() header post-decrements
+            break;
+        }
+
+        // Execution mode might have extra literal operands.  Skip them.
+        case spv::OperandExecutionMode:
+            return true;
+
+        // Single word operands we simply ignore, as they hold no IDs
+        case spv::OperandLiteralNumber:
+        case spv::OperandSource:
+        case spv::OperandExecutionModel:
+        case spv::OperandAddressing:
+        case spv::OperandMemory:
+        case spv::OperandStorage:
+        case spv::OperandDimensionality:
+        case spv::OperandSamplerAddressingMode:
+        case spv::OperandSamplerFilterMode:
+        case spv::OperandSamplerImageFormat:
+        case spv::OperandImageChannelOrder:
+        case spv::OperandImageChannelDataType:
+        case spv::OperandImageOperands:
+        case spv::OperandFPFastMath:
+        case spv::OperandFPRoundingMode:
+        case spv::OperandLinkageType:
+        case spv::OperandAccessQualifier:
+        case spv::OperandFuncParamAttr:
+        case spv::OperandDecoration:
+        case spv::OperandBuiltIn:
+        case spv::OperandSelect:
+        case spv::OperandLoop:
+        case spv::OperandFunction:
+        case spv::OperandMemoryAccess:
+        case spv::OperandGroupOperation:
+        case spv::OperandKernelEnqueueFlags:
+        case spv::OperandKernelProfilingInfo:
+        case spv::OperandCapability:
+            ++word;
+            break;
+
+        case spv::OperandProperties:
+            return true;
+
+        default:
+            errorMsg = "Unhandled Operand Class";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// inspired by spirvbin_t::processInstruction. Allow us to store the instruction data and ids
+bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds, string& errorMsg)
+{
+    const auto instructionStart = word;
+    wordCount = opWordCount(bytecode[instructionStart]);
+    opCode = opOpCode(bytecode[instructionStart]);
+    const unsigned int nextInst = word++ + wordCount;
+
+    if (nextInst > bytecode.size())
+    {
+        errorMsg = "nextInst is out of bound";
+        return false;
+    }
+
+    // Base for computing number of operands; will be updated as more is learned
+    unsigned numOperands = wordCount - 1;
+
+    // Read type and result ID from instruction desc table
+    if (spv::InstructionDesc[opCode].hasType()) {
+        //listIds.push_back(asId(word++));
+        type = bytecode[word++];
+        --numOperands;
+    }
+    else type = unused;
+
+    if (spv::InstructionDesc[opCode].hasResult()) {
+        //listIds.push_back(asId(word++));
+        result = bytecode[word++];
+        --numOperands;
+    }
+    else result = unused;
+
+    // Extended instructions: currently, assume everything is an ID.
+    // TODO: add whatever data we need for exceptions to that
+    if (opCode == spv::OpExtInst) {
+        listIds.push_back(bytecode[word]);  //Add ExtInstImport Id
+
+        word += 2; // instruction set, and instruction from set
+        numOperands -= 2;
+
+        for (unsigned op = 0; op < numOperands; ++op)
+            listIds.push_back(bytecode[word++]); // ID
+
+        return true;
+    }
+
+    // Circular buffer so we can look back at previous unmapped values during the mapping pass.
+    static const unsigned idBufferSize = 4;
+    spv::Id idBuffer[idBufferSize];
+    unsigned idBufferPos = 0;
+
+    // Store IDs from instruction in our map
+    for (int op = 0; numOperands > 0; ++op, --numOperands) {
+        switch (spv::InstructionDesc[opCode].operands.getClass(op)) {
+        case spv::OperandId:
+        case spv::OperandScope:
+        case spv::OperandMemorySemantics:
+            idBuffer[idBufferPos] = bytecode[word];
+            idBufferPos = (idBufferPos + 1) % idBufferSize;
+            listIds.push_back(bytecode[word++]);
+            break;
+
+        case spv::OperandVariableIds:
+            for (unsigned i = 0; i < numOperands; ++i)
+                listIds.push_back(bytecode[word++]);
+            return true;
+
+        case spv::OperandVariableLiterals:
+            // for clarity
+            // if (opCode == spv::OpDecorate && asDecoration(word - 1) == spv::DecorationBuiltIn) {
+            //     ++word;
+            //     --numOperands;
+            // }
+            // word += numOperands;
+            return true;
+
+        case spv::OperandVariableLiteralId: {
+            if (opCode == spv::OpSwitch)
+            {
+                /// // word-2 is the position of the selector ID.  OpSwitch Literals match its type.
+                /// // In case the IDs are currently being remapped, we get the word[-2] ID from
+                /// // the circular idBuffer.
+                /// const unsigned literalSizePos = (idBufferPos + idBufferSize - 2) % idBufferSize;
+                /// const unsigned literalSize = idTypeSizeInWords(idBuffer[literalSizePos]);
+                /// const unsigned numLiteralIdPairs = (nextInst - word) / (1 + literalSize);
+                /// 
+                /// for (unsigned arg = 0; arg<numLiteralIdPairs; ++arg) {
+                ///     word += literalSize;  // literal
+                ///     listIds.push_back(bytecode[word++]);   // label
+                /// }
+                errorMsg = "Unplugged operand for now.. to check later";
+                return false;
+            }
+            else {
+                errorMsg = "invalid OperandVariableLiteralId instruction";
+                return false;
+            }
+
+            return true;
+        }
+
+        case spv::OperandLiteralString: {
+            const int stringWordCount = literalStringWords(literalString(bytecode, word));
+            word += stringWordCount;
+            numOperands -= (stringWordCount - 1); // -1 because for() header post-decrements
+            break;
+        }
+
+        // Execution mode might have extra literal operands.  Skip them.
+        case spv::OperandExecutionMode:
+            return true;
+
+        // Single word operands we simply ignore, as they hold no IDs
+        case spv::OperandLiteralNumber:
+        case spv::OperandSource:
+        case spv::OperandExecutionModel:
+        case spv::OperandAddressing:
+        case spv::OperandMemory:
+        case spv::OperandStorage:
+        case spv::OperandDimensionality:
+        case spv::OperandSamplerAddressingMode:
+        case spv::OperandSamplerFilterMode:
+        case spv::OperandSamplerImageFormat:
+        case spv::OperandImageChannelOrder:
+        case spv::OperandImageChannelDataType:
+        case spv::OperandImageOperands:
+        case spv::OperandFPFastMath:
+        case spv::OperandFPRoundingMode:
+        case spv::OperandLinkageType:
+        case spv::OperandAccessQualifier:
+        case spv::OperandFuncParamAttr:
+        case spv::OperandDecoration:
+        case spv::OperandBuiltIn:
+        case spv::OperandSelect:
+        case spv::OperandLoop:
+        case spv::OperandFunction:
+        case spv::OperandMemoryAccess:
+        case spv::OperandGroupOperation:
+        case spv::OperandKernelEnqueueFlags:
+        case spv::OperandKernelProfilingInfo:
+        case spv::OperandCapability:
+            ++word;
+            break;
+
+        default:
+            errorMsg = "Unhandled Operand Class";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// inspired by spirvbin_t::processInstruction. Allow us to store the instruction data and ids
+bool SpxStreamRemapper::parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds)
+{
+    string errorMsg;
+    if (!parseInstruction(spv, word, opCode, wordCount, type, result, listIds, errorMsg))
+    {
+        error(errorMsg);
+        return false;
+    }
+    return true;
 }

@@ -23,6 +23,20 @@ string xkslang::GetShadingStageLabel(ShadingStageEnum stage)
     return "Undefined";
 }
 
+string xkslang::GetShadingStageLabelShort(ShadingStageEnum stage)
+{
+    switch (stage)
+    {
+        case ShadingStageEnum::Vertex: return "VS";
+        case ShadingStageEnum::Pixel: return "PS";
+        case ShadingStageEnum::TessControl: return "TCS";
+        case ShadingStageEnum::TessEvaluation: return "TES";
+        case ShadingStageEnum::Geometry: return "GS";
+        case ShadingStageEnum::Compute: return "CS";
+    }
+    return "Undef";
+}
+
 /*
 EShLanguage xkslang::TranslateXkslStageToGlslangStage(ShadingStage stage)
 {

@@ -8,6 +8,7 @@
 //#include "glslang/Public/ShaderLang.h"
 
 #define XKSLANG_DEBUG_MODE
+#define XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
 
 namespace xkslang
 {
@@ -23,6 +24,7 @@ namespace xkslang
     };
 
     std::string GetShadingStageLabel(ShadingStageEnum stage);
+    std::string GetShadingStageLabelShort(ShadingStageEnum stage);
 
 } //namespace xkslang
 

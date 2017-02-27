@@ -169,7 +169,7 @@ private:
    typedef std::unordered_map<spv::Id, unsigned> typesize_map_t;
 
    // handle error
-   virtual void error(const std::string& txt) const { errorHandler(txt); }
+   void error(const std::string& txt) const { errorHandler(txt); }
 
    bool     isConstOp(spv::Op opCode)      const;
    bool     isTypeOp(spv::Op opCode)       const;
@@ -195,6 +195,7 @@ private:
 
    static unsigned opWordCount(spirword_t data) { return data >> spv::WordCountShift; }
    static spv::Op  opOpCode(spirword_t data)    { return spv::Op(data & spv::OpCodeMask); }
+   static std::string literalString(const std::vector<spirword_t>& bytecode, unsigned word);
 
    void setLiteralValue(unsigned word, int value) { spv[word] = value; }
    void setId(unsigned word, const spv::Id id) { spv[word] = id; }
@@ -234,7 +235,7 @@ private:
 
    void buildLocalMaps();
    std::string literalString(unsigned word) const; // Return literal as a std::string
-   int literalStringWords(const std::string& str) const { return (int(str.size())+4)/4; }
+   static int literalStringWords(const std::string& str) { return (int(str.size())+4)/4; }
 
    bool isNewIdMapped(spv::Id newId)   const { return isMapped(newId);            }
    bool isOldIdUnmapped(spv::Id oldId) const { return localId(oldId) == unmapped; }
@@ -249,9 +250,6 @@ private:
    spirvbin_t& processOnFullBytecode(instfn_t, idfn_t);
    spirvbin_t& process(instfn_t, idfn_t, unsigned begin = 0, unsigned end = 0);
    int         processInstruction(unsigned word, instfn_t, idfn_t);
-   bool parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds);
-   void remapAllInstructionIds(unsigned word, unsigned& wordCount, const std::vector<spv::Id>& remapTable);
-   bool remapAllIds(unsigned begin, unsigned end, const std::vector<spv::Id>& remapTable);
 
    void        validate() const;
    void        mapTypeConst();
