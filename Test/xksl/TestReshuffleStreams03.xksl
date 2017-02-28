@@ -9,7 +9,18 @@ shader ShaderMain
         streams.Position = float2(0.0f, 1.0f);
     }
 	
+	//return outpur in the last stage?
+	
+	//Test if first read of input variable is done from another function (not VSMain)?
+	
+	//Test if the stage not using any stream variable?
+	
 	//Test calling VSMain from another stage?
+	
+	//keep semantic info?
+	
+	//Test calling streams.variable.XY?
+	
     stage void PSMain() 
     {
         streams.ColorTarget = Compute() + float4(streams.Position.xy, 0, 1) + VSMain();

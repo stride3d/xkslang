@@ -33,7 +33,7 @@ enum class SpxRemapperStatusEnum
     MixinBeingCompiled_UnusedShaderRemoved,
     MixinBeingCompiled_CompositionInstancesProcessed,
     MixinBeingCompiled_StreamsAnalysed,
-    MixinBeingCompiled_StreamFlowValidated,
+    MixinBeingCompiled_StreamReadyForReschuffling,
     MixinBeingCompiled_StreamReschuffled,
     MixinFinalized
 };
@@ -282,11 +282,12 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : structMemberId(-1), isStream(false), isStage(false), memberTypeId(spv::spirvbin_t::unused) {}
+        TypeStructMember() : structMemberId(-1), isStream(false), isStage(false), memberTypeId(spv::spirvbin_t::unused), tmpRemapToIOIndex(-1){}
 
         spv::Id structTypeId;  //Id of the struct type containing the member
         int structMemberId;    //Id of the member within the struct
         int memberTypeId;      //Type Id of the member
+        int tmpRemapToIOIndex;   //used by some algo
 
         bool isStream;
         bool isStage;
@@ -309,6 +310,7 @@ public:
     {
     public:
         std::vector<TypeStructMember> members;
+        std::vector<spv::Id> mapIndexesWithConstValueId;
 
         //Id of the type pointing to the list
         spv::Id structTypeId;
@@ -622,12 +624,10 @@ public:
     };
 
 public:
-    int memberIndex;
     MemberFirstAccessEnum firstAccess;
     int stageIONeeded;
 
-    MemberAccessDetails() : memberIndex(-1), firstAccess(MemberFirstAccessEnum::Undefined), stageIONeeded(0){}
-    MemberAccessDetails(int index) : memberIndex(index), firstAccess(MemberFirstAccessEnum::Undefined), stageIONeeded(0) {}
+    MemberAccessDetails() : firstAccess(MemberFirstAccessEnum::Undefined), stageIONeeded(0){}
     
     void SetFirstAccessRead() {
         if (firstAccess == MemberFirstAccessEnum::Undefined) firstAccess = MemberFirstAccessEnum::ReadFirst;

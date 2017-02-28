@@ -222,7 +222,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
 
     //===================================================================================================================
     //===================================================================================================================
-    // merge the stream variables
+    // merge all stream variables into a global single struct
     SpxStreamRemapper::TypeStructMemberArray globalListOfMergedStreamVariables;
     if (!clonedSpxStream->MergeStreamMembers(globalListOfMergedStreamVariables))
     {
@@ -250,6 +250,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
     }
     else
     {
+        //validate conformity with stream flow
         if (!clonedSpxStream->ValidateStagesStreamMembersFlow(vecMixerOutputStages, globalListOfMergedStreamVariables))
         {
             clonedSpxStream->copyMessagesTo(messages);

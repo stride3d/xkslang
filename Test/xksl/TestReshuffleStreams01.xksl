@@ -4,10 +4,11 @@ shader ShaderMain
 	stage stream float2 Position : POSITION;
 	stage stream float4 ColorTarget: SV_OUTPUT;
 	stage stream float2 VertexPosition: V_POSITION;
+	stage stream float aFloat: V_AFLOAT;
 	
 	stage void VSMain() 
     {
-        streams.Position = float2(0.0f, 1.0f) + streams.VertexPosition;
+        streams.Position = float2(0.0f, 1.0f + streams.aFloat) + streams.VertexPosition;
     }
 
     stage void PSMain() 
