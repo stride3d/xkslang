@@ -17,9 +17,6 @@
 
 namespace xkslang
 {
-//==============================================================================================================//
-//===========================================  SpxStreamRemapper  ==============================================//
-//==============================================================================================================//
 
 static const unsigned int MagicNumber = 0x07230203;
 static const unsigned int Version = 0x00010000;
@@ -40,6 +37,44 @@ enum class SpxRemapperStatusEnum
     MixinBeingCompiled_StreamReschuffled,
     MixinFinalized
 };
+
+class BytecodeChunk
+{
+public:
+    BytecodeChunk() {}
+    BytecodeChunk(int insertionPos) : insertionPos(insertionPos), countInstructionsToOverlap(0){}
+    BytecodeChunk(int insertionPos, unsigned int countInstructionsToOverlap) : insertionPos(insertionPos), countInstructionsToOverlap(countInstructionsToOverlap) {}
+
+    unsigned int insertionPos;
+    std::vector<std::uint32_t> bytecode;
+    unsigned int countInstructionsToOverlap;
+};
+
+class BytecodeAtomicValueUpdate
+{
+public:
+    unsigned int pos;
+    uint32_t value;
+
+    BytecodeAtomicValueUpdate(unsigned int pos, uint32_t value) : pos(pos), value(value) {}
+};
+
+//In order to update the bytecode, we first store all new codes we want to insert, plus all values we want to change
+//Then we'll update the bytecode at once, after all updates have been set
+class BytecodeUpdateController
+{
+public:
+    std::vector<BytecodeAtomicValueUpdate> listAtomicUpdates;
+    std::list<BytecodeChunk> listSortedChunksToInsert;
+
+    void SetNewAtomicValueUpdate(unsigned int pos, uint32_t value) { listAtomicUpdates.push_back(BytecodeAtomicValueUpdate(pos, value)); }
+    BytecodeChunk& InsertNewBytecodeChunckAt(unsigned int position, unsigned int countBytesToOverlap = 0);
+    unsigned int GetCountBytecodeChuncksToInsert() { return listSortedChunksToInsert.size(); }
+};
+
+//==============================================================================================================//
+//===========================================  SpxStreamRemapper  ==============================================//
+//==============================================================================================================//
 
 class XkslMixerOutputStage;
 class SpxStreamRemapper : public spv::spirvbin_t
@@ -471,7 +506,7 @@ private:
 
     unsigned int GetUniqueMergeOperationId();
     static void ResetMergeOperationId();
-
+    bool ApplyBytecodeUpdateController(const BytecodeUpdateController& bytecodeUpdateController);
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
 
     bool ApplyCompositionInstancesToBytecode();
@@ -484,6 +519,7 @@ private:
     bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
 
+    bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
     FunctionInstruction* GetShaderFunctionForEntryPoint(std::string entryPointName);
     bool RemoveShaderFromBytecodeAndData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
     bool RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType, std::vector<range_t>& vecStripRanges);
@@ -565,16 +601,6 @@ private:
     }
 
     friend class XkslMixer;
-};
-
-class BytecodeAdditionContainer
-{
-public:
-    BytecodeAdditionContainer(){}
-    BytecodeAdditionContainer(int insertionPos) : insertionPos(insertionPos){}
-
-    int insertionPos;
-    std::vector<std::uint32_t> bytecode;
 };
 
 class MemberAccessDetails

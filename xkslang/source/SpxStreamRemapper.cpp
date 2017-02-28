@@ -20,6 +20,21 @@ using namespace xkslang;
 
 static const string globalStreamStructDefaultName = "globalStreams";
 static const string globalVarOnStreamStructDefaultName = "globalStreams_var";
+static const string functionInputVariableDefaultName = "__input__";
+static const string functionOutputVariableDefaultName = "__output__";
+
+//===================================================================================================//
+BytecodeChunk& BytecodeUpdateController::InsertNewBytecodeChunckAt(unsigned int position, unsigned int countBytesToOverlap)
+{
+    auto itListPos = listSortedChunksToInsert.begin();
+    while (itListPos != listSortedChunksToInsert.end())
+    {
+        if (position > itListPos->insertionPos) break;
+        itListPos++;
+    }
+    itListPos = listSortedChunksToInsert.insert(itListPos, BytecodeChunk(position, countBytesToOverlap));
+    return *itListPos;
+}
 
 //===================================================================================================//
 void SpxStreamRemapper::copyMessagesTo(vector<string>& list)
@@ -2130,11 +2145,39 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     if (globalStreamType == nullptr)
         return error(string("Cannot retrieve the global stream type. Id: ") + to_string(globalListOfMergedStreamVariables.structTypeId));
 
-    //vectors of new bytecodes to insert
+    //=============================================================================================================
+    //=============================================================================================================
+    //find the best positions where to insert new stuff
+    int posNewTypesInsertion = globalStreamType->bytecodeStartPosition;
+    int posNamesInsertion = header_size;
+    {
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            //we'll insert the new names and decorates before the first name/decorate we find (we are certain to find at least one OpMemberProperties)
+            switch (opCode)
+            {
+            case spv::OpName:
+            case spv::OpMemberName:
+            case spv::OpDeclarationName:
+            case spv::OpMemberProperties:
+                posNamesInsertion = start;
+                start = end;
+                break;
+            }
+            start += wordCount;
+        }
+    }
+    
+    //new bytecode chunks to insert into our bytecode (all updates will be applied at once at the end)
+    BytecodeUpdateController bytecodeUpdateController;
+    BytecodeChunk& bytecodeNewTypes = bytecodeUpdateController.InsertNewBytecodeChunckAt(posNewTypesInsertion);
+    BytecodeChunk& bytecodeNames = bytecodeUpdateController.InsertNewBytecodeChunckAt(posNamesInsertion);
     spv::Id newId = bound();
-    vector<unsigned int> vecTypesToAdd;
-    vector<unsigned int> vecNamesAndDecorate;
-    list<BytecodeAdditionContainer> listFunctionAdditionnalBytecode;
 
     //=============================================================================================================
     //=============================================================================================================
@@ -2143,6 +2186,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     {
         XkslMixerOutputStage& stage = outputStages[iStage];
 
+        //===============================================================================
         //get which members are needed for which IO
         vector<unsigned int> vecInputMembersIndex;
         vector<unsigned int> vecOutputMembersIndex;
@@ -2160,7 +2204,43 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             }
         }
 
-        //Add the stage input structure into the stage entry point function
+        if (vecIOMembersIndex.size() == 0) continue;  //no update needed into the functions
+
+        //===============================================================================
+        //Retrieve (and check validity of) the function declaration type
+        FunctionInstruction* entryFunction = stage.entryFunction;
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (entryFunction == nullptr) return error("Stage has no entry point function");
+        spv::Op opCode = asOpCode(entryFunction->bytecodeStartPosition);
+        if (opCode != spv::OpFunction) return error("Corrupted bytecode: expected OpFunction instruction");
+#endif
+
+        //function declaration type
+        spv::Id functionDeclarationTypeId = asId(entryFunction->bytecodeStartPosition + 4);
+        spv::Id functionReturnTypeId = asId(entryFunction->bytecodeStartPosition + 1);
+        TypeInstruction* functionDeclarationType = GetTypeById(functionDeclarationTypeId);
+        if (functionDeclarationType == nullptr) return error("Cannot find the function declaration type for Id: " + to_string(functionDeclarationTypeId));
+
+#ifdef XKSLANG_DEBUG_MODE
+        //some sanity check
+        if (asOpCode(functionDeclarationType->bytecodeStartPosition) != spv::OpTypeFunction) return error("Corrupted bytecode: function declaration type must have OpTypeFunction instruction");
+        if (functionReturnTypeId != asId(functionDeclarationType->bytecodeStartPosition + 2)) return error("Corrupted bytecode: function return type must be the same as function declaration's return type");
+#endif
+
+        //confirm that the function's return type is void
+        TypeInstruction* initialReturnType = GetTypeById(functionReturnTypeId);
+        if (initialReturnType == nullptr) return error("Cannot find the function return type for Id: " + to_string(functionReturnTypeId));
+        if (asOpCode(initialReturnType->bytecodeStartPosition) != spv::OpTypeVoid) return error(GetShadingStageLabel(stage.outputStage->stage) + " stage's entry function must initially return void");
+
+        //===============================================================================
+        spv::Id inputStructTypeId = spv::spirvbin_t::unused;
+        spv::Id inputStructPointerTypeId = spv::spirvbin_t::unused;
+        spv::Id outputStructTypeId = spv::spirvbin_t::unused;
+        spv::Id outputStructPointerTypeId = spv::spirvbin_t::unused;
+        spv::Id newFunctionDeclarationTypeId = spv::spirvbin_t::unused;
+
+        //create the function's input structure
         if (vecInputMembersIndex.size() > 0)
         {
             //make the struct type
@@ -2171,13 +2251,16 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
                 inputStructType.addIdOperand(streamMember.memberTypeId);
             }
-            inputStructType.dump(vecTypesToAdd);
+            inputStructType.dump(bytecodeNewTypes.bytecode);
 
             //make the struct function parameter pointer type
             spv::Instruction inputStructPointerType(newId++, spv::NoType, spv::OpTypePointer);
             inputStructPointerType.addImmediateOperand(spv::StorageClass::StorageClassFunction);
             inputStructPointerType.addIdOperand(inputStructType.getResultId());
-            inputStructPointerType.dump(vecTypesToAdd);
+            inputStructPointerType.dump(bytecodeNewTypes.bytecode);
+
+            inputStructTypeId = inputStructType.getResultId();
+            inputStructPointerTypeId = inputStructPointerType.getResultId();
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
             //struct name
@@ -2185,7 +2268,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             spv::Instruction stageInputStructName(spv::OpName);
             stageInputStructName.addIdOperand(inputStructType.getResultId());
             stageInputStructName.addStringOperand(stagePrefix.c_str());
-            stageInputStructName.dump(vecNamesAndDecorate);
+            stageInputStructName.dump(bytecodeNames.bytecode);
 
             //Add the members name
             for (unsigned int k = 0; k < vecInputMembersIndex.size(); ++k)
@@ -2198,94 +2281,196 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 memberName.addIdOperand(inputStructType.getResultId());
                 memberName.addImmediateOperand(k);
                 memberName.addStringOperand((stagePrefix + "_" + streamMember.GetSemanticOrDeclarationName() + "_" + to_string(k)).c_str());
-                memberName.dump(vecNamesAndDecorate);
+                memberName.dump(bytecodeNames.bytecode);
             }
 #endif
+        }
 
-            //insert the new input type within the entry function bytecode
-            FunctionInstruction* entryFunction = stage.entryFunction;
-
-#ifdef XKSLANG_DEBUG_MODE
-            if (entryFunction == nullptr) return error("Stage as no entry point function");
-            spv::Op opCode = asOpCode(entryFunction->bytecodeStartPosition);
-            if (opCode != spv::OpFunction) return error("Corrupted bytecode: expected OpFunction instruction");
-#endif
-
-            unsigned int wordCount = asWordCount(entryFunction->bytecodeStartPosition);
-            int posToInsertFunctionBytecode = entryFunction->bytecodeStartPosition + wordCount;
-            
-            //sort the bytecode insertion by their starting position (higher to smaller insertion position)
-            auto itListPos = listFunctionAdditionnalBytecode.begin();
-            while (itListPos != listFunctionAdditionnalBytecode.end())
+        //create the function's output structure
+        if (vecOutputMembersIndex.size() > 0)
+        {
+            //make the struct type
+            spv::Instruction structType(newId++, spv::NoType, spv::OpTypeStruct);
+            for (unsigned int k = 0; k < vecOutputMembersIndex.size(); ++k)
             {
-                if (posToInsertFunctionBytecode > itListPos->insertionPos) break;
-                itListPos++;
+                const unsigned int index = vecOutputMembersIndex[k];
+                const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+                structType.addIdOperand(streamMember.memberTypeId);
             }
-            itListPos = listFunctionAdditionnalBytecode.insert(itListPos, BytecodeAdditionContainer(posToInsertFunctionBytecode));
-            BytecodeAdditionContainer& functionEntryBytecode = *itListPos;
+            structType.dump(bytecodeNewTypes.bytecode);
 
-            //Add the input struct as a function parameter
-            spv::Instruction functionInputParameter(newId++, inputStructPointerType.getResultId(), spv::OpFunctionParameter);
-            functionInputParameter.addIdOperand(inputStructType.getResultId());
-            functionInputParameter.dump(functionEntryBytecode.bytecode);
+            //make the struct function pointer type
+            spv::Instruction structPointerType(newId++, spv::NoType, spv::OpTypePointer);
+            structPointerType.addImmediateOperand(spv::StorageClass::StorageClassFunction);
+            structPointerType.addIdOperand(structType.getResultId());
+            structPointerType.dump(bytecodeNewTypes.bytecode);
 
-        } //end input struct insertion
+            outputStructTypeId = structType.getResultId();
+            outputStructPointerTypeId = structPointerType.getResultId();
+
+#ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
+            //struct name
+            string stagePrefix = GetShadingStageLabelShort(stage.outputStage->stage) + "_OUT";
+            spv::Instruction stageInputStructName(spv::OpName);
+            stageInputStructName.addIdOperand(structType.getResultId());
+            stageInputStructName.addStringOperand(stagePrefix.c_str());
+            stageInputStructName.dump(bytecodeNames.bytecode);
+
+            //Add the members name
+            for (unsigned int k = 0; k < vecOutputMembersIndex.size(); ++k)
+            {
+                const unsigned int index = vecOutputMembersIndex[k];
+                const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+
+                //member name
+                spv::Instruction memberName(spv::OpMemberName);
+                memberName.addIdOperand(structType.getResultId());
+                memberName.addImmediateOperand(k);
+                memberName.addStringOperand((stagePrefix + "_" + streamMember.GetSemanticOrDeclarationName() + "_" + to_string(k)).c_str());
+                memberName.dump(bytecodeNames.bytecode);
+            }
+#endif
+        }
+
+        //Create the new function type (we don't update the current one, in the case of it was used by several function)
+        {
+            spv::Instruction functionNewTypeInstruction(newId++, spv::NoType, spv::OpTypeFunction);
+            newFunctionDeclarationTypeId = functionNewTypeInstruction.getResultId();
+
+            //return type
+            if (outputStructTypeId != spv::spirvbin_t::unused) functionNewTypeInstruction.addIdOperand(outputStructTypeId);
+            else functionNewTypeInstruction.addIdOperand(functionReturnTypeId);  //original return type (void)
+
+            //input parameters
+            if (inputStructPointerTypeId != spv::spirvbin_t::unused) functionNewTypeInstruction.addIdOperand(inputStructPointerTypeId);  //new input struct type (if any)
+            for (unsigned int pos = functionDeclarationType->bytecodeStartPosition + 3; pos < functionDeclarationType->bytecodeEndPosition; pos++)
+                functionNewTypeInstruction.addIdOperand(asId(pos)); //add all previous input parameters
+
+            functionNewTypeInstruction.dump(bytecodeNewTypes.bytecode);
+        }
+        
+        //Add the input struct parameter into the function bytecode
+        if (inputStructPointerTypeId != spv::spirvbin_t::unused)
+        {
+            unsigned int wordCount = asWordCount(entryFunction->bytecodeStartPosition);
+            int entryFunctionFirstInstruction = entryFunction->bytecodeStartPosition + wordCount;
+            BytecodeChunk& bytecodeFunctionParameterChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(entryFunctionFirstInstruction);
+            spv::Instruction functionInputParameter(newId++, inputStructPointerTypeId, spv::OpFunctionParameter);
+            functionInputParameter.dump(bytecodeFunctionParameterChunk.bytecode);
+
+#ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
+            //param name
+            spv::Instruction stageInputStructName(spv::OpName);
+            stageInputStructName.addIdOperand(functionInputParameter.getResultId());
+            stageInputStructName.addStringOperand(functionInputVariableDefaultName.c_str());
+            stageInputStructName.dump(bytecodeNames.bytecode);
+#endif
+        }
+
+        if (outputStructTypeId != spv::spirvbin_t::unused)
+        {
+            unsigned int labelStartPos;
+            unsigned int returnStartPos;
+
+            //Add the output variables into the function bytecode
+            if (!GetFunctionLabelAndReturnInstructionsPosition(entryFunction, labelStartPos, returnStartPos)) return error("Failed to parse the function: " + entryFunction->GetFullName());
+            unsigned int labelEndPos = labelStartPos + asWordCount(labelStartPos); //go at the end of the label instruction
+            if (asOpCode(returnStartPos) != spv::OpReturn) return error("Invalid function end. Expecting OpReturn instructions.");
+
+            BytecodeChunk& bytecodeFunctionOutputVariableChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(labelEndPos);
+            spv::Instruction functionOutputVariable(newId++, outputStructPointerTypeId, spv::OpVariable);
+            functionOutputVariable.addImmediateOperand(spv::StorageClassFunction);
+            functionOutputVariable.dump(bytecodeFunctionOutputVariableChunk.bytecode);
+
+#ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
+            //variable name
+            spv::Instruction outputVariableName(spv::OpName);
+            outputVariableName.addIdOperand(functionOutputVariable.getResultId());
+            outputVariableName.addStringOperand(functionOutputVariableDefaultName.c_str());
+            outputVariableName.dump(bytecodeNames.bytecode);
+#endif
+
+            //update the function return type (must be equal to the function declaration type's return type)
+            bytecodeUpdateController.SetNewAtomicValueUpdate(entryFunction->bytecodeStartPosition + 1, outputStructTypeId);
+
+            //add instruction to load the output (and replace OpReturn by OpReturnValue)
+            BytecodeChunk& loadingOutputChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(returnStartPos, 1);
+            spv::Instruction loadingOutputInstruction(newId++, outputStructTypeId, spv::OpLoad);
+            loadingOutputInstruction.addIdOperand(functionOutputVariable.getResultId());
+            loadingOutputInstruction.dump(loadingOutputChunk.bytecode);
+
+            //add OpReturnValue instructions
+            spv::Instruction returnValueInstruction(spv::NoResult, spv::NoType, spv::OpReturnValue);
+            returnValueInstruction.addIdOperand(loadingOutputInstruction.getResultId());
+            returnValueInstruction.dump(loadingOutputChunk.bytecode);
+        }
+
+        //update the function declaration type to refer to new one
+        if (newFunctionDeclarationTypeId != spv::spirvbin_t::unused)
+        {
+            bytecodeUpdateController.SetNewAtomicValueUpdate(entryFunction->bytecodeStartPosition + 4, newFunctionDeclarationTypeId);
+        }
+        else return error("A new function type must be created");
 
     }  //end loop for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
-
-    if (listFunctionAdditionnalBytecode.size() == 0) error("No bytecode has been added into any functions");
     if (errorMessages.size() > 0) return false;
 
     //=============================================================================================================
     //=============================================================================================================
-    //Insert the new types and dada into our bytecode
+    //Update the bytecode with new chunks and values
+    if (bytecodeUpdateController.GetCountBytecodeChuncksToInsert() == 0) return error("No bytecode has been added");
+
+    setBound(newId);
+
+    //apply the bytecode update controller
+    if (!ApplyBytecodeUpdateController(bytecodeUpdateController)) error("failed to update the bytecode update controller");
+
+    //bytecode has been updated: reupdate all maps
+    if (!UpdateAllMaps()) error("failed to update all maps");
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+bool SpxStreamRemapper::ApplyBytecodeUpdateController(const BytecodeUpdateController& bytecodeUpdateController)
+{
+    unsigned int bytecodeOriginalSize = spv.size();
+
+    //first : update all values    
+    for (auto itau = bytecodeUpdateController.listAtomicUpdates.begin(); itau != bytecodeUpdateController.listAtomicUpdates.end(); itau++)
     {
-        //find the best positions where to insert new stuff
-        int posNewTypesInsertion = globalStreamType->bytecodeStartPosition;
-        int posNamesAndDecoratesInsertion = header_size;
+        const BytecodeAtomicValueUpdate& atomicValueUpdate = *itau;
 
-        unsigned int start = header_size;
-        const unsigned int end = spv.size();
-        while (start < end)
+#ifdef XKSLANG_DEBUG_MODE
+        if (atomicValueUpdate.pos >= bytecodeOriginalSize) {error("pos is out of bound"); break;}
+#endif
+
+        spv[atomicValueUpdate.pos] = atomicValueUpdate.value;
+    }
+
+    //then Insert all new chuncks in the bytecode
+    for (auto itbc = bytecodeUpdateController.listSortedChunksToInsert.begin(); itbc != bytecodeUpdateController.listSortedChunksToInsert.end(); itbc++)
+    {
+        const BytecodeChunk& bytecodeChunck = *itbc;
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (bytecodeChunck.insertionPos > bytecodeOriginalSize) { error("bytecode chunck is out of bound"); break; }
+        if (bytecodeChunck.countInstructionsToOverlap > bytecodeChunck.bytecode.size()) { error("bytecode chunck overlaps too many bytes"); break; }
+#endif
+
+        if (bytecodeChunck.countInstructionsToOverlap == 0)
         {
-            unsigned int wordCount = asWordCount(start);
-            spv::Op opCode = asOpCode(start);
-
-            //we'll insert the new names and decorates before the first name/decorate we find (in the worst case: we are certain to find at least one OpMemberProperties)
-            switch (opCode)
-            {
-                case spv::OpName:
-                case spv::OpMemberName:
-                case spv::OpDeclarationName:
-                case spv::OpMemberProperties:
-                    posNamesAndDecoratesInsertion = start;
-                    start = end;
-                    break;
-            }
-            start += wordCount;
+            spv.insert(spv.begin() + bytecodeChunck.insertionPos, bytecodeChunck.bytecode.begin(), bytecodeChunck.bytecode.end());
         }
-
-        if (posNamesAndDecoratesInsertion > posNewTypesInsertion) posNamesAndDecoratesInsertion = posNewTypesInsertion;
-        if (posNewTypesInsertion > listFunctionAdditionnalBytecode.back().insertionPos) return error("New types must be inserted before new function bytecodes");
-
-        //=============================================================================================================
-        // insert all data in the bytecode
-        //merge functions bytecode (already sorted)
-        for (auto itf = listFunctionAdditionnalBytecode.begin(); itf != listFunctionAdditionnalBytecode.end(); itf++)
+        else
         {
-            BytecodeAdditionContainer& functionBytecode = *itf;
-            //spv.insert(spv.begin() + functionBytecode.insertionPos, functionBytecode.bytecode.begin(), functionBytecode.bytecode.end());
-            //TOTOTOTOTO
+            //We overlap some bytes, and maybe add some more
+            int countOverlaps = bytecodeChunck.countInstructionsToOverlap;
+            int countRemaining = bytecodeChunck.bytecode.size() - countOverlaps;
+            for (unsigned int i = 0; i < countOverlaps; ++i) spv[bytecodeChunck.insertionPos + i] = bytecodeChunck.bytecode[i];
+            if (countRemaining > 0)
+                spv.insert(spv.begin() + (bytecodeChunck.insertionPos + countOverlaps), bytecodeChunck.bytecode.begin() + countOverlaps, bytecodeChunck.bytecode.end());
         }
-        //Merge types and variables
-        spv.insert(spv.begin() + posNewTypesInsertion, vecTypesToAdd.begin(), vecTypesToAdd.end());
-        //Merge names and decorate
-        spv.insert(spv.begin() + posNamesAndDecoratesInsertion, vecNamesAndDecorate.begin(), vecNamesAndDecorate.end());
-
-        setBound(newId);
-
-        //destination bytecode has been updated: reupdate all maps
-        if (!UpdateAllMaps()) error("failed to update all maps");
     }
 
     if (errorMessages.size() > 0) return false;
@@ -3333,6 +3518,41 @@ void SpxStreamRemapper::GetMixinBytecode(vector<uint32_t>& bytecodeStream)
 {
     bytecodeStream.clear();
     bytecodeStream.insert(bytecodeStream.end(), spv.begin(), spv.end());
+}
+
+bool SpxStreamRemapper::GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos)
+{
+    int state = 0;
+    unsigned int start = function->bytecodeStartPosition;
+    const unsigned int end = function->bytecodeEndPosition;
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+        switch (opCode)
+        {
+            case spv::OpLabel:
+            {
+                if (state != 0) return error("Failed to parse the function: expecting OpLabel instruction");
+                labelPos = start;
+                state = 1;
+                break;
+            }
+            case spv::OpReturn:
+            case spv::OpReturnValue:
+            {
+                if (state != 1) return error("Failed to parse the function: expecting OpReturn or OpReturnValue instruction");
+                returnPos = start;
+                state = 2;
+                break;
+            }
+        }
+
+        start += wordCount;
+    }
+
+    if (state != 2) return error("Failed to parse the function: missing some opInstructions");
+    return true;
 }
 
 SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForEntryPoint(string entryPointName)
@@ -4850,101 +5070,110 @@ bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsig
     unsigned idBufferPos = 0;
 
     // Store IDs from instruction in our map
-    for (int op = 0; numOperands > 0; ++op, --numOperands) {
-        switch (spv::InstructionDesc[opCode].operands.getClass(op)) {
-        case spv::OperandId:
-        case spv::OperandScope:
-        case spv::OperandMemorySemantics:
-            idBuffer[idBufferPos] = bytecode[word];
-            idBufferPos = (idBufferPos + 1) % idBufferSize;
-            listIds.push_back(bytecode[word++]);
-            break;
-
-        case spv::OperandVariableIds:
-            for (unsigned i = 0; i < numOperands; ++i)
-                listIds.push_back(bytecode[word++]);
-            return true;
-
-        case spv::OperandVariableLiterals:
-            // for clarity
-            // if (opCode == spv::OpDecorate && asDecoration(word - 1) == spv::DecorationBuiltIn) {
-            //     ++word;
-            //     --numOperands;
-            // }
-            // word += numOperands;
-            return true;
-
-        case spv::OperandVariableLiteralId: {
-            if (opCode == spv::OpSwitch)
-            {
-                /// // word-2 is the position of the selector ID.  OpSwitch Literals match its type.
-                /// // In case the IDs are currently being remapped, we get the word[-2] ID from
-                /// // the circular idBuffer.
-                /// const unsigned literalSizePos = (idBufferPos + idBufferSize - 2) % idBufferSize;
-                /// const unsigned literalSize = idTypeSizeInWords(idBuffer[literalSizePos]);
-                /// const unsigned numLiteralIdPairs = (nextInst - word) / (1 + literalSize);
-                /// 
-                /// for (unsigned arg = 0; arg<numLiteralIdPairs; ++arg) {
-                ///     word += literalSize;  // literal
-                ///     listIds.push_back(bytecode[word++]);   // label
-                /// }
-                errorMsg = "Unplugged operand for now.. to check later";
-                return false;
-            }
-            else {
-                errorMsg = "invalid OperandVariableLiteralId instruction";
-                return false;
-            }
-
-            return true;
-        }
-
-        case spv::OperandLiteralString: {
-            const int stringWordCount = literalStringWords(literalString(bytecode, word));
-            word += stringWordCount;
-            numOperands -= (stringWordCount - 1); // -1 because for() header post-decrements
-            break;
-        }
-
-        // Execution mode might have extra literal operands.  Skip them.
-        case spv::OperandExecutionMode:
-            return true;
-
-        // Single word operands we simply ignore, as they hold no IDs
-        case spv::OperandLiteralNumber:
-        case spv::OperandSource:
-        case spv::OperandExecutionModel:
-        case spv::OperandAddressing:
-        case spv::OperandMemory:
-        case spv::OperandStorage:
-        case spv::OperandDimensionality:
-        case spv::OperandSamplerAddressingMode:
-        case spv::OperandSamplerFilterMode:
-        case spv::OperandSamplerImageFormat:
-        case spv::OperandImageChannelOrder:
-        case spv::OperandImageChannelDataType:
-        case spv::OperandImageOperands:
-        case spv::OperandFPFastMath:
-        case spv::OperandFPRoundingMode:
-        case spv::OperandLinkageType:
-        case spv::OperandAccessQualifier:
-        case spv::OperandFuncParamAttr:
-        case spv::OperandDecoration:
-        case spv::OperandBuiltIn:
-        case spv::OperandSelect:
-        case spv::OperandLoop:
-        case spv::OperandFunction:
-        case spv::OperandMemoryAccess:
-        case spv::OperandGroupOperation:
-        case spv::OperandKernelEnqueueFlags:
-        case spv::OperandKernelProfilingInfo:
-        case spv::OperandCapability:
-            ++word;
-            break;
-
-        default:
-            errorMsg = "Unhandled Operand Class";
+    for (int op = 0; numOperands > 0; ++op, --numOperands)
+    {
+        const spv::OperandParameters& operands = spv::InstructionDesc[opCode].operands;
+#ifdef XKSLANG_DEBUG_MODE
+        if (op >= operands.getNum()) {
+            errorMsg = "op is out of bound";
             return false;
+        }
+#endif
+        switch (operands.getClass(op))
+        {
+            case spv::OperandId:
+            case spv::OperandScope:
+            case spv::OperandMemorySemantics:
+                idBuffer[idBufferPos] = bytecode[word];
+                idBufferPos = (idBufferPos + 1) % idBufferSize;
+                listIds.push_back(bytecode[word++]);
+                break;
+
+            case spv::OperandVariableIds:
+                for (unsigned i = 0; i < numOperands; ++i)
+                    listIds.push_back(bytecode[word++]);
+                return true;
+
+            case spv::OperandVariableLiterals:
+                // for clarity
+                // if (opCode == spv::OpDecorate && asDecoration(word - 1) == spv::DecorationBuiltIn) {
+                //     ++word;
+                //     --numOperands;
+                // }
+                // word += numOperands;
+                return true;
+
+            case spv::OperandVariableLiteralId: {
+                if (opCode == spv::OpSwitch)
+                {
+                    /// // word-2 is the position of the selector ID.  OpSwitch Literals match its type.
+                    /// // In case the IDs are currently being remapped, we get the word[-2] ID from
+                    /// // the circular idBuffer.
+                    /// const unsigned literalSizePos = (idBufferPos + idBufferSize - 2) % idBufferSize;
+                    /// const unsigned literalSize = idTypeSizeInWords(idBuffer[literalSizePos]);
+                    /// const unsigned numLiteralIdPairs = (nextInst - word) / (1 + literalSize);
+                    /// 
+                    /// for (unsigned arg = 0; arg<numLiteralIdPairs; ++arg) {
+                    ///     word += literalSize;  // literal
+                    ///     listIds.push_back(bytecode[word++]);   // label
+                    /// }
+                    errorMsg = "Unplugged operand for now.. to check later";
+                    return false;
+                }
+                else {
+                    errorMsg = "invalid OperandVariableLiteralId instruction";
+                    return false;
+                }
+
+                return true;
+            }
+
+            case spv::OperandLiteralString: {
+                const int stringWordCount = literalStringWords(literalString(bytecode, word));
+                word += stringWordCount;
+                numOperands -= (stringWordCount - 1); // -1 because for() header post-decrements
+                break;
+            }
+
+            // Execution mode might have extra literal operands.  Skip them.
+            case spv::OperandExecutionMode:
+                return true;
+
+            // Single word operands we simply ignore, as they hold no IDs
+            case spv::OperandLiteralNumber:
+            case spv::OperandSource:
+            case spv::OperandExecutionModel:
+            case spv::OperandAddressing:
+            case spv::OperandMemory:
+            case spv::OperandStorage:
+            case spv::OperandDimensionality:
+            case spv::OperandSamplerAddressingMode:
+            case spv::OperandSamplerFilterMode:
+            case spv::OperandSamplerImageFormat:
+            case spv::OperandImageChannelOrder:
+            case spv::OperandImageChannelDataType:
+            case spv::OperandImageOperands:
+            case spv::OperandFPFastMath:
+            case spv::OperandFPRoundingMode:
+            case spv::OperandLinkageType:
+            case spv::OperandAccessQualifier:
+            case spv::OperandFuncParamAttr:
+            case spv::OperandDecoration:
+            case spv::OperandBuiltIn:
+            case spv::OperandSelect:
+            case spv::OperandLoop:
+            case spv::OperandFunction:
+            case spv::OperandMemoryAccess:
+            case spv::OperandGroupOperation:
+            case spv::OperandKernelEnqueueFlags:
+            case spv::OperandKernelProfilingInfo:
+            case spv::OperandCapability:
+                ++word;
+                break;
+
+            default:
+                errorMsg = "Unhandled Operand Class";
+                return false;
         }
     }
 
