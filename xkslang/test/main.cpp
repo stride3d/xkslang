@@ -205,7 +205,7 @@ enum class BytecodeFileFormat
     Text,
 };
 
-void OutputBytecode(const SpvBytecode& bytecode, const string& outputDir, const string& outputFileName, BytecodeFileFormat format)
+void WriteBytecode(const SpvBytecode& bytecode, const string& outputDir, const string& outputFileName, BytecodeFileFormat format)
 {
     const vector<uint32_t>& bytecodeList = bytecode.getBytecodeStream();
     const string outputFullName = outputDir + outputFileName;
@@ -269,7 +269,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     if (!success)
     {
         cout << "Compilation Failed" << endl;
-        OutputBytecode(errorSpv, outputDir, effectName + "_compile_error.hr.spv", BytecodeFileFormat::Text);
+        WriteBytecode(errorSpv, outputDir, effectName + "_compile_error.hr.spv", BytecodeFileFormat::Text);
     }
     else
     {
@@ -277,10 +277,31 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     }
 
     //output the compiled intermediary bytecodes
-    OutputBytecode(composedSpv, outputDir, effectName + "_compile0_composed.hr.spv", BytecodeFileFormat::Text);
-    OutputBytecode(streamsMergedSpv, outputDir, effectName + "_compile1_streamsMerged.hr.spv", BytecodeFileFormat::Text);
-    OutputBytecode(streamsReshuffledSpv, outputDir, effectName + "_compile2_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
-    OutputBytecode(finalSpv, outputDir, effectName + "_compile3_final.hr.spv", BytecodeFileFormat::Text);
+    WriteBytecode(composedSpv, outputDir, effectName + "_compile0_composed.hr.spv", BytecodeFileFormat::Text);
+    WriteBytecode(streamsMergedSpv, outputDir, effectName + "_compile1_streamsMerged.hr.spv", BytecodeFileFormat::Text);
+    WriteBytecode(streamsReshuffledSpv, outputDir, effectName + "_compile2_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
+
+    {
+        //write the final SPIRV bytecode then convert it into GLSL
+        string outputFileNameFinalSpv = effectName + "_compile3_final.spv";
+        string outputFileNameFinalSpvHr = effectName + "_compile3_final.hr.spv";
+        string outputFullnameFinalSpv = outputDir + outputFileNameFinalSpv;
+        WriteBytecode(finalSpv, outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
+        WriteBytecode(finalSpv, outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
+
+        //if (success)
+        //{
+        //    string fileNameGlsl = effectName + "_compileFinal.rv.glsl";
+        //    string fullNameGlsl = outputDir + fileNameGlsl;
+        //
+        //    cout << "Final SPV bytecode: Convert into GLSL." << endl;
+        //
+        //    time_before = GetTickCount();
+        //    int result = ConvertSpvToGlsl(outputFullnameFinalSpv, fullNameGlsl);
+        //    time_after = GetTickCount();
+        //    if (result != 0) success = false;
+        //}
+    }
 
     if (!success) return false;
 
@@ -293,8 +314,8 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
         ///Save the SPIRV bytecode (and its HR form)
         string outputFileNameSpv = effectName + "_" + labelStage + ".spv";
         string outputFullnameSpv = outputDir + outputFileNameSpv;
-        OutputBytecode(outputStages[i].resultingBytecode, outputDir, outputFileNameSpv, BytecodeFileFormat::Binary);
-        OutputBytecode(outputStages[i].resultingBytecode, outputDir, effectName + "_" + labelStage + ".hr.spv", BytecodeFileFormat::Text);
+        WriteBytecode(outputStages[i].resultingBytecode, outputDir, outputFileNameSpv, BytecodeFileFormat::Binary);
+        WriteBytecode(outputStages[i].resultingBytecode, outputDir, effectName + "_" + labelStage + ".hr.spv", BytecodeFileFormat::Text);
 
         //======================================================================================================
         //convert back the SPIRV bytecode into GLSL
@@ -302,7 +323,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
             string fileNameGlsl = effectName + "_" + labelStage + ".rv.glsl";
             string fullNameGlsl = outputDir + fileNameGlsl;
 
-            cout << "Convert into GLSL." << endl;
+            cout << labelStage << " stage: Convert into GLSL." << endl;
 
             time_before = GetTickCount();
             int result = ConvertSpvToGlsl(outputFullnameSpv, fullNameGlsl);
