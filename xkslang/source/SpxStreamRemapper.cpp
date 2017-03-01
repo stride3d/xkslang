@@ -24,20 +24,8 @@ static const string functionInputVariableDefaultName = "__input__";
 static const string functionOutputVariableDefaultName = "__output__";
 static const string functionStreamVariableDefaultName = "_streams";
 
-//===================================================================================================//
-BytecodeChunk& BytecodeUpdateController::InsertNewBytecodeChunckAt(unsigned int position, unsigned int countBytesToOverlap)
-{
-    auto itListPos = listSortedChunksToInsert.begin();
-    while (itListPos != listSortedChunksToInsert.end())
-    {
-        if (position > itListPos->insertionPos) break;
-        itListPos++;
-    }
-    itListPos = listSortedChunksToInsert.insert(itListPos, BytecodeChunk(position, countBytesToOverlap));
-    return *itListPos;
-}
-
-//===================================================================================================//
+//=====================================================================================================================================
+//=====================================================================================================================================
 void SpxStreamRemapper::copyMessagesTo(vector<string>& list)
 {
     list.insert(list.end(), errorMessages.begin(), errorMessages.end());
@@ -49,7 +37,8 @@ bool SpxStreamRemapper::error(const string& txt)
     return false;
 }
 
-//===================================================================================================//
+//=====================================================================================================================================
+//=====================================================================================================================================
 //static const auto spx_inst_fn_nop = [](spv::Op, unsigned) { return false; };
 //static const auto spx_op_fn_nop = [](spv::Id&) {};
 
@@ -64,7 +53,22 @@ void SpxStreamRemapper::ResetMergeOperationId()
 {
     SpxStreamRemapper::currentMergeOperationId = 0;
 }
-//===================================================================================================//
+
+spv::ExecutionModel SpxStreamRemapper::GetShadingStageExecutionMode(ShadingStageEnum stage)
+{
+    switch (stage) {
+    case ShadingStageEnum::Vertex:           return spv::ExecutionModelVertex;
+    case ShadingStageEnum::Pixel:            return spv::ExecutionModelFragment;
+    case ShadingStageEnum::TessControl:      return spv::ExecutionModelTessellationControl;
+    case ShadingStageEnum::TessEvaluation:   return spv::ExecutionModelTessellationEvaluation;
+    case ShadingStageEnum::Geometry:         return spv::ExecutionModelGeometry;
+    case ShadingStageEnum::Compute:          return spv::ExecutionModelGLCompute;
+    default:
+        return spv::ExecutionModelMax;
+    }
+}
+//=====================================================================================================================================
+//=====================================================================================================================================
 
 SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
 {
@@ -1983,7 +1987,7 @@ void SpxStreamRemapper::GetStagesPipeline(vector<ShadingStageEnum>& pipeline)
 
 bool SpxStreamRemapper::InitializeCompilationProcess(vector<XkslMixerOutputStage>& outputStages)
 {
-    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_Initialized;
 
     if (outputStages.size() == 0) return error("no output stages defined");
@@ -2328,6 +2332,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         spv::Id streamIOStructPointerTypeId = spv::spirvbin_t::unused;
         spv::Id functionIOStreamVariableResultId = spv::spirvbin_t::unused;
         spv::Id functionInputStreamParameterResultId = spv::spirvbin_t::unused;
+        spv::Id functionOutputStreamVariableResultId = spv::spirvbin_t::unused;
         spv::Id newFunctionDeclarationTypeId = spv::spirvbin_t::unused;
 
         //===============================================================================
@@ -2553,12 +2558,15 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             outputVariableName.dump(bytecodeNames.bytecode);
 #endif
 
-            //Add the output variables (if any) into the function variables list
+            //Add and init the output variables (if any)
             if (outputStructTypeId != spv::spirvbin_t::unused)
             {
+                //===============================================================================
+                //Add the output variable into the functions
                 spv::Instruction functionOutputVariable(newId++, outputStructPointerTypeId, spv::OpVariable);
                 functionOutputVariable.addImmediateOperand(spv::StorageClassFunction);
                 functionOutputVariable.dump(functionStartingInstructionsChunk.bytecode);
+                functionOutputStreamVariableResultId = functionOutputVariable.getResultId();
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
                 //output variable name
@@ -2567,20 +2575,75 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 outputVariableName.addStringOperand(functionOutputVariableDefaultName.c_str());
                 outputVariableName.dump(bytecodeNames.bytecode);
 #endif
-
                 //update the function return type (must be equal to the function declaration type's return type)
                 bytecodeUpdateController.SetNewAtomicValueUpdate(entryFunction->bytecodeStartPosition + 1, outputStructTypeId);
 
-                //add instruction to load the output (and replace OpReturn by OpReturnValue)
-                BytecodeChunk& functionFinalInstructionsChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionReturnInstrPos, 1);  //1 to tell that we will overlap 1 byte
+                //===============================================================================
+                //copy the IO streams into the output variable
+                BytecodeChunk& functionFinalInstructionsChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionReturnInstrPos, 1); //the Return will be removed and replaced
+
+#ifdef XKSLANG_DEBUG_MODE
+                /// if (functionInputStreamParameterResultId == spv::spirvbin_t::unused) return error("Invalid functionInputStreamParameterResultId");
+                /// if (functionIOStreamVariableResultId == spv::spirvbin_t::unused) return error("Invalid functionIOStreamVariableResultId");
+#endif
+                for (unsigned int kout = 0; kout < vecStageOutputMembersIndex.size(); ++kout)
+                {
+                    TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[vecStageOutputMembersIndex[kout]];
+                    spv::Id memberPointerFunctionTypeId = streamMember.memberPointerFunctionTypeId;
+                    spv::Id memberTypeId = streamMember.memberTypeId;
+
+                    //find the index of the corresponding member within the IO stream struct
+                    int ioStreamMemberIndexConstTypeId = -1;
+                    for (unsigned int kio = 0; kio < vecStageIOMembersIndex.size(); ++kio)
+                    {
+                        if (vecStageIOMembersIndex[kio] == vecStageOutputMembersIndex[kout]) {
+                            ioStreamMemberIndexConstTypeId = globalListOfMergedStreamVariables.mapIndexesWithConstValueId[kio];
+                            break;
+                        }
+                    }
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (memberPointerFunctionTypeId <= 0) return error(string("memberPointerFunctionTypeId has not be found or created"));
+                    if (ioStreamMemberIndexConstTypeId == -1) return error(string("Failed to find the index of the corresponding member within the IO stream struct"));
+#endif
+                    //Access the stream IO member
+                    spv::Instruction accessIOStreamInstr(newId++, memberPointerFunctionTypeId, spv::OpAccessChain);
+                    accessIOStreamInstr.addIdOperand(functionIOStreamVariableResultId);
+                    accessIOStreamInstr.addImmediateOperand(ioStreamMemberIndexConstTypeId);
+                    accessIOStreamInstr.dump(functionFinalInstructionsChunk.bytecode);
+
+                    //Load the member IO value
+                    spv::Instruction loadStreamMemberInstr(newId++, memberTypeId, spv::OpLoad);
+                    loadStreamMemberInstr.addIdOperand(accessIOStreamInstr.getResultId());
+                    loadStreamMemberInstr.dump(functionFinalInstructionsChunk.bytecode);
+
+                    //Access the stream output member
+                    spv::Id outputMemberIndexConstTypeId = globalListOfMergedStreamVariables.mapIndexesWithConstValueId[kout];
+                    spv::Instruction accessOutputStreamInstr(newId++, memberPointerFunctionTypeId, spv::OpAccessChain);
+                    accessOutputStreamInstr.addIdOperand(functionOutputStreamVariableResultId);
+                    accessOutputStreamInstr.addImmediateOperand(outputMemberIndexConstTypeId);
+                    accessOutputStreamInstr.dump(functionFinalInstructionsChunk.bytecode);
+
+                    //store the member value into output stream
+                    spv::Instruction storeStreamMemberInstr(spv::OpStore);
+                    storeStreamMemberInstr.addIdOperand(accessOutputStreamInstr.getResultId());
+                    storeStreamMemberInstr.addIdOperand(loadStreamMemberInstr.getResultId());
+                    storeStreamMemberInstr.dump(functionFinalInstructionsChunk.bytecode);
+                }
+
+                //============================================================================================================
+                //add instruction to load the output
                 spv::Instruction loadingOutputInstruction(newId++, outputStructTypeId, spv::OpLoad);
                 loadingOutputInstruction.addIdOperand(functionOutputVariable.getResultId());
                 loadingOutputInstruction.dump(functionFinalInstructionsChunk.bytecode);
 
-                //change OpReturn instruction to OpReturnValue 
+                //OpReturn instruction to OpReturnValue 
                 spv::Instruction returnValueInstruction(spv::NoResult, spv::NoType, spv::OpReturnValue);
                 returnValueInstruction.addIdOperand(loadingOutputInstruction.getResultId());
                 returnValueInstruction.dump(functionFinalInstructionsChunk.bytecode);
+
+                //remove the current OpReturn instruction
+                bytecodeUpdateController.InsertNewBytecodeChunckAt(functionReturnInstrPos);
             }
 
             //===============================================================================
@@ -2706,8 +2769,16 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             }
         }
 
+        //TOTOTO: do the same for every functions called (stage.listCalledFunctionsAccessingStreamMembers)
+        //TOTOTO
+        //TOTOTO
+        //TOTOTO
+        //TOTOTO
+
     }  //end loop for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
     if (errorMessages.size() > 0) return false;
+
+    //TOTOTOTO: remove global stream struct
 
     //=============================================================================================================
     //=============================================================================================================
@@ -2726,68 +2797,9 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     return true;
 }
 
-bool SpxStreamRemapper::ApplyBytecodeUpdateController(const BytecodeUpdateController& bytecodeUpdateController)
-{
-    unsigned int bytecodeOriginalSize = spv.size();
-
-    //first : update all values and portions    
-    for (auto itau = bytecodeUpdateController.listAtomicUpdates.begin(); itau != bytecodeUpdateController.listAtomicUpdates.end(); itau++)
-    {
-        const BytecodeValueToReplace& atomicValueUpdate = *itau;
-
-#ifdef XKSLANG_DEBUG_MODE
-        if (atomicValueUpdate.pos >= bytecodeOriginalSize) {error("pos is out of bound"); break;}
-#endif
-
-        spv[atomicValueUpdate.pos] = atomicValueUpdate.value;
-    }
-    for (auto itau = bytecodeUpdateController.listPortionsToUpdates.begin(); itau != bytecodeUpdateController.listPortionsToUpdates.end(); itau++)
-    {
-        const BytecodePortionToReplace& portionUpdate = *itau;
-
-#ifdef XKSLANG_DEBUG_MODE
-        if (portionUpdate.pos + portionUpdate.values.size() >= bytecodeOriginalSize) { error("portion to update is out of bound"); break; }
-#endif
-
-        auto itdest = spv.begin() + portionUpdate.pos;
-        for (auto itp = portionUpdate.values.begin(); itp != portionUpdate.values.end(); itp++)
-        {
-            *itdest++ = *itp;
-        }
-    }
-
-    //then Insert all new chuncks in the bytecode
-    for (auto itbc = bytecodeUpdateController.listSortedChunksToInsert.begin(); itbc != bytecodeUpdateController.listSortedChunksToInsert.end(); itbc++)
-    {
-        const BytecodeChunk& bytecodeChunck = *itbc;
-
-#ifdef XKSLANG_DEBUG_MODE
-        if (bytecodeChunck.insertionPos > bytecodeOriginalSize) { error("bytecode chunck is out of bound"); break; }
-        if (bytecodeChunck.countInstructionsToOverlap > bytecodeChunck.bytecode.size()) { error("bytecode chunck overlaps too many bytes"); break; }
-#endif
-
-        if (bytecodeChunck.countInstructionsToOverlap == 0)
-        {
-            spv.insert(spv.begin() + bytecodeChunck.insertionPos, bytecodeChunck.bytecode.begin(), bytecodeChunck.bytecode.end());
-        }
-        else
-        {
-            //We overlap some bytes, and maybe add some more
-            int countOverlaps = bytecodeChunck.countInstructionsToOverlap;
-            int countRemaining = bytecodeChunck.bytecode.size() - countOverlaps;
-            for (unsigned int i = 0; i < countOverlaps; ++i) spv[bytecodeChunck.insertionPos + i] = bytecodeChunck.bytecode[i];
-            if (countRemaining > 0)
-                spv.insert(spv.begin() + (bytecodeChunck.insertionPos + countOverlaps), bytecodeChunck.bytecode.begin() + countOverlaps, bytecodeChunck.bytecode.end());
-        }
-    }
-
-    if (errorMessages.size() > 0) return false;
-    return true;
-}
-
 bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
-    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAnalysed;
 
     if (globalListOfMergedStreamVariables.countMembers() == 0) return true; //nothing to analyse
@@ -2981,7 +2993,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixe
 
 bool SpxStreamRemapper::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputStages)
 {
-    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved;
 
     if (outputStages.size() == 0) return error("no output stages defined");
@@ -3134,7 +3146,7 @@ bool SpxStreamRemapper::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& out
 
 bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
 {
-    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_CompositionInstancesProcessed;
 
     //===================================================================================================================
@@ -3395,95 +3407,6 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
 
             //Update all maps (update objects position in the bytecode)
             if (!UpdateAllMaps()) return error("ApplyAllCompositions: failed to update all maps");
-        }
-    }
-
-    if (errorMessages.size() > 0) return false;
-    return true;
-}
-
-//Mixin is finalized: no more updates will be brought to the mixin bytecode after
-bool SpxStreamRemapper::CompileMixinForStages(vector<XkslMixerOutputStage>& outputStages)
-{
-    //if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
-    status = SpxRemapperStatusEnum::MixinFinalized;
-
-    if (outputStages.size() == 0) return error("no output stages defined");
-    if (!ValidateHeader()) return error("Failed to validate the header");
-
-    //===================================================================================================================
-    //===================================================================================================================
-    //Convert SPIRX extensions to SPIRV: remove SPIRX extended instructions
-    {
-        vector<range_t> vecStripRanges;
-        unsigned int start = header_size;
-        const unsigned int end = spv.size();
-        while (start < end)
-        {
-            unsigned int wordCount = asWordCount(start);
-            spv::Op opCode = asOpCode(start);
-
-            switch (opCode)
-            {
-                case spv::OpFunctionCallBaseResolved:
-                {
-                    //change OpFunctionCallBaseResolved to OpFunctionCall
-                    setOpCode(start, spv::OpFunctionCall);
-                    break;
-                }
-                case spv::OpFunctionCallThroughCompositionVariable:
-                {
-                    error(string("Found unresolved OpFunctionCallThroughCompositionVariable at: ") + to_string(start));
-                    break;
-                }
-                case spv::OpFunctionCallBaseUnresolved:
-                {
-                    error(string("A function base call has an unresolved state at: ") + to_string(start));
-                    break;
-                }
-                case spv::OpForEachCompositionStartLoop:
-                {
-                    error(string("A foreach start loop has not been processed at: ") + to_string(start));
-                    break;
-                }
-                case spv::OpForEachCompositionEndLoop:
-                {
-                    error(string("A foreach end loop has not been processed at: ") + to_string(start));
-                    break;
-                }
-                case spv::OpBelongsToShader:
-                case spv::OpDeclarationName:
-                case spv::OpTypeXlslShaderClass:
-                case spv::OpShaderInheritance:
-                case spv::OpShaderCompositionDeclaration:
-                case spv::OpShaderCompositionInstance:
-                case spv::OpMethodProperties:
-                case spv::OpMemberProperties:
-                case spv::OpMemberSemanticName:
-                {
-                    stripInst(vecStripRanges, start);
-                    break;
-                }
-            }
-            start += wordCount;
-        }
-        if (errorMessages.size() > 0) return false;
-
-        //warning: objects bytecode position is not correct anymore after this 
-        stripBytecode(vecStripRanges);
-    }
-
-    //===================================================================================================================
-    //===================================================================================================================
-    // Generate the SPIRV bytecode for all stages
-    for (unsigned int i = 0; i<outputStages.size(); ++i)
-    {
-        XkslMixerOutputStage& outputStage = outputStages[i];
-        FunctionInstruction* entryFunction = outputStages[i].entryFunction;
-        bool success = this->GenerateSpvStageBytecode(outputStage.outputStage->stage, outputStage.outputStage->entryPointName, entryFunction, outputStage.outputStage->resultingBytecode);
-        if (!success)
-        {
-            error(string("Fail to generate SPV stage bytecode for the stage: ") + GetShadingStageLabel(outputStage.outputStage->stage));
         }
     }
 
@@ -3886,6 +3809,133 @@ SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForE
     return entryPointFunction;
 }
 
+//Mixin is finalized: no more updates will be brought to the mixin bytecode after
+bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage>& outputStages)
+{
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    //status = SpxRemapperStatusEnum::MixinFinalized;   //final step, no more status afterward
+
+    if (outputStages.size() == 0) return error("no output stages defined");
+
+    //===================================================================================================================
+    //save the current bytecode (we don't want to compromise it)
+    vector<uint32_t> bytecodeBackup;
+    bytecodeBackup.insert(bytecodeBackup.end(), spv.begin(), spv.end());
+
+    //===================================================================================================================
+    //Convert SPIRX to SPIRV (remove all SPIRX extended instructions). So we don't need to repeat it for every stages
+    vector<range_t> vecStripRanges;
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        switch (opCode)
+        {
+            case spv::OpEntryPoint:
+            {
+                //remove all current entry points (if there is any): we will set a new one for each stages
+                stripInst(vecStripRanges, start);
+                break;
+            }
+            case spv::OpFunctionCallBaseResolved:
+            {
+                //change OpFunctionCallBaseResolved to OpFunctionCall
+                setOpCode(start, spv::OpFunctionCall);
+                break;
+            }
+            case spv::OpFunctionCallThroughCompositionVariable:
+            {
+                error(string("Found unresolved OpFunctionCallThroughCompositionVariable at: ") + to_string(start));
+                break;
+            }
+            case spv::OpFunctionCallBaseUnresolved:
+            {
+                error(string("A function base call has an unresolved state at: ") + to_string(start));
+                break;
+            }
+            case spv::OpForEachCompositionStartLoop:
+            {
+                error(string("A foreach start loop has not been processed at: ") + to_string(start));
+                break;
+            }
+            case spv::OpForEachCompositionEndLoop:
+            {
+                error(string("A foreach end loop has not been processed at: ") + to_string(start));
+                break;
+            }
+            case spv::OpBelongsToShader:
+            case spv::OpDeclarationName:
+            case spv::OpTypeXlslShaderClass:
+            case spv::OpShaderInheritance:
+            case spv::OpShaderCompositionDeclaration:
+            case spv::OpShaderCompositionInstance:
+            case spv::OpMethodProperties:
+            case spv::OpMemberProperties:
+            case spv::OpMemberSemanticName:
+            {
+                stripInst(vecStripRanges, start);
+                break;
+            }
+        }
+        start += wordCount;
+    }
+
+    if (errorMessages.size() > 0){
+        spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end()); //reset to the initial spx bytecode
+        return false;
+    }
+    stripBytecode(vecStripRanges);
+
+    //===================================================================================================================
+    // Generate the SPIRV bytecode for all stages
+    for (unsigned int i = 0; i<outputStages.size(); ++i)
+    {
+        XkslMixerOutputStage& outputStage = outputStages[i];
+        FunctionInstruction* entryFunction = outputStages[i].entryFunction;
+
+        //======================================================================================
+        //copy the current SPV bytecode to the stage bytecode
+        vector<uint32_t>& stageBytecode = outputStage.outputStage->resultingBytecode.getWritableBytecodeStream();
+        stageBytecode.clear();
+        stageBytecode.insert(stageBytecode.end(), spv.begin(), spv.end());
+
+        //======================================================================================
+        //Add the entry point instruction
+        spv::ExecutionModel model = GetShadingStageExecutionMode(outputStage.outputStage->stage);
+        if (model == spv::ExecutionModelMax) { stageBytecode.clear(); error("Unknown stage"); break; }
+
+        vector<uint32_t> entryPointInstruction;
+        spv::Instruction entryPointInstr(spv::OpEntryPoint);
+        entryPointInstr.addImmediateOperand(model);
+        entryPointInstr.addIdOperand(entryFunction->GetResultId());
+        entryPointInstr.addStringOperand(outputStage.outputStage->entryPointName.c_str());
+        entryPointInstr.dump(entryPointInstruction);
+
+        //insert the stage header in the bytecode, after the header
+        vector<unsigned int>::iterator it = stageBytecode.begin() + header_size;
+        stageBytecode.insert(it, entryPointInstruction.begin(), entryPointInstruction.end());
+
+        //Clean the bytecode!
+        dashfhjdhgkhfk;
+
+        /*bool success = this->GenerateSpvStageBytecode(outputStage.outputStage->stage, outputStage.outputStage->entryPointName, entryFunction, outputStage.outputStage->resultingBytecode);
+        if (!success)
+        {
+            error(string("Fail to generate SPV stage bytecode for the stage: ") + GetShadingStageLabel(outputStage.outputStage->stage));
+        }*/
+    }
+
+    //reset to the initial spx bytecode
+    spv.clear();
+    spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+/*
 bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string entryPointName, FunctionInstruction* entryPointFunction, SpvBytecode& output)
 {
     if (status != SpxRemapperStatusEnum::MixinFinalized) return error("Invalid remapper status");
@@ -3925,6 +3975,7 @@ bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string 
 
     return true;
 }
+*/
 
 bool SpxStreamRemapper::CleanBytecodeFromAllUnusedStuff()
 {
@@ -4057,96 +4108,6 @@ bool SpxStreamRemapper::SpxStreamRemapper::InitDefaultHeader()
     setBound(uniqueId);
 
     return true;
-}
-
-bool SpxStreamRemapper::BuildAndSetShaderStageHeader(ShadingStageEnum stage, FunctionInstruction* entryFunction, string unmangledFunctionName)
-{
-    /*
-    //capabilities
-    //check which capabilities are required, check to merge capabilities from SPX bytecode
-    spv::Instruction capInst(0, 0, spv::OpCapability);
-    capInst.addImmediateOperand(spv::CapabilityShader);
-    capInst.dump(stageHeader);
-
-    //extensions?
-    //spv::Instruction extInst(0, 0, spv::OpExtension);
-    //extInst.addStringOperand(*it);
-    //extInst.dump(stageHeader);
-
-    //import
-    spv::Instruction import(getUniqueId(), NoType, OpExtInstImport);
-    import->addStringOperand(name);
-    */
-
-    if (entryFunction == nullptr){
-        return error("Unknown entry function");
-    }
-
-    spv::ExecutionModel model = GetShadingStageExecutionMode(stage);
-    if (model == spv::ExecutionModelMax)
-    {
-        return error("Unknown stage");
-    }
-
-    //opEntryPoint: set the stage model, and entry point
-    vector<unsigned int> stageHeader;
-    spv::Instruction entryPointInstr(spv::OpEntryPoint);
-    entryPointInstr.addImmediateOperand(model);
-    entryPointInstr.addIdOperand(entryFunction->GetResultId());
-    entryPointInstr.addStringOperand(unmangledFunctionName.c_str());
-    entryPointInstr.dump(stageHeader);
-
-    //remove the current entry points (if any)
-    {
-        vector<range_t> vecStripRanges;
-        unsigned int start = header_size;
-        const unsigned int end = spv.size();
-        while (start < end)
-        {
-            unsigned int wordCount = asWordCount(start);
-            spv::Op opCode = asOpCode(start);
-
-            switch (opCode)
-            {
-                case spv::OpEntryPoint:
-                {
-                    stripInst(vecStripRanges, start);
-                    break;
-                }
-
-                case spv::OpTypeXlslShaderClass:
-                case spv::OpDeclarationName:
-                {
-                    //all entry points are set before those declarations: we can stop parsing the rest of the bytecode
-                    start = end;
-                    break;
-                }
-            }
-            start += wordCount;
-        }
-
-        stripBytecode(vecStripRanges);
-    }
-
-    //insert the stage header in the bytecode, after the header
-    vector<unsigned int>::iterator it = spv.begin() + header_size;
-    spv.insert(it, stageHeader.begin(), stageHeader.end());
-
-    return true;
-}
-
-spv::ExecutionModel SpxStreamRemapper::GetShadingStageExecutionMode(ShadingStageEnum stage)
-{
-    switch (stage) {
-    case ShadingStageEnum::Vertex:           return spv::ExecutionModelVertex;
-    case ShadingStageEnum::Pixel:            return spv::ExecutionModelFragment;
-    case ShadingStageEnum::TessControl:      return spv::ExecutionModelTessellationControl;
-    case ShadingStageEnum::TessEvaluation:   return spv::ExecutionModelTessellationEvaluation;
-    case ShadingStageEnum::Geometry:         return spv::ExecutionModelGeometry;
-    case ShadingStageEnum::Compute:          return spv::ExecutionModelGLCompute;
-    default:
-        return spv::ExecutionModelMax;
-    }
 }
 
 bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
@@ -5497,5 +5458,78 @@ bool SpxStreamRemapper::parseInstruction(unsigned word, spv::Op& opCode, unsigne
         error(errorMsg);
         return false;
     }
+    return true;
+}
+
+//=====================================================================================================================================
+//=====================================================================================================================================
+BytecodeChunk& BytecodeUpdateController::InsertNewBytecodeChunckAt(unsigned int position, unsigned int countBytesToOverlap)
+{
+    auto itListPos = listSortedChunksToInsert.begin();
+    while (itListPos != listSortedChunksToInsert.end())
+    {
+        if (position > itListPos->insertionPos) break;
+        itListPos++;
+    }
+    itListPos = listSortedChunksToInsert.insert(itListPos, BytecodeChunk(position, countBytesToOverlap));
+    return *itListPos;
+}
+
+bool SpxStreamRemapper::ApplyBytecodeUpdateController(const BytecodeUpdateController& bytecodeUpdateController)
+{
+    unsigned int bytecodeOriginalSize = spv.size();
+
+    //first : update all values and portions    
+    for (auto itau = bytecodeUpdateController.listAtomicUpdates.begin(); itau != bytecodeUpdateController.listAtomicUpdates.end(); itau++)
+    {
+        const BytecodeValueToReplace& atomicValueUpdate = *itau;
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (atomicValueUpdate.pos >= bytecodeOriginalSize) { error("pos is out of bound"); break; }
+#endif
+
+        spv[atomicValueUpdate.pos] = atomicValueUpdate.value;
+    }
+    for (auto itau = bytecodeUpdateController.listPortionsToUpdates.begin(); itau != bytecodeUpdateController.listPortionsToUpdates.end(); itau++)
+    {
+        const BytecodePortionToReplace& portionUpdate = *itau;
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (portionUpdate.pos + portionUpdate.values.size() >= bytecodeOriginalSize) { error("portion to update is out of bound"); break; }
+#endif
+
+        auto itdest = spv.begin() + portionUpdate.pos;
+        for (auto itp = portionUpdate.values.begin(); itp != portionUpdate.values.end(); itp++)
+        {
+            *itdest++ = *itp;
+        }
+    }
+
+    //then Insert all new chuncks in the bytecode
+    for (auto itbc = bytecodeUpdateController.listSortedChunksToInsert.begin(); itbc != bytecodeUpdateController.listSortedChunksToInsert.end(); itbc++)
+    {
+        const BytecodeChunk& bytecodeChunck = *itbc;
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (bytecodeChunck.insertionPos > bytecodeOriginalSize) { error("bytecode chunck is out of bound"); break; }
+        if (bytecodeChunck.countInstructionsToOverlap > bytecodeChunck.bytecode.size()) { error("bytecode chunck overlaps too many bytes"); break; }
+#endif
+
+        if (bytecodeChunck.countInstructionsToOverlap == 0)
+        {
+            spv.insert(spv.begin() + bytecodeChunck.insertionPos, bytecodeChunck.bytecode.begin(), bytecodeChunck.bytecode.end());
+        }
+        else
+        {
+            //We overlap some bytes, and maybe add some more
+            int countOverlaps = bytecodeChunck.countInstructionsToOverlap;
+            int countRemaining = bytecodeChunck.bytecode.size() - countOverlaps;
+            for (unsigned int i = 0; i < countOverlaps; ++i) spv[bytecodeChunck.insertionPos + i] = bytecodeChunck.bytecode[i];
+            if (countRemaining > 0)
+                spv.insert(spv.begin() + (bytecodeChunck.insertionPos + countOverlaps), bytecodeChunck.bytecode.begin() + countOverlaps, bytecodeChunck.bytecode.end());
+        }
+    }
+
+    if (errorMessages.size() > 0) return false;
     return true;
 }

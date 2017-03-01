@@ -287,7 +287,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
     }
 
     //===================================================================================================================
-    if (!clonedSpxStream->CompileMixinForStages(vecMixerOutputStages))
+    if (!clonedSpxStream->GenerateBytecodeForAllStages(vecMixerOutputStages))
     {
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());

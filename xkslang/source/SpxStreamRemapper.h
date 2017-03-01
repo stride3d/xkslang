@@ -534,8 +534,7 @@ private:
     bool ValidateStagesStreamMembersFlow(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool ReshuffleStreamVariables(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
-    bool CompileMixinForStages(std::vector<XkslMixerOutputStage>& outputStages);
-    bool GenerateSpvStageBytecode(ShadingStageEnum stage, std::string entryPointName, FunctionInstruction* entryPoint, SpvBytecode& output);
+    bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
 
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
     FunctionInstruction* GetShaderFunctionForEntryPoint(std::string entryPointName);
@@ -556,8 +555,6 @@ private:
     bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
 
     bool InitDefaultHeader();
-    bool BuildAndSetShaderStageHeader(ShadingStageEnum stage, FunctionInstruction* entryFunction, std::string unmangledFunctionName);
-    
     bool ComputeShadersLevel();
 
     void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
