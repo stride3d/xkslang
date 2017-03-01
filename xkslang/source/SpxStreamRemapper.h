@@ -50,13 +50,23 @@ public:
     unsigned int countInstructionsToOverlap;
 };
 
-class BytecodeAtomicValueUpdate
+class BytecodeValueToReplace
 {
 public:
     unsigned int pos;
     uint32_t value;
 
-    BytecodeAtomicValueUpdate(unsigned int pos, uint32_t value) : pos(pos), value(value) {}
+    BytecodeValueToReplace(unsigned int pos, uint32_t value) : pos(pos), value(value) {}
+};
+
+class BytecodePortionToReplace
+{
+public:
+    unsigned int pos;
+    std::vector<std::uint32_t> values;
+
+    BytecodePortionToReplace(unsigned int pos) : pos(pos) {}
+    void SetNewValues(const std::vector<std::uint32_t>& newValues) {values = newValues;}
 };
 
 //In order to update the bytecode, we first store all new codes we want to insert, plus all values we want to change
@@ -64,10 +74,12 @@ public:
 class BytecodeUpdateController
 {
 public:
-    std::vector<BytecodeAtomicValueUpdate> listAtomicUpdates;
+    std::vector<BytecodeValueToReplace> listAtomicUpdates;
+    std::vector<BytecodePortionToReplace> listPortionsToUpdates;
     std::list<BytecodeChunk> listSortedChunksToInsert;
 
-    void SetNewAtomicValueUpdate(unsigned int pos, uint32_t value) { listAtomicUpdates.push_back(BytecodeAtomicValueUpdate(pos, value)); }
+    void SetNewAtomicValueUpdate(unsigned int pos, uint32_t value) { listAtomicUpdates.push_back(BytecodeValueToReplace(pos, value)); }
+    BytecodePortionToReplace& SetNewPortionToReplace(unsigned int pos) { listPortionsToUpdates.push_back(BytecodePortionToReplace(pos)); return listPortionsToUpdates.back(); }
     BytecodeChunk& InsertNewBytecodeChunckAt(unsigned int position, unsigned int countBytesToOverlap = 0);
     unsigned int GetCountBytecodeChuncksToInsert() { return listSortedChunksToInsert.size(); }
 };
@@ -300,7 +312,10 @@ public:
         int newStructMemberId;
 
         bool HasSemantic() const { return semantic.size() > 0; }
+        bool HasDeclarationName() const { return declarationName.size() > 0; }
+
         const std::string& GetSemanticOrDeclarationName() const { return HasSemantic()? semantic: declarationName; }
+        const std::string& GetDeclarationNameOrSemantic() const { return HasDeclarationName() ? declarationName : semantic; }
         std::string GetNameWithSemantic() const {
             if (HasSemantic()) return declarationName + std::string(": ") + semantic;
             return declarationName;
