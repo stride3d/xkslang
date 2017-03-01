@@ -2183,13 +2183,70 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
     //=============================================================================================================
     //=============================================================================================================
-    //when moving stream access from the global buffer to a function input/output/internal struct variable, we need to go through different pointer type (from "Private" to "Function")
-    //so we create or find existing one in this step
-    for (unsigned int im = 0; im < globalListOfMergedStreamVariables.members.size(); ++im)
+    //when moving stream members from the global buffer to a function input/output/internal struct variable, we need to go through different pointer type (from "Private" to "Function")
+    //so we create or find existing ones here
     {
-        const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[im];
+        vector<int> mapStreamsMemberTypeIdToPointerFunctionTypeId;
+        mapStreamsMemberTypeIdToPointerFunctionTypeId.resize(bound(), -1);
 
-        int lkjsdlfgj = 5435345;
+        for (unsigned int im = 0; im < globalListOfMergedStreamVariables.members.size(); ++im)
+        {
+            TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[im];
+            streamMember.memberPointerFunctionTypeId = -1;
+            mapStreamsMemberTypeIdToPointerFunctionTypeId[streamMember.memberTypeId] = 0; //0 for a stream member id with undefined pointer type
+        }
+
+        //Check if the pointer type already exists
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
+            {
+                case spv::OpTypePointer:
+                {
+                    spv::Id typeId = asId(start + 1);
+                    spv::Id targetTypeId = asId(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                    if (targetTypeId >= mapStreamsMemberTypeIdToPointerFunctionTypeId.size()) return error("targetTypeId is out of bound");
+#endif
+                    if (mapStreamsMemberTypeIdToPointerFunctionTypeId[targetTypeId] == 0)
+                    {
+                        spv::StorageClass storageClass = (spv::StorageClass)(asLiteralValue(start + 2));
+                        if (storageClass == spv::StorageClass::StorageClassFunction)
+                        {
+                            mapStreamsMemberTypeIdToPointerFunctionTypeId[targetTypeId] = typeId;
+                        }
+                    }
+                    break;
+                }
+
+                case spv::OpFunction:
+                    //no more type after this, can stop then
+                    start = end;
+                    break;                    
+            }
+            start += wordCount;
+        }
+
+        //assign or create the missing pointer type
+        for (unsigned int im = 0; im < globalListOfMergedStreamVariables.members.size(); ++im)
+        {
+            TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[im];
+            if (mapStreamsMemberTypeIdToPointerFunctionTypeId[streamMember.memberTypeId] == 0)
+            {
+                //make the struct function parameter pointer type
+                spv::Instruction memberPointerType(newId++, spv::NoType, spv::OpTypePointer);
+                memberPointerType.addImmediateOperand(spv::StorageClass::StorageClassFunction);
+                memberPointerType.addIdOperand(streamMember.memberTypeId);
+                memberPointerType.dump(bytecodeNewTypes.bytecode);
+                mapStreamsMemberTypeIdToPointerFunctionTypeId[streamMember.memberTypeId] = memberPointerType.getResultId();
+            }
+            streamMember.memberPointerFunctionTypeId = mapStreamsMemberTypeIdToPointerFunctionTypeId[streamMember.memberTypeId];
+        }
     }
 
     //=============================================================================================================
@@ -2581,30 +2638,34 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                         //are we accessing the global stream buffer?
                         if (structIdAccessed == globalListOfMergedStreamVariables.structVariableTypeId)
                         {
-                            //TOTOTOTOTOTOTO
-                            //Must change the OpAccessChain's pointertype (typeId) from PRIVATE to FUNCTION one!!
-
                             spv::Id resultId = asId(start + 2);
                             spv::Id indexConstId= asId(start + 4);
 
                             ConstInstruction* constObject = GetConstById(indexConstId);
                             if (constObject == nullptr) return error(string("cannot get const object for Id: ") + to_string(indexConstId));
-                            int globalStreamMemberIndex = constObject->valueS32;
+                            int globalStreamMemberIndex = constObject->valueS32;  //index of the member in the original global stream struct
 #ifdef XKSLANG_DEBUG_MODE
                             if (globalStreamMemberIndex < 0 || globalStreamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
                                 return error(string("globalStreamMemberIndex is out of bound: ") + to_string(globalStreamMemberIndex));
                             if (globalListOfMergedStreamVariables.members[globalStreamMemberIndex].tmpRemapToIOIndex == -1)
                                 return error("The global stream member has not been selected as IO stage stream");
 #endif
-                            int ioStreamMemberIndex = globalListOfMergedStreamVariables.members[globalStreamMemberIndex].tmpRemapToIOIndex;
+                            int ioStreamMemberIndex = globalListOfMergedStreamVariables.members[globalStreamMemberIndex].tmpRemapToIOIndex; //new index for the members in the IO stream
 #ifdef XKSLANG_DEBUG_MODE
                             if (ioStreamMemberIndex < 0 || ioStreamMemberIndex >= (int)vecIOMembersIndex.size())
                                 return error(string("ioStreamMemberIndex is out of bound: ") + to_string(ioStreamMemberIndex));
 #endif
-                            spv::Id ioMemberConstId = globalListOfMergedStreamVariables.mapIndexesWithConstValueId[ioStreamMemberIndex];
+                            spv::Id ioMemberConstId = globalListOfMergedStreamVariables.mapIndexesWithConstValueId[ioStreamMemberIndex]; //get the const type id for new index
 
                             bytecodeUpdateController.SetNewAtomicValueUpdate(start + 3, streamStructFunctionVariableId);
                             bytecodeUpdateController.SetNewAtomicValueUpdate(start + 4, ioMemberConstId);
+
+                            //We change the OpAccessChain's pointertype (typeId) from private to function
+                            spv::Id memberPointerFunctionTypeId = globalListOfMergedStreamVariables.members[globalStreamMemberIndex].memberPointerFunctionTypeId;
+#ifdef XKSLANG_DEBUG_MODE
+                            if (memberPointerFunctionTypeId <= 0) return error(string("memberPointerFunctionTypeId has not be found or created"));
+#endif
+                            bytecodeUpdateController.SetNewAtomicValueUpdate(start + 1, memberPointerFunctionTypeId);
                         }
                         break;
                     }

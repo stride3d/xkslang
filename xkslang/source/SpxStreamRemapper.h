@@ -282,11 +282,12 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : structMemberId(-1), isStream(false), isStage(false), memberTypeId(spv::spirvbin_t::unused), tmpRemapToIOIndex(-1){}
+        TypeStructMember() : structMemberId(-1), isStream(false), isStage(false), memberTypeId(spv::spirvbin_t::unused), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1){}
 
         spv::Id structTypeId;  //Id of the struct type containing the member
         int structMemberId;    //Id of the member within the struct
         int memberTypeId;      //Type Id of the member
+        int memberPointerFunctionTypeId;  //id of the member's pointer type (with Function storage class)
         int tmpRemapToIOIndex;   //used by some algo
 
         bool isStream;
