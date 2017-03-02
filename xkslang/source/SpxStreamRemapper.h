@@ -668,6 +668,7 @@ public:
     //bool HasWriteAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Write)); }
     bool IsWriteFirstStream() { return firstAccess == MemberFirstAccessEnum::WriteFirst; }
     bool IsReadFirstStream() { return firstAccess == MemberFirstAccessEnum::ReadFirst; }
+    bool IsBeingAccessed() { return firstAccess != MemberFirstAccessEnum::Undefined; }
 };
 
 //Contains output stage info (stage + entrypoint), bytecode, plus additionnal data processed by the mixer during compilation

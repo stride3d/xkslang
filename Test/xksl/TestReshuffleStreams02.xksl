@@ -11,43 +11,11 @@ shader ShaderMain
 
 	float4 Compute()
 	{
-		streams.Position = float2(1, 1);
-		return float4(streams.Position.xy, 0, 0);
+		return float4(streams.Position.xy, 0, 1);
 	}
 	
     stage void PSMain() 
     {
-        streams.ColorTarget = Compute() + float4(streams.Position.xy, 0, 1);
+        streams.ColorTarget = Compute();
     }
 }
-
-/*
-//Xenko hlsl result:
-struct PS_STREAMS 
-{
-    float2 Position_id0;
-    float4 ColorTarget_id1;
-};
-struct VS_STREAMS 
-{
-    float2 Position_id0;
-};
-struct VS_INPUT 
-{
-};
-float4 Compute_id0(inout PS_STREAMS streams)
-{
-    streams.Position_id0 = float2(1, 1);
-    return float4(streams.Position_id0.xy, 0, 0);
-}
-void PSMain()
-{
-    PS_STREAMS streams = (PS_STREAMS)0;
-    streams.ColorTarget_id1 = Compute_id0(streams) + float4(streams.Position_id0.xy, 0, 1);
-}
-void VSMain()
-{
-    VS_STREAMS streams = (VS_STREAMS)0;
-    streams.Position_id0 = float2(0.0f, 1.0f);
-}
-*/

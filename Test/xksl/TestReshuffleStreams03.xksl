@@ -8,21 +8,46 @@ shader ShaderMain
     {
         streams.Position = float2(0.0f, 1.0f);
     }
-	
-	//return outpur in the last stage?
-	
-	//Test if first read of input variable is done from another function (not VSMain)?
-	
-	//Test if the stage not using any stream variable?
-	
-	//Test calling VSMain from another stage?
-	
-	//keep semantic info?
-	
-	//Test calling streams.variable.XY?
+
+	float4 Compute()
+	{
+		streams.Position = float2(1, 1);
+		return float4(streams.Position.xy, 0, 0);
+	}
 	
     stage void PSMain() 
     {
-        streams.ColorTarget = Compute() + float4(streams.Position.xy, 0, 1) + VSMain();
+        streams.ColorTarget = Compute() + float4(streams.Position.xy, 0, 1);
     }
 }
+
+/*
+//Xenko hlsl result:
+struct PS_STREAMS 
+{
+    float2 Position_id0;
+    float4 ColorTarget_id1;
+};
+struct VS_STREAMS 
+{
+    float2 Position_id0;
+};
+struct VS_INPUT 
+{
+};
+float4 Compute_id0(inout PS_STREAMS streams)
+{
+    streams.Position_id0 = float2(1, 1);
+    return float4(streams.Position_id0.xy, 0, 0);
+}
+void PSMain()
+{
+    PS_STREAMS streams = (PS_STREAMS)0;
+    streams.ColorTarget_id1 = Compute_id0(streams) + float4(streams.Position_id0.xy, 0, 1);
+}
+void VSMain()
+{
+    VS_STREAMS streams = (VS_STREAMS)0;
+    streams.Position_id0 = float2(0.0f, 1.0f);
+}
+*/

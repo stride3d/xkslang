@@ -123,8 +123,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
     //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
 
-    { "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
-    //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
+    //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
+    { "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },
 };
@@ -291,7 +291,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
 
         //if (success)
         //{
-        //    string fileNameGlsl = effectName + "_compileFinal.rv.glsl";
+        //    string fileNameGlsl = effectName + "_compileFinal.glsl";
         //    string fullNameGlsl = outputDir + fileNameGlsl;
         //
         //    cout << "Final SPV bytecode: Convert into GLSL." << endl;
@@ -306,6 +306,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     if (!success) return false;
 
     //convert and output every stages
+    string glslAllOutputs;
     for (unsigned int i = 0; i<outputStages.size(); ++i)
     {
         string labelStage = GetShadingStageLabel(outputStages[i].stage);
@@ -320,7 +321,10 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
         //======================================================================================================
         //convert back the SPIRV bytecode into GLSL
         {
-            string fileNameGlsl = effectName + "_" + labelStage + ".rv.glsl";
+            glslAllOutputs += "\n";
+            glslAllOutputs += "\\\\" + labelStage + " Stage\n";
+
+            string fileNameGlsl = effectName + "_" + labelStage + ".glsl";
             string fullNameGlsl = outputDir + fileNameGlsl;
 
             cout << labelStage << " stage: Convert into GLSL." << endl;
@@ -337,12 +341,14 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
             //compare the glsl output with the expected output
             if (success)
             {
-                string expectedOutputFullNameGlsl = expectedOutputDir + string(fileNameGlsl);
                 string glslExpectedOutput;
-                if (Utils::ReadFile(expectedOutputFullNameGlsl, glslExpectedOutput))
+                string glslConvertedOutput;
+                if (Utils::ReadFile(fullNameGlsl, glslConvertedOutput))
                 {
-                    string glslConvertedOutput;
-                    if (Utils::ReadFile(fullNameGlsl, glslConvertedOutput))
+                    glslAllOutputs += glslConvertedOutput;
+
+                    string expectedOutputFullNameGlsl = expectedOutputDir + string(fileNameGlsl);
+                    if (Utils::ReadFile(expectedOutputFullNameGlsl, glslExpectedOutput))
                     {
                         if (glslExpectedOutput.compare(glslConvertedOutput) != 0) {
                             cout << "expected output:" << endl << glslExpectedOutput;
@@ -355,18 +361,26 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
                         }
                     }
                     else {
-                        cout << " Failed to read the file: " << fileNameGlsl << endl;
-                        success = false;
+                        cout << "Warning: No expected output file for: " << fileNameGlsl << endl;
                     }
                 }
                 else {
-                    cout << "Warning: No expected output file for: " << fileNameGlsl << endl;
+                    cout << " Failed to read the file: " << fileNameGlsl << endl;
+                    success = false;
                 }
             }
             //======================================================================================================
         }
     }
     
+    if (glslAllOutputs.size() > 0)
+    {
+        string fileNameAllGlsl = effectName + ".glsl";
+        string fullNameAllGlsl = outputDir + fileNameAllGlsl;
+        xkslangtest::Utils::WriteFile(fullNameAllGlsl, glslAllOutputs);
+        cout << " output: \"" << fileNameAllGlsl << "\"" << endl;
+    }
+
     return success;
 }
 

@@ -2289,6 +2289,11 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 if (!memberAdded) vecStageIOMembersIndex.push_back(index);
                 memberAdded = true;
             }
+            if (!memberAdded && stage.listStreamVariablesAccessed[index].IsBeingAccessed())
+            {
+                vecStageIOMembersIndex.push_back(index);
+                memberAdded = true;
+            }
 
             if (memberAdded) globalListOfMergedStreamVariables.members[index].tmpRemapToIOIndex = vecStageIOMembersIndex.size() - 1;  //keep this info to remap the stream member to the corresponding IO
             else globalListOfMergedStreamVariables.members[index].tmpRemapToIOIndex = -1;
@@ -2768,11 +2773,8 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             }
         }
 
+        sdgsdgsdgsdg;
         //TOTOTO: do the same for every functions called (stage.listCalledFunctionsAccessingStreamMembers)
-        //TOTOTO
-        //TOTOTO
-        //TOTOTO
-        //TOTOTO
 
     }  //end loop for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
     if (errorMessages.size() > 0) return false;
@@ -4053,11 +4055,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
     //======================================================================================
     //For all IDs used: if it's defining a type, variable or const: check if it's depending on another type no included in the list yet
     {
-        spv::Op opCode;
-        unsigned int wordCount;
-        vector<spv::Id> listIds;
-        spv::Id typeId, resultId;
-        vector<spv::Id> extraTypesToCheckForIds;
+        vector<spv::Id> idToCheckForExtraIds;
         for (unsigned int id = 0; id < listIdsUsed.size(); ++id)
         {
             if (listIdsUsed[id] == true)  //the id is used
@@ -4070,57 +4068,55 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
                         case ObjectInstructionTypeEnum::Type:
                         case ObjectInstructionTypeEnum::Variable:
                         case ObjectInstructionTypeEnum::Const:
-                        {
-                            listIds.clear();
-                            if (!parseInstruction(obj->bytecodeStartPosition, opCode, wordCount, typeId, resultId, listIds))
-                                return error("Error parsing the instruction");
-#ifdef XKSLANG_DEBUG_MODE
-                            if (resultId != id) return error("The type, variable or const does not match its parsed instruction");  //sanity check
-#endif
-                            if (typeId != spv::spirvbin_t::unused && listIdsUsed[typeId] == false) listIds.push_back(typeId);
-                            for (unsigned int k = 0; k < listIds.size(); ++k)
-                            {
-                                const spv::Id& anId = listIds[k];
-                                if (listIdsUsed[anId] == false)
-                                {
-                                    listIdsUsed[anId] = true;
-                                    extraTypesToCheckForIds.push_back(anId);
-                                }
-                            }
+                            idToCheckForExtraIds.push_back(id);
                             break;
-                        }
                     }
                 }
             }
         }
 
-        //if we added extra types, check if those extra types also depend on anothers
-        while (extraTypesToCheckForIds.size() > 0)
+        spv::Op opCode;
+        unsigned int wordCount;
+        vector<spv::Id> listIds;
+        spv::Id typeId, resultId;
+        while (idToCheckForExtraIds.size() > 0)
         {
-            spv::Id id = extraTypesToCheckForIds.back();
-            extraTypesToCheckForIds.pop_back();
+            spv::Id idToCheckForUnreferencedIds = idToCheckForExtraIds.back();
+            idToCheckForExtraIds.pop_back();
 
-            TypeInstruction* type = GetTypeById(id);
-            if (type != nullptr)
-            {
-                listIds.clear();
-                if (!parseInstruction(type->bytecodeStartPosition, opCode, wordCount, typeId, resultId, listIds))
-                    return error("Error parsing the instruction");
+            ObjectInstructionBase* obj = listAllObjects[idToCheckForUnreferencedIds];
+            listIds.clear();
+            if (!parseInstruction(obj->bytecodeStartPosition, opCode, wordCount, typeId, resultId, listIds))
+                return error("Error parsing the instruction");
+
 #ifdef XKSLANG_DEBUG_MODE
-                if (resultId != id) return error("The type does not match its parsed instruction");  //sanity check
+            if (resultId != idToCheckForUnreferencedIds) return error("The type, variable or const does not match its parsed instruction");  //sanity check
 #endif
-                if (typeId != spv::spirvbin_t::unused && listIdsUsed[typeId] == false) listIds.push_back(typeId);
-                for (unsigned int k = 0; k < listIds.size(); ++k)
+
+            if (typeId != spv::spirvbin_t::unused && listIdsUsed[typeId] == false) listIds.push_back(typeId);
+            for (unsigned int k = 0; k < listIds.size(); ++k)
+            {
+                const spv::Id& anotherId = listIds[k];
+                if (listIdsUsed[anotherId] == false)
                 {
-                    const spv::Id& anId = listIds[k];
-                    if (listIdsUsed[anId] == false)
+                    //we'll need this other id
+                    listIdsUsed[anotherId] = true;
+                    
+                    //If this other id is a type, const, or variable: we will need to check it as well
+                    if (listAllObjects[anotherId] != nullptr)
                     {
-                        listIdsUsed[anId] = true;
-                        extraTypesToCheckForIds.push_back(anId);
+                        ObjectInstructionBase* anotherObj = listAllObjects[anotherId];
+                        switch (anotherObj->GetKind())
+                        {
+                            case ObjectInstructionTypeEnum::Type:
+                            case ObjectInstructionTypeEnum::Variable:
+                            case ObjectInstructionTypeEnum::Const:
+                                idToCheckForExtraIds.push_back(anotherId);
+                                break;
+                        }
                     }
                 }
             }
-            else return error("unchecked possibility for now");
         }
     }
 
