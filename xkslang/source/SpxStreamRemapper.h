@@ -30,11 +30,12 @@ enum class SpxRemapperStatusEnum
 
     //define the order of compilation processes
     MixinBeingCompiled_Initialized,
-    MixinBeingCompiled_UnusedShaderRemoved,
     MixinBeingCompiled_CompositionInstancesProcessed,
     MixinBeingCompiled_StreamsAnalysed,
     MixinBeingCompiled_StreamReadyForReschuffling,
     MixinBeingCompiled_StreamReschuffled,
+    MixinBeingCompiled_UnusedShaderRemoved,
+    MixinBeingCompiled_SPXBytecodeRemoved,
     MixinFinalized
 };
 
@@ -561,13 +562,14 @@ private:
     void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);
     static bool GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const std::vector<ShaderClassData*> listShaders, std::vector<ShaderClassData*>& fullDependencies);
 
-    static bool parseInstruction(const std::vector<std::uint32_t>& bytecode, unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds, std::string& errorMsg);
-    bool parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds);
+    static bool parseInstruction(const std::vector<std::uint32_t>& bytecode, unsigned int word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds, std::string& errorMsg);
+    bool parseInstruction(unsigned int word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds);
+    bool flagAllIdsFromInstruction(unsigned int word, spv::Op& opCode, unsigned& wordCount, std::vector<bool>& listIdsUsed);
     static bool remapAllInstructionIds(std::vector<std::uint32_t>& bytecode, unsigned word, unsigned& wordCount, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
     static bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned begin, unsigned end, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
     bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned begin, unsigned end, const std::vector<spv::Id>& remapTable);
 
-    bool CleanBytecodeFromAllUnusedStuff();
+    bool CleanAndSetStageBytecode(XkslMixerOutputStage& stage);
 
 private:
     //static variable share between all SpxStreamRemapper instances
@@ -677,7 +679,7 @@ public:
     SpxStreamRemapper::FunctionInstruction* entryFunction;  //set when initializing the compilation process
 
     std::vector<MemberAccessDetails> listStreamVariablesAccessed;  //list of stream variables accessed by the stage, set by AnalyseStreams method
-    std::vector<SpxStreamRemapper::FunctionInstruction*> listCalledFunctionsAccessingStreamMembers;  //list of functions called by the stage, accessing some stream members
+    std::vector<SpxStreamRemapper::FunctionInstruction*> listFunctionsCalledAndAccessingStreamMembers;  //list of functions called by the stage, accessing some stream members
 
     XkslMixerOutputStage(OutputStageBytecode* outputStage) : outputStage(outputStage) {}
 };

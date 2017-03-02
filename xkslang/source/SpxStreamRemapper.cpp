@@ -2017,13 +2017,12 @@ bool SpxStreamRemapper::InitializeCompilationProcess(vector<XkslMixerOutputStage
 #endif
 
     //===================================================================================================================
-    //===================================================================================================================
     //For each output stages, we search the entryPoint function in the bytecode
-    for (unsigned int i = 0; i<outputStages.size(); ++i)
+    for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++)
     {
-        FunctionInstruction* entryFunction = GetShaderFunctionForEntryPoint(outputStages[i].outputStage->entryPointName);
-        if (entryFunction == nullptr) error(string("Entry point not found: ") + outputStages[i].outputStage->entryPointName);
-        outputStages[i].entryFunction = entryFunction;
+        FunctionInstruction* entryFunction = GetShaderFunctionForEntryPoint(outputStages[iStage].outputStage->entryPointName);
+        if (entryFunction == nullptr) error(string("Entry point not found: ") + outputStages[iStage].outputStage->entryPointName);
+        outputStages[iStage].entryFunction = entryFunction;
     }
     if (errorMessages.size() > 0) return false;
 
@@ -2818,7 +2817,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixe
         if (outputStage->entryFunction == nullptr) return error("A stage entry point function is null.");
 
         //reset output stage data
-        outputStage->listCalledFunctionsAccessingStreamMembers.clear();
+        outputStage->listFunctionsCalledAndAccessingStreamMembers.clear();
         outputStage->listStreamVariablesAccessed.clear();
         for (unsigned int m = 0; m<globalListOfMergedStreamVariables.members.size(); ++m)
             outputStage->listStreamVariablesAccessed.push_back(MemberAccessDetails());
@@ -2913,7 +2912,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixe
                 }
 
                 aFunctionCalled->stageReservingTheFunction = outputStage->outputStage->stage;
-                outputStage->listCalledFunctionsAccessingStreamMembers.push_back(aFunctionCalled);
+                outputStage->listFunctionsCalledAndAccessingStreamMembers.push_back(aFunctionCalled);
             }
         }
 
@@ -3813,7 +3812,7 @@ SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForE
 bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage>& outputStages)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
-    //status = SpxRemapperStatusEnum::MixinFinalized;   //final step, no more status afterward
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_SPXBytecodeRemoved;
 
     if (outputStages.size() == 0) return error("no output stages defined");
 
@@ -3888,44 +3887,20 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
         return false;
     }
     stripBytecode(vecStripRanges);
+    if (!UpdateAllMaps()) return error("GenerateBytecodeForAllStages: failed to update all maps");
 
     //===================================================================================================================
     // Generate the SPIRV bytecode for all stages
     for (unsigned int i = 0; i<outputStages.size(); ++i)
     {
         XkslMixerOutputStage& outputStage = outputStages[i];
-        FunctionInstruction* entryFunction = outputStages[i].entryFunction;
 
-        //======================================================================================
-        //copy the current SPV bytecode to the stage bytecode
-        vector<uint32_t>& stageBytecode = outputStage.outputStage->resultingBytecode.getWritableBytecodeStream();
-        stageBytecode.clear();
-        stageBytecode.insert(stageBytecode.end(), spv.begin(), spv.end());
-
-        //======================================================================================
-        //Add the entry point instruction
-        spv::ExecutionModel model = GetShadingStageExecutionMode(outputStage.outputStage->stage);
-        if (model == spv::ExecutionModelMax) { stageBytecode.clear(); error("Unknown stage"); break; }
-
-        vector<uint32_t> entryPointInstruction;
-        spv::Instruction entryPointInstr(spv::OpEntryPoint);
-        entryPointInstr.addImmediateOperand(model);
-        entryPointInstr.addIdOperand(entryFunction->GetResultId());
-        entryPointInstr.addStringOperand(outputStage.outputStage->entryPointName.c_str());
-        entryPointInstr.dump(entryPointInstruction);
-
-        //insert the stage header in the bytecode, after the header
-        vector<unsigned int>::iterator it = stageBytecode.begin() + header_size;
-        stageBytecode.insert(it, entryPointInstruction.begin(), entryPointInstruction.end());
-
-        //Clean the bytecode!
-        dashfhjdhgkhfk;
-
-        /*bool success = this->GenerateSpvStageBytecode(outputStage.outputStage->stage, outputStage.outputStage->entryPointName, entryFunction, outputStage.outputStage->resultingBytecode);
-        if (!success)
+        //Clean the bytecode of all unused stuff!
+        if (!CleanAndSetStageBytecode(outputStage))
         {
-            error(string("Fail to generate SPV stage bytecode for the stage: ") + GetShadingStageLabel(outputStage.outputStage->stage));
-        }*/
+            error("Failed to set and clean the stage bytecode");
+            break;
+        }
     }
 
     //reset to the initial spx bytecode
@@ -3935,50 +3910,305 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
     return true;
 }
 
-/*
-bool SpxStreamRemapper::GenerateSpvStageBytecode(ShadingStageEnum stage, string entryPointName, FunctionInstruction* entryPointFunction, SpvBytecode& output)
+bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
 {
-    if (status != SpxRemapperStatusEnum::MixinFinalized) return error("Invalid remapper status");
-    if (entryPointFunction == nullptr) return error("Invalid entryPoint function");
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_SPXBytecodeRemoved) return error("Invalid remapper status");
+    FunctionInstruction* entryFunction = stage.entryFunction;
+    if (entryFunction == nullptr) return error("The stage has no entry function");
 
-    //==========================================================================================
-    //save the current bytecode
-    vector<uint32_t> bytecodeBackup;// = output.getWritableBytecodeStream();
-    bytecodeBackup.insert(bytecodeBackup.end(), spv.begin(), spv.end());
-
-    //==========================================================================================
-    // Update the shader stage header
-    if (!BuildAndSetShaderStageHeader(stage, entryPointFunction, entryPointName))
+    //======================================================================================
+    //Find all functions being called by the stage
+    vector<FunctionInstruction*> listAllFunctionsCalledByTheStage;
     {
-        error("Error buiding the shader stage header");
-        spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
-        return false;
+        //Set all functions flag to 0 (to check a function only once)
+        for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
+            FunctionInstruction* aFunction = *itsf;
+            aFunction->flag1 = 0;
+        }
+
+        vector<FunctionInstruction*> vectorFunctionsToCheck;
+        vectorFunctionsToCheck.push_back(stage.entryFunction);
+        stage.entryFunction->flag1 = 1;
+        while (vectorFunctionsToCheck.size() > 0)
+        {
+            FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
+            vectorFunctionsToCheck.pop_back();
+            listAllFunctionsCalledByTheStage.push_back(aFunctionCalled);
+
+            //check if the function is calling any other function
+            unsigned int start = aFunctionCalled->bytecodeStartPosition;
+            const unsigned int end = aFunctionCalled->bytecodeEndPosition;
+            while (start < end)
+            {
+                unsigned int wordCount = asWordCount(start);
+                spv::Op opCode = asOpCode(start);
+
+                switch (opCode)
+                {
+                    case spv::OpFunctionCall:
+                    case spv::OpFunctionCallBaseResolved:
+                    {
+                        //pile the function to go check it later
+                        spv::Id functionCalledId = asId(start + 3);
+                        FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+                        if (anotherFunctionCalled == nullptr) return error("Failed to find the function for id: " + to_string(functionCalledId));
+                        if (anotherFunctionCalled->flag1 == 0) {
+                            anotherFunctionCalled->flag1 = 1;
+                            vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+                        }
+                        break;
+                    }
+
+                    case spv::OpFunctionCallThroughCompositionVariable:
+                    case spv::OpFunctionCallBaseUnresolved:
+                    {
+                        return error(string("An unresolved function call has been found in function: ") + aFunctionCalled->GetFullName());
+                        break;
+                    }
+                }
+                start += wordCount;
+            }
+        }
     }
 
-    //==========================================================================================
-    //Clean the bytecode
-    if (!CleanBytecodeFromAllUnusedStuff())
+    vector<bool> listIdsUsed;
+    listIdsUsed.resize(bound(), false);
+
+    //======================================================================================
+    //Build the header
+    vector<uint32_t> header;
+    header.insert(header.begin(), spv.begin(), spv.begin() + header_size);
+
+    //Add the entry point instruction
+    spv::ExecutionModel model = GetShadingStageExecutionMode(stage.outputStage->stage);
+    if (model == spv::ExecutionModelMax) return error("Unknown stage");
+    spv::Instruction entryPointInstr(spv::OpEntryPoint);
+    entryPointInstr.addImmediateOperand(model);
+    entryPointInstr.addIdOperand(entryFunction->GetResultId());
+    entryPointInstr.addStringOperand(stage.outputStage->entryPointName.c_str());
+    entryPointInstr.dump(header);
+
+    //======================================================================================
+    // Add some header data
     {
-        error("Error cleaning the bytecode");
-        spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
-        return false;
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            //By default: copy memoryModel and external import (this might change later depending on the stage)
+            switch (opCode)
+            {
+                case spv::OpMemoryModel:
+                {
+                    header.insert(header.end(), spv.begin() + start, spv.begin() + (start + wordCount));
+                    break;
+                }
+                case spv::OpExtInstImport:
+                {
+                    spv::Id resultId = asId(start + 1);
+                    listIdsUsed[resultId] = true;
+                    break;
+                }
+
+                case spv::OpName:
+                case spv::OpMemberName:
+                case spv::OpFunction:
+                case spv::OpConstant:
+                case spv::OpTypeInt:
+                {
+                    start = end;
+                    break;
+                }
+            }
+
+            start += wordCount;
+        }
     }
 
-    //copy the spv bytecode into the output
-    vector<uint32_t>& outputSpv = output.getWritableBytecodeStream();
-    outputSpv.clear();
-    outputSpv.insert(outputSpv.end(), spv.begin(), spv.end());
+    //======================================================================================
+    //parse all functions called by the stage to get all IDs needed
+    for (auto itf = listAllFunctionsCalledByTheStage.begin(); itf != listAllFunctionsCalledByTheStage.end(); itf++)
+    {
+        FunctionInstruction* aFunctionCalled = *itf;
 
-    //reset the initial spx bytecode
-    spv.clear();
-    spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
+        spv::Op opCode;
+        unsigned int wordCount;
+        unsigned int start = aFunctionCalled->GetBytecodeStartPosition();
+        const unsigned int end = aFunctionCalled->GetBytecodeEndPosition();
+        while (start < end)
+        {
+            //add all IDs in the list of IDs to keep
+            if (!flagAllIdsFromInstruction(start, opCode, wordCount, listIdsUsed))
+                return error("Error flagging all IDs from the instruction");
+        
+            start += wordCount;
+        }
+    }
+
+    //======================================================================================
+    //For all IDs used: if it's defining a type or const: check if it's depending on another type no included in the list yet
+    {
+        spv::Op opCode;
+        unsigned int wordCount;
+        vector<spv::Id> listIds;
+        spv::Id typeId, resultId;
+        vector<spv::Id> extraTypesToCheckForIds;
+        for (unsigned int id = 0; id < listIdsUsed.size(); ++id)
+        {
+            if (listIdsUsed[id] == true)  //the id is used
+            {
+                if (listAllObjects[id] != nullptr)  //the id has been recognized as a data object
+                {
+                    ObjectInstructionBase* obj = listAllObjects[id];
+                    if (obj->GetKind() == ObjectInstructionTypeEnum::Type || obj->GetKind() == ObjectInstructionTypeEnum::Const)  //the id refers to a type or const
+                    {
+                        listIds.clear();
+                        if (!parseInstruction(obj->bytecodeStartPosition, opCode, wordCount, typeId, resultId, listIds))
+                            return error("Error parsing the instruction");
+#ifdef XKSLANG_DEBUG_MODE
+                        if (resultId != id) return error("The type or const does not match its parsed instruction");  //sanity check
+#endif
+                        if (typeId != spv::spirvbin_t::unused && listIdsUsed[typeId] == false) listIds.push_back(typeId);
+                        for (unsigned int k = 0; k < listIds.size(); ++k)
+                        {
+                            const spv::Id& anId = listIds[k];
+                            if (listIdsUsed[anId] == false)
+                            {
+                                listIdsUsed[anId] = true;
+                                extraTypesToCheckForIds.push_back(anId);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //if we added extra types, check if those extra types also depend on anothers
+        while (extraTypesToCheckForIds.size() > 0)
+        {
+            spv::Id id = extraTypesToCheckForIds.back();
+            extraTypesToCheckForIds.pop_back();
+
+            TypeInstruction* type = GetTypeById(id);
+            if (type != nullptr)
+            {
+                listIds.clear();
+                if (!parseInstruction(type->bytecodeStartPosition, opCode, wordCount, typeId, resultId, listIds))
+                    return error("Error parsing the instruction");
+#ifdef XKSLANG_DEBUG_MODE
+                if (resultId != id) return error("The type does not match its parsed instruction");  //sanity check
+#endif
+                if (typeId != spv::spirvbin_t::unused && listIdsUsed[typeId] == false) listIds.push_back(typeId);
+                for (unsigned int k = 0; k < listIds.size(); ++k)
+                {
+                    const spv::Id& anId = listIds[k];
+                    if (listIdsUsed[anId] == false)
+                    {
+                        listIdsUsed[anId] = true;
+                        extraTypesToCheckForIds.push_back(anId);
+                    }
+                }
+            }
+            else return error("unchecked possibility for now");
+        }
+    }
+
+    //======================================================================================
+    //copy the header
+    vector<uint32_t>& stageBytecode = stage.outputStage->resultingBytecode.getWritableBytecodeStream();
+    stageBytecode.clear();
+    stageBytecode.insert(stageBytecode.end(), header.begin(), header.end());
+
+#ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
+    //copy all names and decorate matching our IDS
+    {
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
+            {
+                case spv::OpName:
+                case spv::OpMemberName:
+                case spv::OpDecorate:
+                case spv::OpMemberDecorate:
+                {
+                    const spv::Id id = asId(start + 1);
+                    if (listIdsUsed[id] == true)
+                    {
+                        auto its = spv.begin() + start;
+                        stageBytecode.insert(stageBytecode.end(), its, its + wordCount);
+                    }
+                    break;
+                }
+                
+                case spv::OpTypeInt:
+                case spv::OpTypeVoid:
+                case spv::OpTypePointer:
+                case spv::OpFunction:
+                {
+                    //can stop parsing at this point
+                    start = end;
+                    break;
+                }
+            }
+
+            start += wordCount;
+        }
+    }
+#endif
+
+    //Copy all types matching our IDS
+    {
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            spv::Id resultId = spv::spirvbin_t::unused;
+            if (isConstOp(opCode))
+            {
+                resultId = asId(start + 2);
+            }
+            else if (isTypeOp(opCode))
+            {
+                resultId = asId(start + 1);
+            }
+
+            if (resultId != spv::spirvbin_t::unused)
+            {
+                if (listIdsUsed[resultId] == true)
+                {
+                    auto its = spv.begin() + start;
+                    stageBytecode.insert(stageBytecode.end(), its, its + wordCount);
+                }
+            }
+
+            //stop at first OpFunction instruction
+            if (opCode == spv::OpFunction) start = end;
+    
+            start += wordCount;
+        }
+    }
+
+    //copy the bytecode of all functions
+    for (auto itf = listAllFunctionsCalledByTheStage.begin(); itf != listAllFunctionsCalledByTheStage.end(); itf++)
+    {
+        FunctionInstruction* aFunctionCalled = *itf;
+        stageBytecode.insert(stageBytecode.end(), spv.begin() + aFunctionCalled->GetBytecodeStartPosition(), spv.begin() + aFunctionCalled->GetBytecodeEndPosition());
+    }
 
     return true;
-}
-*/
 
-bool SpxStreamRemapper::CleanBytecodeFromAllUnusedStuff()
-{
+    /*
     //buildLocalMaps();
     //if (staticErrorMessages.size() > 0) {
     //    copyStaticErrorMessagesTo(errorMessages);
@@ -3998,7 +4228,7 @@ bool SpxStreamRemapper::CleanBytecodeFromAllUnusedStuff()
     entryPoint = spv::NoResult;
     largestNewId = 0;
 
-    idMapL.resize(bound(), unused);
+    idMapL.resize(bound(), spv::spirvbin_t::unused);
 
     {
         int         fnStart = 0;
@@ -4079,6 +4309,7 @@ bool SpxStreamRemapper::CleanBytecodeFromAllUnusedStuff()
 
     if (errorMessages.size() > 0) return false;
     return true;
+    */
 }
 
 bool SpxStreamRemapper::SpxStreamRemapper::InitDefaultHeader()
@@ -4950,7 +5181,7 @@ bool SpxStreamRemapper::GetAllShaderInstancesForComposition(const ShaderComposit
 
 SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)
 {
-    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
 
     if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Shader)
@@ -4979,14 +5210,14 @@ SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableByName(con
 
 SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::GetObjectById(spv::Id id)
 {
-    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
     return obj;
 }
 
 SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetFunctionById(spv::Id id)
 {
-    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
 
     if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Function)
@@ -4999,7 +5230,7 @@ SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetFunctionById(spv::
 
 SpxStreamRemapper::ConstInstruction* SpxStreamRemapper::GetConstById(spv::Id id)
 {
-    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
 
     if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Const)
@@ -5012,7 +5243,7 @@ SpxStreamRemapper::ConstInstruction* SpxStreamRemapper::GetConstById(spv::Id id)
 
 SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypeById(spv::Id id)
 {
-    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
 
     if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Type)
@@ -5025,7 +5256,7 @@ SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypeById(spv::Id id)
 
 SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableById(spv::Id id)
 {
-    if (id < 0 || id >= listAllObjects.size()) return nullptr;
+    if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
 
     if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable)
@@ -5173,19 +5404,12 @@ bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsig
         return true;
     }
 
-    // Circular buffer so we can look back at previous unmapped values during the mapping pass.
-    static const unsigned idBufferSize = 4;
-    spv::Id idBuffer[idBufferSize];
-    unsigned idBufferPos = 0;
-
     // Store IDs from instruction in our map
     for (int op = 0; numOperands > 0; ++op, --numOperands) {
         switch (spv::InstructionDesc[opCode].operands.getClass(op)) {
         case spv::OperandId:
         case spv::OperandScope:
         case spv::OperandMemorySemantics:
-            idBuffer[idBufferPos] = bytecode[word];
-            idBufferPos = (idBufferPos + 1) % idBufferSize;
             bytecode[word] = remapTable[bytecode[word]];
             word++;
             break;
@@ -5287,8 +5511,159 @@ bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsig
     return true;
 }
 
+bool SpxStreamRemapper::flagAllIdsFromInstruction(unsigned int word, spv::Op& opCode, unsigned& wordCount, std::vector<bool>& listIdsUsed)
+{
+    wordCount = opWordCount(spv[word]);
+    opCode = opOpCode(spv[word]);
+    const unsigned int nextInst = word + wordCount;
+    word++;
+
+    if (nextInst > spv.size())
+    {
+        return ("nextInst is out of bound");
+        return false;
+    }
+
+    // Base for computing number of operands; will be updated as more is learned
+    unsigned numOperands = wordCount - 1;
+
+    // Read type and result ID from instruction desc table
+    if (spv::InstructionDesc[opCode].hasType()) {
+        //listIds.push_back(asId(word++));
+        listIdsUsed[asId(word++)] = true;
+        --numOperands;
+    }
+
+    if (spv::InstructionDesc[opCode].hasResult()) {
+        //listIds.push_back(asId(word++));
+        listIdsUsed[asId(word++)] = true;
+        --numOperands;
+    }
+
+    // Extended instructions: currently, assume everything is an ID.
+    // TODO: add whatever data we need for exceptions to that
+    if (opCode == spv::OpExtInst) {
+        listIdsUsed[asId(word)] = true;  //Add ExtInstImport Id
+
+        word += 2; // instruction set, and instruction from set
+        numOperands -= 2;
+
+        for (unsigned op = 0; op < numOperands; ++op)
+            listIdsUsed[asId(word++)] = true;
+
+        return true;
+    }
+
+    // Store IDs from instruction in our map
+    for (int op = 0; numOperands > 0; ++op, --numOperands)
+    {
+        const spv::OperandParameters& operands = spv::InstructionDesc[opCode].operands;
+#ifdef XKSLANG_DEBUG_MODE
+        if (op >= operands.getNum()) {
+            return ("op is out of bound");
+            return false;
+        }
+#endif
+        switch (operands.getClass(op))
+        {
+        case spv::OperandId:
+        case spv::OperandScope:
+        case spv::OperandMemorySemantics:
+            listIdsUsed[asId(word++)] = true;
+            break;
+
+        case spv::OperandVariableIds:
+            for (unsigned i = 0; i < numOperands; ++i)
+                listIdsUsed[asId(word++)] = true;
+            return true;
+
+        case spv::OperandVariableLiterals:
+            // for clarity
+            // if (opCode == spv::OpDecorate && asDecoration(word - 1) == spv::DecorationBuiltIn) {
+            //     ++word;
+            //     --numOperands;
+            // }
+            // word += numOperands;
+            return true;
+
+        case spv::OperandVariableLiteralId: {
+            if (opCode == spv::OpSwitch)
+            {
+                /// // word-2 is the position of the selector ID.  OpSwitch Literals match its type.
+                /// // In case the IDs are currently being remapped, we get the word[-2] ID from
+                /// // the circular idBuffer.
+                /// const unsigned literalSizePos = (idBufferPos + idBufferSize - 2) % idBufferSize;
+                /// const unsigned literalSize = idTypeSizeInWords(idBuffer[literalSizePos]);
+                /// const unsigned numLiteralIdPairs = (nextInst - word) / (1 + literalSize);
+                /// 
+                /// for (unsigned arg = 0; arg<numLiteralIdPairs; ++arg) {
+                ///     word += literalSize;  // literal
+                ///     listIds.push_back(spv[word++]);   // label
+                /// }
+                return ("Unplugged operand for now.. to check later");
+                return false;
+            }
+            else {
+                return ("invalid OperandVariableLiteralId instruction");
+                return false;
+            }
+
+            return true;
+        }
+
+        case spv::OperandLiteralString: {
+            const int stringWordCount = literalStringWords(literalString(spv, word));
+            word += stringWordCount;
+            numOperands -= (stringWordCount - 1); // -1 because for() header post-decrements
+            break;
+        }
+
+        // Execution mode might have extra literal operands.  Skip them.
+        case spv::OperandExecutionMode:
+            return true;
+
+        // Single word operands we simply ignore, as they hold no IDs
+        case spv::OperandLiteralNumber:
+        case spv::OperandSource:
+        case spv::OperandExecutionModel:
+        case spv::OperandAddressing:
+        case spv::OperandMemory:
+        case spv::OperandStorage:
+        case spv::OperandDimensionality:
+        case spv::OperandSamplerAddressingMode:
+        case spv::OperandSamplerFilterMode:
+        case spv::OperandSamplerImageFormat:
+        case spv::OperandImageChannelOrder:
+        case spv::OperandImageChannelDataType:
+        case spv::OperandImageOperands:
+        case spv::OperandFPFastMath:
+        case spv::OperandFPRoundingMode:
+        case spv::OperandLinkageType:
+        case spv::OperandAccessQualifier:
+        case spv::OperandFuncParamAttr:
+        case spv::OperandDecoration:
+        case spv::OperandBuiltIn:
+        case spv::OperandSelect:
+        case spv::OperandLoop:
+        case spv::OperandFunction:
+        case spv::OperandMemoryAccess:
+        case spv::OperandGroupOperation:
+        case spv::OperandKernelEnqueueFlags:
+        case spv::OperandKernelProfilingInfo:
+        case spv::OperandCapability:
+            ++word;
+            break;
+
+        default:
+            return "Unhandled Operand Class";
+        }
+    }
+
+    return true;
+}
+
 // inspired by spirvbin_t::processInstruction. Allow us to store the instruction data and ids
-bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds, string& errorMsg)
+bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsigned int word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds, string& errorMsg)
 {
     const auto instructionStart = word;
     wordCount = opWordCount(bytecode[instructionStart]);
@@ -5310,14 +5685,14 @@ bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsig
         type = bytecode[word++];
         --numOperands;
     }
-    else type = unused;
+    else type = spv::spirvbin_t::unused;
 
     if (spv::InstructionDesc[opCode].hasResult()) {
         //listIds.push_back(asId(word++));
         result = bytecode[word++];
         --numOperands;
     }
-    else result = unused;
+    else result = spv::spirvbin_t::unused;
 
     // Extended instructions: currently, assume everything is an ID.
     // TODO: add whatever data we need for exceptions to that
@@ -5332,11 +5707,6 @@ bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsig
 
         return true;
     }
-
-    // Circular buffer so we can look back at previous unmapped values during the mapping pass.
-    static const unsigned idBufferSize = 4;
-    spv::Id idBuffer[idBufferSize];
-    unsigned idBufferPos = 0;
 
     // Store IDs from instruction in our map
     for (int op = 0; numOperands > 0; ++op, --numOperands)
@@ -5353,8 +5723,6 @@ bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsig
             case spv::OperandId:
             case spv::OperandScope:
             case spv::OperandMemorySemantics:
-                idBuffer[idBufferPos] = bytecode[word];
-                idBufferPos = (idBufferPos + 1) % idBufferSize;
                 listIds.push_back(bytecode[word++]);
                 break;
 
@@ -5450,7 +5818,7 @@ bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsig
 }
 
 // inspired by spirvbin_t::processInstruction. Allow us to store the instruction data and ids
-bool SpxStreamRemapper::parseInstruction(unsigned word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds)
+bool SpxStreamRemapper::parseInstruction(unsigned int word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds)
 {
     string errorMsg;
     if (!parseInstruction(spv, word, opCode, wordCount, type, result, listIds, errorMsg))
