@@ -217,6 +217,7 @@ private:
    spirword_t  bound()    const       { return spv[3]; } // return Id bound from header
    spirword_t  bound(spirword_t b)    { return spv[3] = b; };
    spirword_t  setBound(spirword_t b) { return spv[3] = b; };
+   static spirword_t  setBound(std::vector<spirword_t>& bytecode, spirword_t b) { return bytecode[3] = b; };
    spirword_t  genmagic() const       { return spv[2]; } // generator magic
    spirword_t  genmagic(spirword_t m) { return spv[2] = m; }
    spirword_t  schemaNum() const      { return spv[4]; } // schema number from header

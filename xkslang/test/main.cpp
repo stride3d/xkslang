@@ -78,7 +78,7 @@ struct XkfxEffectsToProcess {
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin01", "TestMixin01.xkfx" },
-    { "TestMixin02", "TestMixin02.xkfx" },
+    //{ "TestMixin02", "TestMixin02.xkfx" },
     //{ "TestMixin03", "TestMixin03.xkfx" },
     //{ "TestMixin04", "TestMixin04.xkfx" },
     //{ "TestMixin05", "TestMixin05.xkfx" },
@@ -123,7 +123,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
     //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
 
-    //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
+    { "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
     //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },

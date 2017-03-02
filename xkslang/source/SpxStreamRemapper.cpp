@@ -3899,6 +3899,7 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
         if (!CleanAndSetStageBytecode(outputStage))
         {
             error("Failed to set and clean the stage bytecode");
+            outputStage.outputStage->resultingBytecode.clear();
             break;
         }
     }
@@ -4010,6 +4011,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
                 {
                     spv::Id resultId = asId(start + 1);
                     listIdsUsed[resultId] = true;
+                    header.insert(header.end(), spv.begin() + start, spv.begin() + (start + wordCount));
                     break;
                 }
 
@@ -4049,7 +4051,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
     }
 
     //======================================================================================
-    //For all IDs used: if it's defining a type or const: check if it's depending on another type no included in the list yet
+    //For all IDs used: if it's defining a type, variable or const: check if it's depending on another type no included in the list yet
     {
         spv::Op opCode;
         unsigned int wordCount;
@@ -4063,23 +4065,29 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
                 if (listAllObjects[id] != nullptr)  //the id has been recognized as a data object
                 {
                     ObjectInstructionBase* obj = listAllObjects[id];
-                    if (obj->GetKind() == ObjectInstructionTypeEnum::Type || obj->GetKind() == ObjectInstructionTypeEnum::Const)  //the id refers to a type or const
+                    switch (obj->GetKind())
                     {
-                        listIds.clear();
-                        if (!parseInstruction(obj->bytecodeStartPosition, opCode, wordCount, typeId, resultId, listIds))
-                            return error("Error parsing the instruction");
-#ifdef XKSLANG_DEBUG_MODE
-                        if (resultId != id) return error("The type or const does not match its parsed instruction");  //sanity check
-#endif
-                        if (typeId != spv::spirvbin_t::unused && listIdsUsed[typeId] == false) listIds.push_back(typeId);
-                        for (unsigned int k = 0; k < listIds.size(); ++k)
+                        case ObjectInstructionTypeEnum::Type:
+                        case ObjectInstructionTypeEnum::Variable:
+                        case ObjectInstructionTypeEnum::Const:
                         {
-                            const spv::Id& anId = listIds[k];
-                            if (listIdsUsed[anId] == false)
+                            listIds.clear();
+                            if (!parseInstruction(obj->bytecodeStartPosition, opCode, wordCount, typeId, resultId, listIds))
+                                return error("Error parsing the instruction");
+#ifdef XKSLANG_DEBUG_MODE
+                            if (resultId != id) return error("The type, variable or const does not match its parsed instruction");  //sanity check
+#endif
+                            if (typeId != spv::spirvbin_t::unused && listIdsUsed[typeId] == false) listIds.push_back(typeId);
+                            for (unsigned int k = 0; k < listIds.size(); ++k)
                             {
-                                listIdsUsed[anId] = true;
-                                extraTypesToCheckForIds.push_back(anId);
+                                const spv::Id& anId = listIds[k];
+                                if (listIdsUsed[anId] == false)
+                                {
+                                    listIdsUsed[anId] = true;
+                                    extraTypesToCheckForIds.push_back(anId);
+                                }
                             }
+                            break;
                         }
                     }
                 }
@@ -4123,6 +4131,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
     stageBytecode.insert(stageBytecode.end(), header.begin(), header.end());
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
+    //======================================================================================
     //copy all names and decorate matching our IDS
     {
         unsigned int start = header_size;
@@ -4164,6 +4173,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
     }
 #endif
 
+    //======================================================================================
     //Copy all types matching our IDS
     {
         unsigned int start = header_size;
@@ -4179,6 +4189,10 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
                 resultId = asId(start + 2);
             }
             else if (isTypeOp(opCode))
+            {
+                resultId = asId(start + 1);
+            }
+            else if (isVariableOp(opCode))
             {
                 resultId = asId(start + 1);
             }
@@ -4199,117 +4213,32 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
         }
     }
 
-    //copy the bytecode of all functions
+    //======================================================================================
+    //copy all functions' bytecode
     for (auto itf = listAllFunctionsCalledByTheStage.begin(); itf != listAllFunctionsCalledByTheStage.end(); itf++)
     {
         FunctionInstruction* aFunctionCalled = *itf;
         stageBytecode.insert(stageBytecode.end(), spv.begin() + aFunctionCalled->GetBytecodeStartPosition(), spv.begin() + aFunctionCalled->GetBytecodeEndPosition());
     }
 
-    return true;
-
-    /*
-    //buildLocalMaps();
-    //if (staticErrorMessages.size() > 0) {
-    //    copyStaticErrorMessagesTo(errorMessages);
-    //    spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
-    //    return false;
-    //}
-
-    //initially spirvbin_t.buildLocalMaps() function
-    //build the local map, using spirvbin_t maps
-    //TODO: maybe get free from spirvbin_t (we're almost not using it anymore)
-    mapped.clear();
-    idMapL.clear();
-    fnPos.clear();
-    fnCalls.clear();
-    typeConstPos.clear();
-    idPosR.clear();
-    entryPoint = spv::NoResult;
-    largestNewId = 0;
-
-    idMapL.resize(bound(), spv::spirvbin_t::unused);
-
+    //======================================================================================
+    //Remap all IDs
     {
-        int         fnStart = 0;
-        spv::Id     fnRes = spv::NoResult;
-
-        spv::Op opCode;
-        unsigned int wordCount;
-        vector<spv::Id> listIds;
-        spv::Id typeId, resultId;
-        unsigned int start = header_size;
-        const unsigned int end = spv.size();
-        while (start < end)
+        int newId = 1;
+        vector<spv::Id> remapTable;
+        remapTable.resize(bound(), spv::spirvbin_t::unused);
+        for (spv::Id id = 0; id < listIdsUsed.size(); ++id)
         {
-            listIds.clear();
-            if (!parseInstruction(start, opCode, wordCount, typeId, resultId, listIds)) return error("Error parsing the instruction");
-
-            if (resultId != spv::spirvbin_t::unused)
-            {
-                idPosR[resultId] = start;
-                if (typeId != spv::spirvbin_t::unused) {
-                    const unsigned idTypeSize = typeSizeInWords(typeId);
-                    if (idTypeSize != 0)
-                        idTypeSizeMap[resultId] = idTypeSize;
-                }
-            }
-
-#ifdef XKSLANG_DEBUG_MODE
-            if (opCode == spv::Op::OpFunctionCallBaseUnresolved || opCode == spv::Op::OpFunctionCallBaseResolved || opCode == spv::Op::OpFunctionCallThroughCompositionVariable) {
-                return error("Invalid functionCall opCode");
-            }
-#endif
-
-            if (opCode == spv::Op::OpFunctionCall) {
-                ++fnCalls[asId(start + 3)];
-            }
-            else if (opCode == spv::Op::OpEntryPoint) {
-                entryPoint = asId(start + 2);
-            }
-            else if (opCode == spv::Op::OpFunction) {
-                if (fnStart != 0) return error("nested function found");
-                fnStart = start;
-                fnRes = asId(start + 2);
-            }
-            else if (opCode == spv::Op::OpFunctionEnd) {
-#ifdef XKSLANG_DEBUG_MODE
-                if (fnRes == spv::NoResult) return error("invalid fnRes");
-                if (fnStart == 0) return error("function end without function start");
-#endif
-                fnPos[fnRes] = range_t(fnStart, start + asWordCount(start));
-                fnStart = 0;
-                fnRes = spv::NoResult;
-            }
-            else if (isConstOp(opCode)) {
-                typeConstPos.insert(start);
-            }
-            else if (isTypeOp(opCode)) {
-                typeConstPos.insert(start);
-            }
-
-            if (typeId != spv::spirvbin_t::unused) localId(typeId, unmapped);
-            if (resultId != spv::spirvbin_t::unused) localId(resultId, unmapped);
-            for (unsigned int i = 0; i < listIds.size(); ++i) localId(listIds[i], unmapped);
-
-            start += wordCount;
+            if (listIdsUsed[id] == true) remapTable[id] = newId++;
         }
+
+        if (!remapAllIds(stageBytecode, header_size, stageBytecode.size(), remapTable))
+            return error("Failed to remap all IDs");
+
+        setBound(stageBytecode, newId);
     }
 
-    dceFuncs(); //dce uncalled functions
-    dceVars();  //dce unused function variables + decorations / name
-    dceTypes(); //dce unused types
-
-    strip();         //remove all strip bytecode
-    stripDeadRefs(); //remove references to things we DCEed
-
-    //change the range of all remaining IDs
-    mapRemainder(); // map any unmapped IDs
-    applyMap();     // Now remap each shader to the new IDs we've come up with
-
-    if (errorMessages.size() > 0) return false;
     return true;
-    */
 }
 
 bool SpxStreamRemapper::SpxStreamRemapper::InitDefaultHeader()
@@ -5371,17 +5300,27 @@ bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsig
     unsigned numOperands = wordCount - 1;
 
     // Read type and result ID from instruction desc table
-    if (spv::InstructionDesc[opCode].hasType()) {
-        //listIds.push_back(asId(word++));
-        //type = asId(word++);
+    if (spv::InstructionDesc[opCode].hasType())
+    {
+#ifdef XKSLANG_DEBUG_MODE
+        if (remapTable[bytecode[word]] == 0 || remapTable[bytecode[word]] == spv::spirvbin_t::unused) {
+            errorMsg = "Fail to remap the instructions IDs, no new value remapped for Id: " + to_string(bytecode[word]);
+            return false;
+        }
+#endif
         bytecode[word] = remapTable[bytecode[word]];
         word++;
         --numOperands;
     }
 
-    if (spv::InstructionDesc[opCode].hasResult()) {
-        //listIds.push_back(asId(word++));
-        //result = asId(word++);
+    if (spv::InstructionDesc[opCode].hasResult())
+    {
+#ifdef XKSLANG_DEBUG_MODE
+        if (remapTable[bytecode[word]] == 0 || remapTable[bytecode[word]] == spv::spirvbin_t::unused) {
+            errorMsg = "Fail to remap the instructions IDs, no new value remapped for Id: " + to_string(bytecode[word]);
+            return false;
+        }
+#endif
         bytecode[word] = remapTable[bytecode[word]];
         word++;
         --numOperands;
@@ -5389,8 +5328,14 @@ bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsig
 
     // Extended instructions: currently, assume everything is an ID.
     // TODO: add whatever data we need for exceptions to that
-    if (opCode == spv::OpExtInst) {
-        //listIds.push_back(asId(word));  //Add ExtInstImport Id
+    if (opCode == spv::OpExtInst)
+    {
+#ifdef XKSLANG_DEBUG_MODE
+        if (remapTable[bytecode[word]] == 0 || remapTable[bytecode[word]] == spv::spirvbin_t::unused) {
+            errorMsg = "Fail to remap the instructions IDs, no new value remapped for Id: " + to_string(bytecode[word]);
+            return false;
+        }
+#endif
         bytecode[word] = remapTable[bytecode[word]];
 
         word += 2; // instruction set, and instruction from set
@@ -5398,7 +5343,14 @@ bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsig
 
         for (unsigned op = 0; op < numOperands; ++op)
         {
-            bytecode[word] = remapTable[bytecode[word]]; word++;
+#ifdef XKSLANG_DEBUG_MODE
+            if (remapTable[bytecode[word]] == 0 || remapTable[bytecode[word]] == spv::spirvbin_t::unused) {
+                errorMsg = "Fail to remap the instructions IDs, no new value remapped for Id: " + to_string(bytecode[word]);
+                return false;
+            }
+#endif
+            bytecode[word] = remapTable[bytecode[word]];
+            word++;
         }
 
         return true;
@@ -5410,6 +5362,12 @@ bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsig
         case spv::OperandId:
         case spv::OperandScope:
         case spv::OperandMemorySemantics:
+#ifdef XKSLANG_DEBUG_MODE
+            if (remapTable[bytecode[word]] == 0 || remapTable[bytecode[word]] == spv::spirvbin_t::unused){
+                errorMsg = "Fail to remap the instructions IDs, no new value remapped for Id: " + to_string(bytecode[word]);
+                return false;
+            }
+#endif
             bytecode[word] = remapTable[bytecode[word]];
             word++;
             break;
@@ -5417,7 +5375,14 @@ bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsig
         case spv::OperandVariableIds:
             for (unsigned i = 0; i < numOperands; ++i)
             {
-                bytecode[word] = remapTable[bytecode[word]]; word++;
+#ifdef XKSLANG_DEBUG_MODE
+                if (remapTable[bytecode[word]] == 0 || remapTable[bytecode[word]] == spv::spirvbin_t::unused) {
+                    errorMsg = "Fail to remap the instructions IDs, no new value remapped for Id: " + to_string(bytecode[word]);
+                    return false;
+                }
+#endif
+                bytecode[word] = remapTable[bytecode[word]];
+                word++;
             }
             return true;
 
