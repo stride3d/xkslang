@@ -287,6 +287,26 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
     }
 
     //===================================================================================================================
+    if (!clonedSpxStream->RemoveAndConvertSPXExtensions())
+    {
+        clonedSpxStream->copyMessagesTo(messages);
+        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        delete clonedSpxStream;
+        return error(messages, "Fail to remove and convert spx extensions");
+    }
+
+#ifdef XKSLANG_DEBUG_MODE
+    //Before final compilation step: do a full sanity check on the bytecode (useful in debug to help detecting problems earlier)
+    if (!clonedSpxStream->ProcessBytecodeAndDataSanityCheck())
+    {
+        clonedSpxStream->copyMessagesTo(messages);
+        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        delete clonedSpxStream;
+        return error(messages, "Fail to process a bytecode and data sanity check");
+    }
+#endif
+
+    //===================================================================================================================
     if (!clonedSpxStream->GenerateBytecodeForAllStages(vecMixerOutputStages))
     {
         clonedSpxStream->copyMessagesTo(messages);

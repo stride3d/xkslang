@@ -35,6 +35,7 @@ enum class SpxRemapperStatusEnum
     MixinBeingCompiled_StreamReadyForReschuffling,
     MixinBeingCompiled_StreamReschuffled,
     MixinBeingCompiled_UnusedShaderRemoved,
+    MixinBeingCompiled_ConvertedToSPV,
     MixinBeingCompiled_SPXBytecodeRemoved,
     MixinFinalized
 };
@@ -255,7 +256,7 @@ public:
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
             : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
-            flag1(0), currentPosInBytecode(0), stageReservingTheFunction(ShadingStageEnum::Undefined){}
+            flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined){}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -287,7 +288,7 @@ public:
         //some variables used to help some algos
         int flag1;
         int currentPosInBytecode;
-        ShadingStageEnum stageReservingTheFunction;  //when a stage calls a function using stream, the stage will reserves the function (another stage calling the function will return an error)
+        ShadingStageEnum functionProcessingStreamForStage;  //when a stage calls a function using stream, the stage will reserves the function (another stage calling the function will return an error)
 
         friend class SpxStreamRemapper;
     };
@@ -518,10 +519,11 @@ public:
 
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
-    //bool MergeAllNewShadersFromBytecode(const SpxBytecode& bytecode, std::vector<ShaderClassData*>& listShadersMerged);
     bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
-    bool ValidateSpxBytecode();
+
+    bool ValidateSpxBytecodeAndData();
     bool ValidateHeader();
+    bool ProcessBytecodeAndDataSanityCheck();
 
     unsigned int GetUniqueMergeOperationId();
     static void ResetMergeOperationId();
@@ -535,8 +537,9 @@ private:
     bool ValidateStagesStreamMembersFlow(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool ReshuffleStreamVariables(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
+    bool RemoveAndConvertSPXExtensions();
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
-
+    
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
     FunctionInstruction* GetShaderFunctionForEntryPoint(std::string entryPointName);
     bool RemoveShaderFromBytecodeAndData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
@@ -560,14 +563,14 @@ private:
 
     void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
     void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);
-    static bool GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const std::vector<ShaderClassData*> listShaders, std::vector<ShaderClassData*>& fullDependencies);
+    static bool GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const std::vector<ShaderClassData*>& listShaders, std::vector<ShaderClassData*>& fullDependencies);
 
-    static bool parseInstruction(const std::vector<std::uint32_t>& bytecode, unsigned int word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds, std::string& errorMsg);
-    bool parseInstruction(unsigned int word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds);
-    bool flagAllIdsFromInstruction(unsigned int word, spv::Op& opCode, unsigned& wordCount, std::vector<bool>& listIdsUsed);
-    static bool remapAllInstructionIds(std::vector<std::uint32_t>& bytecode, unsigned word, unsigned& wordCount, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
-    static bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned begin, unsigned end, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
-    bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned begin, unsigned end, const std::vector<spv::Id>& remapTable);
+    static bool parseInstruction(const std::vector<std::uint32_t>& bytecode, unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds, std::string& errorMsg);
+    bool parseInstruction(unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds);
+    bool flagAllIdsFromInstruction(unsigned int word, spv::Op& opCode, unsigned int& wordCount, std::vector<bool>& listIdsUsed);
+    static bool remapAllInstructionIds(std::vector<std::uint32_t>& bytecode, unsigned int word, unsigned int& wordCount, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
+    static bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned int begin, unsigned int end, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
+    bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned int begin, unsigned int end, const std::vector<spv::Id>& remapTable);
 
     bool CleanAndSetStageBytecode(XkslMixerOutputStage& stage);
 

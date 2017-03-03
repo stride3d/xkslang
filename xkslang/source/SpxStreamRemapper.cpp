@@ -555,7 +555,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
 
 bool SpxStreamRemapper::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassData*>& listNewShaders)
 {
-    if (!ValidateSpxBytecode())
+    if (!ValidateSpxBytecodeAndData())
     {
         return error("Error validating the bytecode");
     }
@@ -1238,7 +1238,7 @@ bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
     spv.clear();
     spv.insert(spv.end(), spx.begin(), spx.end());
 
-    if (!ValidateSpxBytecode())
+    if (!ValidateSpxBytecodeAndData())
         return error(string("Invalid bytecode: ") + bytecode.GetName());
 
     return true;
@@ -1264,7 +1264,114 @@ bool SpxStreamRemapper::ValidateHeader()
     return true;
 }
 
-bool SpxStreamRemapper::ValidateSpxBytecode()
+bool SpxStreamRemapper::ProcessBytecodeAndDataSanityCheck()
+{  
+    vector<unsigned int> listAllTypesConstsAndVariablesPosition;
+    vector<unsigned int> listAllResultIdsPosition;
+    listAllTypesConstsAndVariablesPosition.resize(bound(), 0);
+    listAllResultIdsPosition.resize(bound(), 0);
+
+    vector<spv::Id> listIds;
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        if (wordCount == 0) return error("wordCount is 0 for instruction at pos: " + to_string(start));
+
+        bool hasAType = false;
+        spv::Id instructionTypeId = 0;
+        bool hasAResultId = false;
+        spv::Id instructionResultId = 0;
+        
+        //if the instruction has a type, check that this type is already defined
+        if (spv::InstructionDesc[opCode].hasType())
+        {
+            hasAType = true;
+            unsigned int posTypeId = start + 1;
+            if (posTypeId >= spv.size()) return error("TypeId position is out of bound for instruction at pos: " + to_string(start));
+
+            instructionTypeId = spv[start + 1];
+            if (instructionTypeId == 0 || instructionTypeId >= listAllTypesConstsAndVariablesPosition.size()) return error("instruction TypeId is out of bound: " + to_string(instructionTypeId));
+            if (listAllTypesConstsAndVariablesPosition[instructionTypeId] == 0) return error("an instruction is using an undefined type: " + to_string(instructionTypeId));
+        }
+
+        //if the instruction has a resultId, check this resultId
+        if (spv::InstructionDesc[opCode].hasResult())
+        {
+            hasAResultId = true;
+            unsigned int posResultId = hasAType ? start + 2 : start + 1;
+            if (posResultId >= spv.size()) return error("ResultId position is out of bound for instruction at pos: " + to_string(start));
+
+            instructionResultId = spv[posResultId];
+            if (instructionResultId == 0 || instructionResultId >= listAllResultIdsPosition.size()) return error("instruction ResultId is out of bound: " + to_string(instructionResultId));
+            if (listAllResultIdsPosition[instructionResultId] != 0) return error("the instruction result Id is already defined: " + to_string(instructionResultId));
+            listAllResultIdsPosition[instructionResultId] = start;
+        }
+
+        //Check more details for instruction defining types/consts/variables
+        bool isOpTypeConstOrVariableInstruction = false;
+        spv::Id typeConstVariableResultId = 0;
+        if (isConstOp(opCode)) {
+            if (start + 2 >= spv.size()) return error("resultId position is out of bound for instruction at pos: " + to_string(start));
+            isOpTypeConstOrVariableInstruction = true;
+            typeConstVariableResultId = asId(start + 2);
+        }
+        else if (isTypeOp(opCode)) {
+            if (start + 1 >= spv.size()) return error("resultId position is out of bound for instruction at pos: " + to_string(start));
+            isOpTypeConstOrVariableInstruction = true;
+            typeConstVariableResultId = asId(start + 1);
+        }
+        else if (isVariableOp(opCode)) {
+            if (start + 2 >= spv.size()) return error("resultId position is out of bound for instruction at pos: " + to_string(start));
+            isOpTypeConstOrVariableInstruction = true;
+            typeConstVariableResultId = asId(start + 2);
+        }
+
+        //for every types/consts/variables: if the instruction is refering to other IDs, check that those IDs are already defined.
+        if (isOpTypeConstOrVariableInstruction)
+        {
+            if (typeConstVariableResultId == 0 || typeConstVariableResultId != instructionResultId)
+                return error("typeConstVariableResultId is inconsistent with the instruction resultId: " + to_string(typeConstVariableResultId));
+
+            if (typeConstVariableResultId >= listAllTypesConstsAndVariablesPosition.size()) return error("resultId is out of bound: " + to_string(typeConstVariableResultId));
+
+            if (listAllTypesConstsAndVariablesPosition[typeConstVariableResultId] != 0) return error("the Id is already used by another type: " + to_string(typeConstVariableResultId));
+            listAllTypesConstsAndVariablesPosition[typeConstVariableResultId] = start;
+
+            if (listAllObjects[typeConstVariableResultId] == nullptr) return error("The type, const or variable has no object data defined. Id: " + to_string(typeConstVariableResultId));
+
+            //Check that all IDs refers to by the type/const/variable are already defined
+            {
+                unsigned int wordCountBis;
+                spv::Op opCodeBis;
+                spv::Id typeId;
+                spv::Id resultId;
+                listIds.clear();
+                if (!parseInstruction(start, opCodeBis, wordCountBis, typeId, resultId, listIds)) return error("Error parsing the instruction");
+                if (opCodeBis != opCode) return error("Inconsistency in the opCode parsed");
+                if (wordCountBis != wordCount) return error("Inconsistency in the wordCount parsed");
+
+                if (typeId != spv::spirvbin_t::unused) listIds.push_back(typeId);
+                for (unsigned k = 0; k < listIds.size(); ++k)
+                {
+                    spv::Id anId = listIds[k];
+
+                    if (anId >= listAllTypesConstsAndVariablesPosition.size()) return error("anId is out of bound: " + to_string(anId));
+                    if (listAllTypesConstsAndVariablesPosition[anId] == 0) return error("a type refers to an Id not defined yet: " + to_string(anId));
+                }
+            }
+        }
+
+        start += wordCount;
+    }
+
+    return true;
+}
+
+bool SpxStreamRemapper::ValidateSpxBytecodeAndData()
 {
     if (!ValidateHeader()) return error("Failed to validate the header");
 
@@ -2150,6 +2257,12 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     if (globalStreamType == nullptr)
         return error(string("Cannot retrieve the global stream type. Id: ") + to_string(globalListOfMergedStreamVariables.structTypeId));
 
+    //Reset all functions stage processing stream value to undefined
+    for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
+        FunctionInstruction* aFunction = *itsf;
+        aFunction->functionProcessingStreamForStage = ShadingStageEnum::Undefined;
+    }
+
     //=============================================================================================================
     //=============================================================================================================
     //find the best positions where to insert new stuff
@@ -2264,6 +2377,8 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
     {
         XkslMixerOutputStage& stage = outputStages[iStage];
+        ShadingStageEnum shadingStageEnum = stage.outputStage->stage;
+
         bool canOutputStreams = true;
         if (iStage == outputStages.size() - 1) canOutputStreams = false;  //last stage (Pixel) does not output streams
 
@@ -2310,22 +2425,29 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         if (opCode != spv::OpFunction) return error("Corrupted bytecode: expected OpFunction instruction");
 #endif
 
+        //make sure the stage entry function has not already been processed for a stream
+        if (entryFunction->functionProcessingStreamForStage != ShadingStageEnum::Undefined) {
+            return error(GetShadingStageLabel(shadingStageEnum) + " Stage entry function: " + entryFunction->GetFullName()
+                + " has already been processed for streams for another stage: " + GetShadingStageLabel(entryFunction->functionProcessingStreamForStage));
+        }
+        entryFunction->functionProcessingStreamForStage = shadingStageEnum;
+
         //function declaration type
-        spv::Id functionDeclarationTypeId = asId(entryFunction->bytecodeStartPosition + 4);
-        spv::Id functionReturnTypeId = asId(entryFunction->bytecodeStartPosition + 1);
-        TypeInstruction* functionDeclarationType = GetTypeById(functionDeclarationTypeId);
-        if (functionDeclarationType == nullptr) return error("Cannot find the function declaration type for Id: " + to_string(functionDeclarationTypeId));
+        spv::Id entryFunctionDeclarationTypeId = asId(entryFunction->bytecodeStartPosition + 4);
+        spv::Id entryFunctionReturnTypeId = asId(entryFunction->bytecodeStartPosition + 1);
+        TypeInstruction* entryFunctionDeclarationType = GetTypeById(entryFunctionDeclarationTypeId);
+        if (entryFunctionDeclarationType == nullptr) return error("Cannot find the function declaration type for Id: " + to_string(entryFunctionDeclarationTypeId));
 
 #ifdef XKSLANG_DEBUG_MODE
         //some sanity check
-        if (asOpCode(functionDeclarationType->bytecodeStartPosition) != spv::OpTypeFunction) return error("Corrupted bytecode: function declaration type must have OpTypeFunction instruction");
-        if (functionReturnTypeId != asId(functionDeclarationType->bytecodeStartPosition + 2)) return error("Corrupted bytecode: function return type must be the same as function declaration's return type");
+        if (asOpCode(entryFunctionDeclarationType->bytecodeStartPosition) != spv::OpTypeFunction) return error("Corrupted bytecode: function declaration type must have OpTypeFunction instruction");
+        if (entryFunctionReturnTypeId != asId(entryFunctionDeclarationType->bytecodeStartPosition + 2)) return error("Corrupted bytecode: function return type must be the same as function declaration's return type");
 #endif
 
         //confirm that the function's return type is void
-        TypeInstruction* initialReturnType = GetTypeById(functionReturnTypeId);
-        if (initialReturnType == nullptr) return error("Cannot find the function return type for Id: " + to_string(functionReturnTypeId));
-        if (asOpCode(initialReturnType->bytecodeStartPosition) != spv::OpTypeVoid) return error(GetShadingStageLabel(stage.outputStage->stage) + " stage's entry function must initially return void");
+        TypeInstruction* entryFunctionInitialReturnType = GetTypeById(entryFunctionReturnTypeId);
+        if (entryFunctionInitialReturnType == nullptr) return error("Cannot find the function return type for Id: " + to_string(entryFunctionReturnTypeId));
+        if (asOpCode(entryFunctionInitialReturnType->bytecodeStartPosition) != spv::OpTypeVoid) return error(GetShadingStageLabel(shadingStageEnum) + " stage's entry function must initially return void");
 
         //===============================================================================
         spv::Id inputStructTypeId = spv::spirvbin_t::unused;
@@ -2337,7 +2459,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         spv::Id functionIOStreamVariableResultId = spv::spirvbin_t::unused;
         spv::Id functionInputStreamParameterResultId = spv::spirvbin_t::unused;
         spv::Id functionOutputStreamVariableResultId = spv::spirvbin_t::unused;
-        spv::Id newFunctionDeclarationTypeId = spv::spirvbin_t::unused;
+        spv::Id newEntryFunctionDeclarationTypeId = spv::spirvbin_t::unused;
 
         //===============================================================================
         //create the function's input structure
@@ -2366,7 +2488,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
                 //struct name
-                string stagePrefix = GetShadingStageLabelShort(stage.outputStage->stage) + "_IN";
+                string stagePrefix = GetShadingStageLabelShort(shadingStageEnum) + "_IN";
                 spv::Instruction structName(spv::OpName);
                 structName.addIdOperand(structType.getResultId());
                 structName.addStringOperand(stagePrefix.c_str());
@@ -2429,7 +2551,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
             //struct name
-            string stagePrefix = GetShadingStageLabelShort(stage.outputStage->stage) + "_OUT";
+            string stagePrefix = GetShadingStageLabelShort(shadingStageEnum) + "_OUT";
             spv::Instruction structName(spv::OpName);
             structName.addIdOperand(structType.getResultId());
             structName.addStringOperand(stagePrefix.c_str());
@@ -2475,7 +2597,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
             //struct name
-            string stagePrefix = GetShadingStageLabelShort(stage.outputStage->stage) + "_STREAMS";
+            string stagePrefix = GetShadingStageLabelShort(shadingStageEnum) + "_STREAMS";
             spv::Instruction structName(spv::OpName);
             structName.addIdOperand(structType.getResultId());
             structName.addStringOperand(stagePrefix.c_str());
@@ -2501,15 +2623,15 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         //Create the new function type (we don't update the current one, in the case of it was used by several function)
         {
             spv::Instruction functionNewTypeInstruction(newId++, spv::NoType, spv::OpTypeFunction);
-            newFunctionDeclarationTypeId = functionNewTypeInstruction.getResultId();
+            newEntryFunctionDeclarationTypeId = functionNewTypeInstruction.getResultId();
 
             //return type
             if (outputStructTypeId != spv::spirvbin_t::unused) functionNewTypeInstruction.addIdOperand(outputStructTypeId);
-            else functionNewTypeInstruction.addIdOperand(functionReturnTypeId);  //original return type (void)
+            else functionNewTypeInstruction.addIdOperand(entryFunctionReturnTypeId);  //original return type (void)
 
             //input parameters
             if (inputStructPointerTypeId != spv::spirvbin_t::unused) functionNewTypeInstruction.addIdOperand(inputStructPointerTypeId);  //new input struct type (if any)
-            for (unsigned int pos = functionDeclarationType->bytecodeStartPosition + 3; pos < functionDeclarationType->bytecodeEndPosition; pos++)
+            for (unsigned int pos = entryFunctionDeclarationType->bytecodeStartPosition + 3; pos < entryFunctionDeclarationType->bytecodeEndPosition; pos++)
                 functionNewTypeInstruction.addIdOperand(asId(pos)); //add all previous input parameters
 
             functionNewTypeInstruction.dump(bytecodeNewTypes.bytecode);
@@ -2708,9 +2830,9 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
         //===============================================================================
         //update the function declaration type to refer to new one
-        if (newFunctionDeclarationTypeId != spv::spirvbin_t::unused)
+        if (newEntryFunctionDeclarationTypeId != spv::spirvbin_t::unused)
         {
-            bytecodeUpdateController.SetNewAtomicValueUpdate(entryFunction->bytecodeStartPosition + 4, newFunctionDeclarationTypeId);
+            bytecodeUpdateController.SetNewAtomicValueUpdate(entryFunction->bytecodeStartPosition + 4, newEntryFunctionDeclarationTypeId);
         }
         else return error("No new function type must be created");
 
@@ -2773,8 +2895,52 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             }
         }
 
-        sdgsdgsdgsdg;
-        //TOTOTO: do the same for every functions called (stage.listCalledFunctionsAccessingStreamMembers)
+        //===============================================================================
+        //Add the inout streams into every functions called for the stage (if they need it)
+        for (auto it = stage.listFunctionsCalledAndAccessingStreamMembers.begin(); it != stage.listFunctionsCalledAndAccessingStreamMembers.end(); it++)
+        {
+            FunctionInstruction* functionAccessingStreams = *it;
+            if (functionAccessingStreams->functionProcessingStreamForStage == shadingStageEnum) continue;  //function already treated for the current stage
+
+            //make sure the stage entry function has not already been processed for a stream
+            if (functionAccessingStreams->functionProcessingStreamForStage != ShadingStageEnum::Undefined)
+            {
+                return error(GetShadingStageLabel(functionAccessingStreams->functionProcessingStreamForStage) + " and " + GetShadingStageLabel(shadingStageEnum)
+                    + " stages are both calling a function accessing stream members. Function name: " + functionAccessingStreams->GetFullName());
+            }
+
+            //Function is now reserved for the stage
+            functionAccessingStreams->functionProcessingStreamForStage = shadingStageEnum;
+
+            //Update the function by adding the stream inout parameter
+            {
+                //function declaration type
+                spv::Id functionDeclarationTypeId = asId(functionAccessingStreams->bytecodeStartPosition + 4);
+                spv::Id functionReturnTypeId = asId(functionAccessingStreams->bytecodeStartPosition + 1);
+                TypeInstruction* functionDeclarationType = GetTypeById(functionDeclarationTypeId);
+                if (functionDeclarationType == nullptr) return error("Cannot find the function declaration type for Id: " + to_string(functionDeclarationTypeId));
+
+#ifdef XKSLANG_DEBUG_MODE
+                //some sanity check
+                if (asOpCode(functionDeclarationType->bytecodeStartPosition) != spv::OpTypeFunction) return error("Corrupted bytecode: function declaration type must have OpTypeFunction instruction");
+                if (functionReturnTypeId != asId(functionDeclarationType->bytecodeStartPosition + 2)) return error("Corrupted bytecode: function return type must be the same as function declaration's return type");
+#endif
+
+                //create the function new type
+                spv::Instruction functionNewTypeInstruction(newId++, spv::NoType, spv::OpTypeFunction);
+                spv::Id functionNewDeclarationTypeId = functionNewTypeInstruction.getResultId();
+
+                //return type = same as the original one
+                functionNewTypeInstruction.addIdOperand(functionReturnTypeId);  
+
+                //input parameters = new inout stream, follow by the previous parameters
+                //functionNewTypeInstruction.addIdOperand(inputStructPointerTypeId);
+                //for (unsigned int pos = functionDeclarationType->bytecodeStartPosition + 3; pos < functionDeclarationType->bytecodeEndPosition; pos++)
+                //    functionNewTypeInstruction.addIdOperand(asId(pos)); //add all previous input parameters
+
+                //functionNewTypeInstruction.dump(bytecodeNewTypes.bytecode);
+            }
+        }
 
     }  //end loop for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
     if (errorMessages.size() > 0) return false;
@@ -2806,10 +2972,10 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixe
     if (globalListOfMergedStreamVariables.countMembers() == 0) return true; //nothing to analyse
     spv::Id globalStreamStructVariableId = globalListOfMergedStreamVariables.structVariableTypeId;
 
-    //Set all functions stage reserve value to undefine
+    //Set all functions stage reserve value to undefined
     for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
         FunctionInstruction* aFunction = *itsf;
-        aFunction->stageReservingTheFunction = ShadingStageEnum::Undefined;
+        aFunction->functionProcessingStreamForStage = ShadingStageEnum::Undefined;
     }
 
     //Analyse each stage
@@ -2907,13 +3073,13 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixe
 
             if (isFunctionAccessingAStreamVariable)
             {
-                if (aFunctionCalled->stageReservingTheFunction != ShadingStageEnum::Undefined)
+                if (aFunctionCalled->functionProcessingStreamForStage != ShadingStageEnum::Undefined)
                 {
-                    return error(GetShadingStageLabel(aFunctionCalled->stageReservingTheFunction) + " and " + GetShadingStageLabel(outputStage->outputStage->stage)
+                    return error(GetShadingStageLabel(aFunctionCalled->functionProcessingStreamForStage) + " and " + GetShadingStageLabel(outputStage->outputStage->stage)
                          + " stages are both calling a function accessing stream members. Function name: " + aFunctionCalled->GetFullName() );
                 }
 
-                aFunctionCalled->stageReservingTheFunction = outputStage->outputStage->stage;
+                aFunctionCalled->functionProcessingStreamForStage = outputStage->outputStage->stage;
                 outputStage->listFunctionsCalledAndAccessingStreamMembers.push_back(aFunctionCalled);
             }
         }
@@ -3526,7 +3692,7 @@ void SpxStreamRemapper::GetShaderChildrenList(ShaderClassData* shader, vector<Sh
 // - the complete family tree (parents of all shaders)
 // - the composition type and instances of all shaders
 // - for all shaders: parse the function's bytecode and detect if they're calling any other shaders
-bool SpxStreamRemapper::GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const vector<ShaderClassData*> listShaders, vector<ShaderClassData*>& fullDependencies)
+bool SpxStreamRemapper::GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const vector<ShaderClassData*>& listShaders, vector<ShaderClassData*>& fullDependencies)
 {
     fullDependencies.clear();
 
@@ -3810,18 +3976,10 @@ SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForE
     return entryPointFunction;
 }
 
-//Mixin is finalized: no more updates will be brought to the mixin bytecode after
-bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage>& outputStages)
+bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
-    status = SpxRemapperStatusEnum::MixinBeingCompiled_SPXBytecodeRemoved;
-
-    if (outputStages.size() == 0) return error("no output stages defined");
-
-    //===================================================================================================================
-    //save the current bytecode (we don't want to compromise it)
-    vector<uint32_t> bytecodeBackup;
-    bytecodeBackup.insert(bytecodeBackup.end(), spv.begin(), spv.end());
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_ConvertedToSPV;
 
     //===================================================================================================================
     //Convert SPIRX to SPIRV (remove all SPIRX extended instructions). So we don't need to repeat it for every stages
@@ -3884,12 +4042,22 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
         start += wordCount;
     }
 
-    if (errorMessages.size() > 0){
-        spv.clear(); spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end()); //reset to the initial spx bytecode
-        return false;
-    }
+    if (errorMessages.size() > 0) return false;
+
     stripBytecode(vecStripRanges);
-    if (!UpdateAllMaps()) return error("GenerateBytecodeForAllStages: failed to update all maps");
+    if (!UpdateAllMaps()) return error("RemoveAndConvertSPXExtensions: failed to update all maps");
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+//Mixin is finalized: no more updates will be brought to the mixin bytecode after
+bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage>& outputStages)
+{
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_ConvertedToSPV) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_SPXBytecodeRemoved;
+
+    if (outputStages.size() == 0) return error("no output stages defined");
 
     //===================================================================================================================
     // Generate the SPIRV bytecode for all stages
@@ -3906,9 +4074,6 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
         }
     }
 
-    //reset to the initial spx bytecode
-    spv.clear();
-    spv.insert(spv.end(), bytecodeBackup.begin(), bytecodeBackup.end());
     if (errorMessages.size() > 0) return false;
     return true;
 }
@@ -4190,7 +4355,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
             }
             else if (isVariableOp(opCode))
             {
-                resultId = asId(start + 1);
+                resultId = asId(start + 2);
             }
 
             if (resultId != spv::spirvbin_t::unused)
@@ -5254,7 +5419,7 @@ void SpxStreamRemapper::stripBytecode(vector<range_t>& ranges)
     spv.resize(strippedPos);
 }
 
-bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned begin, unsigned end, const vector<spv::Id>& remapTable)
+bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned int begin, unsigned int end, const vector<spv::Id>& remapTable)
 {
     string errorMsg;
     if (!remapAllIds(bytecode, begin, end, remapTable, errorMsg))
@@ -5265,7 +5430,7 @@ bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned begin, 
     return true;
 }
 
-bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned begin, unsigned end, const vector<spv::Id>& remapTable, string& errorMsg)
+bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned int begin, unsigned int end, const vector<spv::Id>& remapTable, string& errorMsg)
 {
     unsigned int pos = begin;
     unsigned int wordCount = 0;
@@ -5279,21 +5444,20 @@ bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned begin, 
 }
 
 // inspired by spirvbin_t::processInstruction. Allow us to remap the instruction Ids
-bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsigned word, unsigned& wordCount, const vector<spv::Id>& remapTable, string& errorMsg)
+bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsigned int word, unsigned int& wordCount, const vector<spv::Id>& remapTable, string& errorMsg)
 {
-    const auto instructionStart = word;
+    const unsigned int instructionStart = word;
     wordCount = opWordCount(bytecode[instructionStart]);
     spv::Op opCode = opOpCode(bytecode[instructionStart]);
     const unsigned int nextInst = word++ + wordCount;
 
-    if (nextInst > bytecode.size())
-    {
-        errorMsg = "nextInst is out of bound";
-        return false;
-    }
+#ifdef XKSLANG_DEBUG_MODE
+    if (nextInst > bytecode.size()) { errorMsg = "nextInst is out of bound"; return false; }
+    if (wordCount == 0) { errorMsg = "wordcount equals 0"; return false; }
+#endif
 
     // Base for computing number of operands; will be updated as more is learned
-    unsigned numOperands = wordCount - 1;
+    unsigned int numOperands = wordCount - 1;
 
     // Read type and result ID from instruction desc table
     if (spv::InstructionDesc[opCode].hasType())
@@ -5472,21 +5636,20 @@ bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsig
     return true;
 }
 
-bool SpxStreamRemapper::flagAllIdsFromInstruction(unsigned int word, spv::Op& opCode, unsigned& wordCount, std::vector<bool>& listIdsUsed)
+bool SpxStreamRemapper::flagAllIdsFromInstruction(unsigned int word, spv::Op& opCode, unsigned int& wordCount, std::vector<bool>& listIdsUsed)
 {
     wordCount = opWordCount(spv[word]);
     opCode = opOpCode(spv[word]);
     const unsigned int nextInst = word + wordCount;
     word++;
 
-    if (nextInst > spv.size())
-    {
-        return ("nextInst is out of bound");
-        return false;
-    }
+#ifdef XKSLANG_DEBUG_MODE
+    if (nextInst > spv.size()) return error("nextInst is out of bound");
+    if (wordCount == 0) return error("wordcount equals 0");
+#endif
 
     // Base for computing number of operands; will be updated as more is learned
-    unsigned numOperands = wordCount - 1;
+    unsigned int numOperands = wordCount - 1;
 
     // Read type and result ID from instruction desc table
     if (spv::InstructionDesc[opCode].hasType()) {
@@ -5624,21 +5787,20 @@ bool SpxStreamRemapper::flagAllIdsFromInstruction(unsigned int word, spv::Op& op
 }
 
 // inspired by spirvbin_t::processInstruction. Allow us to store the instruction data and ids
-bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsigned int word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds, string& errorMsg)
+bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds, string& errorMsg)
 {
-    const auto instructionStart = word;
+    const unsigned int instructionStart = word;
     wordCount = opWordCount(bytecode[instructionStart]);
     opCode = opOpCode(bytecode[instructionStart]);
     const unsigned int nextInst = word++ + wordCount;
 
-    if (nextInst > bytecode.size())
-    {
-        errorMsg = "nextInst is out of bound";
-        return false;
-    }
+#ifdef XKSLANG_DEBUG_MODE
+    if (nextInst > bytecode.size()) {errorMsg = "nextInst is out of bound"; return false;}
+    if (wordCount == 0) { errorMsg = "wordcount equals 0"; return false; }
+#endif
 
     // Base for computing number of operands; will be updated as more is learned
-    unsigned numOperands = wordCount - 1;
+    unsigned int numOperands = wordCount - 1;
 
     // Read type and result ID from instruction desc table
     if (spv::InstructionDesc[opCode].hasType()) {
@@ -5779,7 +5941,7 @@ bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsig
 }
 
 // inspired by spirvbin_t::processInstruction. Allow us to store the instruction data and ids
-bool SpxStreamRemapper::parseInstruction(unsigned int word, spv::Op& opCode, unsigned& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds)
+bool SpxStreamRemapper::parseInstruction(unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds)
 {
     string errorMsg;
     if (!parseInstruction(spv, word, opCode, wordCount, type, result, listIds, errorMsg))

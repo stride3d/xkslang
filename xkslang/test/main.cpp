@@ -361,7 +361,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
                         }
                     }
                     else {
-                        cout << "Warning: No expected output file for: " << fileNameGlsl << endl;
+                        cout << " !!!!! Warning: No expected output file for: " << fileNameGlsl << endl;
                     }
                 }
                 else {
