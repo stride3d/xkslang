@@ -73,6 +73,7 @@ public:
 
 //In order to update the bytecode, we first store all new codes we want to insert, plus all values we want to change
 //Then we'll update the bytecode at once, after all updates have been set
+class SpxStreamRemapper;
 class BytecodeUpdateController
 {
 public:
@@ -82,7 +83,7 @@ public:
 
     void SetNewAtomicValueUpdate(unsigned int pos, uint32_t value) { listAtomicUpdates.push_back(BytecodeValueToReplace(pos, value)); }
     BytecodePortionToReplace& SetNewPortionToReplace(unsigned int pos) { listPortionsToUpdates.push_back(BytecodePortionToReplace(pos)); return listPortionsToUpdates.back(); }
-    BytecodeChunk& InsertNewBytecodeChunckAt(unsigned int position, unsigned int countBytesToOverlap = 0);
+    BytecodeChunk& InsertNewBytecodeChunckAt(SpxStreamRemapper* remapper, unsigned int position, unsigned int countBytesToOverlap = 0);
     unsigned int GetCountBytecodeChuncksToInsert() { return listSortedChunksToInsert.size(); }
 };
 
@@ -256,7 +257,7 @@ public:
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
             : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
-            flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined){}
+            flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined), streamIOStructVariableResultId(0){}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -288,9 +289,24 @@ public:
         //some variables used to help some algos
         int flag1;
         int currentPosInBytecode;
+
+        //Variables set when reshuffling stream members
         ShadingStageEnum functionProcessingStreamForStage;  //when a stage calls a function using stream, the stage will reserves the function (another stage calling the function will return an error)
+        spv::Id streamIOStructVariableResultId;   //the id of the IO stream struct function parameter
 
         friend class SpxStreamRemapper;
+    };
+
+    class FunctionCallInstructionData
+    {
+    public:
+        FunctionInstruction* functionCalling;
+        FunctionInstruction* functionCalled;
+        spv::Op opCode;
+        unsigned int bytecodePos;
+
+        FunctionCallInstructionData(FunctionInstruction* functionCalling, FunctionInstruction* functionCalled, spv::Op opCode, unsigned int bytecodePos) :
+            functionCalling(functionCalling), functionCalled(functionCalled), opCode(opCode), bytecodePos(bytecodePos) {}
     };
 
     class TypeStructMember
@@ -604,6 +620,7 @@ private:
     HeaderPropertyInstruction* GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const std::string& name);
     ShaderComposition* GetCompositionById(spv::Id shaderId, int compositionId);
     FunctionInstruction* GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name);
+    bool GetListAllFunctionCallInstructions(std::vector<FunctionCallInstructionData>& listFunctionCallInstructions);
     bool GetAllShaderInstancesForComposition(const ShaderComposition* composition, std::vector<ShaderClassData*>& instances);
     bool GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel);
     
