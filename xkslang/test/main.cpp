@@ -134,13 +134,19 @@ vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlsl = {
 };
 
 #ifdef _DEBUG
-static string spirvCrossExe = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe";
-//static string spirvCrossExe = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe --hlsl";
+static string spirvCrossExeGlsl = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe";
+static string spirvCrossExeHlsl = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe --hlsl";
 #else
 static string spirvCrossExe = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross.exe";
 #endif
 
-int ConvertSpvToGlsl(string spvFile, string glslFile)
+enum class ShaderLanguageEnum
+{
+    GlslLanguage,
+    HlslLanguage
+};
+
+int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguageEnum language)
 {
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
@@ -149,7 +155,8 @@ int ConvertSpvToGlsl(string spvFile, string glslFile)
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
-    string commandLine = spirvCrossExe + string(" --output ") + glslFile + string(" ") + spvFile;
+    string exeInstr = (language == ShaderLanguageEnum::GlslLanguage)? spirvCrossExeGlsl : spirvCrossExeHlsl;
+    string commandLine = exeInstr + string(" --output ") + outputFile + string(" ") + spvFile;
 
     const char* cl = commandLine.c_str();
     wchar_t wtext[256];
@@ -307,6 +314,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
 
     //convert and output every stages
     string glslAllOutputs;
+    string hlslAllOutputs;
     for (unsigned int i = 0; i<outputStages.size(); ++i)
     {
         string labelStage = GetShadingStageLabel(outputStages[i].stage);
@@ -319,54 +327,85 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
         WriteBytecode(outputStages[i].resultingBytecode, outputDir, effectName + "_" + labelStage + ".hr.spv", BytecodeFileFormat::Text);
 
         //======================================================================================================
-        //convert back the SPIRV bytecode into GLSL
+        //convert back the SPIRV bytecode into GLSL / HLSL
         {
-            glslAllOutputs += "\n";
-            glslAllOutputs += "\\\\" + labelStage + " Stage\n";
-
-            string fileNameGlsl = effectName + "_" + labelStage + ".glsl";
-            string fullNameGlsl = outputDir + fileNameGlsl;
-
-            cout << labelStage << " stage: Convert into GLSL." << endl;
-
-            time_before = GetTickCount();
-            int result = ConvertSpvToGlsl(outputFullnameSpv, fullNameGlsl);
-            time_after = GetTickCount();
-            if (result != 0) success = false;
-
-            if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
-            else cout << " Failed to convert the SPIRV file to GLSL" << endl;
-
-            //======================================================================================================
-            //compare the glsl output with the expected output
-            if (success)
             {
-                string glslExpectedOutput;
-                string glslConvertedOutput;
-                if (Utils::ReadFile(fullNameGlsl, glslConvertedOutput))
-                {
-                    glslAllOutputs += glslConvertedOutput;
+                glslAllOutputs += "\n";
+                glslAllOutputs += "\\\\" + labelStage + " Stage\n";
 
-                    string expectedOutputFullNameGlsl = expectedOutputDir + string(fileNameGlsl);
-                    if (Utils::ReadFile(expectedOutputFullNameGlsl, glslExpectedOutput))
+                string fileNameGlsl = effectName + "_" + labelStage + ".glsl";
+                string fullNameGlsl = outputDir + fileNameGlsl;
+                cout << labelStage << " stage: Convert into GLSL." << endl;
+                time_before = GetTickCount();
+                int result = ConvertSpvToShaderLanguage(outputFullnameSpv, fullNameGlsl, ShaderLanguageEnum::GlslLanguage);
+                time_after = GetTickCount();
+                if (result != 0) success = false;
+
+                if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+                else cout << " Failed to convert the SPIRV file to GLSL" << endl;
+
+                //======================================================================================================
+                //compare the glsl output with the expected output
+                if (success)
+                {
+                    string glslExpectedOutput;
+                    string glslConvertedOutput;
+                    if (Utils::ReadFile(fullNameGlsl, glslConvertedOutput))
                     {
-                        if (glslExpectedOutput.compare(glslConvertedOutput) != 0) {
-                            cout << "expected output:" << endl << glslExpectedOutput;
-                            cout << "output:" << endl << glslConvertedOutput;
-                            cout << " Glsl output and expected output are different !!!" << endl;
-                            success = false;
+                        glslAllOutputs += glslConvertedOutput;
+
+                        string expectedOutputFullNameGlsl = expectedOutputDir + string(fileNameGlsl);
+                        if (Utils::ReadFile(expectedOutputFullNameGlsl, glslExpectedOutput))
+                        {
+                            if (glslExpectedOutput.compare(glslConvertedOutput) != 0) {
+                                cout << "expected output:" << endl << glslExpectedOutput;
+                                cout << "output:" << endl << glslConvertedOutput;
+                                cout << " Glsl output and expected output are different !!!" << endl;
+                                success = false;
+                            }
+                            else {
+                                cout << " GLSL output VS expected output: OK" << endl;
+                            }
                         }
                         else {
-                            cout << " GLSL output VS expected output: OK" << endl;
+                            cout << " !!!!! Warning: No expected output file for: " << fileNameGlsl << endl;
                         }
                     }
                     else {
-                        cout << " !!!!! Warning: No expected output file for: " << fileNameGlsl << endl;
+                        cout << " Failed to read the file: " << fileNameGlsl << endl;
+                        success = false;
                     }
                 }
-                else {
-                    cout << " Failed to read the file: " << fileNameGlsl << endl;
-                    success = false;
+            }
+
+            {
+                hlslAllOutputs += "\n";
+                hlslAllOutputs += "\\\\" + labelStage + " Stage\n";
+
+                string fileNameHlsl = effectName + "_" + labelStage + ".hlsl";
+                string fullNameHlsl = outputDir + fileNameHlsl;
+                cout << labelStage << " stage: Convert into HLSL." << endl;
+                time_before = GetTickCount();
+                int result = ConvertSpvToShaderLanguage(outputFullnameSpv, fullNameHlsl, ShaderLanguageEnum::HlslLanguage);
+                time_after = GetTickCount();
+                if (result != 0) success = false;
+
+                if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+                else cout << " Failed to convert the SPIRV file to HLSL" << endl;
+
+                //======================================================================================================
+                //compare the glsl output with the expected output
+                if (success)
+                {
+                    string hlslConvertedOutput;
+                    if (Utils::ReadFile(fullNameHlsl, hlslConvertedOutput))
+                    {
+                        hlslAllOutputs += hlslConvertedOutput;
+                    }
+                    else {
+                        cout << " Failed to read the file: " << fileNameHlsl << endl;
+                        success = false;
+                    }
                 }
             }
             //======================================================================================================
@@ -379,6 +418,13 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
         string fullNameAllGlsl = outputDir + fileNameAllGlsl;
         xkslangtest::Utils::WriteFile(fullNameAllGlsl, glslAllOutputs);
         cout << " output: \"" << fileNameAllGlsl << "\"" << endl;
+    }
+    if (hlslAllOutputs.size() > 0)
+    {
+        string fileNameAllHlsl = effectName + ".hlsl";
+        string fullNameAllHlsl = outputDir + fileNameAllHlsl;
+        xkslangtest::Utils::WriteFile(fullNameAllHlsl, hlslAllOutputs);
+        cout << " output: \"" << fileNameAllHlsl << "\"" << endl;
     }
 
     return success;
@@ -790,7 +836,7 @@ void main(int argc, char** argv)
             string outputFullNameGlsl = outputDir + outputNameGlsl;
 
             cout << "Convert into GLSL: " << effect.input << endl;
-            int result = ConvertSpvToGlsl(outputDir + effect.input, outputFullNameGlsl);
+            int result = ConvertSpvToShaderLanguage(outputDir + effect.input, outputFullNameGlsl, ShaderLanguageEnum::GlslLanguage);
             if (result != 0) success = false;
 
             if (success) cout << " OK." << endl;

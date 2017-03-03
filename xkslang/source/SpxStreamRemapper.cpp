@@ -2978,17 +2978,33 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             } //end while (listFunctionToUpdateWithIOStreams.size() > 0)
 
             //=================================================================================================================
-            //check all function call: if we call a function updated with the new IO stream parameter: we add the new param in the call
+            //check all function call: if we call a function updated with the new IO stream parameter: we add the new io stream parameter into the function call
             for (auto itf = listAllFunctionCallInstructions.begin(); itf != listAllFunctionCallInstructions.end(); itf++)
             {
                 const FunctionCallInstructionData& aFunctionCall = *itf;
                 if (aFunctionCall.functionCalled->functionProcessingStreamForStage == shadingStageEnum)
                 {
+                    //==================================================================
+                    //do some checks
                     if (aFunctionCall.functionCalled == entryFunction) return error("The stage entry function cannot be called");
                     if (aFunctionCall.functionCalling->functionProcessingStreamForStage != shadingStageEnum)
                         return error("Cannot call a function having processed stream, if the calling function has not processed stream for the same stage");
+                    if (aFunctionCall.functionCalling->streamIOStructVariableResultId == 0) 
+                        return error("A function calling a function upgraded with a stream IO paramers, has no IO stream to pass. Function: " + aFunctionCall.functionCalling->GetFullName());
 
-                    //BytecodeChunk& bytecodeStreamFunctionCall = bytecodeUpdateController.InsertNewBytecodeChunckAt(this, gfdsgfdsg);
+                    //==================================================================
+                    //Add the parameter into the function call
+                    unsigned int functionCallFirstParamPosition = aFunctionCall.bytecodePos + 4;
+                    BytecodeChunk& bytecodeStreamFunctionCall = bytecodeUpdateController.InsertNewBytecodeChunckAt(this, functionCallFirstParamPosition);
+                    bytecodeStreamFunctionCall.bytecode.push_back(aFunctionCall.functionCalling->streamIOStructVariableResultId);
+                    //Update the instruction wordCount
+                    unsigned int wordCount = asWordCount(aFunctionCall.bytecodePos);
+                    unsigned int newInstructionCode = combineOpAndWordCount(aFunctionCall.opCode, wordCount + 1);
+                    bytecodeUpdateController.SetNewAtomicValueUpdate(aFunctionCall.bytecodePos, newInstructionCode); //update instruction opWord
+
+                    //==================================================================
+                    //The stream parameter is inout: we need to read and assign it back to the streams ?
+                    lfkjdglkjsdf;
                 }
             }
         }

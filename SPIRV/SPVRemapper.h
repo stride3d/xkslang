@@ -208,8 +208,10 @@ private:
        spv[word] = (data & spv::OpCodeMask) + (wordCount << spv::WordCountShift);
    }
    void setOpAndWordCount(unsigned word, spv::Op op, unsigned wordCount) {
-       unsigned data = spv[word];
        spv[word] = ((unsigned)op) + (wordCount << spv::WordCountShift);
+   }
+   static unsigned int combineOpAndWordCount(spv::Op op, unsigned wordCount) {
+       return ((unsigned)op) + (wordCount << spv::WordCountShift);
    }
 
    // Header access & set methods
