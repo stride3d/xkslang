@@ -61,14 +61,13 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestForEach01.xksl" },
     //{ "TestStreamSemantics.xksl" },
     
-    //{{"textureAndSampler.xksl"}, {"", nullptr}},
-    //{{"shaderTexturing.xksl"}, {"", nullptr}},
-    //{{"shaderBase.xksl"}, {"", nullptr}},
-    //{{"shaderSimple.xksl"}, {"", nullptr}},
-    //{ "functionsWithIOStruct01.xksl" },
-
-    //{{"shaderCustomEffect.xksl"}, {"", nullptr}},
-    //{{"methodsPrototypes.xksl"}, {"", nullptr}},
+    ////{{"textureAndSampler.xksl"}, {"", nullptr}},
+    ////{{"shaderTexturing.xksl"}, {"", nullptr}},
+    ////{{"shaderBase.xksl"}, {"", nullptr}},
+    ////{{"shaderSimple.xksl"}, {"", nullptr}},
+    ////{ "functionsWithIOStruct01.xksl" },
+    ////{{"shaderCustomEffect.xksl"}, {"", nullptr}},
+    ////{{"methodsPrototypes.xksl"}, {"", nullptr}},
 };
 
 struct XkfxEffectsToProcess {

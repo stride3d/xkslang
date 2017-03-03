@@ -203,14 +203,6 @@ SH_IMPORT_EXPORT int ShCompile(
     EShMessages messages = EShMsgDefault // warnings and errors
     );
 
-SH_IMPORT_EXPORT int ShLink(
-    const ShHandle,               // linker object
-    const ShHandle h[],           // compiler objects to link together
-    const int numHandles,
-    ShHandle uniformMap,          // updated with new uniforms
-    short int** uniformsAccessed,  // returned with indexes of uniforms accessed
-    int* numUniformsAccessed);
-
 SH_IMPORT_EXPORT int ShLinkExt(
     const ShHandle,               // linker object
     const ShHandle h[],           // compiler objects to link together
@@ -310,6 +302,7 @@ public:
     void setShiftTextureBinding(unsigned int base);
     void setShiftImageBinding(unsigned int base);
     void setShiftUboBinding(unsigned int base);
+    void setShiftSsboBinding(unsigned int base);
     void setAutoMapBindings(bool map);
     void setFlattenUniformArrays(bool flatten);
     void setNoStorageFormat(bool useUnknownFormat);
@@ -517,6 +510,7 @@ public:
     int getUniformBufferOffset(int index) const;           // can be used for glGetActiveUniformsiv(GL_UNIFORM_OFFSET)
     int getUniformArraySize(int index) const;              // can be used for glGetActiveUniformsiv(GL_UNIFORM_SIZE)
     int getNumLiveAttributes() const;                      // can be used for glGetProgramiv(GL_ACTIVE_ATTRIBUTES)
+    unsigned getLocalSize(int dim) const;                  // return dim'th local size
     const char *getAttributeName(int index) const;         // can be used for glGetActiveAttrib()
     int getAttributeType(int index) const;                 // can be used for glGetActiveAttrib()
     const TType* getUniformTType(int index) const;         // returns a TType*

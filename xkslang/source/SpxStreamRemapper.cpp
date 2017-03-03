@@ -3004,7 +3004,8 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
                     //==================================================================
                     //The stream parameter is inout: we need to read and assign it back to the streams ?
-                    lfkjdglkjsdf;
+                    //lfkjdglkjsdf;
+                    //TOTO
                 }
             }
         }

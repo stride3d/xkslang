@@ -91,11 +91,14 @@ namespace glslang {
         bool acceptTemplateVecMatBasicType(TBasicType&);
         bool acceptVectorTemplateType(TType&);
         bool acceptMatrixTemplateType(TType&);
+        bool acceptTessellationDeclType();
+        bool acceptTessellationPatchTemplateType(TType&);
         bool acceptStreamOutTemplateType(TType&, TLayoutGeometry&);
         bool acceptOutputPrimitiveGeometry(TLayoutGeometry&);
         bool acceptAnnotations(TQualifier&);
         bool acceptSamplerType(TType&);
         bool acceptTextureType(TType&);
+        bool acceptStructBufferType(TType&);
         bool acceptStruct(TType&);
         bool acceptShaderClass(TIntermNode** node, TType&);
         bool acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList);
@@ -133,7 +136,7 @@ namespace glslang {
         bool acceptCaseLabel(TIntermNode*&);
         bool acceptDefaultLabel(TIntermNode*&);
         void acceptArraySpecifier(TArraySizes*&);
-        void acceptPostDecls(TQualifier&, TString* userDefinedSemantic = nullptr);
+        bool acceptPostDecls(TQualifier&, TString* userDefinedSemantic = nullptr);
         bool acceptDefaultParameterDeclaration(const TType&, TIntermTyped*&);
 
         //XKSL extensions

@@ -592,8 +592,6 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node, TIntermNode*& node2)
                 }
             }
 
-            // Hand off the actual declaration
-
             // TODO: things scoped within an annotation need their own name space;
             // TODO: strings are not yet handled.
             if (variableType.getBasicType() != EbtString && parseContext.getAnnotationNestingLevel() == 0) {
@@ -728,8 +726,11 @@ bool HlslGrammar::acceptFullySpecifiedType(TIntermNode** node, TType& type)
         qualifier.layoutFormat = type.getQualifier().layoutFormat;
         qualifier.precision    = type.getQualifier().precision;
 
-        if (type.getQualifier().storage == EvqVaryingOut)
+        if (type.getQualifier().storage == EvqVaryingOut ||
+            type.getQualifier().storage == EvqBuffer) {
             qualifier.storage      = type.getQualifier().storage;
+            qualifier.readonly     = type.getQualifier().readonly;
+        }
 
         type.getQualifier()    = qualifier;
     }
@@ -808,6 +809,9 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
             if (! acceptLayoutQualifierList(qualifier))
                 return false;
             continue;
+        case EHTokGloballyCoherent:
+            qualifier.coherent = true;
+            break;
 
         // GS geometries: these are specified on stage input variables, and are an error (not verified here)
         // for output variables.
@@ -1092,6 +1096,67 @@ bool HlslGrammar::acceptOutputPrimitiveGeometry(TLayoutGeometry& geometry)
     return true;
 }
 
+// tessellation_decl_type
+//      : INPUTPATCH
+//      | OUTPUTPATCH
+//
+bool HlslGrammar::acceptTessellationDeclType()
+{
+    // read geometry type
+    const EHlslTokenClass tessType = peek();
+
+    switch (tessType) {
+    case EHTokInputPatch:    break;
+    case EHTokOutputPatch:   break;
+    default:
+        return false;  // not a tessellation decl
+    }
+
+    advanceToken();  // consume the keyword
+    return true;
+}
+
+// tessellation_patch_template_type
+//      : tessellation_decl_type LEFT_ANGLE type comma integer_literal RIGHT_ANGLE
+//
+bool HlslGrammar::acceptTessellationPatchTemplateType(TType& type)
+{
+    if (! acceptTessellationDeclType())
+        return false;
+    
+    if (! acceptTokenClass(EHTokLeftAngle))
+        return false;
+
+    if (! acceptType(nullptr, type)) {
+        expected("tessellation patch type");
+        return false;
+    }
+
+    if (! acceptTokenClass(EHTokComma))
+        return false;
+
+    // integer size
+    if (! peekTokenClass(EHTokIntConstant)) {
+        expected("literal integer");
+        return false;
+    }
+
+    TIntermTyped* size;
+    if (! acceptLiteral(size))
+        return false;
+
+    TArraySizes* arraySizes = new TArraySizes;
+    arraySizes->addInnerSize(size->getAsConstantUnion()->getConstArray()[0].getIConst());
+    type.newArraySizes(*arraySizes);
+
+    if (! acceptTokenClass(EHTokRightAngle)) {
+        expected("right angle bracket");
+        return false;
+    }
+
+    return true;
+}
+    
 // stream_out_template_type
 //      : output_primitive_geometry_type LEFT_ANGLE type RIGHT_ANGLE
 //
@@ -1370,6 +1435,15 @@ bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
             return true;
         }
 
+    case EHTokInputPatch:             // fall through
+    case EHTokOutputPatch:            // ...
+        {
+            if (! acceptTessellationPatchTemplateType(type))
+                return false;
+
+            return true;
+        }
+
     case EHTokSampler:                // fall through
     case EHTokSampler1d:              // ...
     case EHTokSampler2d:              // ...
@@ -1399,11 +1473,19 @@ bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
         return acceptTextureType(type);
         break;
 
+    case EHTokAppendStructuredBuffer:
+    case EHTokByteAddressBuffer:
+    case EHTokConsumeStructuredBuffer:
+    case EHTokRWByteAddressBuffer:
+    case EHTokRWStructuredBuffer:
+    case EHTokStructuredBuffer:
+        return acceptStructBufferType(type);
+        break;
+
     case EHTokStruct:
     case EHTokCBuffer:
     case EHTokTBuffer:
         return acceptStruct(type);
-        break;
 
     case EHTokShaderClass:
         return acceptShaderClass(node, type);
@@ -1413,10 +1495,9 @@ bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
         // An identifier could be for a user-defined type.
         // Note we cache the symbol table lookup, to save for a later rule
         // when this is not a type.
-        token.symbol = parseContext.symbolTable.find(*token.string);
-        if (token.symbol && token.symbol->getAsVariable() && token.symbol->getAsVariable()->isUserType()) {
+        token.symbol = parseContext.lookupUserType(*token.string, type);
+        if (token.symbol != nullptr) {
 
-            type.shallowCopy(token.symbol->getType());
             advanceToken();
 
             //XKSL extensions: if the type is EbtShaderClass: we make sure that it's a valid type declaration, and not an expression of the kind: TypeName.Something
@@ -2480,6 +2561,7 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
 // struct
 //      : struct_type IDENTIFIER post_decls LEFT_BRACE struct_declaration_list RIGHT_BRACE
 //      | struct_type            post_decls LEFT_BRACE struct_declaration_list RIGHT_BRACE
+//      | struct_type IDENTIFIER // use of previously declared struct type
 //
 // struct_type
 //      : STRUCT
@@ -2512,12 +2594,18 @@ bool HlslGrammar::acceptStruct(TType& type)
     // post_decls
     TQualifier postDeclQualifier;
     postDeclQualifier.clear();
-    acceptPostDecls(postDeclQualifier);
+    bool postDeclsFound = acceptPostDecls(postDeclQualifier);
 
     // LEFT_BRACE
+    // struct_type IDENTIFIER
     if (! acceptTokenClass(EHTokLeftBrace)) {
-        expected("{");
-        return false;
+        if (structName.size() > 0 && !postDeclsFound && parseContext.lookupUserType(structName, type) != nullptr) {
+            // struct_type IDENTIFIER
+            return true;
+        } else {
+            expected("{");
+            return false;
+        }
     }
 
     // struct_declaration_list
@@ -2542,6 +2630,101 @@ bool HlslGrammar::acceptStruct(TType& type)
     }
 
     parseContext.declareStruct(token.loc, structName, type);
+
+    return true;
+}
+
+// struct_buffer
+//    : APPENDSTRUCTUREDBUFFER
+//    | BYTEADDRESSBUFFER
+//    | CONSUMESTRUCTUREDBUFFER
+//    | RWBYTEADDRESSBUFFER
+//    | RWSTRUCTUREDBUFFER
+//    | STRUCTUREDBUFFER
+bool HlslGrammar::acceptStructBufferType(TType& type)
+{
+    const EHlslTokenClass structBuffType = peek();
+
+    // TODO: globallycoherent
+    bool hasTemplateType = true;
+    bool readonly = false;
+
+    TStorageQualifier storage = EvqBuffer;
+
+    switch (structBuffType) {
+    case EHTokAppendStructuredBuffer:
+        unimplemented("AppendStructuredBuffer");
+        return false;
+    case EHTokByteAddressBuffer:
+        hasTemplateType = false;
+        readonly = true;
+        break;
+    case EHTokConsumeStructuredBuffer:
+        unimplemented("ConsumeStructuredBuffer");
+        return false;
+    case EHTokRWByteAddressBuffer:
+        hasTemplateType = false;
+        break;
+    case EHTokRWStructuredBuffer:
+        break;
+    case EHTokStructuredBuffer:
+        readonly = true;
+        break;
+    default:
+        return false;  // not a structure buffer type
+    }
+
+    advanceToken();  // consume the structure keyword
+
+    // type on which this StructedBuffer is templatized.  E.g, StructedBuffer<MyStruct> ==> MyStruct
+    TType* templateType = new TType;
+
+    if (hasTemplateType) {
+        if (! acceptTokenClass(EHTokLeftAngle)) {
+            expected("left angle bracket");
+            return false;
+        }
+    
+        if (! acceptType(nullptr, *templateType)) {
+            expected("type");
+            return false;
+        }
+        if (! acceptTokenClass(EHTokRightAngle)) {
+            expected("right angle bracket");
+            return false;
+        }
+    } else {
+        // byte address buffers have no explicit type.
+        TType uintType(EbtUint, storage);
+        templateType->shallowCopy(uintType);
+    }
+
+    // Create an unsized array out of that type.
+    // TODO: does this work if it's already an array type?
+    TArraySizes unsizedArray;
+    unsizedArray.addInnerSize(UnsizedArraySize);
+    templateType->newArraySizes(unsizedArray);
+
+    // field name is canonical for all structbuffers
+    templateType->setFieldName("@data");
+
+    // Create block type.  TODO: hidden internal uint member when needed
+
+    TTypeList* blockStruct = new TTypeList;
+    TTypeLoc  member = { templateType, token.loc };
+    blockStruct->push_back(member);
+
+    // This is the type of the buffer block (SSBO)
+    TType blockType(blockStruct, "", templateType->getQualifier());
+
+    blockType.getQualifier().storage = storage;
+    blockType.getQualifier().readonly = readonly;
+
+    // We may have created an equivalent type before, in which case we should use its
+    // deep structure.
+    parseContext.shareStructBufferType(blockType);
+
+    type.shallowCopy(blockType);
 
     return true;
 }
@@ -3412,6 +3595,11 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             }
             else
             {
+                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition && idToken.symbol == nullptr)
+                {
+                    idToken.symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
+                }
+
                 if (idToken.symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition)
                 {
                     if (hasComposition) {
@@ -3637,8 +3825,8 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
         ~tFinalize() { parseContext.finalizeFlattening(); }
         HlslParseContext& parseContext;
     private:
-        const tFinalize& operator=(const tFinalize& f);
-        tFinalize(const tFinalize& f);
+        const tFinalize& operator=(const tFinalize& f) { return *this; }
+        tFinalize(const tFinalize& f) : parseContext(f.parseContext) { }
     } finalize(parseContext);
 
     // Initialize the flattening accumulation data, so we can track data across multiple bracket or
@@ -3973,7 +4161,7 @@ bool HlslGrammar::acceptLiteral(TIntermTyped*& node)
         node = intermediate.addConstantUnion(token.b, token.loc, true);
         break;
     case EHTokStringConstant:
-        node = nullptr;
+        node = intermediate.addConstantUnion(token.string, token.loc, true);
         break;
 
     default:
@@ -4656,13 +4844,20 @@ void HlslGrammar::acceptShaderClassPostDecls(TIdentifierList*& parents)
 //        COLON LAYOUT layout_qualifier_list
 //        annotations // optional
 //
+// Return true if any tokens were accepted. That is,
+// false can be returned on successfully recognizing nothing,
+// not necessarily meaning bad syntax.
+//
 // XKSL extensions: if userDefinedSemantic is not null, we assign it with the semantic string value
 // (if more than one semantic is set, return an error)
-void HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSemantic)
+bool HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSemantic)
 {
+    bool found = false;
+
     do {
         // COLON
         if (acceptTokenClass(EHTokColon)) {
+            found = true;
             HlslToken idToken;
             if (peekTokenClass(EHTokLayout))
                 acceptLayoutQualifierList(qualifier);
@@ -4670,18 +4865,18 @@ void HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                 // PACKOFFSET LEFT_PAREN c[Subcomponent][.component] RIGHT_PAREN
                 if (! acceptTokenClass(EHTokLeftParen)) {
                     expected("(");
-                    return;
+                    return false;
                 }
                 HlslToken locationToken;
                 if (! acceptIdentifier(locationToken)) {
                     expected("c[subcomponent][.component]");
-                    return;
+                    return false;
                 }
                 HlslToken componentToken;
                 if (acceptTokenClass(EHTokDot)) {
                     if (! acceptIdentifier(componentToken)) {
                         expected("component");
-                        return;
+                        return false;
                     }
                 }
                 if (! acceptTokenClass(EHTokRightParen)) {
@@ -4691,19 +4886,19 @@ void HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                 parseContext.handlePackOffset(locationToken.loc, qualifier, *locationToken.string, componentToken.string);
             } else if (! acceptIdentifier(idToken)) {
                 expected("layout, semantic, packoffset, or register");
-                return;
+                return false;
             } else if (*idToken.string == "register") {
                 // REGISTER LEFT_PAREN [shader_profile,] Type#[subcomp]opt (COMMA SPACEN)opt RIGHT_PAREN
                 // LEFT_PAREN
                 if (! acceptTokenClass(EHTokLeftParen)) {
                     expected("(");
-                    return;
+                    return false;
                 }
                 HlslToken registerDesc;  // for Type#
                 HlslToken profile;
                 if (! acceptIdentifier(registerDesc)) {
                     expected("register number description");
-                    return;
+                    return false;
                 }
                 if (registerDesc.string->size() > 1 && !isdigit((*registerDesc.string)[1]) &&
                                                        acceptTokenClass(EHTokComma)) {
@@ -4712,7 +4907,7 @@ void HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                     profile = registerDesc;
                     if (! acceptIdentifier(registerDesc)) {
                         expected("register number description");
-                        return;
+                        return false;
                     }
                 }
                 int subComponent = 0;
@@ -4720,7 +4915,7 @@ void HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                     // LEFT_BRACKET subcomponent RIGHT_BRACKET
                     if (! peekTokenClass(EHTokIntConstant)) {
                         expected("literal integer");
-                        return;
+                        return false;
                     }
                     subComponent = token.i;
                     advanceToken();
@@ -4734,7 +4929,7 @@ void HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                 if (acceptTokenClass(EHTokComma)) {
                     if (! acceptIdentifier(spaceDesc)) {
                         expected ("space identifier");
-                        return;
+                        return false;
                     }
                 }
                 // RIGHT_PAREN
@@ -4749,19 +4944,22 @@ void HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                 {
                     if (userDefinedSemantic->length() > 0){
                         error("can only accept one user-defined semantic");
-                        return;
+                        return false;
                     }
                     *userDefinedSemantic = *idToken.string;
                 }
 
                 parseContext.handleSemantic(idToken.loc, qualifier, *idToken.string);
             }
-        } else if (peekTokenClass(EHTokLeftAngle))
+        } else if (peekTokenClass(EHTokLeftAngle)) {
+            found = true;
             acceptAnnotations(qualifier);
-        else
+        } else
             break;
 
     } while (true);
+
+    return found;
 }
 
 } // end namespace glslang

@@ -241,6 +241,7 @@ public:
             int baseTextureBinding,
             int baseImageBinding,
             int baseUboBinding,
+            int baseSsboBinding,
             bool autoMapBindings,
             bool flattenUniformArrays)
     {
@@ -251,6 +252,7 @@ public:
         shader.setShiftTextureBinding(baseTextureBinding);
         shader.setShiftImageBinding(baseImageBinding);
         shader.setShiftUboBinding(baseUboBinding);
+        shader.setShiftSsboBinding(baseSsboBinding);
         shader.setAutoMapBindings(autoMapBindings);
         shader.setFlattenUniformArrays(flattenUniformArrays);
 
@@ -437,6 +439,7 @@ public:
                                       int baseTextureBinding,
                                       int baseImageBinding,
                                       int baseUboBinding,
+                                      int baseSsboBinding,
                                       bool autoMapBindings,
                                       bool flattenUniformArrays)
     {
@@ -450,7 +453,8 @@ public:
 
         const EShMessages controls = DeriveOptions(source, semantics, target);
         GlslangResult result = compileLinkIoMap(testName, input, entryPointName, controls,
-                                                baseSamplerBinding, baseTextureBinding, baseImageBinding, baseUboBinding,
+                                                baseSamplerBinding, baseTextureBinding, baseImageBinding,
+                                                baseUboBinding, baseSsboBinding,
                                                 autoMapBindings,
                                                 flattenUniformArrays);
 

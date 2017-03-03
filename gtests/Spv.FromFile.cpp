@@ -48,6 +48,7 @@ struct IoMapData {
     int baseTextureBinding;
     int baseImageBinding;
     int baseUboBinding;
+    int baseSsboBinding;
     bool autoMapBindings;
     bool flattenUniforms;
 };
@@ -129,6 +130,7 @@ TEST_P(HlslIoMap, FromFile)
                                  GetParam().baseTextureBinding,
                                  GetParam().baseImageBinding,
                                  GetParam().baseUboBinding,
+                                 GetParam().baseSsboBinding,
                                  GetParam().autoMapBindings,
                                  GetParam().flattenUniforms);
 }
@@ -143,6 +145,7 @@ TEST_P(GlslIoMap, FromFile)
                                  GetParam().baseTextureBinding,
                                  GetParam().baseImageBinding,
                                  GetParam().baseUboBinding,
+                                 GetParam().baseSsboBinding,
                                  GetParam().autoMapBindings,
                                  GetParam().flattenUniforms);
 }
@@ -222,21 +225,21 @@ INSTANTIATE_TEST_CASE_P(
         //"spv.dataOutIndirect.vert",
         //"spv.deepRvalue.frag",
         //"spv.depthOut.frag",
-        //"spv.discard-dce.frag",
+        //"spv.deviceGroup.frag",
         //"spv.doWhileLoop.frag",
-        //"spv.earlyReturnDiscard.frag",
+        //"spv.drawParams.vert",
         //"spv.flowControl.frag",
         //"spv.forLoop.frag",
         //"spv.forwardFun.frag",
         //"spv.functionCall.frag",
         //"spv.functionSemantics.frag",
         //"spv.interpOps.frag",
-        //"spv.GeometryShaderPassthrough.geom",
+        //"spv.functionNestedOpaque.vert",
         //"spv.int64.frag",
-        //"spv.layoutNested.vert",
+        //"spv.GeometryShaderPassthrough.geom",
         //"spv.length.frag",
         //"spv.localAggregates.frag",
-        //"spv.loops.frag",
+        //"spv.intOps.vert",
         //"spv.loopsArtificial.frag",
         //"spv.matFun.vert",
         //"spv.matrix.frag",
@@ -249,19 +252,17 @@ INSTANTIATE_TEST_CASE_P(
         //"spv.noDeadDecorations.vert",
         //"spv.nonSquare.vert",
         //"spv.offsets.frag",
-        //"spv.Operations.frag",
+        //"spv.multiView.frag",
         //"spv.intOps.vert",
         //"spv.noWorkgroup.comp",
         //"spv.precision.frag",
-        //"spv.prepost.frag",
+        //"spv.noWorkgroup.comp",
         //"spv.qualifiers.vert",
         //"spv.shaderBallot.comp",
-        //"spv.shaderDrawParams.vert",
-        //"spv.sampleMaskOverrideCoverage.frag",
         //"spv.shaderGroupVote.comp",
         //"spv.shiftOps.frag",
         //"spv.simpleFunctionCall.frag",
-        //"spv.simpleMat.vert",
+        //"spv.sampleMaskOverrideCoverage.frag",
         //"spv.sparseTexture.frag",
         //"spv.sparseTextureClamp.frag",
         //"spv.structAssignment.frag",
@@ -303,15 +304,16 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     Hlsl, HlslIoMap,
     ::testing::ValuesIn(std::vector<IoMapData>{
-        { "spv.register.autoassign.frag", "main_ep", 5, 10, 0, 20, true, false },
-        { "spv.register.noautoassign.frag", "main_ep", 5, 10, 0, 15, false, false },
-        { "spv.register.autoassign-2.frag", "main", 5, 10, 0, 15, true, true },
-        { "spv.buffer.autoassign.frag", "main", 5, 10, 0, 15, true, true },
-        { "spv.rw.autoassign.frag", "main", 5, 10, 20, 15, true, true },
+        { "spv.register.autoassign.frag", "main_ep", 5, 10, 0, 20, 30, true, false },
+        { "spv.register.noautoassign.frag", "main_ep", 5, 10, 0, 15, 30, false, false },
+        { "spv.register.autoassign-2.frag", "main", 5, 10, 0, 15, 30, true, true },
+        { "spv.buffer.autoassign.frag", "main", 5, 10, 0, 15, 30, true, true },
+        { "spv.ssbo.autoassign.frag", "main", 5, 10, 0, 15, 30, true, true },
+        { "spv.rw.autoassign.frag", "main", 5, 10, 20, 15, 30, true, true },
         { "spv.register.autoassign.rangetest.frag", "main", 
                 glslang::TQualifier::layoutBindingEnd-2,
                 glslang::TQualifier::layoutBindingEnd+5,
-                20, true, false },
+                20, 30, true, false },
     }),
     FileNameAsCustomTestSuffixIoMap
 );
@@ -320,8 +322,8 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     Hlsl, GlslIoMap,
     ::testing::ValuesIn(std::vector<IoMapData>{
-        { "spv.glsl.register.autoassign.frag", "main", 5, 10, 0, 20, true, false },
-        { "spv.glsl.register.noautoassign.frag", "main", 5, 10, 0, 15, false, false },
+        { "spv.glsl.register.autoassign.frag", "main", 5, 10, 0, 20, 30, true, false },
+        { "spv.glsl.register.noautoassign.frag", "main", 5, 10, 0, 15, 30, false, false },
     }),
     FileNameAsCustomTestSuffixIoMap
 );
@@ -388,6 +390,8 @@ INSTANTIATE_TEST_CASE_P(
     "spv.viewportArray2.tesc",
     "spv.stereoViewRendering.vert",
     "spv.stereoViewRendering.tesc",
+    "spv.multiviewPerViewAttributes.vert",
+    "spv.multiviewPerViewAttributes.tesc",
 })),
 FileNameAsCustomTestSuffix
 );

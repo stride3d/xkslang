@@ -204,6 +204,7 @@ struct TParameter {
     TString *name;
     TType* type;
     TIntermTyped* defaultValue;
+    TBuiltInVariable declaredBuiltIn;
     void copyParam(const TParameter& param)
     {
         if (param.name)
@@ -212,6 +213,7 @@ struct TParameter {
             name = 0;
         type = param.type->clone();
         defaultValue = param.defaultValue;
+        declaredBuiltIn = param.declaredBuiltIn;
     }
 };
 
@@ -229,20 +231,26 @@ public:
         mangledName(*name + '('),
         declaredMangledName(*name + '('),
         op(tOp),
-        defined(false), prototyped(false), defaultParamCount(0) { returnType.shallowCopy(retType); }
+        defined(false), prototyped(false), defaultParamCount(0)
+    {
+        returnType.shallowCopy(retType);
+        declaredBuiltIn = retType.getQualifier().builtIn;
+    }
     TFunction(const TString *className, const TString *name, const TType& retType, TOperator tOp = EOpNull) :
         TSymbol(name),
         mangledName(*className + '.' + *name + '('),
         declaredMangledName(*name + '('),
         op(tOp),
-        defined(false), prototyped(false) {
+        defined(false), prototyped(false)
+    {
         returnType.shallowCopy(retType);
+        declaredBuiltIn = retType.getQualifier().builtIn;
     }
-    virtual TFunction* clone() const;
+    virtual TFunction* clone() const override;
     virtual ~TFunction();
 
-    virtual TFunction* getAsFunction() { return this; }
-    virtual const TFunction* getAsFunction() const { return this; }
+    virtual TFunction* getAsFunction() override { return this; }
+    virtual const TFunction* getAsFunction() const override { return this; }
 
 	virtual void appendMangleName(const TString& s)
 	{
@@ -254,6 +262,7 @@ public:
     virtual void addParameter(TParameter& p)
     {
         assert(writable);
+        p.declaredBuiltIn = p.type->getQualifier().builtIn;
         parameters.push_back(p);
         p.type->appendMangledName(mangledName);
         p.type->appendMangledName(declaredMangledName);
@@ -266,10 +275,11 @@ public:
         mangledName.insert(0, prefix);
     }
 
-    virtual const TString& getMangledName() const { return mangledName; }
+    virtual const TString& getMangledName() const override { return mangledName; }
     virtual const TString& getDeclaredMangledName() const { return declaredMangledName; }
-    virtual const TType& getType() const { return returnType; }
-    virtual TType& getWritableType() { return returnType; }
+    virtual const TType& getType() const override { return returnType; }
+    virtual TBuiltInVariable getDeclaredBuiltInType() const { return declaredBuiltIn; }
+    virtual TType& getWritableType() override { return returnType; }
     virtual void relateToOperator(TOperator o) { assert(writable); op = o; }
     virtual TOperator getBuiltInOp() const { return op; }
     virtual void setDefined() { assert(writable); defined = true; }
@@ -287,7 +297,7 @@ public:
     virtual TParameter& operator[](int i) { assert(writable); return parameters[i]; }
     virtual const TParameter& operator[](int i) const { return parameters[i]; }
 
-    virtual void dump(TInfoSink &infoSink) const;
+    virtual void dump(TInfoSink &infoSink) const override;
 
 protected:
     explicit TFunction(const TFunction&);
@@ -296,6 +306,8 @@ protected:
     typedef TVector<TParameter> TParamList;
     TParamList parameters;
     TType returnType;
+    TBuiltInVariable declaredBuiltIn;
+
     TString mangledName;
     TString declaredMangledName;
     TOperator op;
