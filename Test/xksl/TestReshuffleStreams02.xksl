@@ -11,6 +11,7 @@ shader ShaderMain
 
 	float4 Compute()
 	{
+		streams.Position = float2(0.0f, 1.0f);
 		return float4(streams.Position.xy, 0, 1);
 	}
 	

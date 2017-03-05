@@ -2853,62 +2853,12 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         previousStageOutputStructPointerTypeId = streamOutputStructPointerTypeId;
         previousStageVecOutputMembersIndex = vecStageOutputMembersIndex;
 
-        //===============================================================================
-        //All input, output and stream structs have been created, we can parse the function bytecode and update the reference to all streams members
-        {
-            unsigned int start = entryFunction->bytecodeStartPosition;
-            const unsigned int end = entryFunction->bytecodeEndPosition;
-            while (start < end)
-            {
-                unsigned int wordCount = asWordCount(start);
-                spv::Op opCode = asOpCode(start);
-
-                switch (opCode)
-                {
-                    case spv::OpAccessChain:
-                    {
-                        spv::Id structIdAccessed = asId(start + 3);
-
-                        //are we accessing the global stream buffer?
-                        if (structIdAccessed == globalListOfMergedStreamVariables.structVariableTypeId)
-                        {
-                            spv::Id resultId = asId(start + 2);
-                            spv::Id indexConstId= asId(start + 4);
-
-                            ConstInstruction* constObject = GetConstById(indexConstId);
-                            if (constObject == nullptr) return error(string("cannot get const object for Id: ") + to_string(indexConstId));
-                            int globalStreamMemberIndex = constObject->valueS32;  //index of the member in the original global stream struct
-#ifdef XKSLANG_DEBUG_MODE
-                            if (globalStreamMemberIndex < 0 || globalStreamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
-                                return error(string("globalStreamMemberIndex is out of bound: ") + to_string(globalStreamMemberIndex));
-                            if (globalListOfMergedStreamVariables.members[globalStreamMemberIndex].tmpRemapToIOIndex == -1)
-                                return error("The global stream member has not been selected as IO stage stream");
-#endif
-                            int ioStreamMemberIndex = globalListOfMergedStreamVariables.members[globalStreamMemberIndex].tmpRemapToIOIndex; //new index for the members in the IO stream
-#ifdef XKSLANG_DEBUG_MODE
-                            if (ioStreamMemberIndex < 0 || ioStreamMemberIndex >= (int)vecStageIOMembersIndex.size())
-                                return error(string("ioStreamMemberIndex is out of bound: ") + to_string(ioStreamMemberIndex));
-#endif
-                            spv::Id ioMemberConstId = globalListOfMergedStreamVariables.mapIndexesWithConstValueId[ioStreamMemberIndex]; //get the const type id for new index
-
-                            //We change the OpAccessChain's pointertype (typeId) from private to function
-                            spv::Id memberPointerFunctionTypeId = globalListOfMergedStreamVariables.members[globalStreamMemberIndex].memberPointerFunctionTypeId;
-#ifdef XKSLANG_DEBUG_MODE
-                            if (memberPointerFunctionTypeId <= 0) return error(string("memberPointerFunctionTypeId has not be found or created"));
-#endif
-                            BytecodePortionToReplace& portionToReplace = bytecodeUpdateController.SetNewPortionToReplace(start + 1);
-                            portionToReplace.SetNewValues( {memberPointerFunctionTypeId, resultId, entryFunction->streamIOStructVariableResultId, ioMemberConstId} );
-                        }
-                        break;
-                    }
-                }
-                start += wordCount;
-            }
-        }
+        vector<FunctionInstruction*> listAllFunctionsUpdatedWithIOStreams; //list all functions where we'll need to replace access from global stream to the new variable/parameter ioStream
+        listAllFunctionsUpdatedWithIOStreams.push_back(entryFunction);
 
         //=================================================================================================================
         //=================================================================================================================
-        //Add the inout streams into every functions called for the stage (if they need to access it)
+        //Add the inout streams into every other functions called by the current stage (if they need to access it)
         {
             vector<FunctionInstruction*> listFunctionToUpdateWithIOStreams;
             for (auto it = stage.listFunctionsCalledAndAccessingStreamMembers.begin(); it != stage.listFunctionsCalledAndAccessingStreamMembers.end(); it++)
@@ -2923,14 +2873,15 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 FunctionInstruction* functionAccessingStreams = listFunctionToUpdateWithIOStreams.back();
                 listFunctionToUpdateWithIOStreams.pop_back();
 
-                //Checks
-                if (functionAccessingStreams->functionProcessingStreamForStage == shadingStageEnum) continue;  //the function was treated for the current stage
+                //Some Checks
+                if (functionAccessingStreams->functionProcessingStreamForStage == shadingStageEnum) continue;  //the function was already treated for the current stage
                 if (functionAccessingStreams->functionProcessingStreamForStage != ShadingStageEnum::Undefined)
                 {
                     return error(GetShadingStageLabel(functionAccessingStreams->functionProcessingStreamForStage) + " and " + GetShadingStageLabel(shadingStageEnum)
                         + " stages are both calling a function accessing stream members. Function name: " + functionAccessingStreams->GetFullName());
                 }
-                functionAccessingStreams->functionProcessingStreamForStage = shadingStageEnum; //Function is now reserved for the current stage
+                functionAccessingStreams->functionProcessingStreamForStage = shadingStageEnum; //Function is now reserved for the current stage (ie a function from another stage cannot call this one)
+                listAllFunctionsUpdatedWithIOStreams.push_back(functionAccessingStreams);
 
                 //Update the function by adding the stream inout parameter
                 {
@@ -2989,108 +2940,167 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
                 //any functions calling this function will need to be updated as well
                 //TOTOTOTO
-
+                //TOTOTOTO
+                //TOTOTOTO
+                //TOTOTOTO
 
             } //end while (listFunctionToUpdateWithIOStreams.size() > 0)
+        }  //end of add the inout streams into every other functions called for the stage (if they need to access it)
 
-            //=================================================================================================================
-            //check all function call: if we call a function previously updated with the new IO stream parameter: we add the new io stream parameter into the function call
-            for (auto itf = listAllFunctionCallInstructions.begin(); itf != listAllFunctionCallInstructions.end(); itf++)
+        //===============================================================================
+        //Update every functions to replace access to global stream struct with new ioStream variables / parameter
+        while (listAllFunctionsUpdatedWithIOStreams.size() > 0)
+        {
+            FunctionInstruction* aFunctionAccessingStream = listAllFunctionsUpdatedWithIOStreams.back();
+            listAllFunctionsUpdatedWithIOStreams.pop_back();
+
+            unsigned int start = aFunctionAccessingStream->bytecodeStartPosition;
+            const unsigned int end = aFunctionAccessingStream->bytecodeEndPosition;
+            while (start < end)
             {
-                const FunctionCallInstructionData& aFunctionCall = *itf;
-                if (aFunctionCall.functionCalled->functionProcessingStreamForStage == shadingStageEnum)
-                {
-                    spv::Id functionCallStreamParameterIdToAdd = aFunctionCall.functionCalling->streamIOStructVariableResultId;
-                    unsigned int functionCallInstructionWordCount = asWordCount(aFunctionCall.bytecodePos);
-                    unsigned int functionCallingVariablesStartingPosition = aFunctionCall.functionCalling->functionVariablesStartingPosition;
+                unsigned int wordCount = asWordCount(start);
+                spv::Op opCode = asOpCode(start);
 
-                    //==================================================================
-                    //do some checks
-                    if (aFunctionCall.functionCalled == entryFunction) return error("The stage entry function cannot be called");
-                    if (aFunctionCall.functionCalling->functionProcessingStreamForStage != shadingStageEnum)
-                        return error("Cannot call a function having processed stream, if the calling function has not processed stream for the same stage");
+                switch (opCode)
+                {
+                    case spv::OpAccessChain:
+                    {
+                        spv::Id structIdAccessed = asId(start + 3);
+
+                        //are we accessing the global stream buffer?
+                        if (structIdAccessed == globalListOfMergedStreamVariables.structVariableTypeId)
+                        {
+                            spv::Id resultId = asId(start + 2);
+                            spv::Id indexConstId= asId(start + 4);
+
+                            ConstInstruction* constObject = GetConstById(indexConstId);
+                            if (constObject == nullptr) return error(string("cannot get const object for Id: ") + to_string(indexConstId));
+                            int globalStreamMemberIndex = constObject->valueS32;  //index of the member in the original global stream struct
 #ifdef XKSLANG_DEBUG_MODE
-                    if (functionCallingVariablesStartingPosition == 0)
-                        return error("The function's variable starting position has not been set for: " + aFunctionCall.functionCalling->GetFullName());
-                    if (functionCallStreamParameterIdToAdd == 0)
-                        return error("A function calling another function upgraded with a stream IO paramers, has no IO stream to pass. Function: " + aFunctionCall.functionCalling->GetFullName());
-                    if (functionCallInstructionWordCount < 4) return error("Corrupted code: Invalid OpFunctionCall instruction.");
-                    if (functionCallInstructionWordCount > 4) {
-                        //function already have some parameters: make sure the first one is not the parameter we want to add
-                        spv::Id firstParameterId = asId(aFunctionCall.bytecodePos + 4);
-                        if (firstParameterId == functionCallStreamParameterIdToAdd) return error("The function call is already passing the io stream parameter");
+                            if (globalStreamMemberIndex < 0 || globalStreamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
+                                return error(string("globalStreamMemberIndex is out of bound: ") + to_string(globalStreamMemberIndex));
+                            if (globalListOfMergedStreamVariables.members[globalStreamMemberIndex].tmpRemapToIOIndex == -1)
+                                return error("The global stream member has not been selected as IO stage stream");
+#endif
+                            int ioStreamMemberIndex = globalListOfMergedStreamVariables.members[globalStreamMemberIndex].tmpRemapToIOIndex; //new index for the members in the IO stream
+#ifdef XKSLANG_DEBUG_MODE
+                            if (ioStreamMemberIndex < 0 || ioStreamMemberIndex >= (int)vecStageIOMembersIndex.size())
+                                return error(string("ioStreamMemberIndex is out of bound: ") + to_string(ioStreamMemberIndex));
+#endif
+                            spv::Id ioMemberConstId = globalListOfMergedStreamVariables.mapIndexesWithConstValueId[ioStreamMemberIndex]; //get the const type id for new index
+
+                            //We change the OpAccessChain's pointertype (typeId) from private to function
+                            spv::Id memberPointerFunctionTypeId = globalListOfMergedStreamVariables.members[globalStreamMemberIndex].memberPointerFunctionTypeId;
+#ifdef XKSLANG_DEBUG_MODE
+                            if (memberPointerFunctionTypeId <= 0) return error(string("memberPointerFunctionTypeId has not be found or created"));
+#endif
+                            BytecodePortionToReplace& portionToReplace = bytecodeUpdateController.SetNewPortionToReplace(start + 1);
+                            portionToReplace.SetNewValues( {memberPointerFunctionTypeId, resultId, aFunctionAccessingStream->streamIOStructVariableResultId, ioMemberConstId} );
+                        }
+                        break;
                     }
+                }
+                start += wordCount;
+            }
+        }  //end of: Update every functions to replace access to global stream struct with new ioStream variables / parameter
+
+        //=================================================================================================================
+        //check all function call: if we call a function previously updated with the new IO stream parameter: we add the new io stream parameter into the function call
+        for (auto itf = listAllFunctionCallInstructions.begin(); itf != listAllFunctionCallInstructions.end(); itf++)
+        {
+            const FunctionCallInstructionData& aFunctionCall = *itf;
+            if (aFunctionCall.functionCalled->functionProcessingStreamForStage == shadingStageEnum)
+            {
+                spv::Id functionCallStreamParameterIdToAdd = aFunctionCall.functionCalling->streamIOStructVariableResultId;
+                unsigned int functionCallInstructionWordCount = asWordCount(aFunctionCall.bytecodePos);
+                unsigned int functionCallingVariablesStartingPosition = aFunctionCall.functionCalling->functionVariablesStartingPosition;
+
+                //==================================================================
+                //do some checks
+                if (aFunctionCall.functionCalled == entryFunction) return error("The stage entry function cannot be called");
+                if (aFunctionCall.functionCalling->functionProcessingStreamForStage != shadingStageEnum)
+                    return error("Cannot call a function having processed stream, if the calling function has not processed stream for the same stage");
+#ifdef XKSLANG_DEBUG_MODE
+                if (functionCallingVariablesStartingPosition == 0)
+                    return error("The function's variable starting position has not been set for: " + aFunctionCall.functionCalling->GetFullName());
+                if (functionCallStreamParameterIdToAdd == 0)
+                    return error("A function calling another function upgraded with a stream IO paramers, has no IO stream to pass. Function: " + aFunctionCall.functionCalling->GetFullName());
+                if (functionCallInstructionWordCount < 4) return error("Corrupted code: Invalid OpFunctionCall instruction.");
+                if (functionCallInstructionWordCount > 4) {
+                    //function already have some parameters: make sure the first one is not the parameter we want to add
+                    spv::Id firstParameterId = asId(aFunctionCall.bytecodePos + 4);
+                    if (firstParameterId == functionCallStreamParameterIdToAdd) return error("The function call is already passing the io stream parameter");
+                }
 #endif
 
-                    /// //==================================================================
-                    /// //Add the stream parameter into the function call  (Actually not working in some specific cases)
-                    /// unsigned int functionCallFirstParameterPosition = aFunctionCall.bytecodePos + 4;
-                    /// BytecodeChunk* bytecodeStreamFunctionCall = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionCallFirstParameterPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
-                    /// if (bytecodeStreamFunctionCall == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionCallFirstParameterPosition));
-                    /// bytecodeStreamFunctionCall->bytecode.push_back(functionCallStreamParameterIdToAdd);
-                    /// //Update the instruction wordCount
-                    /// unsigned int newInstructionOpWord = combineOpAndWordCount(aFunctionCall.opCode, functionCallInstructionWordCount + 1);
-                    /// bytecodeUpdateController.SetNewAtomicValueUpdate(aFunctionCall.bytecodePos, newInstructionOpWord); //update instruction opWord
-                    
-                    ///Instead of directly calling the function with the inout stream variable, we create an intermediary variable (to follow to SPIRV semantics)
-                    BytecodeChunk* bytecodeChunkFunctionVariable = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionCallingVariablesStartingPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertFirst);
-                    if (bytecodeChunkFunctionVariable == nullptr) return error("Failed to insert a new bytecode chunk");
+                /// //==================================================================
+                /// //Add the stream parameter into the function call  (Actually not working in some specific cases)
+                /// unsigned int functionCallFirstParameterPosition = aFunctionCall.bytecodePos + 4;
+                /// BytecodeChunk* bytecodeStreamFunctionCall = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionCallFirstParameterPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
+                /// if (bytecodeStreamFunctionCall == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionCallFirstParameterPosition));
+                /// bytecodeStreamFunctionCall->bytecode.push_back(functionCallStreamParameterIdToAdd);
+                /// //Update the instruction wordCount
+                /// unsigned int newInstructionOpWord = combineOpAndWordCount(aFunctionCall.opCode, functionCallInstructionWordCount + 1);
+                /// bytecodeUpdateController.SetNewAtomicValueUpdate(aFunctionCall.bytecodePos, newInstructionOpWord); //update instruction opWord
 
-                    //Add the param variable into the function variables list
-                    std::vector<std::uint32_t> paramVariableInstruction;
-                    spv::Instruction functionStreamCopyParamVariable(newId++, streamIOStructPointerTypeId, spv::OpVariable);
-                    functionStreamCopyParamVariable.addImmediateOperand(spv::StorageClassFunction);
-                    functionStreamCopyParamVariable.dump(paramVariableInstruction);
-                    spv::Id copyParamVariableId = functionStreamCopyParamVariable.getResultId();
+                ///Instead of directly calling the function with the inout stream variable, we create an intermediary variable (to follow to SPIRV semantics)
+                BytecodeChunk* bytecodeChunkFunctionVariable = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionCallingVariablesStartingPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertFirst);
+                if (bytecodeChunkFunctionVariable == nullptr) return error("Failed to insert a new bytecode chunk");
 
-                    //Insert the instruction at the beginning of the chunk (to make sure we're adding the variable directly after OpLabel instruction)
-                    bytecodeChunkFunctionVariable->bytecode.insert(bytecodeChunkFunctionVariable->bytecode.begin(), paramVariableInstruction.begin(), paramVariableInstruction.end());
+                //Add the param variable into the function variables list
+                std::vector<std::uint32_t> paramVariableInstruction;
+                spv::Instruction functionStreamCopyParamVariable(newId++, streamIOStructPointerTypeId, spv::OpVariable);
+                functionStreamCopyParamVariable.addImmediateOperand(spv::StorageClassFunction);
+                functionStreamCopyParamVariable.dump(paramVariableInstruction);
+                spv::Id copyParamVariableId = functionStreamCopyParamVariable.getResultId();
+
+                //Insert the instruction at the beginning of the chunk (to make sure we're adding the variable directly after OpLabel instruction)
+                bytecodeChunkFunctionVariable->bytecode.insert(bytecodeChunkFunctionVariable->bytecode.begin(), paramVariableInstruction.begin(), paramVariableInstruction.end());
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
-                    //param variable name
-                    spv::Instruction outputVariableName(spv::OpName);
-                    outputVariableName.addIdOperand(copyParamVariableId);
-                    outputVariableName.addStringOperand(functionParamVariableDefaultName.c_str());
-                    outputVariableName.dump(bytecodeNames->bytecode);
+                //param variable name
+                spv::Instruction outputVariableName(spv::OpName);
+                outputVariableName.addIdOperand(copyParamVariableId);
+                outputVariableName.addStringOperand(functionParamVariableDefaultName.c_str());
+                outputVariableName.dump(bytecodeNames->bytecode);
 #endif
-                    //we'll overlap the full functionCall instruction, to replace "OpFunctionCall X Y" by "OpLoad stream; OpStore param; OpFunctionCall X param Y; OpLoad param; OpStore stream"
-                    BytecodeChunk* bytecodeChunkStreamFunctionCall = bytecodeUpdateController.InsertNewBytecodeChunckAt(aFunctionCall.bytecodePos, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertLast, functionCallInstructionWordCount);
-                    if (bytecodeChunkFunctionVariable == nullptr) return error("Failed to insert a new bytecode chunk");
+                //we'll overlap the full functionCall instruction, to replace "OpFunctionCall X Y" by "OpLoad stream; OpStore param; OpFunctionCall X param Y; OpLoad param; OpStore stream"
+                BytecodeChunk* bytecodeChunkStreamFunctionCall = bytecodeUpdateController.InsertNewBytecodeChunckAt(aFunctionCall.bytecodePos, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertLast, functionCallInstructionWordCount);
+                if (bytecodeChunkFunctionVariable == nullptr) return error("Failed to insert a new bytecode chunk");
 
-                    std::vector<std::uint32_t>& bytecodeStreamFunctionCall = bytecodeChunkStreamFunctionCall->bytecode;
+                std::vector<std::uint32_t>& bytecodeStreamFunctionCall = bytecodeChunkStreamFunctionCall->bytecode;
 
-                    //OpLoad (load stream)
-                    spv::Instruction loadIOStreamInstr(newId++, streamIOStructTypeId, spv::OpLoad);
-                    loadIOStreamInstr.addIdOperand(functionCallStreamParameterIdToAdd);
-                    loadIOStreamInstr.dump(bytecodeStreamFunctionCall);
+                //OpLoad (load stream)
+                spv::Instruction loadIOStreamInstr(newId++, streamIOStructTypeId, spv::OpLoad);
+                loadIOStreamInstr.addIdOperand(functionCallStreamParameterIdToAdd);
+                loadIOStreamInstr.dump(bytecodeStreamFunctionCall);
 
-                    //OpStore (copy stream to param)
-                    spv::Instruction storeIoStreamToParamInstr(spv::OpStore);
-                    storeIoStreamToParamInstr.addIdOperand(copyParamVariableId);
-                    storeIoStreamToParamInstr.addIdOperand(loadIOStreamInstr.getResultId());
-                    storeIoStreamToParamInstr.dump(bytecodeStreamFunctionCall);
+                //OpStore (copy stream to param)
+                spv::Instruction storeIoStreamToParamInstr(spv::OpStore);
+                storeIoStreamToParamInstr.addIdOperand(copyParamVariableId);
+                storeIoStreamToParamInstr.addIdOperand(loadIOStreamInstr.getResultId());
+                storeIoStreamToParamInstr.dump(bytecodeStreamFunctionCall);
 
-                    //OpFunctionCall
-                    unsigned int newInstructionOpWord = combineOpAndWordCount(aFunctionCall.opCode, functionCallInstructionWordCount + 1);
-                    bytecodeStreamFunctionCall.push_back(newInstructionOpWord);
-                    bytecodeStreamFunctionCall.insert(bytecodeStreamFunctionCall.end(), spv.begin() + (aFunctionCall.bytecodePos + 1), spv.begin() + (aFunctionCall.bytecodePos + 4));
-                    bytecodeStreamFunctionCall.push_back(copyParamVariableId);
-                    if (functionCallInstructionWordCount > 4)
-                        bytecodeStreamFunctionCall.insert(bytecodeStreamFunctionCall.end(), spv.begin() + (aFunctionCall.bytecodePos + 4), spv.begin() + (aFunctionCall.bytecodePos + functionCallInstructionWordCount));
+                //OpFunctionCall
+                unsigned int newInstructionOpWord = combineOpAndWordCount(aFunctionCall.opCode, functionCallInstructionWordCount + 1);
+                bytecodeStreamFunctionCall.push_back(newInstructionOpWord);
+                bytecodeStreamFunctionCall.insert(bytecodeStreamFunctionCall.end(), spv.begin() + (aFunctionCall.bytecodePos + 1), spv.begin() + (aFunctionCall.bytecodePos + 4));
+                bytecodeStreamFunctionCall.push_back(copyParamVariableId);
+                if (functionCallInstructionWordCount > 4)
+                    bytecodeStreamFunctionCall.insert(bytecodeStreamFunctionCall.end(), spv.begin() + (aFunctionCall.bytecodePos + 4), spv.begin() + (aFunctionCall.bytecodePos + functionCallInstructionWordCount));
 
-                    //OpLoad (load param)
-                    spv::Instruction loadParamVariableInstr(newId++, streamIOStructTypeId, spv::OpLoad);
-                    loadParamVariableInstr.addIdOperand(copyParamVariableId);
-                    loadParamVariableInstr.dump(bytecodeStreamFunctionCall);
+                //OpLoad (load param)
+                spv::Instruction loadParamVariableInstr(newId++, streamIOStructTypeId, spv::OpLoad);
+                loadParamVariableInstr.addIdOperand(copyParamVariableId);
+                loadParamVariableInstr.dump(bytecodeStreamFunctionCall);
 
-                    //OpStore (copy back param to stream)
-                    spv::Instruction storeParamToIoStream(spv::OpStore);
-                    storeParamToIoStream.addIdOperand(functionCallStreamParameterIdToAdd);
-                    storeParamToIoStream.addIdOperand(loadParamVariableInstr.getResultId());
-                    storeParamToIoStream.dump(bytecodeStreamFunctionCall);
-                }
+                //OpStore (copy back param to stream)
+                spv::Instruction storeParamToIoStream(spv::OpStore);
+                storeParamToIoStream.addIdOperand(functionCallStreamParameterIdToAdd);
+                storeParamToIoStream.addIdOperand(loadParamVariableInstr.getResultId());
+                storeParamToIoStream.dump(bytecodeStreamFunctionCall);
             }
-        }
+        }  //end of check all function call: if we call a function previously updated with the new IO stream parameter: we add the new io stream parameter into the function call
 
     }  //end loop for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
     if (errorMessages.size() > 0) return false;
