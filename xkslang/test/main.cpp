@@ -123,7 +123,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
 
     //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
-    { "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
+    //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
+    //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
+    //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
+    { "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },
 };
@@ -314,6 +317,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     //convert and output every stages
     string glslAllOutputs;
     string hlslAllOutputs;
+    bool someExpectedOutputsDifferent = false;
     for (unsigned int i = 0; i<outputStages.size(); ++i)
     {
         string labelStage = GetShadingStageLabel(outputStages[i].stage);
@@ -330,7 +334,9 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
         {
             {
                 glslAllOutputs += "\n";
+                glslAllOutputs += "\\\\=============================\n";
                 glslAllOutputs += "\\\\" + labelStage + " Stage\n";
+                glslAllOutputs += "\\\\=============================\n";
 
                 string fileNameGlsl = effectName + "_" + labelStage + ".glsl";
                 string fullNameGlsl = outputDir + fileNameGlsl;
@@ -360,7 +366,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
                                 cout << "expected output:" << endl << glslExpectedOutput;
                                 cout << "output:" << endl << glslConvertedOutput;
                                 cout << " Glsl output and expected output are different !!!" << endl;
-                                success = false;
+                                someExpectedOutputsDifferent = true;
                             }
                             else {
                                 cout << " GLSL output VS expected output: OK" << endl;
@@ -379,7 +385,9 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
 
             {
                 hlslAllOutputs += "\n";
+                hlslAllOutputs += "\\\\=============================\n";
                 hlslAllOutputs += "\\\\" + labelStage + " Stage\n";
+                hlslAllOutputs += "\\\\=============================\n";
 
                 string fileNameHlsl = effectName + "_" + labelStage + ".hlsl";
                 string fullNameHlsl = outputDir + fileNameHlsl;
@@ -411,6 +419,8 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
         }
     }
     
+    if (someExpectedOutputsDifferent) success = false;
+
     if (glslAllOutputs.size() > 0)
     {
         string fileNameAllGlsl = effectName + ".glsl";
@@ -728,7 +738,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
                 success = CompileMixer(effectName, mixerTarget->mixer, outputStages, errorMsgs);
                 if (!success)
                 {
-                    cout << "Failed to compile the mixer: " << effectName << endl;
+                    cout << "Failed to compile the effect: " << effectName << endl;
                 }
             }
             else {

@@ -11,16 +11,16 @@ shader ShaderMain
 
 	float4 Compute()
 	{
-		return Compute(streams.Position)
+		return Compute(5.0f);
 	}
 	
-	float4 Compute(float2 p)
+	float4 Compute(float p)
 	{
-		streams.ColorTarget = float4(p.xy, 0, 1);
+		return float4(streams.Position, p, 1);
 	}
 	
     stage void PSMain() 
     {
-		Compute();
+		streams.ColorTarget = Compute();
     }
 }

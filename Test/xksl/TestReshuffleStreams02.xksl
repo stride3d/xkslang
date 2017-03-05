@@ -11,7 +11,6 @@ shader ShaderMain
 
 	float4 Compute()
 	{
-		streams.Position = float2(0.0f, 1.0f);
 		return float4(streams.Position.xy, 0, 1);
 	}
 	
@@ -20,3 +19,42 @@ shader ShaderMain
         streams.ColorTarget = Compute();
     }
 }
+
+
+/*
+//Xenko hlsl result:
+struct PS_STREAMS 
+{
+    float2 Position_id0;
+    float4 ColorTarget_id1;
+};
+struct VS_STREAMS 
+{
+    float2 Position_id0;
+};
+struct VS_OUTPUT 
+{
+    float2 Position_id0 : POSITION;
+};
+struct VS_INPUT 
+{
+};
+float4 Compute_id0(inout PS_STREAMS streams)
+{
+    return float4(streams.Position_id0.xy, 0, 1);
+}
+void PSMain(VS_OUTPUT __input__)
+{
+    PS_STREAMS streams = (PS_STREAMS)0;
+    streams.Position_id0 = __input__.Position_id0;
+    streams.ColorTarget_id1 = Compute_id0(streams);
+}
+VS_OUTPUT VSMain()
+{
+    VS_STREAMS streams = (VS_STREAMS)0;
+    streams.Position_id0 = float2(0.0f, 1.0f);
+    VS_OUTPUT __output__ = (VS_OUTPUT)0;
+    __output__.Position_id0 = streams.Position_id0;
+    return __output__;
+}
+*/

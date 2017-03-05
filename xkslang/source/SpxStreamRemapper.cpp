@@ -2939,11 +2939,18 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 }
 
                 //any functions calling this function will need to be updated as well
-                //TOTOTOTO
-                //TOTOTOTO
-                //TOTOTOTO
-                //TOTOTOTO
+                for (auto itf = listAllFunctionCallInstructions.begin(); itf != listAllFunctionCallInstructions.end(); itf++)
+                {
+                    const FunctionCallInstructionData& aFunctionCall = *itf;
 
+                    if (aFunctionCall.functionCalled == functionAccessingStreams)
+                    {
+                        if (aFunctionCall.functionCalling->functionProcessingStreamForStage == ShadingStageEnum::Undefined)
+                        {
+                            listFunctionToUpdateWithIOStreams.push_back(aFunctionCall.functionCalling);
+                        }
+                    }
+                }
             } //end while (listFunctionToUpdateWithIOStreams.size() > 0)
         }  //end of add the inout streams into every other functions called for the stage (if they need to access it)
 
@@ -3033,16 +3040,17 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 }
 #endif
 
-                /// //==================================================================
-                /// //Add the stream parameter into the function call  (Actually not working in some specific cases)
-                /// unsigned int functionCallFirstParameterPosition = aFunctionCall.bytecodePos + 4;
-                /// BytecodeChunk* bytecodeStreamFunctionCall = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionCallFirstParameterPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
-                /// if (bytecodeStreamFunctionCall == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionCallFirstParameterPosition));
-                /// bytecodeStreamFunctionCall->bytecode.push_back(functionCallStreamParameterIdToAdd);
-                /// //Update the instruction wordCount
-                /// unsigned int newInstructionOpWord = combineOpAndWordCount(aFunctionCall.opCode, functionCallInstructionWordCount + 1);
-                /// bytecodeUpdateController.SetNewAtomicValueUpdate(aFunctionCall.bytecodePos, newInstructionOpWord); //update instruction opWord
+                //==================================================================
+                //Add the stream parameter into the function call  (Actually not working in some specific cases)
+                unsigned int functionCallFirstParameterPosition = aFunctionCall.bytecodePos + 4;
+                BytecodeChunk* bytecodeStreamFunctionCall = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionCallFirstParameterPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
+                if (bytecodeStreamFunctionCall == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionCallFirstParameterPosition));
+                bytecodeStreamFunctionCall->bytecode.push_back(functionCallStreamParameterIdToAdd);
+                //Update the instruction wordCount
+                unsigned int newInstructionOpWord = combineOpAndWordCount(aFunctionCall.opCode, functionCallInstructionWordCount + 1);
+                bytecodeUpdateController.SetNewAtomicValueUpdate(aFunctionCall.bytecodePos, newInstructionOpWord); //update instruction opWord
 
+                /*
                 ///Instead of directly calling the function with the inout stream variable, we create an intermediary variable (to follow to SPIRV semantics)
                 BytecodeChunk* bytecodeChunkFunctionVariable = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionCallingVariablesStartingPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertFirst);
                 if (bytecodeChunkFunctionVariable == nullptr) return error("Failed to insert a new bytecode chunk");
@@ -3098,14 +3106,12 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 spv::Instruction storeParamToIoStream(spv::OpStore);
                 storeParamToIoStream.addIdOperand(functionCallStreamParameterIdToAdd);
                 storeParamToIoStream.addIdOperand(loadParamVariableInstr.getResultId());
-                storeParamToIoStream.dump(bytecodeStreamFunctionCall);
+                storeParamToIoStream.dump(bytecodeStreamFunctionCall);*/
             }
         }  //end of check all function call: if we call a function previously updated with the new IO stream parameter: we add the new io stream parameter into the function call
 
     }  //end loop for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
     if (errorMessages.size() > 0) return false;
-
-    //TOTOTOTO: remove global stream struct
 
     //=============================================================================================================
     //=============================================================================================================
