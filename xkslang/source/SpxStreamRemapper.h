@@ -77,13 +77,22 @@ class SpxStreamRemapper;
 class BytecodeUpdateController
 {
 public:
+
+    enum class InsertionConflictBehaviourEnum
+    {
+        InsertFirst,
+        InsertLast,
+        ReturnNull,
+    };
+
     std::vector<BytecodeValueToReplace> listAtomicUpdates;
     std::vector<BytecodePortionToReplace> listPortionsToUpdates;
     std::list<BytecodeChunk> listSortedChunksToInsert;
 
     void SetNewAtomicValueUpdate(unsigned int pos, uint32_t value) { listAtomicUpdates.push_back(BytecodeValueToReplace(pos, value)); }
     BytecodePortionToReplace& SetNewPortionToReplace(unsigned int pos) { listPortionsToUpdates.push_back(BytecodePortionToReplace(pos)); return listPortionsToUpdates.back(); }
-    BytecodeChunk& InsertNewBytecodeChunckAt(SpxStreamRemapper* remapper, unsigned int position, unsigned int countBytesToOverlap = 0);
+    BytecodeChunk* InsertNewBytecodeChunckAt(unsigned int position, InsertionConflictBehaviourEnum conflictBehaviour, unsigned int countBytesToOverlap = 0);
+    BytecodeChunk* GetBytecodeChunkAt(unsigned int position);
     unsigned int GetCountBytecodeChuncksToInsert() { return listSortedChunksToInsert.size(); }
 };
 
@@ -257,7 +266,7 @@ public:
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
             : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
-            flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined), streamIOStructVariableResultId(0){}
+            flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined), streamIOStructVariableResultId(0), functionVariablesStartingPosition(0){}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -289,8 +298,9 @@ public:
         //some variables used to help some algos
         int flag1;
         int currentPosInBytecode;
+        unsigned int functionVariablesStartingPosition; //position directly after the function OpLabel instruction (set by some algo needing it)
 
-        //Variables set when reshuffling stream members
+        //those variables are used when reshuffling stream members
         ShadingStageEnum functionProcessingStreamForStage;  //when a stage calls a function using stream, the stage will reserves the function (another stage calling the function will return an error)
         spv::Id streamIOStructVariableResultId;   //the id of the IO stream struct function parameter
 
@@ -557,6 +567,7 @@ private:
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
     
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
+    bool GetFunctionLabelInstructionPosition(FunctionInstruction* function, unsigned int& labelPos);
     FunctionInstruction* GetShaderFunctionForEntryPoint(std::string entryPointName);
     bool RemoveShaderFromBytecodeAndData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
     bool RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType, std::vector<range_t>& vecStripRanges);
