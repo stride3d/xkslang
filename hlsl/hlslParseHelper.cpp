@@ -114,13 +114,13 @@ void HlslParseContext::setLimits(const TBuiltInResource& r)
 }
 
 TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
-    TPpContext& ppContext, HlslToken* expressionTokensList, int countTokens, bool versionWillBeError)
+    TPpContext& ppContext, HlslToken* expressionTokensList, int countTokens)
 {
     const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
     TInputScanner emptyInput(1, emptyString, emptyStringLen, nullptr, 0, 0);
 
     currentScanner = &emptyInput;
-    ppContext.setInput(emptyInput, versionWillBeError);
+    ppContext.setInput(emptyInput, true);
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);
@@ -131,11 +131,10 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
     return expressionNode;
 }
 
-bool HlslParseContext::parseXkslShaderString(XkslShaderLibrary* shaderLibrary, bool parseXkslShaderDeclarationOnly,
-    TPpContext& ppContext, TInputScanner& input, bool versionWillBeError)
+bool HlslParseContext::parseXkslShaderString(XkslShaderLibrary* shaderLibrary, bool parseXkslShaderDeclarationOnly, TPpContext& ppContext, TInputScanner& input)
 {
     currentScanner = &input;
-    ppContext.setInput(input, versionWillBeError);
+    ppContext.setInput(input, true);
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);

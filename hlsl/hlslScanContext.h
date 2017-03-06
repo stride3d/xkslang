@@ -158,6 +158,7 @@ public:
 
     TString shaderName;
     TIdentifierList shaderparentsName;
+    TVector<TType*> vectorGenericTypes;
 
     TVector<TShaderCompositionVariable> listCompositions;  //list of compositions declared in the shader
 

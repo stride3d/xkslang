@@ -101,6 +101,7 @@ namespace glslang {
         bool acceptStructBufferType(TType&);
         bool acceptStruct(TType&);
         bool acceptShaderClass(TIntermNode** node, TType&);
+        bool checkShaderGenericTypes(TVector<TType*>& vectorGenericTypes);
         bool acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList);
         bool acceptShaderClassFunctionsDefinition(const TString& shaderName, XkslShaderDefinition* shader);
         bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
@@ -140,7 +141,7 @@ namespace glslang {
         bool acceptDefaultParameterDeclaration(const TType&, TIntermTyped*&);
 
         //XKSL extensions
-        void acceptShaderClassPostDecls(TIdentifierList*& parents);
+        void acceptShaderClassParentsInheritance(TIdentifierList*& parents);
         TString* getCurrentShaderName();
         TFunction* getFunctionCurrentlyParsed();
         XkslShaderDefinition* getShaderCurrentlyParsed();

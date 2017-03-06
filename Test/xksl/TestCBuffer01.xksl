@@ -1,11 +1,8 @@
 
 shader ShaderMain
 {
-	stage stream float2 Position : POSITION;
+	stage stream float2 Position : SV_POSITION;
 	stage stream float4 ColorTarget: SV_OUTPUT;
-	
-	float4 BaseColor;
-	static const float colorZ = 0.5;
 	
 	stage void VSMain() 
     {
@@ -14,6 +11,6 @@ shader ShaderMain
 
     stage void PSMain() 
     {
-        streams.ColorTarget = float4(streams.Position.xy, colorZ, 1) + BaseColor;
+        streams.ColorTarget = float4(streams.Position.xy, 0, 1);
     }
 }

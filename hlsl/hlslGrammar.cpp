@@ -1964,6 +1964,59 @@ bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
     return true;
 }
 
+bool HlslGrammar::checkShaderGenericTypes(TVector<TType*>& vectorGenericTypes)
+{
+    if (acceptTokenClass(EHTokLeftAngle))
+    {
+        do
+        {
+            //accept type definition
+            TType* genericType = new TType;
+            const TString* identifierName = nullptr;
+
+            if (!acceptType(nullptr, *genericType)) {
+                expected("generic type definition");
+                return false;
+            }
+
+            //filter out some invalid type
+            switch (genericType->getBasicType()) {
+                case EbtSampler:
+                case EbtStruct:
+                case EbtBlock:
+                case EbtShaderClass:
+                    error("invalid generic type");
+                    return false;
+            }
+
+            HlslToken idToken = token;
+            if (!acceptIdentifier(idToken)) {
+                error("Invalid generic name");
+                return false;
+            }
+            identifierName = idToken.string;
+
+            genericType->setUserIdentifierName(identifierName->c_str());
+            genericType->setFieldName(identifierName->c_str());
+            genericType->setTypeName(identifierName->c_str());
+
+            vectorGenericTypes.push_back(genericType);
+
+            if (acceptTokenClass(EHTokComma)) continue;
+            else break;
+
+        } while (true);
+    }
+
+    if (!acceptTokenClass(EHTokRightAngle))
+    {
+        expected(">");
+        return false;
+    }
+
+    return true;
+}
+
 // XKSL language extension
 // shader
 //      : shader IDENTIFIER post_decls LEFT_BRACE class_declaration_list RIGHT_BRACE
@@ -2002,14 +2055,16 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
         return false;
     }
 
-    // post_decls
-    TQualifier postDeclQualifier;
-    postDeclQualifier.clear();
-    //acceptPostDecls(postDeclQualifier);
+    //Any Generics?
+    TVector<TType*> vectorGenericTypes;
+    if (!checkShaderGenericTypes(vectorGenericTypes)) {
+        error("failed to check for shader generics");
+        return false;
+    }
 
     //Get shader parents
     TIdentifierList* parentsName = nullptr;
-    acceptShaderClassPostDecls(parentsName);
+    acceptShaderClassParentsInheritance(parentsName);
 
     // LEFT_BRACE
     if (!acceptTokenClass(EHTokLeftBrace)) {
@@ -2042,6 +2097,7 @@ bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
             int countParents = parentsName == nullptr ? 0 : parentsName->size();
             for (int i = 0; i < countParents; ++i)
                 shaderDefinition->shaderparentsName.push_back( parentsName->at(i) );
+            shaderDefinition->vectorGenericTypes = vectorGenericTypes;
             this->xkslShaderCurrentlyParsed = shaderDefinition;
 
             TVector<TShaderClassFunction> shaderFunctionsList;  //list of functions declared by the shader
@@ -4806,7 +4862,7 @@ void HlslGrammar::acceptArraySpecifier(TArraySizes*& arraySizes)
 //Parse the post declaration following a shader declaration
 // post_decls
 //		: parent1, parent2, ...
-void HlslGrammar::acceptShaderClassPostDecls(TIdentifierList*& parents)
+void HlslGrammar::acceptShaderClassParentsInheritance(TIdentifierList*& parents)
 {
     do {
         // COLON 

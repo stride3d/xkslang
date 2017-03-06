@@ -126,7 +126,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
     //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
     //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
-    { "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
+    //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
+
+    { "TestGenerics01", "TestGenerics01.xkfx" },
 
     //{ "TestForEachXX", "TestForEachXX.xkfx" },
 };

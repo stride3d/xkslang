@@ -621,6 +621,13 @@ void ClearShaderLibrary(XkslShaderLibrary& shaderLibrary)
     shaderLibrary.listShaders.clear();
 }
 
+bool XkslShaderResolveGenerics(XkslShaderLibrary& shaderLibrary, HlslParseContext* parseContext, TPpContext& ppContext)
+{
+    gfdsgfdg;
+
+    return true;
+}
+
 //Resolve unresolved consts:
 // const depending on other const variables could not have been assignem with the expression during the shader declaration
 //While parsing them, we stored the token list describing their assignment expression
@@ -628,8 +635,7 @@ void ClearShaderLibrary(XkslShaderLibrary& shaderLibrary)
 //we could probably optimize this by sorting consts depending on their dependency
 //however we would need to do the work of the parser to try evaluating expressions such like base.X, class.Y, ...
 //typedef std::map<TString, int> MapString;
-bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary,
-    HlslParseContext* parseContext, TPpContext& ppContext, bool versionWillBeError)
+bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary, HlslParseContext* parseContext, TPpContext& ppContext)
 {
     //find all unresolved members from the shader library
     std::list<XkslShaderDefinition::XkslShaderMember*> listUnresolvedMembers;
@@ -664,7 +670,7 @@ bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary
             HlslToken* expressionTokensList = &(constMember->expressionTokensList->at(0));
             int countTokens = constMember->expressionTokensList->size();
             TIntermTyped* expressionNode = parseContext->parseXkslExpression(&shaderLibrary, constMember->shader,
-                ppContext, expressionTokensList, countTokens, versionWillBeError);
+                ppContext, expressionTokensList, countTokens);
 
             if (expressionNode != nullptr)
             {
@@ -740,7 +746,6 @@ bool ParseXkslShaderFile(
     EProfile profile = ECoreProfile;
     int version = 450;
     bool forwardCompatible = false;
-    bool versionWillBeError = true;
     bool parsingBuiltIns = false;
     EShOptimizationLevel optLevel = EShOptNone;
     std::string sourceEntryPointName = "";
@@ -803,7 +808,7 @@ bool ParseXkslShaderFile(
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
 
             bool parseXkslShaderDeclarationOnly = true;
-            success = parseContext->parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput, versionWillBeError);
+            success = parseContext->parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput);
         }
 
         //==================================================================================================================
@@ -1048,10 +1053,18 @@ bool ParseXkslShaderFile(
 
         //==================================================================================================================
         //==================================================================================================================
+        //resolve generics
+        if (success)
+        {
+            success = XkslShaderResolveGenerics(shaderLibrary, parseContext, ppContext);
+        }
+
+        //==================================================================================================================
+        //==================================================================================================================
         //resolve all unresolved const members
         if (success)
         {
-            success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, parseContext, ppContext, versionWillBeError);
+            success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, parseContext, ppContext);
         }
 
         /*
@@ -1099,7 +1112,7 @@ bool ParseXkslShaderFile(
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
 
             bool parseXkslShaderDeclarationOnly = false;
-            success = parseContext->parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput, versionWillBeError);
+            success = parseContext->parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput);
         }
 
         //==================================================================================================================
