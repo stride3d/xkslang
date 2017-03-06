@@ -319,6 +319,18 @@ public:
             functionCalling(functionCalling), functionCalled(functionCalled), opCode(opCode), bytecodePos(bytecodePos) {}
     };
 
+    class MemberDecorateData
+    {
+    public:
+        spv::Id typeId;
+        unsigned int memberId;
+        spv::Decoration decoration;
+        unsigned int value;
+
+        MemberDecorateData(spv::Id typeId, unsigned int memberId, spv::Decoration decoration, unsigned int value):
+            typeId(typeId), memberId(memberId), decoration(decoration), value(value) {}
+    };
+
     class TypeStructMember
     {
     public:
@@ -328,8 +340,9 @@ public:
         int structMemberId;    //Id of the member within the struct
         int memberTypeId;      //Type Id of the member
         int memberPointerFunctionTypeId;  //id of the member's pointer type (with Function storage class)
-        int tmpRemapToIOIndex;   //used by some algo
-
+        
+        std::vector<unsigned int> listBuiltInSemantics;  //list of builtin semantics set to the member
+        
         bool isStream;
         bool isStage;
         std::string declarationName;
@@ -338,6 +351,7 @@ public:
         //new type and member id used when merging variables
         spv::Id newStructTypeId;
         int newStructMemberId;
+        int tmpRemapToIOIndex;   //used by some algo
 
         bool HasSemantic() const { return semantic.size() > 0; }
         bool HasDeclarationName() const { return declarationName.size() > 0; }

@@ -1559,8 +1559,9 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
     //===================================================================================================================
     //collect the list of all stream variables
     {
+        vector<MemberDecorateData> vectorParsedMembersBuiltin;
         {
-            //first pass: get all stream variables by checking OpMemberProperties
+            //first pass: get all stream variables by checking OpMemberProperties, an get all semantics properties
             unsigned int start = header_size;
             const unsigned int end = spv.size();
             while (start < end)
@@ -1570,6 +1571,19 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
 
                 switch (opCode)
                 {
+                    case spv::OpMemberDecorate:
+                    {
+                        const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
+                        if (dec == spv::DecorationBuiltIn)
+                        {
+                            const spv::Id typeId = asId(start + 1);
+                            const unsigned int memberId = asLiteralValue(start + 2);
+                            const unsigned int value = asLiteralValue(start + 4);
+                            vectorParsedMembersBuiltin.push_back(MemberDecorateData(typeId, memberId, dec, value));
+                        }
+                        break;
+                    }
+
                     case spv::OpMemberProperties:
                     {
                         poslastMemberXkslPropertiesEnd = start + wordCount;
@@ -1692,12 +1706,15 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
             if (errorMessages.size() > 0) success = false;
         }
 
-        //finally: get the stream members typeId  (define when creating the stream struct, for example: OpTypeStruct 22(int) 30(fvec4))
+        //finally:
+        // get the stream members typeId (define when creating the stream struct, for example: OpTypeStruct 22(int) 30(fvec4))
+        // add builtins information
         if (success)
         {
             for (auto itt = listAllShaderTypeHoldingStreamVariables.begin(); itt != listAllShaderTypeHoldingStreamVariables.end(); itt++)
             {
                 TypeInstruction* type = *itt;
+                const spv::Id typeId = type->GetId();
 
                 unsigned int start = type->bytecodeStartPosition;
                 unsigned int wordCount = asWordCount(start);
@@ -1714,6 +1731,17 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
                 {
                     int memberTypeId = asLiteralValue(start + 2 + m);
                     type->streamStructData->members[m].memberTypeId = memberTypeId;
+                }
+
+                for (auto itBuitIns = vectorParsedMembersBuiltin.begin(); itBuitIns != vectorParsedMembersBuiltin.end(); itBuitIns++)
+                {
+                    const MemberDecorateData& builtInData = *itBuitIns;
+                    if (builtInData.typeId == typeId)
+                    {
+                        const unsigned int memberId = builtInData.memberId;
+                        if (memberId >= type->streamStructData->members.size()) { error(string("Invalid BuiltIn member id: ") + to_string(memberId)); continue; }
+                        type->streamStructData->members[memberId].listBuiltInSemantics.push_back(builtInData.value);
+                    }
                 }
             }
             if (errorMessages.size() > 0) success = false;
@@ -1975,17 +2003,31 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
             {
                 const TypeStructMember& streamMember = listOfMergedStreamVariables[memberIndex];
 
+#ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
                 //member name
                 spv::Instruction memberName(spv::OpMemberName);
                 memberName.addIdOperand(streamStructType.getResultId());
                 memberName.addImmediateOperand(memberIndex);
-                if (streamMember.HasSemantic()) {
-                    memberName.addStringOperand((streamMember.semantic + (streamMember.isStage ? string("_s") : string("_")) + to_string(memberIndex)).c_str());
-                }
-                else {
-                    memberName.addStringOperand((streamMember.declarationName + (streamMember.isStage ? string("_s") : string("_")) + to_string(memberIndex)).c_str());
-                }
+                //if (streamMember.HasSemantic()) {
+                //    memberName.addStringOperand((streamMember.semantic + (streamMember.isStage ? string("_s") : string("_")) + to_string(memberIndex)).c_str());
+                //}
+                //else {
+                //    memberName.addStringOperand((streamMember.declarationName + (streamMember.isStage ? string("_s") : string("_")) + to_string(memberIndex)).c_str());
+                //}
+                memberName.addStringOperand((streamMember.declarationName + (streamMember.isStage ? string("_s") : string("_")) + to_string(memberIndex)).c_str()); //use declaration name
                 memberName.dump(vecNamesAndDecorate);
+#endif
+
+                //member decorate (builtin)
+                for (unsigned int smd = 0; smd < streamMember.listBuiltInSemantics.size(); ++smd)
+                {
+                    spv::Instruction memberDecorateInstr(spv::OpMemberDecorate);
+                    memberDecorateInstr.addIdOperand(streamStructType.getResultId());
+                    memberDecorateInstr.addImmediateOperand(memberIndex);
+                    memberDecorateInstr.addImmediateOperand(spv::DecorationBuiltIn);
+                    memberDecorateInstr.addImmediateOperand(streamMember.listBuiltInSemantics[smd]);
+                    memberDecorateInstr.dump(vecNamesAndDecorate);
+                }
 
                 //member properties
                 spv::Instruction memberProperties(spv::OpMemberProperties);
@@ -2067,7 +2109,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
         if (!UpdateAllMaps()) error("failed to update all maps");
     }
 
-    //build the stream members struct info
+    //build the stream members struct info (will be used in next algorithms)
     globalListOfMergedStreamVariables.members.clear();
     globalListOfMergedStreamVariables.structTypeId = streamStructTypeId;
     globalListOfMergedStreamVariables.structPointerTypeId = streamPointerStructTypeId;
@@ -2473,7 +2515,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         spv::Id newEntryFunctionDeclarationTypeId = spv::spirvbin_t::unused;
 
         //===============================================================================
-        //create the function's input structure
+        //create the function's input structure (for the first stage only, the next stage will use the previous stage's output structs)
         if (iStage == 0)
         {
             if (vecStageInputMembersIndex.size() > 0)
@@ -2519,6 +2561,23 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                     memberName.dump(bytecodeNames->bytecode);
                 }
 #endif
+
+                //add the members builtins
+                for (unsigned int k = 0; k < vecStageInputMembersIndex.size(); ++k)
+                {
+                    const unsigned int index = vecStageInputMembersIndex[k];
+                    const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+
+                    for (unsigned int smd = 0; smd < streamMember.listBuiltInSemantics.size(); ++smd)
+                    {
+                        spv::Instruction memberDecorateInstr(spv::OpMemberDecorate);
+                        memberDecorateInstr.addIdOperand(streamInputStructTypeId);
+                        memberDecorateInstr.addImmediateOperand(k);
+                        memberDecorateInstr.addImmediateOperand(spv::DecorationBuiltIn);
+                        memberDecorateInstr.addImmediateOperand(streamMember.listBuiltInSemantics[smd]);
+                        memberDecorateInstr.dump(bytecodeNames->bytecode);
+                    }
+                }
             }
         }
         else
@@ -2582,6 +2641,23 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 memberName.dump(bytecodeNames->bytecode);
             }
 #endif
+
+            //add the members builtins
+            for (unsigned int k = 0; k < vecStageOutputMembersIndex.size(); ++k)
+            {
+                const unsigned int index = vecStageOutputMembersIndex[k];
+                const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+
+                for (unsigned int smd = 0; smd < streamMember.listBuiltInSemantics.size(); ++smd)
+                {
+                    spv::Instruction memberDecorateInstr(spv::OpMemberDecorate);
+                    memberDecorateInstr.addIdOperand(streamOutputStructTypeId);
+                    memberDecorateInstr.addImmediateOperand(k);
+                    memberDecorateInstr.addImmediateOperand(spv::DecorationBuiltIn);
+                    memberDecorateInstr.addImmediateOperand(streamMember.listBuiltInSemantics[smd]);
+                    memberDecorateInstr.dump(bytecodeNames->bytecode);
+                }
+            }
         }
 
         //===============================================================================
