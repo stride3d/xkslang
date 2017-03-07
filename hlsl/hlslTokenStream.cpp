@@ -57,7 +57,7 @@ namespace glslang {
 
     bool HlslTokenStream::advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks)
     {
-        for (int i = 0; i<tokList.size(); ++i)
+        for (unsigned int i = 0; i<tokList.size(); ++i)
             if (token.tokenClass == tokList[i]) return true;
 
         while (true)
@@ -83,7 +83,7 @@ namespace glslang {
                 }
             }
 
-            for (int i = 0; i<tokList.size(); ++i)
+            for (unsigned int i = 0; i<tokList.size(); ++i)
                 if (token.tokenClass == tokList[i]) return true;
 
             advanceToken();

@@ -47,7 +47,7 @@ void XkslParser::Finalize()
     glslang::FinalizeProcess();
 }
 
-bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& shaderString, SpxBytecode& spirXBytecode,
+bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& shaderString, const vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
     std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV)
 {
     const char* shaderStrings = shaderString.data();
@@ -72,7 +72,7 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
 
     bool success = false;
 
-    success = shader.parseXkslShaderFile(shaderFileName, (resources ? resources : &glslang::DefaultTBuiltInResource), controls);
+    success = shader.parseXkslShaderFile(shaderFileName, listGenericsValue, (resources ? resources : &glslang::DefaultTBuiltInResource), controls);
 
     spv::SpvBuildLogger logger;
 

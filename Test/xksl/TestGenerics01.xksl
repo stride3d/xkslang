@@ -1,16 +1,8 @@
 
 shader ShaderMain<int TapCount>
 {
-	float3 ColorAberrations[TapCount];
-	
-	stage void VSMain() 
+	stage int VSMain() 
     {
-		float res = 0;
-		
-        [unroll]
-		for (int i = 0; i < TapCount; i++) 
-		{
-			res += ColorAberrations[i];
-		}
+		return TapCount;
     }
 }

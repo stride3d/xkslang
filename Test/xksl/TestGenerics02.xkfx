@@ -1,4 +1,4 @@
-load "TestGenerics01.xksl" ShaderMain<5>  
+load "TestGenerics02.xksl" ShaderMain<5>  
 
 mixer mixerMain
 mixerMain.mixin ShaderMain

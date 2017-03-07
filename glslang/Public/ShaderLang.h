@@ -40,6 +40,7 @@
 #include "../MachineIndependent/Versions.h"
 
 #include <cstring>
+#include <vector>
 
 #ifdef _WIN32
 #define C_DECL __cdecl
@@ -162,6 +163,11 @@ typedef struct {
     int numBindings;
     ShBinding* bindings;  // array of bindings
 } ShBindingTable;
+
+typedef struct {
+    std::string shaderName;
+    std::vector<std::string> genericsValue;
+} XkslShaderGenericsValue;
 
 //
 // ShHandle held by but opaque to the driver.  It is allocated,
@@ -401,7 +407,7 @@ public:
                bool forwardCompatible, EShMessages, Includer&);
 
     //XKSL extensions
-    bool parseXkslShaderFile(const std::string& fileName, const TBuiltInResource* builtInResources, EShMessages messages);
+    bool parseXkslShaderFile(const std::string& fileName, const std::vector<XkslShaderGenericsValue>& listGenericValues, const TBuiltInResource* builtInResources, EShMessages messages);
 
     // Equivalent to parse() without a default profile and without forcing defaults.
     // Provided for backwards compatibility.

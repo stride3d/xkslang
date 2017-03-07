@@ -58,6 +58,7 @@ public:
     //XKSL extensions
     bool parseXkslShaderString(XkslShaderLibrary* shaderLibrary, bool parseXkslShaderDeclarationOnly, TPpContext&, TInputScanner& input);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, HlslToken* expressionTokensList, int countTokens);
+    TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, TString& expressionString);
     void parseXkslShaderFinalize();
 
     void setLimits(const TBuiltInResource&) override;

@@ -1,0 +1,16 @@
+
+shader ShaderMain<int TapCount>
+{
+	float ColorAberrations[TapCount];sdfsdf
+	
+	stage void VSMain() 
+    {
+		float res = 0;
+		
+        //[unroll]
+		for (int i = 0; i < TapCount; i++) 
+		{
+			res += ColorAberrations[i];
+		}
+    }
+}

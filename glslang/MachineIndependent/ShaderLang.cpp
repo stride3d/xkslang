@@ -621,9 +621,94 @@ void ClearShaderLibrary(XkslShaderLibrary& shaderLibrary)
     shaderLibrary.listShaders.clear();
 }
 
-bool XkslShaderResolveGenerics(XkslShaderLibrary& shaderLibrary, HlslParseContext* parseContext, TPpContext& ppContext)
+//resolve the shader generics with the value passed by the user
+//This step is done after parsing the shader's declaration, but before parsing their definition
+bool XkslShaderResolveGenerics(XkslShaderLibrary& shaderLibrary, const std::vector<XkslShaderGenericsValue>& listGenericValues, HlslParseContext* parseContext, TPpContext& ppContext)
 {
-    gfdsgfdg;
+    for (unsigned int s = 0; s < shaderLibrary.listShaders.size(); s++)
+    {
+        XkslShaderDefinition* shader = shaderLibrary.listShaders[s];
+        std::string shaderName = std::string(shader->shaderName.c_str());
+
+        if (shader->listGenericTypes.size() > 0)
+        {
+            //========================================================================================================
+            //Get the corresponding generics value
+            const XkslShaderGenericsValue* shaderGenericsValue = nullptr;
+            for (unsigned int sg = 0; sg < listGenericValues.size(); sg++)
+            {
+                if (shaderName == listGenericValues[sg].shaderName)
+                {
+                    shaderGenericsValue = &(listGenericValues[sg]);
+                    break;
+                }
+            }
+            if (shaderGenericsValue == nullptr) {
+                parseContext->infoSink.info.message(EPrefixError, (TString("No generics value have been set for shader: ") + shader->shaderName).c_str());
+                return false;
+            }
+            if (shaderGenericsValue->genericsValue.size() != shader->listGenericTypes.size()){
+                parseContext->infoSink.info.message(EPrefixError, (TString("Invalid number of generics for shader: ") + shader->shaderName).c_str());
+                return false;
+            }
+
+            //========================================================================================================
+            //Resolved all shader's generics
+            // -we construct the generic const statement: shader Shader<int aGeneric> --> "aGeneric = value;"
+            // -then parse it to add the const and its value into the symbol table
+            for (unsigned int g = 0; g < shader->listGenericTypes.size(); g++)
+            {
+                TString genericValue = TString(shaderGenericsValue->genericsValue[g].c_str());
+
+                //========================================================================================================
+                TString* genericVariableName = shader->listGenericTypes[g]->getUserIdentifierName();
+                TString* typeDefExpre = shader->listGenericTypes[g]->getTypeDefinitionExpression();
+                if (typeDefExpre == nullptr || genericVariableName == nullptr) {
+                    parseContext->infoSink.info.message(EPrefixError, (TString("The generic type has no name or no expression defined: ") + shader->listGenericTypes[g]->getFieldName()).c_str());
+                    return false;
+                }
+                TString genericFullAssignementExpression = (*typeDefExpre) + TString(" = ") + genericValue + TString(";");
+
+                //========================================================================================================
+                //parse the expression
+                TIntermTyped* expressionNode = parseContext->parseXkslExpression(&shaderLibrary, shader, ppContext, genericFullAssignementExpression);
+
+                if (expressionNode == nullptr)
+                {
+                    parseContext->infoSink.info.message(EPrefixError, (TString("Failed to parse the generic expression: ") + genericFullAssignementExpression).c_str());
+                    return false;
+                }
+
+                //========================================================================================================
+                //Create the generic const variable on global space
+                //Create the const variable on global space
+                XkslShaderDefinition::XkslShaderMember member;
+                member.shader = shader;
+                member.loc = shader->location;
+                member.type = shader->listGenericTypes[g];
+                member.resolvedDeclaredExpression = expressionNode;
+                member.memberLocation.memberLocationType = XkslShaderDefinition::MemberLocationTypeEnum::Const;
+
+                TString* variableName = NewPoolTString((shader->shaderName + "_generic_" + (*genericVariableName)).c_str());
+                member.type->setFieldName(*variableName);
+
+                //add variable on the global space
+                TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression, false);
+
+                //check that the variable exists
+                TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
+                TVariable* constVariable = constVariableSymbol == nullptr? nullptr: constVariableSymbol->getAsVariable();
+                if (constVariable == nullptr)
+                {
+                    parseContext->infoSink.info.message(EPrefixError, (TString("Failed to create the generic const variable: ") + *genericVariableName).c_str());
+                    return false;
+                }
+
+                member.memberLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
+                shader->listAllDeclaredMembers.push_back(member);
+            }
+        }
+    }
 
     return true;
 }
@@ -681,7 +766,7 @@ bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shaderLibrary
                 //Retrieve the variable
                 const TString& variableName = constMember->type->getFieldName();
                 TSymbol* constVariableSymbol = parseContext->symbolTable.find(variableName);
-                TVariable* constVariable = constVariableSymbol->getAsVariable();
+                TVariable* constVariable = constVariableSymbol == nullptr? nullptr: constVariableSymbol->getAsVariable();
 
                 if (constVariable == nullptr)
                 {
@@ -731,7 +816,8 @@ bool ParseXkslShaderFile(
     const TBuiltInResource* resources,
     EShMessages messages,
     const char* shaderStrings,
-    const unsigned int inputLengths)
+    const unsigned int inputLengths,
+    const std::vector<XkslShaderGenericsValue>& listGenericValues)
 {
     const char* t_strings[] = { shaderStrings };
     size_t t_length[] = { inputLengths };
@@ -878,7 +964,7 @@ bool ParseXkslShaderFile(
                             TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression, false);
                         
                             TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
-                            TVariable* constVariable = constVariableSymbol->getAsVariable();
+                            TVariable* constVariable = constVariableSymbol == nullptr? nullptr: constVariableSymbol->getAsVariable();
 
                             if (constVariable == nullptr)
                             {
@@ -1056,7 +1142,7 @@ bool ParseXkslShaderFile(
         //resolve generics
         if (success)
         {
-            success = XkslShaderResolveGenerics(shaderLibrary, parseContext, ppContext);
+            success = XkslShaderResolveGenerics(shaderLibrary, listGenericValues, parseContext, ppContext);
         }
 
         //==================================================================================================================
@@ -2172,7 +2258,7 @@ bool TShader::parse(const TBuiltInResource* builtInResources, int defaultVersion
     return parse(builtInResources, defaultVersion, ENoProfile, false, forwardCompatible, messages);
 }
 
-bool TShader::parseXkslShaderFile(const std::string& fileName, const TBuiltInResource* builtInResources, EShMessages messages)
+bool TShader::parseXkslShaderFile(const std::string& fileName, const std::vector<XkslShaderGenericsValue>& listGenericValues, const TBuiltInResource* builtInResources, EShMessages messages)
 {
     if (numStrings != 1) return false;
 
@@ -2181,7 +2267,7 @@ bool TShader::parseXkslShaderFile(const std::string& fileName, const TBuiltInRes
     pool = new TPoolAllocator();
     SetThreadPoolAllocator(*pool);
 
-    return ParseXkslShaderFile(fileName, compiler, intermediate, builtInResources, messages, strings[0], lengths[0]);
+    return ParseXkslShaderFile(fileName, compiler, intermediate, builtInResources, messages, strings[0], lengths[0], listGenericValues);
 }
 
 // Fill in a string with the result of preprocessing ShaderStrings

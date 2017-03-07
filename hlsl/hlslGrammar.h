@@ -101,7 +101,7 @@ namespace glslang {
         bool acceptStructBufferType(TType&);
         bool acceptStruct(TType&);
         bool acceptShaderClass(TIntermNode** node, TType&);
-        bool checkShaderGenericTypes(TVector<TType*>& vectorGenericTypes);
+        bool checkShaderGenericsList(TVector<TType*>& listGenericTypes);
         bool acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList);
         bool acceptShaderClassFunctionsDefinition(const TString& shaderName, XkslShaderDefinition* shader);
         bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
@@ -158,6 +158,7 @@ namespace glslang {
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
 
         //XKSL extensions
+        TString getLabelForTokenType(EHlslTokenClass tokenType);
         XkslShaderParsingOperationEnum xkslShaderParsingOperation;
         XkslShaderDefinition* xkslShaderCurrentlyParsed;
         TFunction* functionCurrentlyParsed;

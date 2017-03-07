@@ -207,6 +207,7 @@ public:
     };
 
     void setInput(TInputScanner& input, bool versionWillBeError);
+    void clearAllInput();
 
     void pushInput(tInput* in)
     {

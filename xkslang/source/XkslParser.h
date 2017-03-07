@@ -28,7 +28,7 @@ public:
     bool InitialiseXkslang();
     void Finalize();
 
-    bool ConvertXkslToSpirX(const std::string& shaderFileName, const std::string& shaderString, SpxBytecode& spirXBytecode,
+    bool ConvertXkslToSpirX(const std::string& shaderFileName, const std::string& shaderString, const std::vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
         std::ostringstream* errorAndDebugMessages , std::ostringstream* outputHumanReadableASTAndSPV);
 };
 

@@ -102,6 +102,12 @@ TPpContext::~TPpContext()
         popInput();
 }
 
+void TPpContext::clearAllInput()
+{
+    while (!inputStack.empty())
+        popInput();
+}
+
 void TPpContext::setInput(TInputScanner& input, bool versionWillBeError)
 {
     assert(inputStack.size() == 0);

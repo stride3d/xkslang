@@ -113,6 +113,23 @@ void HlslParseContext::setLimits(const TBuiltInResource& r)
     intermediate.setLimits(resources);
 }
 
+TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext& ppContext, TString& expressionString)
+{
+    const char* stringsPtr[] = { expressionString.c_str() };
+    size_t stringsLen[] = { expressionString.size() };
+    TInputScanner input(1, stringsPtr, stringsLen, nullptr, 0, 0);
+
+    currentScanner = &input;
+    ppContext.clearAllInput();
+    ppContext.setInput(input, true);
+
+    HlslScanContext scanContext(*this, ppContext);
+    HlslGrammar grammar(scanContext, *this);
+
+    TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader);
+    return expressionNode;
+}
+
 TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
     TPpContext& ppContext, HlslToken* expressionTokensList, int countTokens)
 {
@@ -120,6 +137,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
     TInputScanner emptyInput(1, emptyString, emptyStringLen, nullptr, 0, 0);
 
     currentScanner = &emptyInput;
+    ppContext.clearAllInput();
     ppContext.setInput(emptyInput, true);
 
     HlslScanContext scanContext(*this, ppContext);
@@ -134,6 +152,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
 bool HlslParseContext::parseXkslShaderString(XkslShaderLibrary* shaderLibrary, bool parseXkslShaderDeclarationOnly, TPpContext& ppContext, TInputScanner& input)
 {
     currentScanner = &input;
+    ppContext.clearAllInput();
     ppContext.setInput(input, true);
 
     HlslScanContext scanContext(*this, ppContext);
@@ -174,6 +193,7 @@ void HlslParseContext::parseXkslShaderFinalize()
 bool HlslParseContext::parseShaderStrings(TPpContext& ppContext, TInputScanner& input, bool versionWillBeError)
 {
     currentScanner = &input;
+    ppContext.clearAllInput();
     ppContext.setInput(input, versionWillBeError);
 
     HlslScanContext scanContext(*this, ppContext);
