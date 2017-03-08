@@ -43,11 +43,12 @@ namespace glslang {
     class HlslTokenStream {
     public:
         explicit HlslTokenStream(HlslScanContext& scanner)
-            : scanner(scanner), tokenBufferPos(0) { }
+            : scanner(scanner), tokenBufferPos(-1) { }
         virtual ~HlslTokenStream() { }
 
     public:
         void advanceToken();
+        void CopyTokenBufferInto(TVector<HlslToken>& fileTokenList);
 
         bool advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken);
         bool advanceUntilToken(EHlslTokenClass tok, bool jumpOverBlocks);

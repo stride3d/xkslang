@@ -2,7 +2,7 @@
 
 struct globalStreams
 {
-    int TOTO_s0;
+    int ColorTarget_s0;
 };
 
 globalStreams globalStreams_var;
@@ -14,6 +14,6 @@ int OverrideB_Compute()
 
 void main()
 {
-    globalStreams_var.TOTO_s0 = 1 + OverrideB_Compute();
+    globalStreams_var.ColorTarget_s0 = 1 + OverrideB_Compute();
 }
 

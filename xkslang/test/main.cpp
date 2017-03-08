@@ -60,7 +60,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestComposeSimple.xksl" },
     //{ "TestForEach01.xksl" },
     //{ "TestStreamSemantics.xksl" },
-    
+
     ////{{"textureAndSampler.xksl"}, {"", nullptr}},
     ////{{"shaderTexturing.xksl"}, {"", nullptr}},
     ////{{"shaderBase.xksl"}, {"", nullptr}},

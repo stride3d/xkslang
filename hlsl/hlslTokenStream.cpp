@@ -57,6 +57,8 @@ namespace glslang {
 
     bool HlslTokenStream::advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks)
     {
+        if (tokenBufferPos == -1) advanceToken();
+
         for (unsigned int i = 0; i<tokList.size(); ++i)
             if (token.tokenClass == tokList[i]) return true;
 
@@ -241,6 +243,11 @@ namespace glslang {
 		token = tokenBuffer[tokenBufferPos];
 		return true;
 	}
+
+    void HlslTokenStream::CopyTokenBufferInto(TVector<HlslToken>& fileTokenList)
+    {
+        fileTokenList = tokenBuffer;
+    }
 
 	// Load 'token' with the next token in the stream of tokens.
 	void HlslTokenStream::advanceToken()

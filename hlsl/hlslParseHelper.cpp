@@ -149,7 +149,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
     return expressionNode;
 }
 
-bool HlslParseContext::parseXkslShaderString(XkslShaderLibrary* shaderLibrary, bool parseXkslShaderDeclarationOnly, TPpContext& ppContext, TInputScanner& input)
+bool HlslParseContext::parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TInputScanner& input, TVector<HlslToken>& fileTokenList)
 {
     currentScanner = &input;
     ppContext.clearAllInput();
@@ -159,23 +159,82 @@ bool HlslParseContext::parseXkslShaderString(XkslShaderLibrary* shaderLibrary, b
     HlslGrammar grammar(scanContext, *this);
 
     bool res = false;
-    if (parseXkslShaderDeclarationOnly)
-    {
-        res = grammar.parseXKslShaderDeclaration(shaderLibrary);
-    }
-    else
-    {
-        res = grammar.parseXKslShaderDefinition(shaderLibrary);
-    }
+    res = grammar.parseXKslShaderDeclaration(shaderLibrary);
 
     if (!res) {
         // Print a message formated such that if you click on the message it will take you right to
         // the line through most UIs.
         const glslang::TSourceLoc& sourceLoc = input.getSourceLoc();
-        infoSink.info << (sourceLoc.name != nullptr? sourceLoc.name: "") << "(" << sourceLoc.line << "): error at column " << sourceLoc.column << ", HLSL parsing failed.\n";
+        infoSink.info << (sourceLoc.name != nullptr ? sourceLoc.name : "") << "(" << sourceLoc.line << "): error at column " << sourceLoc.column << ", HLSL parsing failed.\n";
         ++numErrors;
         return false;
     }
+
+    grammar.CopyTokenBufferInto(fileTokenList);
+    return numErrors == 0;
+}
+
+bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TVector<HlslToken>& tokenList)
+{
+    //currentScanner = &input;
+    //ppContext.clearAllInput();
+    //ppContext.setInput(input, true);
+    //
+    //HlslScanContext scanContext(*this, ppContext);
+    //HlslGrammar grammar(scanContext, *this);
+
+    //reparse the list of token previously parsed
+    if (tokenList.size() == 0) return true;
+
+    const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
+    TInputScanner emptyInput(1, emptyString, emptyStringLen, nullptr, 0, 0);
+
+    currentScanner = &emptyInput;
+    ppContext.clearAllInput();
+    ppContext.setInput(emptyInput, true);
+
+    HlslToken* expressionTokensList = &(tokenList[0]);
+    int countTokens = tokenList.size();
+
+    HlslScanContext scanContext(*this, ppContext);
+    HlslGrammar grammar(scanContext, *this);
+    grammar.importListParsedToken(expressionTokensList, countTokens);
+
+    bool res = false;
+    res = grammar.parseXKslShaderMembersAndMethodsDeclaration(shaderLibrary);
+    if (!res) return false;
+
+    return numErrors == 0;
+}
+
+bool HlslParseContext::parseXkslShaderDefinition(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TVector<HlslToken>& tokenList)
+{
+    //currentScanner = &input;
+    //ppContext.clearAllInput();
+    //ppContext.setInput(input, true);
+    //
+    //HlslScanContext scanContext(*this, ppContext);
+    //HlslGrammar grammar(scanContext, *this);
+
+    if (tokenList.size() == 0) return true;
+
+    const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
+    TInputScanner emptyInput(1, emptyString, emptyStringLen, nullptr, 0, 0);
+
+    currentScanner = &emptyInput;
+    ppContext.clearAllInput();
+    ppContext.setInput(emptyInput, true);
+
+    HlslToken* expressionTokensList = &(tokenList[0]);
+    int countTokens = tokenList.size();
+
+    HlslScanContext scanContext(*this, ppContext);
+    HlslGrammar grammar(scanContext, *this);
+    grammar.importListParsedToken(expressionTokensList, countTokens);
+
+    bool res = false;
+    res = grammar.parseXKslShaderDefinition(shaderLibrary);
+    if (!res) return false;
 
     return numErrors == 0;
 }

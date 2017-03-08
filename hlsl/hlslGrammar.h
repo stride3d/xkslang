@@ -45,9 +45,10 @@ namespace glslang {
 
     enum class XkslShaderParsingOperationEnum {
         Undefined,
-        ParseXkslDeclarations,
-        ParseXkslDefinitions,
-        ParseXkslConstStatements,
+        ParseXkslShaderDeclarations,
+        ParseXkslShaderMembersAndMethodsDeclarations,
+        ParseXkslShaderConstStatements,
+        ParseXkslShaderDefinitions,
     };
 
     class TAttributeMap; // forward declare
@@ -59,12 +60,14 @@ namespace glslang {
     public:
         HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
-            xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr){ }
+            xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined),
+            xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr){ }
         virtual ~HlslGrammar() { }
 
         bool parse();
 
         bool parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary);
+        bool parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary* shaderLibrary);
         bool parseXKslShaderDefinition(XkslShaderLibrary* shaderLibrary);
         TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader);
 
@@ -161,6 +164,7 @@ namespace glslang {
         TString getLabelForTokenType(EHlslTokenClass tokenType);
         XkslShaderParsingOperationEnum xkslShaderParsingOperation;
         XkslShaderDefinition* xkslShaderCurrentlyParsed;
+        TType* shaderMethodOrMemberTypeCurrentlyParsed;
         TFunction* functionCurrentlyParsed;
         XkslShaderLibrary* xkslShaderLibrary;
         TVector<TShaderVariableTargetingACompositionVariable> listForeachArrayCompositionVariable;  //if we parse a foreach loop: we pile (we can have nested foreach) the temporary variable composition name

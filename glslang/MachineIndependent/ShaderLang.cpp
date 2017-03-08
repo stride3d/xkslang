@@ -887,14 +887,32 @@ bool ParseXkslShaderFile(
     //YEAH, can finally parse !!!!
     bool success = false;
     {
+        //After the 1st pass: we keep the list of token to avoid reparsing them
+        TVector<HlslToken> fullTokenList;
+
         //==================================================================================================================
         //==================================================================================================================
         //Parse shader declaration only!
         {
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
+            success = parseContext->parseXkslShaderDeclaration(&shaderLibrary, ppContext, fullInput, fullTokenList);
+        }
 
-            bool parseXkslShaderDeclarationOnly = true;
-            success = parseContext->parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput);
+        //==================================================================================================================
+        //==================================================================================================================
+        //resolve generics (before  parsing methods and members declaration)
+        if (success)
+        {
+            success = XkslShaderResolveGenerics(shaderLibrary, listGenericValues, parseContext, ppContext);
+        }
+
+        //==================================================================================================================
+        //==================================================================================================================
+        //Parse shader declaration only!
+        if (success)
+        {
+            //TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
+            success = parseContext->parseXkslShaderMembersAndMethodDeclaration(&shaderLibrary, ppContext, fullTokenList);
         }
 
         //==================================================================================================================
@@ -1139,66 +1157,19 @@ bool ParseXkslShaderFile(
 
         //==================================================================================================================
         //==================================================================================================================
-        //resolve generics
-        if (success)
-        {
-            success = XkslShaderResolveGenerics(shaderLibrary, listGenericValues, parseContext, ppContext);
-        }
-
-        //==================================================================================================================
-        //==================================================================================================================
         //resolve all unresolved const members
         if (success)
         {
             success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, parseContext, ppContext);
         }
 
-        /*
-        //==================================================================================================================
-        //==================================================================================================================
-        //Process all compositions declared in the shaders: we need to duplicate the composed shader then instantiate them
-        if (success)
-        {
-            TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
-            for (int s = 0; s < listShaderParsed.size(); s++)
-            {
-                XkslShaderDefinition* shader = listShaderParsed[s];
-                for (int i = 0; i < shader->listCompositions.size(); ++i)
-                {
-                    XkslShaderDefinition::XkslCompositionDeclaration& composition = shader->listCompositions.at(i);
-                    TString& shaderName = composition.shaderName;
-
-                    XkslShaderDefinition* shaderToInstantiate = GetShaderDefinition(shaderLibrary, shaderName);
-                    if (shaderToInstantiate == nullptr) {
-                        parseContext->infoSink.info.message(EPrefixError, (TString("No Shader found in the library with the name: ") + shaderName).c_str());
-                        success = false;
-                    }
-                    else
-                    {
-                        XkslShaderDefinition* compositionShader = CloneShaderForComposition(parseContext, shaderToInstantiate, composition);
-                        if (compositionShader == nullptr) {
-                            parseContext->infoSink.info.message(EPrefixError, (TString("Failed to instantiate the composition for the shader: ") + shaderName).c_str());
-                            success = false;
-                        }
-                        else
-                        {
-                            shaderLibrary.listCompositionShaders.push_back(compositionShader);
-                        }
-                    }
-                }
-            }
-        }
-        */
-
         //==================================================================================================================
         //==================================================================================================================
         //Now we can parse the shader methods' definition!
         if (success)
         {
-            TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-
-            bool parseXkslShaderDeclarationOnly = false;
-            success = parseContext->parseXkslShaderString(&shaderLibrary, parseXkslShaderDeclarationOnly, ppContext, fullInput);
+            //TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
+            success = parseContext->parseXkslShaderDefinition(&shaderLibrary, ppContext, fullTokenList);
         }
 
         //==================================================================================================================

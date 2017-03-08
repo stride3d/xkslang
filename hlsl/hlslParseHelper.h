@@ -56,7 +56,9 @@ public:
     void initializeExtensionBehavior() override;
 
     //XKSL extensions
-    bool parseXkslShaderString(XkslShaderLibrary* shaderLibrary, bool parseXkslShaderDeclarationOnly, TPpContext&, TInputScanner& input);
+    bool parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TInputScanner& input, TVector<HlslToken>& fileTokenList);
+    bool parseXkslShaderMembersAndMethodDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TVector<HlslToken>& tokenList);
+    bool parseXkslShaderDefinition(XkslShaderLibrary* shaderLibrary, TPpContext&, TVector<HlslToken>& tokenList);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, HlslToken* expressionTokensList, int countTokens);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, TString& expressionString);
     void parseXkslShaderFinalize();

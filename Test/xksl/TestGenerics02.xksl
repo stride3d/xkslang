@@ -1,7 +1,7 @@
 
 shader ShaderMain<int TapCount>
 {
-	float ColorAberrations[TapCount];sdfsdf
+	float ColorAberrations[TapCount];
 	
 	stage void VSMain() 
     {
