@@ -1,0 +1,44 @@
+shader ShaderMain
+{
+    cbuffer PerLighting
+    {
+        float2 ShadowMapTextureSize;
+        float2 ShadowMapTextureTexelSize;
+    }
+
+    cbuffer PerLighting
+    {
+        float BleedingFactor;
+        float MinVariance;
+    }
+
+    cbuffer PerDraw
+    {
+        stage float4x4 BlendMatrixArray[5];
+    }
+
+    cbuffer PerToto
+    {
+        float toto;
+    }
+
+    cbuffer PerToto
+    {
+        float toto1;
+    }
+
+    float4x4 GetBlendMatrix(int index)
+    {
+        return BlendMatrixArray[index];
+    }
+
+	stage void VSMain() 
+    {
+        float4x4 f44 = GetBlendMatrix(2);
+    }
+	
+    stage void PSMain() 
+    {
+        float f = MinVariance;
+    }
+};

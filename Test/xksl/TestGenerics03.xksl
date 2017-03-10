@@ -1,16 +1,18 @@
 
-shader ShaderMain<int TapCount>
+shader ShaderBase<float offset>
 {
-	float3 ColorAberrations[TapCount];
+	float compute()
+	{
+		return offset;
+	}
+}
+
+shader ShaderMain<int TapCount, float aFloat> : ShaderBase<aFloat>
+{
+	int array[TapCount];
 	
-	stage void VSMain() 
+	stage int VSMain() 
     {
-		float res = 0;
-		
-        //[unroll]
-		for (int i = 0; i < TapCount; i++) 
-		{
-			res += ColorAberrations[i];
-		}
+		return compute() + array[TapCount - 1];
     }
 }

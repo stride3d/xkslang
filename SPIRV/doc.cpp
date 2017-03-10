@@ -1209,6 +1209,7 @@ const char* OpcodeString(int op)
     case (OpMethodProperties):       return "OpMethodProperties";
     case (OpMemberProperties):       return "OpMemberProperties";
     case (OpMemberSemanticName):     return "OpMemberSemanticName";
+    case (OpCBufferProperties):      return "OpCBufferProperties";
     case (OpFunctionCallBaseUnresolved): return "OpFunctionCallBaseUnres";
     case (OpFunctionCallBaseResolved):   return "OpFunctionCallBaseRes";
     case (OpShaderCompositionDeclaration):            return "OpShaderCompositionDeclaration";
@@ -1359,6 +1360,7 @@ void Parameterize()
     InstructionDesc[OpMethodProperties].setResultAndType(false, false);
     InstructionDesc[OpMemberProperties].setResultAndType(false, false);
     InstructionDesc[OpMemberSemanticName].setResultAndType(false, false);
+    InstructionDesc[OpCBufferProperties].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionStartLoop].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionEndLoop].setResultAndType(false, false);
 
@@ -1910,6 +1912,10 @@ void Parameterize()
     InstructionDesc[OpMemberSemanticName].operands.push(OperandId, "'Type'");
     InstructionDesc[OpMemberSemanticName].operands.push(OperandLiteralNumber, "'Member'");
     InstructionDesc[OpMemberSemanticName].operands.push(OperandLiteralString, "'SemanticName'");
+
+    InstructionDesc[OpCBufferProperties].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpCBufferProperties].operands.push(OperandLiteralNumber, "'CountMembers'");
+    InstructionDesc[OpCBufferProperties].operands.push(OperandLiteralNumber, "'TotalOffset'");
 
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");

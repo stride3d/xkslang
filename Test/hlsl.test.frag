@@ -1,9 +1,15 @@
-int ShaderFunction(float inf, int toto) : COLOR0
+cbuffer PerLighting
 {
-	return 0;
+	float BleedingFactor;
+	float MinVariance;
+};
+
+float VSMain() 
+{
+	return BleedingFactor;
 }
 
-void Toto(float f, int i)
+float PSMain() 
 {
-
+	return MinVariance;
 }

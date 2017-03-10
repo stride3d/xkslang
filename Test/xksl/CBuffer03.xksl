@@ -1,0 +1,25 @@
+//test merging 2 cbuffers having the same name
+shader ShaderMain
+{
+	float toto;
+
+    cbuffer CBufferToto
+    {
+        float MinVariance;
+    }
+	
+	cbuffer CBufferToto
+    {
+        float BleedingFactor;
+    }
+
+	stage void VSMain() 
+    {
+        float f = BleedingFactor;
+    }
+	
+    stage void PSMain() 
+    {
+        float f = MinVariance;
+    }
+};

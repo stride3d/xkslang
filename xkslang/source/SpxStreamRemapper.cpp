@@ -170,6 +170,10 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
                     clonedTypePointer->SetShaderOwner(clonedShader);
                     clonedVariable->SetShaderOwner(clonedShader);
                     clonedShader->AddShaderType(clonedShaderType);
+                    
+                    clonedShaderType->isCbuffer = type->isCbuffer;
+                    clonedShaderType->cbufferCountMembers = type->cbufferCountMembers;
+                    clonedShaderType->cbufferTotalOffset = type->cbufferTotalOffset;
                 }
                 break;
             }
@@ -1251,15 +1255,17 @@ bool SpxStreamRemapper::ValidateHeader()
         return error("file too short");
     }
 
-    if (magic() != spv::MagicNumber)
+    if (magic() != spv::MagicNumber) {
         error("bad magic number");
+    }
 
     // field 1 = version
     // field 2 = generator magic
     // field 3 = result <id> bound
 
-    if (schemaNum() != 0)
+    if (schemaNum() != 0) {
         error("bad schema, must be 0");
+    }
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -1573,6 +1579,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
                 {
                     case spv::OpMemberDecorate:
                     {
+                        //store members builtin to clone them with new steam members
                         const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
                         if (dec == spv::DecorationBuiltIn)
                         {
@@ -1708,7 +1715,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
 
         //finally:
         // get the stream members typeId (define when creating the stream struct, for example: OpTypeStruct 22(int) 30(fvec4))
-        // add builtins information
+        // also add builtins information
         if (success)
         {
             for (auto itt = listAllShaderTypeHoldingStreamVariables.begin(); itt != listAllShaderTypeHoldingStreamVariables.end(); itt++)
@@ -1733,6 +1740,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
                     type->streamStructData->members[m].memberTypeId = memberTypeId;
                 }
 
+                //add builtins info
                 for (auto itBuitIns = vectorParsedMembersBuiltin.begin(); itBuitIns != vectorParsedMembersBuiltin.end(); itBuitIns++)
                 {
                     const MemberDecorateData& builtInData = *itBuitIns;
@@ -1767,6 +1775,8 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
     }
 #endif
 
+    //TOTOTO
+
     //Id of the new global stream struct
     spv::Id streamStructTypeId = bound();
     spv::Id streamPointerStructTypeId = streamStructTypeId + 1;
@@ -1776,7 +1786,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
 
     //===================================================================================================================
     //===================================================================================================================
-    //regroup all stream variables in the same struct, merge the stage stream variables having the same semantic (or name, if no semantic is set)
+    //regroup all stream variables in the same struct, merge the STAGE stream variables having the same semantic (or name, if no semantic is set)
     if (success)
     {
         for (auto itt = listAllShaderTypeHoldingStreamVariables.begin(); itt != listAllShaderTypeHoldingStreamVariables.end(); itt++)
@@ -2181,7 +2191,7 @@ bool SpxStreamRemapper::InitializeCompilationProcess(vector<XkslMixerOutputStage
 
 bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
-    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAnalysed) return error("Invalid remapper status");
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAndCBuffersAnalysed) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamReadyForReschuffling;
 
     if (outputStages.size() == 0) return error("no output stages defined");
@@ -3206,12 +3216,103 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     return true;
 }
 
-bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+//Remove unused cbuffers, merge used cbuffers havind same name
+bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
+{
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_CBuffersValidated;
+
+    //=========================================================================================================================
+    //=========================================================================================================================
+    //reset ALL cbuffers, then flag the USED cbuffers
+    vector<ShaderTypeData*> listAllCBuffers;
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+        ShaderClassData* shader = *itsh;
+        for (auto it = shader->shaderTypesList.begin(); it != shader->shaderTypesList.end(); it++){
+            ShaderTypeData* shaderType = *it;
+            if (shaderType->isCbuffer) {
+                listAllCBuffers.push_back(shaderType);
+                shaderType->tmpFlag = 0;
+            }
+        }
+    }
+    if (listAllCBuffers.size() == 0) return true;  //if no cbuffer, can immediatly
+
+    for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++) {
+        XkslMixerOutputStage* outputStage = &(outputStages[iStage]);
+        for (auto itcb = outputStage->listCBuffersAccessed.begin(); itcb != outputStage->listCBuffersAccessed.end(); itcb++){
+            ShaderTypeData* shaderType = *itcb;
+            shaderType->tmpFlag = 1;
+        }
+    }
+
+    //=========================================================================================================================
+    //=========================================================================================================================
+    //merge all cbuffers sharing the same declaration name (only if they're used)
+    for (unsigned int i = 0; i < listAllCBuffers.size(); i++)
+    {
+        ShaderTypeData* cbufferA = listAllCBuffers[i];
+        if (cbufferA->tmpFlag == 0) continue; //cbuffer A is not used
+
+        vector<TypeStructMember> listOfMergedCBufferVariables;
+
+        //any used cbuffer sharing the same name?
+        for (unsigned int j = i+1; j < listAllCBuffers.size(); j++)
+        {
+            ShaderTypeData* cbufferB = listAllCBuffers[j];
+            if (cbufferB->tmpFlag == 0) continue; //cbuffer B is not used
+
+            if (cbufferA->type->name == cbufferB->type->name)
+            {
+                //both cbuffer A and B will be removed and replaced by another one
+                cbufferA->tmpFlag = 0;
+                cbufferB->tmpFlag = 0;
+
+                sadfsadfasd;
+
+                //TOTOTO
+                //merge cbufferB into cbufferA
+                
+                if (listOfMergedCBufferVariables.size() == 0)
+                {
+                    for (unsigned m = 0; m < mmmmmmmmm; m++)
+                    {
+                        TypeStructMember cbufferMember;
+                    }
+                }
+            }
+        }
+    }
+
+    //=========================================================================================================================
+    //remove all unused cbuffers
+    {
+        vector<range_t> vecStripRanges;
+        for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
+        {
+            ShaderTypeData* cbuffer = *itcb;
+            if (cbuffer->tmpFlag == 0)
+            {
+                if (!RemoveShaderTypeFromBytecodeAndData(cbuffer, vecStripRanges))
+                {
+                    return error(string("Failed to remove the unused cbuffer type: ") + cbuffer->type->GetName());
+                }
+            }
+        }
+    
+        stripBytecode(vecStripRanges);
+        if (!UpdateAllMaps()) return error("failed to update all maps");
+    }
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+bool SpxStreamRemapper::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
-    status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAnalysed;
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAndCBuffersAnalysed;
 
-    if (globalListOfMergedStreamVariables.countMembers() == 0) return true; //nothing to analyse
     spv::Id globalStreamStructVariableId = globalListOfMergedStreamVariables.structVariableTypeId;
 
     //Set all functions stage reserve value to undefined
@@ -3220,17 +3321,47 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixe
         aFunction->functionProcessingStreamForStage = ShadingStageEnum::Undefined;
     }
 
-    //Analyse each stage
+    //Get the IDs of all CBuffers variable access
+    vector<ShaderTypeData*> listAllCBufferIds;
+    listAllCBufferIds.resize(bound(), nullptr);
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+        ShaderClassData* shader = *itsh;
+        for (auto it = shader->shaderTypesList.begin(); it != shader->shaderTypesList.end(); it++)
+        {
+            ShaderTypeData* shaderType = *it;
+            if (shaderType->isCbuffer) {
+                const spv::Id cbufferVarId = shaderType->variable->GetId();  //this variable is used to access the cbuffer
+#ifdef XKSLANG_DEBUG_MODE
+                if (cbufferVarId >= listAllCBufferIds.size()) return error("cbufferVarId is out of bound");
+                if (listAllCBufferIds[cbufferVarId] != nullptr) return error("shoudn't be possible....");
+#endif
+                listAllCBufferIds[cbufferVarId] = shaderType;
+            }
+        }
+    }
+
+    //Analyse each stage: detect which streams and cbuffer are being accessed by them
     for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++)
     {
         XkslMixerOutputStage* outputStage = &(outputStages[iStage]);
         if (outputStage->entryFunction == nullptr) return error("A stage entry point function is null.");
 
-        //reset output stage data
+        //===================================================================================================================
+        //reset/init stage access data
         outputStage->listFunctionsCalledAndAccessingStreamMembers.clear();
         outputStage->listStreamVariablesAccessed.clear();
+        outputStage->listCBuffersAccessed.clear();
         for (unsigned int m = 0; m<globalListOfMergedStreamVariables.members.size(); ++m)
-            outputStage->listStreamVariablesAccessed.push_back(MemberAccessDetails());
+            outputStage->listStreamVariablesAccessed.push_back(MemberAccessDetails());  //by default: set an empty access for each stream variable
+
+        //reset flag for all shader types
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+            ShaderClassData* shader = *itsh;
+            for (auto it = shader->shaderTypesList.begin(); it != shader->shaderTypesList.end(); it++){
+                ShaderTypeData* shaderType = *it;
+                shaderType->tmpFlag = 0;
+            }
+        }
 
         //Set all functions flag to 0 (to check a function only once)
         for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
@@ -3244,6 +3375,7 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixe
         // a function using a stream variable will be owned/reserved by the stage calling it. If another stage calls the same function it will return an error
         vector<int> vectorResultIdsAccessingAStreamVariable;
         vectorResultIdsAccessingAStreamVariable.resize(bound(), -1);
+        bool anyStreamBeingAccessedByTheStage = false;
 
         vector<FunctionInstruction*> vectorAllFunctionsCalledByTheStage;
         vector<FunctionInstruction*> vectorFunctionsToCheck;
@@ -3284,9 +3416,19 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixe
                             if (streamMemberIndex < 0 || streamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
                                 return error(string("streamMemberIndex is out of bound: ") + to_string(streamMemberIndex));
 #endif
+                            anyStreamBeingAccessedByTheStage = true;
                             vectorResultIdsAccessingAStreamVariable[resultId] = streamMemberIndex;
                             isFunctionAccessingAStreamVariable = true;
                         }
+                        else if (listAllCBufferIds[structIdAccessed] != nullptr) //are we accessing a cbuffer
+                        {
+                            ShaderTypeData* cbufferAccessed = listAllCBufferIds[structIdAccessed];
+                            if (cbufferAccessed->tmpFlag == 0) {
+                                cbufferAccessed->tmpFlag = 1;
+                                outputStage->listCBuffersAccessed.push_back(cbufferAccessed);
+                            }
+                        }
+
                         break;
                     }
 
@@ -3326,75 +3468,79 @@ bool SpxStreamRemapper::AnalyseStreamMembersUsageForOutputStages(vector<XkslMixe
             }
         }
 
-        //===================================================================================================================
-        //===================================================================================================================
-        // 2nd pass: go through all functions again to check all accesses to the stream variables
-        // Here the order of functions called is important: if there is a function call we interrupt the current one to visit the called one first
-        for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
+        if (anyStreamBeingAccessedByTheStage)
         {
-            FunctionInstruction* aFunctionCalled = *itf;
-            aFunctionCalled->currentPosInBytecode = aFunctionCalled->bytecodeStartPosition;
-            aFunctionCalled->flag1 = 0;
-        }
-
-        vectorFunctionsToCheck.push_back(outputStage->entryFunction);
-        outputStage->entryFunction->flag1 = 1;
-        while (vectorFunctionsToCheck.size() > 0)
-        {
-            FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
-            vectorFunctionsToCheck.pop_back();
-
-            unsigned int start = aFunctionCalled->currentPosInBytecode;
-            const unsigned int end = aFunctionCalled->bytecodeEndPosition;
-            while (start < end)
+            //===================================================================================================================
+            //===================================================================================================================
+            // 2nd pass: go through all functions again to check all accesses to the stream variables
+            // Here the order of functions called is important: if there is a function call we interrupt the current one to visit the called one first
+            for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
             {
-                unsigned int wordCount = asWordCount(start);
-                spv::Op opCode = asOpCode(start);
-
-                switch (opCode)
-                {
-                    case spv::OpFunctionCall:
-                    case spv::OpFunctionCallBaseResolved:
-                    {
-                        spv::Id functionCalledId = asId(start + 3);
-                        FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
-                        if (anotherFunctionCalled->flag1 == 0)
-                        {
-                            aFunctionCalled->currentPosInBytecode = start + wordCount;  //we will start again at the next function instruction
-                            vectorFunctionsToCheck.push_back(aFunctionCalled);
-
-                            //pile the function and go check it immediatly
-                            anotherFunctionCalled->flag1 = 1;
-                            vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
-
-                            start = end;  //to end the loop
-                        }
-                        break;
-                    }
-
-                    case spv::OpStore:
-                    case spv::OpLoad:
-                    {
-                        //is the stage storing (writing) into a stream variable?
-                        spv::Id targetId = (opCode == spv::OpStore)? asId(start + 1) : asId(start + 3);
-                        if (vectorResultIdsAccessingAStreamVariable[targetId] != -1)
-                        {
-                            //cout << "write: " << globalListOfMergedStreamVariables.members[vectorResultIdsAccessingAStreamVariable[targetId]].declarationName << endl;
-                            int streamVariableindex = vectorResultIdsAccessingAStreamVariable[targetId];
-#ifdef XKSLANG_DEBUG_MODE
-                            if (streamVariableindex < 0 || streamVariableindex >= (int)outputStage->listStreamVariablesAccessed.size())
-                                return error(string("stream variable index is out of bound. Id: ") + to_string(streamVariableindex));
-#endif
-                            if (opCode == spv::OpStore) outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessWrite();
-                            else outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessRead();
-                        }
-                        break;
-                    }
-                }
-                start += wordCount;
+                FunctionInstruction* aFunctionCalled = *itf;
+                aFunctionCalled->currentPosInBytecode = aFunctionCalled->bytecodeStartPosition;
+                aFunctionCalled->flag1 = 0;
             }
-        }
-    }
+
+            vectorFunctionsToCheck.push_back(outputStage->entryFunction);
+            outputStage->entryFunction->flag1 = 1;
+            while (vectorFunctionsToCheck.size() > 0)
+            {
+                FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
+                vectorFunctionsToCheck.pop_back();
+
+                unsigned int start = aFunctionCalled->currentPosInBytecode;
+                const unsigned int end = aFunctionCalled->bytecodeEndPosition;
+                while (start < end)
+                {
+                    unsigned int wordCount = asWordCount(start);
+                    spv::Op opCode = asOpCode(start);
+
+                    switch (opCode)
+                    {
+                        case spv::OpFunctionCall:
+                        case spv::OpFunctionCallBaseResolved:
+                        {
+                            spv::Id functionCalledId = asId(start + 3);
+                            FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+                            if (anotherFunctionCalled->flag1 == 0)
+                            {
+                                aFunctionCalled->currentPosInBytecode = start + wordCount;  //we will start again at the next function instruction
+                                vectorFunctionsToCheck.push_back(aFunctionCalled);
+
+                                //pile the function and go check it immediatly
+                                anotherFunctionCalled->flag1 = 1;
+                                vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+
+                                start = end;  //to end the loop
+                            }
+                            break;
+                        }
+
+                        case spv::OpStore:
+                        case spv::OpLoad:
+                        {
+                            //is the stage storing (writing) into a stream variable?
+                            spv::Id targetId = (opCode == spv::OpStore)? asId(start + 1) : asId(start + 3);
+                            if (vectorResultIdsAccessingAStreamVariable[targetId] != -1)
+                            {
+                                //cout << "write: " << globalListOfMergedStreamVariables.members[vectorResultIdsAccessingAStreamVariable[targetId]].declarationName << endl;
+                                int streamVariableindex = vectorResultIdsAccessingAStreamVariable[targetId];
+    #ifdef XKSLANG_DEBUG_MODE
+                                if (streamVariableindex < 0 || streamVariableindex >= (int)outputStage->listStreamVariablesAccessed.size())
+                                    return error(string("stream variable index is out of bound. Id: ") + to_string(streamVariableindex));
+    #endif
+                                if (opCode == spv::OpStore) outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessWrite();
+                                else outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessRead();
+                            }
+                            break;
+                        }
+                    }
+                    start += wordCount;
+                }
+            }
+        } //end of if (anyStreamBeingAccessedByTheStage)
+
+    } //end of for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++)
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -4243,7 +4389,7 @@ SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForE
 
 bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
 {
-    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_CBuffersValidated) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_ConvertedToSPV;
 
     //===================================================================================================================
@@ -4459,6 +4605,27 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage)
             }
 
             start += wordCount;
+        }
+    }
+
+    //======================================================================================
+    //We'll keep all cbuffers (unused cbuffers have already been removed)
+    {
+        //Get the IDs of all CBuffers variable access
+        vector<ShaderTypeData*> listAllCBufferIds;
+        listAllCBufferIds.resize(bound(), nullptr);
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+            ShaderClassData* shader = *itsh;
+            for (auto it = shader->shaderTypesList.begin(); it != shader->shaderTypesList.end(); it++)
+            {
+                ShaderTypeData* shaderType = *it;
+                if (shaderType->isCbuffer)
+                {
+                    listIdsUsed[shaderType->type->GetId()] = true;
+                    listIdsUsed[shaderType->pointerToType->GetId()] = true;
+                    listIdsUsed[shaderType->variable->GetId()] = true;
+                }
+            }
         }
     }
 
@@ -4875,6 +5042,9 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
     //======================================================================================================
     // Decorate objects attributes and relations
 
+    //some decorate must be processed after we finish processing some others
+    vector<int> vectorInstructionsToProcessAtTheEnd;
+
     unsigned int start = header_size;
     const unsigned int end = spv.size();
     while (start < end)
@@ -4893,6 +5063,16 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
                 break;
             }*/
+
+            case spv::OpCBufferProperties:
+            {
+                //we look for decorate with Block property (defining a cbuffer)
+                const spv::Id typeId = asId(start + 1);
+                if (typeId < 0 || typeId >= vectorIdsToDecorate.size()) break;
+                if (!vectorIdsToDecorate[typeId]) break;
+                vectorInstructionsToProcessAtTheEnd.push_back(start);
+                break;
+            }
 
             case spv::Op::OpBelongsToShader:
             {
@@ -5041,6 +5221,34 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
         }
 
         start += wordCount;
+    }
+
+    for (unsigned int i = 0; i < vectorInstructionsToProcessAtTheEnd.size(); i++)
+    {
+        unsigned int start = vectorInstructionsToProcessAtTheEnd[i];
+        spv::Op opCode = asOpCode(start);
+
+        switch (opCode)
+        {
+            case spv::OpCBufferProperties:
+            {
+                const spv::Id typeId = asId(start + 1);
+                int countMembers = asLiteralValue(start + 2);
+                int totalOffset = asLiteralValue(start + 3);
+                TypeInstruction* type = GetTypeById(typeId);
+                if (type == nullptr) return error("Cannot find the type for Id: " + to_string(typeId));
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (type->GetShaderOwner() == nullptr) { error("The type has no shader owner: " + type->GetName()); break; }
+                if (type->GetShaderOwner()->GetShaderTypeDataForType(type) == nullptr) { error("The type's shader owner has no shader type for: " + type->GetName()); break; }
+#endif
+                ShaderTypeData* shaderType = type->GetShaderOwner()->GetShaderTypeDataForType(type);
+                shaderType->isCbuffer = true;
+                shaderType->cbufferCountMembers = countMembers;
+                shaderType->cbufferTotalOffset = totalOffset;
+                break;
+            }
+        }
     }
 
     if (errorMessages.size() > 0) return false;
@@ -6362,8 +6570,13 @@ bool SpxStreamRemapper::ApplyBytecodeUpdateController(const BytecodeUpdateContro
         else
         {
             //We overlap some bytes, and maybe add some more
-            int countOverlaps = bytecodeChunck.countInstructionsToOverlap;
-            int countRemaining = bytecodeChunck.bytecode.size() - countOverlaps;
+            unsigned int countOverlaps = bytecodeChunck.countInstructionsToOverlap;
+            int countRemaining = (int)bytecodeChunck.bytecode.size() - (int)countOverlaps;
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (countRemaining < 0) { error("invalid number of overlapping bytes"); break; }
+#endif
+
             for (unsigned int i = 0; i < countOverlaps; ++i) spv[bytecodeChunck.insertionPos + i] = bytecodeChunck.bytecode[i];
             if (countRemaining > 0)
                 spv.insert(spv.begin() + (bytecodeChunck.insertionPos + countOverlaps), bytecodeChunck.bytecode.begin() + countOverlaps, bytecodeChunck.bytecode.end());

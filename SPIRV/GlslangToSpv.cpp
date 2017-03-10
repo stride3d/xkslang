@@ -2372,6 +2372,10 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
                                                 const glslang::TQualifier& qualifier,
                                                 spv::Id spvType)
 {
+    bool isCbuffer = false;
+    unsigned int cbufferTotalCountMembers = 0;
+    unsigned int cbufferTotalOffset = 0;
+
     // Name and decorate the non-hidden members
     int offset = -1;
     int locationOffset = 0;  // for use within the members of this struct
@@ -2500,6 +2504,15 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
         }
     }
 
+    if (type.getBasicType() == glslang::EbtBlock)
+    {
+        isCbuffer = true;
+        cbufferTotalCountMembers = glslangMembers->size();
+        cbufferTotalOffset = offset;
+
+        builder.addCBufferProperties(spvType, cbufferTotalCountMembers, cbufferTotalOffset);
+    }
+    
     // Decorate the structure
     addDecoration(spvType, TranslateLayoutDecoration(type, qualifier.layoutMatrix));
     addDecoration(spvType, TranslateBlockDecoration(type));

@@ -1,0 +1,19 @@
+//only one cbuffer used by both Vs and PS
+shader ShaderMain
+{
+    cbuffer PerLighting
+    {
+        float BleedingFactor;
+        float MinVariance;
+    }
+
+	stage void VSMain() 
+    {
+        float f = BleedingFactor;
+    }
+	
+    stage void PSMain() 
+    {
+        float f = MinVariance;
+    }
+};

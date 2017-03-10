@@ -54,7 +54,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "rulesWhenCallingShaderVariables.xksl" },
     //{ "methodReferingToShaderVariable.xksl" },
     //{ "methodsWithSimpleClassAccessor.xksl" },
-    //{ "cbuffers.xksl" },
+    //{ "testParsingCbuffers.xksl" },
     //{ "shaderWithForLoop.xksl" },
     //{ "shaderWithLoops.xksl" },
     //{ "TestComposeSimple.xksl" },
@@ -129,11 +129,16 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
 
     //{ "TestGenerics01", "TestGenerics01.xkfx" },
-    { "TestGenerics02", "TestGenerics02.xkfx" },
+    //{ "TestGenerics02", "TestGenerics02.xkfx" },
+
+    //{ "CBuffer01", "CBuffer01.xkfx" },
+    //{ "CBuffer02", "CBuffer02.xkfx" },
+    { "CBuffer03", "CBuffer03.xkfx" },
 };
 
-vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlsl = {
-    //{ "TestGlsl01", "TestForEach01_Pixel.spv" },
+vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
+    //{ "TestConvert01", "TestForEach01_Pixel.spv" },
+    //{ "TestCbuffer", "cbuffer.spv" },
 };
 
 #ifdef _DEBUG
@@ -894,22 +899,52 @@ void main(int argc, char** argv)
         }
     }
 
-    if (vecSpvFileToConvertToGlsl.size() > 0)
+    if (vecSpvFileToConvertToGlslAndHlsl.size() > 0)
     {
-        for (unsigned int n = 0; n < vecSpvFileToConvertToGlsl.size(); ++n)
+        cout << endl;
+        cout << "___________________________________________________________________________________" << endl;
+        cout << "Convert SPV Files:" << endl << endl;
+
+        for (unsigned int n = 0; n < vecSpvFileToConvertToGlslAndHlsl.size(); ++n)
         {
             bool success = true;
-            XkfxEffectsToProcess effect = vecSpvFileToConvertToGlsl[n];
+            int result = 0;
+            XkfxEffectsToProcess effect = vecSpvFileToConvertToGlslAndHlsl[n];
+            string inputFileSpv = inputDir + effect.input;
 
-            string outputNameGlsl = effect.input + ".glsl";
-            string outputFullNameGlsl = outputDir + outputNameGlsl;
+            string xkslInput;
+            if (!Utils::ReadFile(inputFileSpv, xkslInput))
+            {
+                cout << " Failed to read the file: " << inputFileSpv << endl;
+                success = false;
+            }
 
-            cout << "Convert into GLSL: " << effect.input << endl;
-            int result = ConvertSpvToShaderLanguage(outputDir + effect.input, outputFullNameGlsl, ShaderLanguageEnum::GlslLanguage);
-            if (result != 0) success = false;
+            if (success)
+            {
+                //======================================================================
+                //GLSL
+                string outputNameGlsl = effect.input + ".glsl";
+                string outputFullNameGlsl = outputDir + outputNameGlsl;
+
+                cout << "Convert into GLSL: " << effect.input << endl;
+                result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameGlsl, ShaderLanguageEnum::GlslLanguage);
+                if (result != 0) success = false;
+
+                if (success) cout << " OK." << endl;
+                else cout << " Failed to convert the SPIRV file to GLSL" << endl;
+
+                //======================================================================
+                //HLSL
+                string outputNameHlsl = effect.input + ".hlsl";
+                string outputFullNameHlsl = outputDir + outputNameHlsl;
+
+                cout << "Convert into GLSL: " << effect.input << endl;
+                result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameHlsl, ShaderLanguageEnum::HlslLanguage);
+                if (result != 0) success = false;
+            }
 
             if (success) cout << " OK." << endl;
-            else cout << " Failed to convert the SPIRV file to GLSL" << endl;
+            else cout << " Failed to convert the SPIRV file to HLSL" << endl;
         }
     }
     

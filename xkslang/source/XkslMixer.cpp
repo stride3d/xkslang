@@ -207,6 +207,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
     }
 
     //===================================================================================================================
+    // Process compositions
     //===================================================================================================================
     // apply all composition instances
     if (!clonedSpxStream->ApplyCompositionInstancesToBytecode())
@@ -221,6 +222,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
         clonedSpxStream->GetMixinBytecode(composedSpv->getWritableBytecodeStream());
 
     //===================================================================================================================
+    // Process streams
     //===================================================================================================================
     // merge all stream variables into a global single struct
     SpxStreamRemapper::TypeStructMemberArray globalListOfMergedStreamVariables;
@@ -235,8 +237,9 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
     if (streamsMergeSpv != nullptr)
         clonedSpxStream->GetMixinBytecode(streamsMergeSpv->getWritableBytecodeStream());
 
-    // analyse the stream members usage for each stage
-    if (!clonedSpxStream->AnalyseStreamMembersUsageForOutputStages(vecMixerOutputStages, globalListOfMergedStreamVariables))
+    //===================================================================================================================
+    // analyse the stream and cbuffers usage for each stage
+    if (!clonedSpxStream->AnalyseStreamsAndCBuffersAccessesForOutputStages(vecMixerOutputStages, globalListOfMergedStreamVariables))
     {
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
@@ -246,7 +249,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
 
     if (vecMixerOutputStages[0].outputStage->stage != ShadingStageEnum::Vertex)
     {
-        //Missing this stage would normally returns an error in the streams validation, but we just skip those steps for now to allow compilation of sample effects
+        //Missing this stage would normally returns an error in the streams validation, but we just skip this step for now to allow compilation of partial sample effects
     }
     else
     {
@@ -276,8 +279,7 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
 
     //===================================================================================================================
     //===================================================================================================================
-    //===================================================================================================================
-    // remove unused shaders
+    // remove unused shaders (shader whose methods or members are never called by the output stages)
     if (!clonedSpxStream->RemoveAllUnusedShaders(vecMixerOutputStages))
     {
         clonedSpxStream->copyMessagesTo(messages);
@@ -286,6 +288,20 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
         return error(messages, "Fail to remove all unused shaders");
     }
 
+    //===================================================================================================================
+    // Process cbuffers
+    //===================================================================================================================
+    // remove unused cbuffers, merge used cbuffers havind same name
+    if (!clonedSpxStream->ProcessCBuffers(vecMixerOutputStages))
+    {
+        clonedSpxStream->copyMessagesTo(messages);
+        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        delete clonedSpxStream;
+        return error(messages, "Fail to process the cbuffers");
+    }
+
+    //===================================================================================================================
+    // Convert SPX to SPV
     //===================================================================================================================
     if (!clonedSpxStream->RemoveAndConvertSPXExtensions())
     {
@@ -306,6 +322,8 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
     }
 #endif
 
+    //===================================================================================================================
+    // Build SPV bytecode for each output stages
     //===================================================================================================================
     if (!clonedSpxStream->GenerateBytecodeForAllStages(vecMixerOutputStages))
     {

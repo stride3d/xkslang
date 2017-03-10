@@ -31,10 +31,11 @@ enum class SpxRemapperStatusEnum
     //define the order of compilation processes
     MixinBeingCompiled_Initialized,
     MixinBeingCompiled_CompositionInstancesProcessed,
-    MixinBeingCompiled_StreamsAnalysed,
+    MixinBeingCompiled_StreamsAndCBuffersAnalysed,
     MixinBeingCompiled_StreamReadyForReschuffling,
     MixinBeingCompiled_StreamReschuffled,
     MixinBeingCompiled_UnusedShaderRemoved,
+    MixinBeingCompiled_CBuffersValidated,
     MixinBeingCompiled_ConvertedToSPV,
     MixinBeingCompiled_SPXBytecodeRemoved,
     MixinFinalized
@@ -216,7 +217,7 @@ public:
     {
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr){}
+            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr){}
         virtual ~TypeInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -388,7 +389,15 @@ public:
         TypeInstruction* pointerToType;
         VariableInstruction* variable;
 
-        ShaderTypeData(TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) : type(type), pointerToType(pointerToType), variable(variable){}
+        //data for cbuffer
+        bool isCbuffer;
+        int cbufferCountMembers;
+        int cbufferTotalOffset;
+
+        int tmpFlag;
+
+        ShaderTypeData(TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) : type(type), pointerToType(pointerToType), variable(variable),
+            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), tmpFlag(0) {}
         virtual ~ShaderTypeData(){}
     };
 
@@ -573,12 +582,13 @@ private:
     bool ApplyCompositionInstancesToBytecode();
     bool InitializeCompilationProcess(std::vector<XkslMixerOutputStage>& outputStages);
     bool MergeStreamMembers(TypeStructMemberArray& globalListOfMergedStreamVariables);
-    bool AnalyseStreamMembersUsageForOutputStages(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
+    bool AnalyseStreamsAndCBuffersAccessesForOutputStages(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool ValidateStagesStreamMembersFlow(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool ReshuffleStreamVariables(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
     bool RemoveAndConvertSPXExtensions();
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
+    bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
     
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
     bool GetFunctionLabelInstructionPosition(FunctionInstruction* function, unsigned int& labelPos);
@@ -726,6 +736,7 @@ public:
 
     std::vector<MemberAccessDetails> listStreamVariablesAccessed;  //list of stream variables accessed by the stage, set by AnalyseStreams method
     std::vector<SpxStreamRemapper::FunctionInstruction*> listFunctionsCalledAndAccessingStreamMembers;  //list of functions called by the stage, accessing some stream members
+    std::vector<SpxStreamRemapper::ShaderTypeData*> listCBuffersAccessed;
 
     XkslMixerOutputStage(OutputStageBytecode* outputStage) : outputStage(outputStage) {}
 };

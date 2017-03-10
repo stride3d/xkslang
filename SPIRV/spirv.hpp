@@ -957,6 +957,7 @@ enum Op {
     OpMethodProperties = 4605,               //Add XKSL properties to a method: cf XkslPropertyEnum
     OpMemberProperties = 4606,               //Add XKSL properties to a member: cf XkslPropertyEnum
     OpMemberSemanticName = 4607,             //Record the semantic name as declared by the user
+    OpCBufferProperties = 4608,              //Additionnal data when defining a cbuffer
 
     OpForEachCompositionStartLoop = 4620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 46021,

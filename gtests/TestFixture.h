@@ -170,6 +170,7 @@ public:
         std::string linkingError;
         std::string spirvWarningsErrors;
         std::string spirv;  // Optional SPIR-V disassembly text.
+        std::vector<uint32_t> bytecode;
     };
 
     // Compiles and the given source |code| of the given shader |stage| into
@@ -222,10 +223,11 @@ public:
             spv::Disassemble(disassembly_stream, spirv_binary);
             return {{{shaderName, shader.getInfoLog(), shader.getInfoDebugLog()},},
                     program.getInfoLog(), program.getInfoDebugLog(),
-                    logger.getAllMessages(), disassembly_stream.str()};
+                    logger.getAllMessages(), disassembly_stream.str(), spirv_binary };
         } else {
+            std::vector<uint32_t> spirv_binary;
             return {{{shaderName, shader.getInfoLog(), shader.getInfoDebugLog()},},
-                    program.getInfoLog(), program.getInfoDebugLog(), "", ""};
+                    program.getInfoLog(), program.getInfoDebugLog(), "", "", spirv_binary };
         }
     }
 
@@ -395,7 +397,13 @@ public:
         // Write the stream output on the disk
         if (source == Source::HLSL)
         {
-            const std::string newOutputFname = testDir + "/" + testName + ".latest.spv";
+            if (result.bytecode.size() > 0)
+            {
+                const std::string spvOutputFilename = testDir + "/" + testName + ".latest.spv";
+                glslang::OutputSpvBin(result.bytecode, spvOutputFilename.c_str());
+            }
+
+            const std::string newOutputFname = testDir + "/" + testName + ".latest.hr.spv";
             WriteFile(newOutputFname, stream.str());
         }
 

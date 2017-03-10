@@ -1,0 +1,25 @@
+//Each stage using its own cbuffer, both of them will be included in the final outputs
+shader ShaderMain
+{
+	float toto;
+
+    cbuffer CBufferPixelStage
+    {
+        float MinVariance;
+    }
+	
+	cbuffer CBufferVertexStage
+    {
+        float BleedingFactor;
+    }
+
+	stage void VSMain() 
+    {
+        float f = BleedingFactor;
+    }
+	
+    stage void PSMain() 
+    {
+        float f = MinVariance;
+    }
+};
