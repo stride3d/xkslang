@@ -335,23 +335,27 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : structMemberId(-1), isStream(false), isStage(false), memberTypeId(spv::spirvbin_t::unused), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1){}
+        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spv::spirvbin_t::unused), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), offset(-1) {}
+        TypeStructMember(spv::Id structTypeId, int structMemberIndex, spv::Id memberTypeId) :
+            structTypeId(structTypeId), structMemberIndex(structMemberIndex) , memberTypeId(memberTypeId), isStream(false), isStage(false), offset(-1) {}
 
-        spv::Id structTypeId;  //Id of the struct type containing the member
-        int structMemberId;    //Id of the member within the struct
-        int memberTypeId;      //Type Id of the member
-        int memberPointerFunctionTypeId;  //id of the member's pointer type (with Function storage class)
-        
-        std::vector<unsigned int> listBuiltInSemantics;  //list of builtin semantics set to the member
-        
+        spv::Id structTypeId;             //Id of the struct type containing the member
+        int structMemberIndex;            //Id of the member within the struct
+        spv::Id memberTypeId;             //Type Id of the member
+
         bool isStream;
         bool isStage;
         std::string declarationName;
         std::string semantic;
 
+        int memberPointerFunctionTypeId;  //id of the member's pointer type (with Function storage class)
+        
+        std::vector<unsigned int> listBuiltInSemantics;  //list of builtin semantics set to the member
+        int offset;
+
         //new type and member id used when merging variables
         spv::Id newStructTypeId;
-        int newStructMemberId;
+        int newStructMemberIndex;
         int tmpRemapToIOIndex;   //used by some algo
 
         bool HasSemantic() const { return semantic.size() > 0; }
@@ -378,7 +382,7 @@ public:
 
         TypeStructMemberArray() : structTypeId(spv::spirvbin_t::unused), structPointerTypeId(spv::spirvbin_t::unused), structVariableTypeId(spv::spirvbin_t::unused) {}
 
-        int countMembers() { return members.size(); }
+        unsigned int countMembers() { return members.size(); }
     };
 
     //This is a type declared by a shader: we store the type definition, plus the variable and pointer to access it
@@ -389,15 +393,16 @@ public:
         TypeInstruction* pointerToType;
         VariableInstruction* variable;
 
-        //data for cbuffer
         bool isCbuffer;
         int cbufferCountMembers;
         int cbufferTotalOffset;
+        TypeStructMemberArray* cbufferMembers;  //data used temporarly when processing cbuffer
+        bool isCbufferUsed;
 
         int tmpFlag;
 
         ShaderTypeData(TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) : type(type), pointerToType(pointerToType), variable(variable),
-            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), tmpFlag(0) {}
+            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), isCbufferUsed(false), cbufferMembers(nullptr), tmpFlag(0){}
         virtual ~ShaderTypeData(){}
     };
 
@@ -590,6 +595,7 @@ private:
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
     
+    bool GetStructTypeMembersTypeIdList(TypeInstruction* structType, std::vector<spv::Id>& membersTypeList);
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
     bool GetFunctionLabelInstructionPosition(FunctionInstruction* function, unsigned int& labelPos);
     FunctionInstruction* GetShaderFunctionForEntryPoint(std::string entryPointName);
