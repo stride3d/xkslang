@@ -160,7 +160,7 @@ bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& mes
 }
 
 bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>& messages,
-    SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* finalSpv, SpvBytecode* errorLatestSpv)
+    SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* finalSpv, SpvBytecode* errorLatestSpv)
 {
     if (spxStreamRemapper == nullptr)
         return error(messages, "you must process some mixin first");
@@ -299,6 +299,8 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
         delete clonedSpxStream;
         return error(messages, "Fail to process the cbuffers");
     }
+    if (mergedCBuffersSpv != nullptr)
+        clonedSpxStream->GetMixinBytecode(mergedCBuffersSpv->getWritableBytecodeStream());
 
     //===================================================================================================================
     // Convert SPX to SPV

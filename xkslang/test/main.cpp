@@ -274,11 +274,12 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     SpvBytecode composedSpv;
     SpvBytecode streamsMergedSpv;
     SpvBytecode streamsReshuffledSpv;
+    SpvBytecode mergedCBuffersSpv;
     SpvBytecode finalSpv;
     SpvBytecode errorSpv;
     cout << "Compile Mixin: ";
     time_before = GetTickCount();
-    success = mixer->Compile(outputStages, errorMsgs, &composedSpv, &streamsMergedSpv, &streamsReshuffledSpv, &finalSpv, &errorSpv);
+    success = mixer->Compile(outputStages, errorMsgs, &composedSpv, &streamsMergedSpv, &streamsReshuffledSpv, &mergedCBuffersSpv, &finalSpv, &errorSpv);
     time_after = GetTickCount();
 
     if (!success)
@@ -295,11 +296,12 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     WriteBytecode(composedSpv, outputDir, effectName + "_compile0_composed.hr.spv", BytecodeFileFormat::Text);
     WriteBytecode(streamsMergedSpv, outputDir, effectName + "_compile1_streamsMerged.hr.spv", BytecodeFileFormat::Text);
     WriteBytecode(streamsReshuffledSpv, outputDir, effectName + "_compile2_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
+    WriteBytecode(mergedCBuffersSpv, outputDir, effectName + "_compile3_mergedCBuffers.hr.spv", BytecodeFileFormat::Text);
 
     {
         //write the final SPIRV bytecode then convert it into GLSL
-        string outputFileNameFinalSpv = effectName + "_compile3_final.spv";
-        string outputFileNameFinalSpvHr = effectName + "_compile3_final.hr.spv";
+        string outputFileNameFinalSpv = effectName + "_compile4_final.spv";
+        string outputFileNameFinalSpvHr = effectName + "_compile4_final.hr.spv";
         string outputFullnameFinalSpv = outputDir + outputFileNameFinalSpv;
         WriteBytecode(finalSpv, outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
         WriteBytecode(finalSpv, outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);

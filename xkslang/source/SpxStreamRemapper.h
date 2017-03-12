@@ -18,6 +18,7 @@
 namespace xkslang
 {
 
+static const spv::Id spvUndefinedId = spv::Id(-10001);
 static const unsigned int MagicNumber = 0x07230203;
 static const unsigned int Version = 0x00010000;
 static const unsigned int Revision = 8;
@@ -335,9 +336,7 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spv::spirvbin_t::unused), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), offset(-1) {}
-        TypeStructMember(spv::Id structTypeId, int structMemberIndex, spv::Id memberTypeId) :
-            structTypeId(structTypeId), structMemberIndex(structMemberIndex) , memberTypeId(memberTypeId), isStream(false), isStage(false), offset(-1) {}
+        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spvUndefinedId), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), offset(-1) {}
 
         spv::Id structTypeId;             //Id of the struct type containing the member
         int structMemberIndex;            //Id of the member within the struct
@@ -380,7 +379,9 @@ public:
         spv::Id structPointerTypeId;
         spv::Id structVariableTypeId;
 
-        TypeStructMemberArray() : structTypeId(spv::spirvbin_t::unused), structPointerTypeId(spv::spirvbin_t::unused), structVariableTypeId(spv::spirvbin_t::unused) {}
+        unsigned int tmpTargetedBytecodePosition;
+
+        TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId), tmpTargetedBytecodePosition(0){}
 
         unsigned int countMembers() { return members.size(); }
     };
@@ -396,13 +397,13 @@ public:
         bool isCbuffer;
         int cbufferCountMembers;
         int cbufferTotalOffset;
-        TypeStructMemberArray* cbufferMembers;  //data used temporarly when processing cbuffer
+        TypeStructMemberArray* cbufferMembersData;  //data used temporarly when processing cbuffer
         bool isCbufferUsed;
 
         int tmpFlag;
 
         ShaderTypeData(TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) : type(type), pointerToType(pointerToType), variable(variable),
-            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), isCbufferUsed(false), cbufferMembers(nullptr), tmpFlag(0){}
+            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), isCbufferUsed(false), cbufferMembersData(nullptr), tmpFlag(0){}
         virtual ~ShaderTypeData(){}
     };
 
