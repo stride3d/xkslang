@@ -218,10 +218,15 @@ public:
     {
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr){}
+            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr),
+            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), isCbufferUsed(false) {}
         virtual ~TypeInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
+            obj->isCbuffer = isCbuffer;
+            obj->isCbufferUsed = isCbufferUsed;
+            obj->cbufferCountMembers = cbufferCountMembers;
+            obj->cbufferTotalOffset = cbufferTotalOffset;
             return obj;
         }
 
@@ -234,6 +239,12 @@ public:
         //used by some algo to fill the type buffer
         TypeStructMemberArray* streamStructData;
         ShaderTypeData* connectedShaderTypeData;
+
+        //used if the type is a cbuffer struct
+        bool isCbuffer;
+        bool isCbufferUsed;
+        int cbufferCountMembers;
+        int cbufferTotalOffset;
 
         friend class SpxStreamRemapper;
     };
@@ -254,6 +265,8 @@ public:
 
     private:
         TypeInstruction* variableTo;
+
+        friend class SpxStreamRemapper;
     };
 
     class FunctionInstruction : public ObjectInstructionBase
@@ -380,8 +393,9 @@ public:
         spv::Id structVariableTypeId;
 
         unsigned int tmpTargetedBytecodePosition;
+        unsigned int cbufferTotalOffset;
 
-        TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId), tmpTargetedBytecodePosition(0){}
+        TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId), tmpTargetedBytecodePosition(0), cbufferTotalOffset(0){}
 
         unsigned int countMembers() { return members.size(); }
     };
@@ -394,17 +408,14 @@ public:
         TypeInstruction* pointerToType;
         VariableInstruction* variable;
 
-        bool isCbuffer;
-        int cbufferCountMembers;
-        int cbufferTotalOffset;
         TypeStructMemberArray* cbufferMembersData;  //data used temporarly when processing cbuffer
-        bool isCbufferUsed;
-
         int tmpFlag;
 
         ShaderTypeData(TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) : type(type), pointerToType(pointerToType), variable(variable),
-            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), isCbufferUsed(false), cbufferMembersData(nullptr), tmpFlag(0){}
+            cbufferMembersData(nullptr), tmpFlag(0){}
         virtual ~ShaderTypeData(){}
+
+        bool isCBufferType() { return type->isCbuffer; }
     };
 
     class ShaderComposition
@@ -630,7 +641,7 @@ private:
     static bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned int begin, unsigned int end, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
     bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned int begin, unsigned int end, const std::vector<spv::Id>& remapTable);
 
-    bool CleanAndSetStageBytecode(XkslMixerOutputStage& stage);
+    bool CleanAndSetStageBytecode(XkslMixerOutputStage& stage, std::vector<spv::Id>& listCBufferIds);
 
 private:
     //static variable share between all SpxStreamRemapper instances
