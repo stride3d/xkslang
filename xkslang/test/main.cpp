@@ -133,7 +133,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
-    { "CBuffer03", "CBuffer03.xkfx" },
+    //{ "CBuffer03", "CBuffer03.xkfx" },
+    { "CBuffer04", "CBuffer04.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {

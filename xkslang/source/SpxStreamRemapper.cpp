@@ -3242,8 +3242,8 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
     //flag the USED cbuffers and allocate object necessary to store their data
     vector<ShaderTypeData*> vectorUsedCbuffers;
     vectorUsedCbuffers.resize(bound(), nullptr);
+    bool anyCBufferUsed = false;
     {
-        bool anyCBufferUsed = false;
         for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++)
         {
             XkslMixerOutputStage* outputStage = &(outputStages[iStage]);
@@ -3268,14 +3268,13 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
         }
 
         if (errorMessages.size() > 0) success = false;
-        if (!anyCBufferUsed) return success;  //no cbuffer used, we can return immediatly
     }
 
     //=========================================================================================================================
     //=========================================================================================================================
     //Retrieve information from the bytecode for all USED cbuffers, and their members
     unsigned int posLatestMemberNameOrDecorate = header_size;
-    if (success)
+    if (success && anyCBufferUsed)
     {
         unsigned int start = header_size;
         const unsigned int end = spv.size();
@@ -3399,7 +3398,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
     vector<ShaderTypeData*>& vectorCbuffersToRemap = vectorUsedCbuffers;  //just reusing an existing vector to avoid creating a new one...
     std::fill(vectorCbuffersToRemap.begin(), vectorCbuffersToRemap.end(), nullptr);
 
-    if (success)
+    if (success && anyCBufferUsed)
     {
         //=========================================================================================================================
         //=========================================================================================================================
@@ -3656,66 +3655,71 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
         //===================================================================================================================
         //===================================================================================================================
         //Update all accesses to previous cbuffer to the new ones
-        if (positionFirstOpFunctionInstruction == 0) positionFirstOpFunctionInstruction = header_size;
-        unsigned int start = positionFirstOpFunctionInstruction;
-        const unsigned int end = spv.size();
-        while (start < end)
+        if (listNewCbuffers.size() > 0)
         {
-            unsigned int wordCount = asWordCount(start);
-            spv::Op opCode = asOpCode(start);
-
-            switch (opCode)
+            if (positionFirstOpFunctionInstruction == 0) positionFirstOpFunctionInstruction = header_size;
+            unsigned int start = positionFirstOpFunctionInstruction;
+            const unsigned int end = spv.size();
+            while (start < end)
             {
-                case spv::OpAccessChain:
+                unsigned int wordCount = asWordCount(start);
+                spv::Op opCode = asOpCode(start);
+
+                switch (opCode)
                 {
-                    spv::Id structIdAccessed = asId(start + 3);
-
-                    //are we accessing a cbuffer that we just merged?
-                    if (vectorCbuffersToRemap[structIdAccessed] != nullptr)
+                    case spv::OpAccessChain:
                     {
-                        ShaderTypeData* shaderType = vectorCbuffersToRemap[structIdAccessed];
-                        TypeStructMemberArray* cbufferMembersData = shaderType->cbufferMembersData;
+                        spv::Id structIdAccessed = asId(start + 3);
 
-                        spv::Id typeId = asId(start + 1);
-                        spv::Id resultId = asId(start + 2);
-                        spv::Id indexConstId = asId(start + 4);
-
-                        ConstInstruction* constObject = GetConstById(indexConstId);
-                        if (constObject == nullptr) { error(string("cannot get const object for Id: ") + to_string(indexConstId)); break; }
-                        int memberIndexInOriginalCbuffer = constObject->valueS32;
-
-#ifdef XKSLANG_DEBUG_MODE
-                        if (!constObject->isS32) { error("const object is not a valid S32"); break; }
-                        if (cbufferMembersData == nullptr) { error("the original shaderType cbuffer has not initialized its members"); break; }
-                        if (memberIndexInOriginalCbuffer < 0 || memberIndexInOriginalCbuffer >= (int)cbufferMembersData->members.size()) { error("memberIndexInOriginalCbuffer is out of bound"); break; }
-#endif
-                        spv::Id newStructAccessId = cbufferMembersData->members[memberIndexInOriginalCbuffer].newStructVariableAccessTypeId;
-                        int memberIndexInNewCbuffer = cbufferMembersData->members[memberIndexInOriginalCbuffer].newStructMemberIndex;
-
-                        //could eventually be optimized, but we shouldn't have too many new cbuffers to bother
-                        TypeStructMemberArray* newCbuffer = nullptr;
-                        for (unsigned int i = 0; i < listNewCbuffers.size(); ++i)
+                        //are we accessing a cbuffer that we just merged?
+                        if (vectorCbuffersToRemap[structIdAccessed] != nullptr)
                         {
-                            if (listNewCbuffers[i]->structVariableTypeId == newStructAccessId) {
-                                newCbuffer = listNewCbuffers[i];
-                                break;
-                            }
-                        }
-                        if (newCbuffer == nullptr) { error("unable to find the new cbuffer"); break; }
+                            ShaderTypeData* shaderType = vectorCbuffersToRemap[structIdAccessed];
+                            TypeStructMemberArray* cbufferMembersData = shaderType->cbufferMembersData;
+
+                            spv::Id typeId = asId(start + 1);
+                            spv::Id resultId = asId(start + 2);
+                            spv::Id indexConstId = asId(start + 4);
+
+                            ConstInstruction* constObject = GetConstById(indexConstId);
+                            if (constObject == nullptr) { error(string("cannot get const object for Id: ") + to_string(indexConstId)); break; }
+                            int memberIndexInOriginalCbuffer = constObject->valueS32;
 
 #ifdef XKSLANG_DEBUG_MODE
-                        if (memberIndexInNewCbuffer < 0 || memberIndexInNewCbuffer >= (int)mapIndexesWithConstValueId.size()) { error("memberIndexInNewCbuffer is out of bound"); break; }
+                            if (!constObject->isS32) { error("const object is not a valid S32"); break; }
+                            if (cbufferMembersData == nullptr) { error("the original shaderType cbuffer has not initialized its members"); break; }
+                            if (memberIndexInOriginalCbuffer < 0 || memberIndexInOriginalCbuffer >= (int)cbufferMembersData->members.size()) { error("memberIndexInOriginalCbuffer is out of bound"); break; }
 #endif
-                        spv::Id memberIndexInNewCbufferConstTypeId = mapIndexesWithConstValueId[memberIndexInNewCbuffer]; //get the const type id for new index
+                            spv::Id newStructAccessId = cbufferMembersData->members[memberIndexInOriginalCbuffer].newStructVariableAccessTypeId;
+                            int memberIndexInNewCbuffer = cbufferMembersData->members[memberIndexInOriginalCbuffer].newStructMemberIndex;
 
-                        BytecodePortionToReplace& portionToReplace = bytecodeUpdateController.SetNewPortionToReplace(start + 1);
-                        portionToReplace.SetNewValues({ typeId, resultId, newStructAccessId, memberIndexInNewCbufferConstTypeId });
+                            //could eventually be optimized, but we shouldn't have too many new cbuffers to bother
+                            TypeStructMemberArray* newCbuffer = nullptr;
+                            for (unsigned int i = 0; i < listNewCbuffers.size(); ++i)
+                            {
+                                if (listNewCbuffers[i]->structVariableTypeId == newStructAccessId) {
+                                    newCbuffer = listNewCbuffers[i];
+                                    break;
+                                }
+                            }
+                            if (newCbuffer == nullptr) { error("unable to find the new cbuffer"); break; }
+
+#ifdef XKSLANG_DEBUG_MODE
+                            if (memberIndexInNewCbuffer < 0 || memberIndexInNewCbuffer >= (int)mapIndexesWithConstValueId.size()) { error("memberIndexInNewCbuffer is out of bound"); break; }
+#endif
+                            spv::Id memberIndexInNewCbufferConstTypeId = mapIndexesWithConstValueId[memberIndexInNewCbuffer]; //get the const type id for new index
+
+                            BytecodePortionToReplace& portionToReplace = bytecodeUpdateController.SetNewPortionToReplace(start + 1);
+                            portionToReplace.SetNewValues({ typeId, resultId, newStructAccessId, memberIndexInNewCbufferConstTypeId });
+                        }
+                        break;
                     }
-                    break;
                 }
+                start += wordCount;
             }
-            start += wordCount;
         }
+
+        if (errorMessages.size() > 0) success = false;
     }
 
     //=========================================================================================================================
@@ -3737,7 +3741,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
     if (success)
     {
         //add the new cbuffers into the bytecode
-        if (bytecodeUpdateController.GetCountBytecodeChuncksToInsert() > 0)
+        if (newBoundId > bound())
         {
             setBound(newBoundId);
 
