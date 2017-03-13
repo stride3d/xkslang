@@ -367,6 +367,7 @@ public:
 
         //new type and member id used when merging variables
         spv::Id newStructTypeId;
+        spv::Id newStructVariableAccessTypeId;
         int newStructMemberIndex;
         int tmpRemapToIOIndex;   //used by some algo
 
@@ -394,6 +395,7 @@ public:
 
         unsigned int tmpTargetedBytecodePosition;
         unsigned int cbufferTotalOffset;
+        std::string declarationName;
 
         TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId), tmpTargetedBytecodePosition(0), cbufferTotalOffset(0){}
 
