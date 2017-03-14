@@ -157,7 +157,8 @@ enum OperandClass {
 
     OperandOpcode,
 
-    OperandProperties,
+    XkslShaderDataProperty,
+    XkslShaderDataProperties,
 
     OperandCount
 };

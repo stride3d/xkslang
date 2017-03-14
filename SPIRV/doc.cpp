@@ -215,6 +215,8 @@ const char* XkslPropertyString(int prop)
         case (PropertyMethodAbstract): return "Abstract";
         case (PropertyMethodClone):    return "Clone";
         case (PropertyMethodStatic):   return "Static";
+        case (CBufferUndefined):       return "Undefined";
+        case (CBufferDefined):         return "Defined";
         default:  return "Bad";
     }
 }
@@ -1903,17 +1905,18 @@ void Parameterize()
     InstructionDesc[OpForEachCompositionStartLoop].operands.push(OperandLiteralNumber, "'CompId'");
 
     InstructionDesc[OpMethodProperties].operands.push(OperandId, "'Function'");
-    InstructionDesc[OpMethodProperties].operands.push(OperandProperties, "'Property 0', +\n'Property 1', +\n...");
+    InstructionDesc[OpMethodProperties].operands.push(XkslShaderDataProperties, "'Property 0', +\n'Property 1', +\n...");
 
     InstructionDesc[OpMemberProperties].operands.push(OperandId, "'Type'");
     InstructionDesc[OpMemberProperties].operands.push(OperandLiteralNumber, "'Member'");
-    InstructionDesc[OpMemberProperties].operands.push(OperandProperties, "'Property 0', +\n'Property 1', +\n...");
+    InstructionDesc[OpMemberProperties].operands.push(XkslShaderDataProperties, "'Property 0', +\n'Property 1', +\n...");
     
     InstructionDesc[OpMemberSemanticName].operands.push(OperandId, "'Type'");
     InstructionDesc[OpMemberSemanticName].operands.push(OperandLiteralNumber, "'Member'");
     InstructionDesc[OpMemberSemanticName].operands.push(OperandLiteralString, "'SemanticName'");
 
     InstructionDesc[OpCBufferProperties].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpCBufferProperties].operands.push(XkslShaderDataProperty, "'CbufferType'");
     InstructionDesc[OpCBufferProperties].operands.push(OperandLiteralNumber, "'CountMembers'");
     InstructionDesc[OpCBufferProperties].operands.push(OperandLiteralNumber, "'TotalOffset'");
 

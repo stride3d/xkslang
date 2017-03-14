@@ -2510,7 +2510,17 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
         cbufferTotalCountMembers = glslangMembers->size();
         cbufferTotalOffset = offset;
 
-        builder.addCBufferProperties(spvType, cbufferTotalCountMembers, cbufferTotalOffset);
+        int cbufferType = -1;
+        if (type.IsUndefinedCBufferType()) cbufferType = spv::CBufferUndefined;
+        else if (type.IsDefinedCBufferType()) cbufferType = spv::CBufferDefined;
+        else {
+            if (logger) logger->error(std::string("The cbuffer type is undefined for: ") + type.getTypeName().c_str());
+        }
+
+        if (cbufferType != -1)
+        {
+            builder.addCBufferProperties(spvType, cbufferType, cbufferTotalCountMembers, cbufferTotalOffset);
+        }
     }
     
     // Decorate the structure

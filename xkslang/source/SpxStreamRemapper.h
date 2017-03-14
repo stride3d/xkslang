@@ -219,7 +219,7 @@ public:
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
             : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr),
-            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), isCbufferUsed(false) {}
+            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), isCbufferUsed(false), cbufferType(-1) {}
         virtual ~TypeInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -227,6 +227,7 @@ public:
             obj->isCbufferUsed = isCbufferUsed;
             obj->cbufferCountMembers = cbufferCountMembers;
             obj->cbufferTotalOffset = cbufferTotalOffset;
+            obj->cbufferType = cbufferType;
             return obj;
         }
 
@@ -243,6 +244,7 @@ public:
         //used if the type is a cbuffer struct
         bool isCbuffer;
         bool isCbufferUsed;
+        int cbufferType;
         int cbufferCountMembers;
         int cbufferTotalOffset;
 
@@ -265,6 +267,7 @@ public:
 
     private:
         TypeInstruction* variableTo;
+        int tmpFlag;
 
         friend class SpxStreamRemapper;
     };
@@ -346,6 +349,7 @@ public:
             typeId(typeId), memberId(memberId), decoration(decoration), value(value) {}
     };
 
+    //This class is a bit messy as it contains data for different member type (stream, cbuffer) and some parameters used for some specific algorithm or some specific cases only
     class TypeStructMember
     {
     public:
@@ -367,6 +371,7 @@ public:
         //some cbuffer members properties
         int offset;
         std::vector<unsigned int> listMemberDecoration;  //extra decorate properties set with the member (for example: RowMajor, MatrixStride, ... set for cbuffer members)
+        bool isUsed; //in some case we need to know which members are actually used or not
 
         //temporary variables used to remap members to others
         spv::Id newStructTypeId;
@@ -374,6 +379,7 @@ public:
         int newStructMemberIndex;
         int tmpRemapToIOIndex;   //used by some algo
 
+        //====================================================
         bool HasSemantic() const { return semantic.size() > 0; }
         bool HasDeclarationName() const { return declarationName.size() > 0; }
 
@@ -525,6 +531,10 @@ public:
         }
         ShaderTypeData* GetShaderTypeDataForType(TypeInstruction* type) {
             for (unsigned int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->type == type) return shaderTypesList[i];
+            return nullptr;
+        }
+        ShaderTypeData* GetShaderTypeDataForVariable(VariableInstruction* variable) {
+            for (unsigned int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->variable == variable) return shaderTypesList[i];
             return nullptr;
         }
 

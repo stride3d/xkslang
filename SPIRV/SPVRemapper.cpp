@@ -625,10 +625,11 @@ namespace spv {
             case spv::OperandKernelEnqueueFlags:
             case spv::OperandKernelProfilingInfo:
             case spv::OperandCapability:
+            case spv::XkslShaderDataProperty:
                 ++word;
                 break;
 
-            case spv::OperandProperties:
+            case spv::XkslShaderDataProperties:
                 return nextInst;
 
             default:

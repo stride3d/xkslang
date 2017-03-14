@@ -936,12 +936,12 @@ bool ParseXkslShaderFile(
                 //======================================================================================
                 // Members declaration: create and add the new shader structs
 
-                //cbuffer of variables declared by the shader
+                //buffer of variables declared by the shader (cbuffer)
                 TString* cbufferGlobalBlockName = NewPoolTString((shader->shaderName + TString(".globalCBuffer")).c_str());
                 TString* cbufferGlobalBlockVarName = NewPoolTString((*cbufferGlobalBlockName + TString("_var")).c_str());
                 TTypeList* cbufferStructTypeList = new TTypeList();
 
-                //stream buffer of stream variables declared by the shader
+                //buffer of stream variables declared by the shader
                 TString* streamBufferStructName = NewPoolTString((shader->shaderName + TString(".streamBuffer")).c_str());
                 TString* streamBufferVarName = NewPoolTString((*streamBufferStructName + TString("_var")).c_str());
                 TTypeList* streambufferStructTypeList = new TTypeList();
@@ -1037,8 +1037,9 @@ bool ParseXkslShaderFile(
                             TString numberId = TString(std::to_string(shader->listDeclaredBlockNames.size()).c_str());
                             TString* blockName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName() + "_" + numberId).c_str());  //name = class_name_num
                             TString* blockVarName = NewPoolTString((*blockName + TString("_var")).c_str());
+                            member.type->SetAsDefinedCBufferType();
 
-                            parseContext->declareBlock(member.loc, *member.type, blockVarName);
+                            parseContext->declareBlock(member.loc, *(member.type), blockVarName);
                             shader->listDeclaredBlockNames.push_back(blockVarName);
 
                             TSymbol* symbol = parseContext->symbolTable.find(*blockVarName);
@@ -1091,8 +1092,9 @@ bool ParseXkslShaderFile(
                     blockQualifier.storage = EvqUniform;
                     TString& typeName = *cbufferGlobalBlockName; //shader->shaderName; //cbufferGlobalBlockName; //NewPoolTString("");
                     TType globalBlockType(cbufferStructTypeList, typeName, blockQualifier);
+                    globalBlockType.SetAsUndefinedCBufferType();
 
-                    globalBlockType.setUserIdentifierName("");  //type name is "", will be merged with unnamed cbuffer
+                    globalBlockType.setUserIdentifierName("_globalCbuffer");  //set a default user identifier name (doesn't matter if there is any name conflict)
                     globalBlockType.setOwnerClassName(shader->shaderName.c_str());
 
                     parseContext->declareBlock(shader->location, globalBlockType, cbufferGlobalBlockVarName);

@@ -109,11 +109,11 @@ protected:
     void outputResultId(Id id);
     void outputTypeId(Id id);
     void outputId(Id id);
-    void outputProperty(int propId);
+    void outputXkslShaderDataProperty(int propId);
     void outputMask(OperandClass operandClass, unsigned mask);
     void disassembleImmediates(int numOperands);
     void disassembleIds(int numOperands);
-    void disassembleProperties(int numOperands);
+    void disassembleXkslShaderDataProperties(int numOperands);
     int disassembleString();
     void disassembleInstruction(Id resultId, Id typeId, Op opCode, int numOperands);
 
@@ -270,7 +270,7 @@ void SpirvStream::outputTypeId(Id id)
     out << std::setw(width) << std::right << idStream.str() << " ";
 }
 
-void SpirvStream::outputProperty(int propId)
+void SpirvStream::outputXkslShaderDataProperty(int propId)
 {
     out << XkslPropertyString(propId);
 }
@@ -306,10 +306,10 @@ void SpirvStream::disassembleImmediates(int numOperands)
     }
 }
 
-void SpirvStream::disassembleProperties(int numOperands)
+void SpirvStream::disassembleXkslShaderDataProperties(int numOperands)
 {
     for (int i = 0; i < numOperands; ++i) {
-        outputProperty(stream[word++]);
+        outputXkslShaderDataProperty(stream[word++]);
         if (i < numOperands - 1)
             out << " ";
     }
@@ -534,9 +534,12 @@ void SpirvStream::disassembleInstruction(Id resultId, Id /*typeId*/, Op opCode, 
         case OperandLiteralString:
             numOperands -= disassembleString();
             break;
-        case OperandProperties:
-            disassembleProperties(numOperands);
+        case XkslShaderDataProperties:
+            disassembleXkslShaderDataProperties(numOperands);
             return;
+        case XkslShaderDataProperty:
+            outputXkslShaderDataProperty(stream[word++]);
+            --numOperands;
             break;
         default:
             assert(operandClass >= OperandSource && operandClass < OperandOpcode);

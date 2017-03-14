@@ -7007,6 +7007,7 @@ void HlslParseContext::declareBlock(const TSourceLoc& loc, TType& type, const TS
     if (type.getOwnerClassName() != nullptr) blockType.setOwnerClassName(type.getOwnerClassName()->c_str());
     if (type.getParentsName() != nullptr) blockType.SetParentsName(type.getParentsName());
     if (type.getCompositionsList() != nullptr) blockType.SetCompositionsList(type.getCompositionsList());
+    blockType.SetCbufferType(type.GetCbufferType());
 
     // Add the variable, as anonymous or named instanceName.
     // Make an anonymous variable if no name was provided.

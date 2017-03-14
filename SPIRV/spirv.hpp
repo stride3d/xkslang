@@ -632,12 +632,14 @@ enum Capability {
 };
 
 enum XkslPropertyEnum {
-    PropertyStage = 1,            //member or method is a stage
-    PropertyStream = 2,           //member or method is a stream
-    PropertyMethodAbstract = 3,   //abstract method
-    PropertyMethodOverride = 4,   //override method
-    PropertyMethodClone = 5,      //clone method
-    PropertyMethodStatic = 6,     //static method
+    PropertyStage = 1,             //member or method is a stage
+    PropertyStream = 2,            //member or method is a stream
+    PropertyMethodAbstract = 3,    //abstract method
+    PropertyMethodOverride = 4,    //override method
+    PropertyMethodClone = 5,       //clone method
+    PropertyMethodStatic = 6,      //static method
+    CBufferUndefined = 7,          //the cbuffer is undefined and global to a shader class
+    CBufferDefined = 8,            //the cbuffer has been defined within the shader class
 };
 
 enum Op {
@@ -957,7 +959,7 @@ enum Op {
     OpMethodProperties = 4605,               //Add XKSL properties to a method: cf XkslPropertyEnum
     OpMemberProperties = 4606,               //Add XKSL properties to a member: cf XkslPropertyEnum
     OpMemberSemanticName = 4607,             //Record the semantic name as declared by the user
-    OpCBufferProperties = 4608,              //Additionnal data when defining a cbuffer
+    OpCBufferProperties = 4608,              //Additionnal data when defining a cbuffer. cf XkslPropertyEnum
 
     OpForEachCompositionStartLoop = 4620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 46021,

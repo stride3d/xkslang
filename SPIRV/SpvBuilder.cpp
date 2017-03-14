@@ -978,10 +978,11 @@ void Builder::addMemberSemanticName(Id id, int num, const char* semantic)
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
-void Builder::addCBufferProperties(Id id, int countMembers, int totalCountOffset)
+void Builder::addCBufferProperties(Id id, int cbufferType, int countMembers, int totalCountOffset)
 {
     Instruction* dec = new Instruction(OpCBufferProperties);
     dec->addIdOperand(id);
+    dec->addImmediateOperand(cbufferType);
     dec->addImmediateOperand(countMembers);
     dec->addImmediateOperand(totalCountOffset);
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
