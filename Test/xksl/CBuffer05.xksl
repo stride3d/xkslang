@@ -1,0 +1,67 @@
+//Test merging cbuffer and check that all offset and extra decorates are correctly transferred
+shader ShaderMain
+{
+	cbuffer PerDraw
+    {
+		int aInt;
+		float aFloat;
+		float aFloatB;
+        float4x4 arrayA[3];
+		float varf;
+		float3x4 arrayB[4];
+		float3x4 af3x4;
+		int4x4 i4x4;
+		int4x4 i4x4A[2];
+    }
+	
+	cbuffer PerDraw
+    {
+		float4x4 arrayC[5];
+		float4 arrayD[2];
+		float BleedingFactor;
+		bool aB320;
+		bool aB321;
+		float4x2 arrayCC[1];
+    }
+	
+	cbuffer PerDraw
+    {
+		bool aBA[2];
+		float4 arrayAA4[4];
+		float2 arrayAA2[4];
+		float4 af02;
+    }
+	
+	cbuffer ReferenceCBuffer
+    {
+		int _aInt;
+		float _aFloat;
+		float _aFloatB;
+        float4x4 _arrayA[3];
+		float _varf;
+		float3x4 _arrayB[4];
+		float3x4 _af3x4;
+		int4x4 _i4x4;
+		int4x4 _i4x4A[2];
+		float4x4 _arrayC[5];
+		float4 _arrayD[2];
+		float _BleedingFactor;
+		bool _aB320;
+		bool _aB321;
+		float4x2 _arrayCC[1];
+		bool _aBA[2];
+		float4 _arrayAA4[4];
+		float2 _arrayAA2[4];
+		float4 _af02;
+    }
+
+	stage void VSMain() 
+    {
+        float4x4 f44 = arrayA[0] + _aInt;
+    }
+	
+    stage void PSMain() 
+    {
+        float4 f4 = arrayD[1] + arrayAA4[0];
+    }
+};

@@ -1,0 +1,21 @@
+shader ShaderPSMain
+{
+	int var1;
+	float4x4 var2;
+	
+    stage void PSMain() 
+    {
+        float4x4 f44 = var2;
+    }
+};
+
+shader ShaderVSMain
+{
+	int var1;
+	float4x4 var2;
+	
+	stage void VSMain() 
+    {
+        float4x4 f44 = var2;
+    }
+};

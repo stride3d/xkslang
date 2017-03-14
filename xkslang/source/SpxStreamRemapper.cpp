@@ -3315,13 +3315,27 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
 
                         const unsigned int index = asLiteralValue(start + 2);
                         const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                        if (index >= cbuffer->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+#endif
                         if (dec == spv::DecorationOffset)
                         {
-                            const unsigned int offsetValue = asLiteralValue(start + 4);
 #ifdef XKSLANG_DEBUG_MODE
-                            if (index >= cbuffer->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+                            if (wordCount <= 4) { error("Invalid wordCount"); break; }
 #endif
+                            const unsigned int offsetValue = asLiteralValue(start + 4);
                             cbuffer->cbufferMembersData->members[index].offset = offsetValue;
+                        }
+                        else
+                        {
+#ifdef XKSLANG_DEBUG_MODE
+                            if (wordCount <= 3) { error("Invalid wordCount"); break; }
+#endif
+                            unsigned int countRemainingBytes = wordCount - 3;
+                            std::vector<unsigned int>& listMemberDecoration = cbuffer->cbufferMembersData->members[index].listMemberDecoration;
+                            listMemberDecoration.push_back(countRemainingBytes);
+                            for (unsigned int i=0; i<countRemainingBytes; i++)
+                                listMemberDecoration.push_back(asLiteralValue(start + 3 + i));
                         }
                     }
                     break;
@@ -3441,26 +3455,30 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 for (auto itcb = someCBuffersToMerge.begin(); itcb != someCBuffersToMerge.end(); itcb++)
                 {
                     ShaderTypeData* cbufferToMerge = *itcb;
-                    vectorCbuffersToRemap[cbufferToMerge->variable->GetId()] = cbufferToMerge;
+                    vectorCbuffersToRemap[cbufferToMerge->variable->GetId()] = cbufferToMerge; //store the cbuffer to remap
 
+                    //check the best position where to insert the new cbuffer in the bytecode
                     if (cbufferToMerge->type->bytecodeEndPosition > combinedCbuffer->tmpTargetedBytecodePosition) combinedCbuffer->tmpTargetedBytecodePosition = cbufferToMerge->type->bytecodeEndPosition;
 
                     for (unsigned int m = 0; m < cbufferToMerge->cbufferMembersData->members.size(); m++)
                     {
+                        TypeStructMember& memberToMerge = cbufferToMerge->cbufferMembersData->members[m];
+
                         int memberNewIndex = combinedCbuffer->members.size();
-                        spv::Id memberTypeId = cbufferToMerge->cbufferMembersData->members[m].memberTypeId;
+                        spv::Id memberTypeId = memberToMerge.memberTypeId;
                         combinedCbuffer->members.push_back(TypeStructMember());
                         TypeStructMember& member = combinedCbuffer->members.back();
 
                         member.structMemberIndex = memberNewIndex;
                         member.memberTypeId = memberTypeId;
-                        member.declarationName = cbufferToMerge->cbufferMembersData->members[m].declarationName;
-                        member.offset = cbufferCurrentOffset + cbufferToMerge->cbufferMembersData->members[m].offset;
+                        member.declarationName = memberToMerge.declarationName;
+                        member.offset = cbufferCurrentOffset + memberToMerge.offset;
+                        member.listMemberDecoration = memberToMerge.listMemberDecoration;
 
                         //link reference from previous member to new one
-                        cbufferToMerge->cbufferMembersData->members[m].newStructMemberIndex = memberNewIndex;
-                        cbufferToMerge->cbufferMembersData->members[m].newStructTypeId = combinedCbuffer->structTypeId;
-                        cbufferToMerge->cbufferMembersData->members[m].newStructVariableAccessTypeId = combinedCbuffer->structVariableTypeId;
+                        memberToMerge.newStructMemberIndex = memberNewIndex;
+                        memberToMerge.newStructTypeId = combinedCbuffer->structTypeId;
+                        memberToMerge.newStructVariableAccessTypeId = combinedCbuffer->structVariableTypeId;
                     }
                     cbufferCurrentOffset += cbufferToMerge->type->cbufferTotalOffset;
                 }
@@ -3627,24 +3645,36 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 const TypeStructMember& cbufferMember = cbuffer->members[memberIndex];
 
                 //member decorate (offset)
-                spv::Instruction memberDecorateInstr(spv::OpMemberDecorate);
-                memberDecorateInstr.addIdOperand(cbuffer->structTypeId);
-                memberDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
-                memberDecorateInstr.addImmediateOperand(spv::DecorationOffset);
-                memberDecorateInstr.addImmediateOperand(cbufferMember.offset);
-                memberDecorateInstr.dump(bytecodeNamesAndDecocates->bytecode);
+                spv::Instruction memberOffsetDecorateInstr(spv::OpMemberDecorate);
+                memberOffsetDecorateInstr.addIdOperand(cbuffer->structTypeId);
+                memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
+                memberOffsetDecorateInstr.addImmediateOperand(spv::DecorationOffset);
+                memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.offset);
+                memberOffsetDecorateInstr.dump(bytecodeNamesAndDecocates->bytecode);
             
-                /// //member semantic?
-                /// if (streamMember.HasSemantic())
-                /// {
-                ///     spv::Instruction memberSemantic(spv::OpMemberSemanticName);
-                ///     memberSemantic.addIdOperand(streamStructType.getResultId());
-                ///     memberSemantic.addImmediateOperand(memberIndex);
-                ///     memberSemantic.addStringOperand(streamMember.semantic.c_str());
-                ///     memberSemantic.dump(vecXkslMemberProperties);
-                /// }
-            }
+                //member extra decorate (if any)
+                if (cbufferMember.listMemberDecoration.size() > 0)
+                {
+                    unsigned int cur = 0;
+                    while (cur < cbufferMember.listMemberDecoration.size())
+                    {
+                        unsigned int decorateCount = cbufferMember.listMemberDecoration[cur];
+                        cur++;
+#ifdef XKSLANG_DEBUG_MODE
+                        if (cur + decorateCount > cbufferMember.listMemberDecoration.size()) { error("Invalid member decorate instructions"); break; }
+#endif
 
+                        spv::Instruction memberDecorateInstr(spv::OpMemberDecorate);
+                        memberDecorateInstr.addIdOperand(cbuffer->structTypeId);
+                        memberDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
+                        for (unsigned int k = 0; k < decorateCount; k++)
+                            memberDecorateInstr.addImmediateOperand(cbufferMember.listMemberDecoration[cur + k]);
+                        memberDecorateInstr.dump(bytecodeNamesAndDecocates->bytecode);
+
+                        cur += decorateCount;
+                    }
+                }
+            }
         }
 
         if (errorMessages.size() > 0) success = false;

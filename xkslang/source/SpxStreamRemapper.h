@@ -360,12 +360,15 @@ public:
         std::string declarationName;
         std::string semantic;
 
+        //some stream member properties
         int memberPointerFunctionTypeId;  //id of the member's pointer type (with Function storage class)
-        
-        std::vector<unsigned int> listBuiltInSemantics;  //list of builtin semantics set to the member
-        int offset;
+        std::vector<unsigned int> listBuiltInSemantics; //list of builtin semantics set to the member
 
-        //new type and member id used when merging variables
+        //some cbuffer members properties
+        int offset;
+        std::vector<unsigned int> listMemberDecoration;  //extra decorate properties set with the member (for example: RowMajor, MatrixStride, ... set for cbuffer members)
+
+        //temporary variables used to remap members to others
         spv::Id newStructTypeId;
         spv::Id newStructVariableAccessTypeId;
         int newStructMemberIndex;
