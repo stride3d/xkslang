@@ -63,6 +63,15 @@ public:
     BytecodeValueToReplace(unsigned int pos, uint32_t value) : pos(pos), value(value) {}
 };
 
+class BytecodePortionToRemove
+{
+public:
+    unsigned int position;
+    unsigned int count;
+
+    BytecodePortionToRemove(unsigned int position, unsigned int count) : position(position), count(count) {}
+};
+
 class BytecodePortionToReplace
 {
 public:
@@ -89,10 +98,12 @@ public:
 
     std::vector<BytecodeValueToReplace> listAtomicUpdates;
     std::vector<BytecodePortionToReplace> listPortionsToUpdates;
+    std::vector<BytecodePortionToRemove> listSortedPortionsToRemove;
     std::list<BytecodeChunk> listSortedChunksToInsert;
 
     void SetNewAtomicValueUpdate(unsigned int pos, uint32_t value) { listAtomicUpdates.push_back(BytecodeValueToReplace(pos, value)); }
     BytecodePortionToReplace& SetNewPortionToReplace(unsigned int pos) { listPortionsToUpdates.push_back(BytecodePortionToReplace(pos)); return listPortionsToUpdates.back(); }
+    BytecodePortionToRemove* AddPortionToRemove(unsigned int position, unsigned int count);
     BytecodeChunk* InsertNewBytecodeChunckAt(unsigned int position, InsertionConflictBehaviourEnum conflictBehaviour, unsigned int countBytesToOverlap = 0);
     BytecodeChunk* GetBytecodeChunkAt(unsigned int position);
     unsigned int GetCountBytecodeChuncksToInsert() { return listSortedChunksToInsert.size(); }
@@ -219,14 +230,13 @@ public:
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
             : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr),
-            isCbuffer(false), cbufferCountMembers(0), cbufferTotalOffset(0), isCbufferUsed(false), cbufferType(-1) {}
+            isCbuffer(false), cbufferCountMembers(0), isCbufferUsed(false), cbufferType(-1) {}
         virtual ~TypeInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->isCbuffer = isCbuffer;
             obj->isCbufferUsed = isCbufferUsed;
             obj->cbufferCountMembers = cbufferCountMembers;
-            obj->cbufferTotalOffset = cbufferTotalOffset;
             obj->cbufferType = cbufferType;
             return obj;
         }
@@ -246,7 +256,6 @@ public:
         bool isCbufferUsed;
         int cbufferType;
         int cbufferCountMembers;
-        int cbufferTotalOffset;
 
         friend class SpxStreamRemapper;
     };
@@ -353,7 +362,7 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spvUndefinedId), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), offset(-1) {}
+        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spvUndefinedId), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), memberSize(-1), memberAlignment(-1){}
 
         spv::Id structTypeId;             //Id of the struct type containing the member
         int structMemberIndex;            //Id of the member within the struct
@@ -369,7 +378,9 @@ public:
         std::vector<unsigned int> listBuiltInSemantics; //list of builtin semantics set to the member
 
         //some cbuffer members properties
-        int offset;
+        int memberSize;
+        int memberAlignment;
+        int memberOffset;
         std::vector<unsigned int> listMemberDecoration;  //extra decorate properties set with the member (for example: RowMajor, MatrixStride, ... set for cbuffer members)
         bool isUsed; //in some case we need to know which members are actually used or not
 
@@ -403,10 +414,9 @@ public:
         spv::Id structVariableTypeId;
 
         unsigned int tmpTargetedBytecodePosition;
-        unsigned int cbufferTotalOffset;
         std::string declarationName;
 
-        TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId), tmpTargetedBytecodePosition(0), cbufferTotalOffset(0){}
+        TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId), tmpTargetedBytecodePosition(0){}
 
         unsigned int countMembers() { return members.size(); }
     };
@@ -419,9 +429,13 @@ public:
         TypeInstruction* pointerToType;
         VariableInstruction* variable;
 
-        TypeStructMemberArray* cbufferMembersData;  //data used temporarly when processing cbuffer
+        //data used temporarly when processing cbuffers
+        TypeStructMemberArray* cbufferMembersData;
         int tmpFlag;
+        int posOpNameType;
+        int posOpNameVariable;
 
+        //===========================================================
         ShaderTypeData(TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) : type(type), pointerToType(pointerToType), variable(variable),
             cbufferMembersData(nullptr), tmpFlag(0){}
         virtual ~ShaderTypeData(){}
@@ -608,7 +622,7 @@ private:
 
     unsigned int GetUniqueMergeOperationId();
     static void ResetMergeOperationId();
-    bool ApplyBytecodeUpdateController(const BytecodeUpdateController& bytecodeUpdateController);
+    bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
 
     bool ApplyCompositionInstancesToBytecode();

@@ -6,21 +6,21 @@ struct globalStreams
     int sbase2_1;
 };
 
-layout(std140) uniform Base_globalCBuffer
+layout(std140) uniform _globalCbuffer
 {
     int Var0;
     int Var1;
-} Base_globalCBuffer_var;
+} _globalCbuffer_var;
 
-layout(std140) uniform Base__0
+layout(std140) uniform _5
 {
     float Var2;
-} Base__0_var;
+} _var;
 
 globalStreams globalStreams_var;
 
 int main()
 {
-    return int(((globalStreams_var.sbase1_0 + float(Base_globalCBuffer_var.Var1)) + Base__0_var.Var2) + 2.0);
+    return int(((globalStreams_var.sbase1_0 + float(_globalCbuffer_var.Var1)) + _var.Var2) + 2.0);
 }
 

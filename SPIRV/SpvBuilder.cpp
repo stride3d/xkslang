@@ -978,13 +978,14 @@ void Builder::addMemberSemanticName(Id id, int num, const char* semantic)
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
-void Builder::addCBufferProperties(Id id, int cbufferType, int countMembers, int totalCountOffset)
+void Builder::addCBufferProperties(Id id, int cbufferType, int countMembers, std::vector<unsigned int>& membersSizeAndAlignment)
 {
-    Instruction* dec = new Instruction(OpCBufferProperties);
+    Instruction* dec = new Instruction(OpCBufferMemberProperties);
     dec->addIdOperand(id);
     dec->addImmediateOperand(cbufferType);
     dec->addImmediateOperand(countMembers);
-    dec->addImmediateOperand(totalCountOffset);
+    for (unsigned int i = 0; i < membersSizeAndAlignment.size(); ++i)
+        dec->addImmediateOperand(membersSizeAndAlignment[i]);
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 

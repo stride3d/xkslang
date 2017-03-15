@@ -1,0 +1,27 @@
+shader ShaderA
+{
+	stage cbuffer PerDraw
+	{
+		float var1;
+		float var2;
+	}
+	
+	float VSMain()
+	{
+		return var1;
+	}
+}
+
+shader ShaderB
+{
+	stage cbuffer PerDraw
+	{
+		float var2;
+		float var3;
+	}
+	
+	float PSMain()
+	{
+		return var3;
+	}
+}

@@ -2372,10 +2372,6 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
                                                 const glslang::TQualifier& qualifier,
                                                 spv::Id spvType)
 {
-    bool isCbuffer = false;
-    unsigned int cbufferTotalCountMembers = 0;
-    unsigned int cbufferTotalOffset = 0;
-
     // Name and decorate the non-hidden members
     int offset = -1;
     int locationOffset = 0;  // for use within the members of this struct
@@ -2506,9 +2502,21 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 
     if (type.getBasicType() == glslang::EbtBlock)
     {
-        isCbuffer = true;
-        cbufferTotalCountMembers = glslangMembers->size();
-        cbufferTotalOffset = offset;
+        bool isCbuffer = true;
+        unsigned int countMembers = glslangMembers->size();
+
+        //Get the size and alignment of the cbuffer members
+        std::vector<unsigned int> membersSizeAndAlignment;
+        for (unsigned int m = 0; m < countMembers; m++)
+        {
+            const glslang::TType& glslangMember = *(*glslangMembers)[m].type;
+            const glslang::TQualifier& memberQualifier = glslangMember.getQualifier();
+
+            int memberSize, dummyStride;
+            int memberAlignment = glslangIntermediate->getBaseAlignment(glslangMember, memberSize, dummyStride, explicitLayout == glslang::ElpStd140, memberQualifier.layoutMatrix == glslang::ElmRowMajor);
+            membersSizeAndAlignment.push_back(memberSize);
+            membersSizeAndAlignment.push_back(memberAlignment);
+        }
 
         int cbufferType = -1;
         if (type.IsUndefinedCBufferType()) cbufferType = spv::CBufferUndefined;
@@ -2519,7 +2527,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 
         if (cbufferType != -1)
         {
-            builder.addCBufferProperties(spvType, cbufferType, cbufferTotalCountMembers, cbufferTotalOffset);
+            builder.addCBufferProperties(spvType, cbufferType, countMembers, membersSizeAndAlignment);
         }
     }
     

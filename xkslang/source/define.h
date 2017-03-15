@@ -26,6 +26,8 @@ namespace xkslang
     std::string GetShadingStageLabel(ShadingStageEnum stage);
     std::string GetShadingStageLabelShort(ShadingStageEnum stage);
 
+    bool IsPow2(int pow2);
+
 } //namespace xkslang
 
 #endif  // XKSLANG_XKSLPARSER_DEFINE_H

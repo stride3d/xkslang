@@ -1,5 +1,10 @@
 #version 450
 
+layout(std140) uniform PerDraw
+{
+    layout(row_major) mat4 BlendMatrixArray[5];
+} PerDraw_var;
+
 layout(std140) uniform PerLighting
 {
     float BleedingFactor;
@@ -8,6 +13,6 @@ layout(std140) uniform PerLighting
 
 void main()
 {
-    float f = PerLighting_var.BleedingFactor;
+    float f = PerLighting_var.MinVariance;
 }
 

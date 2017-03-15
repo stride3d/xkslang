@@ -5,16 +5,16 @@ struct globalStreams
     int sbase1_0;
 };
 
-layout(std140) uniform Base_globalCBuffer
+layout(std140) uniform _globalCbuffer
 {
     int Var1;
-} Base_globalCBuffer_var;
+} _globalCbuffer_var;
 
 globalStreams globalStreams_var;
 
 int Base_ComputeBase()
 {
-    return Base_globalCBuffer_var.Var1 + globalStreams_var.sbase1_0;
+    return _globalCbuffer_var.Var1 + globalStreams_var.sbase1_0;
 }
 
 int shaderA_f1()
@@ -24,6 +24,6 @@ int shaderA_f1()
 
 int main()
 {
-    return ((Base_ComputeBase() + Base_globalCBuffer_var.Var1) + Base_ComputeBase()) + shaderA_f1();
+    return ((Base_ComputeBase() + _globalCbuffer_var.Var1) + Base_ComputeBase()) + shaderA_f1();
 }
 

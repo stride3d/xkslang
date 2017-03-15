@@ -9,6 +9,12 @@
 using namespace std;
 using namespace xkslang;
 
+bool xkslang::IsPow2(int pow2)
+{
+    if (pow2 <= 0) return false;
+    return (pow2 & (pow2 - 1)) == 0;
+}
+
 string xkslang::GetShadingStageLabel(ShadingStageEnum stage)
 {
     switch (stage)

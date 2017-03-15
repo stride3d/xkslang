@@ -283,7 +283,7 @@ bool SpxStreamRemapper::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shad
                 case spv::OpBelongsToShader:
                 case spv::OpMethodProperties:
                 case spv::OpMemberProperties:
-                case spv::OpCBufferProperties:
+                case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
                 {
                     const spv::Id id = asId(start + 1);
@@ -416,7 +416,7 @@ bool SpxStreamRemapper::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderT
                 case spv::OpBelongsToShader:
                 case spv::OpMethodProperties:
                 case spv::OpMemberProperties:
-                case spv::OpCBufferProperties:
+                case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
                 {
                     const spv::Id id = asId(start + 1);
@@ -1072,7 +1072,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
                 case spv::OpMemberProperties:
-                case spv::OpCBufferProperties:
+                case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
@@ -1184,7 +1184,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
                 case spv::OpMemberProperties:
-                case spv::OpCBufferProperties:
+                case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
                 {
                     posToInsertNewNames = start;
@@ -3234,6 +3234,8 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 listAllShaderCBuffers.push_back(shaderType);
                 shaderType->type->isCbufferUsed = false;
                 shaderType->cbufferMembersData = nullptr;
+                shaderType->posOpNameType = -1;
+                shaderType->posOpNameVariable = -1;
             }
         }
     }
@@ -3262,7 +3264,9 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                     shaderType->cbufferMembersData = new TypeStructMemberArray();
                     shaderType->cbufferMembersData->members.resize(shaderType->type->cbufferCountMembers);
 
+                    //set both type and variable IDs
                     vectorUsedCbuffers[shaderType->type->GetId()] = shaderType;
+                    vectorUsedCbuffers[shaderType->variable->GetId()] = shaderType;
                 }
             }
         }
@@ -3274,6 +3278,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
     //=========================================================================================================================
     //Retrieve information from the bytecode for all USED cbuffers, and their members
     unsigned int posLatestMemberNameOrDecorate = header_size;
+    unsigned int posFirstOpNameOrDecorate = spv.size();
     if (success && anyCBufferUsed)
     {
         unsigned int start = header_size;
@@ -3285,18 +3290,34 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
 
             switch (opCode)
             {
+                case spv::OpName:
+                {
+                    if (posFirstOpNameOrDecorate > start) posFirstOpNameOrDecorate = start;
+
+                    spv::Id id = asId(start + 1);
+                    if (vectorUsedCbuffers[id] != nullptr)
+                    {
+                        ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
+                        
+                        if (cbuffer->type->GetId() == id) cbuffer->posOpNameType = start;
+                        else if (cbuffer->variable->GetId() == id) cbuffer->posOpNameVariable = start;
+                    }
+                    break;
+                }
+
                 case spv::OpMemberName:
                 {
                     spv::Id id = asId(start + 1);
                     if (vectorUsedCbuffers[id] != nullptr)
                     {
-                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
-
                         const ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
 
                         unsigned int index = asLiteralValue(start + 2);
                         string memberName = literalString(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
+                        if (cbuffer->type->GetId() != id) { error("Invalid instruction Id"); break; }
                         if (index >= cbuffer->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
                         cbuffer->cbufferMembersData->members[index].declarationName = memberName;
@@ -3304,18 +3325,53 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                     break;
                 }
 
+                case spv::OpCBufferMemberProperties:
+                {
+                    const spv::Id typeId = asId(start + 1);
+
+                    if (vectorUsedCbuffers[typeId] != nullptr)
+                    {
+                        const ShaderTypeData* cbuffer = vectorUsedCbuffers[typeId];
+                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
+
+#ifdef XKSLANG_DEBUG_MODE
+                        if (cbuffer->type->GetId() != typeId) { error("Invalid instruction Id"); break; }
+#endif
+
+                        int cbufferType = asLiteralValue(start + 2);
+                        unsigned int countMembers = asLiteralValue(start + 3);
+                        unsigned int remainingBytes = wordCount - 4;
+
+                        if (countMembers != cbuffer->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
+                        if (remainingBytes != countMembers * 2) { error("OpCBufferMemberProperties instruction has an invalid number of bytes"); break; }
+                        
+                        for (unsigned int m = 0; m < countMembers; m++)
+                        {
+                            unsigned int k = start + 4 + (m * 2);
+                            unsigned int memberSize = asLiteralValue(k);
+                            unsigned int memberAlignment = asLiteralValue(k + 1);
+
+                            cbuffer->cbufferMembersData->members[m].memberSize = memberSize;
+                            cbuffer->cbufferMembersData->members[m].memberAlignment = memberAlignment;
+                        }
+                    }
+                    break;
+                }
+
                 case spv::OpMemberDecorate:
                 {
+                    if (posFirstOpNameOrDecorate > start) posFirstOpNameOrDecorate = start;
+
                     spv::Id id = asId(start + 1);
                     if (vectorUsedCbuffers[id] != nullptr)
                     {
-                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
-
                         const ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
 
                         const unsigned int index = asLiteralValue(start + 2);
                         const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
+                        if (cbuffer->type->GetId() != id) { error("Invalid instruction Id"); break; }
                         if (index >= cbuffer->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
                         if (dec == spv::DecorationOffset)
@@ -3324,7 +3380,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                             if (wordCount <= 4) { error("Invalid wordCount"); break; }
 #endif
                             const unsigned int offsetValue = asLiteralValue(start + 4);
-                            cbuffer->cbufferMembersData->members[index].offset = offsetValue;
+                            cbuffer->cbufferMembersData->members[index].memberOffset = offsetValue;
                         }
                         else
                         {
@@ -3350,6 +3406,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
 
                         int countMembers = wordCount - 2;
 #ifdef XKSLANG_DEBUG_MODE
+                        if (cbuffer->type->GetId() != id) { error("Invalid instruction Id"); break; }
                         if (countMembers < 0) { error("corrupted bytecode: countMembers is negative"); break; }
                         if (countMembers != cbuffer->cbufferMembersData->members.size()) { error("inconsistent number of members between struct instruction and cbuffer properties"); break; }
 #endif
@@ -3374,6 +3431,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
         }
 
         if (positionFirstOpFunctionInstruction == 0) positionFirstOpFunctionInstruction = header_size;
+        if (posFirstOpNameOrDecorate > posLatestMemberNameOrDecorate) posFirstOpNameOrDecorate = posLatestMemberNameOrDecorate;
         if (errorMessages.size() > 0) success = false;
     }
 
@@ -3389,7 +3447,8 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 if (cbuffer->type->cbufferCountMembers != cbuffer->cbufferMembersData->countMembers()) {error("inconsistent number of members");}
                 for (unsigned int m = 0; m < cbuffer->cbufferMembersData->countMembers(); ++m)
                 {
-                    if (cbuffer->cbufferMembersData->members[m].offset < 0) { error("undefined offset for a cbuffer member"); }
+                    if (cbuffer->cbufferMembersData->members[m].memberSize < 0) { error("undefined size or alignment for a cbuffer member"); }
+                    if (!IsPow2(cbuffer->cbufferMembersData->members[m].memberAlignment)) { error("invalid member alignment"); }
                     if (cbuffer->cbufferMembersData->members[m].memberTypeId == spvUndefinedId) { error("undefined member type id for a cbuffer member"); }
                     cbuffer->cbufferMembersData->members[m].newStructMemberIndex = -1;
                     cbuffer->cbufferMembersData->members[m].newStructTypeId = 0;
@@ -3403,12 +3462,13 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
     //=========================================================================================================================
     //Stuff necessary to insert new bytecode
     BytecodeUpdateController bytecodeUpdateController;
-    BytecodeChunk* bytecodeNamesAndDecocates = bytecodeUpdateController.InsertNewBytecodeChunckAt(posLatestMemberNameOrDecorate, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertFirst);
+    BytecodeChunk* bytecodeNewNamesAndDecocates = bytecodeUpdateController.InsertNewBytecodeChunckAt(posLatestMemberNameOrDecorate, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertFirst);
     spv::Id newBoundId = bound();
 
     unsigned int maxConstValueNeeded = 0;
     vector<spv::Id> mapIndexesWithConstValueId; //map const value with their typeId
-    vector<TypeStructMemberArray*> listNewCbuffers; //this list will contain all new cbuffer
+    vector<TypeStructMemberArray*> listNewCbuffers;  //this list will contain all new cbuffer
+    vector<ShaderTypeData*> listUntouchedCbuffers;   //this list will contain all cbuffers being kept as they are
 
     vector<ShaderTypeData*>& vectorCbuffersToRemap = vectorUsedCbuffers;  //just reusing an existing vector to avoid creating a new one...
     std::fill(vectorCbuffersToRemap.begin(), vectorCbuffersToRemap.end(), nullptr);
@@ -3529,8 +3589,6 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
 
                 //==========================================================================================
                 //create the list with all members from cbuffers we're merging
-                unsigned int totalCBuffersOffset = 0;
-                unsigned int totalOffsetOfSkippedMembers = 0;
                 for (auto itcb = someCBuffersToMerge.begin(); itcb != someCBuffersToMerge.end(); itcb++)
                 {
                     ShaderTypeData* cbufferToMerge = *itcb;
@@ -3544,11 +3602,6 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                     {
                         TypeStructMember& memberToMerge = cbufferToMerge->cbufferMembersData->members[m];
                         if (onlyMergeUsedMembers && memberToMerge.isUsed == false){
-                            unsigned int skippedOffset;
-                            if (m < countMembersInBufferToMerge - 1) skippedOffset = cbufferToMerge->cbufferMembersData->members[m + 1].offset - memberToMerge.offset;
-                            else skippedOffset = cbufferToMerge->type->cbufferTotalOffset - memberToMerge.offset;
-                            totalOffsetOfSkippedMembers += skippedOffset;
-                            sadfsdafds;  //check for padding !!!!!!!!!!!!!!!!!!
                             continue;
                         }
 
@@ -3560,20 +3613,35 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                         member.structMemberIndex = memberNewIndex;
                         member.memberTypeId = memberTypeId;
                         member.declarationName = memberToMerge.declarationName;
-                        member.offset = (totalCBuffersOffset + memberToMerge.offset) - totalOffsetOfSkippedMembers;
                         member.listMemberDecoration = memberToMerge.listMemberDecoration;
+
+                        member.memberSize = memberToMerge.memberSize;
+                        member.memberAlignment = memberToMerge.memberAlignment;
+
+                        //compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment
+                        int memberOffset = 0;
+                        if (memberNewIndex > 0)
+                        {
+                            int previousMemberOffset = combinedCbuffer->members[memberNewIndex - 1].memberOffset;
+                            int previousMemberSize = combinedCbuffer->members[memberNewIndex - 1].memberSize;
+
+                            memberOffset = previousMemberOffset + previousMemberSize;
+                            int memberAlignment = member.memberAlignment;
+                            //round to pow2
+                            memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1));
+                        }
+                        member.memberOffset = memberOffset;
 
                         //link reference from previous member to new one
                         memberToMerge.newStructMemberIndex = memberNewIndex;
                         memberToMerge.newStructTypeId = combinedCbuffer->structTypeId;
                         memberToMerge.newStructVariableAccessTypeId = combinedCbuffer->structVariableTypeId;
                     }
-                    totalCBuffersOffset += cbufferToMerge->type->cbufferTotalOffset;
+                    /// totalCBuffersOffset += cbufferToMerge->type->cbufferTotalOffset;
                 }
                 if (combinedCbuffer->members.size() == 0) { error("The combined cbuffer has no members"); break; }
                 if (combinedCbuffer->members.size() > maxConstValueNeeded) maxConstValueNeeded = combinedCbuffer->members.size();
 
-                combinedCbuffer->cbufferTotalOffset = totalCBuffersOffset - totalOffsetOfSkippedMembers;
                 combinedCbuffer->declarationName = someCBuffersToMerge[0]->type->GetName();
 
                 //the merged cbuffers will be removed
@@ -3583,6 +3651,11 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                     cbufferToMerge->type->isCbufferUsed = false;
                 }
             }  //end of if (listCBuffersToMerge.size() > 0)
+            else
+            {
+                //the cbuffer is used but not merged with anyone else: we still add it in this list, so that we can just rename it (for a cleaner bytecode)
+                listUntouchedCbuffers.push_back(cbufferA);
+            }
         } //end of for (unsigned int i = 0; i < listAllShaderCBuffers.size(); i++) (checking all used cbuffers)
 
         if (errorMessages.size() > 0) success = false;
@@ -3673,22 +3746,27 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 spv::Instruction cbufferStructName(spv::OpName);
                 cbufferStructName.addIdOperand(cbufferType.getResultId());
                 cbufferStructName.addStringOperand(cbufferName.c_str());
-                cbufferStructName.dump(bytecodeNamesAndDecocates->bytecode);
+                cbufferStructName.dump(bytecodeNewNamesAndDecocates->bytecode);
 #endif
 
                 //cbuffer struct decorate (block / cbuffer)
                 spv::Instruction structDecorateInstr(spv::OpDecorate);
                 structDecorateInstr.addIdOperand(cbuffer->structTypeId);
                 structDecorateInstr.addImmediateOperand(spv::DecorationBlock);
-                structDecorateInstr.dump(bytecodeNamesAndDecocates->bytecode);
+                structDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
 
                 //cbuffer properties (block / cbuffer)
-                spv::Instruction structCBufferPropertiesInstr(spv::OpCBufferProperties);
+                spv::Instruction structCBufferPropertiesInstr(spv::OpCBufferMemberProperties);
                 structCBufferPropertiesInstr.addIdOperand(cbuffer->structTypeId);
                 structCBufferPropertiesInstr.addImmediateOperand(spv::CBufferDefined);
                 structCBufferPropertiesInstr.addImmediateOperand(cbuffer->countMembers());
-                structCBufferPropertiesInstr.addImmediateOperand(cbuffer->cbufferTotalOffset);
-                structCBufferPropertiesInstr.dump(bytecodeNamesAndDecocates->bytecode);
+                for (unsigned int m = 0; m < cbuffer->members.size(); ++m)
+                {
+                    //add size and alignment for each members
+                    structCBufferPropertiesInstr.addImmediateOperand(cbuffer->members[m].memberSize);
+                    structCBufferPropertiesInstr.addImmediateOperand(cbuffer->members[m].memberAlignment);
+                }
+                structCBufferPropertiesInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
             }
 
             //make the pointer type
@@ -3709,7 +3787,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 spv::Instruction variableName(spv::OpName);
                 variableName.addIdOperand(variable.getResultId());
                 variableName.addStringOperand(cbufferVarName.c_str());
-                variableName.dump(bytecodeNamesAndDecocates->bytecode);
+                variableName.dump(bytecodeNewNamesAndDecocates->bytecode);
 #endif
             }
 
@@ -3724,7 +3802,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 memberName.addIdOperand(cbuffer->structTypeId);
                 memberName.addImmediateOperand(memberIndex);
                 memberName.addStringOperand(cbufferMember.declarationName.c_str()); //use declaration name
-                memberName.dump(bytecodeNamesAndDecocates->bytecode);
+                memberName.dump(bytecodeNewNamesAndDecocates->bytecode);
             }
 #endif
 
@@ -3738,8 +3816,8 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 memberOffsetDecorateInstr.addIdOperand(cbuffer->structTypeId);
                 memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
                 memberOffsetDecorateInstr.addImmediateOperand(spv::DecorationOffset);
-                memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.offset);
-                memberOffsetDecorateInstr.dump(bytecodeNamesAndDecocates->bytecode);
+                memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.memberOffset);
+                memberOffsetDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
             
                 //member extra decorate (if any)
                 if (cbufferMember.listMemberDecoration.size() > 0)
@@ -3758,13 +3836,55 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                         memberDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
                         for (unsigned int k = 0; k < decorateCount; k++)
                             memberDecorateInstr.addImmediateOperand(cbufferMember.listMemberDecoration[cur + k]);
-                        memberDecorateInstr.dump(bytecodeNamesAndDecocates->bytecode);
+                        memberDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
 
                         cur += decorateCount;
                     }
                 }
             }
         }
+
+#ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
+        if (listUntouchedCbuffers.size() > 0)
+        {
+            //rename the cbuffers
+            for (auto itcb = listUntouchedCbuffers.begin(); itcb != listUntouchedCbuffers.end(); itcb++)
+            {
+                ShaderTypeData* cbuffer = *itcb;
+
+                //remove their initial name instruction (if any)
+                unsigned int posToInsert = 0;
+                if (cbuffer->posOpNameType > 0)
+                {
+                    if (posToInsert == 0) posToInsert = cbuffer->posOpNameType;
+                    int wordCount = asWordCount(cbuffer->posOpNameType);
+                    if (bytecodeUpdateController.AddPortionToRemove(cbuffer->posOpNameType, wordCount) == nullptr) { error("Failed to insert a portion to remove"); break; }   
+                }
+                if (cbuffer->posOpNameVariable > 0)
+                {
+                    if (posToInsert == 0) posToInsert = cbuffer->posOpNameVariable;
+                    int wordCount = asWordCount(cbuffer->posOpNameVariable);
+                    if (bytecodeUpdateController.AddPortionToRemove(cbuffer->posOpNameVariable, wordCount) == nullptr) { error("Failed to insert a portion to remove"); break; }
+                }
+                if (posToInsert == 0) posToInsert = posFirstOpNameOrDecorate;
+                BytecodeChunk* bytecodeNameInsertion = bytecodeUpdateController.InsertNewBytecodeChunckAt(posToInsert, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertFirst);
+
+                //set the new type and variable name
+                string cbufferName = cbuffer->type->GetName();
+                string cbufferVarName = cbufferName + "_var";
+
+                spv::Instruction cbufferStructName(spv::OpName);
+                cbufferStructName.addIdOperand(cbuffer->type->GetId());
+                cbufferStructName.addStringOperand(cbufferName.c_str());
+                cbufferStructName.dump(bytecodeNameInsertion->bytecode);
+
+                spv::Instruction variableName(spv::OpName);
+                variableName.addIdOperand(cbuffer->variable->GetId());
+                variableName.addStringOperand(cbufferVarName.c_str());
+                variableName.dump(bytecodeNameInsertion->bytecode);
+            }
+        }
+#endif
 
         if (errorMessages.size() > 0) success = false;
     }
@@ -3859,18 +3979,15 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
     if (success)
     {
         //add the new cbuffers into the bytecode
-        if (newBoundId > bound())
-        {
-            setBound(newBoundId);
+        setBound(newBoundId);
 
-            //apply the bytecode update controller
-            if (!ApplyBytecodeUpdateController(bytecodeUpdateController)) error("failed to update the bytecode update controller");
+        //apply the bytecode update controller
+        if (!ApplyBytecodeUpdateController(bytecodeUpdateController)) error("failed to update the bytecode update controller");
 
-            //bytecode has been updated: reupdate all maps
-            if (!UpdateAllMaps()) error("failed to update all maps");
+        //bytecode has been updated: reupdate all maps
+        if (!UpdateAllMaps()) error("failed to update all maps");
 
-            if (errorMessages.size() > 0) success = false;
-        }
+        if (errorMessages.size() > 0) success = false;
     }
 
     //=========================================================================================================================
@@ -5067,7 +5184,7 @@ bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
             case spv::OpShaderCompositionInstance:
             case spv::OpMethodProperties:
             case spv::OpMemberProperties:
-            case spv::OpCBufferProperties:
+            case spv::OpCBufferMemberProperties:
             case spv::OpMemberSemanticName:
             {
                 stripInst(vecStripRanges, start);
@@ -5712,7 +5829,7 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 break;
             }*/
 
-            case spv::Op::OpCBufferProperties:
+            case spv::Op::OpCBufferMemberProperties:
             {
                 //we look for decorate with Block property (defining a cbuffer)
                 const spv::Id typeId = asId(start + 1);
@@ -5878,12 +5995,11 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
         switch (opCode)
         {
-            case spv::OpCBufferProperties:
+            case spv::OpCBufferMemberProperties:
             {
                 const spv::Id typeId = asId(start + 1);
                 int cbufferType = asLiteralValue(start + 2);
                 int countMembers = asLiteralValue(start + 3);
-                int totalOffset = asLiteralValue(start + 4);
                 TypeInstruction* type = GetTypeById(typeId);
                 if (type == nullptr) return error("Cannot find the type for Id: " + to_string(typeId));
                 if (countMembers <= 0) { error("Invalid number of members for the cbuffer: " + type->GetName()); break; }
@@ -5891,7 +6007,6 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 type->isCbuffer = true;
                 type->cbufferType = cbufferType;
                 type->cbufferCountMembers = countMembers;
-                type->cbufferTotalOffset = totalOffset;
                 break;
             }
         }
@@ -7113,6 +7228,24 @@ bool SpxStreamRemapper::parseInstruction(unsigned int word, spv::Op& opCode, uns
 
 //=====================================================================================================================================
 //=====================================================================================================================================
+BytecodePortionToRemove* BytecodeUpdateController::AddPortionToRemove(unsigned int position, unsigned int count)
+{
+    if (count == 0) return nullptr;
+
+    auto itListPos = listSortedPortionsToRemove.begin();
+    while (itListPos != listSortedPortionsToRemove.end())
+    {
+        if (position == itListPos->position) return nullptr;
+        if (position > itListPos->position) break; //we sort the list from higher to smaller position
+
+        if (position + count > itListPos->position) return nullptr; //we're overlapping
+        itListPos++;
+    }
+
+    itListPos = listSortedPortionsToRemove.insert(itListPos, BytecodePortionToRemove(position, count));
+    return &(*itListPos);
+}
+
 BytecodeChunk* BytecodeUpdateController::InsertNewBytecodeChunckAt(unsigned int position, InsertionConflictBehaviourEnum conflictBehaviour, unsigned int countBytesToOverlap)
 {
     auto itListPos = listSortedChunksToInsert.begin();
@@ -7170,7 +7303,7 @@ BytecodeChunk* BytecodeUpdateController::GetBytecodeChunkAt(unsigned int positio
     return nullptr;
 }
 
-bool SpxStreamRemapper::ApplyBytecodeUpdateController(const BytecodeUpdateController& bytecodeUpdateController)
+bool SpxStreamRemapper::ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController)
 {
     unsigned int bytecodeOriginalSize = spv.size();
 
@@ -7200,11 +7333,13 @@ bool SpxStreamRemapper::ApplyBytecodeUpdateController(const BytecodeUpdateContro
         }
     }
 
-    //then Insert all new chuncks in the bytecode
+    //Insert all new chuncks in the bytecode, update positions accordingly of chuncks to remove
     for (auto itbc = bytecodeUpdateController.listSortedChunksToInsert.begin(); itbc != bytecodeUpdateController.listSortedChunksToInsert.end(); itbc++)
     {
         const BytecodeChunk& bytecodeChunck = *itbc;
         if (bytecodeChunck.bytecode.size() == 0) continue;
+
+        int countBytesInserted = 0;
 
 #ifdef XKSLANG_DEBUG_MODE
         if (bytecodeChunck.insertionPos > bytecodeOriginalSize) { error("bytecode chunck is out of bound"); break; }
@@ -7214,6 +7349,7 @@ bool SpxStreamRemapper::ApplyBytecodeUpdateController(const BytecodeUpdateContro
         if (bytecodeChunck.countInstructionsToOverlap == 0)
         {
             spv.insert(spv.begin() + bytecodeChunck.insertionPos, bytecodeChunck.bytecode.begin(), bytecodeChunck.bytecode.end());
+            countBytesInserted = bytecodeChunck.bytecode.size();
         }
         else
         {
@@ -7223,12 +7359,41 @@ bool SpxStreamRemapper::ApplyBytecodeUpdateController(const BytecodeUpdateContro
 
 #ifdef XKSLANG_DEBUG_MODE
             if (countRemaining < 0) { error("invalid number of overlapping bytes"); break; }
+            if (bytecodeChunck.insertionPos + countOverlaps >= spv.size()) { error("bytecode chunck overlaps too many bytes"); break; }
 #endif
 
             for (unsigned int i = 0; i < countOverlaps; ++i) spv[bytecodeChunck.insertionPos + i] = bytecodeChunck.bytecode[i];
-            if (countRemaining > 0)
+            if (countRemaining > 0){
                 spv.insert(spv.begin() + (bytecodeChunck.insertionPos + countOverlaps), bytecodeChunck.bytecode.begin() + countOverlaps, bytecodeChunck.bytecode.end());
+            }
+            countBytesInserted = countRemaining;
         }
+
+        if (countBytesInserted > 0)
+        {
+            //for all portions to remove coming AFTER the position we just inserted into, we update their position
+            for (auto itpr = bytecodeUpdateController.listSortedPortionsToRemove.begin(); itpr != bytecodeUpdateController.listSortedPortionsToRemove.end(); itpr++)
+            {
+                BytecodePortionToRemove& portionToRemove = *itpr;
+
+                if (portionToRemove.position >= bytecodeChunck.insertionPos)
+                {
+                    portionToRemove.position += countBytesInserted;
+                }
+                else
+                {
+                    if (portionToRemove.position + portionToRemove.count > bytecodeChunck.insertionPos){ error("A portion to remove overlap an insertion chunck"); }
+                    break;
+                }
+            }
+        }
+    }
+
+    //Remove all portions to remove
+    for (auto itpr = bytecodeUpdateController.listSortedPortionsToRemove.begin(); itpr != bytecodeUpdateController.listSortedPortionsToRemove.end(); itpr++)
+    {
+        BytecodePortionToRemove& portionToRemove = *itpr;
+        spv.erase(spv.begin() + portionToRemove.position, spv.begin() + (portionToRemove.position + portionToRemove.count));
     }
 
     if (errorMessages.size() > 0) return false;

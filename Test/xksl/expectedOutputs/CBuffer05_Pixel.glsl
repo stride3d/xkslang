@@ -1,6 +1,6 @@
 #version 450
 
-layout(std140) uniform ShaderMain_ReferenceCBuffer_3
+layout(std140) uniform ReferenceCBuffer
 {
     int _aInt;
     float _aFloat;
@@ -21,7 +21,7 @@ layout(std140) uniform ShaderMain_ReferenceCBuffer_3
     vec4 _arrayAA4[4];
     vec2 _arrayAA2[4];
     vec4 _af02;
-} ShaderMain_ReferenceCBuffer_3_var;
+} ReferenceCBuffer_var;
 
 layout(std140) uniform PerDraw
 {

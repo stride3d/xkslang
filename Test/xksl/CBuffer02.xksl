@@ -3,9 +3,10 @@ shader ShaderMain
 {
 	float var1;
 	float var2;
-	float var3;
 	float var4[4];
-	float4 var5;
+	float var5;
+	float2x2 var6;
+	float4 var7;
 
     cbuffer CBufferPixelStage
     {
@@ -24,6 +25,6 @@ shader ShaderMain
 	
     stage void PSMain() 
     {
-        float f = MinVariance + var5.x;
+        float f = MinVariance + var7.x;
     }
 };

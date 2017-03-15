@@ -1,13 +1,13 @@
 #version 450
 
-layout(std140) uniform ShaderMain_PerLighting_0
+layout(std140) uniform PerLighting
 {
     float BleedingFactor;
     float MinVariance;
-} ShaderMain_PerLighting_0_var;
+} PerLighting_var;
 
 void main()
 {
-    float f = ShaderMain_PerLighting_0_var.MinVariance;
+    float f = PerLighting_var.MinVariance;
 }
 

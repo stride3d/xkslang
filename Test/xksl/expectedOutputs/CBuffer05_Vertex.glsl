@@ -1,6 +1,6 @@
 #version 450
 
-layout(std140) uniform ShaderMain_ReferenceCBuffer_3
+layout(std140) uniform ReferenceCBuffer
 {
     int _aInt;
     float _aFloat;
@@ -21,7 +21,7 @@ layout(std140) uniform ShaderMain_ReferenceCBuffer_3
     vec4 _arrayAA4[4];
     vec2 _arrayAA2[4];
     vec4 _af02;
-} ShaderMain_ReferenceCBuffer_3_var;
+} ReferenceCBuffer_var;
 
 layout(std140) uniform PerDraw
 {
@@ -48,7 +48,7 @@ layout(std140) uniform PerDraw
 
 void main()
 {
-    vec4 _13 = vec4(float(ShaderMain_ReferenceCBuffer_3_var._aInt));
+    vec4 _13 = vec4(float(ReferenceCBuffer_var._aInt));
     mat4 f44 = mat4(PerDraw_var.arrayA[0][0] + _13, PerDraw_var.arrayA[0][1] + _13, PerDraw_var.arrayA[0][2] + _13, PerDraw_var.arrayA[0][3] + _13);
 }
 
