@@ -1,13 +1,13 @@
 #version 450
 
-layout(std140) uniform _globalCbuffer
+layout(std140) uniform globalCbuffer
 {
     float varCB;
-} _globalCbuffer_var;
+} globalCbuffer_var;
 
 float o0S2C0_CompB_Compute()
 {
-    return _globalCbuffer_var.varCB;
+    return globalCbuffer_var.varCB;
 }
 
 float main()

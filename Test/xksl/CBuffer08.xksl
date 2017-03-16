@@ -1,27 +1,45 @@
-shader ShaderA
+shader ShaderPSMain
 {
-	stage cbuffer PerDraw
+    stage cbuffer
 	{
 		float var1;
 		float var2;
-	}
-	
-	float VSMain()
-	{
-		return var1;
-	}
-}
-
-shader ShaderB
-{
-	stage cbuffer PerDraw
-	{
-		float var2;
 		float var3;
+		float var4;
 	}
 	
-	float PSMain()
+	cbuffer
 	{
-		return var3;
+		float var5;
+		float var1;
 	}
-}
+
+	float var7;
+	
+	cbuffer
+	{
+		float var8;
+		float var9;
+	}
+
+    stage void PSMain() 
+    {
+        float f = var5 + var2 + var1;
+    }
+};
+
+shader ShaderVSMain
+{
+	cbuffer
+	{
+		float var5;
+		float var1;
+	}
+	
+	stage float var8;
+
+	stage void VSMain() 
+    {
+        float f = var1 + var8;
+    }
+};

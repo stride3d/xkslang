@@ -278,17 +278,6 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
     }
 
     //===================================================================================================================
-    //===================================================================================================================
-    // remove unused shaders (shader whose methods or members are never called by the output stages)
-    if (!clonedSpxStream->RemoveAllUnusedShaders(vecMixerOutputStages))
-    {
-        clonedSpxStream->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
-        delete clonedSpxStream;
-        return error(messages, "Fail to remove all unused shaders");
-    }
-
-    //===================================================================================================================
     // Process cbuffers
     //===================================================================================================================
     // remove unused cbuffers, merge used cbuffers havind same name
@@ -301,6 +290,17 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
     }
     if (mergedCBuffersSpv != nullptr)
         clonedSpxStream->GetMixinBytecode(mergedCBuffersSpv->getWritableBytecodeStream());
+
+    //===================================================================================================================
+    //===================================================================================================================
+    // remove unused shaders (shader whose methods or members are never called by the output stages)
+    if (!clonedSpxStream->RemoveAllUnusedShaders(vecMixerOutputStages))
+    {
+        clonedSpxStream->copyMessagesTo(messages);
+        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        delete clonedSpxStream;
+        return error(messages, "Fail to remove all unused shaders");
+    }
 
     //===================================================================================================================
     // Convert SPX to SPV

@@ -5,16 +5,16 @@ struct globalStreams
     int sbase1_0;
 };
 
-layout(std140) uniform _globalCbuffer
+layout(std140) uniform globalCbuffer
 {
     int Var1;
-} _globalCbuffer_var;
+} globalCbuffer_var;
 
 globalStreams globalStreams_var;
 
 int shaderA_Compute1()
 {
-    return _globalCbuffer_var.Var1 + globalStreams_var.sbase1_0;
+    return globalCbuffer_var.Var1 + globalStreams_var.sbase1_0;
 }
 
 int shaderA_Compute2()

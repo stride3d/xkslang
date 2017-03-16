@@ -10,28 +10,28 @@ struct globalStreams
     int s1_5;
 };
 
-layout(std140) uniform _globalCbuffer
+layout(std140) uniform globalCbuffer
 {
     int var1;
     int var1_1;
     int var1_2;
-} _globalCbuffer_var;
+} globalCbuffer_var;
 
 globalStreams globalStreams_var;
 
 int o1S2C0_o0S8C0_SubComp_Compute()
 {
-    return _globalCbuffer_var.var1_1 + globalStreams_var.s1_4;
+    return globalCbuffer_var.var1_1 + globalStreams_var.s1_4;
 }
 
 int o1S2C0_Comp_Compute()
 {
-    return (_globalCbuffer_var.var1_2 + globalStreams_var.s1_3) + o1S2C0_o0S8C0_SubComp_Compute();
+    return (globalCbuffer_var.var1 + globalStreams_var.s1_3) + o1S2C0_o0S8C0_SubComp_Compute();
 }
 
 int o2S2C1_SubComp_Compute()
 {
-    return _globalCbuffer_var.var1 + globalStreams_var.s1_5;
+    return globalCbuffer_var.var1_2 + globalStreams_var.s1_5;
 }
 
 int main()

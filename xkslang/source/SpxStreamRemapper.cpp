@@ -669,6 +669,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
             finalRemapTable[variable->GetId()] = newId++;
             bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge, variable->GetBytecodeStartPosition());
 
+            //don't update the name of non-instantiated merged shaders
             if (instantiateTheShader) {
                 listIdsWhereToAddNamePrefix[type->GetId()] = true;
                 listIdsWhereToAddNamePrefix[pointerToType->GetId()] = true;
@@ -774,6 +775,13 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                     {
                         bytecodeToMerge.CopyInstructionToVector(vecXkslDecorationsPossesingIds, start);
                     }
+                    break;
+                }
+
+                case spv::OpTypeXlslShaderClass:
+                {
+                    //all done at this point
+                    start = end;
                     break;
                 }
             }
@@ -1418,7 +1426,7 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 
     //===================================================================================================================
     //===================================================================================================================
-    //Find the shader from source bytecode to be instantiated
+    //Find the shader to instantiate from source bytecode
     ShaderClassData* shaderCompositionTarget = this->GetShaderByName(shaderName);
     if (shaderCompositionTarget == nullptr) return error(string("No shader exists in destination bytecode with the name: ") + shaderName);
 
@@ -1461,7 +1469,7 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
         }
         else
         {
-            //new instance
+            //we will make a new instance of the shader in the destination bytecode
             listShadersToMerge.push_back(ShaderToMergeData(aShaderToMerge, true));
         }
     }
@@ -1485,14 +1493,19 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
         return error(string("Merge shader function is expected to return a reference on the merged shader"));
 
     //===================================================================================================================
-    //Map the list of targeted shaders with the cloned shader (so that we can update the links later on)
-    /*unordered_map<spv::Id, spv::Id> mapCompositionShaderTargetedWithClonedShader;
-    for (auto its = listAllShadersToInstantiate.begin(); its != listAllShadersToInstantiate.end(); its++)
+    //Make a link between the instances and their original shaderId
+    for (auto its = listShadersToMerge.begin(); its != listShadersToMerge.end(); its++)
     {
-        ShaderClassData* shaderCloned = *its;
-        ShaderClassData* clonedShader = shaderCloned->tmpClonedShader;
-        mapCompositionShaderTargetedWithClonedShader[shaderCloned->GetId()] = clonedShader->GetId();
-    }*/
+        const ShaderToMergeData& shaderInstantiated = *its;
+        if (shaderInstantiated.instantiateShader)
+        {
+            ShaderClassData* shaderCloned = shaderInstantiated.shader;
+            ShaderClassData* clonedShader = shaderCloned->tmpClonedShader;
+            if (clonedShader == nullptr)
+                return error(string("Cannot retrieve the cloned shaders after having instantiated some compositions"));
+            clonedShader->instantiatedFromShaderId = shaderCloned->GetId();
+        }
+    }
 
     //===================================================================================================================
     //===================================================================================================================
@@ -3215,7 +3228,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 //Remove unused cbuffers, merge used cbuffers havind same name
 bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 {
-    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamReschuffled && status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAndCBuffersAnalysed) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_CBuffersValidated;
     bool success = true;
 
@@ -3302,6 +3315,35 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                         
                         if (cbuffer->type->GetId() == id) cbuffer->posOpNameType = start;
                         else if (cbuffer->variable->GetId() == id) cbuffer->posOpNameVariable = start;
+                    }
+                    break;
+                }
+
+                case spv::OpMemberProperties:
+                {
+                    const spv::Id id = asId(start + 1);
+                    if (vectorUsedCbuffers[id] != nullptr)
+                    {
+                        const ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+
+                        unsigned int index = asLiteralValue(start + 2);
+                        string memberName = literalString(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                        if (cbuffer->type->GetId() != id) { error("Invalid instruction Id"); break; }
+                        if (index >= cbuffer->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+#endif
+                        //we're only interested by the member's stage property
+                        int countProperties = wordCount - 3;
+                        for (int a = 0; a < countProperties; ++a)
+                        {
+                            int prop = asLiteralValue(start + 3 + a);
+                            switch (prop)
+                            {
+                                case spv::XkslPropertyEnum::PropertyStage:
+                                    cbuffer->cbufferMembersData->members[index].isStage = true;
+                                    break;
+                            }
+                        }
                     }
                     break;
                 }
@@ -3487,7 +3529,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
             vector<ShaderTypeData*> someCBuffersToMerge;
 
             //==========================================================================================
-            //check if we find some USED cbuffers which have to be merged (sharing the same name)
+            //check if we find some USED cbuffers which have to be merged (all defined cbuffer sharing the same name, or all global cbuffer (undefined))
             for (unsigned int j = i + 1; j < listAllShaderCBuffers.size(); j++)
             {
                 ShaderTypeData* cbufferB = listAllShaderCBuffers[j];
@@ -3588,7 +3630,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 combinedCbuffer->tmpTargetedBytecodePosition = 0;
 
                 //==========================================================================================
-                //create the list with all members from cbuffers we're merging
+                //create the list with all members from the cbuffers we're merging
                 for (auto itcb = someCBuffersToMerge.begin(); itcb != someCBuffersToMerge.end(); itcb++)
                 {
                     ShaderTypeData* cbufferToMerge = *itcb;
@@ -3605,20 +3647,44 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                             continue;
                         }
 
+                        if (memberToMerge.isStage)
+                        {
+                            //we're merging a stage member: we check that another stage member has not been added previously
+                            int lkdsjfglj = 5234535;
+
+                            /// one is CompA.varDraw1
+                            /// other is CompB.varDraw1
+                            /// btw, even if stage, just prefix the variable with the class name !!!!!!!
+                        }
+
                         int memberNewIndex = combinedCbuffer->members.size();
                         spv::Id memberTypeId = memberToMerge.memberTypeId;
                         combinedCbuffer->members.push_back(TypeStructMember());
-                        TypeStructMember& member = combinedCbuffer->members.back();
+                        TypeStructMember& newMember = combinedCbuffer->members.back();
 
-                        member.structMemberIndex = memberNewIndex;
-                        member.memberTypeId = memberTypeId;
-                        member.declarationName = memberToMerge.declarationName;
-                        member.listMemberDecoration = memberToMerge.listMemberDecoration;
+                        newMember.structMemberIndex = memberNewIndex;
+                        newMember.memberTypeId = memberTypeId;
+                        newMember.listMemberDecoration = memberToMerge.listMemberDecoration;
 
-                        member.memberSize = memberToMerge.memberSize;
-                        member.memberAlignment = memberToMerge.memberAlignment;
+                        //update the members name with a more explicit name (ex. var1 --> ShaderA.var1)
+                        /*{
+                            ShaderClassData* shaderOwningTheMember = nullptr;
+
+                            if (memberToMerge.isStage)
+                            {
+                                //for stage members: check if the members has been instantiated from another shader
+                                int originalShaderId = cbufferToMerge->type->shaderOwner->instantiatedFromShaderId;
+                                if (originalShaderId != -1) shaderOwningTheMember = GetShaderById(originalShaderId);
+                            }
+                            if (shaderOwningTheMember == nullptr) shaderOwningTheMember = cbufferToMerge->type->shaderOwner;
+
+                            newMember.declarationName = shaderOwningTheMember->GetName() + "_" + memberToMerge.declarationName;
+                        }*/
+                        newMember.declarationName = memberToMerge.declarationName;
 
                         //compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment
+                        newMember.memberSize = memberToMerge.memberSize;
+                        newMember.memberAlignment = memberToMerge.memberAlignment;
                         int memberOffset = 0;
                         if (memberNewIndex > 0)
                         {
@@ -3626,11 +3692,11 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                             int previousMemberSize = combinedCbuffer->members[memberNewIndex - 1].memberSize;
 
                             memberOffset = previousMemberOffset + previousMemberSize;
-                            int memberAlignment = member.memberAlignment;
+                            int memberAlignment = newMember.memberAlignment;
                             //round to pow2
                             memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1));
                         }
-                        member.memberOffset = memberOffset;
+                        newMember.memberOffset = memberOffset;
 
                         //link reference from previous member to new one
                         memberToMerge.newStructMemberIndex = memberNewIndex;
@@ -5129,7 +5195,7 @@ SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForE
 
 bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
 {
-    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_CBuffersValidated) return error("Invalid remapper status");
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_ConvertedToSPV;
 
     //===================================================================================================================

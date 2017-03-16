@@ -1,0 +1,12 @@
+load "CBuffer09.xksl"
+
+mixer A
+A.mixin ShaderComp
+
+mixer B
+B.mixin ShaderA
+B.addComposition ShaderA.colorA A
+B.addComposition ShaderA.colorB A
+
+B.setStageEntryPoint Pixel "main"
+B.compile

@@ -10,15 +10,15 @@ layout(std140) uniform CBufferPixelStage
     float MinVariance;
 } CBufferPixelStage_var;
 
-layout(std140) uniform _globalCbuffer
+layout(std140) uniform globalCbuffer
 {
     float var2;
     float var4[4];
     vec4 var7;
-} _globalCbuffer_var;
+} globalCbuffer_var;
 
 void main()
 {
-    float f = CBufferPixelStage_var.MinVariance + _globalCbuffer_var.var7.x;
+    float f = CBufferPixelStage_var.MinVariance + globalCbuffer_var.var7.x;
 }
 

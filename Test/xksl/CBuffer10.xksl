@@ -1,0 +1,31 @@
+shader ShaderComp
+{
+	//stage float varC1;
+	//float varC2;
+	
+	stage cbuffer PerDraw
+	{
+		float varDraw1;
+		float varDraw2;
+	}
+	
+	float Compute()
+	{
+		//return varC1 + varC2 + varDraw1;
+		return varDraw1;
+	}
+}
+
+shader ShaderA
+{
+	//float varA;
+	
+	compose ShaderComp colorA;
+	compose ShaderComp colorB;
+	
+	float main()
+	{
+		//return varA + colorA.Compute() + colorB.Compute();
+		return colorA.Compute() + colorB.Compute();
+	}
+}

@@ -35,8 +35,8 @@ enum class SpxRemapperStatusEnum
     MixinBeingCompiled_StreamsAndCBuffersAnalysed,
     MixinBeingCompiled_StreamReadyForReschuffling,
     MixinBeingCompiled_StreamReschuffled,
-    MixinBeingCompiled_UnusedShaderRemoved,
     MixinBeingCompiled_CBuffersValidated,
+    MixinBeingCompiled_UnusedShaderRemoved,
     MixinBeingCompiled_ConvertedToSPV,
     MixinBeingCompiled_SPXBytecodeRemoved,
     MixinFinalized
@@ -506,7 +506,7 @@ public:
 
     public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
+            : ObjectInstructionBase(parsedData, name, source), level(-1), instantiatedFromShaderId(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
         }
         virtual ~ShaderClassData() {
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
@@ -514,7 +514,7 @@ public:
         virtual ObjectInstructionBase* CloneBasicData() {
             ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->level = level;
-            obj->flag = flag;
+            obj->instantiatedFromShaderId = instantiatedFromShaderId;
             return obj;
         }
 
@@ -566,6 +566,7 @@ public:
 
     public:
         int level;
+        int instantiatedFromShaderId;  //set this Id when instantiating shader compositions
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
         std::vector<FunctionInstruction*> functionsList;

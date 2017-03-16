@@ -79,7 +79,10 @@ pair<bool, vector<uint32_t> > Utils::ReadSpvBinaryFile(const string& path)
 bool Utils::WriteFile(const string& path, const string& contents)
 {
     ofstream fstream(path, ios::out);
-    if (!fstream) return false;
+    if (!fstream){
+        cout << "failed to write file: " << path;
+        return false;
+    }
     fstream << contents;
     fstream.flush();
     return true;

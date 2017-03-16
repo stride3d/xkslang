@@ -31,6 +31,7 @@ struct XkslFilesToParseAndConvert {
 
 static string inputDir = "glslang\\source\\Test\\xksl\\";
 static string outputDir;
+static string finalResultOutputDir;
 static string expectedOutputDir;
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
@@ -138,7 +139,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer05", "CBuffer05.xkfx" },
     //{ "CBuffer06", "CBuffer06.xkfx" },
     //{ "CBuffer07", "CBuffer07.xkfx" },
-    { "CBuffer08", "CBuffer08.xkfx" },
+    //{ "CBuffer08", "CBuffer08.xkfx" },
+    { "CBuffer09", "CBuffer09.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -216,6 +218,7 @@ void SetupTestDirectories()
     inputDir = dir + inputDir;
 
     outputDir = inputDir + string("outputs\\");
+    finalResultOutputDir = outputDir + string("finals\\");
     expectedOutputDir = inputDir + string("expectedOutputs\\");
 }
 
@@ -437,14 +440,14 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     if (glslAllOutputs.size() > 0)
     {
         string fileNameAllGlsl = effectName + ".glsl";
-        string fullNameAllGlsl = outputDir + fileNameAllGlsl;
+        string fullNameAllGlsl = finalResultOutputDir + fileNameAllGlsl;
         xkslangtest::Utils::WriteFile(fullNameAllGlsl, glslAllOutputs);
         cout << " output: \"" << fileNameAllGlsl << "\"" << endl;
     }
     if (hlslAllOutputs.size() > 0)
     {
         string fileNameAllHlsl = effectName + ".hlsl";
-        string fullNameAllHlsl = outputDir + fileNameAllHlsl;
+        string fullNameAllHlsl = finalResultOutputDir + fileNameAllHlsl;
         xkslangtest::Utils::WriteFile(fullNameAllHlsl, hlslAllOutputs);
         cout << " output: \"" << fileNameAllHlsl << "\"" << endl;
     }
