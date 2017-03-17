@@ -2,12 +2,12 @@
 
 layout(std140) uniform globalCbuffer
 {
-    float varCA;
+    float o0S5C0_CompA_varCA;
 } globalCbuffer_var;
 
 float o0S5C0_CompA_Compute()
 {
-    return globalCbuffer_var.varCA;
+    return globalCbuffer_var.o0S5C0_CompA_varCA;
 }
 
 float main()

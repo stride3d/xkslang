@@ -1,54 +1,54 @@
 #version 450
 
-layout(std140) uniform ReferenceCBuffer
-{
-    int _aInt;
-    float _aFloat;
-    float _aFloatB;
-    layout(row_major) mat4 _arrayA[3];
-    float _varf;
-    layout(row_major) mat3x4 _arrayB[4];
-    layout(row_major) mat3x4 _af3x4;
-    layout(row_major) imat4 _i4x4;
-    layout(row_major) imat4 _i4x4A[2];
-    layout(row_major) mat4 _arrayC[5];
-    vec4 _arrayD[2];
-    float _BleedingFactor;
-    uint _aB320;
-    uint _aB321;
-    layout(row_major) mat4x2 _arrayCC[1];
-    uint _aBA[2];
-    vec4 _arrayAA4[4];
-    vec2 _arrayAA2[4];
-    vec4 _af02;
-} ReferenceCBuffer_var;
-
 layout(std140) uniform PerDraw
 {
-    int aInt;
-    float aFloat;
-    float aFloatB;
-    layout(row_major) mat4 arrayA[3];
-    float varf;
-    layout(row_major) mat3x4 arrayB[4];
-    layout(row_major) mat3x4 af3x4;
-    layout(row_major) imat4 i4x4;
-    layout(row_major) imat4 i4x4A[2];
-    layout(row_major) mat4 arrayC[5];
-    vec4 arrayD[2];
-    float BleedingFactor;
-    uint aB320;
-    uint aB321;
-    layout(row_major) mat4x2 arrayCC[1];
-    uint aBA[2];
-    vec4 arrayAA4[4];
-    vec2 arrayAA2[4];
-    vec4 af02;
+    int ShaderMain_aInt;
+    float ShaderMain_aFloat;
+    float ShaderMain_aFloatB;
+    layout(row_major) mat4 ShaderMain_arrayA[3];
+    float ShaderMain_varf;
+    layout(row_major) mat3x4 ShaderMain_arrayB[4];
+    layout(row_major) mat3x4 ShaderMain_af3x4;
+    layout(row_major) imat4 ShaderMain_i4x4;
+    layout(row_major) imat4 ShaderMain_i4x4A[2];
+    layout(row_major) mat4 ShaderMain_arrayC[5];
+    vec4 ShaderMain_arrayD[2];
+    float ShaderMain_BleedingFactor;
+    uint ShaderMain_aB320;
+    uint ShaderMain_aB321;
+    layout(row_major) mat4x2 ShaderMain_arrayCC[1];
+    uint ShaderMain_aBA[2];
+    vec4 ShaderMain_arrayAA4[4];
+    vec2 ShaderMain_arrayAA2[4];
+    vec4 ShaderMain_af02;
 } PerDraw_var;
+
+layout(std140) uniform ReferenceCBuffer
+{
+    int ShaderMain__aInt;
+    float ShaderMain__aFloat;
+    float ShaderMain__aFloatB;
+    layout(row_major) mat4 ShaderMain__arrayA[3];
+    float ShaderMain__varf;
+    layout(row_major) mat3x4 ShaderMain__arrayB[4];
+    layout(row_major) mat3x4 ShaderMain__af3x4;
+    layout(row_major) imat4 ShaderMain__i4x4;
+    layout(row_major) imat4 ShaderMain__i4x4A[2];
+    layout(row_major) mat4 ShaderMain__arrayC[5];
+    vec4 ShaderMain__arrayD[2];
+    float ShaderMain__BleedingFactor;
+    uint ShaderMain__aB320;
+    uint ShaderMain__aB321;
+    layout(row_major) mat4x2 ShaderMain__arrayCC[1];
+    uint ShaderMain__aBA[2];
+    vec4 ShaderMain__arrayAA4[4];
+    vec2 ShaderMain__arrayAA2[4];
+    vec4 ShaderMain__af02;
+} ReferenceCBuffer_var;
 
 void main()
 {
-    vec4 _13 = vec4(float(ReferenceCBuffer_var._aInt));
-    mat4 f44 = mat4(PerDraw_var.arrayA[0][0] + _13, PerDraw_var.arrayA[0][1] + _13, PerDraw_var.arrayA[0][2] + _13, PerDraw_var.arrayA[0][3] + _13);
+    vec4 _10 = vec4(float(ReferenceCBuffer_var.ShaderMain__aInt));
+    mat4 f44 = mat4(PerDraw_var.ShaderMain_arrayA[0][0] + _10, PerDraw_var.ShaderMain_arrayA[0][1] + _10, PerDraw_var.ShaderMain_arrayA[0][2] + _10, PerDraw_var.ShaderMain_arrayA[0][3] + _10);
 }
 

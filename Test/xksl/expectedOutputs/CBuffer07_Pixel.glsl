@@ -2,29 +2,29 @@
 
 layout(std140) uniform globalCbuffer
 {
-    float varA;
-    float varC1;
-    float varC1_1;
+    float ShaderA_varA;
+    float o0S5C0_ShaderComp_varC1;
+    float o1S5C1_ShaderComp_varC1;
 } globalCbuffer_var;
 
 layout(std140) uniform PerDraw
 {
-    float varDraw1;
-    float varDraw1_1;
+    float o0S5C0_ShaderComp_varDraw1;
+    float o1S5C1_ShaderComp_varDraw1;
 } PerDraw_var;
 
 float o0S5C0_ShaderComp_Compute()
 {
-    return globalCbuffer_var.varC1 + PerDraw_var.varDraw1;
+    return globalCbuffer_var.o0S5C0_ShaderComp_varC1 + PerDraw_var.o0S5C0_ShaderComp_varDraw1;
 }
 
 float o1S5C1_ShaderComp_Compute()
 {
-    return globalCbuffer_var.varC1_1 + PerDraw_var.varDraw1_1;
+    return globalCbuffer_var.o1S5C1_ShaderComp_varC1 + PerDraw_var.o1S5C1_ShaderComp_varDraw1;
 }
 
 float main()
 {
-    return (globalCbuffer_var.varA + o0S5C0_ShaderComp_Compute()) + o1S5C1_ShaderComp_Compute();
+    return (globalCbuffer_var.ShaderA_varA + o0S5C0_ShaderComp_Compute()) + o1S5C1_ShaderComp_Compute();
 }
 

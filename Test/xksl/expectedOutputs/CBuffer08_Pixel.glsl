@@ -2,15 +2,15 @@
 
 layout(std140) uniform globalCbuffer
 {
-    float var1;
-    float var2;
-    float var5;
-    float var1_1;
-    float var8;
+    float ShaderPSMain_var5;
+    float ShaderPSMain_var1;
+    float ShaderPSMain_var2;
+    float ShaderVSMain_var1;
+    float ShaderVSMain_var8;
 } globalCbuffer_var;
 
 void main()
 {
-    float f = (globalCbuffer_var.var5 + globalCbuffer_var.var2) + globalCbuffer_var.var1;
+    float f = (globalCbuffer_var.ShaderPSMain_var5 + globalCbuffer_var.ShaderPSMain_var2) + globalCbuffer_var.ShaderPSMain_var1;
 }
 

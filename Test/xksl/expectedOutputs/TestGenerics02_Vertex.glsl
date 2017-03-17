@@ -2,7 +2,7 @@
 
 layout(std140) uniform globalCbuffer
 {
-    float ColorAberrations[5];
+    float ShaderMain_ColorAberrations[5];
 } globalCbuffer_var;
 
 void main()
@@ -10,7 +10,7 @@ void main()
     float res = 0.0;
     for (int i = 0; i < 5; i++)
     {
-        res += globalCbuffer_var.ColorAberrations[i];
+        res += globalCbuffer_var.ShaderMain_ColorAberrations[i];
     }
 }
 

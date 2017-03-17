@@ -2,12 +2,12 @@
 
 layout(std140) uniform CBufferToto
 {
-    float BleedingFactor;
-    float MinVariance;
+    float ShaderMain_BleedingFactor;
+    float ShaderMain_MinVariance;
 } CBufferToto_var;
 
 void main()
 {
-    float f = CBufferToto_var.MinVariance;
+    float f = CBufferToto_var.ShaderMain_MinVariance;
 }
 

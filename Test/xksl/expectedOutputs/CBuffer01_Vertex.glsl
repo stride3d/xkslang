@@ -2,12 +2,12 @@
 
 layout(std140) uniform PerLighting
 {
-    float BleedingFactor;
-    float MinVariance;
+    float ShaderMain_BleedingFactor;
+    float ShaderMain_MinVariance;
 } PerLighting_var;
 
 void main()
 {
-    float f = PerLighting_var.BleedingFactor;
+    float f = PerLighting_var.ShaderMain_BleedingFactor;
 }
 

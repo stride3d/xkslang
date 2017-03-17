@@ -2,8 +2,8 @@
 
 layout(std140) uniform globalCbuffer
 {
-    float varC;
-    float varC_1;
+    float o0S5C0_ShaderComp_varC;
+    float o1S5C1_ShaderComp_varC;
 } globalCbuffer_var;
 
 float ShaderA_Compute()
@@ -13,12 +13,12 @@ float ShaderA_Compute()
 
 float o0S5C0_ShaderComp_Compute()
 {
-    return globalCbuffer_var.varC;
+    return globalCbuffer_var.o0S5C0_ShaderComp_varC;
 }
 
 float o1S5C1_ShaderComp_Compute()
 {
-    return globalCbuffer_var.varC_1;
+    return globalCbuffer_var.o1S5C1_ShaderComp_varC;
 }
 
 float main()

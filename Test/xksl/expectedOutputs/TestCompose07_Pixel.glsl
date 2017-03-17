@@ -2,24 +2,24 @@
 
 layout(std140) uniform globalCbuffer
 {
-    float varCA;
-    float varCA_1;
-    float varCB;
+    float o0S2C0_CompA_varCA;
+    float o1S2C1_CompA_varCA;
+    float o1S2C1_CompB_varCB;
 } globalCbuffer_var;
 
 float o0S2C0_CompA_Compute()
 {
-    return globalCbuffer_var.varCA;
+    return globalCbuffer_var.o0S2C0_CompA_varCA;
 }
 
 float o1S2C1_CompA_Compute()
 {
-    return globalCbuffer_var.varCA_1;
+    return globalCbuffer_var.o1S2C1_CompA_varCA;
 }
 
 float o1S2C1_CompB_Compute()
 {
-    return globalCbuffer_var.varCB + o1S2C1_CompA_Compute();
+    return globalCbuffer_var.o1S2C1_CompB_varCB + o1S2C1_CompA_Compute();
 }
 
 float main()

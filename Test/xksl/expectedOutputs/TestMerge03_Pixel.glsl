@@ -8,15 +8,14 @@ struct globalStreams
 
 layout(std140) uniform globalCbuffer
 {
-    int Var0;
-    int Var1;
-    float Var2;
+    int Base_Var1;
+    float Base_Var2;
 } globalCbuffer_var;
 
 globalStreams globalStreams_var;
 
 int main()
 {
-    return int(((globalStreams_var.sbase1_0 + float(globalCbuffer_var.Var1)) + globalCbuffer_var.Var2) + 2.0);
+    return int(((globalStreams_var.sbase1_0 + float(globalCbuffer_var.Base_Var1)) + globalCbuffer_var.Base_Var2) + 2.0);
 }
 

@@ -2,17 +2,17 @@
 
 layout(std140) uniform PerDraw
 {
-    layout(row_major) mat4 BlendMatrixArray[5];
+    layout(row_major) mat4 ShaderMain_BlendMatrixArray[5];
 } PerDraw_var;
 
 layout(std140) uniform PerLighting
 {
-    float BleedingFactor;
-    float MinVariance;
+    float ShaderMain_BleedingFactor;
+    float ShaderMain_MinVariance;
 } PerLighting_var;
 
 void main()
 {
-    float f = PerLighting_var.MinVariance;
+    float f = PerLighting_var.ShaderMain_MinVariance;
 }
 

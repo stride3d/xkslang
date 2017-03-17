@@ -7,14 +7,14 @@ struct globalStreams
 
 layout(std140) uniform globalCbuffer
 {
-    int Var1;
+    int Base_Var1;
 } globalCbuffer_var;
 
 globalStreams globalStreams_var;
 
 int shaderA_Compute1()
 {
-    return globalCbuffer_var.Var1 + globalStreams_var.sbase1_0;
+    return globalCbuffer_var.Base_Var1 + globalStreams_var.sbase1_0;
 }
 
 int shaderA_Compute2()

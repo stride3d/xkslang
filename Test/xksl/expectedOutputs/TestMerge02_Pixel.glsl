@@ -9,13 +9,13 @@ struct globalStreams
 
 layout(std140) uniform globalCbuffer
 {
-    int Var0;
+    int shaderA_Var0;
 } globalCbuffer_var;
 
 globalStreams globalStreams_var;
 
 int main()
 {
-    return ((globalCbuffer_var.Var0 + globalStreams_var.sa1_2) + 2) + 3;
+    return ((globalCbuffer_var.shaderA_Var0 + globalStreams_var.sa1_2) + 2) + 3;
 }
 
