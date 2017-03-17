@@ -14,13 +14,13 @@ layout(std140) uniform C1
 
 layout(std140) uniform globalCbuffer
 {
-    int Var1;
+    int Base_Var1;
 } globalCbuffer_var;
 
 globalStreams globalStreams_var;
 
 int main()
 {
-    return int(((((2.0 + globalStreams_var.sbase1_0) + float(C1_var.Var1)) + float(globalCbuffer_var.Var1)) + 5.0) + float(globalStreams_var.sa1_2));
+    return int(((((2.0 + globalStreams_var.sbase1_0) + float(C1_var.Var1)) + float(globalCbuffer_var.Base_Var1)) + 5.0) + float(globalStreams_var.sa1_2));
 }
 

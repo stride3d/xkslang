@@ -2525,9 +2525,13 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             if (logger) logger->error(std::string("The cbuffer type is undefined for: ") + type.getTypeName().c_str());
         }
 
+        int cbufferStage = -1;
+        if (type.getQualifier().isStage) cbufferStage = spv::CBufferStage;
+        else cbufferStage = spv::CBufferUnstage;
+
         if (cbufferType != -1)
         {
-            builder.addCBufferProperties(spvType, cbufferType, countMembers, membersSizeAndAlignment);
+            builder.addCBufferProperties(spvType, cbufferType, cbufferStage, countMembers, membersSizeAndAlignment);
         }
     }
     

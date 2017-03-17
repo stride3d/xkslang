@@ -223,26 +223,63 @@ public:
         int valueS32;
     };
 
+    //extra data recorded when a shaderType defines a cbuffer
+    class TypeStructMemberArray;
+    class ShaderTypeData;
+    class CBufferTypeData
+    {
+    public:
+        //used if the type is a cbuffer struct
+        int cbufferType;
+        bool isStage;
+        int cbufferCountMembers;
+        std::string cbufferName;
+        std::string shaderOwnerName;  //name of the shader owning the cbuffer (for stage cbuffer, instantiated cbuffers will keep the name of the original shader class)
+
+        bool isUsed;
+        
+        //temporary data used when processing the cbuffers
+        TypeStructMemberArray* cbufferMembersData;
+        ShaderTypeData* correspondingShaderType;
+        int posOpNameType;
+        int posOpNameVariable;
+
+        CBufferTypeData(std::string shaderOwnerName, std::string cbufferName, int cbufferType, bool isStage, int cbufferCountMembers) :
+            shaderOwnerName(shaderOwnerName), cbufferName(cbufferName), cbufferType(cbufferType), isStage(isStage), cbufferCountMembers(cbufferCountMembers),
+            isUsed(false), cbufferMembersData(nullptr), correspondingShaderType(nullptr){}
+        virtual ~CBufferTypeData() { if (cbufferMembersData != nullptr) delete cbufferMembersData; }
+
+        virtual CBufferTypeData* Clone() {
+            CBufferTypeData* cbufferData = new CBufferTypeData(shaderOwnerName, cbufferName, cbufferType, isStage, cbufferCountMembers);
+            cbufferData->isUsed = isUsed;
+            return cbufferData;
+        }
+    };
+
     class TypeStructMemberArray;
     class ShaderTypeData;
     class TypeInstruction : public ObjectInstructionBase
     {
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr),
-            isCbuffer(false), cbufferCountMembers(0), isCbufferUsed(false), cbufferType(-1) {}
-        virtual ~TypeInstruction() {}
+            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr){}
+        virtual ~TypeInstruction() {
+            if (cbufferData != nullptr) delete cbufferData;
+        }
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
-            obj->isCbuffer = isCbuffer;
-            obj->isCbufferUsed = isCbufferUsed;
-            obj->cbufferCountMembers = cbufferCountMembers;
-            obj->cbufferType = cbufferType;
+            if (cbufferData != nullptr) obj->cbufferData = cbufferData->Clone();
             return obj;
         }
 
         void SetTypePointed(TypeInstruction* type) { pointerTo = type; }
         TypeInstruction* GetTypePointed() const { return pointerTo; }
+
+        void SetCBufferData(CBufferTypeData* data) {
+            if (cbufferData != nullptr) delete cbufferData;
+            cbufferData = data;
+        }
+        CBufferTypeData* GetCBufferData() { return cbufferData; }
 
     private:
         TypeInstruction* pointerTo;
@@ -251,11 +288,17 @@ public:
         TypeStructMemberArray* streamStructData;
         ShaderTypeData* connectedShaderTypeData;
 
+        bool IsCBuffer(){ return cbufferData != nullptr; }
+
         //used if the type is a cbuffer struct
-        bool isCbuffer;
-        bool isCbufferUsed;
-        int cbufferType;
-        int cbufferCountMembers;
+        CBufferTypeData* cbufferData;
+
+        //bool isCbuffer;
+        //bool isCbufferUsed;
+        //int cbufferType;
+        //bool cbufferStage;
+        //int cbufferCountMembers;
+        //std::string cbufferOwnerName; //shader owning the cbuffer (for stage cbuffer, cbuffers will share the same owner)
 
         friend class SpxStreamRemapper;
     };
@@ -383,6 +426,7 @@ public:
         int memberOffset;
         std::vector<unsigned int> listMemberDecoration;  //extra decorate properties set with the member (for example: RowMajor, MatrixStride, ... set for cbuffer members)
         bool isUsed; //in some case we need to know which members are actually used or not
+        std::string shaderOwnerName;  //name of the shader owning the cbuffer member (for stage cbuffer, instantiated cbuffers will keep the name of the original shader class)
 
         //temporary variables used to remap members to others
         spv::Id newStructTypeId;
@@ -428,19 +472,18 @@ public:
         TypeInstruction* type;
         TypeInstruction* pointerToType;
         VariableInstruction* variable;
+        ShaderClassData* shaderOwner;
 
         //data used temporarly when processing cbuffers
-        TypeStructMemberArray* cbufferMembersData;
         int tmpFlag;
-        int posOpNameType;
-        int posOpNameVariable;
 
         //===========================================================
-        ShaderTypeData(TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) : type(type), pointerToType(pointerToType), variable(variable),
-            cbufferMembersData(nullptr), tmpFlag(0){}
+        ShaderTypeData(ShaderClassData* shaderOwner, TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) :
+            shaderOwner(shaderOwner), type(type), pointerToType(pointerToType), variable(variable), tmpFlag(0){}
         virtual ~ShaderTypeData(){}
 
-        bool isCBufferType() { return type->isCbuffer; }
+        bool isCBufferType() { return type->IsCBuffer(); }
+        CBufferTypeData* GetCBufferData() { return type->GetCBufferData(); }
     };
 
     class ShaderComposition
@@ -506,7 +549,7 @@ public:
 
     public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
-            : ObjectInstructionBase(parsedData, name, source), level(-1), instantiatedFromShaderId(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
+            : ObjectInstructionBase(parsedData, name, source), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
         }
         virtual ~ShaderClassData() {
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
@@ -514,7 +557,7 @@ public:
         virtual ObjectInstructionBase* CloneBasicData() {
             ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->level = level;
-            obj->instantiatedFromShaderId = instantiatedFromShaderId;
+            //obj->instanceOriginalShaderName = instanceOriginalShaderName;
             return obj;
         }
 
@@ -566,18 +609,21 @@ public:
 
     public:
         int level;
-        int instantiatedFromShaderId;  //set this Id when instantiating shader compositions
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
         std::vector<FunctionInstruction*> functionsList;
 
         std::vector<ShaderComposition> compositionsList;
 
+        //std::string instanceOriginalShaderName;  //when a shader is instantiated (for composition), we store its original shader name
+
     private:
         //When merging/duplicating a shader into a bytecode, this field will hold a temporary reference to its resulting, cloned shader 
         ShaderClassData* tmpClonedShader;
-        int flag, flag1;  //to simplify some algo
-        ShaderDependencyTypeEnum dependencyType;  //dependency type, set by GetShadersFullDependencies algorithm.
+
+        //some params to simplify some algos
+        int flag, flag1;
+        ShaderDependencyTypeEnum dependencyType;  //dependency type (static or not), set by GetShadersFullDependencies algorithm.
 
     friend class SpxStreamRemapper;
     };

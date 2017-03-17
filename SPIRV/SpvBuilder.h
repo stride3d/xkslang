@@ -218,7 +218,7 @@ public:
     void addMethodPropertyList(Id id, std::vector<int>&);
     void addMemberPropertyList(Id id, int num, std::vector<int>&);
     void addMemberSemanticName(Id id, int num, const char* semantic);
-    void addCBufferProperties(Id id, int cbufferType, int countMembers, std::vector<unsigned int>& membersSizeAndAlignment);
+    void addCBufferProperties(Id id, int cbufferType, int cbufferStage, int countMembers, std::vector<unsigned int>& membersSizeAndAlignment);
 
     // At the end of what block do the next create*() instructions go?
     void setBuildPoint(Block* bp) { buildPoint = bp; }

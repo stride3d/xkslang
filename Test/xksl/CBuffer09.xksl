@@ -1,5 +1,10 @@
 shader ShaderComp
 {
+	float varG1;
+	stage float varG2;
+	stage float varUnusedC0;
+	float varUnusedC1;
+	
 	stage cbuffer PerDraw
 	{
 		float varDraw1;
@@ -11,9 +16,14 @@ shader ShaderComp
 		float varDraw3;
 	}
 	
+	cbuffer PerToto
+	{
+		float varCompToto;
+	}
+	
 	float Compute()
 	{
-		return varDraw1 + varDraw3;
+		return varDraw1 + varDraw3 + varG1 + varG2 + varCompToto;
 	}
 }
 
@@ -22,16 +32,28 @@ shader ShaderA
 	compose ShaderComp colorA;
 	compose ShaderComp colorB;
 	
+	float varG1;
+	stage float varG2;
+	float varUnused1;
+	
+	cbuffer PerDraw
+	{
+		float varDrawA;
+		float varDraw3;
+	}
+	
+	stage cbuffer PerToto
+	{
+		float varToto;
+	}
+	
 	float VSmain()
 	{
-		return colorA.Compute();
+		return varToto + colorA.Compute() + varG1;
 	}
 	
 	float PSmain()
 	{
-		return colorB.Compute();
+		return varDrawA + colorB.Compute() + varG2;
 	}
 }
-
-//!!!!!!!!!!!!!!!!!!!!!!!!!!
-// vectorShaderPrefixToAddIntoMergedCBufferMembers optionnal?

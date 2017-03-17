@@ -165,7 +165,7 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
                     TypeInstruction* clonedType = clonedSpxRemapper->GetTypeById(type->type->GetId());
                     TypeInstruction* clonedTypePointer = clonedSpxRemapper->GetTypeById(type->pointerToType->GetId());
                     VariableInstruction* clonedVariable = clonedSpxRemapper->GetVariableById(type->variable->GetId());
-                    ShaderTypeData* clonedShaderType = new ShaderTypeData(clonedType, clonedTypePointer, clonedVariable);
+                    ShaderTypeData* clonedShaderType = new ShaderTypeData(clonedShader, clonedType, clonedTypePointer, clonedVariable);
                     clonedType->SetShaderOwner(clonedShader);
                     clonedTypePointer->SetShaderOwner(clonedShader);
                     clonedVariable->SetShaderOwner(clonedShader);
@@ -215,7 +215,7 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
 
 bool SpxStreamRemapper::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderTypeToRemove, vector<range_t>& vecStripRanges)
 {
-    ShaderClassData* shaderOwner = shaderTypeToRemove->type->shaderOwner;
+    ShaderClassData* shaderOwner = shaderTypeToRemove->shaderOwner;
 
     vector<bool> listIdsRemoved;
     listIdsRemoved.resize(bound(), false);
@@ -1461,7 +1461,7 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
         ShaderClassData* aShaderToMerge = *its;
         if (aShaderToMerge->dependencyType == ShaderClassData::ShaderDependencyTypeEnum::StaticFunctionCall)
         {
-            //new merge: we won't add a shader if it already exists in the destination bytecode
+            //if calling a shader static function only: we don't make a new instance
             if (this->GetShaderByName(aShaderToMerge->GetName()) == nullptr)
             {
                 listShadersToMerge.push_back(ShaderToMergeData(aShaderToMerge, false));
@@ -1493,17 +1493,29 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
         return error(string("Merge shader function is expected to return a reference on the merged shader"));
 
     //===================================================================================================================
-    //Make a link between the instances and their original shaderId
+    //After having instantiated a shader, we set the original shader name to all cloned cbuffers having a STAGE property (so that we can merge them later on)
     for (auto its = listShadersToMerge.begin(); its != listShadersToMerge.end(); its++)
     {
         const ShaderToMergeData& shaderInstantiated = *its;
         if (shaderInstantiated.instantiateShader)
         {
-            ShaderClassData* shaderCloned = shaderInstantiated.shader;
-            ShaderClassData* clonedShader = shaderCloned->tmpClonedShader;
-            if (clonedShader == nullptr)
-                return error(string("Cannot retrieve the cloned shaders after having instantiated some compositions"));
-            clonedShader->instantiatedFromShaderId = shaderCloned->GetId();
+            ShaderClassData* originalShader = shaderInstantiated.shader;
+            ShaderClassData* instantiatedShader = originalShader->tmpClonedShader;
+            if (instantiatedShader == nullptr) return error(string("Cannot retrieve the instantiated shader after having added some compositions"));
+            string originalShaderName = originalShader->GetName();
+
+            for (auto itt = instantiatedShader->shaderTypesList.begin(); itt != instantiatedShader->shaderTypesList.end(); itt++)
+            {
+                ShaderTypeData* aShaderType = *itt;
+                if (aShaderType->isCBufferType())
+                {
+                    CBufferTypeData* cbuffer = aShaderType->GetCBufferData();
+                    if (cbuffer->isStage)
+                    {
+                        cbuffer->shaderOwnerName = originalShaderName;
+                    }
+                }
+            }
         }
     }
 
@@ -3236,26 +3248,33 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
 
     //=========================================================================================================================
     //=========================================================================================================================
-    //get ALL shader cbuffers
-    vector<ShaderTypeData*> listAllShaderCBuffers;
+    //get ALL shaders' cbuffers
+    vector<CBufferTypeData*> listAllShaderCBuffers;
     for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
         ShaderClassData* shader = *itsh;
         for (auto it = shader->shaderTypesList.begin(); it != shader->shaderTypesList.end(); it++){
             ShaderTypeData* shaderType = *it;
             if (shaderType->isCBufferType())
             {
-                listAllShaderCBuffers.push_back(shaderType);
-                shaderType->type->isCbufferUsed = false;
-                shaderType->cbufferMembersData = nullptr;
-                shaderType->posOpNameType = -1;
-                shaderType->posOpNameVariable = -1;
+                CBufferTypeData* cbufferData = shaderType->type->cbufferData;
+#ifdef XKSLANG_DEBUG_MODE
+                if (cbufferData == nullptr) { error("a cbuffer type has no cbuffer data: " + shaderType->type->GetName()); break; }
+                if (cbufferData->cbufferMembersData != nullptr) return error("a cbuffer members data has already been initialized");
+#endif
+                cbufferData->correspondingShaderType = shaderType;
+                cbufferData->isUsed = false;
+                cbufferData->cbufferMembersData = nullptr;
+                cbufferData->posOpNameType = -1;
+                cbufferData->posOpNameVariable = -1;
+
+                listAllShaderCBuffers.push_back(cbufferData);
             }
         }
     }
     if (listAllShaderCBuffers.size() == 0) return true;  //no cbuffer at all, we can return immediatly
 
     //flag the USED cbuffers and allocate object necessary to store their data
-    vector<ShaderTypeData*> vectorUsedCbuffers;
+    vector<CBufferTypeData*> vectorUsedCbuffers;
     vectorUsedCbuffers.resize(bound(), nullptr);
     bool anyCBufferUsed = false;
     {
@@ -3266,20 +3285,22 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
             {
                 anyCBufferUsed = true;
                 ShaderTypeData* shaderType = *itcb;
-                shaderType->type->isCbufferUsed = true;
+                CBufferTypeData* cbufferData = shaderType->type->cbufferData;
 
 #ifdef XKSLANG_DEBUG_MODE
                 if (shaderType->type->GetId() >= vectorUsedCbuffers.size()) { error("cbuffer type id is out of bound. Id: " + to_string(shaderType->type->GetId())); break; }
-                if (shaderType->type->cbufferCountMembers <= 0) { error("invalid count members for cbuffer: " + shaderType->type->GetName()); break; }
+                if (cbufferData->cbufferCountMembers <= 0) { error("invalid count members for cbuffer: " + shaderType->type->GetName()); break; }
 #endif
+
+                cbufferData->isUsed = true;
                 if (vectorUsedCbuffers[shaderType->type->GetId()] == nullptr)
                 {
-                    shaderType->cbufferMembersData = new TypeStructMemberArray();
-                    shaderType->cbufferMembersData->members.resize(shaderType->type->cbufferCountMembers);
+                    cbufferData->cbufferMembersData = new TypeStructMemberArray();
+                    cbufferData->cbufferMembersData->members.resize(cbufferData->cbufferCountMembers);
 
                     //set both type and variable IDs
-                    vectorUsedCbuffers[shaderType->type->GetId()] = shaderType;
-                    vectorUsedCbuffers[shaderType->variable->GetId()] = shaderType;
+                    vectorUsedCbuffers[shaderType->type->GetId()] = cbufferData;
+                    vectorUsedCbuffers[shaderType->variable->GetId()] = cbufferData;
                 }
             }
         }
@@ -3310,27 +3331,30 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                     spv::Id id = asId(start + 1);
                     if (vectorUsedCbuffers[id] != nullptr)
                     {
-                        ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+                        //ShaderTypeData* cbuffer = fdsfsdf;
+                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
+
                         if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
                         
-                        if (cbuffer->type->GetId() == id) cbuffer->posOpNameType = start;
-                        else if (cbuffer->variable->GetId() == id) cbuffer->posOpNameVariable = start;
+                        if (cbufferData->correspondingShaderType->type->GetId() == id) cbufferData->posOpNameType = start;
+                        else if (cbufferData->correspondingShaderType->variable->GetId() == id) cbufferData->posOpNameVariable = start;
                     }
                     break;
                 }
 
-                case spv::OpMemberProperties:
+                /*case spv::OpMemberProperties:
                 {
                     const spv::Id id = asId(start + 1);
                     if (vectorUsedCbuffers[id] != nullptr)
                     {
                         const ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = cbuffer->type->cbufferData;
 
                         unsigned int index = asLiteralValue(start + 2);
                         string memberName = literalString(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
                         if (cbuffer->type->GetId() != id) { error("Invalid instruction Id"); break; }
-                        if (index >= cbuffer->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+                        if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
                         //we're only interested by the member's stage property
                         int countProperties = wordCount - 3;
@@ -3340,29 +3364,30 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                             switch (prop)
                             {
                                 case spv::XkslPropertyEnum::PropertyStage:
-                                    cbuffer->cbufferMembersData->members[index].isStage = true;
+                                    cbufferData->cbufferMembersData->members[index].isStage = true;
                                     break;
                             }
                         }
                     }
                     break;
-                }
+                }*/
 
                 case spv::OpMemberName:
                 {
                     spv::Id id = asId(start + 1);
                     if (vectorUsedCbuffers[id] != nullptr)
                     {
-                        const ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
+
                         if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
 
                         unsigned int index = asLiteralValue(start + 2);
                         string memberName = literalString(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
-                        if (cbuffer->type->GetId() != id) { error("Invalid instruction Id"); break; }
-                        if (index >= cbuffer->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+                        if (cbufferData->correspondingShaderType->type->GetId() != id) { error("Invalid instruction Id"); break; }
+                        if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
-                        cbuffer->cbufferMembersData->members[index].declarationName = memberName;
+                        cbufferData->cbufferMembersData->members[index].declarationName = memberName;
                     }
                     break;
                 }
@@ -3373,28 +3398,32 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
 
                     if (vectorUsedCbuffers[typeId] != nullptr)
                     {
-                        const ShaderTypeData* cbuffer = vectorUsedCbuffers[typeId];
+                        CBufferTypeData* cbufferData = vectorUsedCbuffers[typeId];
+
                         if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
 
+                        spv::XkslPropertyEnum cbufferType = (spv::XkslPropertyEnum)asLiteralValue(start + 2);
+                        spv::XkslPropertyEnum cbufferStage = (spv::XkslPropertyEnum)asLiteralValue(start + 3);
+                        unsigned int countMembers = asLiteralValue(start + 4);
+                        unsigned int remainingBytes = wordCount - 5;
+
 #ifdef XKSLANG_DEBUG_MODE
-                        if (cbuffer->type->GetId() != typeId) { error("Invalid instruction Id"); break; }
+                        if (cbufferData->correspondingShaderType->type->GetId() != typeId) { error("Invalid instruction Id"); break; }
+                        if (cbufferType != cbufferData->cbufferType) { error("Invalid cbuffer type property"); break; }
+                        if (countMembers != cbufferData->cbufferCountMembers) { error("Invalid cbuffer count members property"); break; }
 #endif
 
-                        int cbufferType = asLiteralValue(start + 2);
-                        unsigned int countMembers = asLiteralValue(start + 3);
-                        unsigned int remainingBytes = wordCount - 4;
-
-                        if (countMembers != cbuffer->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
+                        if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
                         if (remainingBytes != countMembers * 2) { error("OpCBufferMemberProperties instruction has an invalid number of bytes"); break; }
                         
                         for (unsigned int m = 0; m < countMembers; m++)
                         {
-                            unsigned int k = start + 4 + (m * 2);
+                            unsigned int k = start + 5 + (m * 2);
                             unsigned int memberSize = asLiteralValue(k);
                             unsigned int memberAlignment = asLiteralValue(k + 1);
 
-                            cbuffer->cbufferMembersData->members[m].memberSize = memberSize;
-                            cbuffer->cbufferMembersData->members[m].memberAlignment = memberAlignment;
+                            cbufferData->cbufferMembersData->members[m].memberSize = memberSize;
+                            cbufferData->cbufferMembersData->members[m].memberAlignment = memberAlignment;
                         }
                     }
                     break;
@@ -3407,14 +3436,14 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                     spv::Id id = asId(start + 1);
                     if (vectorUsedCbuffers[id] != nullptr)
                     {
-                        const ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
                         if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
 
                         const unsigned int index = asLiteralValue(start + 2);
                         const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
-                        if (cbuffer->type->GetId() != id) { error("Invalid instruction Id"); break; }
-                        if (index >= cbuffer->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+                        if (cbufferData->correspondingShaderType->type->GetId() != id) { error("Invalid instruction Id"); break; }
+                        if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
                         if (dec == spv::DecorationOffset)
                         {
@@ -3422,7 +3451,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                             if (wordCount <= 4) { error("Invalid wordCount"); break; }
 #endif
                             const unsigned int offsetValue = asLiteralValue(start + 4);
-                            cbuffer->cbufferMembersData->members[index].memberOffset = offsetValue;
+                            cbufferData->cbufferMembersData->members[index].memberOffset = offsetValue;
                         }
                         else
                         {
@@ -3430,7 +3459,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                             if (wordCount <= 3) { error("Invalid wordCount"); break; }
 #endif
                             unsigned int countRemainingBytes = wordCount - 3;
-                            std::vector<unsigned int>& listMemberDecoration = cbuffer->cbufferMembersData->members[index].listMemberDecoration;
+                            std::vector<unsigned int>& listMemberDecoration = cbufferData->cbufferMembersData->members[index].listMemberDecoration;
                             listMemberDecoration.push_back(countRemainingBytes);
                             for (unsigned int i=0; i<countRemainingBytes; i++)
                                 listMemberDecoration.push_back(asLiteralValue(start + 3 + i));
@@ -3444,18 +3473,18 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                     spv::Id id = asId(start + 1);
                     if (vectorUsedCbuffers[id] != nullptr)
                     {
-                        const ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
 
                         int countMembers = wordCount - 2;
 #ifdef XKSLANG_DEBUG_MODE
-                        if (cbuffer->type->GetId() != id) { error("Invalid instruction Id"); break; }
+                        if (cbufferData->correspondingShaderType->type->GetId() != id) { error("Invalid instruction Id"); break; }
                         if (countMembers < 0) { error("corrupted bytecode: countMembers is negative"); break; }
-                        if (countMembers != cbuffer->cbufferMembersData->members.size()) { error("inconsistent number of members between struct instruction and cbuffer properties"); break; }
+                        if (countMembers != cbufferData->cbufferMembersData->members.size()) { error("inconsistent number of members between struct instruction and cbuffer properties"); break; }
 #endif
                         for (int m = 0; m < countMembers; ++m)
                         {
                             spv::Id memberTypeId = asLiteralValue(start + 2 + m);
-                            cbuffer->cbufferMembersData->members[m].memberTypeId = memberTypeId;
+                            cbufferData->cbufferMembersData->members[m].memberTypeId = memberTypeId;
                         }
                     }
                     break;
@@ -3483,17 +3512,17 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
     {
         for (unsigned int i = 0; i < listAllShaderCBuffers.size(); i++)
         {
-            ShaderTypeData* cbuffer = listAllShaderCBuffers[i];
-            if (cbuffer->cbufferMembersData != nullptr)
+            CBufferTypeData* cbufferData = listAllShaderCBuffers[i];
+            if (cbufferData->cbufferMembersData != nullptr)
             {
-                if (cbuffer->type->cbufferCountMembers != cbuffer->cbufferMembersData->countMembers()) {error("inconsistent number of members");}
-                for (unsigned int m = 0; m < cbuffer->cbufferMembersData->countMembers(); ++m)
+                if (cbufferData->cbufferCountMembers != cbufferData->cbufferMembersData->countMembers()) {error("inconsistent number of members");}
+                for (unsigned int m = 0; m < cbufferData->cbufferMembersData->countMembers(); ++m)
                 {
-                    if (cbuffer->cbufferMembersData->members[m].memberSize < 0) { error("undefined size or alignment for a cbuffer member"); }
-                    if (!IsPow2(cbuffer->cbufferMembersData->members[m].memberAlignment)) { error("invalid member alignment"); }
-                    if (cbuffer->cbufferMembersData->members[m].memberTypeId == spvUndefinedId) { error("undefined member type id for a cbuffer member"); }
-                    cbuffer->cbufferMembersData->members[m].newStructMemberIndex = -1;
-                    cbuffer->cbufferMembersData->members[m].newStructTypeId = 0;
+                    if (cbufferData->cbufferMembersData->members[m].memberSize < 0) { error("undefined size or alignment for a cbuffer member"); }
+                    if (!IsPow2(cbufferData->cbufferMembersData->members[m].memberAlignment)) { error("invalid member alignment"); }
+                    if (cbufferData->cbufferMembersData->members[m].memberTypeId == spvUndefinedId) { error("undefined member type id for a cbuffer member"); }
+                    cbufferData->cbufferMembersData->members[m].newStructMemberIndex = -1;
+                    cbufferData->cbufferMembersData->members[m].newStructTypeId = 0;
                 }
             }
         }
@@ -3509,10 +3538,10 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
 
     unsigned int maxConstValueNeeded = 0;
     vector<spv::Id> mapIndexesWithConstValueId; //map const value with their typeId
-    vector<TypeStructMemberArray*> listNewCbuffers;  //this list will contain all new cbuffer
-    vector<ShaderTypeData*> listUntouchedCbuffers;   //this list will contain all cbuffers being kept as they are
+    vector<CBufferTypeData*> listUntouchedCbuffers;   //this list will contain all cbuffers being kept as they are
+    vector<TypeStructMemberArray*> listNewCbuffers;   //this list will contain all new cbuffer information
 
-    vector<ShaderTypeData*>& vectorCbuffersToRemap = vectorUsedCbuffers;  //just reusing an existing vector to avoid creating a new one...
+    vector<CBufferTypeData*>& vectorCbuffersToRemap = vectorUsedCbuffers;  //just reusing an existing vector to avoid creating a new one...
     std::fill(vectorCbuffersToRemap.begin(), vectorCbuffersToRemap.end(), nullptr);
 
     if (success && anyCBufferUsed)
@@ -3522,19 +3551,22 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
         //merge all USED cbuffers having an undefined type, or sharing the same declaration name
         for (unsigned int i = 0; i < listAllShaderCBuffers.size(); i++)
         {
-            ShaderTypeData* cbufferA = listAllShaderCBuffers[i];
-            if (cbufferA->type->isCbufferUsed == false) continue; //cbuffer A is not used
-            bool mergingUndefinedCbuffers = cbufferA->type->cbufferType == spv::CBufferUndefined;
+            CBufferTypeData* cbufferA = listAllShaderCBuffers[i];
 
-            vector<ShaderTypeData*> someCBuffersToMerge;
+            if (cbufferA->isUsed == false) continue; //cbuffer A is not used
+            bool mergingUndefinedCbuffers = cbufferA->cbufferType == spv::CBufferUndefined;
+
+            vector<CBufferTypeData*> someCBuffersToMerge;
+            someCBuffersToMerge.push_back(cbufferA); //for consistency purpose, we will recreate every used cbuffers, even if it's not merged with another one
 
             //==========================================================================================
             //check if we find some USED cbuffers which have to be merged (all defined cbuffer sharing the same name, or all global cbuffer (undefined))
             for (unsigned int j = i + 1; j < listAllShaderCBuffers.size(); j++)
             {
-                ShaderTypeData* cbufferB = listAllShaderCBuffers[j];
-                if (cbufferB->type->isCbufferUsed == false) continue; //cbuffer B is not used
-                bool isBUndefinedCbuffer = cbufferB->type->cbufferType == spv::CBufferUndefined;
+                CBufferTypeData* cbufferB = listAllShaderCBuffers[j];
+
+                if (cbufferB->isUsed == false) continue; //cbuffer B is not used
+                bool isBUndefinedCbuffer = cbufferB->cbufferType == spv::CBufferUndefined;
 
                 if (mergingUndefinedCbuffers)
                 {
@@ -3545,7 +3577,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 else
                 {
                     //merge defined cbuffers, only if they share the same name
-                    if (!isBUndefinedCbuffer && cbufferA->type->name == cbufferB->type->name)
+                    if (!isBUndefinedCbuffer && cbufferA->cbufferName == cbufferB->cbufferName)
                     {
                         if (someCBuffersToMerge.size() == 0) someCBuffersToMerge.push_back(cbufferA);
                         someCBuffersToMerge.push_back(cbufferB);
@@ -3562,17 +3594,20 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 if (onlyMergeUsedMembers)
                 {
                     //flag all variables accessing a cbuffer that we're merging
-                    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it) {
-                        ObjectInstructionBase* obj = *it;
-                        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable) {
-                            VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
-                            variable->tmpFlag = 0;
+                    {
+                        for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it) {
+                            ObjectInstructionBase* obj = *it;
+                            if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable) {
+                                VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+                                variable->tmpFlag = 0;
+                            }
                         }
-                    }
-                    for (auto itcb = someCBuffersToMerge.begin(); itcb != someCBuffersToMerge.end(); itcb++){
-                        ShaderTypeData* cbufferToMerge = *itcb;
-                        cbufferToMerge->variable->tmpFlag = 1;
-                        for (unsigned int m = 0; m < cbufferToMerge->cbufferMembersData->members.size(); m++) cbufferToMerge->cbufferMembersData->members[m].isUsed = false;
+                        for (auto itcb = someCBuffersToMerge.begin(); itcb != someCBuffersToMerge.end(); itcb++){
+                            CBufferTypeData* cbufferToMerge = *itcb;
+
+                            cbufferToMerge->correspondingShaderType->variable->tmpFlag = 1;
+                            for (unsigned int m = 0; m < cbufferToMerge->cbufferMembersData->members.size(); m++) cbufferToMerge->cbufferMembersData->members[m].isUsed = false;
+                        }
                     }
 
                     //Detect which members from the cbuffers to merge are used
@@ -3605,12 +3640,13 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                                     if (variable->shaderOwner == nullptr) { error("the accessed variable does not belong to a shader: " + variable->GetName()); break; }
 #endif
                                     ShaderTypeData* cbufferToMerge = variable->shaderOwner->GetShaderTypeDataForVariable(variable);
+                                    CBufferTypeData* cbufferData = cbufferToMerge->type->cbufferData;
 #ifdef XKSLANG_DEBUG_MODE
                                     if (cbufferToMerge == nullptr) { error("cannot get the cbuffer shader type for the variable: " + variable->GetName()); break; }
-                                    if (cbufferToMerge->cbufferMembersData == nullptr) { error("the cbuffer members data have not been initialized for: " + variable->GetName()); break; }
-                                    if (memberIndexValue < 0 || memberIndexValue >= cbufferToMerge->cbufferMembersData->members.size()) {error("the member access index is out of bound"); break;}
+                                    if (cbufferData->cbufferMembersData == nullptr) { error("the cbuffer members data have not been initialized for: " + variable->GetName()); break; }
+                                    if (memberIndexValue < 0 || memberIndexValue >= cbufferData->cbufferMembersData->members.size()) {error("the member access index is out of bound"); break;}
 #endif
-                                    cbufferToMerge->cbufferMembersData->members[memberIndexValue].isUsed = true;
+                                    cbufferData->cbufferMembersData->members[memberIndexValue].isUsed = true;
                                 }
 
                                 break;
@@ -3633,11 +3669,14 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 //create the list with all members from the cbuffers we're merging
                 for (auto itcb = someCBuffersToMerge.begin(); itcb != someCBuffersToMerge.end(); itcb++)
                 {
-                    ShaderTypeData* cbufferToMerge = *itcb;
-                    vectorCbuffersToRemap[cbufferToMerge->variable->GetId()] = cbufferToMerge; //store the cbuffer to remap
+                    CBufferTypeData* cbufferToMerge = *itcb;
+                    ShaderTypeData* cbufferShaderType = cbufferToMerge->correspondingShaderType;
+
+                    vectorCbuffersToRemap[cbufferShaderType->variable->GetId()] = cbufferToMerge; //store the cbuffer to remap
+                    bool isMemberStaged = cbufferToMerge->isStage;
 
                     //check the best position where to insert the new cbuffer in the bytecode
-                    if (cbufferToMerge->type->bytecodeEndPosition > combinedCbuffer->tmpTargetedBytecodePosition) combinedCbuffer->tmpTargetedBytecodePosition = cbufferToMerge->type->bytecodeEndPosition;
+                    if (cbufferShaderType->type->bytecodeEndPosition > combinedCbuffer->tmpTargetedBytecodePosition) combinedCbuffer->tmpTargetedBytecodePosition = cbufferShaderType->type->bytecodeEndPosition;
 
                     const unsigned int countMembersInBufferToMerge = cbufferToMerge->cbufferMembersData->members.size();
                     for (unsigned int m = 0; m < countMembersInBufferToMerge; m++)
@@ -3647,74 +3686,84 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                             continue;
                         }
 
-                        if (memberToMerge.isStage)
+                        int memberNewIndex = -1;
+                        bool memberAlreadyAdded = false;
+                        if (isMemberStaged)
                         {
-                            //we're merging a stage member: we check that another stage member has not been added previously
-                            int lkdsjfglj = 5234535;
-
-                            /// one is CompA.varDraw1
-                            /// other is CompB.varDraw1
-                            /// btw, even if stage, just prefix the variable with the class name !!!!!!!
-                        }
-
-                        int memberNewIndex = combinedCbuffer->members.size();
-                        spv::Id memberTypeId = memberToMerge.memberTypeId;
-                        combinedCbuffer->members.push_back(TypeStructMember());
-                        TypeStructMember& newMember = combinedCbuffer->members.back();
-
-                        newMember.structMemberIndex = memberNewIndex;
-                        newMember.memberTypeId = memberTypeId;
-                        newMember.listMemberDecoration = memberToMerge.listMemberDecoration;
-
-                        //update the members name with a more explicit name (ex. var1 --> ShaderA.var1)
-                        /*{
-                            ShaderClassData* shaderOwningTheMember = nullptr;
-
-                            if (memberToMerge.isStage)
+                            for (unsigned int pm = 0; pm < combinedCbuffer->members.size(); pm++)
                             {
-                                //for stage members: check if the members has been instantiated from another shader
-                                int originalShaderId = cbufferToMerge->type->shaderOwner->instantiatedFromShaderId;
-                                if (originalShaderId != -1) shaderOwningTheMember = GetShaderById(originalShaderId);
+                                TypeStructMember& anotherMember = combinedCbuffer->members[pm];
+                                if (anotherMember.isStage)
+                                {
+                                    if (anotherMember.shaderOwnerName == cbufferToMerge->shaderOwnerName && anotherMember.declarationName == memberToMerge.declarationName)
+                                    {
+                                        memberAlreadyAdded = true;
+                                        memberNewIndex = pm;
+                                        break;
+                                    }
+                                }
                             }
-                            if (shaderOwningTheMember == nullptr) shaderOwningTheMember = cbufferToMerge->type->shaderOwner;
-
-                            newMember.declarationName = shaderOwningTheMember->GetName() + "_" + memberToMerge.declarationName;
-                        }*/
-                        newMember.declarationName = memberToMerge.declarationName;
-
-                        //compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment
-                        newMember.memberSize = memberToMerge.memberSize;
-                        newMember.memberAlignment = memberToMerge.memberAlignment;
-                        int memberOffset = 0;
-                        if (memberNewIndex > 0)
-                        {
-                            int previousMemberOffset = combinedCbuffer->members[memberNewIndex - 1].memberOffset;
-                            int previousMemberSize = combinedCbuffer->members[memberNewIndex - 1].memberSize;
-
-                            memberOffset = previousMemberOffset + previousMemberSize;
-                            int memberAlignment = newMember.memberAlignment;
-                            //round to pow2
-                            memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1));
                         }
-                        newMember.memberOffset = memberOffset;
+
+                        if (memberAlreadyAdded)
+                        {
+                            //member already added, nothing else to do
+                        }
+                        else
+                        {
+                            memberNewIndex = combinedCbuffer->members.size();
+                            spv::Id memberTypeId = memberToMerge.memberTypeId;
+                            combinedCbuffer->members.push_back(TypeStructMember());
+                            TypeStructMember& newMember = combinedCbuffer->members.back();
+
+                            newMember.structMemberIndex = memberNewIndex;
+                            newMember.memberTypeId = memberTypeId;
+                            newMember.isStage = isMemberStaged;
+                            newMember.listMemberDecoration = memberToMerge.listMemberDecoration;
+                            newMember.declarationName = memberToMerge.declarationName;
+                            newMember.shaderOwnerName = cbufferToMerge->shaderOwnerName;
+                        
+                            //compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment
+                            newMember.memberSize = memberToMerge.memberSize;
+                            newMember.memberAlignment = memberToMerge.memberAlignment;
+                            int memberOffset = 0;
+                            if (memberNewIndex > 0)
+                            {
+                                int previousMemberOffset = combinedCbuffer->members[memberNewIndex - 1].memberOffset;
+                                int previousMemberSize = combinedCbuffer->members[memberNewIndex - 1].memberSize;
+
+                                memberOffset = previousMemberOffset + previousMemberSize;
+                                int memberAlignment = newMember.memberAlignment;
+                                //round to pow2
+                                memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1));
+                            }
+                            newMember.memberOffset = memberOffset;
+                        }
 
                         //link reference from previous member to new one
                         memberToMerge.newStructMemberIndex = memberNewIndex;
                         memberToMerge.newStructTypeId = combinedCbuffer->structTypeId;
                         memberToMerge.newStructVariableAccessTypeId = combinedCbuffer->structVariableTypeId;
                     }
-                    /// totalCBuffersOffset += cbufferToMerge->type->cbufferTotalOffset;
                 }
                 if (combinedCbuffer->members.size() == 0) { error("The combined cbuffer has no members"); break; }
                 if (combinedCbuffer->members.size() > maxConstValueNeeded) maxConstValueNeeded = combinedCbuffer->members.size();
 
-                combinedCbuffer->declarationName = someCBuffersToMerge[0]->type->GetName();
+                //name of the combined cbuffer is the name of the first cbuffer (all merged cbuffers have the same name)
+                combinedCbuffer->declarationName = someCBuffersToMerge[0]->cbufferName;
 
-                //the merged cbuffers will be removed
+                //update the new member's name with a more explicit name (ex. var1 --> ShaderA.var1, if the member is stage we use the original shader name)
+                for (unsigned int pm = 0; pm < combinedCbuffer->members.size(); pm++)
+                {
+                    TypeStructMember& anotherMember = combinedCbuffer->members[pm];
+                    anotherMember.declarationName = anotherMember.shaderOwnerName + "_" + anotherMember.declarationName;
+                }
+                
+                //all old cbuffers merged will be removed
                 for (auto itcb = someCBuffersToMerge.begin(); itcb != someCBuffersToMerge.end(); itcb++)
                 {
-                    ShaderTypeData* cbufferToMerge = *itcb;
-                    cbufferToMerge->type->isCbufferUsed = false;
+                    CBufferTypeData* cbufferToMerge = *itcb;
+                    cbufferToMerge->isUsed = false;
                 }
             }  //end of if (listCBuffersToMerge.size() > 0)
             else
@@ -3825,6 +3874,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 spv::Instruction structCBufferPropertiesInstr(spv::OpCBufferMemberProperties);
                 structCBufferPropertiesInstr.addIdOperand(cbuffer->structTypeId);
                 structCBufferPropertiesInstr.addImmediateOperand(spv::CBufferDefined);
+                structCBufferPropertiesInstr.addImmediateOperand(spv::CBufferUnstage);
                 structCBufferPropertiesInstr.addImmediateOperand(cbuffer->countMembers());
                 for (unsigned int m = 0; m < cbuffer->members.size(); ++m)
                 {
@@ -3916,7 +3966,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
             //rename the cbuffers
             for (auto itcb = listUntouchedCbuffers.begin(); itcb != listUntouchedCbuffers.end(); itcb++)
             {
-                ShaderTypeData* cbuffer = *itcb;
+                CBufferTypeData* cbuffer = *itcb;
 
                 //remove their initial name instruction (if any)
                 unsigned int posToInsert = 0;
@@ -3924,7 +3974,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 {
                     if (posToInsert == 0) posToInsert = cbuffer->posOpNameType;
                     int wordCount = asWordCount(cbuffer->posOpNameType);
-                    if (bytecodeUpdateController.AddPortionToRemove(cbuffer->posOpNameType, wordCount) == nullptr) { error("Failed to insert a portion to remove"); break; }   
+                    if (bytecodeUpdateController.AddPortionToRemove(cbuffer->posOpNameType, wordCount) == nullptr) { error("Failed to insert a portion to remove"); break; }
                 }
                 if (cbuffer->posOpNameVariable > 0)
                 {
@@ -3936,16 +3986,16 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 BytecodeChunk* bytecodeNameInsertion = bytecodeUpdateController.InsertNewBytecodeChunckAt(posToInsert, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertFirst);
 
                 //set the new type and variable name
-                string cbufferName = cbuffer->type->GetName();
+                string cbufferName = cbuffer->cbufferName;
                 string cbufferVarName = cbufferName + "_var";
 
                 spv::Instruction cbufferStructName(spv::OpName);
-                cbufferStructName.addIdOperand(cbuffer->type->GetId());
+                cbufferStructName.addIdOperand(cbuffer->correspondingShaderType->type->GetId());
                 cbufferStructName.addStringOperand(cbufferName.c_str());
                 cbufferStructName.dump(bytecodeNameInsertion->bytecode);
 
                 spv::Instruction variableName(spv::OpName);
-                variableName.addIdOperand(cbuffer->variable->GetId());
+                variableName.addIdOperand(cbuffer->correspondingShaderType->variable->GetId());
                 variableName.addStringOperand(cbufferVarName.c_str());
                 variableName.dump(bytecodeNameInsertion->bytecode);
             }
@@ -3978,8 +4028,8 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                         //are we accessing a cbuffer that we just merged?
                         if (vectorCbuffersToRemap[structIdAccessed] != nullptr)
                         {
-                            ShaderTypeData* shaderType = vectorCbuffersToRemap[structIdAccessed];
-                            TypeStructMemberArray* cbufferMembersData = shaderType->cbufferMembersData;
+                            CBufferTypeData* cbufferData = vectorCbuffersToRemap[structIdAccessed];
+                            TypeStructMemberArray* cbufferMembersData = cbufferData->cbufferMembersData;
 
                             spv::Id typeId = asId(start + 1);
                             spv::Id resultId = asId(start + 2);
@@ -4030,8 +4080,12 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
     //delete allocated data
     for (unsigned int i = 0; i < listAllShaderCBuffers.size(); i++)
     {
-        ShaderTypeData* cbuffer = listAllShaderCBuffers[i];
-        if (cbuffer->cbufferMembersData != nullptr) delete cbuffer->cbufferMembersData;
+        CBufferTypeData* cbufferData = listAllShaderCBuffers[i];
+        if (cbufferData->cbufferMembersData != nullptr)
+        {
+            delete cbufferData->cbufferMembersData;
+            cbufferData->cbufferMembersData = nullptr;
+        }
     }
     for (auto itcb = listNewCbuffers.begin(); itcb != listNewCbuffers.end(); itcb++)
     {
@@ -4064,12 +4118,12 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
         vector<range_t> vecStripRanges;
         for (auto itcb = listAllShaderCBuffers.begin(); itcb != listAllShaderCBuffers.end(); itcb++)
         {
-            ShaderTypeData* cbuffer = *itcb;
-            if (cbuffer->type->isCbufferUsed == false)
+            CBufferTypeData* cbuffer = *itcb;
+            if (cbuffer->isUsed == false)
             {
-                if (!RemoveShaderTypeFromBytecodeAndData(cbuffer, vecStripRanges))
+                if (!RemoveShaderTypeFromBytecodeAndData(cbuffer->correspondingShaderType, vecStripRanges))
                 {
-                    return error(string("Failed to remove the unused cbuffer type: ") + cbuffer->type->GetName());
+                    return error(string("Failed to remove the unused cbuffer type: ") + cbuffer->correspondingShaderType->type->GetName());
                 }
             }
         }
@@ -5293,10 +5347,10 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
                 case ObjectInstructionTypeEnum::Type:
                 {
                     TypeInstruction* type = dynamic_cast<TypeInstruction*>(obj);
-                    if (type->isCbuffer) listCBufferIds.push_back(type->GetId());
+                    if (type->IsCBuffer()) listCBufferIds.push_back(type->GetId());
                     else
                     {
-                        if (type->pointerTo != nullptr && type->pointerTo->isCbuffer) listCBufferIds.push_back(type->GetId());
+                        if (type->pointerTo != nullptr && type->pointerTo->IsCBuffer()) listCBufferIds.push_back(type->GetId());
                     }
                     break;
                 }
@@ -5304,7 +5358,7 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
                 case ObjectInstructionTypeEnum::Variable:
                 {
                     VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
-                    if (variable->variableTo != nullptr && variable->variableTo->pointerTo != nullptr && variable->variableTo->pointerTo->isCbuffer)
+                    if (variable->variableTo != nullptr && variable->variableTo->pointerTo != nullptr && variable->variableTo->pointerTo->IsCBuffer())
                         listCBufferIds.push_back(variable->GetId());
                 }
             }
@@ -5949,7 +6003,7 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                         if (variable->GetShaderOwner() != nullptr) { error(string("The variable already has a shader owner: ") + variable->GetName()); break; }
                         if (shaderOwner->HasType(type)) { error(string("The shader: ") + shaderOwner->GetName() + string(" already possesses the type: ") + type->GetName()); break; }
 #endif
-                        ShaderTypeData* shaderType = new ShaderTypeData(type, typePointer, variable);
+                        ShaderTypeData* shaderType = new ShaderTypeData(shaderOwner, type, typePointer, variable);
                         type->SetShaderOwner(shaderOwner);
                         typePointer->SetShaderOwner(shaderOwner);
                         variable->SetShaderOwner(shaderOwner);
@@ -6064,15 +6118,24 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
             case spv::OpCBufferMemberProperties:
             {
                 const spv::Id typeId = asId(start + 1);
-                int cbufferType = asLiteralValue(start + 2);
-                int countMembers = asLiteralValue(start + 3);
+                spv::XkslPropertyEnum cbufferType = (spv::XkslPropertyEnum)asLiteralValue(start + 2);
+                spv::XkslPropertyEnum cbufferStage = (spv::XkslPropertyEnum)asLiteralValue(start + 3);
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (cbufferType != spv::CBufferUndefined && cbufferType != spv::CBufferDefined) { error("Invalid cbuffer type property"); break; }
+                if (cbufferStage != spv::CBufferStage && cbufferStage != spv::CBufferUnstage) { error("Invalid cbuffer stage property"); break; }
+#endif
+
+                int countMembers = asLiteralValue(start + 4);
                 TypeInstruction* type = GetTypeById(typeId);
                 if (type == nullptr) return error("Cannot find the type for Id: " + to_string(typeId));
                 if (countMembers <= 0) { error("Invalid number of members for the cbuffer: " + type->GetName()); break; }
+                
+                string shaderOwnerName = "";
+                if (type->shaderOwner != nullptr) shaderOwnerName = type->shaderOwner->GetName();
 
-                type->isCbuffer = true;
-                type->cbufferType = cbufferType;
-                type->cbufferCountMembers = countMembers;
+                CBufferTypeData* cbufferData = new CBufferTypeData(shaderOwnerName, type->GetName(), cbufferType, cbufferStage == spv::CBufferStage ? true : false, countMembers);
+                type->SetCBufferData(cbufferData);
                 break;
             }
         }

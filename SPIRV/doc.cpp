@@ -217,6 +217,8 @@ const char* XkslPropertyString(int prop)
         case (PropertyMethodStatic):   return "Static";
         case (CBufferUndefined):       return "Undefined";
         case (CBufferDefined):         return "Defined";
+        case (CBufferStage):           return "Stage";
+        case (CBufferUnstage):         return "Unstage";
         default:  return "Bad";
     }
 }
@@ -1205,15 +1207,15 @@ const char* OpcodeString(int op)
     case 5007: return "OpGroupSMaxNonUniformAMD";
 #endif
 
-    case (OpDeclarationName):        return "OpDeclarationName";
-    case (OpShaderInheritance):      return "OpShaderInheritance";
-    case (OpBelongsToShader):        return "OpBelongsToShader";
-    case (OpMethodProperties):       return "OpMethodProperties";
-    case (OpMemberProperties):       return "OpMemberProperties";
-    case (OpMemberSemanticName):     return "OpMemberSemanticName";
-    case (OpCBufferMemberProperties):    return "OpCBufferMemberProperties";
-    case (OpFunctionCallBaseUnresolved): return "OpFunctionCallBaseUnres";
-    case (OpFunctionCallBaseResolved):   return "OpFunctionCallBaseRes";
+    case (OpDeclarationName):                         return "OpDeclarationName";
+    case (OpShaderInheritance):                       return "OpShaderInheritance";
+    case (OpBelongsToShader):                         return "OpBelongsToShader";
+    case (OpMethodProperties):                        return "OpMethodProperties";
+    case (OpMemberProperties):                        return "OpMemberProperties";
+    case (OpMemberSemanticName):                      return "OpMemberSemanticName";
+    case (OpCBufferMemberProperties):                 return "OpCBufferMemberProperties";
+    case (OpFunctionCallBaseUnresolved):              return "OpFunctionCallBaseUnres";
+    case (OpFunctionCallBaseResolved):                return "OpFunctionCallBaseRes";
     case (OpShaderCompositionDeclaration):            return "OpShaderCompositionDeclaration";
     case (OpShaderCompositionInstance):               return "OpShaderCompositionInstance";
     case (OpFunctionCallThroughCompositionVariable):  return "OpFunctionCallThroughCompositionVar";
@@ -1917,6 +1919,7 @@ void Parameterize()
 
     InstructionDesc[OpCBufferMemberProperties].operands.push(OperandId, "'Type'");
     InstructionDesc[OpCBufferMemberProperties].operands.push(XkslShaderDataProperty, "'CbufferType'");
+    InstructionDesc[OpCBufferMemberProperties].operands.push(XkslShaderDataProperty, "'CbufferStage'");
     InstructionDesc[OpCBufferMemberProperties].operands.push(OperandLiteralNumber, "'CountMembers'");
     InstructionDesc[OpCBufferMemberProperties].operands.push(OperandVariableLiterals, "'SizeAndAlignment'");
 
