@@ -5336,6 +5336,8 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
     //Get the IDs of all cbuffers (plus their pointer and variable types)
     //We keep all cbuffers, even if some are not used by the output stage (unused cbuffers have already been removed)
     vector<spv::Id> listCBufferIds;
+
+    /*
     {
         for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
         {
@@ -5364,6 +5366,7 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
             }
         }
     }
+    */
 
     //===================================================================================================================
     // Generate the SPIRV bytecode for all stages
@@ -5372,7 +5375,7 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
         XkslMixerOutputStage& outputStage = outputStages[i];
 
         //Clean the bytecode of all unused stuff!
-        if (!CleanAndSetStageBytecode(outputStage, listCBufferIds))
+        if (!GenerateBytecodeForStage(outputStage, listCBufferIds))
         {
             error("Failed to set and clean the stage bytecode");
             outputStage.outputStage->resultingBytecode.clear();
@@ -5384,13 +5387,13 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
     return true;
 }
 
-bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, vector<spv::Id>& listCBufferIds)
+bool SpxStreamRemapper::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<spv::Id>& listObjectIdsToKeep)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_SPXBytecodeRemoved) return error("Invalid remapper status");
     FunctionInstruction* entryFunction = stage.entryFunction;
     if (entryFunction == nullptr) return error("The stage has no entry function");
 
-    //======================================================================================
+    //======================================================================================================
     //Find all functions being called by the stage
     vector<FunctionInstruction*> listAllFunctionsCalledByTheStage;
     {
@@ -5445,12 +5448,13 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, ve
         }
     }
 
-    //======================================================================================
+    //======================================================================================================
     //Init the list of IDs that we need to keep
     vector<bool> listIdsUsed;
     listIdsUsed.resize(bound(), false);
 
-    for (auto it = listCBufferIds.begin(); it != listCBufferIds.end(); it++)
+    //Keep some IDs
+    for (auto it = listObjectIdsToKeep.begin(); it != listObjectIdsToKeep.end(); it++)
     {
         const spv::Id& id = *it;
 #ifdef XKSLANG_DEBUG_MODE
@@ -5459,10 +5463,53 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, ve
         listIdsUsed[id] = true;
     }
 
-    //======================================================================================
+    //======================================================================================================
+    //======================================================================================================
     //Build the header
     vector<uint32_t> header;
     header.insert(header.begin(), spv.begin(), spv.begin() + header_size);
+
+    //======================================================================================================
+    //Add stage capabilities and execution mode (cf TGlslangToSpvTraverser::TGlslangToSpvTraverser function)
+    vector<spv::Capability> capabilities;
+    vector<SPVHeaderStageExecutionMode> executionModes;
+    {
+        switch (stage.outputStage->stage)
+        {
+            case ShadingStageEnum::Vertex:
+                capabilities.push_back(spv::CapabilityShader);
+                break;
+            case ShadingStageEnum::Geometry:
+                capabilities.push_back(spv::CapabilityGeometry);
+                return error("stage not processed yet"); //(cf TGlslangToSpvTraverser::TGlslangToSpvTraverser function)
+                break;
+            case ShadingStageEnum::TessControl:
+                capabilities.push_back(spv::CapabilityTessellation);
+                return error("stage not processed yet"); //(cf TGlslangToSpvTraverser::TGlslangToSpvTraverser function)
+                break;
+            case ShadingStageEnum::TessEvaluation:
+                capabilities.push_back(spv::CapabilityTessellation);
+                return error("stage not processed yet"); //(cf TGlslangToSpvTraverser::TGlslangToSpvTraverser function)
+                break;
+            case ShadingStageEnum::Pixel:
+                capabilities.push_back(spv::CapabilityShader);
+                executionModes.push_back(SPVHeaderStageExecutionMode(spv::ExecutionModeOriginUpperLeft));  //default for now!!
+                break;
+            case ShadingStageEnum::Compute:
+                capabilities.push_back(spv::CapabilityShader);
+                return error("stage not processed yet"); //(cf TGlslangToSpvTraverser::TGlslangToSpvTraverser function)
+                break;
+            default:
+                return error("unknown stage");
+        }
+        for (auto itc = capabilities.begin(); itc != capabilities.end(); itc++)
+        {
+            const spv::Capability& capability = *itc;
+            spv::Instruction capInst(0, 0, spv::OpCapability);
+            capInst.addImmediateOperand(capability);
+            capInst.dump(header);
+        }
+    }
 
     //Add the entry point instruction
     spv::ExecutionModel model = GetShadingStageExecutionMode(stage.outputStage->stage);
@@ -5473,8 +5520,22 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, ve
     entryPointInstr.addStringOperand(stage.outputStage->entryPointName.c_str());
     entryPointInstr.dump(header);
 
-    //======================================================================================
-    // Add some header data
+    //add the execution modes
+    for (auto itc = executionModes.begin(); itc != executionModes.end(); itc++)
+    {
+        const SPVHeaderStageExecutionMode& execMode = *itc;
+        spv::Instruction instrExecMode(spv::OpExecutionMode);
+        instrExecMode.addIdOperand(entryFunction->GetResultId());
+        instrExecMode.addImmediateOperand(execMode.mode);
+        if (execMode.value1 >= 0) instrExecMode.addImmediateOperand(execMode.value1);
+        if (execMode.value2 >= 0) instrExecMode.addImmediateOperand(execMode.value2);
+        if (execMode.value3 >= 0) instrExecMode.addImmediateOperand(execMode.value3);
+        instrExecMode.dump(header);
+    }
+
+    //======================================================================================================
+    //======================================================================================================
+    // Add some header data from original spv files
     {
         unsigned int start = header_size;
         const unsigned int end = spv.size();
@@ -5514,7 +5575,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, ve
         }
     }
 
-    //======================================================================================
+    //======================================================================================================
     //parse all functions called by the stage to get all IDs needed
     for (auto itf = listAllFunctionsCalledByTheStage.begin(); itf != listAllFunctionsCalledByTheStage.end(); itf++)
     {
@@ -5534,7 +5595,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, ve
         }
     }
 
-    //======================================================================================
+    //======================================================================================================
     //For all IDs used: if it's defining a type, variable or const: check if it's depending on another type no included in the list yet
     {
         vector<spv::Id> idToCheckForExtraIds;
@@ -5602,14 +5663,14 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, ve
         }
     }
 
-    //======================================================================================
+    //======================================================================================================
     //copy the header
     vector<uint32_t>& stageBytecode = stage.outputStage->resultingBytecode.getWritableBytecodeStream();
     stageBytecode.clear();
     stageBytecode.insert(stageBytecode.end(), header.begin(), header.end());
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
-    //======================================================================================
+    //======================================================================================================
     //copy all names and decorate matching our IDS
     {
         unsigned int start = header_size;
@@ -5651,7 +5712,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, ve
     }
 #endif
 
-    //======================================================================================
+    //======================================================================================================
     //Copy all types matching our IDS
     {
         unsigned int start = header_size;
@@ -5691,7 +5752,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, ve
         }
     }
 
-    //======================================================================================
+    //======================================================================================================
     //copy all functions' bytecode
     for (auto itf = listAllFunctionsCalledByTheStage.begin(); itf != listAllFunctionsCalledByTheStage.end(); itf++)
     {
@@ -5699,7 +5760,7 @@ bool SpxStreamRemapper::CleanAndSetStageBytecode(XkslMixerOutputStage& stage, ve
         stageBytecode.insert(stageBytecode.end(), spv.begin() + aFunctionCalled->GetBytecodeStartPosition(), spv.begin() + aFunctionCalled->GetBytecodeEndPosition());
     }
 
-    //======================================================================================
+    //======================================================================================================
     //Remap all IDs
     {
         int newId = 1;

@@ -4965,6 +4965,7 @@ void HlslParseContext::mergeQualifiers(TQualifier& dst, const TQualifier& src)
     MERGE_SINGLETON(isStage);
     MERGE_SINGLETON(isStream);
     MERGE_SINGLETON(isOverride);
+    MERGE_SINGLETON(isRGroup);
     MERGE_SINGLETON(isAbstract);
     MERGE_SINGLETON(isClone);
     MERGE_SINGLETON(isStatic);

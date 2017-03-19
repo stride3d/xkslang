@@ -1504,6 +1504,7 @@ bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
     case EHTokStruct:
     case EHTokCBuffer:
     case EHTokTBuffer:
+    case EHTokRGroup:
         return acceptStruct(type);
 
     case EHTokShaderClass:
@@ -2851,15 +2852,23 @@ bool HlslGrammar::acceptStruct(TType& type)
     // block type or just a generic structure type.
     TStorageQualifier storageQualifier = EvqTemporary;
 
-    // CBUFFER
-    if (acceptTokenClass(EHTokCBuffer))
+    bool isRGroupBuffer = acceptTokenClass(EHTokRGroup);
+    if (isRGroupBuffer)
+    {
         storageQualifier = EvqUniform;
-    // TBUFFER
-    else if (acceptTokenClass(EHTokTBuffer))
-        storageQualifier = EvqBuffer;
-    // STRUCT
-    else if (! acceptTokenClass(EHTokStruct))
-        return false;
+    }
+    else
+    {
+        // CBUFFER
+        if (acceptTokenClass(EHTokCBuffer))
+            storageQualifier = EvqUniform;
+        // TBUFFER
+        else if (acceptTokenClass(EHTokTBuffer))
+            storageQualifier = EvqBuffer;
+        // STRUCT
+        else if (! acceptTokenClass(EHTokStruct))
+            return false;
+    }
 
     // IDENTIFIER
     TString structName = "";
@@ -2904,6 +2913,11 @@ bool HlslGrammar::acceptStruct(TType& type)
     else {
         postDeclQualifier.storage = storageQualifier;
         new(&type) TType(typeList, structName, postDeclQualifier); // sets EbtBlock
+    }
+
+    if (isRGroupBuffer)
+    {
+        type.getQualifier().isRGroup = true;
     }
 
     parseContext.declareStruct(token.loc, structName, type);

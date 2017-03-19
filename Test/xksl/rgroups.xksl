@@ -1,0 +1,8 @@
+shader ShaderMain
+{
+	SamplerState Sampler;
+	Texture2D Texture;
+	TextureCube CubeMap;
+	Texture3D<uint2> LightClusters;
+	Buffer<uint> LightIndices;
+}

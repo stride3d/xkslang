@@ -1,10 +1,5 @@
 #version 450
 
-layout(std140) uniform PerDraw
-{
-    layout(row_major) mat4 ShaderMain_BlendMatrixArray[5];
-} PerDraw_var;
-
 layout(std140) uniform PerLighting
 {
     float ShaderMain_BleedingFactor;

@@ -1,10 +1,5 @@
 #version 450
 
-layout(std140) uniform CBufferVertexStage
-{
-    float ShaderMain_BleedingFactor;
-} CBufferVertexStage_var;
-
 layout(std140) uniform globalCbuffer
 {
     float ShaderMain_var2;

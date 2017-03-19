@@ -717,7 +717,7 @@ private:
     static bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned int begin, unsigned int end, const std::vector<spv::Id>& remapTable, std::string& errorMsg);
     bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned int begin, unsigned int end, const std::vector<spv::Id>& remapTable);
 
-    bool CleanAndSetStageBytecode(XkslMixerOutputStage& stage, std::vector<spv::Id>& listCBufferIds);
+    bool GenerateBytecodeForStage(XkslMixerOutputStage& stage, std::vector<spv::Id>& listObjectIdsToKeep);
 
 private:
     //static variable share between all SpxStreamRemapper instances
@@ -767,6 +767,15 @@ private:
     }
 
     friend class XkslMixer;
+};
+
+class SPVHeaderStageExecutionMode
+{
+public:
+    spv::ExecutionMode mode;
+    int value1, value2, value3;
+
+    SPVHeaderStageExecutionMode(spv::ExecutionMode mode, int value1 = 0, int value2 = 0, int value3 = 0) : mode(mode), value1(value1), value2(value2), value3(value3){}
 };
 
 class MemberAccessDetails

@@ -289,7 +289,8 @@ enum EHlslTokenClass {
     EHTokCBuffer,
     EHTokTBuffer,
     EHTokTypedef,
-    
+    EHTokRGroup,
+
     // XKSL new type Token
     EHTokShaderClass,
 

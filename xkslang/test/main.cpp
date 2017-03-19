@@ -61,6 +61,9 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestComposeSimple.xksl" },
     //{ "TestForEach01.xksl" },
     //{ "TestStreamSemantics.xksl" },
+    //{ "testParsingResources.xksl" },
+
+    //{ "rgroups.xksl" },
 
     ////{{"textureAndSampler.xksl"}, {"", nullptr}},
     ////{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -140,12 +143,15 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer06", "CBuffer06.xkfx" },
     //{ "CBuffer07", "CBuffer07.xkfx" },
     //{ "CBuffer08", "CBuffer08.xkfx" },
-    { "CBuffer09", "CBuffer09.xkfx" },
+    //{ "CBuffer09", "CBuffer09.xkfx" },
+
+    { "ShaderWithResources", "ShaderWithResources.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
     //{ "TestConvert01", "TestForEach01_Pixel.spv" },
     //{ "TestCbuffer", "cbuffer.spv" },
+    //{ "parseResources", "parseResources.spv" },
 };
 
 #ifdef _DEBUG

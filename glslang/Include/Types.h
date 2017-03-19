@@ -466,6 +466,7 @@ public:
 		isStage      = false;
 		isStream     = false;
 		isOverride   = false;
+        isRGroup     = false;
 		isAbstract   = false;
 		isClone      = false;
         isStatic     = false;
@@ -512,6 +513,7 @@ public:
 	bool isAbstract   : 1;
 	bool isClone      : 1;
     bool isStatic     : 1;
+    bool isRGroup     : 1;
 
     bool isMemory() const
     {

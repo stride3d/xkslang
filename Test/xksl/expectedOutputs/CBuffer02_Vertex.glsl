@@ -12,11 +12,6 @@ layout(std140) uniform globalCbuffer
     vec4 ShaderMain_var7;
 } globalCbuffer_var;
 
-layout(std140) uniform CBufferPixelStage
-{
-    float ShaderMain_MinVariance;
-} CBufferPixelStage_var;
-
 void main()
 {
     float f = (CBufferVertexStage_var.ShaderMain_BleedingFactor + globalCbuffer_var.ShaderMain_var2) + globalCbuffer_var.ShaderMain_var4[2];

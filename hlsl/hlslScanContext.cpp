@@ -331,6 +331,7 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["cbuffer"] =                 EHTokCBuffer;
     (*KeywordMap)["tbuffer"] =                 EHTokTBuffer;
     (*KeywordMap)["typedef"] =                 EHTokTypedef;
+    (*KeywordMap)["rgroup"]  =                 EHTokRGroup;
 
     (*KeywordMap)["shader"]  =                 EHTokShaderClass;
 
@@ -781,6 +782,7 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokTypedef:
     case EHTokCBuffer:
     case EHTokTBuffer:
+    case EHTokRGroup:
         return keyword;
 
     case EHTokShaderClass:
