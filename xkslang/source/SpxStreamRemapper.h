@@ -36,6 +36,7 @@ enum class SpxRemapperStatusEnum
     MixinBeingCompiled_StreamReadyForReschuffling,
     MixinBeingCompiled_StreamReschuffled,
     MixinBeingCompiled_CBuffersValidated,
+    MixinBeingCompiled_ResourcesProcessed,
     MixinBeingCompiled_UnusedShaderRemoved,
     MixinBeingCompiled_ConvertedToSPV,
     MixinBeingCompiled_SPXBytecodeRemoved,
@@ -682,6 +683,7 @@ private:
     bool RemoveAndConvertSPXExtensions();
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
+    bool ProcessResources();
     
     bool GetStructTypeMembersTypeIdList(TypeInstruction* structType, std::vector<spv::Id>& membersTypeList);
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);

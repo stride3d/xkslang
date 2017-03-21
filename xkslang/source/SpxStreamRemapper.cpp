@@ -3237,7 +3237,18 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     return true;
 }
 
-//Remove unused cbuffers, merge used cbuffers havind same name
+//when a cbuffer contains a resource, this resource must be taken out of the cbuffer and put on the global space
+bool SpxStreamRemapper::ProcessResources()
+{
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_CBuffersValidated) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_ResourcesProcessed;
+
+
+
+    return true;
+}
+
+//Remove unused cbuffers, merge used cbuffers havind the same name
 bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamReschuffled && status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAndCBuffersAnalysed) return error("Invalid remapper status");

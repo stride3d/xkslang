@@ -9,12 +9,13 @@
 	//Buffer<float4> PointLights;
 };*/
 
-cbuffer Buf
-{
-	SamplerState Sampler0;
-	Texture2D Texture0;
-	TextureCube CubeMap;
-};
+SamplerState Sampler0;
+Texture2D Texture0;
+TextureCube CubeMap;
+Texture3D text3D;
+Texture3D<uint2> text3Du;
+Texture2D TextureTabs[2];
+Buffer<float4> PointLights;
 
 void main()
 {

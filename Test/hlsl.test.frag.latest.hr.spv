@@ -2,56 +2,50 @@ hlsl.test.frag
 Shader version: 450
 gl_FragCoord origin is upper left
 0:? Sequence
-0:20  Function Definition: @main( (temp void)
-0:20    Function Parameters: 
+0:21  Function Definition: @main( (temp void)
+0:21    Function Parameters: 
 0:?     Sequence
-0:21      Sequence
-0:21        move second child to first child (temp 2-component vector of float)
-0:21          'uv2' (temp 2-component vector of float)
+0:22      Sequence
+0:22        move second child to first child (temp 2-component vector of float)
+0:22          'uv2' (temp 2-component vector of float)
 0:?           Constant:
 0:?             0.500000
 0:?             0.500000
-0:22      Sequence
-0:22        move second child to first child (temp 4-component vector of float)
-0:22          'colorA' (temp 4-component vector of float)
-0:22          texture (temp 4-component vector of float)
-0:22            Construct combined texture-sampler (temp sampler2D)
-0:22              Texture0: direct index for structure (layout(row_major std140 ) uniform texture2D)
-0:22                'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
-0:22                Constant:
-0:22                  1 (const uint)
-0:22              Sampler0: direct index for structure (layout(row_major std140 ) uniform sampler)
-0:22                'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
-0:22                Constant:
-0:22                  0 (const uint)
-0:22            'uv2' (temp 2-component vector of float)
-0:24      Sequence
-0:24        move second child to first child (temp 3-component vector of float)
-0:24          'direction' (temp 3-component vector of float)
+0:23      Sequence
+0:23        move second child to first child (temp 4-component vector of float)
+0:23          'colorA' (temp 4-component vector of float)
+0:23          texture (temp 4-component vector of float)
+0:23            Construct combined texture-sampler (temp sampler2D)
+0:23              'Texture0' (uniform texture2D)
+0:23              'Sampler0' (uniform sampler)
+0:23            'uv2' (temp 2-component vector of float)
+0:25      Sequence
+0:25        move second child to first child (temp 3-component vector of float)
+0:25          'direction' (temp 3-component vector of float)
 0:?           Constant:
 0:?             1.000000
 0:?             0.000000
 0:?             0.000000
-0:25      Sequence
-0:25        move second child to first child (temp 4-component vector of float)
-0:25          'colorB' (temp 4-component vector of float)
-0:25          texture (temp 4-component vector of float)
-0:25            Construct combined texture-sampler (temp samplerCube)
-0:25              CubeMap: direct index for structure (layout(row_major std140 ) uniform textureCube)
-0:25                'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
-0:25                Constant:
-0:25                  2 (const uint)
-0:25              Sampler0: direct index for structure (layout(row_major std140 ) uniform sampler)
-0:25                'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
-0:25                Constant:
-0:25                  0 (const uint)
-0:25            'direction' (temp 3-component vector of float)
-0:20  Function Definition: main( (temp void)
-0:20    Function Parameters: 
+0:26      Sequence
+0:26        move second child to first child (temp 4-component vector of float)
+0:26          'colorB' (temp 4-component vector of float)
+0:26          texture (temp 4-component vector of float)
+0:26            Construct combined texture-sampler (temp samplerCube)
+0:26              'CubeMap' (uniform textureCube)
+0:26              'Sampler0' (uniform sampler)
+0:26            'direction' (temp 3-component vector of float)
+0:21  Function Definition: main( (temp void)
+0:21    Function Parameters: 
 0:?     Sequence
-0:20      Function Call: @main( (temp void)
+0:21      Function Call: @main( (temp void)
 0:?   Linker Objects
-0:?     'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
+0:?     'Sampler0' (uniform sampler)
+0:?     'Texture0' (uniform texture2D)
+0:?     'CubeMap' (uniform textureCube)
+0:?     'text3D' (uniform texture3D)
+0:?     'text3Du' (uniform utexture3D)
+0:?     'TextureTabs' (uniform 2-element array of texture2D)
+0:?     'PointLights' (layout(rgba32f ) uniform samplerBuffer)
 
 
 Linked fragment stage:
@@ -60,63 +54,57 @@ Linked fragment stage:
 Shader version: 450
 gl_FragCoord origin is upper left
 0:? Sequence
-0:20  Function Definition: @main( (temp void)
-0:20    Function Parameters: 
+0:21  Function Definition: @main( (temp void)
+0:21    Function Parameters: 
 0:?     Sequence
-0:21      Sequence
-0:21        move second child to first child (temp 2-component vector of float)
-0:21          'uv2' (temp 2-component vector of float)
+0:22      Sequence
+0:22        move second child to first child (temp 2-component vector of float)
+0:22          'uv2' (temp 2-component vector of float)
 0:?           Constant:
 0:?             0.500000
 0:?             0.500000
-0:22      Sequence
-0:22        move second child to first child (temp 4-component vector of float)
-0:22          'colorA' (temp 4-component vector of float)
-0:22          texture (temp 4-component vector of float)
-0:22            Construct combined texture-sampler (temp sampler2D)
-0:22              Texture0: direct index for structure (layout(row_major std140 ) uniform texture2D)
-0:22                'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
-0:22                Constant:
-0:22                  1 (const uint)
-0:22              Sampler0: direct index for structure (layout(row_major std140 ) uniform sampler)
-0:22                'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
-0:22                Constant:
-0:22                  0 (const uint)
-0:22            'uv2' (temp 2-component vector of float)
-0:24      Sequence
-0:24        move second child to first child (temp 3-component vector of float)
-0:24          'direction' (temp 3-component vector of float)
+0:23      Sequence
+0:23        move second child to first child (temp 4-component vector of float)
+0:23          'colorA' (temp 4-component vector of float)
+0:23          texture (temp 4-component vector of float)
+0:23            Construct combined texture-sampler (temp sampler2D)
+0:23              'Texture0' (uniform texture2D)
+0:23              'Sampler0' (uniform sampler)
+0:23            'uv2' (temp 2-component vector of float)
+0:25      Sequence
+0:25        move second child to first child (temp 3-component vector of float)
+0:25          'direction' (temp 3-component vector of float)
 0:?           Constant:
 0:?             1.000000
 0:?             0.000000
 0:?             0.000000
-0:25      Sequence
-0:25        move second child to first child (temp 4-component vector of float)
-0:25          'colorB' (temp 4-component vector of float)
-0:25          texture (temp 4-component vector of float)
-0:25            Construct combined texture-sampler (temp samplerCube)
-0:25              CubeMap: direct index for structure (layout(row_major std140 ) uniform textureCube)
-0:25                'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
-0:25                Constant:
-0:25                  2 (const uint)
-0:25              Sampler0: direct index for structure (layout(row_major std140 ) uniform sampler)
-0:25                'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
-0:25                Constant:
-0:25                  0 (const uint)
-0:25            'direction' (temp 3-component vector of float)
-0:20  Function Definition: main( (temp void)
-0:20    Function Parameters: 
+0:26      Sequence
+0:26        move second child to first child (temp 4-component vector of float)
+0:26          'colorB' (temp 4-component vector of float)
+0:26          texture (temp 4-component vector of float)
+0:26            Construct combined texture-sampler (temp samplerCube)
+0:26              'CubeMap' (uniform textureCube)
+0:26              'Sampler0' (uniform sampler)
+0:26            'direction' (temp 3-component vector of float)
+0:21  Function Definition: main( (temp void)
+0:21    Function Parameters: 
 0:?     Sequence
-0:20      Function Call: @main( (temp void)
+0:21      Function Call: @main( (temp void)
 0:?   Linker Objects
-0:?     'anon@0' (layout(row_major std140 ) uniform block{layout(row_major std140 ) uniform sampler Sampler0, layout(row_major std140 ) uniform texture2D Texture0, layout(row_major std140 ) uniform textureCube CubeMap})
+0:?     'Sampler0' (uniform sampler)
+0:?     'Texture0' (uniform texture2D)
+0:?     'CubeMap' (uniform textureCube)
+0:?     'text3D' (uniform texture3D)
+0:?     'text3Du' (uniform utexture3D)
+0:?     'TextureTabs' (uniform 2-element array of texture2D)
+0:?     'PointLights' (layout(rgba32f ) uniform samplerBuffer)
 
-error: The cbuffer type is undefined for: Buf
 // Module Version 10000
 // Generated by (magic number): 80001
-// Id's are bound by 54
+// Id's are bound by 61
 
                               Capability Shader
+                              Capability SampledBuffer
                1:             ExtInstImport  "GLSL.std.450"
                               MemoryModel Logical GLSL450
                               EntryPoint Fragment 4  "main"
@@ -125,18 +113,22 @@ error: The cbuffer type is undefined for: Buf
                               Name 6  "@main("
                               Name 11  "uv2"
                               Name 16  "colorA"
-                              Name 20  "Buf"
-                              MemberName 20(Buf) 0  "Sampler0"
-                              MemberName 20(Buf) 1  "Texture0"
-                              MemberName 20(Buf) 2  "CubeMap"
-                              Name 22  ""
-                              Name 38  "direction"
-                              Name 42  "colorB"
-                              MemberDecorate 20(Buf) 0 Offset 0
-                              MemberDecorate 20(Buf) 1 Offset 4
-                              MemberDecorate 20(Buf) 2 Offset 8
-                              Decorate 20(Buf) Block
-                              Decorate 22 DescriptorSet 0
+                              Name 19  "Texture0"
+                              Name 23  "Sampler0"
+                              Name 31  "direction"
+                              Name 35  "colorB"
+                              Name 38  "CubeMap"
+                              Name 48  "text3D"
+                              Name 52  "text3Du"
+                              Name 56  "TextureTabs"
+                              Name 60  "PointLights"
+                              Decorate 19(Texture0) DescriptorSet 0
+                              Decorate 23(Sampler0) DescriptorSet 0
+                              Decorate 38(CubeMap) DescriptorSet 0
+                              Decorate 48(text3D) DescriptorSet 0
+                              Decorate 52(text3Du) DescriptorSet 0
+                              Decorate 56(TextureTabs) DescriptorSet 0
+                              Decorate 60(PointLights) DescriptorSet 0
                2:             TypeVoid
                3:             TypeFunction 2
                8:             TypeFloat 32
@@ -146,54 +138,61 @@ error: The cbuffer type is undefined for: Buf
               13:    9(fvec2) ConstantComposite 12 12
               14:             TypeVector 8(float) 4
               15:             TypePointer Function 14(fvec4)
-              17:             TypeSampler
-              18:             TypeImage 8(float) 2D sampled format:Unknown
-              19:             TypeImage 8(float) Cube sampled format:Unknown
-         20(Buf):             TypeStruct 17 18 19
-              21:             TypePointer UniformConstant 20(Buf)
-              22:     21(ptr) Variable UniformConstant
-              23:             TypeInt 32 1
-              24:     23(int) Constant 1
-              25:             TypePointer UniformConstant 18
-              28:     23(int) Constant 0
-              29:             TypePointer UniformConstant 17
-              32:             TypeSampledImage 18
-              36:             TypeVector 8(float) 3
-              37:             TypePointer Function 36(fvec3)
-              39:    8(float) Constant 1065353216
-              40:    8(float) Constant 0
-              41:   36(fvec3) ConstantComposite 39 40 40
-              43:     23(int) Constant 2
-              44:             TypePointer UniformConstant 19
-              49:             TypeSampledImage 19
+              17:             TypeImage 8(float) 2D sampled format:Unknown
+              18:             TypePointer UniformConstant 17
+    19(Texture0):     18(ptr) Variable UniformConstant
+              21:             TypeSampler
+              22:             TypePointer UniformConstant 21
+    23(Sampler0):     22(ptr) Variable UniformConstant
+              25:             TypeSampledImage 17
+              29:             TypeVector 8(float) 3
+              30:             TypePointer Function 29(fvec3)
+              32:    8(float) Constant 1065353216
+              33:    8(float) Constant 0
+              34:   29(fvec3) ConstantComposite 32 33 33
+              36:             TypeImage 8(float) Cube sampled format:Unknown
+              37:             TypePointer UniformConstant 36
+     38(CubeMap):     37(ptr) Variable UniformConstant
+              41:             TypeSampledImage 36
+              46:             TypeImage 8(float) 3D sampled format:Unknown
+              47:             TypePointer UniformConstant 46
+      48(text3D):     47(ptr) Variable UniformConstant
+              49:             TypeInt 32 0
+              50:             TypeImage 49(int) 3D sampled format:Unknown
+              51:             TypePointer UniformConstant 50
+     52(text3Du):     51(ptr) Variable UniformConstant
+              53:     49(int) Constant 2
+              54:             TypeArray 17 53
+              55:             TypePointer UniformConstant 54
+ 56(TextureTabs):     55(ptr) Variable UniformConstant
+              57:             TypeImage 8(float) Buffer sampled format:Rgba32f
+              58:             TypeSampledImage 57
+              59:             TypePointer UniformConstant 58
+ 60(PointLights):     59(ptr) Variable UniformConstant
          4(main):           2 Function None 3
                5:             Label
-              53:           2 FunctionCall 6(@main()
+              45:           2 FunctionCall 6(@main()
                               Return
                               FunctionEnd
        6(@main():           2 Function None 3
                7:             Label
          11(uv2):     10(ptr) Variable Function
       16(colorA):     15(ptr) Variable Function
-   38(direction):     37(ptr) Variable Function
-      42(colorB):     15(ptr) Variable Function
+   31(direction):     30(ptr) Variable Function
+      35(colorB):     15(ptr) Variable Function
                               Store 11(uv2) 13
-              26:     25(ptr) AccessChain 22 24
-              27:          18 Load 26
-              30:     29(ptr) AccessChain 22 28
-              31:          17 Load 30
-              33:          32 SampledImage 27 31
-              34:    9(fvec2) Load 11(uv2)
-              35:   14(fvec4) ImageSampleImplicitLod 33 34
-                              Store 16(colorA) 35
-                              Store 38(direction) 41
-              45:     44(ptr) AccessChain 22 43
-              46:          19 Load 45
-              47:     29(ptr) AccessChain 22 28
-              48:          17 Load 47
-              50:          49 SampledImage 46 48
-              51:   36(fvec3) Load 38(direction)
-              52:   14(fvec4) ImageSampleImplicitLod 50 51
-                              Store 42(colorB) 52
+              20:          17 Load 19(Texture0)
+              24:          21 Load 23(Sampler0)
+              26:          25 SampledImage 20 24
+              27:    9(fvec2) Load 11(uv2)
+              28:   14(fvec4) ImageSampleImplicitLod 26 27
+                              Store 16(colorA) 28
+                              Store 31(direction) 34
+              39:          36 Load 38(CubeMap)
+              40:          21 Load 23(Sampler0)
+              42:          41 SampledImage 39 40
+              43:   29(fvec3) Load 31(direction)
+              44:   14(fvec4) ImageSampleImplicitLod 42 43
+                              Store 35(colorB) 44
                               Return
                               FunctionEnd

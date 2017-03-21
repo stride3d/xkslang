@@ -1,6 +1,6 @@
 shader ShaderMain
 {
-	rgroup ResourceGroup
+	cbuffer ResourceGroup
 	{
 		SamplerState Sampler0;
 		Texture2D Texture0;
