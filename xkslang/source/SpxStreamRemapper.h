@@ -406,11 +406,14 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spvUndefinedId), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), memberSize(-1), memberAlignment(-1){}
+        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spvUndefinedId),
+            newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), memberSize(-1), memberAlignment(-1), memberType(nullptr),
+            variableAccessTypeId(0){}
 
         spv::Id structTypeId;             //Id of the struct type containing the member
         int structMemberIndex;            //Id of the member within the struct
         spv::Id memberTypeId;             //Type Id of the member
+        TypeInstruction* memberType;      //member type
 
         bool isStream;
         bool isStage;
@@ -427,6 +430,7 @@ public:
         int memberOffset;
         std::vector<unsigned int> listMemberDecoration;  //extra decorate properties set with the member (for example: RowMajor, MatrixStride, ... set for cbuffer members)
         bool isUsed; //in some case we need to know which members are actually used or not
+        bool isResourceType;
         std::string shaderOwnerName;  //name of the shader owning the cbuffer member (for stage cbuffer, instantiated cbuffers will keep the name of the original shader class)
 
         //temporary variables used to remap members to others
@@ -434,6 +438,7 @@ public:
         spv::Id newStructVariableAccessTypeId;
         int newStructMemberIndex;
         int tmpRemapToIOIndex;   //used by some algo
+        spv::Id variableAccessTypeId; //in some case (resources) the member is not within a struct...
 
         //====================================================
         bool HasSemantic() const { return semantic.size() > 0; }
@@ -683,8 +688,8 @@ private:
     bool RemoveAndConvertSPXExtensions();
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
-    bool ProcessResources();
-    
+    static bool IsResourceType(const spv::Op& opCode);
+
     bool GetStructTypeMembersTypeIdList(TypeInstruction* structType, std::vector<spv::Id>& membersTypeList);
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
     bool GetFunctionLabelInstructionPosition(FunctionInstruction* function, unsigned int& labelPos);

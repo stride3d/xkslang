@@ -160,7 +160,7 @@ bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& mes
 }
 
 bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>& messages,
-    SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* processedResourcesSpv, SpvBytecode* finalSpv, SpvBytecode* errorLatestSpv)
+    SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* finalSpv, SpvBytecode* errorLatestSpv)
 {
     if (spxStreamRemapper == nullptr)
         return error(messages, "you must process some mixin first");
@@ -290,16 +290,6 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
     }
     if (mergedCBuffersSpv != nullptr)
         clonedSpxStream->GetMixinBytecode(mergedCBuffersSpv->getWritableBytecodeStream());
-
-    if (!clonedSpxStream->ProcessResources())
-    {
-        clonedSpxStream->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
-        delete clonedSpxStream;
-        return error(messages, "Fail to process the resources");
-    }
-    if (processedResourcesSpv != nullptr)
-        clonedSpxStream->GetMixinBytecode(processedResourcesSpv->getWritableBytecodeStream());
 
     //===================================================================================================================
     //===================================================================================================================

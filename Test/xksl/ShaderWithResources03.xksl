@@ -1,0 +1,18 @@
+shader ShaderMain
+{
+	cbuffer ResourceGroup
+	{
+		SamplerState Sampler0;
+		Texture2D Texture0;
+	}
+	
+	void VSMain()
+	{
+	}
+	
+	void PSMain()
+	{
+		float2 uv2 = float2(0.5, 0.5);
+		float4 color = Texture0.Sample(Sampler0, uv2);
+	}
+}
