@@ -627,9 +627,13 @@ bool error(HlslParseContext* parseContext, const TString& txt)
     return false;
 }
 
-static bool IsTypeValidForCBuffer(const TBasicType& type)
+static bool IsTypeValidForBuffer(const TBasicType& type, bool isRGroup)
 {
-    return true; //we accept any type in cbuffers (we will filter resources out later on)
+    switch (type)
+    {
+        case EbtSampler: return isRGroup;
+    }
+    return !isRGroup;
 }
 
 static bool IsTypeValidForStream(const TBasicType& type)
@@ -640,16 +644,6 @@ static bool IsTypeValidForStream(const TBasicType& type)
         case EbtSampler: return false;
     }
     return true;
-}
-
-static bool IsTypeValidForRGroup(const TBasicType& type)
-{
-    //only accept resources types
-    switch (type)
-    {
-        case EbtSampler: return true;
-    }
-    return false;
 }
 
 static bool ProcessDeclarationOfAllShadersMembersAndMethods(XkslShaderLibrary& shaderLibrary, HlslParseContext* parseContext)
@@ -760,76 +754,8 @@ static bool ProcessDeclarationOfAllShadersMembersAndMethods(XkslShaderLibrary& s
                     //If the block (cbuffer) is set as stage: we will set all its members as stage too
                     bool isStageBlock = member.type->getQualifier().isStage;
                     bool isUnnamedCbuffer = member.type->getTypeName().size() == 0;
-                    bool isRGroup = member.type->getQualifier().isRGroup;
+                    bool isRGroup = member.type->getQualifier().isRGroup;  //XKSL rules: a rgroup can only contain resources, while a cbuffer will contains basic types
 
-                    if (isRGroup)
-                    {
-                        return error(parseContext, "Plop");
-
-                        ///  //we treat a rgroup as if it is a normal cbuffer, expect that an rgroup only contains resources type
-                        ///  if (isUnnamedCbuffer)
-                        ///  {
-                        ///      return error(parseContext, "A RGroup cannot be unnamed");
-                        ///  }
-                        ///  
-                        ///  //directly insert the new cbuffer block, then add the block members separatly in the shader (to be able to retrieve their access)
-                        ///  TQualifier blockQualifier;
-                        ///  blockQualifier.clear();
-                        ///  blockQualifier.storage = EvqUniform;
-                        ///  TString numberId = TString(std::to_string(shader->listDeclaredBlockNames.size()).c_str());
-                        ///  TString* blockName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName() + "_" + numberId).c_str());  //name = class_name_num
-                        ///  TString* blockVarName = NewPoolTString((*blockName + TString("_var")).c_str());
-                        ///  member.type->SetAsDefinedCBufferType();
-                        ///  
-                        ///  parseContext->declareBlock(member.loc, *(member.type), blockVarName);
-                        ///  shader->listDeclaredBlockNames.push_back(blockVarName);
-                        ///  
-                        ///  TSymbol* symbol = parseContext->symbolTable.find(*blockVarName);
-                        ///  if (symbol == nullptr || symbol->getAsVariable() == nullptr)
-                        ///  {
-                        ///      return error(parseContext, "Error creating the block rgroup variable");
-                        ///  }
-                        ///  else
-                        ///  {
-                        ///      symbol->getWritableType().setTypeName(*blockName);  //set the type name
-                        ///      //set the userName to the variable (needed to retrieve variables id when mixing shaders)
-                        ///      TVariable* variableSymbol = symbol->getAsVariable();
-                        ///      variableSymbol->SetUserDefinedName(blockVarName->c_str());
-                        ///  }
-                        ///  
-                        ///  //Individually add the block members in the shader list of member
-                        ///  TTypeList* typeList = member.type->getWritableStruct();
-                        ///  for (unsigned int indexInBlock = 0; indexInBlock < typeList->size(); ++indexInBlock)
-                        ///  {
-                        ///      TType& blockMemberType = *(typeList->at(indexInBlock).type);
-                        ///  
-                        ///      if (!IsTypeValidForRGroup(blockMemberType.getBasicType()))
-                        ///      {
-                        ///          return error(parseContext, "The variable has an invalid type to be declared in a rgroup: " + blockMemberType.getFieldName());
-                        ///      }
-                        ///      if (blockMemberType.getQualifier().isStream) {
-                        ///          return error(parseContext, "A stream variable cannot be declared in a rgroup block. Variable: " + blockMemberType.getFieldName());
-                        ///      }
-                        ///      //XKSL Rules: we set stage in front of the cbuffer declaration, not in front of its members
-                        ///      if (blockMemberType.getQualifier().isStage) {
-                        ///          return error(parseContext, "A rgroup member cannot directly be declared with \"stage\" attribute, you must set the \"stage\" attribute before the rgroup. Variable: " + blockMemberType.getFieldName());
-                        ///      }
-                        ///  
-                        ///      blockMemberType.setUserIdentifierName(blockMemberType.getFieldName().c_str());
-                        ///      blockMemberType.setOwnerClassName(shader->shaderName.c_str());
-                        ///  
-                        ///      XkslShaderDefinition::XkslShaderMember newShaderMember;
-                        ///      newShaderMember.shader = shader;
-                        ///      newShaderMember.type = new TType(EbtVoid);
-                        ///      newShaderMember.type->shallowCopy(blockMemberType);
-                        ///      newShaderMember.loc = typeList->at(indexInBlock).loc;
-                        ///  
-                        ///      identifierLocation.SetMemberLocation(shader, blockMemberType.getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, blockVarName, indexInBlock);
-                        ///      newShaderMember.memberLocation = identifierLocation;
-                        ///      shader->listAllDeclaredMembers.push_back(newShaderMember);
-                        ///  }
-                    }
-                    else
                     {
                         //CBuffer (either named or unnamed)
                         if (isUnnamedCbuffer)
@@ -840,8 +766,8 @@ static bool ProcessDeclarationOfAllShadersMembersAndMethods(XkslShaderLibrary& s
                             {
                                 TType& blockMemberType = *(typeList->at(indexInBlock).type);
 
-                                if (!IsTypeValidForCBuffer(blockMemberType.getBasicType()))
-                                    return error(parseContext, "The variable has an invalid type to be declared in the global cbuffer: " + blockMemberType.getFieldName());
+                                if (!IsTypeValidForBuffer(blockMemberType.getBasicType(), isRGroup))
+                                    return error(parseContext, "The variable has an invalid type to be declared in a " + TString(isRGroup? "rgroup: ": "cbuffer: ") + blockMemberType.getFieldName());
                                 if (blockMemberType.getQualifier().isStream)
                                     return error(parseContext, "A stream variable cannot be declared in a cbuffer block. Variable: " + blockMemberType.getFieldName());
                                 //XKSL Rules: we set stage in front of the cbuffer declaration, not in front of its members
@@ -907,8 +833,8 @@ static bool ProcessDeclarationOfAllShadersMembersAndMethods(XkslShaderLibrary& s
                             {
                                 TType& blockMemberType = *(typeList->at(indexInBlock).type);
 
-                                if (!IsTypeValidForCBuffer(blockMemberType.getBasicType()))
-                                    return error(parseContext, "The variable has an invalid type to be declared in a cbuffer: " + blockMemberType.getFieldName());
+                                if (!IsTypeValidForBuffer(blockMemberType.getBasicType(), isRGroup))
+                                    return error(parseContext, "The variable has an invalid type to be declared in a " + TString(isRGroup ? "rgroup: " : "cbuffer: ") + blockMemberType.getFieldName());
                                 if (blockMemberType.getQualifier().isStream)
                                     return error(parseContext, "A stream variable cannot be declared in a cbuffer block. Variable: " + blockMemberType.getFieldName());
                                 //XKSL Rules: we set stage in front of the cbuffer declaration, not in front of its members
@@ -934,7 +860,7 @@ static bool ProcessDeclarationOfAllShadersMembersAndMethods(XkslShaderLibrary& s
                 else
                 {
                     //the member belongs to the shader global cbuffer (either staged or unstaged one)
-                    if (!IsTypeValidForCBuffer(member.type->getBasicType()))
+                    if (!IsTypeValidForBuffer(member.type->getBasicType(), false))
                         return error(parseContext, "The variable has an invalid type to be declared in the global cbuffer: " + member.type->getFieldName());
 
                     TTypeLoc typeLoc = { member.type, member.loc };

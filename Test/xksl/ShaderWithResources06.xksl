@@ -1,0 +1,32 @@
+shader ShaderMain
+{
+	rgroup ResourceGroup
+	{
+		Texture2D Texture0;
+		TextureCube CubeMap;
+	}
+	
+	cbuffer cb
+	{
+		float3 direction;
+		float2 uv2;
+	}
+	
+	rgroup ResourceGroup
+	{
+		SamplerState Sampler0;
+		Texture3D<uint2> LightClusters;
+		Buffer<uint> LightIndices;
+		Buffer<float4> PointLights;
+	}
+	
+	void VSMain()
+	{
+		float4 color = Texture0.Sample(Sampler0, uv2);
+	}
+	
+	void PSMain()
+	{
+		float4 color = CubeMap.Sample(Sampler0, direction);
+	}
+}

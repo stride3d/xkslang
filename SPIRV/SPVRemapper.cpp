@@ -1248,7 +1248,7 @@ namespace spv {
         case spv::OpTypeSampler:
             return 500;
         case spv::OpTypeSampledImage:
-            return 502;
+            return 502 + hashType(idPos(spv[typeStart + 2]));
         case spv::OpTypeArray:
             return 501 + hashType(idPos(spv[typeStart+2])) * spv[typeStart+3];
         case spv::OpTypeRuntimeArray:

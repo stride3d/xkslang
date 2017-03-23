@@ -3243,6 +3243,7 @@ bool SpxStreamRemapper::IsResourceType(const spv::Op& opCode)
     {
         case spv::OpTypeImage:
         case spv::OpTypeSampler:
+        case spv::OpTypeSampledImage:
             return true;
     }
 
@@ -6004,13 +6005,14 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
 
         if (id != spvUndefinedId)
         {
-            const uint32_t hashval = hashType(start);
+            uint32_t hashval = hashType(start);
 #ifdef XKSLANG_DEBUG_MODE
             if (mapHashPos.find(hashval) != mapHashPos.end())
             {
                 // Warning: might cause some conflicts sometimes?
                 //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
                 id = spvUndefinedId;  //by precaution we invalidate the id: we should not choose between them
+                //hashval = hashType(start);
             }
 #endif
             mapHashPos[hashval] = pairIdPos(id, start);

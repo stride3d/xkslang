@@ -1,0 +1,10 @@
+load "ShaderWithResources07.xksl"
+
+mixer m
+m.mixin ShaderA
+m.mixin ShaderB
+
+m.setStageEntryPoint Vertex "VSMain"
+m.setStageEntryPoint Pixel "PSMain"
+
+m.compile
