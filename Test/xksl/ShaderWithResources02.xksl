@@ -1,13 +1,14 @@
 //Declared resources plus a basic type in a same buffer, but don't use the resources
 shader ShaderMain
 {
-	cbuffer ResourceGroup
+	rgroup ResourceGroup
 	{
 		SamplerState Sampler0;
 		Texture2D Texture0;
 		TextureCube CubeMap;
-		float aFloat;
 	}
+	
+	float aFloat;
 	
 	void VSMain()
 	{

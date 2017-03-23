@@ -1,12 +1,12 @@
 #version 450
 
-layout(std140) uniform ResourceGroup
+layout(std140) uniform globalCbuffer
 {
     float ShaderMain_aFloat;
-} ResourceGroup_var;
+} globalCbuffer_var;
 
 void main()
 {
-    float f = ResourceGroup_var.ShaderMain_aFloat;
+    float f = globalCbuffer_var.ShaderMain_aFloat;
 }
 
