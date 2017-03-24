@@ -261,15 +261,31 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
     return true;
 }
 
+// IDENTIFIER
+// THIS
+// type that can be used as IDENTIFIER
 // Only process the next token if it is an identifier.
 // Return true if it was an identifier.
 bool HlslGrammar::acceptIdentifier(HlslToken& idToken)
 {
+    // IDENTIFIER
     if (peekTokenClass(EHTokIdentifier)) {
         idToken = token;
         advanceToken();
         return true;
     }
+
+    // THIS
+    // -> maps to the IDENTIFIER spelled with the internal special name for 'this'
+    if (peekTokenClass(EHTokThis)) {
+        idToken = token;
+        advanceToken();
+        idToken.tokenClass = EHTokIdentifier;
+        idToken.string = NewPoolTString(intermediate.implicitThisName);
+        return true;
+    }
+
+    // type that can be used as IDENTIFIER
 
     // Even though "sample", "bool", "float", etc keywords (for types, interpolation modifiers),
     // they ARE still accepted as identifiers.  This is not a dense space: e.g, "void" is not a
@@ -295,7 +311,6 @@ bool HlslGrammar::acceptIdentifier(HlslToken& idToken)
 
     token.string     = idString;
     token.tokenClass = EHTokIdentifier;
-    token.symbol     = nullptr;
     idToken          = token;
 
     advanceToken();
@@ -317,22 +332,20 @@ bool HlslGrammar::acceptCompilationUnit()
             continue;
 
         // externalDeclaration
-        TIntermNode* declarationNode1;
-        TIntermNode* declarationNode2 = nullptr;  // sometimes the grammar for a single declaration creates two
-        if (! acceptDeclaration(declarationNode1, declarationNode2))
+        if (! acceptDeclaration(unitNode))
             return false;
-            
-        // hook it up
-        unitNode = intermediate.growAggregate(unitNode, declarationNode1);
-        if (declarationNode2 != nullptr)
-            unitNode = intermediate.growAggregate(unitNode, declarationNode2);
     }
 
     // set root of AST
+    if (unitNode && !unitNode->getAsAggregate())
+        unitNode = intermediate.growAggregate(nullptr, unitNode);
     intermediate.setTreeRoot(unitNode);
 
     return true;
 }
+
+
+
 
 // sampler_state
 //      : LEFT_BRACE [sampler_state_assignment ... ] RIGHT_BRACE
@@ -478,26 +491,22 @@ bool HlslGrammar::acceptSamplerDeclarationDX9(TType& /*type*/)
 // as above.  (The 'identifier' in the first item in init_declarator list is the
 // same as 'identifier' for function declarations.)
 //
-// 'node' could get populated if the declaration creates code, like an initializer
-// or a function body.
+// This can generate more than one subtree, one per initializer or a function body.
+// All initializer subtrees are put in their own aggregate node, making one top-level
+// node for all the initializers. Each function created is a top-level node to grow
+// into the passed-in nodeList.
 //
-// 'node2' could get populated with a second decoration tree if a single source declaration
-// leads to two subtrees that need to be peers higher up.
+// If 'nodeList' is passed in as non-null, it must an aggregate to extend for
+// each top-level node the declaration creates. Otherwise, if only one top-level
+// node in generated here, that is want is returned in nodeList.
 //
-bool HlslGrammar::acceptDeclaration(TIntermNode*& node)
+bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
 {
-    TIntermNode* node2;
-    return acceptDeclaration(node, node2);
-}
-bool HlslGrammar::acceptDeclaration(TIntermNode*& node, TIntermNode*& node2)
-{
-    node = nullptr;
-    node2 = nullptr;
-    bool list = false;
+    bool declarator_list = false; // true when processing comma separation
 
     // attributes
-    TAttributeMap attributes;
-    acceptAttributes(attributes);
+    TFunctionDeclarator declarator;
+    acceptAttributes(declarator.attributes);
 
     // typedef
     bool typedefDecl = acceptTokenClass(EHTokTypedef);
@@ -510,14 +519,13 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node, TIntermNode*& node2)
     // HLSL shaders, this will have to be a master level switch
     // As such, the sampler keyword in D3D10+ turns into an automatic sampler type, and is commonly used
     // For that reason, this line is commented out
-
-   // if (acceptSamplerDeclarationDX9(declaredType))
-   //     return true;
+    // if (acceptSamplerDeclarationDX9(declaredType))
+    //     return true;
 
     HlslToken initialToken = this->token;
 
     // fully_specified_type
-    if (! acceptFullySpecifiedType(&node, declaredType))
+    if (!acceptFullySpecifiedType(declaredType, nodeList))
         return false;
 
     if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderDeclarations ||
@@ -539,29 +547,37 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node, TIntermNode*& node2)
 
     // identifier
     HlslToken idToken;
+    TIntermAggregate* initializers = nullptr;
     while (acceptIdentifier(idToken)) {
-        TString* fnName = idToken.string;
+        if (peekTokenClass(EHTokLeftParen)) {
+            // looks like function parameters
+            TString* fnName = idToken.string;
 
-        // Potentially rename shader entry point function.  No-op most of the time.
-        parseContext.renameShaderFunction(fnName);
+            // Potentially rename shader entry point function.  No-op most of the time.
+            parseContext.renameShaderFunction(fnName);
 
-        // function_parameters
-        TFunction& function = *new TFunction(fnName, declaredType);
-        if (acceptFunctionParameters(function)) {
+            // function_parameters
+            declarator.function = new TFunction(fnName, declaredType);
+            if (!acceptFunctionParameters(*declarator.function)) {
+                expected("function parameter list");
+                return false;
+            }
+
             // post_decls
-            acceptPostDecls(function.getWritableType().getQualifier());
+            acceptPostDecls(declarator.function->getWritableType().getQualifier());
 
             // compound_statement (function body definition) or just a prototype?
+            declarator.loc = token.loc;
             if (peekTokenClass(EHTokLeftBrace)) {
-                if (list)
+                if (declarator_list)
                     parseContext.error(idToken.loc, "function body can't be in a declarator list", "{", "");
                 if (typedefDecl)
                     parseContext.error(idToken.loc, "function body can't be in a typedef", "{", "");
-                return acceptFunctionDefinition(function, node, node2, attributes);
+                return acceptFunctionDefinition(declarator, nodeList, nullptr);
             } else {
                 if (typedefDecl)
                     parseContext.error(idToken.loc, "function typedefs not implemented", "{", "");
-                parseContext.handleFunctionDeclarator(idToken.loc, function, true);
+                parseContext.handleFunctionDeclarator(declarator.loc, *declarator.function, true);
             }
         } else {
             // A variable declaration. Fix the storage qualifier if it's a global.
@@ -626,24 +642,29 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& node, TIntermNode*& node2)
                         // Declare the variable and add any initializer code to the AST.
                         // The top-level node is always made into an aggregate, as that's
                         // historically how the AST has been.
-                        node = intermediate.growAggregate(node,
-                                                          parseContext.declareVariable(idToken.loc, *idToken.string, variableType,
-                                                                                       expressionNode),
-                                                          idToken.loc);
+                        initializers = intermediate.growAggregate(initializers,
+                            parseContext.declareVariable(idToken.loc, *idToken.string, variableType, expressionNode),
+                            idToken.loc);
                     }
                 }
             }
         }
 
         if (acceptTokenClass(EHTokComma)) {
-            list = true;
+            declarator_list = true;
             continue;
         }
     };
 
-    // The top-level node is a sequence.
-    if (node != nullptr)
-        node->getAsAggregate()->setOperator(EOpSequence);
+    // The top-level initializer node is a sequence.
+    if (initializers != nullptr)
+        initializers->setOperator(EOpSequence);
+
+    // Add the initializers' aggregate to the nodeList we were handed.
+    if (nodeList)
+        nodeList = intermediate.growAggregate(nodeList, initializers);
+    else
+        nodeList = initializers;
 
     // SEMICOLON
     if (! acceptTokenClass(EHTokSemicolon)) {
@@ -674,8 +695,14 @@ bool HlslGrammar::acceptControlDeclaration(TIntermNode*& node)
 
     // fully_specified_type
     TType type;
-    if (! acceptFullySpecifiedType(&node, type))
+    if (!acceptFullySpecifiedType(type))
         return false;
+
+    // filter out type casts
+    if (peekTokenClass(EHTokLeftParen)) {
+        recedeToken();
+        return false;
+    }
 
     // identifier
     HlslToken idToken;
@@ -706,7 +733,12 @@ bool HlslGrammar::acceptControlDeclaration(TIntermNode*& node)
 //      : type_specifier
 //      | type_qualifier type_specifier
 //
-bool HlslGrammar::acceptFullySpecifiedType(TIntermNode** node, TType& type)
+bool HlslGrammar::acceptFullySpecifiedType(TType& type)
+{
+    TIntermNode* nodeList = nullptr;
+    return acceptFullySpecifiedType(type, nodeList);
+}
+bool HlslGrammar::acceptFullySpecifiedType(TType& type, TIntermNode*& nodeList)
 {
     // type_qualifier
     TQualifier qualifier;
@@ -716,7 +748,7 @@ bool HlslGrammar::acceptFullySpecifiedType(TIntermNode** node, TType& type)
     TSourceLoc loc = token.loc;
 
     // type_specifier
-    if (! acceptType(node, type)) {
+    if (! acceptType(type, nodeList)) {
         // If this is not a type, we may have inadvertently gone down a wrong path
         // by parsing "sample", which can be treated like either an identifier or a
         // qualifier.  Back it out, if we did.
@@ -744,6 +776,10 @@ bool HlslGrammar::acceptFullySpecifiedType(TIntermNode** node, TType& type)
 
         qualifier.layoutFormat = type.getQualifier().layoutFormat;
         qualifier.precision    = type.getQualifier().precision;
+
+        // Propagate sampler readonly qualifier for buffers
+        if (type.getBasicType() == EbtSampler)
+            qualifier.readonly = type.getQualifier().readonly;
 
         if (type.getQualifier().storage == EvqVaryingOut ||
             type.getQualifier().storage == EvqBuffer) {
@@ -830,6 +866,9 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
             continue;
         case EHTokGloballyCoherent:
             qualifier.coherent = true;
+            break;
+        case EHTokInline:
+            // TODO: map this to SPIR-V function control
             break;
 
         // GS geometries: these are specified on stage input variables, and are an error (not verified here)
@@ -1225,7 +1264,7 @@ bool HlslGrammar::acceptAnnotations(TQualifier&)
             break;
 
         // declaration
-        TIntermNode* node;
+        TIntermNode* node = nullptr;
         if (! acceptDeclaration(node)) {
             expected("declaration in annotation");
             return false;
@@ -1304,24 +1343,25 @@ bool HlslGrammar::acceptTextureType(TType& type)
     bool array = false;
     bool ms    = false;
     bool image = false;
+    bool readonly = false;
 
     switch (textureType) {
-    case EHTokBuffer:            dim = EsdBuffer;                      break;
-    case EHTokTexture1d:         dim = Esd1D;                          break;
-    case EHTokTexture1darray:    dim = Esd1D; array = true;            break;
-    case EHTokTexture2d:         dim = Esd2D;                          break;
-    case EHTokTexture2darray:    dim = Esd2D; array = true;            break;
-    case EHTokTexture3d:         dim = Esd3D;                          break;
-    case EHTokTextureCube:       dim = EsdCube;                        break;
-    case EHTokTextureCubearray:  dim = EsdCube; array = true;          break;
-    case EHTokTexture2DMS:       dim = Esd2D; ms = true;               break;
-    case EHTokTexture2DMSarray:  dim = Esd2D; array = true; ms = true; break;
-    case EHTokRWBuffer:          dim = EsdBuffer; image=true;          break;
-    case EHTokRWTexture1d:       dim = Esd1D; array=false; image=true; break;
-    case EHTokRWTexture1darray:  dim = Esd1D; array=true;  image=true; break;
-    case EHTokRWTexture2d:       dim = Esd2D; array=false; image=true; break;
-    case EHTokRWTexture2darray:  dim = Esd2D; array=true;  image=true; break;
-    case EHTokRWTexture3d:       dim = Esd3D; array=false; image=true; break;
+    case EHTokTexture1d:         dim = Esd1D;                                break;
+    case EHTokTexture1darray:    dim = Esd1D; array = true;                  break;
+    case EHTokTexture2d:         dim = Esd2D;                                break;
+    case EHTokTexture2darray:    dim = Esd2D; array = true;                  break;
+    case EHTokTexture3d:         dim = Esd3D;                                break;
+    case EHTokTextureCube:       dim = EsdCube;                              break;
+    case EHTokTextureCubearray:  dim = EsdCube; array = true;                break;
+    case EHTokTexture2DMS:       dim = Esd2D; ms = true;                     break;
+    case EHTokTexture2DMSarray:  dim = Esd2D; array = true; ms = true;       break;
+    case EHTokBuffer:            dim = EsdBuffer; readonly=true; image=true; break;
+    case EHTokRWBuffer:          dim = EsdBuffer; image=true;                break;
+    case EHTokRWTexture1d:       dim = Esd1D; array=false; image=true;       break;
+    case EHTokRWTexture1darray:  dim = Esd1D; array=true;  image=true;       break;
+    case EHTokRWTexture2d:       dim = Esd2D; array=false; image=true;       break;
+    case EHTokRWTexture2darray:  dim = Esd2D; array=true;  image=true;       break;
+    case EHTokRWTexture3d:       dim = Esd3D; array=false; image=true;       break;
     default:
         return false;  // not a texture declaration
     }
@@ -1381,7 +1421,7 @@ bool HlslGrammar::acceptTextureType(TType& type)
     } else if (ms) {
         expected("texture type for multisample");
         return false;
-    } else if (image) {
+    } else if (image && !readonly) {
         expected("type for RWTexture/RWBuffer");
         return false;
     }
@@ -1412,7 +1452,9 @@ bool HlslGrammar::acceptTextureType(TType& type)
     sampler.vectorSize = txType.getVectorSize();
 
     type.shallowCopy(TType(sampler, EvqUniform, arraySizes));
+
     type.getQualifier().layoutFormat = format;
+    type.getQualifier().readonly = readonly;
 
     return true;
 }
@@ -1421,6 +1463,11 @@ bool HlslGrammar::acceptTextureType(TType& type)
 // and return true and advance.
 // Otherwise, return false, and don't advance
 bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
+{
+    TIntermNode* nodeList = nullptr;
+    return acceptType(type, nodeList);
+}
+bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
 {
     // Basic types for min* types, broken out here in case of future
     // changes, e.g, to use native halfs.
@@ -1501,35 +1548,24 @@ bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
         return acceptStructBufferType(type);
         break;
 
+    case EHTokClass:
     case EHTokStruct:
     case EHTokCBuffer:
     case EHTokTBuffer:
     case EHTokRGroup:
-        return acceptStruct(type);
+        return acceptStruct(type, nodeList);
 
     case EHTokShaderClass:
-        return acceptShaderClass(node, type);
+        return acceptShaderClass(type);
         break;
 
     case EHTokIdentifier:
         // An identifier could be for a user-defined type.
         // Note we cache the symbol table lookup, to save for a later rule
         // when this is not a type.
-        token.symbol = parseContext.lookupUserType(*token.string, type);
-        if (token.symbol != nullptr) {
-
+        if (parseContext.lookupUserType(*token.string, type) != nullptr)
+        {
             advanceToken();
-
-            //XKSL extensions: if the type is EbtShaderClass: we make sure that it's a valid type declaration, and not an expression of the kind: TypeName.Something
-            if (token.symbol->getAsVariable()->getType().getBasicType() == EbtShaderClass)
-            {
-                if (peekTokenClass(EHTokDot))
-                {
-                    recedeToken();
-                    return false;
-                }
-            }
-            
             return true;
         } else
             return false;
@@ -2204,7 +2240,7 @@ bool HlslGrammar::checkShaderGenericsList(TVector<TType*>& listGenericTypes)
 // class_type
 //      : SHADER
 //
-bool HlslGrammar::acceptShaderClass(TIntermNode** node, TType& type)
+bool HlslGrammar::acceptShaderClass(TType& type)
 {
     TStorageQualifier storageQualifier = EvqTemporary;
 
@@ -2473,7 +2509,7 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
 
         // check the type (plus any post-declaration qualifiers)
         TType declaredType;
-        if (!acceptFullySpecifiedType(nullptr, declaredType)) {
+        if (!acceptFullySpecifiedType(declaredType)) {
             error((TString("invalid keyword, member or function type: ") + *token.string).c_str());
             return false;
         }
@@ -2705,7 +2741,7 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
 
         // check the type (plus any post-declaration qualifiers)
         TType declaredType;
-        if (!acceptFullySpecifiedType(nullptr, declaredType)) {
+        if (!acceptFullySpecifiedType(declaredType)) {
             error("invalid keyword, member or function type");
             return false;
         }
@@ -2775,11 +2811,6 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
 
                 shaderClassFunction->token = token;  //in case of the token was those from the function prototype
 
-                TIntermNode* functionNode = nullptr;
-                TIntermNode* functionNode2 = nullptr;
-                TAttributeMap attributes;  // attributes ?
-                //acceptAttributes(attributes);
-
                 //==============================================================================================================
                 //==============================================================================================================
                 // start parsing a shader class method
@@ -2789,7 +2820,11 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
                 }
 
                 this->functionCurrentlyParsed = function;
-                if (!acceptFunctionDefinition(*function, functionNode, functionNode2, attributes))
+
+                TFunctionDeclarator declarator;
+                declarator.function = function;
+                TIntermNode* nodeList = nullptr;
+                if (!acceptFunctionDefinition(declarator, nodeList, nullptr))
                 {
                     error("shader: invalid function definition");
                     this->functionCurrentlyParsed = nullptr;
@@ -2800,13 +2835,7 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
                 if (listForeachArrayCompositionVariable.size() > 0){
                     error("shader: list of foreach array composition variable should be empty"); return false;
                 }
-
-                if (functionNode2 != nullptr) {
-                    error("The function definitation returns a second node which is not treated (glslang update)");
-                    return false;
-                }
-
-                shaderClassFunction->bodyNode = functionNode;
+                shaderClassFunction->bodyNode = nodeList;
                 //==============================================================================================================
                 //==============================================================================================================
             }
@@ -2843,10 +2872,11 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
 //
 // struct_type
 //      : STRUCT
+//      | CLASS
 //      | CBUFFER
 //      | TBUFFER
 //
-bool HlslGrammar::acceptStruct(TType& type)
+bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
 {
     // This storage qualifier will tell us whether it's an AST
     // block type or just a generic structure type.
@@ -2865,8 +2895,9 @@ bool HlslGrammar::acceptStruct(TType& type)
         // TBUFFER
         else if (acceptTokenClass(EHTokTBuffer))
             storageQualifier = EvqBuffer;
+    // CLASS
         // STRUCT
-        else if (! acceptTokenClass(EHTokStruct))
+    else if (! acceptTokenClass(EHTokClass) && ! acceptTokenClass(EHTokStruct))
             return false;
     }
 
@@ -2882,7 +2913,7 @@ bool HlslGrammar::acceptStruct(TType& type)
     postDeclQualifier.clear();
     bool postDeclsFound = acceptPostDecls(postDeclQualifier);
 
-    // LEFT_BRACE
+    // LEFT_BRACE, or
     // struct_type IDENTIFIER
     if (! acceptTokenClass(EHTokLeftBrace)) {
         if (structName.size() > 0 && !postDeclsFound && parseContext.lookupUserType(structName, type) != nullptr) {
@@ -2894,9 +2925,17 @@ bool HlslGrammar::acceptStruct(TType& type)
         }
     }
 
+
     // struct_declaration_list
     TTypeList* typeList;
-    if (! acceptStructDeclarationList(typeList)) {
+    // Save each member function so they can be processed after we have a fully formed 'this'.
+    TVector<TFunctionDeclarator> functionDeclarators;
+
+    parseContext.pushNamespace(structName);
+    bool acceptedList = acceptStructDeclarationList(typeList, nodeList, structName, functionDeclarators);
+    parseContext.popNamespace();
+
+    if (! acceptedList) {
         expected("struct member declarations");
         return false;
     }
@@ -2922,7 +2961,31 @@ bool HlslGrammar::acceptStruct(TType& type)
 
     parseContext.declareStruct(token.loc, structName, type);
 
-    return true;
+    // For member functions: now that we know the type of 'this', go back and
+    // - add their implicit argument with 'this' (not to the mangling, just the argument list)
+    // - parse the functions, their tokens were saved for deferred parsing (now)
+    for (int b = 0; b < (int)functionDeclarators.size(); ++b) {
+        // update signature
+        if (functionDeclarators[b].function->hasImplicitThis())
+            functionDeclarators[b].function->addThisParameter(type, intermediate.implicitThisName);
+    }
+
+    // All member functions get parsed inside the class/struct namespace and with the
+    // class/struct members in a symbol-table level.
+    parseContext.pushNamespace(structName);
+    parseContext.pushThisScope(type);
+    bool deferredSuccess = true;
+    for (int b = 0; b < (int)functionDeclarators.size() && deferredSuccess; ++b) {
+        // parse body
+        pushTokenStream(functionDeclarators[b].body);
+        if (! acceptFunctionBody(functionDeclarators[b], nodeList))
+            deferredSuccess = false;
+        popTokenStream();
+    }
+    parseContext.popThisScope();
+    parseContext.popNamespace();
+
+    return deferredSuccess;
 }
 
 // struct_buffer
@@ -2995,6 +3058,7 @@ bool HlslGrammar::acceptStructBufferType(TType& type)
     TArraySizes unsizedArray;
     unsizedArray.addInnerSize(UnsizedArraySize);
     templateType->newArraySizes(unsizedArray);
+    templateType->getQualifier().storage = storage;
 
     // field name is canonical for all structbuffers
     templateType->setFieldName("@data");
@@ -3025,12 +3089,15 @@ bool HlslGrammar::acceptStructBufferType(TType& type)
 //
 // struct_declaration
 //      : fully_specified_type struct_declarator COMMA struct_declarator ...
+//      | fully_specified_type IDENTIFIER function_parameters post_decls compound_statement // member-function definition
 //
 // struct_declarator
 //      : IDENTIFIER post_decls
 //      | IDENTIFIER array_specifier post_decls
+//      | IDENTIFIER function_parameters post_decls                                         // member-function prototype
 //
-bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList)
+bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*& nodeList, const TString& typeName,
+                                              TVector<TFunctionDeclarator>& declarators)
 {
     typeList = new TTypeList();
     HlslToken idToken;
@@ -3038,54 +3105,72 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList)
     do {
         // success on seeing the RIGHT_BRACE coming up
         if (peekTokenClass(EHTokRightBrace))
-            return true;
+            break;
 
         // struct_declaration
+    
+        bool declarator_list = false;
 
         // fully_specified_type
         TType memberType;
-        if (! acceptFullySpecifiedType(nullptr, memberType)) {
+        if (!acceptFullySpecifiedType(memberType, nodeList)) {
             expected("member type");
             return false;
         }
 
         // struct_declarator COMMA struct_declarator ...
+        bool functionDefinitionAccepted = false;
         do {
             if (! acceptIdentifier(idToken)) {
                 expected("member name");
                 return false;
             }
 
-            // add it to the list of members
-            TTypeLoc member = { new TType(EbtVoid), token.loc };
-            member.type->shallowCopy(memberType);
-            member.type->setFieldName(*idToken.string);
-            typeList->push_back(member);
+            if (peekTokenClass(EHTokLeftParen)) {
+                // function_parameters
+                if (!declarator_list) {
+                    declarators.resize(declarators.size() + 1);
+                    // request a token stream for deferred processing
+                    functionDefinitionAccepted = acceptMemberFunctionDefinition(nodeList, memberType, *idToken.string,
+                                                                                declarators.back());
+                    if (functionDefinitionAccepted)
+                        break;
+                }
+                expected("member-function definition");
+                return false;
+            } else {
+                // add it to the list of members
+                TTypeLoc member = { new TType(EbtVoid), token.loc };
+                member.type->shallowCopy(memberType);
+                member.type->setFieldName(*idToken.string);
+                typeList->push_back(member);
 
-            // array_specifier
-            TArraySizes* arraySizes = nullptr;
-            acceptArraySpecifier(arraySizes);
-            if (arraySizes)
-                typeList->back().type->newArraySizes(*arraySizes);
+                // array_specifier
+                TArraySizes* arraySizes = nullptr;
+                acceptArraySpecifier(arraySizes);
+                if (arraySizes)
+                    typeList->back().type->newArraySizes(*arraySizes);
 
-            acceptPostDecls(member.type->getQualifier());
+                acceptPostDecls(member.type->getQualifier());
 
-            // EQUAL assignment_expression
-            if (acceptTokenClass(EHTokAssign)) {
-                parseContext.warn(idToken.loc, "struct-member initializers ignored", "typedef", "");
-                TIntermTyped* expressionNode = nullptr;
-                if (! acceptAssignmentExpression(expressionNode)) {
-                    expected("initializer");
-                    return false;
+                // EQUAL assignment_expression
+                if (acceptTokenClass(EHTokAssign)) {
+                    parseContext.warn(idToken.loc, "struct-member initializers ignored", "typedef", "");
+                    TIntermTyped* expressionNode = nullptr;
+                    if (! acceptAssignmentExpression(expressionNode)) {
+                        expected("initializer");
+                        return false;
+                    }
                 }
             }
-
             // success on seeing the SEMICOLON coming up
             if (peekTokenClass(EHTokSemicolon))
                 break;
 
             // COMMA
-            if (! acceptTokenClass(EHTokComma)) {
+            if (acceptTokenClass(EHTokComma))
+                declarator_list = true;
+            else {
                 expected(",");
                 return false;
             }
@@ -3093,12 +3178,48 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList)
         } while (true);
 
         // SEMI_COLON
-        if (! acceptTokenClass(EHTokSemicolon)) {
+        if (! functionDefinitionAccepted && ! acceptTokenClass(EHTokSemicolon)) {
             expected(";");
             return false;
         }
 
     } while (true);
+
+    return true;
+}
+
+// member_function_definition
+//    | function_parameters post_decls compound_statement
+//
+// Expects type to have EvqGlobal for a static member and
+// EvqTemporary for non-static member.
+bool HlslGrammar::acceptMemberFunctionDefinition(TIntermNode*& nodeList, const TType& type, const TString& memberName,
+                                                 TFunctionDeclarator& declarator)
+{
+    bool accepted = false;
+
+    TString* functionName = parseContext.getFullNamespaceName(memberName);
+    declarator.function = new TFunction(functionName, type);
+    if (type.getQualifier().storage == EvqTemporary)
+        declarator.function->setImplicitThis();
+    else
+        declarator.function->setIllegalImplicitThis();
+
+    // function_parameters
+    if (acceptFunctionParameters(*declarator.function)) {
+        // post_decls
+        acceptPostDecls(declarator.function->getWritableType().getQualifier());
+
+        // compound_statement (function body definition)
+        if (peekTokenClass(EHTokLeftBrace)) {
+            declarator.loc = token.loc;
+            declarator.body = new TVector<HlslToken>;
+            accepted = acceptFunctionDefinition(declarator, nodeList, declarator.body);
+        }
+    } else
+        expected("function parameter list");
+
+    return accepted;
 }
 
 // function_parameters
@@ -3186,7 +3307,7 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
 {
     // fully_specified_type
     TType* type = new TType;
-    if (! acceptFullySpecifiedType(nullptr, *type))
+    if (! acceptFullySpecifiedType(*type))
         return false;
 
     // identifier
@@ -3228,20 +3349,41 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
 
 // Do the work to create the function definition in addition to
 // parsing the body (compound_statement).
-bool HlslGrammar::acceptFunctionDefinition(TFunction& function, TIntermNode*& node, TIntermNode*& node2, const TAttributeMap& attributes)
+//
+// If 'deferredTokens' are passed in, just get the token stream,
+// don't process.
+//
+bool HlslGrammar::acceptFunctionDefinition(TFunctionDeclarator& declarator, TIntermNode*& nodeList,
+                                           TVector<HlslToken>* deferredTokens)
 {
-    TFunction& functionDeclarator = parseContext.handleFunctionDeclarator(token.loc, function, false /* not prototype */);
-    TSourceLoc loc = token.loc;
+    parseContext.handleFunctionDeclarator(declarator.loc, *declarator.function, false /* not prototype */);
+
+    if (deferredTokens)
+        return captureBlockTokens(*deferredTokens);
+    else
+        return acceptFunctionBody(declarator, nodeList);
+}
+
+bool HlslGrammar::acceptFunctionBody(TFunctionDeclarator& declarator, TIntermNode*& nodeList)
+{
+    // we might get back an entry-point
+    TIntermNode* entryPointNode = nullptr;
 
     // This does a pushScope()
-    node = parseContext.handleFunctionDefinition(loc, functionDeclarator, attributes, node2);
+    TIntermNode* functionNode = parseContext.handleFunctionDefinition(declarator.loc, *declarator.function,
+                                                                      declarator.attributes, entryPointNode);
 
     // compound_statement
     TIntermNode* functionBody = nullptr;
     if (! acceptCompoundStatement(functionBody))
         return false;
 
-    parseContext.handleFunctionBody(loc, functionDeclarator, functionBody, node);
+    // this does a popScope()
+    parseContext.handleFunctionBody(declarator.loc, *declarator.function, functionBody, functionNode);
+
+    // Hook up the 1 or 2 function definitions.
+    nodeList = intermediate.growAggregate(nodeList, functionNode);
+    nodeList = intermediate.growAggregate(nodeList, entryPointNode);
 
     return true;
 }
@@ -3839,18 +3981,23 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
 //      | function_call
 //      | postfix_expression LEFT_BRACKET integer_expression RIGHT_BRACKET
 //      | postfix_expression DOT IDENTIFIER
+//      | postfix_expression DOT IDENTIFIER arguments
+//      | postfix_expression COLONCOLON IDENTIFIER arguments
 //      | postfix_expression INC_OP
 //      | postfix_expression DEC_OP
 //
 bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAccessor, bool hasStreamAccessor, TString* classAccessorName, TShaderCompositionVariable& compositionTargeted)
 {
     // Not implemented as self-recursive:
-    // The logical "right recursion" is done with an loop at the end
+    // The logical "right recursion" is done with a loop at the end
 
     // idToken will pick up either a variable or a function name in a function call
     HlslToken idToken;
 
     bool hasComposition = compositionTargeted.shaderCompositionId >= 0? true: false;
+
+    // scopeBase will pick up the type symbol on the left of '::'
+    TSymbol* scope = nullptr;
 
     // Find something before the postfix operations, as they can't operate
     // on nothing.  So, no "return true", they fall through, only "return false".
@@ -3875,23 +4022,32 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
     }
     else if (acceptIdentifier(idToken))
     {
-        // identifier or function_call name
-        if (! peekTokenClass(EHTokLeftParen))
+        if (peekTokenClass(EHTokColonColon))
+        {
+            TType type;
+            scope = parseContext.lookupUserType(*idToken.string, type);
+            if (scope == nullptr) {
+                expected("type left of ::");
+                return false;
+            }
+        }
+        else if (! peekTokenClass(EHTokLeftParen))
         {
             TString* referenceShaderName = getCurrentShaderName();
             if (referenceShaderName == nullptr)
             {
                 //we're not parsing a shader: normal hlsl procedure
-                node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
+                node = parseContext.handleVariable(idToken.loc, idToken.string);
             }
             else
             {
-                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition && idToken.symbol == nullptr)
+                TSymbol* symbol = nullptr;
+                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition)
                 {
-                    idToken.symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
+                    symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
                 }
-
-                if (idToken.symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition)
+                
+                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition)
                 {
                     if (hasComposition) {
                         //maybe we can authorize this later?
@@ -4045,7 +4201,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                                 return false;
                             }
 
-                            node = parseContext.handleVariable(idToken.loc, variableSymbol, identifierLocation.symbolName);
+                            node = parseContext.handleVariable(idToken.loc, identifierLocation.symbolName);
                         }
                         else {
                             error("invalid class identifier");
@@ -4055,10 +4211,9 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                 }
                 else
                 {
-                    node = parseContext.handleVariable(idToken.loc, idToken.symbol, token.string);
+                    node = parseContext.handleVariable(idToken.loc, idToken.string);
                 }
             }
-
         }
         else 
         {
@@ -4076,7 +4231,13 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             }
             else
             {
-                if (idToken.symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition)
+                TSymbol* symbol = nullptr;
+                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition)
+                {
+                    symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
+                }
+
+                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition)
                 {
                     //No known symbol or a class accessor: we look for the appropriate method in our xksl shader library
 
@@ -4121,7 +4282,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
         ~tFinalize() { parseContext.finalizeFlattening(); }
         HlslParseContext& parseContext;
     private:
-        const tFinalize& operator=(const tFinalize& f) { return *this; }
+        const tFinalize& operator=(const tFinalize&) { return *this; }
         tFinalize(const tFinalize& f) : parseContext(f.parseContext) { }
     } finalize(parseContext);
 
@@ -4142,6 +4303,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
         case EOpIndexIndirect:
         case EOpPostIncrement:
         case EOpPostDecrement:
+        case EOpScoping:
             advanceToken();
             break;
         default:
@@ -4150,26 +4312,28 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
 
         // We have a valid post-unary operator, process it.
         switch (postOp) {
+        case EOpScoping:
         case EOpIndexDirectStruct:
         {
             // DOT IDENTIFIER
-            // includes swizzles and struct members
+            // includes swizzles, member variables, and member functions
             HlslToken field;
             if (! acceptIdentifier(field)) {
                 expected("swizzle or member");
                 return false;
             }
 
-            TIntermTyped* base = node; // preserve for method function calls
-            node = parseContext.handleDotDereference(field.loc, node, *field.string);
+            if (peekTokenClass(EHTokLeftParen)) {
+                // member function
+                TIntermTyped* thisNode = node;
 
-            // In the event of a method node, we look for an open paren and accept the function call.
-            if (node != nullptr && node->getAsMethodNode() != nullptr && peekTokenClass(EHTokLeftParen)) {
-                if (! acceptFunctionCall(field, node, base)) {
+                // arguments
+                if (! acceptFunctionCall(field, node, thisNode, scope)) {
                     expected("function parameters");
                     return false;
                 }
-            }
+            } else
+                node = parseContext.handleDotDereference(field.loc, node, *field.string);
 
             break;
         }
@@ -4380,20 +4544,42 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
 // function_call
 //      : [idToken] arguments
 //
-bool HlslGrammar::acceptFunctionCall(HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
+bool HlslGrammar::acceptFunctionCall(HlslToken callToken, TIntermTyped*& node, TIntermTyped* baseObject,
+                                     const TSymbol* scope)
 {
+    // name
+    TString* functionName = nullptr;
+    if ((baseObject == nullptr && scope == nullptr)) {
+        functionName = callToken.string;
+    } else if (parseContext.isBuiltInMethod(callToken.loc, baseObject, *callToken.string)) {
+        // Built-in methods are not in the symbol table as methods, but as global functions
+        // taking an explicit 'this' as the first argument.
+        functionName = NewPoolTString(BUILTIN_PREFIX);
+        functionName->append(*callToken.string);
+    } else {
+        functionName = NewPoolTString("");
+        if (baseObject != nullptr)
+            functionName->append(baseObject->getType().getTypeName());
+        else if (scope != nullptr)
+            functionName->append(scope->getType().getTypeName());
+        parseContext.addScopeMangler(*functionName);
+        functionName->append(*callToken.string);
+    }
+
+    // function
+    TFunction* function = new TFunction(functionName, TType(EbtVoid));
+
     // arguments
-    TFunction* function = new TFunction(idToken.string, TType(EbtVoid));
     TIntermTyped* arguments = nullptr;
-
-    // methods have an implicit first argument of the calling object.
-    if (base != nullptr)
-        parseContext.handleFunctionArgument(function, arguments, base);
-
+    if (baseObject != nullptr) {
+        // Non-static member functions have an implicit first argument of the base object.
+        parseContext.handleFunctionArgument(function, arguments, baseObject);
+    }
     if (! acceptArguments(function, arguments))
         return false;
 
-    node = parseContext.handleFunctionCall(idToken.loc, function, arguments);
+    // call
+    node = parseContext.handleFunctionCall(callToken.loc, function, arguments);
 
     return true;
 }
@@ -5080,7 +5266,7 @@ void HlslGrammar::acceptArraySpecifier(TArraySizes*& arraySizes)
         TSourceLoc loc = token.loc;
         TIntermTyped* sizeExpr = nullptr;
 
-        // Array sizing expression is optional.  If ommitted, array will be later sized by initializer list.
+        // Array sizing expression is optional.  If omitted, array will be later sized by initializer list.
         const bool hasArraySize = acceptAssignmentExpression(sizeExpr);
 
         if (! acceptTokenClass(EHTokRightBracket)) {
@@ -5245,7 +5431,6 @@ bool HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                     *userDefinedSemantic = *idToken.string;
                 }
 
-                parseContext.handleSemantic(idToken.loc, qualifier, *idToken.string);
             }
         } else if (peekTokenClass(EHTokLeftAngle)) {
             found = true;
@@ -5256,6 +5441,39 @@ bool HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
     } while (true);
 
     return found;
+}
+
+//
+// Get the stream of tokens from the scanner, but skip all syntactic/semantic
+// processing.
+//
+bool HlslGrammar::captureBlockTokens(TVector<HlslToken>& tokens)
+{
+    if (! peekTokenClass(EHTokLeftBrace))
+        return false;
+
+    int braceCount = 0;
+
+    do {
+        switch (peek()) {
+        case EHTokLeftBrace:
+            ++braceCount;
+            break;
+        case EHTokRightBrace:
+            --braceCount;
+            break;
+        case EHTokNone:
+            // End of input before balance { } is bad...
+            return false;
+        default:
+            break;
+        }
+
+        tokens.push_back(token);
+        advanceToken();
+    } while (braceCount > 0);
+
+    return true;
 }
 
 } // end namespace glslang

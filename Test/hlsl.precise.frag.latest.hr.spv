@@ -1,0 +1,18 @@
+hlsl.precise.frag
+ERROR: 0:6: ')' : Expected 
+ERROR: 0:6: 'function parameter list' : Expected 
+(6): error at column 18, HLSL parsing failed.
+ERROR: 3 compilation errors.  No code generated.
+
+
+Shader version: 450
+gl_FragCoord origin is upper left
+
+
+Linked fragment stage:
+
+
+Shader version: 450
+gl_FragCoord origin is upper left
+
+SPIR-V is not generated for failed compile or link

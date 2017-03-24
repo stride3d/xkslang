@@ -63,8 +63,6 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestStreamSemantics.xksl" },
     //{ "testParsingResources.xksl" },
 
-    //{ "rgroups.xksl" },
-
     ////{{"textureAndSampler.xksl"}, {"", nullptr}},
     ////{{"shaderTexturing.xksl"}, {"", nullptr}},
     ////{{"shaderBase.xksl"}, {"", nullptr}},
@@ -130,7 +128,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
     //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
     //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
-    { "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
+    //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
 
     //{ "TestGenerics01", "TestGenerics01.xkfx" },
     //{ "TestGenerics02", "TestGenerics02.xkfx" },
@@ -218,20 +216,26 @@ int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguage
     return 0;
 }
 
-void SetupTestDirectories()
+bool SetupTestDirectories()
 {
-    //Get app directories (unclean and hardcoded code for now)
+    //Get app directories
     WCHAR fileName[MAX_PATH];
     int bytes = GetModuleFileName(NULL, fileName, MAX_PATH);
     wstring ws(fileName);
     string fullName(ws.begin(), ws.end());
+
+    //WARNIG: UNCLEAN AND HARDCODED FOR NOW!!
     const size_t pos = fullName.find("glslang");
+    if (pos >= fullName.size()) return false;
+
     string dir = fullName.substr(0, pos);
     inputDir = dir + inputDir;
 
     outputDir = inputDir + string("outputs\\");
     finalResultOutputDir = outputDir + string("finals\\");
     expectedOutputDir = inputDir + string("expectedOutputs\\");
+
+    return true;
 }
 
 enum class BytecodeFileFormat
@@ -859,7 +863,11 @@ void main(int argc, char** argv)
     cout << "RELEASE mode" << endl << endl;
 #endif
 
-    SetupTestDirectories();
+    if (!SetupTestDirectories())
+    {
+        cout << "Failed to setup the directories" << endl;
+        return;
+    }
 
     XkslParser parser;
     if (!parser.InitialiseXkslang())

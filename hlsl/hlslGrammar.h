@@ -43,6 +43,9 @@
 
 namespace glslang {
 
+    class TAttributeMap;
+    class TFunctionDeclarator;
+    
     enum class XkslShaderParsingOperationEnum {
         Undefined,
         ParseXkslShaderDeclarations,
@@ -51,7 +54,6 @@ namespace glslang {
         ParseXkslShaderDefinitions,
     };
 
-    class TAttributeMap; // forward declare
 
     // Should just be the grammar aspect of HLSL.
     // Described in more detail in hlslGrammar.cpp.
@@ -83,14 +85,15 @@ namespace glslang {
         bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStreams, TShaderCompositionVariable& compositionTargeted);
         bool acceptCompilationUnit();
         bool acceptDeclaration(TIntermNode*&);
-        bool acceptDeclaration(TIntermNode*& node1, TIntermNode*& node2);
         bool acceptControlDeclaration(TIntermNode*& node);
         bool acceptSamplerDeclarationDX9(TType&);
         bool acceptSamplerState();
-        bool acceptFullySpecifiedType(TIntermNode** node, TType&);
+        bool acceptFullySpecifiedType(TType&);
+        bool acceptFullySpecifiedType(TType&, TIntermNode*& nodeList);
         bool acceptQualifier(TQualifier&);
         bool acceptLayoutQualifierList(TQualifier&);
         bool acceptType(TIntermNode** node, TType&);
+        bool acceptType(TType&, TIntermNode*& nodeList);
         bool acceptTemplateVecMatBasicType(TBasicType&);
         bool acceptVectorTemplateType(TType&);
         bool acceptMatrixTemplateType(TType&);
@@ -102,16 +105,20 @@ namespace glslang {
         bool acceptSamplerType(TType&);
         bool acceptTextureType(TType&);
         bool acceptStructBufferType(TType&);
-        bool acceptStruct(TType&);
-        bool acceptShaderClass(TIntermNode** node, TType&);
+        bool acceptStruct(TType&, TIntermNode*& nodeList);
+        bool acceptStructDeclarationList(TTypeList*&, TIntermNode*& nodeList, const TString& typeName,
+                                         TVector<TFunctionDeclarator>&);
+        bool acceptMemberFunctionDefinition(TIntermNode*& nodeList, const TType&, const TString& memberName,
+                                            TFunctionDeclarator&);
+        bool acceptShaderClass(TType&);
         bool checkShaderGenericsList(TVector<TType*>& listGenericTypes);
         bool acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList);
         bool acceptShaderClassFunctionsDefinition(const TString& shaderName, XkslShaderDefinition* shader);
         bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
-        bool acceptStructDeclarationList(TTypeList*&);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);
-        bool acceptFunctionDefinition(TFunction&, TIntermNode*& node1, TIntermNode*& node2, const TAttributeMap&);
+        bool acceptFunctionDefinition(TFunctionDeclarator&, TIntermNode*& nodeList, TVector<HlslToken>* deferredTokens);
+        bool acceptFunctionBody(TFunctionDeclarator& declarator, TIntermNode*& nodeList);
         bool acceptParenExpression(TIntermTyped*&);
         bool acceptExpression(TIntermTyped*&);
         bool acceptInitializer(TIntermTyped*&);
@@ -122,7 +129,8 @@ namespace glslang {
         bool acceptPostfixExpression(TIntermTyped*&);
         bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor, bool hasStreamAccessor, TString* classAccessor, TShaderCompositionVariable& compositionTargeted);
         bool acceptConstructor(TIntermTyped*&);
-        bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* base = nullptr);
+        bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* objectBase = nullptr,
+                                const TSymbol* scope = nullptr);
         bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, TShaderCompositionVariable* compositionTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
@@ -142,6 +150,8 @@ namespace glslang {
         void acceptArraySpecifier(TArraySizes*&);
         bool acceptPostDecls(TQualifier&, TString* userDefinedSemantic = nullptr);
         bool acceptDefaultParameterDeclaration(const TType&, TIntermTyped*&);
+
+        bool captureBlockTokens(TVector<HlslToken>& tokens);
 
         //XKSL extensions
         void acceptShaderClassParentsInheritance(TIdentifierList*& parents);

@@ -1,0 +1,16 @@
+hlsl.nonstaticMemberFunction.frag
+(36): error at column 0, HLSL parsing failed.
+ERROR: 1 compilation errors.  No code generated.
+
+
+Shader version: 450
+gl_FragCoord origin is upper left
+
+
+Linked fragment stage:
+
+
+Shader version: 450
+gl_FragCoord origin is upper left
+
+SPIR-V is not generated for failed compile or link

@@ -1,12 +1,11 @@
 shader ShaderMain
 {
-	SamplerState Sampler0;
-	Texture2D Texture0;
-	TextureCube CubeMap;
-	
-	//Texture3D<uint2> LightClusters;
-	//Buffer<uint> LightIndices;
-	//Buffer<float4> PointLights;
+	rgroup
+	{
+		SamplerState Sampler0;
+		Texture2D Texture0;
+		TextureCube CubeMap;
+	}
 	
 	void VSMain()
 	{

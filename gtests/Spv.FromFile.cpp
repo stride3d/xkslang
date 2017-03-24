@@ -296,6 +296,7 @@ INSTANTIATE_TEST_CASE_P(
         //"spv.specConstantOperations.vert",
         //"spv.precise.tese",
         //"spv.precise.tesc",
+        //"spv.pushConstantAnon.vert",
     })),
     FileNameAsCustomTestSuffix
 );

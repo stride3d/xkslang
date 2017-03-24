@@ -14,7 +14,7 @@ struct PS_STREAMS
 void main(VS_OUT __input__)
 {
     PS_STREAMS _streams;
-    _streams.Position_id0 = gl_FragCoord;
+    _streams.Position_id0 = __input__.Position_id0;
     _streams.ColorTarget_id1 = vec4(_streams.Position_id0, 0.0, 1.0);
 }
 

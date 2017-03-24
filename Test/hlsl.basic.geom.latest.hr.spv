@@ -1,0 +1,24 @@
+hlsl.basic.geom
+ERROR: 0:13: ')' : Expected 
+ERROR: 0:13: 'function parameter list' : Expected 
+(13): error at column 21, HLSL parsing failed.
+ERROR: 3 compilation errors.  No code generated.
+
+
+Shader version: 450
+invocations = -1
+max_vertices = -1
+input primitive = triangles
+output primitive = none
+
+
+Linked geometry stage:
+
+
+Shader version: 450
+invocations = -1
+max_vertices = -1
+input primitive = triangles
+output primitive = none
+
+SPIR-V is not generated for failed compile or link

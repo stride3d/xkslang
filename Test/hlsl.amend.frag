@@ -11,7 +11,7 @@ struct Toto
 
 float4 a;
 float b;
-
+static float4 m = a * b;
 void f1()
 {
     a * b;

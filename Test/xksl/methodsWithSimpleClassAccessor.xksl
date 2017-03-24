@@ -1,20 +1,18 @@
 
-//TODO:
-//OVERRIDE? BASE?  STAGE  ??
 
 shader SA
 {
 	int Compute()
 	{
-		return 0;
+		return 5;
 	}
 	
-	int ComputeInSAOnly()
+	void ComputeInSAOnly()
 	{
-		return 10;
+        int k = Compute();
 	}
 };
-
+/*
 shader SB : SA
 {
 	int Compute()
@@ -42,4 +40,4 @@ shader SB : SA
 		return abs(-5);
 	}
 };
-
+*/

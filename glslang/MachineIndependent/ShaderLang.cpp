@@ -1325,13 +1325,19 @@ static bool ParseXkslShaderFile(
                 int countFunctionNodes = shader->listMethods.size();
                 for (int i = 0; i< countFunctionNodes; i++)
                 {
-                    TIntermNode* functionNode = shader->listMethods.at(i).bodyNode;
-                    if (functionNode != nullptr)
+                    TIntermNode* functionNodeList = shader->listMethods.at(i).bodyNode;
+                    if (functionNodeList != nullptr)
                     {
-                        TType& functionType = functionNode->getAsAggregate()->getWritableType();
-                        functionType.setOwnerClassName(shader->shaderName.c_str());
-                
-                        treeRootNode = intermediate->growAggregate(treeRootNode, functionNode);
+                        const TIntermSequence& sequence = functionNodeList->getAsAggregate()->getSequence();
+                        int countNodes = sequence.size();
+                        for (unsigned int k = 0; k < countNodes; k++)
+                        {
+                            glslang::TIntermAggregate* functionNode = sequence[k]->getAsAggregate();
+
+                            TType& functionType = functionNode->getAsAggregate()->getWritableType();
+                            functionType.setOwnerClassName(shader->shaderName.c_str());
+                            treeRootNode = intermediate->growAggregate(treeRootNode, functionNode);
+                        }
                     }
                     else
                     {

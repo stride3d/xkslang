@@ -66,6 +66,7 @@ enum EHlslTokenClass {
     EHTokInOut,
     EHTokLayout,
     EHTokGloballyCoherent,
+    EHTokInline,
 
     //XKSL extensions: new qualifiers
     EHTokPublic,
@@ -77,7 +78,6 @@ enum EHlslTokenClass {
     EHTokOverride,
     EHTokAbstract,
     EHTokClone,
-    EHTokThis,
     EHTokBase,
     EHTokStreams,
     EHTokCompose,
@@ -284,11 +284,12 @@ enum EHlslTokenClass {
 
     // variable, user type, ...
     EHTokIdentifier,
-    EHTokTypeName,
+    EHTokClass,
     EHTokStruct,
     EHTokCBuffer,
     EHTokTBuffer,
     EHTokTypedef,
+    EHTokThis,
     EHTokRGroup,
 
     // XKSL new type Token
@@ -348,6 +349,7 @@ enum EHlslTokenClass {
     EHTokDot,
     EHTokComma,
     EHTokColon,
+    EHTokColonColon,
     EHTokSemicolon,
     EHTokBang,
     EHTokDash,

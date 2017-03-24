@@ -249,6 +249,32 @@ namespace glslang {
         fileTokenList = tokenBuffer;
     }
 
+    void HlslTokenStream::pushTokenStream(const TVector<HlslToken>* tokens)
+    {
+        // not yet setup to interrupt a stream that has been receded
+        // and not yet reconsumed
+        //assert(preTokenStackSize == 0);
+
+        // save current state
+        currentTokenStack.push_back(token);
+
+        // set up new token stream
+        tokenStreamStack.push_back(tokens);
+
+        // start position at first token:
+        token = (*tokens)[0];
+        tokenPosition.push_back(0);
+    }
+
+    // Undo pushTokenStream(), see above
+    void HlslTokenStream::popTokenStream()
+    {
+        tokenStreamStack.pop_back();
+        tokenPosition.pop_back();
+        token = currentTokenStack.back();
+        currentTokenStack.pop_back();
+    }
+
 	// Load 'token' with the next token in the stream of tokens.
 	void HlslTokenStream::advanceToken()
 	{

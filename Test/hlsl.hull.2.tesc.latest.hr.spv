@@ -1,0 +1,134 @@
+hlsl.hull.2.tesc
+ERROR: 0:0: '' : patch constant function invalid parameter 
+ERROR: 1 compilation errors.  No code generated.
+
+
+Shader version: 450
+vertices = 4
+ERROR: node is still EOpNull!
+0:26  Function Definition: @main(struct-VS_OUT-vf31[4]; ( temp structure{ temp 3-component vector of float cpoint})
+0:26    Function Parameters: 
+0:26      'ip' ( in 4-element array of structure{ temp 3-component vector of float cpoint})
+0:?     Sequence
+0:28      move second child to first child ( temp 3-component vector of float)
+0:28        cpoint: direct index for structure ( temp 3-component vector of float)
+0:28          'output' ( temp structure{ temp 3-component vector of float cpoint})
+0:28          Constant:
+0:28            0 (const int)
+0:28        cpoint: direct index for structure ( temp 3-component vector of float)
+0:28          direct index ( temp structure{ temp 3-component vector of float cpoint})
+0:28            'ip' ( in 4-element array of structure{ temp 3-component vector of float cpoint})
+0:28            Constant:
+0:28              0 (const int)
+0:28          Constant:
+0:28            0 (const int)
+0:29      Branch: Return with expression
+0:29        'output' ( temp structure{ temp 3-component vector of float cpoint})
+0:26  Function Definition: main( ( temp void)
+0:26    Function Parameters: 
+0:?     Sequence
+0:26      move second child to first child ( temp 4-element array of structure{ temp 3-component vector of float cpoint})
+0:?         'ip' ( temp 4-element array of structure{ temp 3-component vector of float cpoint})
+0:?         'ip' (layout( location=0) in 4-element array of structure{ temp 3-component vector of float cpoint})
+0:26      move second child to first child ( temp structure{ temp 3-component vector of float cpoint})
+0:?         '@entryPointOutput' (layout( location=0) out structure{ temp 3-component vector of float cpoint})
+0:26        Function Call: @main(struct-VS_OUT-vf31[4]; ( temp structure{ temp 3-component vector of float cpoint})
+0:?           'ip' ( temp 4-element array of structure{ temp 3-component vector of float cpoint})
+0:33  Function Definition: PCF(u1;vf4; ( temp structure{ temp 2-element array of float edges})
+0:33    Function Parameters: 
+0:33      'pid' ( in uint)
+0:33      'pos' ( in 4-component vector of float)
+0:?     Sequence
+0:36      move second child to first child ( temp float)
+0:36        direct index ( temp float)
+0:36          edges: direct index for structure ( temp 2-element array of float)
+0:36            'output' ( temp structure{ temp 2-element array of float edges})
+0:36            Constant:
+0:36              0 (const int)
+0:36          Constant:
+0:36            0 (const int)
+0:36        Constant:
+0:36          2.000000
+0:37      move second child to first child ( temp float)
+0:37        direct index ( temp float)
+0:37          edges: direct index for structure ( temp 2-element array of float)
+0:37            'output' ( temp structure{ temp 2-element array of float edges})
+0:37            Constant:
+0:37              0 (const int)
+0:37          Constant:
+0:37            1 (const int)
+0:37        Constant:
+0:37          8.000000
+0:38      Branch: Return with expression
+0:38        'output' ( temp structure{ temp 2-element array of float edges})
+0:?   Linker Objects
+0:?     '@entryPointOutput' (layout( location=0) out structure{ temp 3-component vector of float cpoint})
+0:?     'ip' (layout( location=0) in 4-element array of structure{ temp 3-component vector of float cpoint})
+
+
+Linked tessellation control stage:
+
+
+Shader version: 450
+vertices = 4
+ERROR: node is still EOpNull!
+0:26  Function Definition: @main(struct-VS_OUT-vf31[4]; ( temp structure{ temp 3-component vector of float cpoint})
+0:26    Function Parameters: 
+0:26      'ip' ( in 4-element array of structure{ temp 3-component vector of float cpoint})
+0:?     Sequence
+0:28      move second child to first child ( temp 3-component vector of float)
+0:28        cpoint: direct index for structure ( temp 3-component vector of float)
+0:28          'output' ( temp structure{ temp 3-component vector of float cpoint})
+0:28          Constant:
+0:28            0 (const int)
+0:28        cpoint: direct index for structure ( temp 3-component vector of float)
+0:28          direct index ( temp structure{ temp 3-component vector of float cpoint})
+0:28            'ip' ( in 4-element array of structure{ temp 3-component vector of float cpoint})
+0:28            Constant:
+0:28              0 (const int)
+0:28          Constant:
+0:28            0 (const int)
+0:29      Branch: Return with expression
+0:29        'output' ( temp structure{ temp 3-component vector of float cpoint})
+0:26  Function Definition: main( ( temp void)
+0:26    Function Parameters: 
+0:?     Sequence
+0:26      move second child to first child ( temp 4-element array of structure{ temp 3-component vector of float cpoint})
+0:?         'ip' ( temp 4-element array of structure{ temp 3-component vector of float cpoint})
+0:?         'ip' (layout( location=0) in 4-element array of structure{ temp 3-component vector of float cpoint})
+0:26      move second child to first child ( temp structure{ temp 3-component vector of float cpoint})
+0:?         '@entryPointOutput' (layout( location=0) out structure{ temp 3-component vector of float cpoint})
+0:26        Function Call: @main(struct-VS_OUT-vf31[4]; ( temp structure{ temp 3-component vector of float cpoint})
+0:?           'ip' ( temp 4-element array of structure{ temp 3-component vector of float cpoint})
+0:33  Function Definition: PCF(u1;vf4; ( temp structure{ temp 2-element array of float edges})
+0:33    Function Parameters: 
+0:33      'pid' ( in uint)
+0:33      'pos' ( in 4-component vector of float)
+0:?     Sequence
+0:36      move second child to first child ( temp float)
+0:36        direct index ( temp float)
+0:36          edges: direct index for structure ( temp 2-element array of float)
+0:36            'output' ( temp structure{ temp 2-element array of float edges})
+0:36            Constant:
+0:36              0 (const int)
+0:36          Constant:
+0:36            0 (const int)
+0:36        Constant:
+0:36          2.000000
+0:37      move second child to first child ( temp float)
+0:37        direct index ( temp float)
+0:37          edges: direct index for structure ( temp 2-element array of float)
+0:37            'output' ( temp structure{ temp 2-element array of float edges})
+0:37            Constant:
+0:37              0 (const int)
+0:37          Constant:
+0:37            1 (const int)
+0:37        Constant:
+0:37          8.000000
+0:38      Branch: Return with expression
+0:38        'output' ( temp structure{ temp 2-element array of float edges})
+0:?   Linker Objects
+0:?     '@entryPointOutput' (layout( location=0) out structure{ temp 3-component vector of float cpoint})
+0:?     'ip' (layout( location=0) in 4-element array of structure{ temp 3-component vector of float cpoint})
+
+SPIR-V is not generated for failed compile or link

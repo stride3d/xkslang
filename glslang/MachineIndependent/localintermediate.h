@@ -423,6 +423,13 @@ public:
     bool getGeoPassthroughEXT() const { return geoPassthroughEXT; }
 #endif
 
+    const char* addSemanticName(const TString& name)
+    {
+        return semanticNameSet.insert(name).first->c_str();
+    }
+
+    const char* const implicitThisName = "@this";
+
 protected:
     TIntermSymbol* addSymbol(int Id, const TString&, const TType&, const TConstUnionArray&, TIntermTyped* subtree, const TSourceLoc&, TString*);
     void error(TInfoSink& infoSink, const char*);
@@ -501,6 +508,7 @@ protected:
     std::vector<TOffsetRange> usedAtomics;  // sets of bindings used by atomic counters
     std::vector<TXfbBuffer> xfbBuffers;     // all the data we need to track per xfb buffer
     std::unordered_set<int> usedConstantId; // specialization constant ids used
+    std::set<TString> semanticNameSet;
 
 private:
     void operator=(TIntermediate&); // prevent assignments

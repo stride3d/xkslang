@@ -65,7 +65,12 @@ public:
 
     void setLimits(const TBuiltInResource&) override;
     bool parseShaderStrings(TPpContext&, TInputScanner& input, bool versionWillBeError = false) override;
-    virtual const char* getGlobalUniformBlockName() override { return "$Global"; }
+    virtual const char* getGlobalUniformBlockName() const override { return "$Global"; }
+    virtual void setUniformBlockDefaults(TType& block) const override
+    {
+        block.getQualifier().layoutPacking = ElpStd140;
+        block.getQualifier().layoutMatrix = ElmRowMajor;
+    }
 
     void reservedPpErrorCheck(const TSourceLoc&, const char* /*name*/, const char* /*op*/) override { }
     bool lineContinuationCheck(const TSourceLoc&, bool /*endOfComment*/) override { return true; }
@@ -73,7 +78,7 @@ public:
     bool builtInName(const TString&);
 
     void handlePragma(const TSourceLoc&, const TVector<TString>&) override;
-    TIntermTyped* handleVariable(const TSourceLoc&, TSymbol* symbol,  const TString* string);
+    TIntermTyped* handleVariable(const TSourceLoc&, const TString* string);
     TIntermTyped* handleBracketDereference(const TSourceLoc&, TIntermTyped* base, TIntermTyped* index);
     TIntermTyped* handleBracketOperator(const TSourceLoc&, TIntermTyped* base, TIntermTyped* index);
     void checkIndex(const TSourceLoc&, const TType&, int& index);
@@ -81,8 +86,9 @@ public:
     TIntermTyped* handleBinaryMath(const TSourceLoc&, const char* str, TOperator op, TIntermTyped* left, TIntermTyped* right);
     TIntermTyped* handleUnaryMath(const TSourceLoc&, const char* str, TOperator op, TIntermTyped* childNode);
     TIntermTyped* handleDotDereference(const TSourceLoc&, TIntermTyped* base, const TString& field);
+    bool isBuiltInMethod(const TSourceLoc&, TIntermTyped* base, const TString& field);
     void assignLocations(TVariable& variable);
-    TFunction& handleFunctionDeclarator(const TSourceLoc&, TFunction& function, bool prototype);
+    void handleFunctionDeclarator(const TSourceLoc&, TFunction& function, bool prototype);
     TIntermAggregate* handleFunctionDefinition(const TSourceLoc&, TFunction&, const TAttributeMap&, TIntermNode*& entryPointTree);
     TIntermNode* transformEntryPoint(const TSourceLoc&, TFunction&, const TAttributeMap&);
     void handleFunctionBody(const TSourceLoc&, TFunction&, TIntermNode* functionBody, TIntermNode*& node);
@@ -97,12 +103,11 @@ public:
     void decomposeSampleMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeStructBufferMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeGeometryMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
-    TIntermTyped* handleLengthMethod(const TSourceLoc&, TFunction*, TIntermNode*);
     void addInputArgumentConversions(const TFunction&, TIntermTyped*&);
     TIntermTyped* addOutputArgumentConversions(const TFunction&, TIntermOperator&);
     void builtInOpCheck(const TSourceLoc&, const TFunction&, TIntermOperator&);
     TFunction* handleConstructorCall(const TSourceLoc&, const TType&);
-    void handleSemantic(TSourceLoc, TQualifier&, const TString& semantic);
+    void handleSemantic(TSourceLoc, TQualifier&, TBuiltInVariable, const TString& upperCase);
     void handlePackOffset(const TSourceLoc&, TQualifier&, const glslang::TString& location,
                           const glslang::TString* component);
     void handleRegister(const TSourceLoc&, TQualifier&, const glslang::TString* profile, const glslang::TString& desc,
@@ -146,14 +151,12 @@ public:
     void declareStruct(const TSourceLoc&, TString& structName, TType&);
     TSymbol* lookupUserType(const TString&, TType&);
     TIntermNode* declareVariable(const TSourceLoc&, TString& identifier, TType&, TIntermTyped* initializer = 0, bool fixConstInitIfNoInitializer = true);
-    bool removeVariable(const TSourceLoc& loc, TString& identifier);
     TSymbol* lookIfSymbolExistInSymbolTable(const TString* string);
     void lengthenList(const TSourceLoc&, TIntermSequence& list, int size);
     TIntermTyped* addConstructor(const TSourceLoc&, TIntermNode*, const TType&);
     TIntermTyped* constructAggregate(TIntermNode*, const TType&, int, const TSourceLoc&);
     TIntermTyped* constructBuiltIn(const TType&, TOperator, TIntermTyped*, const TSourceLoc&, bool subset);
     void declareBlock(const TSourceLoc&, TType&, const TString* instanceName = 0, TArraySizes* arraySizes = 0);
-    void finalizeGlobalUniformBlockLayout(TVariable& block) override;
     void fixBlockLocations(const TSourceLoc&, TQualifier&, TTypeList&, bool memberWithLocation, bool memberWithoutLocation);
     void fixBlockXfbOffsets(TQualifier&, TTypeList&);
     void fixBlockUniformOffsets(const TQualifier&, TTypeList&);
@@ -172,6 +175,18 @@ public:
     int getAnnotationNestingLevel() { return annotationNestingLevel; }
     void pushScope()         { symbolTable.push(); }
     void popScope()          { symbolTable.pop(0); }
+
+    void pushThisScope(const TType&);
+    void popThisScope()      { symbolTable.pop(0); }
+
+    void pushImplicitThis(TVariable* thisParameter) { implicitThisStack.push_back(thisParameter); }
+    void popImplicitThis() { implicitThisStack.pop_back(); }
+    TVariable* getImplicitThis(int thisDepth) const { return implicitThisStack[implicitThisStack.size() - thisDepth]; }
+
+    void pushNamespace(const TString& name);
+    void popNamespace();
+    TString* getFullNamespaceName(const TString& localName) const;
+    void addScopeMangler(TString&);
 
     void pushSwitchSequence(TIntermSequence* sequence) { switchSequenceStack.push_back(sequence); }
     void popSwitchSequence() { switchSequenceStack.pop_back(); }
@@ -263,7 +278,6 @@ protected:
     void clearUniformInputOutput(TQualifier& qualifier);
 
     // Test method names
-    bool isSamplerMethod(const TString& name) const;
     bool isStructBufferMethod(const TString& name) const;
 
     TType* getStructBufferContentType(const TType& type) const;
@@ -397,7 +411,15 @@ protected:
     TString patchConstantFunctionName; // hull shader patch constant function name, from function level attribute.
     TMap<TBuiltInVariable, TSymbol*> builtInLinkageSymbols; // used for tessellation, finding declared builtins
 
+    TVector<TString> currentTypePrefix;      // current scoping prefix for nested structures
+    TVector<TVariable*> implicitThisStack;   // currently active 'this' variables for nested structures
 };
+
+// This is the prefix we use for builtin methods to avoid namespace collisions with
+// global scope user functions.
+// TODO: this would be better as a nonparseable character, but that would
+// require changing the scanner.
+#define BUILTIN_PREFIX "__BI_"
 
 } // end namespace glslang
 

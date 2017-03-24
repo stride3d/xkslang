@@ -349,7 +349,7 @@ public:
 
     // Emit the OpTextureQuery* instruction that was passed in.
     // Figure out the right return value and type, and return it.
-    Id createTextureQueryCall(Op, const TextureParameters&);
+    Id createTextureQueryCall(Op, const TextureParameters&, bool isUnsignedResult);
 
     Id createSamplePositionCall(Decoration precision, Id, Id);
 

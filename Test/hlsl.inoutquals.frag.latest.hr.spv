@@ -1,0 +1,18 @@
+hlsl.inoutquals.frag
+ERROR: 0:7: ')' : Expected 
+ERROR: 0:7: 'function parameter list' : Expected 
+(7): error at column 21, HLSL parsing failed.
+ERROR: 3 compilation errors.  No code generated.
+
+
+Shader version: 450
+gl_FragCoord origin is upper left
+
+
+Linked fragment stage:
+
+
+Shader version: 450
+gl_FragCoord origin is upper left
+
+SPIR-V is not generated for failed compile or link
