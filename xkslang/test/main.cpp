@@ -149,7 +149,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
-    //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
+    { "ShaderWithResources07", "ShaderWithResources07.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {

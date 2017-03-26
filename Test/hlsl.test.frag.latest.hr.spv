@@ -2,111 +2,179 @@ hlsl.test.frag
 Shader version: 450
 gl_FragCoord origin is upper left
 0:? Sequence
-0:21  Function Definition: @main( ( temp void)
-0:21    Function Parameters: 
+0:14  Function Definition: main(u1[3];u1[3];struct-PSInput-f1-i11; ( temp void)
+0:14    Function Parameters: 
+0:14      'VertexID' ( in 3-element array of uint)
+0:14      'test' ( in 3-element array of uint)
+0:14      'OutputStream' ( out structure{ temp float myfloat,  temp int something})
 0:?     Sequence
-0:22      Sequence
-0:22        move second child to first child ( temp 2-component vector of float)
-0:22          'uv2' ( temp 2-component vector of float)
-0:?           Constant:
-0:?             0.500000
-0:?             0.500000
-0:23      Sequence
-0:23        move second child to first child ( temp 4-component vector of float)
-0:23          'color' ( temp 4-component vector of float)
-0:23          texture ( temp 4-component vector of float)
-0:23            Construct combined texture-sampler ( temp sampler2D)
-0:23              'Texture0' ( uniform texture2D)
-0:23              'Sampler0' ( uniform sampler)
-0:23            'uv2' ( temp 2-component vector of float)
-0:21  Function Definition: main( ( temp void)
-0:21    Function Parameters: 
-0:?     Sequence
-0:21      Function Call: @main( ( temp void)
+0:17      move second child to first child ( temp float)
+0:17        myfloat: direct index for structure ( temp float)
+0:17          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:17          Constant:
+0:17            0 (const int)
+0:17        Convert uint to float ( temp float)
+0:17          add ( temp uint)
+0:17            add ( temp uint)
+0:17              direct index ( temp uint)
+0:17                'test' ( in 3-element array of uint)
+0:17                Constant:
+0:17                  0 (const int)
+0:17              direct index ( temp uint)
+0:17                'test' ( in 3-element array of uint)
+0:17                Constant:
+0:17                  1 (const int)
+0:17            direct index ( temp uint)
+0:17              'test' ( in 3-element array of uint)
+0:17              Constant:
+0:17                2 (const int)
+0:18      move second child to first child ( temp int)
+0:18        something: direct index for structure ( temp int)
+0:18          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:18          Constant:
+0:18            1 (const int)
+0:18        Convert uint to int ( temp int)
+0:18          direct index ( temp uint)
+0:18            'VertexID' ( in 3-element array of uint)
+0:18            Constant:
+0:18              0 (const int)
+0:20      Sequence
+0:20        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
+0:20          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:20          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:20        EmitVertex ( temp void)
+0:21      Sequence
+0:21        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
+0:21          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:21          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:21        EmitVertex ( temp void)
+0:22      EndPrimitive ( temp void)
 0:?   Linker Objects
-0:?     'Sampler0' ( uniform sampler)
-0:?     'Texture0' ( uniform texture2D)
 
 
 Linked fragment stage:
 
+WARNING: Linking fragment stage: Entry point not found
 
 Shader version: 450
 gl_FragCoord origin is upper left
 0:? Sequence
-0:21  Function Definition: @main( ( temp void)
-0:21    Function Parameters: 
+0:14  Function Definition: main(u1[3];u1[3];struct-PSInput-f1-i11; ( temp void)
+0:14    Function Parameters: 
+0:14      'VertexID' ( in 3-element array of uint)
+0:14      'test' ( in 3-element array of uint)
+0:14      'OutputStream' ( out structure{ temp float myfloat,  temp int something})
 0:?     Sequence
-0:22      Sequence
-0:22        move second child to first child ( temp 2-component vector of float)
-0:22          'uv2' ( temp 2-component vector of float)
-0:?           Constant:
-0:?             0.500000
-0:?             0.500000
-0:23      Sequence
-0:23        move second child to first child ( temp 4-component vector of float)
-0:23          'color' ( temp 4-component vector of float)
-0:23          texture ( temp 4-component vector of float)
-0:23            Construct combined texture-sampler ( temp sampler2D)
-0:23              'Texture0' ( uniform texture2D)
-0:23              'Sampler0' ( uniform sampler)
-0:23            'uv2' ( temp 2-component vector of float)
-0:21  Function Definition: main( ( temp void)
-0:21    Function Parameters: 
-0:?     Sequence
-0:21      Function Call: @main( ( temp void)
+0:17      move second child to first child ( temp float)
+0:17        myfloat: direct index for structure ( temp float)
+0:17          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:17          Constant:
+0:17            0 (const int)
+0:17        Convert uint to float ( temp float)
+0:17          add ( temp uint)
+0:17            add ( temp uint)
+0:17              direct index ( temp uint)
+0:17                'test' ( in 3-element array of uint)
+0:17                Constant:
+0:17                  0 (const int)
+0:17              direct index ( temp uint)
+0:17                'test' ( in 3-element array of uint)
+0:17                Constant:
+0:17                  1 (const int)
+0:17            direct index ( temp uint)
+0:17              'test' ( in 3-element array of uint)
+0:17              Constant:
+0:17                2 (const int)
+0:18      move second child to first child ( temp int)
+0:18        something: direct index for structure ( temp int)
+0:18          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:18          Constant:
+0:18            1 (const int)
+0:18        Convert uint to int ( temp int)
+0:18          direct index ( temp uint)
+0:18            'VertexID' ( in 3-element array of uint)
+0:18            Constant:
+0:18              0 (const int)
+0:20      Sequence
+0:20        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
+0:20          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:20          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:20        EmitVertex ( temp void)
+0:21      Sequence
+0:21        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
+0:21          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:21          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:21        EmitVertex ( temp void)
+0:22      EndPrimitive ( temp void)
 0:?   Linker Objects
-0:?     'Sampler0' ( uniform sampler)
-0:?     'Texture0' ( uniform texture2D)
 
 // Module Version 10000
 // Generated by (magic number): 80001
-// Id's are bound by 30
+// Id's are bound by 43
 
                               Capability Shader
                1:             ExtInstImport  "GLSL.std.450"
                               MemoryModel Logical GLSL450
-                              EntryPoint Fragment 4  "main"
+                              EntryPoint Fragment 4  ""
                               ExecutionMode 4 OriginUpperLeft
-                              Name 4  "main"
-                              Name 6  "@main("
-                              Name 11  "uv2"
-                              Name 16  "color"
-                              Name 19  "Texture0"
-                              Name 23  "Sampler0"
-                              Decorate 19(Texture0) DescriptorSet 0
-                              Decorate 23(Sampler0) DescriptorSet 0
+                              Name 4  ""
+                              Name 12  "PSInput"
+                              MemberName 12(PSInput) 0  "myfloat"
+                              MemberName 12(PSInput) 1  "something"
+                              Name 18  "main(u1[3];u1[3];struct-PSInput-f1-i11;"
+                              Name 15  "VertexID"
+                              Name 16  "test"
+                              Name 17  "OutputStream"
+                              Name 20  "Vert"
                2:             TypeVoid
                3:             TypeFunction 2
-               8:             TypeFloat 32
-               9:             TypeVector 8(float) 2
-              10:             TypePointer Function 9(fvec2)
-              12:    8(float) Constant 1056964608
-              13:    9(fvec2) ConstantComposite 12 12
-              14:             TypeVector 8(float) 4
-              15:             TypePointer Function 14(fvec4)
-              17:             TypeImage 8(float) 2D sampled format:Unknown
-              18:             TypePointer UniformConstant 17
-    19(Texture0):     18(ptr) Variable UniformConstant
-              21:             TypeSampler
-              22:             TypePointer UniformConstant 21
-    23(Sampler0):     22(ptr) Variable UniformConstant
-              25:             TypeSampledImage 17
-         4(main):           2 Function None 3
+               6:             TypeInt 32 0
+               7:      6(int) Constant 3
+               8:             TypeArray 6(int) 7
+               9:             TypePointer Function 8
+              10:             TypeFloat 32
+              11:             TypeInt 32 1
+     12(PSInput):             TypeStruct 10(float) 11(int)
+              13:             TypePointer Function 12(PSInput)
+              14:             TypeFunction 2 9(ptr) 9(ptr) 13(ptr)
+              21:     11(int) Constant 0
+              22:             TypePointer Function 6(int)
+              25:     11(int) Constant 1
+              29:     11(int) Constant 2
+              34:             TypePointer Function 10(float)
+              39:             TypePointer Function 11(int)
+               4:           2 Function None 3
                5:             Label
-              29:           2 FunctionCall 6(@main()
                               Return
                               FunctionEnd
-       6(@main():           2 Function None 3
-               7:             Label
-         11(uv2):     10(ptr) Variable Function
-       16(color):     15(ptr) Variable Function
-                              Store 11(uv2) 13
-              20:          17 Load 19(Texture0)
-              24:          21 Load 23(Sampler0)
-              26:          25 SampledImage 20 24
-              27:    9(fvec2) Load 11(uv2)
-              28:   14(fvec4) ImageSampleImplicitLod 26 27
-                              Store 16(color) 28
+18(main(u1[3];u1[3];struct-PSInput-f1-i11;):           2 Function None 14
+    15(VertexID):      9(ptr) FunctionParameter
+        16(test):      9(ptr) FunctionParameter
+17(OutputStream):     13(ptr) FunctionParameter
+              19:             Label
+        20(Vert):     13(ptr) Variable Function
+              23:     22(ptr) AccessChain 16(test) 21
+              24:      6(int) Load 23
+              26:     22(ptr) AccessChain 16(test) 25
+              27:      6(int) Load 26
+              28:      6(int) IAdd 24 27
+              30:     22(ptr) AccessChain 16(test) 29
+              31:      6(int) Load 30
+              32:      6(int) IAdd 28 31
+              33:   10(float) ConvertUToF 32
+              35:     34(ptr) AccessChain 20(Vert) 21
+                              Store 35 33
+              36:     22(ptr) AccessChain 15(VertexID) 21
+              37:      6(int) Load 36
+              38:     11(int) Bitcast 37
+              40:     39(ptr) AccessChain 20(Vert) 25
+                              Store 40 38
+              41: 12(PSInput) Load 20(Vert)
+                              Store 17(OutputStream) 41
+                              EmitVertex
+              42: 12(PSInput) Load 20(Vert)
+                              Store 17(OutputStream) 42
+                              EmitVertex
+                              EndPrimitive
                               Return
                               FunctionEnd

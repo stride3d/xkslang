@@ -1,0 +1,118 @@
+hlsl.test.geom
+Shader version: 450
+invocations = -1
+max_vertices = -1
+input primitive = triangles
+output primitive = line_strip
+0:? Sequence
+0:11  Function Definition: main(u1[3];u1[3];struct-PSInput-f1-i11; ( temp void)
+0:11    Function Parameters: 
+0:11      'VertexID' ( in 3-element array of uint)
+0:11      'test' ( in 3-element array of uint)
+0:11      'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:?     Sequence
+0:14      move second child to first child ( temp float)
+0:14        myfloat: direct index for structure ( temp float)
+0:14          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:14          Constant:
+0:14            0 (const int)
+0:14        Convert uint to float ( temp float)
+0:14          add ( temp uint)
+0:14            add ( temp uint)
+0:14              direct index ( temp uint)
+0:14                'test' ( in 3-element array of uint)
+0:14                Constant:
+0:14                  0 (const int)
+0:14              direct index ( temp uint)
+0:14                'test' ( in 3-element array of uint)
+0:14                Constant:
+0:14                  1 (const int)
+0:14            direct index ( temp uint)
+0:14              'test' ( in 3-element array of uint)
+0:14              Constant:
+0:14                2 (const int)
+0:15      move second child to first child ( temp int)
+0:15        something: direct index for structure ( temp int)
+0:15          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:15          Constant:
+0:15            1 (const int)
+0:15        Convert uint to int ( temp int)
+0:15          direct index ( temp uint)
+0:15            'VertexID' ( in 3-element array of uint)
+0:15            Constant:
+0:15              0 (const int)
+0:17      Sequence
+0:17        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
+0:17          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:17          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:17        EmitVertex ( temp void)
+0:18      Sequence
+0:18        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
+0:18          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:18          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:18        EmitVertex ( temp void)
+0:19      EndPrimitive ( temp void)
+0:?   Linker Objects
+
+
+Linked geometry stage:
+
+WARNING: Linking geometry stage: Entry point not found
+ERROR: Linking geometry stage: At least one shader must specify a layout(max_vertices = value)
+
+Shader version: 450
+invocations = 1
+max_vertices = -1
+input primitive = triangles
+output primitive = line_strip
+0:? Sequence
+0:11  Function Definition: main(u1[3];u1[3];struct-PSInput-f1-i11; ( temp void)
+0:11    Function Parameters: 
+0:11      'VertexID' ( in 3-element array of uint)
+0:11      'test' ( in 3-element array of uint)
+0:11      'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:?     Sequence
+0:14      move second child to first child ( temp float)
+0:14        myfloat: direct index for structure ( temp float)
+0:14          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:14          Constant:
+0:14            0 (const int)
+0:14        Convert uint to float ( temp float)
+0:14          add ( temp uint)
+0:14            add ( temp uint)
+0:14              direct index ( temp uint)
+0:14                'test' ( in 3-element array of uint)
+0:14                Constant:
+0:14                  0 (const int)
+0:14              direct index ( temp uint)
+0:14                'test' ( in 3-element array of uint)
+0:14                Constant:
+0:14                  1 (const int)
+0:14            direct index ( temp uint)
+0:14              'test' ( in 3-element array of uint)
+0:14              Constant:
+0:14                2 (const int)
+0:15      move second child to first child ( temp int)
+0:15        something: direct index for structure ( temp int)
+0:15          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:15          Constant:
+0:15            1 (const int)
+0:15        Convert uint to int ( temp int)
+0:15          direct index ( temp uint)
+0:15            'VertexID' ( in 3-element array of uint)
+0:15            Constant:
+0:15              0 (const int)
+0:17      Sequence
+0:17        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
+0:17          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:17          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:17        EmitVertex ( temp void)
+0:18      Sequence
+0:18        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
+0:18          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
+0:18          'Vert' ( temp structure{ temp float myfloat,  temp int something})
+0:18        EmitVertex ( temp void)
+0:19      EndPrimitive ( temp void)
+0:?   Linker Objects
+
+SPIR-V is not generated for failed compile or link

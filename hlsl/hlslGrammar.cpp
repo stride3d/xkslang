@@ -4982,7 +4982,7 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
         if (!acceptTokenClass(EHTokIdentifier)) expected("foreach: variable name");
         
         //in
-        if (!acceptTokenClass(EHTokForEachIn)) expected("foreach in");
+        if (!acceptTokenClass(EHTokIn)) expected("foreach in");
 
         //name of the composition targeted
         TString compositionArrayVariableName = *token.string;

@@ -82,7 +82,6 @@ enum EHlslTokenClass {
     EHTokStreams,
     EHTokCompose,
     EHTokForEach,
-    EHTokForEachIn,
 
     // primitive types
     EHTokPoint,
