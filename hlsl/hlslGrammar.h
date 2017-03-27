@@ -49,7 +49,7 @@ namespace glslang {
     enum class XkslShaderParsingOperationEnum {
         Undefined,
         ParseXkslShaderDeclarations,
-        ParseXkslShaderNewTypesDeclaration,
+        ParseXkslShaderNewTypesDefinition,
         ParseXkslShaderMembersAndMethodsDeclarations,
         ParseXkslShaderConstStatements,
         ParseXkslShaderMethodsDefinition,

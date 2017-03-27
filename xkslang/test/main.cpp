@@ -62,8 +62,8 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "TestForEach01.xksl" },
     //{ "TestStreamSemantics.xksl" },
     //{ "testParsingResources.xksl" },
-    
-    //{ "parseShaderWithStructs.xksl" },
+    //{ "parseShaderWithStructs01.xksl" },
+    { "parseShaderWithStructs02.xksl" },
     
     //{ "parseGeomShader02.xksl" },
 

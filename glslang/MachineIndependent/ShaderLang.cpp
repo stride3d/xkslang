@@ -1275,12 +1275,12 @@ static bool ParseXkslShaderFile(
         //==================================================================================================================
         //==================================================================================================================
         //Parse shader to detect new type definition (such like struct)
-        //if (success)
-        //{
-        //    //TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-        //    success = parseContext->parseXkslShaderNewTypesDeclaration(&shaderLibrary, ppContext, fullTokenList);
-        //    if (!success) error(parseContext, "Failed to parse shaders new types definition");
-        //}
+        if (success)
+        {
+            //TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
+            success = parseContext->parseXkslShaderNewTypesDeclaration(&shaderLibrary, ppContext, fullTokenList);
+            if (!success) error(parseContext, "Failed to parse shaders new types definition");
+        }
 
         //==================================================================================================================
         //==================================================================================================================

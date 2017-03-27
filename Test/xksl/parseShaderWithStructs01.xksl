@@ -1,0 +1,8 @@
+shader Shader
+{
+	struct DirectionalLightData
+	{
+		float3 DirectionWS;
+		float3 Color;
+	};
+}

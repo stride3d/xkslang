@@ -1,0 +1,19 @@
+
+shader ShaderA
+{
+	LightStruct toto2;
+	
+	float3 aFunction()
+	{
+		LightStruct ls;
+		return ls.DirectionWS;
+	}
+	
+	struct LightStruct
+	{
+		float3 DirectionWS;
+		float3 Color;
+	};
+	
+	LightStruct light;
+};
