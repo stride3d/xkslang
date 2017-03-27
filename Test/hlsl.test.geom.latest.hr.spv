@@ -1,118 +1,69 @@
 hlsl.test.geom
-Shader version: 450
-invocations = -1
-max_vertices = -1
-input primitive = triangles
-output primitive = line_strip
-0:? Sequence
-0:11  Function Definition: main(u1[3];u1[3];struct-PSInput-f1-i11; ( temp void)
-0:11    Function Parameters: 
-0:11      'VertexID' ( in 3-element array of uint)
-0:11      'test' ( in 3-element array of uint)
-0:11      'OutputStream' ( out structure{ temp float myfloat,  temp int something})
-0:?     Sequence
-0:14      move second child to first child ( temp float)
-0:14        myfloat: direct index for structure ( temp float)
-0:14          'Vert' ( temp structure{ temp float myfloat,  temp int something})
-0:14          Constant:
-0:14            0 (const int)
-0:14        Convert uint to float ( temp float)
-0:14          add ( temp uint)
-0:14            add ( temp uint)
-0:14              direct index ( temp uint)
-0:14                'test' ( in 3-element array of uint)
-0:14                Constant:
-0:14                  0 (const int)
-0:14              direct index ( temp uint)
-0:14                'test' ( in 3-element array of uint)
-0:14                Constant:
-0:14                  1 (const int)
-0:14            direct index ( temp uint)
-0:14              'test' ( in 3-element array of uint)
-0:14              Constant:
-0:14                2 (const int)
-0:15      move second child to first child ( temp int)
-0:15        something: direct index for structure ( temp int)
-0:15          'Vert' ( temp structure{ temp float myfloat,  temp int something})
-0:15          Constant:
-0:15            1 (const int)
-0:15        Convert uint to int ( temp int)
-0:15          direct index ( temp uint)
-0:15            'VertexID' ( in 3-element array of uint)
-0:15            Constant:
-0:15              0 (const int)
-0:17      Sequence
-0:17        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
-0:17          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
-0:17          'Vert' ( temp structure{ temp float myfloat,  temp int something})
-0:17        EmitVertex ( temp void)
-0:18      Sequence
-0:18        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
-0:18          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
-0:18          'Vert' ( temp structure{ temp float myfloat,  temp int something})
-0:18        EmitVertex ( temp void)
-0:19      EndPrimitive ( temp void)
-0:?   Linker Objects
-
 
 Linked geometry stage:
 
 WARNING: Linking geometry stage: Entry point not found
 ERROR: Linking geometry stage: At least one shader must specify a layout(max_vertices = value)
 
-Shader version: 450
-invocations = 1
-max_vertices = -1
-input primitive = triangles
-output primitive = line_strip
-0:? Sequence
-0:11  Function Definition: main(u1[3];u1[3];struct-PSInput-f1-i11; ( temp void)
-0:11    Function Parameters: 
-0:11      'VertexID' ( in 3-element array of uint)
-0:11      'test' ( in 3-element array of uint)
-0:11      'OutputStream' ( out structure{ temp float myfloat,  temp int something})
-0:?     Sequence
-0:14      move second child to first child ( temp float)
-0:14        myfloat: direct index for structure ( temp float)
-0:14          'Vert' ( temp structure{ temp float myfloat,  temp int something})
-0:14          Constant:
-0:14            0 (const int)
-0:14        Convert uint to float ( temp float)
-0:14          add ( temp uint)
-0:14            add ( temp uint)
-0:14              direct index ( temp uint)
-0:14                'test' ( in 3-element array of uint)
-0:14                Constant:
-0:14                  0 (const int)
-0:14              direct index ( temp uint)
-0:14                'test' ( in 3-element array of uint)
-0:14                Constant:
-0:14                  1 (const int)
-0:14            direct index ( temp uint)
-0:14              'test' ( in 3-element array of uint)
-0:14              Constant:
-0:14                2 (const int)
-0:15      move second child to first child ( temp int)
-0:15        something: direct index for structure ( temp int)
-0:15          'Vert' ( temp structure{ temp float myfloat,  temp int something})
-0:15          Constant:
-0:15            1 (const int)
-0:15        Convert uint to int ( temp int)
-0:15          direct index ( temp uint)
-0:15            'VertexID' ( in 3-element array of uint)
-0:15            Constant:
-0:15              0 (const int)
-0:17      Sequence
-0:17        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
-0:17          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
-0:17          'Vert' ( temp structure{ temp float myfloat,  temp int something})
-0:17        EmitVertex ( temp void)
-0:18      Sequence
-0:18        move second child to first child ( temp structure{ temp float myfloat,  temp int something})
-0:18          'OutputStream' ( out structure{ temp float myfloat,  temp int something})
-0:18          'Vert' ( temp structure{ temp float myfloat,  temp int something})
-0:18        EmitVertex ( temp void)
-0:19      EndPrimitive ( temp void)
-0:?   Linker Objects
+// Module Version 10000
+// Generated by (magic number): 80001
+// Id's are bound by 33
 
-SPIR-V is not generated for failed compile or link
+                              Capability Geometry
+               1:             ExtInstImport  "GLSL.std.450"
+                              MemoryModel Logical GLSL450
+                              EntryPoint Geometry 4  ""
+                              ExecutionMode 4 Triangles
+                              ExecutionMode 4 Invocations 1
+                              ExecutionMode 4 OutputLineStrip
+                              ExecutionMode 4 OutputVertices
+                              Name 4  ""
+                              Name 12  "PSInput"
+                              MemberName 12(PSInput) 0  "myfloat"
+                              MemberName 12(PSInput) 1  "something"
+                              Name 17  "main(u1[3];struct-PSInput-f1-i11;"
+                              Name 15  "VertexID"
+                              Name 16  "OutputStream"
+                              Name 19  "Vert"
+               2:             TypeVoid
+               3:             TypeFunction 2
+               6:             TypeInt 32 0
+               7:      6(int) Constant 3
+               8:             TypeArray 6(int) 7
+               9:             TypePointer Function 8
+              10:             TypeFloat 32
+              11:             TypeInt 32 1
+     12(PSInput):             TypeStruct 10(float) 11(int)
+              13:             TypePointer Function 12(PSInput)
+              14:             TypeFunction 2 9(ptr) 13(ptr)
+              20:     11(int) Constant 0
+              21:   10(float) Constant 0
+              22:             TypePointer Function 10(float)
+              24:     11(int) Constant 1
+              25:             TypePointer Function 6(int)
+              29:             TypePointer Function 11(int)
+               4:           2 Function None 3
+               5:             Label
+                              Return
+                              FunctionEnd
+17(main(u1[3];struct-PSInput-f1-i11;):           2 Function None 14
+    15(VertexID):      9(ptr) FunctionParameter
+16(OutputStream):     13(ptr) FunctionParameter
+              18:             Label
+        19(Vert):     13(ptr) Variable Function
+              23:     22(ptr) AccessChain 19(Vert) 20
+                              Store 23 21
+              26:     25(ptr) AccessChain 15(VertexID) 20
+              27:      6(int) Load 26
+              28:     11(int) Bitcast 27
+              30:     29(ptr) AccessChain 19(Vert) 24
+                              Store 30 28
+              31: 12(PSInput) Load 19(Vert)
+                              Store 16(OutputStream) 31
+                              EmitVertex
+              32: 12(PSInput) Load 19(Vert)
+                              Store 16(OutputStream) 32
+                              EmitVertex
+                              EndPrimitive
+                              Return
+                              FunctionEnd

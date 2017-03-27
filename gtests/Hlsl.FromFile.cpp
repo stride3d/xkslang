@@ -88,8 +88,8 @@ INSTANTIATE_TEST_CASE_P(
     ToSpirv, HlslCompileTest,
     ::testing::ValuesIn(std::vector<FileNameEntryPointPair>{
         
-        //{"hlsl.test.geom", "" },
-        {"hlsl.test.frag", "" },
+        {"hlsl.test.geom", "" },
+        //{"hlsl.test.frag", "" },
         //{"hlsl.struct.test01.frag", ""},
         //{"functionsWithIOStruct01.frag", "" },
 

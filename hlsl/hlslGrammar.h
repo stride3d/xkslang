@@ -49,11 +49,11 @@ namespace glslang {
     enum class XkslShaderParsingOperationEnum {
         Undefined,
         ParseXkslShaderDeclarations,
+        ParseXkslShaderNewTypesDeclaration,
         ParseXkslShaderMembersAndMethodsDeclarations,
         ParseXkslShaderConstStatements,
-        ParseXkslShaderDefinitions,
+        ParseXkslShaderMethodsDefinition,
     };
-
 
     // Should just be the grammar aspect of HLSL.
     // Described in more detail in hlslGrammar.cpp.
@@ -69,6 +69,7 @@ namespace glslang {
         bool parse();
 
         bool parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary);
+        bool parseXKslShaderNewTypesDefinition(XkslShaderLibrary* shaderLibrary);
         bool parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary* shaderLibrary);
         bool parseXKslShaderDefinition(XkslShaderLibrary* shaderLibrary);
         TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader);
@@ -112,8 +113,7 @@ namespace glslang {
                                             TFunctionDeclarator&);
         bool acceptShaderClass(TType&);
         bool checkShaderGenericsList(TVector<TType*>& listGenericTypes);
-        bool acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList);
-        bool acceptShaderClassFunctionsDefinition(const TString& shaderName, XkslShaderDefinition* shader);
+        bool acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration);
         bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);

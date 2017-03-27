@@ -224,10 +224,17 @@ public:
             return {{{shaderName, shader.getInfoLog(), shader.getInfoDebugLog()},},
                     program.getInfoLog(), program.getInfoDebugLog(),
                     logger.getAllMessages(), disassembly_stream.str(), spirv_binary };
-        } else {
+        }
+        else
+        {
             std::vector<uint32_t> spirv_binary;
+            glslang::GlslangToSpv(*program.getIntermediate(kind), spirv_binary, &logger);
+            std::ostringstream disassembly_stream;
+            spv::Parameterize();
+            spv::Disassemble(disassembly_stream, spirv_binary);
+
             return {{{shaderName, shader.getInfoLog(), shader.getInfoDebugLog()},},
-                    program.getInfoLog(), program.getInfoDebugLog(), "", "", spirv_binary };
+                    program.getInfoLog(), program.getInfoDebugLog(), "", disassembly_stream.str(), spirv_binary };
         }
     }
 
@@ -349,7 +356,7 @@ public:
 
     void outputResultToStream(std::ostringstream* stream,
                               const GlslangResult& result,
-                              EShMessages controls)
+                              EShMessages controls, bool outputAST = true)
     {
         const auto outputIfNotEmpty = [&stream](const std::string& str) {
             if (!str.empty()) *stream << str << "\n";
@@ -357,11 +364,15 @@ public:
 
         for (const auto& shaderResult : result.shaderResults) {
             *stream << shaderResult.shaderName << "\n";
-            outputIfNotEmpty(shaderResult.output);
-            outputIfNotEmpty(shaderResult.error);
+            if (outputAST) {
+                outputIfNotEmpty(shaderResult.output);
+                outputIfNotEmpty(shaderResult.error);
+            }
         }
         outputIfNotEmpty(result.linkingOutput);
-        outputIfNotEmpty(result.linkingError);
+        if (outputAST) {
+            outputIfNotEmpty(result.linkingError);
+        }
         *stream << result.spirvWarningsErrors;
 
         if (controls & EShMsgSpvRules) {
@@ -389,10 +400,11 @@ public:
 
         const EShMessages controls = DeriveOptions(source, semantics, target);
         GlslangResult result = compileAndLink(testName, input, entryPointName, controls);
+        bool outputAST = false;
 
         // Generate the hybrid output in the way of glslangValidator.
         std::ostringstream stream;
-        outputResultToStream(&stream, result, controls);
+        outputResultToStream(&stream, result, controls, outputAST);
 
         // Write the stream output on the disk
         if (source == Source::HLSL)

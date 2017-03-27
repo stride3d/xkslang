@@ -1,0 +1,73 @@
+
+struct PS_STREAMS 
+{
+    float4 PositionOut1_id1;
+    float4 PositionOut2_id2;
+    float4 Color_id3;
+};
+struct GS_STREAMS 
+{
+    float4 PositionOut1_id1;
+    float4 PositionOut2_id2;
+};
+struct GS_OUTPUT 
+{
+    float4 PositionOut1_id1 : POSITIONOUT1_ID1_SEM;
+    float4 PositionOut2_id2 : POSITIONOUT2_ID2_SEM;
+};
+struct VS_STREAMS 
+{
+    float2 PositionIn_id0;
+    float4 PositionOut1_id1;
+    float4 PositionOut2_id2;
+};
+struct VS_OUTPUT 
+{
+    float4 PositionOut1_id1 : POSITIONOUT1_ID1_SEM;
+    float4 PositionOut2_id2 : POSITIONOUT2_ID2_SEM;
+};
+struct VS_INPUT 
+{
+    float2 PositionIn_id0 : Position;
+};
+//====================================================================/
+
+VS_OUTPUT VSMain(VS_INPUT __input__)
+{
+    VS_STREAMS _streams = (VS_STREAMS)0;
+    _streams.PositionIn_id0 = __input__.PositionIn_id0;
+    _streams.PositionOut1_id1 = float4(_streams.PositionIn_id0, 0.0f, 1.0f);
+    _streams.PositionOut2_id2 = float4(_streams.PositionIn_id0, 1.0f, 1.0f);
+    VS_OUTPUT __output__ = (VS_OUTPUT)0;
+    __output__.PositionOut1_id1 = _streams.PositionOut1_id1;
+    __output__.PositionOut2_id2 = _streams.PositionOut2_id2;
+    return __output__;
+}
+
+void PSMain(GS_OUTPUT __input__)
+{
+    PS_STREAMS _streams = (PS_STREAMS)0;
+    _streams.PositionOut1_id1 = __input__.PositionOut1_id1;
+    _streams.PositionOut2_id2 = __input__.PositionOut2_id2;
+    _streams.Color_id3 = _streams.PositionOut1_id1 + _streams.PositionOut2_id2;
+}
+
+[maxvertexcount(3)]
+void GSMain(line VS_OUTPUT input[2], inout PointStream<GS_OUTPUT> outStream)
+{
+    GS_STREAMS _streams = (GS_STREAMS)0;
+
+    for (int i = 0; i < 2; ++i)
+    {
+        _streams.PositionOut1_id1 = input[i].PositionOut1_id1;
+        _streams.PositionOut2_id2 = input[i].PositionOut2_id2;
+
+        {
+            GS_OUTPUT output = (GS_OUTPUT)0;
+            output.PositionOut1_id1 = _streams.PositionOut1_id1;
+            output.PositionOut2_id2 = _streams.PositionOut2_id2;
+            outStream.Append(output);
+        }
+    }
+}
+

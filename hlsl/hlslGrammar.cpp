@@ -125,6 +125,26 @@ bool HlslGrammar::parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary)
     return true;
 }
 
+bool HlslGrammar::parseXKslShaderNewTypesDefinition(XkslShaderLibrary* shaderLibrary)
+{
+    //root entry point for parsing xksl shader membes and methods declaration
+    if (xkslShaderCurrentlyParsed != nullptr || xkslShaderLibrary != nullptr || this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined)
+    {
+        error("an xksl shader is or have already being parsed");
+        return false;
+    }
+
+    this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDeclaration; //Tell the parser to only parse shader new types declaration
+    this->xkslShaderLibrary = shaderLibrary;
+
+    //advanceToken();
+    advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
+    bool res = acceptCompilationUnit();
+    if (!res) return false;
+
+    return true;
+}
+
 bool HlslGrammar::parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary* shaderLibrary)
 {
     //root entry point for parsing xksl shader membes and methods declaration
@@ -154,7 +174,7 @@ bool HlslGrammar::parseXKslShaderDefinition(XkslShaderLibrary* shaderLibrary)
         return false;
     }
 
-    this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderDefinitions;  //Tell the parser to parse shader method definition
+    this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition;  //Tell the parser to parse shader method definition
     this->xkslShaderLibrary = shaderLibrary;
 
     //advanceToken();
@@ -529,6 +549,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
         return false;
 
     if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderDeclarations ||
+        this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDeclaration ||
         this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
         this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
     {
@@ -2330,11 +2351,10 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             break;
         }
 
+        //case XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDeclaration:
         case XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations:
+        case XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition:
         {
-            //=================================================================================
-            // We're declaring methods and members of a shader previously declared (so must be in listDeclaredXkslShader)
-
             //retrieve the shader's declaration in the list of declared shader
             XkslShaderDefinition* shaderDefinition = nullptr;
             for (unsigned int i = 0; i < this->xkslShaderLibrary->listShaders.size(); ++i)
@@ -2353,56 +2373,24 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             }
             this->xkslShaderCurrentlyParsed = shaderDefinition;
 
-            TVector<TShaderClassFunction> shaderFunctionsList;  //list of functions declared by the shader
-            HlslToken shaderStartingToken = token;
-
             //======================================================================================
-            //parse the shader members and variables declaration
-            if (!acceptShaderAllVariablesAndFunctionsDeclaration(shaderDefinition, shaderFunctionsList)) {
-                error("failed to parse class variables and functions declarations");
-                //listShaderCurrentlyParsed.pop_back();
+            //parse the shader new members and methods
+            TVector<TShaderClassFunction> listMethodDeclaration;  //list of functions declared by the shader
+            TVector<TShaderClassFunction>* plistMethodDeclaration = nullptr;
+            if (xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations) plistMethodDeclaration = &listMethodDeclaration;
+            if (!acceptShaderMembersAndMethodsDeclaration(shaderDefinition, plistMethodDeclaration)) {
+                error("failed to parse the shader's members and methods declarations");
                 return false;
             }
 
             //Add all defined methods
-            for (unsigned int i = 0; i < shaderFunctionsList.size(); ++i)
+            if (plistMethodDeclaration != nullptr)
             {
-                TShaderClassFunction& shaderFunction = shaderFunctionsList.at(i);
-                shaderDefinition->listMethods.push_back(shaderFunction);
-            }
-
-            this->xkslShaderCurrentlyParsed = nullptr;
-        }
-        break;
-
-        case XkslShaderParsingOperationEnum::ParseXkslShaderDefinitions:
-        {
-            //=================================================================================
-            // We're defining a shader previously declared (must be in listDeclaredXkslShader)
-
-            //retrieve the shader's declaration in the list of declared shader
-            XkslShaderDefinition* shaderDefinition = nullptr;
-            for (unsigned int i = 0; i < this->xkslShaderLibrary->listShaders.size(); ++i)
-            {
-                XkslShaderDefinition* aShader = this->xkslShaderLibrary->listShaders.at(i);
-                if (aShader->shaderName == *shaderName)
+                for (unsigned int i = 0; i < plistMethodDeclaration->size(); ++i)
                 {
-                    shaderDefinition = aShader;
-                    break;
+                    TShaderClassFunction& shaderFunction = plistMethodDeclaration->at(i);
+                    shaderDefinition->listMethods.push_back(shaderFunction);
                 }
-            }
-            if (shaderDefinition == nullptr)
-            {
-                error( TString("missing shader declaration for: " + *shaderName).c_str());
-                return false;
-            }
-            this->xkslShaderCurrentlyParsed = shaderDefinition;
-
-            //Parse the shader method definition
-            if (!acceptShaderClassFunctionsDefinition(*shaderName, shaderDefinition)) {
-                error("failed to parse class functions definition");
-                //listShaderCurrentlyParsed.pop_back();
-                return false;
             }
 
             this->xkslShaderCurrentlyParsed = nullptr;
@@ -2459,7 +2447,7 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, T
 }
 
 //Parse a shader class: check for all variables and functions declaration (don't parse into function definition)
-bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList)
+bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration)
 {
     const TString& shaderName = shader->shaderName;
 
@@ -2484,35 +2472,43 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
         bool isComposition = acceptTokenClass(EHTokCompose);
         if (isComposition)
         {
-            TShaderCompositionVariable composition;
-            composition.location = token.loc;
-            composition.shaderOwnerName = shader->shaderName;
-            if (!acceptXkslShaderComposition(composition)) {
-                error("Failed to accept the composition declaration");
-                return false;
-            }
-            composition.shaderCompositionId = shader->listCompositions.size();
-            
-            //Make sure the shader does not already declared a composition with the same variable name
-            for (unsigned int i = 0; i < shader->listCompositions.size(); ++i)
+            if (xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations)
             {
-                if (shader->listCompositions[i].variableName == composition.variableName)
-                {
-                    error((TString("A composition already exist with the variable name: ") + composition.variableName).c_str());
+                TShaderCompositionVariable composition;
+                composition.location = token.loc;
+                composition.shaderOwnerName = shader->shaderName;
+                if (!acceptXkslShaderComposition(composition)) {
+                    error("Failed to accept the composition declaration");
                     return false;
                 }
+                composition.shaderCompositionId = shader->listCompositions.size();
+            
+                //Make sure the shader does not already declared a composition with the same variable name
+                for (unsigned int i = 0; i < shader->listCompositions.size(); ++i)
+                {
+                    if (shader->listCompositions[i].variableName == composition.variableName)
+                    {
+                        error((TString("A composition already exist with the variable name: ") + composition.variableName).c_str());
+                        return false;
+                    }
+                }
+                shader->listCompositions.push_back(composition);
             }
-            shader->listCompositions.push_back(composition);
+            else
+            {
+                advanceUntilToken(EHTokSemicolon, true);
+            }
 
             continue;
         }
 
         // check the type (plus any post-declaration qualifiers)
         TType declaredType;
-        if (!acceptFullySpecifiedType(declaredType)) {
+        if (!acceptFullySpecifiedType(declaredType)){
             error((TString("invalid keyword, member or function type: ") + *token.string).c_str());
             return false;
         }
+
         if (this->shaderMethodOrMemberTypeCurrentlyParsed != nullptr) { error("Another shader's method or member type is currently being parsed"); return false; }
         this->shaderMethodOrMemberTypeCurrentlyParsed = &declaredType;
 
@@ -2538,319 +2534,277 @@ bool HlslGrammar::acceptShaderAllVariablesAndFunctionsDeclaration(XkslShaderDefi
         
         if (identifierName == nullptr)
         {
-            expected("invalid member or function name");
-            return false;
+            //We're defining a new type (likely a new struct type)
+            if (declaredType.getTypeNamePtr() == nullptr || declaredType.getTypeNamePtr()->size() == 0)
+            {
+                error("The type needs a name");
+                return false;
+            }
         }
-        declaredType.setUserIdentifierName(identifierName->c_str());
+        else declaredType.setUserIdentifierName(identifierName->c_str());
 
-        TFunction& function = *new TFunction(&shaderName, identifierName, declaredType);
-        if (acceptFunctionParameters(function))
+        bool isAFunctionDeclaration = false;
+        TFunction* tmpFunction = nullptr;
+        if (identifierName != nullptr)
         {
-            //The function declared name will be mangled with the function parameters
-            declaredType.setUserIdentifierName(function.getDeclaredMangledName().c_str());
-            function.getWritableType().shallowCopy(declaredType);
+            tmpFunction = new TFunction(&shaderName, identifierName, declaredType);
+            isAFunctionDeclaration = acceptFunctionParameters(*tmpFunction);
+        }
 
+        if (isAFunctionDeclaration)
+        {
             //=======================================================================================================
             //Accept function declaration / definition
 
-            //// post_decls
-            //acceptPostDecls(function.getWritableType().getQualifier());
+            //The function declared name will be mangled with the function parameters
+            declaredType.setUserIdentifierName(tmpFunction->getDeclaredMangledName().c_str());
+            tmpFunction->getWritableType().shallowCopy(declaredType);
 
-            // compound_statement (function body definition) or just a declaration?
-            if (peekTokenClass(EHTokLeftBrace))
+            switch (xkslShaderParsingOperation)
             {
-                //function definition: but we add the function prototype only
-                if (!addShaderClassFunctionDeclaration(shaderName, function, functionList)) return false;
-
-                advanceToken();
-                if (!advanceUntilEndOfBlock(EHTokRightBrace))
+                case XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations:
                 {
-                    error("Error parsing until end of function block");
-                    return false;
+                    //only record the method declaration
+                    if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
+                    {
+                        //function definition: but we add the function prototype only
+                        if (!addShaderClassFunctionDeclaration(shaderName, *tmpFunction, *listMethodDeclaration)) return false;
+
+                        advanceToken();
+                        if (!advanceUntilEndOfBlock(EHTokRightBrace))
+                        {
+                            error("Error parsing until end of function block");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        //add the function prototype
+                        if (!addShaderClassFunctionDeclaration(shaderName, *tmpFunction, *listMethodDeclaration)) return false;
+                    }
                 }
-            }
-            else
-            {
-                //add the function prototype
-                if (!addShaderClassFunctionDeclaration(shaderName, function, functionList)) return false;
+                break;
+
+                case XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition:
+                {
+                    if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
+                    {
+                        //Find the function from list of all declared function
+                        TVector<TShaderClassFunction>& functionList = shader->listMethods;
+                        const TString& newFunctionMangledName = tmpFunction->getMangledName();
+                        TFunction* function = nullptr;
+                        TShaderClassFunction* shaderClassFunction;
+                        for (unsigned int i = 0; i < functionList.size(); ++i)
+                        {
+                            shaderClassFunction = &(functionList.at(i));
+                            if (shaderClassFunction->function->getMangledName() == newFunctionMangledName)
+                            {
+                                function = functionList.at(i).function;
+                                break;
+                            }
+                        }
+
+                        if (function == nullptr)
+                        {
+                            error("failed to retrieve the function in the shader list of declared functions");
+                            return false;
+                        }
+
+                        shaderClassFunction->token = token;  //in case of the token was those from the function prototype
+
+                        //==============================================================================================================
+                        // start parsing a shader class method
+                        if (listForeachArrayCompositionVariable.size() > 0) {
+                            error("shader: list of foreach array composition variable should be empty"); return false;
+                        }
+
+                        this->functionCurrentlyParsed = function;
+
+                        TFunctionDeclarator declarator;
+                        declarator.function = function;
+                        TIntermNode* nodeList = nullptr;
+                        if (!acceptFunctionDefinition(declarator, nodeList, nullptr))
+                        {
+                            error("shader: invalid function definition");
+                            this->functionCurrentlyParsed = nullptr;
+                            return false;
+                        }
+                        this->functionCurrentlyParsed = nullptr;
+
+                        if (listForeachArrayCompositionVariable.size() > 0) {
+                            error("shader: list of foreach array composition variable should be empty"); return false;
+                        }
+                        shaderClassFunction->bodyNode = nodeList;
+                        //==============================================================================================================
+                    }
+                }
+                break;
+
+                default:
+                    error("Invalid parsing operation");
+                    return false;
             }
         }
         else
         {
             //=======================================================================================================
-            //Accept variables declaration: accept one of severel type identifiers and properties
-            
-            do
+            //member declaration
+
+            switch (xkslShaderParsingOperation)
             {
-                declaredType.setFieldName(*identifierName);
-                TSourceLoc memberLoc = token.loc;
-
-                // array_specifier
-                TArraySizes* arraySizes = nullptr;
-                acceptArraySpecifier(arraySizes);
-
-                // Fix arrayness in the variableType
-                if (declaredType.isImplicitlySizedArray()) {
-                    // Because "int[] a = int[2](...), b = int[3](...)" makes two arrays a and b
-                    // of different sizes, for this case sharing the shallow copy of arrayness
-                    // with the parseType oversubscribes it, so get a deep copy of the arrayness.
-                    declaredType.newArraySizes(declaredType.getArraySizes());
-                }
-                if (arraySizes || declaredType.isArray()) {
-                    // In the most general case, arrayness is potentially coming both from the
-                    // declared type and from the variable: "int[] a[];" or just one or the other.
-                    // Merge it all to the variableType, so all arrayness is part of the variableType.
-                    parseContext.arrayDimMerge(declaredType, arraySizes);
-                }
-
-                // samplers accept immediate sampler state
-                if (declaredType.getBasicType() == EbtSampler) {
-                    if (!acceptSamplerState())
-                        return false;
-                }
-
-                TString userDefinedSemantic;
-                acceptPostDecls(declaredType.getQualifier(), &userDefinedSemantic);
-                if (userDefinedSemantic.length() > 0){
-                    if (!declaredType.getQualifier().isStage){
-                        error(TString("A variable cannot declare a user-defined semantic if it's not a stage variable. Invalid variable: ") + declaredType.getFieldName());
-                        return false;
-                    }
-
-                    //add the semantic with the variable
-                    declaredType.setUserDefinedSemantic(userDefinedSemantic.c_str());
-                }
-
-                // EQUAL assignment_expression
-                TIntermTyped* expressionNode = nullptr;
-                TVector<HlslToken>* listTokens = nullptr;
-                HlslToken tokenAtAssignmentStart = token;
-                if (acceptTokenClass(EHTokAssign))
+                case XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations:
                 {
-                    if (!acceptAssignmentExpression(expressionNode))
+                    if (identifierName == nullptr)
                     {
-                        //we're initializing a variable while parsing the shader declaration, but we meet unknown symbol
-                        //we ignore it for now and will resolve it during the next step
-                        expressionNode = nullptr;
-
-                        //advance until the next variable definition, or end of line
-                        recedeToToken(tokenAtAssignmentStart);
-                        TVector<EHlslTokenClass> toks; toks.push_back(EHTokSemicolon); toks.push_back(EHTokComma);
-                        if (!advanceUntilFirstTokenFromList(toks, true))
-                        {
-                            error("Error finding the end of assignment expression");
-                            return false;
+                        //Unidentified type: already processed in the previous step
+                        //xksl shaders doesn't necessary require a semicolon after the cbuffer declaration
+                        if (declaredType.getBasicType() == EbtBlock) {
+                            //block declaration have no identifier
+                        }
+                        else {
+                            advanceUntilToken(EHTokSemicolon, true);
                         }
 
-                        HlslToken tokenAtAssignmentEnd = token;
-                        
-                        listTokens = new TVector<HlslToken>();
-                        getListPreviouslyParsedToken(tokenAtAssignmentStart, tokenAtAssignmentEnd, *listTokens);
-                    }
-                }
-
-                // add the new member into the list of class members
-                {
-                    XkslShaderDefinition::XkslShaderMember shaderMember;
-                    
-                    shaderMember.shader = shader;
-                    shaderMember.type = new TType(EbtVoid);
-                    shaderMember.type->shallowCopy(declaredType);
-                    shaderMember.loc = memberLoc;
-                    
-                    if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
-                    {
-                        //the const value can directly be assigned with a const assignment if the expression has been resolved
-                        shaderMember.resolvedDeclaredExpression = expressionNode;
-                        shaderMember.expressionTokensList = nullptr;
+                        error("PROUT");
+                        return false;
                     }
                     else
                     {
-                        shaderMember.resolvedDeclaredExpression = nullptr;
-                        shaderMember.expressionTokensList = listTokens;  //const values will be resolved later
-                    }
-                    
-                    shader->listParsedMembers.push_back(shaderMember);
-                }
+                        do
+                        {
+                            declaredType.setFieldName(*identifierName);
+                            TSourceLoc memberLoc = token.loc;
 
-                // success on seeing the SEMICOLON coming up
-                if (peekTokenClass(EHTokSemicolon)) break;
-                if (declaredType.getBasicType() == EbtBlock) break; //exception with cbuffer. xksl shaders doesn't necessary require a semicolon after the cbuffer declaration
+                            // array_specifier
+                            TArraySizes* arraySizes = nullptr;
+                            acceptArraySpecifier(arraySizes);
 
-                // declare another variable of the same type
-                // COMMA
-                if (!acceptTokenClass(EHTokComma)) {
-                    expected(",");
-                    return false;
-                }
+                            // Fix arrayness in the variableType
+                            if (declaredType.isImplicitlySizedArray()) {
+                                // Because "int[] a = int[2](...), b = int[3](...)" makes two arrays a and b
+                                // of different sizes, for this case sharing the shallow copy of arrayness
+                                // with the parseType oversubscribes it, so get a deep copy of the arrayness.
+                                declaredType.newArraySizes(declaredType.getArraySizes());
+                            }
+                            if (arraySizes || declaredType.isArray()) {
+                                // In the most general case, arrayness is potentially coming both from the
+                                // declared type and from the variable: "int[] a[];" or just one or the other.
+                                // Merge it all to the variableType, so all arrayness is part of the variableType.
+                                parseContext.arrayDimMerge(declaredType, arraySizes);
+                            }
 
-                {
-                    //get new type identifier
-                    HlslToken idToken = token;
-                    if (!acceptIdentifier(idToken))
-                    {
-                        expected("shader: member name");
-                        return false;
-                    }
-                    identifierName = idToken.string;
-                    declaredType.setUserIdentifierName(identifierName->c_str());
-                }
+                            // samplers accept immediate sampler state
+                            if (declaredType.getBasicType() == EbtSampler) {
+                                if (!acceptSamplerState())
+                                    return false;
+                            }
 
-            } while (true);
+                            TString userDefinedSemantic;
+                            acceptPostDecls(declaredType.getQualifier(), &userDefinedSemantic);
+                            if (userDefinedSemantic.length() > 0) {
+                                if (!declaredType.getQualifier().isStage) {
+                                    error(TString("A variable cannot declare a user-defined semantic if it's not a stage variable. Invalid variable: ") + declaredType.getFieldName());
+                                    return false;
+                                }
 
-            // SEMI_COLON
-            if (!acceptTokenClass(EHTokSemicolon) && declaredType.getBasicType() != EbtBlock) {
-                expected("; expected at the end of type declaration");
-                return false;
-            }
-        }
+                                //add the semantic with the variable
+                                declaredType.setUserDefinedSemantic(userDefinedSemantic.c_str());
+                            }
 
-        this->shaderMethodOrMemberTypeCurrentlyParsed = nullptr;
+                            // EQUAL assignment_expression
+                            TIntermTyped* expressionNode = nullptr;
+                            TVector<HlslToken>* listTokens = nullptr;
+                            HlslToken tokenAtAssignmentStart = token;
+                            if (acceptTokenClass(EHTokAssign))
+                            {
+                                if (!acceptAssignmentExpression(expressionNode))
+                                {
+                                    //we're initializing a variable while parsing the shader declaration, but we meet unknown symbol
+                                    //we ignore it for now and will resolve it during the next step
+                                    expressionNode = nullptr;
 
-    } while (true);
-}
+                                    //advance until the next variable definition, or end of line
+                                    recedeToToken(tokenAtAssignmentStart);
+                                    TVector<EHlslTokenClass> toks; toks.push_back(EHTokSemicolon); toks.push_back(EHTokComma);
+                                    if (!advanceUntilFirstTokenFromList(toks, true))
+                                    {
+                                        error("Error finding the end of assignment expression");
+                                        return false;
+                                    }
 
-// Parse a shader class: only accepts function definition
-// function must already have been declared previously using method: acceptShaderAllVariablesAndFunctionsDeclaration
-bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName, XkslShaderDefinition* shader)
-{
-    do {
-        // some extra SEMI_COLON?
-        while (acceptTokenClass(EHTokSemicolon)) {}
+                                    HlslToken tokenAtAssignmentEnd = token;
 
-        // success on seeing the RIGHT_BRACE '}'
-        if (peekTokenClass(EHTokRightBrace)) return true;
+                                    listTokens = new TVector<HlslToken>();
+                                    getListPreviouslyParsedToken(tokenAtAssignmentStart, tokenAtAssignmentEnd, *listTokens);
+                                }
+                            }
 
-        //=================================================
-        //New member or method
-        // check if there is a typedef
-        bool typedefDecl = acceptTokenClass(EHTokTypedef);
-        if (typedefDecl)
-        {
-            error("Cannot have \"typedef\" before a Shader class member of method");
-            return false;
-        }
+                            // add the new member into the list of class members
+                            {
+                                XkslShaderDefinition::XkslShaderMember shaderMember;
 
-        // check if we're declaring a composition
-        bool isComposition = acceptTokenClass(EHTokCompose);
-        if (isComposition)
-        {
-            advanceUntilToken(EHTokSemicolon, true);
-            continue;
-        }
+                                shaderMember.shader = shader;
+                                shaderMember.type = new TType(EbtVoid);
+                                shaderMember.type->shallowCopy(declaredType);
+                                shaderMember.loc = memberLoc;
 
-        // check the type (plus any post-declaration qualifiers)
-        TType declaredType;
-        if (!acceptFullySpecifiedType(declaredType)) {
-            error("invalid keyword, member or function type");
-            return false;
-        }
-        if (this->shaderMethodOrMemberTypeCurrentlyParsed != nullptr) { error("Another shader's method or member type is currently being parsed"); return false; }
-        this->shaderMethodOrMemberTypeCurrentlyParsed = &declaredType;
+                                if (declaredType.getQualifier().storage == EvqConst && expressionNode != nullptr)
+                                {
+                                    //the const value can directly be assigned with a const assignment if the expression has been resolved
+                                    shaderMember.resolvedDeclaredExpression = expressionNode;
+                                    shaderMember.expressionTokensList = nullptr;
+                                }
+                                else
+                                {
+                                    shaderMember.resolvedDeclaredExpression = nullptr;
+                                    shaderMember.expressionTokensList = listTokens;  //const values will be resolved later
+                                }
 
-        const TString* identifierName = nullptr;
-        bool acceptIdentifierAfterTypeDeclaration = true;
-        if (declaredType.getBasicType() == EbtBlock)
-        {
-            //XKSL extension: cbuffer declaration, no identifier needed after the block declaration
-            //with xksl, a cbuffer does not require ";" after its declaration, so accepting an identifier after the cbuffer declaration would create some confusions
-            acceptIdentifierAfterTypeDeclaration = false;
-            identifierName = &(declaredType.getTypeName());
-        }
+                                shader->listParsedMembers.push_back(shaderMember);
+                            }
 
-        if (acceptIdentifierAfterTypeDeclaration)
-        {
-            // get the Identifier (variable name)
-            HlslToken idToken = token;
-            if (acceptIdentifier(idToken))
-            {
-                identifierName = idToken.string;
-            }
-        }
+                            // success on seeing the SEMICOLON coming up
+                            if (peekTokenClass(EHTokSemicolon)) break;
+                            if (declaredType.getBasicType() == EbtBlock) break; //exception with cbuffer. xksl shaders doesn't necessary require a semicolon after the cbuffer declaration
 
-        if (identifierName == nullptr)
-        {
-            expected("invalid member or function name");
-            return false;
-        }
-        declaredType.setUserIdentifierName(identifierName->c_str());
+                            // declare another variable of the same type
+                            // COMMA
+                            if (!acceptTokenClass(EHTokComma)) {
+                                expected(",");
+                                return false;
+                            }
 
-        TFunction& tmpFunction = *new TFunction(&shaderName, identifierName, declaredType);
-        if (acceptFunctionParameters(tmpFunction))
-        {
-            //The function declared name will be mangled with the function parameters
-            declaredType.setUserIdentifierName(tmpFunction.getDeclaredMangledName().c_str());
-            tmpFunction.getWritableType().shallowCopy(declaredType);
+                            {
+                                //get new type identifier
+                                HlslToken idToken = token;
+                                if (!acceptIdentifier(idToken))
+                                {
+                                    expected("shader: member name");
+                                    return false;
+                                }
+                                identifierName = idToken.string;
+                                declaredType.setUserIdentifierName(identifierName->c_str());
+                            }
 
-            //// post_decls
-            //acceptPostDecls(function.getWritableType().getQualifier());
-
-            // compound_statement (function body definition) or just a declaration?
-            if (peekTokenClass(EHTokLeftBrace))
-            {
-                //Find the function from list of all declared function
-                TVector<TShaderClassFunction>& functionList = shader->listMethods;
-                const TString& newFunctionMangledName = tmpFunction.getMangledName();
-                TFunction* function = nullptr;
-                TShaderClassFunction* shaderClassFunction;
-                for (unsigned int i = 0; i < functionList.size(); ++i)
-                {
-                    shaderClassFunction = &(functionList.at(i));
-                    if (shaderClassFunction->function->getMangledName() == newFunctionMangledName)
-                    {
-                        function = functionList.at(i).function;
-                        break;
+                        } while (true);
                     }
                 }
+                break;  //end case XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations:
 
-                if (function == nullptr)
+                case XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition:
                 {
-                    error("failed to retrieve the function in the shader list of declared functions");
+                    //we skip the member/type declaration
+                    //xksl shaders doesn't necessary require a semicolon after the cbuffer declaration
+                    if (declaredType.getBasicType() == EbtBlock) {
+                        //block declaration have no identifier
+                    }
+                    else advanceUntilToken(EHTokSemicolon, true);
+                }
+                break;
+
+                default:
+                    error("Invalid parsing operation");
                     return false;
-                }
-
-                shaderClassFunction->token = token;  //in case of the token was those from the function prototype
-
-                //==============================================================================================================
-                //==============================================================================================================
-                // start parsing a shader class method
-
-                if (listForeachArrayCompositionVariable.size() > 0) {
-                    error("shader: list of foreach array composition variable should be empty"); return false;
-                }
-
-                this->functionCurrentlyParsed = function;
-
-                TFunctionDeclarator declarator;
-                declarator.function = function;
-                TIntermNode* nodeList = nullptr;
-                if (!acceptFunctionDefinition(declarator, nodeList, nullptr))
-                {
-                    error("shader: invalid function definition");
-                    this->functionCurrentlyParsed = nullptr;
-                    return false;
-                }
-                this->functionCurrentlyParsed = nullptr;
-
-                if (listForeachArrayCompositionVariable.size() > 0){
-                    error("shader: list of foreach array composition variable should be empty"); return false;
-                }
-                shaderClassFunction->bodyNode = nodeList;
-                //==============================================================================================================
-                //==============================================================================================================
-            }
-        }
-        else 
-        {
-            //=======================================================================================================
-            //variables declaration
-
-            //xksl shaders doesn't necessary require a semicolon after the cbuffer declaration
-            if (declaredType.getBasicType() == EbtBlock) {
-                //block declaration have no identifier
-            }
-            else {
-                advanceUntilToken(EHTokSemicolon, true);
             }
 
             // SEMI_COLON
@@ -2858,12 +2812,186 @@ bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName
                 expected("; expected at the end of type declaration");
                 return false;
             }
-        }
+        }  //end member declaration
 
         this->shaderMethodOrMemberTypeCurrentlyParsed = nullptr;
 
     } while (true);
 }
+
+
+//// Parse a shader class: only accepts function definition
+//// function must already have been declared previously using method: acceptShaderAllVariablesAndFunctionsDeclaration
+//bool HlslGrammar::acceptShaderClassFunctionsDefinition(const TString& shaderName, XkslShaderDefinition* shader)
+//{
+//    PROUT;
+//    do {
+//        // some extra SEMI_COLON?
+//        while (acceptTokenClass(EHTokSemicolon)) {}
+//
+//        // success on seeing the RIGHT_BRACE '}'
+//        if (peekTokenClass(EHTokRightBrace)) return true;
+//
+//        //=================================================
+//        //New member or method
+//        // check if there is a typedef
+//        bool typedefDecl = acceptTokenClass(EHTokTypedef);
+//        if (typedefDecl)
+//        {
+//            error("Cannot have \"typedef\" before a Shader class member of method");
+//            return false;
+//        }
+//
+//        // check if we're declaring a composition
+//        bool isComposition = acceptTokenClass(EHTokCompose);
+//        if (isComposition)
+//        {
+//            advanceUntilToken(EHTokSemicolon, true);
+//            continue;
+//        }
+//
+//        // check the type (plus any post-declaration qualifiers)
+//        TType declaredType;
+//        if (!acceptFullySpecifiedType(declaredType)) {
+//            error("invalid keyword, member or function type");
+//            return false;
+//        }
+//        if (this->shaderMethodOrMemberTypeCurrentlyParsed != nullptr) { error("Another shader's method or member type is currently being parsed"); return false; }
+//        this->shaderMethodOrMemberTypeCurrentlyParsed = &declaredType;
+//
+//        const TString* identifierName = nullptr;
+//        bool acceptIdentifierAfterTypeDeclaration = true;
+//        if (declaredType.getBasicType() == EbtBlock)
+//        {
+//            //XKSL extension: cbuffer declaration, no identifier needed after the block declaration
+//            //with xksl, a cbuffer does not require ";" after its declaration, so accepting an identifier after the cbuffer declaration would create some confusions
+//            acceptIdentifierAfterTypeDeclaration = false;
+//            identifierName = &(declaredType.getTypeName());
+//        }
+//
+//        if (acceptIdentifierAfterTypeDeclaration)
+//        {
+//            // get the Identifier (variable name)
+//            HlslToken idToken = token;
+//            if (acceptIdentifier(idToken))
+//            {
+//                identifierName = idToken.string;
+//            }
+//        }
+//
+//        if (identifierName == nullptr)
+//        {
+//            //We're defining a new type (likely a new struct type)
+//            if (declaredType.getTypeNamePtr() == nullptr || declaredType.getTypeNamePtr()->size() == 0)
+//            {
+//                error("The type needs a name");
+//                return false;
+//            }
+//        }
+//        else declaredType.setUserIdentifierName(identifierName->c_str());
+//
+//        bool isAFunctionDeclaration = false;
+//        TFunction* tmpFunction = nullptr;
+//        if (identifierName != nullptr)
+//        {
+//            tmpFunction = new TFunction(&shaderName, identifierName, declaredType);
+//            isAFunctionDeclaration = acceptFunctionParameters(*tmpFunction);
+//        }
+//
+//        if (isAFunctionDeclaration)
+//        {
+//            if (identifierName == nullptr)
+//            {
+//                expected("A function can't be unnamed");
+//                return false;
+//            }
+//
+//            //The function declared name will be mangled with the function parameters
+//            declaredType.setUserIdentifierName(tmpFunction->getDeclaredMangledName().c_str());
+//            tmpFunction->getWritableType().shallowCopy(declaredType);
+//
+//            //// post_decls
+//            //acceptPostDecls(function.getWritableType().getQualifier());
+//
+//            // compound_statement (function body definition) or just a declaration?
+//            if (peekTokenClass(EHTokLeftBrace))
+//            {
+//                //Find the function from list of all declared function
+//                TVector<TShaderClassFunction>& functionList = shader->listMethods;
+//                const TString& newFunctionMangledName = tmpFunction->getMangledName();
+//                TFunction* function = nullptr;
+//                TShaderClassFunction* shaderClassFunction;
+//                for (unsigned int i = 0; i < functionList.size(); ++i)
+//                {
+//                    shaderClassFunction = &(functionList.at(i));
+//                    if (shaderClassFunction->function->getMangledName() == newFunctionMangledName)
+//                    {
+//                        function = functionList.at(i).function;
+//                        break;
+//                    }
+//                }
+//
+//                if (function == nullptr)
+//                {
+//                    error("failed to retrieve the function in the shader list of declared functions");
+//                    return false;
+//                }
+//
+//                shaderClassFunction->token = token;  //in case of the token was those from the function prototype
+//
+//                //==============================================================================================================
+//                //==============================================================================================================
+//                // start parsing a shader class method
+//
+//                if (listForeachArrayCompositionVariable.size() > 0) {
+//                    error("shader: list of foreach array composition variable should be empty"); return false;
+//                }
+//
+//                this->functionCurrentlyParsed = function;
+//
+//                TFunctionDeclarator declarator;
+//                declarator.function = function;
+//                TIntermNode* nodeList = nullptr;
+//                if (!acceptFunctionDefinition(declarator, nodeList, nullptr))
+//                {
+//                    error("shader: invalid function definition");
+//                    this->functionCurrentlyParsed = nullptr;
+//                    return false;
+//                }
+//                this->functionCurrentlyParsed = nullptr;
+//
+//                if (listForeachArrayCompositionVariable.size() > 0){
+//                    error("shader: list of foreach array composition variable should be empty"); return false;
+//                }
+//                shaderClassFunction->bodyNode = nodeList;
+//                //==============================================================================================================
+//                //==============================================================================================================
+//            }
+//        }
+//        else 
+//        {
+//            //=======================================================================================================
+//            //variables declaration
+//
+//            //xksl shaders doesn't necessary require a semicolon after the cbuffer declaration
+//            if (declaredType.getBasicType() == EbtBlock) {
+//                //block declaration have no identifier
+//            }
+//            else {
+//                advanceUntilToken(EHTokSemicolon, true);
+//            }
+//
+//            // SEMI_COLON
+//            if (!acceptTokenClass(EHTokSemicolon) && declaredType.getBasicType() != EbtBlock) {
+//                expected("; expected at the end of type declaration");
+//                return false;
+//            }
+//        }
+//
+//        this->shaderMethodOrMemberTypeCurrentlyParsed = nullptr;
+//
+//    } while (true);
+//}
 
 // struct
 //      : struct_type IDENTIFIER post_decls LEFT_BRACE struct_declaration_list RIGHT_BRACE
@@ -2881,6 +3009,9 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
     // This storage qualifier will tell us whether it's an AST
     // block type or just a generic structure type.
     TStorageQualifier storageQualifier = EvqTemporary;
+
+    bool canDeclareBufferInSymbolTable = true;
+    if (this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined) canDeclareBufferInSymbolTable = false;
 
     bool isRGroupBuffer = acceptTokenClass(EHTokRGroup);
     if (isRGroupBuffer)
@@ -2959,7 +3090,10 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
         type.getQualifier().isRGroup = true;
     }
 
-    parseContext.declareStruct(token.loc, structName, type);
+    if (canDeclareBufferInSymbolTable)
+    {
+        parseContext.declareStruct(token.loc, structName, type);
+    }
 
     // For member functions: now that we know the type of 'this', go back and
     // - add their implicit argument with 'this' (not to the mangling, just the argument list)
@@ -3490,7 +3624,8 @@ bool HlslGrammar::acceptInitializer(TIntermTyped*& node)
         TIntermTyped* expr;
         if (! acceptAssignmentExpression(expr)) {
             
-            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDeclaration ||
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
                 this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
                 return false; //return false but it's not necessary an error: the expression can be resolved later
 
@@ -3532,7 +3667,8 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
         if (acceptInitializer(node))
             return true;
 
-        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDeclaration || 
+            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
             this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
             return false; //return false but it's not necessary an error: the expression can be resolved later
 
@@ -3649,7 +3785,8 @@ bool HlslGrammar::acceptBinaryExpression(TIntermTyped*& node, PrecedenceLevel pr
         TIntermTyped* rightNode = nullptr;
         if (! acceptBinaryExpression(rightNode, (PrecedenceLevel)(precedenceLevel + 1))) {
 
-            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDeclaration || 
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
                 this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
                 return false; //return false but it's not necessary an error: the expression can be resolved later
 
@@ -3819,7 +3956,8 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
 
     XkslShaderDefinition* shader = getShaderClassDefinition(*className);
     if (shader == nullptr) {
-        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDeclaration || 
+            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
             this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
         {
             //return false but it's not necessary an error: the expression can be resolved later
@@ -4381,7 +4519,8 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
         TIntermTyped* arguments = nullptr;
         if (! acceptArguments(constructorFunction, arguments)) {
         
-            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDeclaration || 
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
                 this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
                 return false; //return false but it's not necessary an error: the expression can be resolved later
 
@@ -4613,7 +4752,8 @@ bool HlslGrammar::acceptArguments(TFunction* function, TIntermTyped*& arguments)
     // RIGHT_PAREN
     if (! acceptTokenClass(EHTokRightParen)) {
 
-        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDeclaration || 
+            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
             this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
             return false; //return false but it's not necessary an error: the expression can be resolved later
 

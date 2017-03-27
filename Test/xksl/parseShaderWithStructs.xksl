@@ -1,0 +1,28 @@
+shader ShaderLightDirectional
+{
+	//DirectionalLightData toto2;
+	
+	struct DirectionalLightData
+	{
+		float3 DirectionWS;
+		//[Color]
+		float3 Color;
+	};
+	
+	//DirectionalLightData light;
+	//
+	//void VSMain()
+	//{
+	//	float3 c = light.Color;
+	//}
+};
+
+
+
+//shader LightDirectionalGroup<int TMaxLightCount> : DirectLightGroupPerView, LightDirectional
+//{
+//	//cbuffer PerView.Lighting
+//	//{
+//	//	DirectionalLightData Lights[TMaxLightCount];
+//	//}
+//}

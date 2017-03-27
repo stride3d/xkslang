@@ -174,6 +174,32 @@ bool HlslParseContext::parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibra
     return numErrors == 0;
 }
 
+bool HlslParseContext::parseXkslShaderNewTypesDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TVector<HlslToken>& tokenList)
+{
+    //reparse the list of token previously parsed
+    if (tokenList.size() == 0) return true;
+
+    const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
+    TInputScanner emptyInput(1, emptyString, emptyStringLen, nullptr, 0, 0);
+
+    currentScanner = &emptyInput;
+    ppContext.clearAllInput();
+    ppContext.setInput(emptyInput, true);
+
+    HlslToken* expressionTokensList = &(tokenList[0]);
+    int countTokens = tokenList.size();
+
+    HlslScanContext scanContext(*this, ppContext);
+    HlslGrammar grammar(scanContext, *this);
+    grammar.importListParsedToken(expressionTokensList, countTokens);
+
+    bool res = false;
+    res = grammar.parseXKslShaderNewTypesDefinition(shaderLibrary);
+    if (!res) return false;
+
+    return numErrors == 0;
+}
+
 bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TVector<HlslToken>& tokenList)
 {
     //currentScanner = &input;

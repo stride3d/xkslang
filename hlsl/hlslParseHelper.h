@@ -57,6 +57,7 @@ public:
 
     //XKSL extensions
     bool parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TInputScanner& input, TVector<HlslToken>& fileTokenList);
+    bool parseXkslShaderNewTypesDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TVector<HlslToken>& tokenList);
     bool parseXkslShaderMembersAndMethodDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TVector<HlslToken>& tokenList);
     bool parseXkslShaderDefinition(XkslShaderLibrary* shaderLibrary, TPpContext&, TVector<HlslToken>& tokenList);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, HlslToken* expressionTokensList, int countTokens);

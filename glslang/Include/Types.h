@@ -1414,6 +1414,11 @@ public:
         return *typeName;
     }
 
+    virtual const TString* getTypeNamePtr() const
+    {
+        return typeName;
+    }
+
     virtual const TString& getFieldName() const
     {
         assert(fieldName);
