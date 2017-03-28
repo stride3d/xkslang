@@ -1280,6 +1280,32 @@ static bool ParseXkslShaderFile(
             //TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
             success = parseContext->parseXkslShaderNewTypesDeclaration(&shaderLibrary, ppContext, fullTokenList);
             if (!success) error(parseContext, "Failed to parse shaders new types definition");
+
+            if (success)
+            {
+                //set the shader's user identifier name and rename the type name (for better clarity in xksl files)
+                TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+                for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+                {
+                    XkslShaderDefinition* shader = listShaderParsed[s];
+                    int countCustomTypes = shader->listCustomTypes.size();
+                    for (int i = 0; i < countCustomTypes; ++i)
+                    {
+                        TType* type = shader->listCustomTypes[i].type;
+
+                        const TString* typeName = type->getTypeNamePtr();
+                        if (typeName == nullptr) {
+                            error(parseContext, "The type has no name");
+                            success = false;
+                            continue;
+                        }
+
+                        type->setUserIdentifierName(typeName->c_str());
+                        TString* newTypeName = NewPoolTString((shader->shaderName + "_" + *typeName).c_str());
+                        type->setTypeName(*newTypeName);
+                    }
+                }
+            }
         }
 
         //==================================================================================================================

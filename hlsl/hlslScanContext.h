@@ -161,7 +161,7 @@ public:
 
     TVector<TShaderCompositionVariable> listCompositions;  //list of compositions declared in the shader
 
-    TVector<XkslShaderMember> listTypeDefinition; //list of new types declared by the shader (such like struct definition)
+    TVector<XkslShaderMember> listCustomTypes; //list of new types declared by the shader (such like struct definition)
     TVector<XkslShaderMember> listParsedMembers;  //list of members read by the parser
     TVector<XkslShaderMember> listAllDeclaredMembers;  //list of members after being declared
     TVector<TString*> listDeclaredBlockNames;  //list of block (cbuffer) names declared by the shader

@@ -203,6 +203,75 @@ void HlslGrammar::error(const TString& str)
     error(str.c_str());
 }
 
+bool HlslGrammar::acceptShaderCustomType(const TString& shaderName, TType& type)
+{
+    switch (peek())
+    {
+        case EHTokIdentifier:
+        {
+            TString* name = token.string;
+            if (name == nullptr) { error("invalid token"); return false; }
+
+            if (isRecordedAsAShaderName(*name))
+            {
+                //The token is a known shader class (ShaderA.XXX)
+                TString* referredClassName = name;
+                advanceToken();
+                if (!acceptTokenClass(EHTokDot))
+                {
+                    expected("dot");
+                    return false;
+                }
+                return acceptShaderCustomType(*referredClassName, type);
+            }
+            else
+            {
+                TType* typeDefinedByShader = getTypeDefinedByTheShaderOrItsParents(shaderName, *name);
+                if (typeDefinedByShader != nullptr)
+                {
+                    advanceToken();
+                    type.shallowCopy(*typeDefinedByShader);
+                    return true;
+                }
+                else return false;
+            }
+        }
+
+        case EHTokThis:
+        {
+            TString* referredClassName = getCurrentShaderName();
+            if (referredClassName == nullptr) { error("Failed to get the current shader name"); return false; }
+            advanceToken();
+            if (!acceptTokenClass(EHTokDot))
+            {
+                expected("dot");
+                return false;
+            }
+
+            return acceptShaderCustomType(*referredClassName, type);
+        }
+
+        case EHTokBase:
+        {
+            //Base refers to the first parent
+            int countParent = getCurrentShaderCountParents();
+            if (countParent <= 0) { error("Invalid \"base\" accessor: the current shader has no inherited parents"); return false; }
+            TString* referredClassName = getCurrentShaderParentName(0);
+            if (referredClassName == nullptr) { error("Failed to get the current shader name"); return false; }
+
+            advanceToken();
+            if (!acceptTokenClass(EHTokDot))
+            {
+                expected("dot");
+                return false;
+            }
+
+            return acceptShaderCustomType(*referredClassName, type);
+        }
+    }
+    return false;
+}
+
 //Process class accessor: this, base, Knwon ClassName, composition variable name, ...
 bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStream, TShaderCompositionVariable& compositionTargeted)
 {
@@ -769,6 +838,7 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type, TIntermNode*& nodeList)
     if (! acceptQualifier(qualifier))
         return false;
     TSourceLoc loc = token.loc;
+    TString* potentialTypeName = token.string;
 
     // type_specifier
     if (! acceptType(type, nodeList)) {
@@ -778,8 +848,28 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type, TIntermNode*& nodeList)
         if (qualifier.sample)
             recedeToken();
 
-        return false;
+        //PROUT
+        //bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStream, TShaderCompositionVariable& compositionTargeted)
+
+        //XKSL extensions: Unknown identifer: we look if the type is a custom type defined by the current shader, or its parents
+        int tokenIndex = getTokenCurrentIndex();
+        bool parsedShaderCustomType = false;
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
+            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
+        {
+            XkslShaderDefinition* shader = getShaderCurrentlyParsed();
+            if (shader != nullptr)
+            {
+                parsedShaderCustomType = acceptShaderCustomType(shader->shaderName, type);
+            }
+        }
+        if (!parsedShaderCustomType)
+        {
+            recedeToTokenIndex(tokenIndex);
+            return false;
+        }
     }
+
     if (type.getBasicType() == EbtBlock) {
         // the type was a block, which set some parts of the qualifier
         parseContext.mergeQualifiers(type.getQualifier(), qualifier);
@@ -2514,7 +2604,7 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
             //Unknown type
             if (xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition)
             {
-                //we're currently processing the new types definition, so we just skip the instruction or function
+                //but we're currently parsing the shader for new types definition, so we just skip the instruction or function for now
                 TVector<EHlslTokenClass> listTokens; listTokens.push_back(EHTokSemicolon); listTokens.push_back(EHTokLeftBrace);
                 if (!advanceUntilFirstTokenFromList(listTokens, true)){
                     error("Error advancing until the end of the expression");
@@ -2533,14 +2623,8 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
             }
             else
             {
-                error("PROUT");
-
-                //We first check if the type has not been defined by the shader (or its parents)
-                declaredType.shallowCopy(*(shader->listTypeDefinition[0].type));
-                advanceToken();
-
-                //error((TString("invalid keyword, member or function type: ") + *token.string).c_str());
-                //return false;
+                error("invalid keyword, member or function type: " + (token.tokenClass == EHTokIdentifier? *(token.string): ""));
+                return false;
             }
         }
 
@@ -2840,12 +2924,13 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
                     if (identifierName == nullptr)
                     {
                         //add a new type definition into the shader
+                        declaredType.SetTypeAsDefinedByShader(true);
                         XkslShaderDefinition::XkslShaderMember shaderType;
                         shaderType.shader = shader;
                         shaderType.type = new TType(EbtVoid);
                         shaderType.type->shallowCopy(declaredType);
                         shaderType.loc = token.loc;
-                        shader->listTypeDefinition.push_back(shaderType);
+                        shader->listCustomTypes.push_back(shaderType);
                     }
 
                     //we skip the member/type declaration
@@ -3800,6 +3885,35 @@ XkslShaderDefinition* HlslGrammar::getShaderClassDefinition(const TString& shade
     }
 
     return shader;
+}
+
+TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderName, const TString& typeName)
+{
+    XkslShaderDefinition* shader = getShaderClassDefinition(shaderName);
+    if (shader == nullptr) {
+        error(TString("undeclared class:") + shaderName);
+        return nullptr;
+    }
+
+    //look if the shader defined the type
+    int countTypes = shader->listCustomTypes.size();
+    for (int i = 0; i < countTypes; ++i)
+    {
+        if (shader->listCustomTypes[i].type->getUserIdentifierName()->compare(typeName) == 0)
+        {
+            return shader->listCustomTypes[i].type;
+        }
+    }
+
+    //type not found: we look in the parent classes
+    int countParents = shader->shaderparentsName.size();
+    for (int p = 0; p < countParents; p++)
+    {
+        TType* type = getTypeDefinedByTheShaderOrItsParents(*(shader->shaderparentsName[p]), typeName);
+        if (type != nullptr) return type;
+    }
+
+    return nullptr;
 }
 
 XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMethod(const TString& shaderClassName, const TString& methodName)

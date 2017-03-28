@@ -55,7 +55,9 @@ namespace glslang {
         bool advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks);
         void advanceUntilEndOfTokenList();
 
+        int getTokenCurrentIndex();
         bool recedeToken();
+        bool recedeToTokenIndex(int index);
         bool recedeToToken(HlslToken tok);
         bool getListPreviouslyParsedToken(HlslToken tokenStart, HlslToken tokenEnd, TVector<HlslToken>& listTokens);
         void importListParsedToken(HlslToken* expressionTokensList, int countTokens);

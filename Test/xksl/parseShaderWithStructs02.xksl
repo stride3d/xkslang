@@ -3,10 +3,16 @@ shader ShaderA
 {
 	LightStruct toto2;
 	
-	float3 aFunction()
+	float3 functionA()
 	{
 		LightStruct ls;
 		return ls.DirectionWS;
+	}
+	
+	LightStruct functionA(LightStruct p1)
+	{
+		LightStruct ls = p1;
+		return ls;
 	}
 	
 	struct LightStruct

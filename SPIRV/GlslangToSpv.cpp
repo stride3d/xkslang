@@ -2557,23 +2557,25 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     //========================================================================================================
     // XKSL extensions: add info to all type defined within a shader
     {
-        if (type.getUserIdentifierName() != nullptr)
+        if (!type.IsTypeDefinedByShader())
         {
-            builder.addDeclarationNameDecoration(spvType, type.getUserIdentifierName()->c_str());
-        }
-
-        if (type.getOwnerClassName() != nullptr)
-        {
-            std::string shaderName(type.getOwnerClassName()->c_str());
-            auto fit = shaderClassMap.find(shaderName);
-            if (fit == shaderClassMap.end())
+            if (type.getUserIdentifierName() != nullptr)
             {
-                if (logger)
-                    logger->error(std::string("The type shader owner has not been created: ") + shaderName);
+                builder.addDeclarationNameDecoration(spvType, type.getUserIdentifierName()->c_str());
             }
-            else
-                builder.addBelongToShaderDecoration(fit->second, spvType);
-                
+
+            if (type.getOwnerClassName() != nullptr)
+            {
+                std::string shaderName(type.getOwnerClassName()->c_str());
+                auto fit = shaderClassMap.find(shaderName);
+                if (fit == shaderClassMap.end())
+                {
+                    if (logger)
+                        logger->error(std::string("The type shader owner has not been created: ") + shaderName);
+                }
+                else
+                    builder.addBelongToShaderDecoration(fit->second, spvType);
+            }
         }
     }
     //========================================================================================================

@@ -84,6 +84,7 @@ namespace glslang {
         void error(const TString&);
         bool acceptIdentifier(HlslToken&);
         bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStreams, TShaderCompositionVariable& compositionTargeted);
+        bool acceptShaderCustomType(const TString& shaderName, TType& type);
         bool acceptCompilationUnit();
         bool acceptDeclaration(TIntermNode*&);
         bool acceptControlDeclaration(TIntermNode*& node);
@@ -163,6 +164,7 @@ namespace glslang {
         XkslShaderDefinition* getShaderClassDefinition(const TString& shaderClassName);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName);
+        TType* getTypeDefinedByTheShaderOrItsParents(const TString& shaderName, const TString& typeName);
         bool IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslShaderDefinition* maybeParent);
         bool isRecordedAsAShaderName(const TString& name);
         bool isIdentifierRecordedAsACompositionVariableName(TString* accessorClassName, const TString& identifierName, bool lookForArraycomposition, TShaderCompositionVariable& compositionTargeted);

@@ -1,44 +1,36 @@
+
 shader ShaderMain
 {
 	struct LightStruct
 	{
 		float3 DirectionWS;
-		//[Color]
 		float3 Color;
 	};
 }
 
 shader ShaderA : ShaderMain
 {
-	LightStruct toto2;
-	
 	struct LightStruct
 	{
 		float3 DirectionWS;
-		//[Color]
 		float3 Color;
+		float3 toto;
 	};
 	
-	LightStruct light;
+	LightStruct ls1;
+	this.LightStruct ls2;
+	base.LightStruct ls3;
+	ShaderMain.LightStruct ls4;
 	
-	//void aFunction(LightStruct ls)
-	//{
-	//	float3 toto = ls.DirectionWS;
-	//}
+	float3 functionA()
+	{
+		LightStruct ls;
+		return ls.DirectionWS;
+	}
 	
-	//
-	//void VSMain()
-	//{
-	//	float3 c = light.Color;
-	//}
+	this.LightStruct functionA(LightStruct p1)
+	{
+		LightStruct ls = p1;
+		return ls;
+	}
 };
-
-
-
-//shader LightDirectionalGroup<int TMaxLightCount> : DirectLightGroupPerView, LightDirectional
-//{
-//	//cbuffer PerView.Lighting
-//	//{
-//	//	LightStruct Lights[TMaxLightCount];
-//	//}
-//}

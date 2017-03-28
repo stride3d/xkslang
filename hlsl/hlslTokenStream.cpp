@@ -218,6 +218,26 @@ namespace glslang {
     //    return true;
     //}
 
+    int HlslTokenStream::getTokenCurrentIndex()
+    {
+        return tokenBufferPos;
+    }
+
+    bool HlslTokenStream::recedeToTokenIndex(int index)
+    {
+        if (index < 0) index = 0;
+        if (tokenBufferPos <= index) return true;
+        
+        if (tokenBufferPos == tokenBuffer.size())
+        {
+            //save current token at the end of buffer, so that we can push it back
+            pushTokenBuffer(token);
+        }
+        tokenBufferPos = index;
+        token = tokenBuffer[tokenBufferPos];
+        return true;
+    }
+
 	bool HlslTokenStream::recedeToToken(HlslToken tok)
 	{
 		if (token.IsEqualsToToken(tok)) return true;

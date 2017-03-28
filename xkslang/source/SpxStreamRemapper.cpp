@@ -533,7 +533,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
     //===============================================================================================================================================
     // Merge the shaders
     if (!MergeShadersIntoBytecode(bytecodeToMerge, listShadersToMerge, "")){
-        return error("Failed tomerge the shaders");
+        return error("Failed to merge the shaders");
     }
 
     //===============================================================================================================================================
