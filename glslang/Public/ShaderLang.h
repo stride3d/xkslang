@@ -421,6 +421,7 @@ public:
     const char* getInfoDebugLog();
 
     EShLanguage getStage() const { return stage; }
+    TIntermediate* getIntermediate() { return intermediate; }
 
 protected:
     TPoolAllocator* pool;

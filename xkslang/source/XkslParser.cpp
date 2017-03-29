@@ -76,16 +76,18 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
 
     spv::SpvBuildLogger logger;
 
-    //We don't really need to link, but glslang will do some final checkups, then give access to the intermediary
-    glslang::TProgram program;
-    program.addShader(&shader);
-    success &= program.link(controls);
-    glslang::TIntermediate* AST = program.getIntermediate(kind);
-    if (!success)
-    {
-        logger.error("linking the shader failed");
-        logger.error(program.getInfoLog());
-    }
+    glslang::TIntermediate* AST = shader.getIntermediate();
+
+    /////We don't really need to link, but glslang will do some final checkups
+    ///glslang::TProgram program;
+    ///program.addShader(&shader);
+    ///success &= program.link(controls);
+    ///glslang::TIntermediate* AST = program.getIntermediate(kind);
+    ///if (!success)
+    ///{
+    ///    logger.error("linking the shader failed");
+    ///    logger.error(program.getInfoLog());
+    ///}
 
     vector<uint32_t> bytecodeList;
     

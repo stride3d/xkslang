@@ -1,14 +1,22 @@
 // D:\Prgms\glslang\source\Test\hlsl.test.frag --keep-uncalled -D -V -o D:\Prgms\glslang\source\Test\hlsl.test.frag.latest.spv
 //D:\Prgms\glslang\source\Test\hlsl.test.frag --keep-uncalled -D -V -H -o D:\Prgms\glslang\source\Test\hlsl.test.fragB.latest.spv.hr
 
-struct DirectionalLightData
+struct PSInput
 {
-	float3 DirectionWS;
-	//[Color]
-	float3 Color;
+    float myfloat;
+    int something;
 };
 
-void main()
+//[maxvertexcount(4)]
+void main(triangle in uint VertexID[3],
+          inout LineStream<PSInput> OutputStream)
 {
-	DirectionalLightData d = (DirectionalLightData)0;
+    PSInput Vert;
+
+    Vert.myfloat    = 0;
+    Vert.something  = VertexID[0];
+
+    OutputStream.Append(Vert);
+    OutputStream.Append(Vert);
+    OutputStream.RestartStrip();
 }

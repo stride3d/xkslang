@@ -782,7 +782,7 @@ public:
     spv::ExecutionMode mode;
     int value1, value2, value3;
 
-    SPVHeaderStageExecutionMode(spv::ExecutionMode mode, int value1 = 0, int value2 = 0, int value3 = 0) : mode(mode), value1(value1), value2(value2), value3(value3){}
+    SPVHeaderStageExecutionMode(spv::ExecutionMode mode, int value1 = -1, int value2 = -1, int value3 = -1) : mode(mode), value1(value1), value2(value2), value3(value3){}
 };
 
 class MemberAccessDetails

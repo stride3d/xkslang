@@ -2545,15 +2545,18 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
         // success on seeing the RIGHT_BRACE '}'
         if (peekTokenClass(EHTokRightBrace)) return true;
 
-        //=================================================
-        //New member or method
-        // check if there is a typedef
-        bool typedefDecl = acceptTokenClass(EHTokTypedef);
-        if (typedefDecl)
-        {
-            error("Cannot have \"typedef\" before a Shader class member of method");
+        //any attributes?
+        TFunctionDeclarator declarator;
+        acceptAttributes(declarator.attributes);
+
+        // typedef?
+        if (peekTokenClass(EHTokTypedef)) {
+            error("Cannot have \"typedef\" within a Shader class");
             return false;
         }
+
+        //=================================================
+        //declare either a shader's member or method
 
         // check if we're declaring a composition
         bool isComposition = acceptTokenClass(EHTokCompose);
@@ -2760,7 +2763,6 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
 
                         this->functionCurrentlyParsed = function;
 
-                        TFunctionDeclarator declarator;
                         declarator.function = function;
                         TIntermNode* nodeList = nullptr;
                         if (!acceptFunctionDefinition(declarator, nodeList, nullptr))

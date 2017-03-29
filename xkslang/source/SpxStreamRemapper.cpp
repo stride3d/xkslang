@@ -5695,9 +5695,9 @@ bool SpxStreamRemapper::GenerateBytecodeForStage(XkslMixerOutputStage& stage, ve
         spv::Instruction instrExecMode(spv::OpExecutionMode);
         instrExecMode.addIdOperand(entryFunction->GetResultId());
         instrExecMode.addImmediateOperand(execMode.mode);
-        if (execMode.value1 > 0) instrExecMode.addImmediateOperand(execMode.value1);
-        if (execMode.value2 > 0) instrExecMode.addImmediateOperand(execMode.value2);
-        if (execMode.value3 > 0) instrExecMode.addImmediateOperand(execMode.value3);
+        if (execMode.value1 >= 0) instrExecMode.addImmediateOperand(execMode.value1);
+        if (execMode.value2 >= 0) instrExecMode.addImmediateOperand(execMode.value2);
+        if (execMode.value3 >= 0) instrExecMode.addImmediateOperand(execMode.value3);
         instrExecMode.dump(header);
     }
 

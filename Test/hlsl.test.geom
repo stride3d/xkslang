@@ -1,7 +1,7 @@
 struct PSInput
 {
-    float  myfloat
-    int    something
+    float myfloat;
+    int something;
 };
 
 [maxvertexcount(4)]
