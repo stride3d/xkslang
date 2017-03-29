@@ -8,15 +8,7 @@ struct DirectionalLightData
 	float3 Color;
 };
 
-DirectionalLightData toto1;
-DirectionalLightData toto2;
-
-void mainA()
+void main()
 {
-	DirectionalLightData d = toto1;
-}
-
-void mainB()
-{
-	DirectionalLightData d = toto2;
+	DirectionalLightData d = (DirectionalLightData)0;
 }

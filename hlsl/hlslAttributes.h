@@ -95,7 +95,7 @@ namespace glslang {
 
     class TFunctionDeclarator {
     public:
-        TFunctionDeclarator() : function(nullptr), body(nullptr) { }
+        TFunctionDeclarator() : function(nullptr), body(nullptr) { loc.init(); }
         TSourceLoc loc;
         TFunction* function;
         TAttributeMap attributes;

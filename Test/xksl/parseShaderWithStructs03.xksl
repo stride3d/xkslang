@@ -28,7 +28,13 @@ shader ShaderA : ShaderMain
 		return ls.DirectionWS;
 	}
 	
-	this.LightStruct functionA(LightStruct p1)
+	void functionA(LightStruct l)
+	{
+		LightStruct ls;
+		return;
+	}
+	
+	this.LightStruct functionB(LightStruct p1)
 	{
 		LightStruct ls = p1;
 		return ls;

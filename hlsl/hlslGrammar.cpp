@@ -619,21 +619,15 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
     if (!acceptFullySpecifiedType(declaredType, nodeList))
         return false;
 
-    if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderDeclarations ||
-        this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition ||
-        this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
-        this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+    if (this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined)
     {
-        if (declaredType.getBasicType() != EbtShaderClass)
+        if (this->xkslShaderCurrentlyParsed == nullptr)
         {
-            //XKSL extensions: we're parsing an xksl file, but we're having a type outside a shader class.
-            //So we skip the declaration if the operation is ParseXkslShaderMembersAndMethodsDeclarations or ParseXkslShaderConstStatements
-            //We will parse this only when processing the ParseXkslDefinitions operation
-            //This case will normally never occur when parsing XKSL shader
-            //however we allow this to let us accept normal hlsl instructions / declaration within an xksl shader file, so that we can easily test and compare HLSL VS XKSL
-
-            advanceUntilToken(EHTokShaderClass, true);
-            return true;
+            if (declaredType.getBasicType() != EbtShaderClass)
+            {
+                error("Cannot parse anything outside a XKSL shader boundary");
+                return false;
+            }
         }
     }
 
@@ -848,26 +842,7 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type, TIntermNode*& nodeList)
         if (qualifier.sample)
             recedeToken();
 
-        //PROUT
-        //bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStream, TShaderCompositionVariable& compositionTargeted)
-
-        //XKSL extensions: Unknown identifer: we look if the type is a custom type defined by the current shader, or its parents
-        int tokenIndex = getTokenCurrentIndex();
-        bool parsedShaderCustomType = false;
-        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
-            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
-        {
-            XkslShaderDefinition* shader = getShaderCurrentlyParsed();
-            if (shader != nullptr)
-            {
-                parsedShaderCustomType = acceptShaderCustomType(shader->shaderName, type);
-            }
-        }
-        if (!parsedShaderCustomType)
-        {
-            recedeToTokenIndex(tokenIndex);
-            return false;
-        }
+        return false;
     }
 
     if (type.getBasicType() == EbtBlock) {
@@ -1672,16 +1647,36 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         return acceptShaderClass(type);
         break;
 
+    case EHTokThis:
+    case EHTokBase:
     case EHTokIdentifier:
-        // An identifier could be for a user-defined type.
-        // Note we cache the symbol table lookup, to save for a later rule
-        // when this is not a type.
-        if (parseContext.lookupUserType(*token.string, type) != nullptr)
+
+        if (peek() == EHTokIdentifier)
         {
-            advanceToken();
-            return true;
-        } else
-            return false;
+            // An identifier could be for a user-defined type.
+            // Note we cache the symbol table lookup, to save for a later rule
+            // when this is not a type.
+            if (parseContext.lookupUserType(*token.string, type) != nullptr)
+            {
+                advanceToken();
+                return true;
+            }
+        }
+
+        //XKSL extensions: we look if the type is a custom type defined by the current shader, or its parents
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations ||
+            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
+        {
+            bool parsedShaderCustomType = false;
+            int tokenIndex = getTokenCurrentIndex();
+            XkslShaderDefinition* shader = getShaderCurrentlyParsed();
+            if (shader != nullptr) {
+                if (acceptShaderCustomType(shader->shaderName, type))
+                    return true;
+            }
+            if (!recedeToTokenIndex(tokenIndex)) error("Failed to recede to token index");
+        }
+        return false;
 
     case EHTokVoid:
         new(&type) TType(EbtVoid);
@@ -2653,36 +2648,30 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
         
         if (identifierName == nullptr)
         {
-            //We're defining a new type (likely a new struct type)
-            if (declaredType.getTypeNamePtr() == nullptr || declaredType.getTypeNamePtr()->size() == 0)
-            {
-                error("The type needs a name");
-                return false;
-            }
+            //We're defining a new type (likely a new struct type), check the type name
+            if (declaredType.getTypeNamePtr() == nullptr || declaredType.getTypeNamePtr()->size() == 0){error("The type needs a name"); return false;}
         }
         else declaredType.setUserIdentifierName(identifierName->c_str());
 
-        bool isAFunctionDeclaration = false;
-        TFunction* tmpFunction = nullptr;
-        if (identifierName != nullptr)
-        {
-            tmpFunction = new TFunction(&shaderName, identifierName, declaredType);
-            isAFunctionDeclaration = acceptFunctionParameters(*tmpFunction);
-        }
+        bool isAFunctionDeclaration = peekTokenClass(EHTokLeftParen);
 
         if (isAFunctionDeclaration)
         {
             //=======================================================================================================
             //Accept function declaration / definition
 
-            //The function declared name will be mangled with the function parameters
-            declaredType.setUserIdentifierName(tmpFunction->getDeclaredMangledName().c_str());
-            tmpFunction->getWritableType().shallowCopy(declaredType);
+            if (identifierName == nullptr){
+                error("A function cannot be unnamed");
+                return false;
+            }
 
             switch (xkslShaderParsingOperation)
             {
                 case XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition:
                 {
+                    if (!acceptTokenClass(EHTokLeftParen)) { expected("("); return false; }
+                    if (!advanceUntilToken(EHTokRightParen, true)) { expected("failed to advance until )"); return false; }
+                    advanceToken();
                     if (peekTokenClass(EHTokLeftBrace)) {
                         advanceToken();
                         if (!advanceUntilEndOfBlock(EHTokRightBrace)) {
@@ -2690,16 +2679,27 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
                             return false;
                         }
                     }
+                    //else {} //function without body, no need to do anything
                 }
                 break;
 
                 case XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations:
                 {
+                    TFunction* function = new TFunction(&shaderName, identifierName, declaredType);
+                    if (!acceptFunctionParameters(*function))
+                    {
+                        error("Failed to parse the function parameters");
+                        return false;
+                    }
+                    //The function declared name will be mangled with the function parameters
+                    declaredType.setUserIdentifierName(function->getDeclaredMangledName().c_str());
+                    function->getWritableType().shallowCopy(declaredType);
+
                     //only record the method declaration
                     if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
                     {
                         //function definition: but we add the function prototype only
-                        if (!addShaderClassFunctionDeclaration(shaderName, *tmpFunction, *listMethodDeclaration)) return false;
+                        if (!addShaderClassFunctionDeclaration(shaderName, *function, *listMethodDeclaration)) return false;
 
                         advanceToken();
                         if (!advanceUntilEndOfBlock(EHTokRightBrace)) {
@@ -2710,13 +2710,23 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
                     else
                     {
                         //add the function prototype
-                        if (!addShaderClassFunctionDeclaration(shaderName, *tmpFunction, *listMethodDeclaration)) return false;
+                        if (!addShaderClassFunctionDeclaration(shaderName, *function, *listMethodDeclaration)) return false;
                     }
                 }
                 break;
 
                 case XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition:
                 {
+                    TFunction* tmpFunction = new TFunction(&shaderName, identifierName, declaredType);
+                    if (!acceptFunctionParameters(*tmpFunction))
+                    {
+                        error("Failed to parse the function parameters");
+                        return false;
+                    }
+                    //The function declared name will be mangled with the function parameters
+                    declaredType.setUserIdentifierName(tmpFunction->getDeclaredMangledName().c_str());
+                    tmpFunction->getWritableType().shallowCopy(declaredType);
+
                     if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
                     {
                         //Find the function from list of all declared function

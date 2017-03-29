@@ -1,44 +1,33 @@
 shader ShaderMain
 {
-	struct LightStruct
+	struct VS_STREAMS 
 	{
-		float3 DirectionWS;
-		//[Color]
-		float3 Color;
+		float2 PositionIn_id0;
+		float4 PositionOut1_id1;
+		float4 PositionOut2_id2;
 	};
+	
+	struct VS_OUTPUT 
+	{
+		float4 PositionOut1_id1 : POSITIONOUT1_ID1_SEM;
+		float4 PositionOut2_id2 : POSITIONOUT2_ID2_SEM;
+	};
+	
+	struct VS_INPUT 
+	{
+		float2 PositionIn_id0 : Position;
+	};
+
+	VS_OUTPUT VSMain(VS_INPUT __input__)
+	{
+		VS_STREAMS _streams = (VS_STREAMS)0;
+		_streams.PositionIn_id0 = __input__.PositionIn_id0;
+		_streams.PositionOut1_id1 = float4(_streams.PositionIn_id0, 0.0f, 1.0f);
+		_streams.PositionOut2_id2 = float4(_streams.PositionIn_id0, 1.0f, 1.0f);
+		VS_OUTPUT __output__ = (VS_OUTPUT)0;
+		__output__.PositionOut1_id1 = _streams.PositionOut1_id1;
+		__output__.PositionOut2_id2 = _streams.PositionOut2_id2;
+		return __output__;
+	}
 }
 
-shader ShaderA : ShaderMain
-{
-	LightStruct toto2;
-	
-	struct LightStruct
-	{
-		float3 DirectionWS;
-		//[Color]
-		float3 Color;
-	};
-	
-	LightStruct light;
-	
-	//void aFunction(LightStruct ls)
-	//{
-	//	float3 toto = ls.DirectionWS;
-	//}
-	
-	//
-	//void VSMain()
-	//{
-	//	float3 c = light.Color;
-	//}
-};
-
-
-
-//shader LightDirectionalGroup<int TMaxLightCount> : DirectLightGroupPerView, LightDirectional
-//{
-//	//cbuffer PerView.Lighting
-//	//{
-//	//	LightStruct Lights[TMaxLightCount];
-//	//}
-//}

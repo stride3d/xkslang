@@ -52,7 +52,7 @@ shader ShaderMain
 		_streams.Color_id3 = _streams.PositionOut1_id1 + _streams.PositionOut2_id2;
 	}
 
-	[maxvertexcount(3)]
+	/*[maxvertexcount(3)]
 	void GSMain(line VS_OUTPUT input[2], inout PointStream<GS_OUTPUT> outStream)
 	{
 		GS_STREAMS _streams = (GS_STREAMS)0;
@@ -69,6 +69,6 @@ shader ShaderMain
 				outStream.Append(output);
 			}
 		}
-	}
+	}*/
 }
 
