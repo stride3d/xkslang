@@ -209,16 +209,26 @@ const char* XkslPropertyString(int prop)
 {
     switch (prop)
     {
-        case (PropertyStage):	       return "Stage";
-        case (PropertyStream):         return "Stream";
-        case (PropertyMethodOverride): return "Override";
-        case (PropertyMethodAbstract): return "Abstract";
-        case (PropertyMethodClone):    return "Clone";
-        case (PropertyMethodStatic):   return "Static";
-        case (CBufferUndefined):       return "Undefined";
-        case (CBufferDefined):         return "Defined";
-        case (CBufferStage):           return "Stage";
-        case (CBufferUnstage):         return "Unstage";
+        case (PropertyStage):	          return "Stage";
+        case (PropertyStream):            return "Stream";
+        case (PropertyMethodOverride):    return "Override";
+        case (PropertyMethodAbstract):    return "Abstract";
+        case (PropertyMethodClone):       return "Clone";
+        case (PropertyMethodStatic):      return "Static";
+        case (CBufferUndefined):          return "Undefined";
+        case (CBufferDefined):            return "Defined";
+        case (CBufferStage):              return "Stage";
+        case (CBufferUnstage):            return "Unstage";
+
+        case (GSInputPoints):             return "GSInputPoints";
+        case (GSInputLines):              return "GSInputLines";
+        case (GSInputTriangles):          return "GSInputTriangles";
+        case (GSInputLinesAdjacency):     return "GSInputLinesAdjacency";
+        case (GSInputTrianglesAdjacency): return "GSInputTrianglesAdjacency";
+        case (GSOutputPointStream):       return "GSOutputPointStream";
+        case (GSOutputLineStream):        return "GSOutputLineStream";
+        case (GSOutputTriangleStream):    return "GSOutputTriangleStream";
+
         default:  return "Bad";
     }
 }
@@ -1214,6 +1224,8 @@ const char* OpcodeString(int op)
     case (OpMemberProperties):                        return "OpMemberProperties";
     case (OpMemberSemanticName):                      return "OpMemberSemanticName";
     case (OpCBufferMemberProperties):                 return "OpCBufferMemberProperties";
+    case (OpGSMethodProperties):                      return "OpGSMethodProperties";
+
     case (OpFunctionCallBaseUnresolved):              return "OpFunctionCallBaseUnres";
     case (OpFunctionCallBaseResolved):                return "OpFunctionCallBaseRes";
     case (OpShaderCompositionDeclaration):            return "OpShaderCompositionDeclaration";
@@ -1362,6 +1374,7 @@ void Parameterize()
     InstructionDesc[OpShaderCompositionDeclaration].setResultAndType(false, false);
     InstructionDesc[OpShaderCompositionInstance].setResultAndType(false, false);
     InstructionDesc[OpMethodProperties].setResultAndType(false, false);
+    InstructionDesc[OpGSMethodProperties].setResultAndType(false, false);
     InstructionDesc[OpMemberProperties].setResultAndType(false, false);
     InstructionDesc[OpMemberSemanticName].setResultAndType(false, false);
     InstructionDesc[OpCBufferMemberProperties].setResultAndType(false, false);
@@ -1908,6 +1921,10 @@ void Parameterize()
 
     InstructionDesc[OpMethodProperties].operands.push(OperandId, "'Function'");
     InstructionDesc[OpMethodProperties].operands.push(XkslShaderDataProperties, "'Property 0', +\n'Property 1', +\n...");
+
+    InstructionDesc[OpGSMethodProperties].operands.push(OperandId, "'Function'");
+    InstructionDesc[OpGSMethodProperties].operands.push(XkslShaderDataProperty, "'GSInput type'");
+    InstructionDesc[OpGSMethodProperties].operands.push(XkslShaderDataProperty, "'GSOutput type'");
 
     InstructionDesc[OpMemberProperties].operands.push(OperandId, "'Type'");
     InstructionDesc[OpMemberProperties].operands.push(OperandLiteralNumber, "'Member'");

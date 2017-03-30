@@ -282,6 +282,7 @@ bool SpxStreamRemapper::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shad
                 case spv::OpShaderCompositionInstance:
                 case spv::OpBelongsToShader:
                 case spv::OpMethodProperties:
+                case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
                 case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
@@ -415,6 +416,7 @@ bool SpxStreamRemapper::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderT
                 case spv::OpShaderCompositionInstance:
                 case spv::OpBelongsToShader:
                 case spv::OpMethodProperties:
+                case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
                 case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
@@ -1079,6 +1081,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
+                case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
                 case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
@@ -1191,6 +1194,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
                 case spv::OpMethodProperties:
+                case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
                 case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
@@ -5471,6 +5475,7 @@ bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
             case spv::OpShaderCompositionDeclaration:
             case spv::OpShaderCompositionInstance:
             case spv::OpMethodProperties:
+            case spv::OpGSMethodProperties:
             case spv::OpMemberProperties:
             case spv::OpCBufferMemberProperties:
             case spv::OpMemberSemanticName:
@@ -6300,11 +6305,10 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 break;
             }
 
-            //case spv::OpMemberSemanticName:
-            //case spv::OpMemberProperties:
-            //{
-            //    return error(string("unprocessed yet"));
-            //}
+            case spv::OpGSMethodProperties:
+            {
+                return error(string("OpGSMethodProperties: unprocessed yet"));
+            }
 
             case spv::Op::OpMethodProperties:
             {

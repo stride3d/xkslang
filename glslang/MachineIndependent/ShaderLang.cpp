@@ -1200,9 +1200,6 @@ static bool ParseXkslShaderFile(
     EShOptimizationLevel optLevel = EShOptNone;
     std::string sourceEntryPointName = "";
 
-    //TInfoSink* infoSink = new TInfoSink;
-    //TIntermediate* intermediate = new TIntermediate(stage);
-
     intermediate->setSource(source);
     intermediate->setVersion(version);
     intermediate->setProfile(profile);

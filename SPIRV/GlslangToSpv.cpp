@@ -3014,7 +3014,7 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
             builder.addName(function->getParamId(p), parameters[p]->getAsSymbolNode()->getName().c_str());
         }
 
-        //XKSL extensions: add functions attributes (through decorate)
+        //XKSL extensions: add methods attributes
         {
             const glslang::TType &functionType = glslFunction->getType();
             if (functionType.getUserIdentifierName() != nullptr)
@@ -3028,7 +3028,7 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
                 if (fit == shaderClassMap.end())
                 {
                     if (logger)
-                        logger->error(std::string("The function shader owner has not been created: ") + shaderName);
+                        logger->error(std::string("The function's shader owner has not been created: ") + shaderName);
                 }
                 else
                     builder.addBelongToShaderDecoration(fit->second, function->getId());
@@ -3052,6 +3052,46 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
             if (vecAttributes.size() > 0)
             {
                 builder.addMethodPropertyList(function->getId(), vecAttributes);
+            }
+
+            //Is the function specific to GS?
+            int GSInputPrimite = -1;
+            int GSOutputPrimite = -1;
+            for (int p = 0; p < (int)parameters.size(); ++p)
+            {
+                const glslang::TType& paramType = parameters[p]->getAsTyped()->getType();
+                if (paramType.getQualifier().GSInputPrimite != glslang::TLayoutGeometry::ElgNone)
+                {
+                    if (GSInputPrimite != -1) { if (logger) logger->error(std::string("A function defines 2 GS inputs")); }
+                    switch (paramType.getQualifier().GSInputPrimite)
+                    {
+                        case glslang::ElgPoints:             GSInputPrimite = spv::XkslPropertyEnum::GSInputPoints; break;
+                        case glslang::ElgLines:              GSInputPrimite = spv::XkslPropertyEnum::GSInputLines; break;
+                        case glslang::ElgTriangles:          GSInputPrimite = spv::XkslPropertyEnum::GSInputTriangles; break;
+                        case glslang::ElgLinesAdjacency:     GSInputPrimite = spv::XkslPropertyEnum::GSInputLinesAdjacency; break;
+                        case glslang::ElgTrianglesAdjacency: GSInputPrimite = spv::XkslPropertyEnum::GSInputTrianglesAdjacency; break;
+                        default: if (logger) logger->error(std::string("Unknown GS input primite")); break;
+                    }
+                }
+                if (paramType.getQualifier().GSOutputPrimite != glslang::TLayoutGeometry::ElgNone)
+                {
+                    if (GSOutputPrimite != -1) { if (logger) logger->error(std::string("A function defines 2 GS outputs")); }
+                    switch (paramType.getQualifier().GSOutputPrimite)
+                    {
+                        case glslang::ElgPoints:             GSOutputPrimite = spv::XkslPropertyEnum::GSOutputPointStream; break;
+                        case glslang::ElgLineStrip:          GSOutputPrimite = spv::XkslPropertyEnum::GSOutputLineStream; break;
+                        case glslang::ElgTriangleStrip:      GSOutputPrimite = spv::XkslPropertyEnum::GSOutputTriangleStream; break;
+                        default: if (logger) logger->error(std::string("Unknown GS output primite")); break;
+                    }
+                }
+            }
+            if (GSInputPrimite != -1 || GSOutputPrimite != -1)
+            {
+                //The method defines a GS entry point
+                if (GSInputPrimite == -1) { if (logger) logger->error(std::string("A function defines a GS output, but no GS input")); }
+                if (GSOutputPrimite == -1) { if (logger) logger->error(std::string("A function defines a GS input, but no GS output")); }
+
+                builder.addGSMethodProperties(function->getId(), GSInputPrimite, GSOutputPrimite);
             }
         }
     }

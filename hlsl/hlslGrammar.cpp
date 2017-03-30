@@ -862,6 +862,8 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type, TIntermNode*& nodeList)
         // whatever comes from acceptQualifier.
         assert(qualifier.layoutFormat == ElfNone);
 
+        qualifier.GSOutputPrimite = type.getQualifier().GSOutputPrimite; //GSOutputPrimitive is set with the type
+
         qualifier.layoutFormat = type.getQualifier().layoutFormat;
         qualifier.precision    = type.getQualifier().precision;
 
@@ -962,26 +964,31 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
         // GS geometries: these are specified on stage input variables, and are an error (not verified here)
         // for output variables.
         case EHTokPoint:
+            qualifier.GSInputPrimite = ElgPoints; //xksl extensions
             qualifier.storage = EvqIn;
             if (!parseContext.handleInputGeometry(token.loc, ElgPoints))
                 return false;
             break;
         case EHTokLine:
+            qualifier.GSInputPrimite = ElgLines; //xksl extensions
             qualifier.storage = EvqIn;
             if (!parseContext.handleInputGeometry(token.loc, ElgLines))
                 return false;
             break;
         case EHTokTriangle:
+            qualifier.GSInputPrimite = ElgTriangles; //xksl extensions
             qualifier.storage = EvqIn;
             if (!parseContext.handleInputGeometry(token.loc, ElgTriangles))
                 return false;
             break;
         case EHTokLineAdj:
+            qualifier.GSInputPrimite = ElgLinesAdjacency; //xksl extensions
             qualifier.storage = EvqIn;
             if (!parseContext.handleInputGeometry(token.loc, ElgLinesAdjacency))
                 return false;
             break;
         case EHTokTriangleAdj:
+            qualifier.GSInputPrimite = ElgTrianglesAdjacency; //xksl extensions
             qualifier.storage = EvqIn;
             if (!parseContext.handleInputGeometry(token.loc, ElgTrianglesAdjacency))
                 return false;
@@ -1585,6 +1592,8 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
 
             if (! parseContext.handleOutputGeometry(token.loc, geometry))
                 return false;
+
+            type.getQualifier().GSOutputPrimite = geometry;
 
             return true;
         }
@@ -4265,7 +4274,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                         {
                             if (currentFunctionBeingParsed->getType().getQualifier().isStatic)
                             {
-                                //a static function we can only access a const variables
+                                //a static function can only access a const variables
                                 if (identifierLocation.memberLocationType != XkslShaderDefinition::MemberLocationTypeEnum::Const)
                                 {
                                     error(TString("A static method: " + currentFunctionBeingParsed->getName() + TString(" is accessing a non-const variable: ") + (*identifierLocation.memberName)));

@@ -1,0 +1,13 @@
+
+shader ShaderMain : shaderA, shaderB
+{
+	TypeDeclaredInA var1;	
+	shaderC.typeDeclareInC var2;
+	
+	const float f = shaderD.aConstValue;
+	
+	void function()
+	{
+		shaderE.staticFunction();		
+	}
+}

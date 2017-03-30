@@ -57,11 +57,9 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
     bool flattenUniformArrays = false;
     TBuiltInResource* resources = nullptr;
     bool buildSPRV = true;
-    bool keepUncalledFuntionsInAST = true;
-
     EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST);
     controls = static_cast<EShMessages>(controls | EShMsgVulkanRules);
-    if (keepUncalledFuntionsInAST) controls = static_cast<EShMessages>(controls | EShMsgKeepUncalled);
+    
     if (buildSPRV) controls = static_cast<EShMessages>(controls | EShMsgSpvRules);
 
     glslang::TShader shader(kind);
@@ -75,12 +73,16 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
     success = shader.parseXkslShaderFile(shaderFileName, listGenericsValue, (resources ? resources : &glslang::DefaultTBuiltInResource), controls);
 
     spv::SpvBuildLogger logger;
-
     glslang::TIntermediate* AST = shader.getIntermediate();
+    vector<uint32_t> bytecodeList;
+
+    sadfsadfggfdsl;
 
     /////We don't really need to link, but glslang will do some final checkups
     ///glslang::TProgram program;
     ///program.addShader(&shader);
+    ///bool keepUncalledFuntionsInAST = true;
+    ///if (keepUncalledFuntionsInAST) controls = static_cast<EShMessages>(controls | EShMsgKeepUncalled);
     ///success &= program.link(controls);
     ///glslang::TIntermediate* AST = program.getIntermediate(kind);
     ///if (!success)
@@ -89,8 +91,6 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
     ///    logger.error(program.getInfoLog());
     ///}
 
-    vector<uint32_t> bytecodeList;
-    
     //=============================================================================================
     //=============================================================================================
     //Build the SPRX bytecode from the AST

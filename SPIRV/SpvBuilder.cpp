@@ -1011,6 +1011,15 @@ void Builder::addMethodPropertyList(Id id, std::vector<int>& attributes)
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
+void Builder::addGSMethodProperties(Id id, int inputType, int outputType)
+{
+    Instruction* dec = new Instruction(OpGSMethodProperties);
+    dec->addIdOperand(id);
+    dec->addImmediateOperand(inputType);
+    dec->addImmediateOperand(outputType);
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
+}
+
 void Builder::addShaderInheritanceDecoration(Id shaderId, std::vector<spv::Id>& parentsId)
 {
     Instruction* dec = new Instruction(OpShaderInheritance);

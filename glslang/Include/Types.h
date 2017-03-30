@@ -471,6 +471,8 @@ public:
 		isAbstract   = false;
 		isClone      = false;
         isStatic     = false;
+        GSInputPrimite  = ElgNone;
+        GSOutputPrimite = ElgNone;
     }
 
     // Drop just the storage qualification, which perhaps should
@@ -508,6 +510,7 @@ public:
     bool writeonly    : 1;
     bool specConstant : 1;  // having a constant_id is not sufficient: expressions have no id, but are still specConstant
 
+    //==========================================================================================
 	//XKSL qualifiers extensions
 	bool isStage      : 1;
 	bool isStream     : 1;
@@ -516,6 +519,10 @@ public:
 	bool isClone      : 1;
     bool isStatic     : 1;
     bool isRGroup     : 1;
+    //we record those parameters with the type qualifier to store them in the SPX file
+    TLayoutGeometry GSInputPrimite;
+    TLayoutGeometry GSOutputPrimite;
+    //==========================================================================================
 
     bool isMemory() const
     {
