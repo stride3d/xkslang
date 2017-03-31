@@ -50,59 +50,17 @@ void XkslParser::Finalize()
 bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& shaderString, const vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
     std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV)
 {
-    const char* shaderStrings = shaderString.data();
-    const int shaderLengths = static_cast<int>(shaderString.size());
-
-    const EShLanguage kind = EShLangFragment;   //Default kind (glslang expect one, even though we're parsing generic xksl files)
-    bool flattenUniformArrays = false;
-    TBuiltInResource* resources = nullptr;
-    bool buildSPRV = true;
-    EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST);
-    controls = static_cast<EShMessages>(controls | EShMsgVulkanRules);
-    
-    if (buildSPRV) controls = static_cast<EShMessages>(controls | EShMsgSpvRules);
-
-    glslang::TShader shader(kind);
-    shader.setFlattenUniformArrays(flattenUniformArrays);
-
-    shader.setStringsWithLengths(&shaderStrings, &shaderLengths, 1);
-    //shader.setEntryPoint(entryPointName.c_str());
-
     bool success = false;
 
-    success = shader.parseXkslShaderFile(shaderFileName, listGenericsValue, (resources ? resources : &glslang::DefaultTBuiltInResource), controls);
+    //const EShLanguage kind = EShLangFragment;   //Default kind (glslang expect one, even though we're parsing generic xksl files)
+    const TBuiltInResource& resources = glslang::DefaultTBuiltInResource;
+    EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST);
+    controls = static_cast<EShMessages>(controls | EShMsgVulkanRules);
 
-    spv::SpvBuildLogger logger;
-    glslang::TIntermediate* AST = shader.getIntermediate();
-    vector<uint32_t> bytecodeList;
+    vector<uint32_t>& spxBytecode = spirXBytecode.getWritableBytecodeStream();
+    vector<string> errorMsgs;
+    success = glslang::ConvertXkslShaderToSpx(shaderFileName, shaderString, listGenericsValue, &resources, controls, spxBytecode, errorMsgs);
 
-    sadfsadfggfdsl;
-
-    /////We don't really need to link, but glslang will do some final checkups
-    ///glslang::TProgram program;
-    ///program.addShader(&shader);
-    ///bool keepUncalledFuntionsInAST = true;
-    ///if (keepUncalledFuntionsInAST) controls = static_cast<EShMessages>(controls | EShMsgKeepUncalled);
-    ///success &= program.link(controls);
-    ///glslang::TIntermediate* AST = program.getIntermediate(kind);
-    ///if (!success)
-    ///{
-    ///    logger.error("linking the shader failed");
-    ///    logger.error(program.getInfoLog());
-    ///}
-
-    //=============================================================================================
-    //=============================================================================================
-    //Build the SPRX bytecode from the AST
-    if (success && AST != nullptr)
-    {
-        glslang::GlslangToSpv(*AST, bytecodeList, &logger);
-        spirXBytecode.clear();
-        spirXBytecode.SetBytecode(bytecodeList);
-        spirXBytecode.SetName(shaderFileName);
-        if (logger.hasAnyError()) success = false;
-    }
-    
     //output debug and error messages
     if (errorAndDebugMessages != nullptr)
     {
@@ -110,30 +68,22 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
         ostringstream& stream = *errorAndDebugMessages;
 
         stream << shaderFileName << "\n";
-        c = shader.getInfoLog();
-        if (c != nullptr && strlen(c) > 0) stream << c << "\n";
-        stream << logger.getAllMessages();
+        for (unsigned int i = 0; i < errorMsgs.size(); ++i)
+            stream << errorMsgs[i] << endl;
         stream << "\n";
     }
 
     //output Human Readable form of AST and SPIV bytecode
-    if (outputHumanReadableASTAndSPV != nullptr)
+    if (success && outputHumanReadableASTAndSPV != nullptr)
     {    
         const char* c;
         ostringstream& stream = *outputHumanReadableASTAndSPV;
-
-        c = shader.getInfoDebugLog();
-        if (c != nullptr && strlen(c) > 0) stream << c << "\n";
         
-        if (success && AST != nullptr)
-        {
-            //dissassemble the binary
-            ostringstream disassembly_stream;
-            spv::Parameterize();
-            spv::Disassemble(disassembly_stream, bytecodeList);
-
-            stream << disassembly_stream.str();
-        }
+        //dissassemble the binary
+        ostringstream disassembly_stream;
+        spv::Parameterize();
+        spv::Disassemble(disassembly_stream, spxBytecode);
+        stream << disassembly_stream.str();
     }
 
     return success;

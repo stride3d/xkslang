@@ -282,6 +282,10 @@ bool InitializeProcess();
 // Call once per process to tear down everything
 void FinalizeProcess();
 
+//XKSL extensions
+bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<XkslShaderGenericsValue>& listGenericValues,
+    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs);
+
 // Make one TShader per shader that you will link into a program.  Then provide
 // the shader through setStrings() or setStringsWithLengths(), then call parse(),
 // then query the info logs.
@@ -407,7 +411,7 @@ public:
                bool forwardCompatible, EShMessages, Includer&);
 
     //XKSL extensions
-    bool parseXkslShaderFile(const std::string& fileName, const std::vector<XkslShaderGenericsValue>& listGenericValues, const TBuiltInResource* builtInResources, EShMessages messages);
+    //bool parseXkslShaderFile(const std::string& fileName, const std::vector<XkslShaderGenericsValue>& listGenericValues, const TBuiltInResource* builtInResources, EShMessages messages);
 
     // Equivalent to parse() without a default profile and without forcing defaults.
     // Provided for backwards compatibility.
