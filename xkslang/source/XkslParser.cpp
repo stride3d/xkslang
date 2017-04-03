@@ -47,9 +47,14 @@ void XkslParser::Finalize()
     glslang::FinalizeProcess();
 }
 
-bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& shaderString, const vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
+bool XkslParser::ConvertXkslToSpx(const string& shaderFileName, const string& shaderString, const vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
     std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV)
 {
+    if (!isInitialized){
+        if (errorAndDebugMessages != nullptr) (*errorAndDebugMessages) << "xkslParser has not been initialized, call XkslParser::InitialiseXkslang() function first";
+        return false;
+    }
+
     bool success = false;
 
     //const EShLanguage kind = EShLangFragment;   //Default kind (glslang expect one, even though we're parsing generic xksl files)
@@ -64,7 +69,6 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
     //output debug and error messages
     if (errorAndDebugMessages != nullptr)
     {
-        const char* c;
         ostringstream& stream = *errorAndDebugMessages;
 
         stream << shaderFileName << "\n";
@@ -76,7 +80,6 @@ bool XkslParser::ConvertXkslToSpirX(const string& shaderFileName, const string& 
     //output Human Readable form of AST and SPIV bytecode
     if (success && outputHumanReadableASTAndSPV != nullptr)
     {    
-        const char* c;
         ostringstream& stream = *outputHumanReadableASTAndSPV;
         
         //dissassemble the binary

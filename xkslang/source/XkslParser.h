@@ -28,7 +28,11 @@ public:
     bool InitialiseXkslang();
     void Finalize();
 
-    bool ConvertXkslToSpirX(const std::string& shaderFileName, const std::string& shaderString, const std::vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
+    //bool ConvertShaderToSpirX(const std::string shaderName, std::vector<std::string> listAllExistingShader);
+
+    //Convert a xksl shader into a SPX file
+    //The shader string has to contain the shader and all its dependencies
+    bool ConvertXkslToSpx(const std::string& shaderFileName, const std::string& shaderString, const std::vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
         std::ostringstream* errorAndDebugMessages , std::ostringstream* outputHumanReadableASTAndSPV);
 };
 

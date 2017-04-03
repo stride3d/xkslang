@@ -35,11 +35,11 @@ static string finalResultOutputDir;
 static string expectedOutputDir;
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
-    { "shaderOnly.xksl" },
-    { "shaderWithVariable.xksl" },
-    { "shaderWithManyVariables.xksl" },
-    { "manySimpleShaders.xksl" },
-    { "simpleShaderWithFunction.xksl" },
+    //{ "shaderOnly.xksl" },
+    //{ "shaderWithVariable.xksl" },
+    //{ "shaderWithManyVariables.xksl" },
+    //{ "manySimpleShaders.xksl" },
+    //{ "simpleShaderWithFunction.xksl" },
     //{ "declarationMixOfFunctionsAndVariables.xksl" },
     //{ "2ShaderWithSameFunctionNames.xksl" },
     //{ "shaderInheritance.xksl" },
@@ -67,7 +67,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "parseShaderWithStructs03.xksl" },
     //{ "parseShaderWithStructs04.xksl" },
     //{ "parseGeomShader01.xksl" },
-    //{ "parseGeomShader02.xksl" },
+    { "parseGeomShader02.xksl" },
 
     ////{{"textureAndSampler.xksl"}, {"", nullptr}},
     ////{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -127,32 +127,32 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestForEach03", "TestForEach03.xkfx" },
     //{ "TestForEach04", "TestForEach04.xkfx" },
     //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
-    //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
-    //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
+    { "TestForEachCompose02", "TestForEachCompose02.xkfx" },
+    { "TestMergeStreams01", "TestMergeStreams01.xkfx" },
 
-    //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
-    //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
-    //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
-    //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
-    //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
+    { "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
+    { "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
+    { "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
+    { "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
+    { "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
 
-    //{ "TestGenerics01", "TestGenerics01.xkfx" },
-    //{ "TestGenerics02", "TestGenerics02.xkfx" },
+    { "TestGenerics01", "TestGenerics01.xkfx" },
+    { "TestGenerics02", "TestGenerics02.xkfx" },
 
-    //{ "CBuffer01", "CBuffer01.xkfx" },
-    //{ "CBuffer02", "CBuffer02.xkfx" },
-    //{ "CBuffer03", "CBuffer03.xkfx" },
-    //{ "CBuffer04", "CBuffer04.xkfx" },
-    //{ "CBuffer05", "CBuffer05.xkfx" },
-    //{ "CBuffer06", "CBuffer06.xkfx" },
-    //{ "CBuffer07", "CBuffer07.xkfx" },
-    //{ "CBuffer08", "CBuffer08.xkfx" },
-    //{ "CBuffer09", "CBuffer09.xkfx" },
+    { "CBuffer01", "CBuffer01.xkfx" },
+    { "CBuffer02", "CBuffer02.xkfx" },
+    { "CBuffer03", "CBuffer03.xkfx" },
+    { "CBuffer04", "CBuffer04.xkfx" },
+    { "CBuffer05", "CBuffer05.xkfx" },
+    { "CBuffer06", "CBuffer06.xkfx" },
+    { "CBuffer07", "CBuffer07.xkfx" },
+    { "CBuffer08", "CBuffer08.xkfx" },
+    { "CBuffer09", "CBuffer09.xkfx" },
 
-    //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
-    //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
-    //{ "ShaderWithResources03", "ShaderWithResources03.xkfx" },
-    //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
+    { "ShaderWithResources01", "ShaderWithResources01.xkfx" },
+    { "ShaderWithResources02", "ShaderWithResources02.xkfx" },
+    { "ShaderWithResources03", "ShaderWithResources03.xkfx" },
+    { "ShaderWithResources04", "ShaderWithResources04.xkfx" },
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
@@ -497,7 +497,7 @@ bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const ve
 
     DWORD time_before, time_after;
     time_before = GetTickCount();
-    bool success = parser->ConvertXkslToSpirX(xkslInputFile, xkslInput, listGenericsValue, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
+    bool success = parser->ConvertXkslToSpx(xkslInputFile, xkslInput, listGenericsValue, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
     time_after = GetTickCount();
 
     if (!success) {
@@ -918,7 +918,6 @@ void main(int argc, char** argv)
     vector<string> listEffectsFailed;
     //Parse the effects
     {
-        
         for (unsigned int n = 0; n < vecXkfxEffectToProcess.size(); ++n)
         {
             XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];

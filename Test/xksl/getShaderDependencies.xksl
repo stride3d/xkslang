@@ -8,6 +8,6 @@ shader ShaderMain : shaderA, shaderB
 	
 	void function()
 	{
-		shaderE.staticFunction();		
+		shaderE.staticFunction();
 	}
 }

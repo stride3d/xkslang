@@ -2380,21 +2380,17 @@ static XkslShaderDefinition* GetShaderDefinition(XkslShaderLibrary& shaderLibrar
     return nullptr;
 }
 
-static bool ParseXkslShaderFileOld(
+//Parse an xksl shader file. The shader file has to be complete (ie contains all shader dependencies)
+static bool ParseXkslShaderFileComplete(
     const std::string& fileName,
-    TCompiler* compiler,
-    TIntermediate* intermediate,  //will contains the AST
+    TInfoSink& infoSink,
+    TIntermediate* intermediate,
     const TBuiltInResource* resources,
     EShMessages messages,
     const char* shaderStrings,
     const unsigned int inputLengths,
     const std::vector<XkslShaderGenericsValue>& listGenericValues)
 {
-    const char* t_strings[] = { shaderStrings };
-    size_t t_length[] = { inputLengths };
-    glslang::TInputScanner userInput(1, t_strings, t_length);
-
-    // TODO: eventually have this come from the outside
     EShLanguage stage = EShLangFragment;
     SpvVersion spvVersion;
     spvVersion.spv = 0x00010000;
@@ -2405,7 +2401,6 @@ static bool ParseXkslShaderFileOld(
     bool forwardCompatible = false;
     bool parsingBuiltIns = false;
     EShOptimizationLevel optLevel = EShOptNone;
-    std::string sourceEntryPointName = "";
 
     intermediate->setSource(source);
     intermediate->setVersion(version);
@@ -2414,27 +2409,25 @@ static bool ParseXkslShaderFileOld(
     if (spvVersion.vulkan >= 100) intermediate->setOriginUpperLeft();
 
     //=====================================================================================
-    // Setup symbol tables
+    // Setup symbol tables (this is only done the first time a thread call it)
     SetupBuiltinSymbolTable(version, profile, spvVersion, source);
 
     TSymbolTable* cachedTable = SharedSymbolTables[MapVersionToIndex(version)]
-        [MapSpvVersionToIndex(spvVersion)]
-    [MapProfileToIndex(profile)]
-    [MapSourceToIndex(source)]
-    [stage];
-
+                                                  [MapSpvVersionToIndex(spvVersion)]
+                                                  [MapProfileToIndex(profile)]
+                                                  [MapSourceToIndex(source)]
+                                                  [stage];
     // Dynamically allocate the symbol table so we can control when it is deallocated WRT the pool.
     TSymbolTable* symbolTableMemory = new TSymbolTable;
     TSymbolTable& symbolTable = *symbolTableMemory;
     if (cachedTable) symbolTable.adoptLevels(*cachedTable);
 
     // Add built-in symbols that are potentially context dependent; they get popped again further down.
-    AddContextSpecificSymbols(resources, compiler->infoSink, symbolTable, version, profile, spvVersion, stage, source);
+    AddContextSpecificSymbols(resources, infoSink, symbolTable, version, profile, spvVersion, stage, source);
 
     //=====================================================================================
     // Create ParseContext and ppContext
-    HlslParseContext* parseContext = new HlslParseContext(symbolTable, *intermediate, parsingBuiltIns, version, profile, spvVersion,
-        stage, compiler->infoSink, sourceEntryPointName.c_str(), forwardCompatible, messages);
+    HlslParseContext* parseContext = new HlslParseContext(symbolTable, *intermediate, parsingBuiltIns, version, profile, spvVersion, stage, infoSink, "", forwardCompatible, messages);
 
     TShader::ForbidIncluder includer;
     TPpContext ppContext(*parseContext, "", includer);
@@ -2448,11 +2441,10 @@ static bool ParseXkslShaderFileOld(
     symbolTable.push();
 
     //List of all declared shader
-
     XkslShaderLibrary shaderLibrary;
 
     //==================================================================================================================
-    //YEAH, can finally parse !!!!
+    //can finally parse !!!!
     bool success = false;
     {
         //After the 1st pass: we keep the list of token to avoid reparsing them
@@ -2462,6 +2454,8 @@ static bool ParseXkslShaderFileOld(
         //==================================================================================================================
         //Parse shader declaration only!
         {
+            const char* t_strings[] = { shaderStrings };
+            size_t t_length[] = { inputLengths };
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
             success = parseContext->parseXkslShaderDeclaration(&shaderLibrary, ppContext, fullInput, fullTokenList);
             if (!success) error(parseContext, "Failed to parse shader declaration");
@@ -2469,7 +2463,7 @@ static bool ParseXkslShaderFileOld(
 
         //==================================================================================================================
         //==================================================================================================================
-        //resolve generics (before  parsing methods and members declaration)
+        //resolve generics (before parsing methods and members declaration)
         if (success)
         {
             success = XkslShaderResolveGenerics(shaderLibrary, listGenericValues, parseContext, ppContext);
@@ -2591,25 +2585,17 @@ static bool ParseXkslShaderFileOld(
         }
 
         //==================================================================================================================
-        //End of parsing
+        //parsing completed
         parseContext->parseXkslShaderFinalize();
     }
 
-    //finalize some stuff to start building the AST
-    {
-        if (success && intermediate->getTreeRoot()) {
-            if (optLevel == EShOptNoGeneration)
-                parseContext->infoSink.info.message(EPrefixNone, "No errors.  No code generation or linking was requested.");
-            else
-                success = intermediate->postProcess(intermediate->getTreeRoot(), parseContext->getLanguage());
-        }
-        else if (!success) {
-            parseContext->infoSink.info.prefix(EPrefixError);
-            parseContext->infoSink.info << parseContext->getNumErrors() << " compilation errors.  No code generated.\n\n";
-        }
+    symbolTable.pop(nullptr);
 
-        if (messages & EShMsgAST)
-            intermediate->output(parseContext->infoSink, true);
+    if (success)
+    {
+        //finalize the AST
+        success = intermediate->postProcess(intermediate->getTreeRoot(), parseContext->getLanguage());
+        intermediate->output(parseContext->infoSink, true);
     }
 
     //=====================================================================================
@@ -2617,11 +2603,6 @@ static bool ParseXkslShaderFileOld(
     delete symbolTableMemory;
     delete parseContext;
     ClearShaderLibrary(shaderLibrary);
-
-    //delete infoSink;
-    //delete intermediate;
-
-    //GetThreadPoolAllocator().pop();
 
     return success;
 }
@@ -2639,9 +2620,8 @@ bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shad
 
     EShLanguage stage = EShLangFragment;
     TInfoSink* infoSink = new TInfoSink;
-    TCompiler* compiler = new TDeferredCompiler(stage, *infoSink);
     TIntermediate* ast = new TIntermediate(stage);
-    bool success = ParseXkslShaderFileOld(fileName, compiler, ast, builtInResources, options, shaderStrings, shaderLengths, listGenericValues);
+    bool success = ParseXkslShaderFileComplete(fileName, *infoSink, ast, builtInResources, options, shaderStrings, shaderLengths, listGenericValues);
 
     errorMsgs.clear();
     const char* infoStr = infoSink->info.c_str();
@@ -2660,7 +2640,6 @@ bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shad
     }
 
     delete infoSink;
-    delete compiler;
     delete ast;
     delete pool;
 
