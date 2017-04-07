@@ -165,7 +165,7 @@ bool HlslGrammar::parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary*
     return true;
 }
 
-bool HlslGrammar::parseXKslShaderDefinition(XkslShaderLibrary* shaderLibrary)
+bool HlslGrammar::parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary)
 {
     //root entry point for parsing xksl shader definition
     if (xkslShaderCurrentlyParsed != nullptr || xkslShaderLibrary != nullptr || this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined)

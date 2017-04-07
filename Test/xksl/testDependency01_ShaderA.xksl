@@ -1,8 +1,8 @@
 
 shader ShaderA
 {
-	struct TypeDeclaredInA
+	int function()
 	{
-		int aInt;
-	};
+		return 2;
+	}
 }

@@ -1,6 +1,6 @@
 shader ShaderMain : ShaderA, ShaderB
 {
-	TypeDeclaredInA var1;
+	TypeDeclaredInB var1;
 	
 	const int constI = ShaderD.aConstValue;
 	
@@ -20,15 +20,15 @@ shader ShaderMain : ShaderA, ShaderB
 	}
 }
 
-shader ShaderA
+shader ShaderB
 {
-	struct TypeDeclaredInA
+	struct TypeDeclaredInB
 	{
 		int aInt;
 	};
 }
 
-shader ShaderB
+shader ShaderA
 {
 	int function()
 	{

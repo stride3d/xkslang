@@ -282,9 +282,16 @@ bool InitializeProcess();
 // Call once per process to tear down everything
 void FinalizeProcess();
 
+//=============================================================================================================================
 //XKSL extensions
-bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<ClassGenericsValue>& listGenericValues,
+typedef bool(*CallbackRequestDataForShader)(const std::string&, std::string&);
+
+bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<ClassGenericsValue>& listGenericValues,
     const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs);
+
+bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ClassGenericsValue>& listGenericValues,
+    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs);
+//=============================================================================================================================
 
 // Make one TShader per shader that you will link into a program.  Then provide
 // the shader through setStrings() or setStringsWithLengths(), then call parse(),

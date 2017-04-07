@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-//#include "glslang/Public/ShaderLang.h"
+#include "glslang/Public/ShaderLang.h"
 //#include "StandAlone/ResourceLimits.h"
 
 #include "define.h"
@@ -15,6 +15,8 @@
 
 namespace xkslang
 {
+
+//typedef bool(*CallbackRequestDataForShader)(const std::string&, std::string&);
 
 class ShaderGenericsValue
 {
@@ -34,11 +36,14 @@ public:
     bool InitialiseXkslang();
     void Finalize();
 
-    //bool ConvertShaderToSpirX(const std::string shaderName, std::vector<std::string> listAllExistingShader);
+    //Recursively convert a shader into SPX bytecode
+    //If the shader misses some dependencies, xkslang will query their data through the callback function
+    bool ConvertShaderToSpx(const std::string shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
+        std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV);
 
-    //Convert a xksl shader into a SPX file
+    //Convert a xksl file into a SPX bytecode
     //The shader string has to contain the shader and all its dependencies
-    bool ConvertXkslToSpx(const std::string& shaderFileName, const std::string& shaderString, const std::vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
+    bool ConvertXkslFileToSpx(const std::string& shaderFileName, const std::string& data, const std::vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
         std::ostringstream* errorAndDebugMessages , std::ostringstream* outputHumanReadableASTAndSPV);
 };
 

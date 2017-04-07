@@ -31,10 +31,20 @@ struct XkslFilesToParseAndConvert {
     const char* fileName;
 };
 
+struct XkslShaderToRecursivelyParse {
+    const char* filesPrefix;
+    const char* shaderName;
+};
+
 static string inputDir = "glslang\\source\\Test\\xksl\\";
 static string outputDir;
 static string finalResultOutputDir;
 static string expectedOutputDir;
+
+vector<XkslShaderToRecursivelyParse> vecXkslShaderToRecursivelyConvert = {
+    //{ "dummyTest", "Shader" },
+    { "testDependency01", "ShaderMain" },
+};
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "shaderOnly.xksl" },
@@ -484,7 +494,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
 
 bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
 {
-    cout << "Parsing XKSL shader \"" << xkslInputFile << "\"" << endl;
+    cout << "Parsing XKSL file \"" << xkslInputFile << "\"" << endl;
 
     const string inputFname = inputDir + xkslInputFile;
     string xkslInput;
@@ -502,8 +512,7 @@ bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const ve
 
     DWORD time_before, time_after;
     time_before = GetTickCount();
-
-    bool success = parser->ConvertXkslToSpx(xkslInputFile, xkslInput, listGenericsValue, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
+    bool success = parser->ConvertXkslFileToSpx(xkslInputFile, xkslInput, listGenericsValue, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
     time_after = GetTickCount();
 
     if (!success) {
@@ -528,6 +537,64 @@ bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const ve
 
             //output the AST and debug and HR spirv binary
             const string outputFileName = xkslInputFile + ".hr.spv";
+            const string outputFullName = outputDir + outputFileName;
+            errorAndDebugMessages << outputHumanReadableASTAndSPV.str();
+            xkslangtest::Utils::WriteFile(outputFullName, errorAndDebugMessages.str());
+            cout << " output: \"" << outputFileName << "\"" << endl;
+        }
+    }
+
+    return success;
+}
+
+static string shaderFilesPrefix;
+bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
+{
+    const string inputFname = inputDir + shaderFilesPrefix + "_" + shaderName + ".xksl";
+    if (!Utils::ReadFile(inputFname, shaderData))
+    {
+        cout << " Failed to read the file: " << inputFname << endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool RecusrsivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix, const vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
+{
+    cout << "Parsing XKSL shader \"" << shaderName + "\" (" + filesPrefix + ")" << endl;
+
+    ostringstream errorAndDebugMessages;
+    ostringstream outputHumanReadableASTAndSPV;
+
+    shaderFilesPrefix = filesPrefix; //set for the callback function
+    DWORD time_before, time_after;
+    time_before = GetTickCount();
+    bool success = parser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
+    time_after = GetTickCount();
+
+    if (!success) {
+        cout << " Failed to parse the xksl shader" << endl;
+        cout << errorAndDebugMessages.str() << endl;
+        return false;
+    }
+    else
+    {
+        cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+
+        //output binary and debug info
+        if (writeOutputsOnDisk)
+        {
+            //output the SPIRX binary
+            const vector<uint32_t>& bytecodeList = spirXBytecode.getBytecodeStream();
+            if (bytecodeList.size() > 0)
+            {
+                const string newOutputFname = outputDir + filesPrefix + "_" + shaderName + ".spv";
+                glslang::OutputSpvBin(bytecodeList, newOutputFname.c_str());
+            }
+
+            //output the AST and debug and HR spirv binary
+            const string outputFileName = filesPrefix + "_" + shaderName + ".hr.spv";
             const string outputFullName = outputDir + outputFileName;
             errorAndDebugMessages << outputHumanReadableASTAndSPV.str();
             xkslangtest::Utils::WriteFile(outputFullName, errorAndDebugMessages.str());
@@ -890,6 +957,8 @@ void main(int argc, char** argv)
         return;
     }
 
+    //====================================================================================================================
+    //====================================================================================================================
     cout << "___________________________________________________________________________________" << endl;
     cout << "Parse and convert XKSL Files:" << endl << endl;
     int countParsingProcessed = 0;
@@ -917,6 +986,38 @@ void main(int argc, char** argv)
         }
     }
 
+    //====================================================================================================================
+    //====================================================================================================================
+    cout << "___________________________________________________________________________________" << endl;
+    cout << "Recursively parse and convert shaders:" << endl << endl;
+    int countShadersProcessed = 0;
+    int countShadersSuccessful = 0;
+    vector<string> listShaderFailed;
+    //Parse the shaders using XkslParser library
+    {
+        for (unsigned int n = 0; n < vecXkslShaderToRecursivelyConvert.size(); ++n)
+        {
+            countShadersProcessed++;
+            bool success = true;
+
+            XkslShaderToRecursivelyParse& shaderToRecursivelyParse = vecXkslShaderToRecursivelyConvert[n];
+            string xkslFilesPrefix = shaderToRecursivelyParse.filesPrefix;
+            string shaderName = shaderToRecursivelyParse.shaderName;
+
+            // parse and convert all xksl files
+            SpxBytecode spirXBytecode;
+            vector<ShaderGenericsValue> listGenericsValue;
+            success = RecusrsivelyParseAndConvertXkslShader(&parser, shaderName, xkslFilesPrefix, listGenericsValue, spirXBytecode, true);
+
+            if (success) countShadersSuccessful++;
+            else listShaderFailed.push_back(shaderName + " (" + xkslFilesPrefix + ")");
+
+            cout << endl;
+        }
+    }
+
+    //====================================================================================================================
+    //====================================================================================================================
     cout << endl;
     cout << "___________________________________________________________________________________" << endl;
     cout << "Process XKFX Effect  Files:" << endl << endl;
@@ -995,21 +1096,34 @@ void main(int argc, char** argv)
     cout << "___________________________________________________________________________________" << endl;
     cout << "Results:" << endl << endl;
 
-    cout << "Count xksl parsing processed: " << countParsingProcessed << endl;
-    cout << "Count xksl parsing successful: " << countParsingSuccessful << endl;
+    //==========================================================
+    cout << "Count Xksl files parsed: " << countParsingProcessed << endl;
+    cout << "Count Xksl files successful: " << countParsingSuccessful << endl;
     if (listXkslParsingFailed.size() > 0)
     {
         cout << endl;
-        cout << "Failed Xksl Parsing:" << endl;
+        cout << "Failed Xksl Files:" << endl;
         for (unsigned int i = 0; i<listXkslParsingFailed.size(); ++i) cout << listXkslParsingFailed[i] << endl;
     }
     cout << endl;
 
-    cout << "Count effects processed: " << countEffectsProcessed << endl;
-    cout << "Count effects successful: " << countEffectsSuccessful << endl;
+    //==========================================================
+    cout << "Count Shader processed: " << countShadersProcessed << endl;
+    cout << "Count Shader successful: " << countShadersSuccessful << endl;
+    if (listShaderFailed.size() > 0)
+    {
+        cout << endl;
+        cout << "Failed Shader:" << endl;
+        for (unsigned int i = 0; i<listShaderFailed.size(); ++i) cout << listShaderFailed[i] << endl;
+    }
+    cout << endl;
+
+    //==========================================================
+    cout << "Count Effects processed: " << countEffectsProcessed << endl;
+    cout << "Count Effects successful: " << countEffectsSuccessful << endl;
     if (listEffectsFailed.size() > 0)
     {
-        cout << "Failed effects:" << endl;
+        cout << "Failed Effects:" << endl;
         for (unsigned int i = 0; i<listEffectsFailed.size(); ++i) cout << listEffectsFailed[i] << endl;
     }
     cout << endl;

@@ -233,7 +233,7 @@ bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderLibr
     return numErrors == 0;
 }
 
-bool HlslParseContext::parseXkslShaderDefinition(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TVector<HlslToken>& tokenList)
+bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TVector<HlslToken>& tokenList)
 {
     //currentScanner = &input;
     //ppContext.clearAllInput();
@@ -259,7 +259,7 @@ bool HlslParseContext::parseXkslShaderDefinition(XkslShaderLibrary* shaderLibrar
     grammar.importListParsedToken(expressionTokensList, countTokens);
 
     bool res = false;
-    res = grammar.parseXKslShaderDefinition(shaderLibrary);
+    res = grammar.parseXKslShaderMethodsDefinition(shaderLibrary);
     if (!res) return false;
 
     return numErrors == 0;

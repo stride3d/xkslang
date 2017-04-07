@@ -2381,15 +2381,15 @@ static XkslShaderDefinition* GetShaderDefinition(XkslShaderLibrary& shaderLibrar
 }
 
 //Parse an xksl shader file. The shader file has to be complete (ie contains all shader dependencies)
-static bool ParseXkslShaderFileComplete(
-    const std::string& fileName,
+static bool ParseXkslShaderFile(
     TInfoSink& infoSink,
     TIntermediate* intermediate,
     const TBuiltInResource* resources,
     EShMessages messages,
     const char* shaderStrings,
     const unsigned int inputLengths,
-    const std::vector<ClassGenericsValue>& listGenericValues)
+    const std::vector<ClassGenericsValue>& listGenericValues,
+    CallbackRequestDataForShader callbackRequestDataForShader)
 {
     EShLanguage stage = EShLangFragment;
     SpvVersion spvVersion;
@@ -2442,6 +2442,7 @@ static bool ParseXkslShaderFileComplete(
 
     //List of all declared shader
     XkslShaderLibrary shaderLibrary;
+    std::map<TString, TString> mapParsedShaders;
 
     //==================================================================================================================
     //can finally parse !!!!
@@ -2452,7 +2453,7 @@ static bool ParseXkslShaderFileComplete(
 
         //==================================================================================================================
         //==================================================================================================================
-        //Parse shader declaration only!
+        //Parse all shaders declaration!
         {
             const char* t_strings[] = { shaderStrings };
             size_t t_length[] = { inputLengths };
@@ -2540,7 +2541,7 @@ static bool ParseXkslShaderFileComplete(
         if (success)
         {
             //TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-            success = parseContext->parseXkslShaderDefinition(&shaderLibrary, ppContext, fullTokenList);
+            success = parseContext->parseXkslShaderMethodsDefinition(&shaderLibrary, ppContext, fullTokenList);
             if (!success) error(parseContext, "Failed to parse all shader method definition");
         }
 
@@ -2607,10 +2608,60 @@ static bool ParseXkslShaderFileComplete(
     return success;
 }
 
-bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<ClassGenericsValue>& listGenericValues,
+bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ClassGenericsValue>& listGenericValues,
     const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs)
 {
-    if (shaderString.size() == 0) return false;
+    errorMsgs.clear();
+    if (shaderName.size() == 0) { errorMsgs.push_back("shaderName is empty"); return false; }
+    if (callbackRequestDataForShader == nullptr) { errorMsgs.push_back("callback function is missing");return false; }
+
+    std::string shaderData;
+    if (!callbackRequestDataForShader(shaderName, shaderData))
+    {
+        errorMsgs.push_back("Failed to request data for shader: " + shaderName);
+        return false;
+    }
+
+    const char* shaderStrings = shaderData.data();
+    const int shaderLengths = (int)(shaderData.size());
+
+    if (!InitThread()) return false;
+    TPoolAllocator* pool = new TPoolAllocator();
+    SetThreadPoolAllocator(*pool);
+
+    EShLanguage stage = EShLangFragment;
+    TInfoSink* infoSink = new TInfoSink;
+    TIntermediate* ast = new TIntermediate(stage);
+    bool success = ParseXkslShaderFile(*infoSink, ast, builtInResources, options, shaderStrings, shaderLengths, listGenericValues, callbackRequestDataForShader);
+
+    const char* infoStr = infoSink->info.c_str();
+    if (infoStr != nullptr && strlen(infoStr) > 0) errorMsgs.push_back(infoStr);
+    const char* debugStr = infoSink->debug.c_str();
+    if (debugStr != nullptr && strlen(debugStr) > 0) errorMsgs.push_back(debugStr);
+
+    if (success)
+    {
+        //convert AST to SPX
+        spxBytecode.clear();
+        spv::SpvBuildLogger logger;
+        glslang::GlslangToSpv(*ast, spxBytecode, &logger);
+        if (logger.hasAnyError()) success = false;
+        logger.getAllMessages(errorMsgs);
+    }
+
+    delete infoSink;
+    delete ast;
+    delete pool;
+
+    return success;
+}
+
+bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<ClassGenericsValue>& listGenericValues,
+    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs)
+{
+    errorMsgs.clear();
+    if (shaderString.size() == 0) { errorMsgs.push_back("shaderString is empty"); return false; }
+
     const char* shaderStrings = shaderString.data();
     const int shaderLengths = (int)(shaderString.size());
 
@@ -2621,9 +2672,8 @@ bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shad
     EShLanguage stage = EShLangFragment;
     TInfoSink* infoSink = new TInfoSink;
     TIntermediate* ast = new TIntermediate(stage);
-    bool success = ParseXkslShaderFileComplete(fileName, *infoSink, ast, builtInResources, options, shaderStrings, shaderLengths, listGenericValues);
+    bool success = ParseXkslShaderFile(*infoSink, ast, builtInResources, options, shaderStrings, shaderLengths, listGenericValues, nullptr);
 
-    errorMsgs.clear();
     const char* infoStr = infoSink->info.c_str();
     if (infoStr != nullptr && strlen(infoStr) > 0) errorMsgs.push_back(infoStr);
     const char* debugStr = infoSink->debug.c_str();

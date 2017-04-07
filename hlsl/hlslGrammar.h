@@ -71,7 +71,7 @@ namespace glslang {
         bool parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary);
         bool parseXKslShaderNewTypesDefinition(XkslShaderLibrary* shaderLibrary);
         bool parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary* shaderLibrary);
-        bool parseXKslShaderDefinition(XkslShaderLibrary* shaderLibrary);
+        bool parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary);
         TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader);
 
     protected:
