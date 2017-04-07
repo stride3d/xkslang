@@ -20,6 +20,8 @@
 #include "../source/XkslParser.h"
 #include "../source/XkslMixer.h"
 
+#include "../source/XkslangDLL/XkslangDLL.h"
+
 using namespace std;
 using namespace xkslangtest;
 using namespace xkslang;
@@ -67,7 +69,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "parseShaderWithStructs03.xksl" },
     //{ "parseShaderWithStructs04.xksl" },
     //{ "parseGeomShader01.xksl" },
-    { "parseGeomShader02.xksl" },
+    //{ "parseGeomShader02.xksl" },
 
     ////{{"textureAndSampler.xksl"}, {"", nullptr}},
     ////{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -127,35 +129,37 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestForEach03", "TestForEach03.xkfx" },
     //{ "TestForEach04", "TestForEach04.xkfx" },
     //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
-    { "TestForEachCompose02", "TestForEachCompose02.xkfx" },
-    { "TestMergeStreams01", "TestMergeStreams01.xkfx" },
+    //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
+    //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
 
-    { "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
-    { "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
-    { "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
-    { "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
-    { "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
+    //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
+    //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
+    //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
+    //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
+    //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
 
-    { "TestGenerics01", "TestGenerics01.xkfx" },
-    { "TestGenerics02", "TestGenerics02.xkfx" },
+    //{ "TestGenerics01", "TestGenerics01.xkfx" },
+    //{ "TestGenerics02", "TestGenerics02.xkfx" },
 
-    { "CBuffer01", "CBuffer01.xkfx" },
-    { "CBuffer02", "CBuffer02.xkfx" },
-    { "CBuffer03", "CBuffer03.xkfx" },
-    { "CBuffer04", "CBuffer04.xkfx" },
-    { "CBuffer05", "CBuffer05.xkfx" },
-    { "CBuffer06", "CBuffer06.xkfx" },
-    { "CBuffer07", "CBuffer07.xkfx" },
-    { "CBuffer08", "CBuffer08.xkfx" },
-    { "CBuffer09", "CBuffer09.xkfx" },
+    //{ "CBuffer01", "CBuffer01.xkfx" },
+    //{ "CBuffer02", "CBuffer02.xkfx" },
+    //{ "CBuffer03", "CBuffer03.xkfx" },
+    //{ "CBuffer04", "CBuffer04.xkfx" },
+    //{ "CBuffer05", "CBuffer05.xkfx" },
+    //{ "CBuffer06", "CBuffer06.xkfx" },
+    //{ "CBuffer07", "CBuffer07.xkfx" },
+    //{ "CBuffer08", "CBuffer08.xkfx" },
+    //{ "CBuffer09", "CBuffer09.xkfx" },
 
-    { "ShaderWithResources01", "ShaderWithResources01.xkfx" },
-    { "ShaderWithResources02", "ShaderWithResources02.xkfx" },
-    { "ShaderWithResources03", "ShaderWithResources03.xkfx" },
-    { "ShaderWithResources04", "ShaderWithResources04.xkfx" },
+    //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
+    //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
+    //{ "ShaderWithResources03", "ShaderWithResources03.xkfx" },
+    //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
+
+    { "testDependency01", "testDependency01.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -191,7 +195,8 @@ int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguage
 
     const char* cl = commandLine.c_str();
     wchar_t wtext[256];
-    mbstowcs(wtext, cl, strlen(cl) + 1);
+    size_t size;
+    errno_t error = mbstowcs_s(&size, wtext, cl, strlen(cl) + 1);
     LPWSTR ptr = wtext;
 
     // Start the child process. 
@@ -477,7 +482,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     return success;
 }
 
-bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
+bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
 {
     cout << "Parsing XKSL shader \"" << xkslInputFile << "\"" << endl;
 
@@ -497,6 +502,7 @@ bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const ve
 
     DWORD time_before, time_after;
     time_before = GetTickCount();
+
     bool success = parser->ConvertXkslToSpx(xkslInputFile, xkslInput, listGenericsValue, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
     time_after = GetTickCount();
 
@@ -562,7 +568,7 @@ public:
     ~EffectMixerObject() {delete mixer;}
 };
 
-bool parseStringIntoShaderGenericsValue(vector<XkslShaderGenericsValue>& listGenericsValue, string& txt)
+bool parseStringIntoShaderGenericsValue(vector<ShaderGenericsValue>& listGenericsValue, string& txt)
 {
     int len = txt.size();
     int pos = 0, end = 0;
@@ -580,7 +586,7 @@ bool parseStringIntoShaderGenericsValue(vector<XkslShaderGenericsValue>& listGen
         string shaderName = txt.substr(pos, end - pos);
         shaderName = Utils::trim(shaderName);
 
-        XkslShaderGenericsValue shaderGenerics;
+        ShaderGenericsValue shaderGenerics;
         shaderGenerics.shaderName = shaderName;
 
         //generic values
@@ -649,7 +655,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
             xkslInputFile = Utils::trim(xkslInputFile, '\"');
 
             //any generic value defined?
-            vector<XkslShaderGenericsValue> listGenericsValue;
+            vector<ShaderGenericsValue> listGenericsValue;
             string genericsValueText;
             if (getline(lineSs, genericsValueText))
             {
@@ -869,6 +875,8 @@ void main(int argc, char** argv)
     cout << "RELEASE mode" << endl << endl;
 #endif
 
+    //Xkslang::XkslangDLL::TestAdd(0, 1);
+
     if (!SetupTestDirectories())
     {
         cout << "Failed to setup the directories" << endl;
@@ -878,7 +886,7 @@ void main(int argc, char** argv)
     XkslParser parser;
     if (!parser.InitialiseXkslang())
     {
-        cout << "Failed to initialize the parser" << endl;
+        cout << "Failed to initialize the XkslParser" << endl;
         return;
     }
 
@@ -896,7 +904,7 @@ void main(int argc, char** argv)
 
             XkslFilesToParseAndConvert& xkslFilesToParseAndConvert = vecXkslFilesToConvert[n];
             string xkslShaderInputFile = xkslFilesToParseAndConvert.fileName;
-            vector<XkslShaderGenericsValue> listGenericsValue;
+            vector<ShaderGenericsValue> listGenericsValue;
 
             // parse and convert all xksl files
             SpxBytecode spirXBytecode;

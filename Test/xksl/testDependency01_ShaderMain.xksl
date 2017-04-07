@@ -1,0 +1,17 @@
+
+shader ShaderMain : ShaderA, ShaderB
+{
+	TypeDeclaredInA var1;
+	
+	const int constI = ShaderD.aConstValue;
+	
+	override int function()
+	{
+		int res = base.function();
+		res += ShaderE.staticFunction();
+		res += var1.aInt;
+		res += constI;
+		res += ShaderC.aConstValue;
+		return res;
+	}
+}

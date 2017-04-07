@@ -2201,7 +2201,7 @@ static bool ProcessDeclarationOfAllShadersMembersAndMethods(XkslShaderLibrary& s
 
 //resolve the shader generics with the value passed by the user
 //This step is done after parsing the shader's declaration, but before parsing their definition
-static bool XkslShaderResolveGenerics(XkslShaderLibrary& shaderLibrary, const std::vector<XkslShaderGenericsValue>& listGenericValues, HlslParseContext* parseContext, TPpContext& ppContext)
+static bool XkslShaderResolveGenerics(XkslShaderLibrary& shaderLibrary, const std::vector<ClassGenericsValue>& listGenericValues, HlslParseContext* parseContext, TPpContext& ppContext)
 {
     for (unsigned int s = 0; s < shaderLibrary.listShaders.size(); s++)
     {
@@ -2212,10 +2212,10 @@ static bool XkslShaderResolveGenerics(XkslShaderLibrary& shaderLibrary, const st
         {
             //========================================================================================================
             //Get the corresponding generics value
-            const XkslShaderGenericsValue* shaderGenericsValue = nullptr;
+            const ClassGenericsValue* shaderGenericsValue = nullptr;
             for (unsigned int sg = 0; sg < listGenericValues.size(); sg++)
             {
-                if (shaderName == listGenericValues[sg].shaderName)
+                if (shaderName == listGenericValues[sg].targetName)
                 {
                     shaderGenericsValue = &(listGenericValues[sg]);
                     break;
@@ -2389,7 +2389,7 @@ static bool ParseXkslShaderFileComplete(
     EShMessages messages,
     const char* shaderStrings,
     const unsigned int inputLengths,
-    const std::vector<XkslShaderGenericsValue>& listGenericValues)
+    const std::vector<ClassGenericsValue>& listGenericValues)
 {
     EShLanguage stage = EShLangFragment;
     SpvVersion spvVersion;
@@ -2607,7 +2607,7 @@ static bool ParseXkslShaderFileComplete(
     return success;
 }
 
-bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<XkslShaderGenericsValue>& listGenericValues,
+bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<ClassGenericsValue>& listGenericValues,
     const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs)
 {
     if (shaderString.size() == 0) return false;

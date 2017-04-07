@@ -34,7 +34,7 @@ XkslParser::~XkslParser()
 static bool isInitialized = false;
 bool XkslParser::InitialiseXkslang()
 {
-    assert(!isInitialized);
+    if (isInitialized) return true;
 
     bool res = glslang::InitializeProcess();
     isInitialized = res;
@@ -47,7 +47,7 @@ void XkslParser::Finalize()
     glslang::FinalizeProcess();
 }
 
-bool XkslParser::ConvertXkslToSpx(const string& shaderFileName, const string& shaderString, const vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
+bool XkslParser::ConvertXkslToSpx(const string& shaderFileName, const string& shaderString, const vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
     std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV)
 {
     if (!isInitialized){
@@ -62,9 +62,19 @@ bool XkslParser::ConvertXkslToSpx(const string& shaderFileName, const string& sh
     EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST);
     controls = static_cast<EShMessages>(controls | EShMsgVulkanRules);
 
+    //Convert ShaderGenericsValue to ClassGenericsValue
+    vector<ClassGenericsValue> listGenericsPerShader;
+    for (unsigned int k = 0; k < listGenericsValue.size(); ++k)
+    {
+        listGenericsPerShader.push_back(ClassGenericsValue());
+        ClassGenericsValue& sg = listGenericsPerShader.back();
+        sg.targetName = listGenericsValue[k].shaderName;
+        sg.genericsValue = listGenericsValue[k].genericsValue;
+    }
+
     vector<uint32_t>& spxBytecode = spirXBytecode.getWritableBytecodeStream();
     vector<string> errorMsgs;
-    success = glslang::ConvertXkslShaderToSpx(shaderFileName, shaderString, listGenericsValue, &resources, controls, spxBytecode, errorMsgs);
+    success = glslang::ConvertXkslShaderToSpx(shaderFileName, shaderString, listGenericsPerShader, &resources, controls, spxBytecode, errorMsgs);
 
     //output debug and error messages
     if (errorAndDebugMessages != nullptr)

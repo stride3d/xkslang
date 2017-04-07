@@ -1,0 +1,13 @@
+
+shader ShaderE
+{
+	static int staticFunction()
+	{
+		return 2;
+	}
+	
+	static int unusedStaticFunction()
+	{
+		return 3;
+	}
+}

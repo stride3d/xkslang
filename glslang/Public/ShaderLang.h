@@ -165,9 +165,9 @@ typedef struct {
 } ShBindingTable;
 
 typedef struct {
-    std::string shaderName;
+    std::string targetName;
     std::vector<std::string> genericsValue;
-} XkslShaderGenericsValue;
+} ClassGenericsValue;
 
 //
 // ShHandle held by but opaque to the driver.  It is allocated,
@@ -283,7 +283,7 @@ bool InitializeProcess();
 void FinalizeProcess();
 
 //XKSL extensions
-bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<XkslShaderGenericsValue>& listGenericValues,
+bool ConvertXkslShaderToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<ClassGenericsValue>& listGenericValues,
     const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs);
 
 // Make one TShader per shader that you will link into a program.  Then provide
@@ -411,7 +411,7 @@ public:
                bool forwardCompatible, EShMessages, Includer&);
 
     //XKSL extensions
-    //bool parseXkslShaderFile(const std::string& fileName, const std::vector<XkslShaderGenericsValue>& listGenericValues, const TBuiltInResource* builtInResources, EShMessages messages);
+    //bool parseXkslShaderFile(const std::string& fileName, const std::vector<ClassGenericsValue>& listGenericValues, const TBuiltInResource* builtInResources, EShMessages messages);
 
     // Equivalent to parse() without a default profile and without forcing defaults.
     // Provided for backwards compatibility.

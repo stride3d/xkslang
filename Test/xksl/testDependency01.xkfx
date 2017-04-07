@@ -1,0 +1,9 @@
+//Test "importing" a static lib when adding a composition
+
+load "testDependency01.xksl"
+
+mixer m
+m.mixin ShaderMain
+
+m.setStageEntryPoint Pixel "main"
+m.compile

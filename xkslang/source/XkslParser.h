@@ -4,7 +4,6 @@
 #ifndef XKSLANG_XKSLPARSER_H
 #define XKSLANG_XKSLPARSER_H
 
-#include <tuple>
 #include <string>
 #include <vector>
 
@@ -16,6 +15,13 @@
 
 namespace xkslang
 {
+
+class ShaderGenericsValue
+{
+public:
+    std::string shaderName;
+    std::vector<std::string> genericsValue;
+};
 
 class XkslParser
 {
@@ -32,7 +38,7 @@ public:
 
     //Convert a xksl shader into a SPX file
     //The shader string has to contain the shader and all its dependencies
-    bool ConvertXkslToSpx(const std::string& shaderFileName, const std::string& shaderString, const std::vector<XkslShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
+    bool ConvertXkslToSpx(const std::string& shaderFileName, const std::string& shaderString, const std::vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
         std::ostringstream* errorAndDebugMessages , std::ostringstream* outputHumanReadableASTAndSPV);
 };
 
