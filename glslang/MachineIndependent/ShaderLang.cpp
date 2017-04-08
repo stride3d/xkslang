@@ -2449,7 +2449,7 @@ static bool ParseXkslShaderFile(
     bool success = false;
     {
         //After the 1st pass: we keep the list of token to avoid reparsing them
-        TVector<HlslToken> fullTokenList;
+        //TVector<HlslToken> fullTokenList;
 
         //==================================================================================================================
         //==================================================================================================================
@@ -2458,7 +2458,7 @@ static bool ParseXkslShaderFile(
             const char* t_strings[] = { shaderStrings };
             size_t t_length[] = { inputLengths };
             TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-            success = parseContext->parseXkslShaderDeclaration(&shaderLibrary, ppContext, fullInput, fullTokenList);
+            success = parseContext->parseXkslShaderDeclaration(&shaderLibrary, ppContext, fullInput);
             if (!success) error(parseContext, "Failed to parse shader declaration");
         }
 
@@ -2473,20 +2473,17 @@ static bool ParseXkslShaderFile(
 
         //==================================================================================================================
         //==================================================================================================================
-        //Parse shader to detect new type definition (such like struct)
+        //check parsed shader for new type definition (such like struct)
         if (success)
         {
-            //TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-            success = parseContext->parseXkslShaderNewTypesDeclaration(&shaderLibrary, ppContext, fullTokenList);
-            if (!success) error(parseContext, "Failed to parse shaders new types definition");
-
-            if (success)
+            TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+            for (unsigned int s = 0; s < listShaderParsed.size(); s++)
             {
-                //set the shader's user identifier name and rename the type name (for better clarity in xksl files)
-                TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
-                for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+                XkslShaderDefinition* shader = listShaderParsed[s];
+
+                success = parseContext->parseXkslShaderNewTypesDeclaration(shader, &shaderLibrary, ppContext);
+                if (success)
                 {
-                    XkslShaderDefinition* shader = listShaderParsed[s];
                     int countCustomTypes = shader->listCustomTypes.size();
                     for (int i = 0; i < countCustomTypes; ++i)
                     {
@@ -2504,7 +2501,41 @@ static bool ParseXkslShaderFile(
                         type->setTypeName(*newTypeName);
                     }
                 }
+                else
+                {
+                    error(parseContext, "Failed to parse the shaders new types definition for: " + shader->shaderName);
+                    break;
+                }
             }
+
+            //success = parseContext->parseXkslShaderNewTypesDeclaration(&shaderLibrary, ppContext, fullTokenList);
+            //if (!success) error(parseContext, "Failed to parse shaders new types definition");
+            //
+            //if (success)
+            //{
+            //    //set the shader's user identifier name and rename the type name (for better clarity in xksl files)
+            //    TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+            //    for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+            //    {
+            //        XkslShaderDefinition* shader = listShaderParsed[s];
+            //        int countCustomTypes = shader->listCustomTypes.size();
+            //        for (int i = 0; i < countCustomTypes; ++i)
+            //        {
+            //            TType* type = shader->listCustomTypes[i].type;
+            //
+            //            const TString* typeName = type->getTypeNamePtr();
+            //            if (typeName == nullptr) {
+            //                error(parseContext, "The type has no name");
+            //                success = false;
+            //                continue;
+            //            }
+            //
+            //            type->setUserIdentifierName(typeName->c_str());
+            //            TString* newTypeName = NewPoolTString((shader->shaderName + "_" + *typeName).c_str());
+            //            type->setTypeName(*newTypeName);
+            //        }
+            //    }
+            //}
         }
 
         //==================================================================================================================
@@ -2512,9 +2543,20 @@ static bool ParseXkslShaderFile(
         //Parse shader members and variables declaration only!
         if (success)
         {
-            //TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-            success = parseContext->parseXkslShaderMembersAndMethodDeclaration(&shaderLibrary, ppContext, fullTokenList);
-            if (!success) error(parseContext, "Failed to parse shaders' members and method declaration");
+            TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+            for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+            {
+                XkslShaderDefinition* shader = listShaderParsed[s];
+                success = parseContext->parseXkslShaderMembersAndMethodDeclaration(shader, &shaderLibrary, ppContext);
+                if (!success)
+                {
+                    error(parseContext, "Failed to parse the shaders' members and method declaration for: " + shader->shaderName);
+                    break;
+                }
+            }
+
+            //success = parseContext->parseXkslShaderMembersAndMethodDeclaration(&shaderLibrary, ppContext, fullTokenList);
+            //if (!success) error(parseContext, "Failed to parse shaders' members and method declaration");
         }
 
         //==================================================================================================================
@@ -2537,12 +2579,20 @@ static bool ParseXkslShaderFile(
 
         //==================================================================================================================
         //==================================================================================================================
-        //Now we can parse the shader methods' definition!
+        //we can now parse the shader methods' definition!
         if (success)
         {
-            //TInputScanner fullInput(1, t_strings, t_length, nullptr, 0, 0);
-            success = parseContext->parseXkslShaderMethodsDefinition(&shaderLibrary, ppContext, fullTokenList);
-            if (!success) error(parseContext, "Failed to parse all shader method definition");
+            TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+            for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+            {
+                XkslShaderDefinition* shader = listShaderParsed[s];
+                success = parseContext->parseXkslShaderMethodsDefinition(shader, &shaderLibrary, ppContext);
+                if (!success)
+                {
+                    error(parseContext, "Failed to parse the shader method definition for: " + shader->shaderName);
+                    break;
+                }
+            }
         }
 
         //==================================================================================================================

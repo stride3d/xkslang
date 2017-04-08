@@ -149,7 +149,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
     return expressionNode;
 }
 
-bool HlslParseContext::parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TInputScanner& input, TVector<HlslToken>& fileTokenList)
+bool HlslParseContext::parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TInputScanner& input)
 {
     currentScanner = &input;
     ppContext.clearAllInput();
@@ -170,13 +170,21 @@ bool HlslParseContext::parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibra
         return false;
     }
 
-    grammar.CopyTokenBufferInto(fileTokenList);
+    //TVector<HlslToken>& fileTokenList;
+    //grammar.CopyTokenBufferInto(fileTokenList);
     return numErrors == 0;
 }
 
-bool HlslParseContext::parseXkslShaderNewTypesDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TVector<HlslToken>& tokenList)
+bool HlslParseContext::parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
 {
+    //if (shader->parseStatus == -1 || true)
+    //{
+    //    infoSink.info << "PROUT";
+    //    return false;
+    //}
+
     //reparse the list of token previously parsed
+    TVector<HlslToken>& tokenList = shader->listTokens;
     if (tokenList.size() == 0) return true;
 
     const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
@@ -200,16 +208,16 @@ bool HlslParseContext::parseXkslShaderNewTypesDeclaration(XkslShaderLibrary* sha
     return numErrors == 0;
 }
 
-bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TVector<HlslToken>& tokenList)
+bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
 {
-    //currentScanner = &input;
-    //ppContext.clearAllInput();
-    //ppContext.setInput(input, true);
-    //
-    //HlslScanContext scanContext(*this, ppContext);
-    //HlslGrammar grammar(scanContext, *this);
+    //if (shader->parseStatus == -1 || true)
+    //{
+    //    infoSink.info << "PROUT";
+    //    return false;
+    //}
 
     //reparse the list of token previously parsed
+    TVector<HlslToken>& tokenList = shader->listTokens;
     if (tokenList.size() == 0) return true;
 
     const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
@@ -233,15 +241,16 @@ bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderLibr
     return numErrors == 0;
 }
 
-bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TVector<HlslToken>& tokenList)
+bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
 {
-    //currentScanner = &input;
-    //ppContext.clearAllInput();
-    //ppContext.setInput(input, true);
-    //
-    //HlslScanContext scanContext(*this, ppContext);
-    //HlslGrammar grammar(scanContext, *this);
+    //if (shader->parseStatus == -1 || true)
+    //{
+    //    infoSink.info << "PROUT";
+    //    return false;
+    //}
 
+    //reparse the list of token previously parsed
+    TVector<HlslToken>& tokenList = shader->listTokens;
     if (tokenList.size() == 0) return true;
 
     const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };

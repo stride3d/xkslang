@@ -1653,8 +1653,11 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         return acceptStruct(type, nodeList);
 
     case EHTokShaderClass:
-        return acceptShaderClass(type);
+    {
+        bool res = acceptShaderClass(type);
+        return res;
         break;
+    }
 
     case EHTokThis:
     case EHTokBase:
@@ -2361,6 +2364,8 @@ bool HlslGrammar::acceptShaderClass(TType& type)
 {
     TStorageQualifier storageQualifier = EvqTemporary;
 
+    int tokenStart = getTokenCurrentIndex();
+
     if (!acceptTokenClass(EHTokShaderClass))
         return false;
 
@@ -2406,6 +2411,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
         return false;
     }
 
+    XkslShaderDefinition* shaderDefinition = nullptr;
     switch (xkslShaderParsingOperation)
     {
         case XkslShaderParsingOperationEnum::ParseXkslShaderDeclarations:
@@ -2424,7 +2430,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             }
 
             //Create the new shader declaration
-            XkslShaderDefinition* shaderDefinition = new XkslShaderDefinition();
+            shaderDefinition = new XkslShaderDefinition();
             shaderDefinition->location = token.loc;
             shaderDefinition->shaderName = *shaderName;
             int countParents = parentsName == nullptr ? 0 : parentsName->size();
@@ -2452,7 +2458,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
         case XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition:
         {
             //retrieve the shader's declaration in the list of declared shader
-            XkslShaderDefinition* shaderDefinition = nullptr;
+            shaderDefinition = nullptr;
             for (unsigned int i = 0; i < this->xkslShaderLibrary->listShaders.size(); ++i)
             {
                 XkslShaderDefinition* aShader = this->xkslShaderLibrary->listShaders.at(i);
@@ -2503,6 +2509,20 @@ bool HlslGrammar::acceptShaderClass(TType& type)
         expected("}");
         //listShaderCurrentlyParsed.pop_back();
         return false;
+    }
+
+    if (xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderDeclarations)
+    {
+        int tokenEnd = getTokenCurrentIndex();
+
+        //Store the list of tokens into the new shader object
+        if (shaderDefinition == nullptr) {
+            error("No shader has been created");
+            return false;
+        }
+
+        CopyTokenBufferInto(shaderDefinition->listTokens, tokenStart, tokenEnd);
+        shaderDefinition->listTokens[shaderDefinition->listTokens.size() - 1].tokenClass = EHTokNone;
     }
 
     //Even if we don't directly use a shader type, we return its basictype as EbtShaderClass
@@ -2661,7 +2681,7 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
         if (identifierName == nullptr)
         {
             //We're defining a new type (likely a new struct type), check the type name
-            if (declaredType.getTypeNamePtr() == nullptr || declaredType.getTypeNamePtr()->size() == 0){error("The type needs a name"); return false;}
+            if (declaredType.getTypeNamePtr() == nullptr || declaredType.getTypeNamePtr()->size() == 0){ error("The type needs a name"); return false; }
         }
         else declaredType.setUserIdentifierName(identifierName->c_str());
 
@@ -2944,7 +2964,15 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
                 {
                     if (identifierName == nullptr)
                     {
+                        //if identifier is null: we're defining a new type ("struct Toto { };")
                         //add a new type definition into the shader
+
+                        if (declaredType.getBasicType() != EbtStruct)
+                        {
+                            error("A shader can only define a struct type");
+                            return false;
+                        }
+
                         declaredType.SetTypeAsDefinedByShader(true);
                         XkslShaderDefinition::XkslShaderMember shaderType;
                         shaderType.shader = shader;

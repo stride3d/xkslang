@@ -49,6 +49,7 @@ namespace glslang {
     public:
         void advanceToken();
         void CopyTokenBufferInto(TVector<HlslToken>& fileTokenList);
+        bool CopyTokenBufferInto(TVector<HlslToken>& tokenList, int indexStart, int indexEnd);
 
         bool advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken);
         bool advanceUntilToken(EHlslTokenClass tok, bool jumpOverBlocks);

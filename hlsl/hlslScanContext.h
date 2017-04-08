@@ -95,6 +95,13 @@ public:
         Method
     };
 
+    enum class ShaderParsingStatusEnum
+    {
+        Undefined = 0,
+        ShaderHeaderDeclarationParsed = 1,
+
+    };
+
     //Define the location of an identidier (member or method)
     class ShaderIdentifierLocation
     {
@@ -153,6 +160,8 @@ public:
     };
 
 public:
+    XkslShaderDefinition() : parsingStatus(ShaderParsingStatusEnum::Undefined) {}
+
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
 
     TString shaderName;
@@ -167,6 +176,9 @@ public:
     TVector<TString*> listDeclaredBlockNames;  //list of block (cbuffer) names declared by the shader
 
     TVector<TShaderClassFunction> listMethods;
+
+    TVector<HlslToken> listTokens;
+    ShaderParsingStatusEnum parsingStatus;
 
     TShaderCompositionVariable* GetCompositionVariableForId(int id){
         for (unsigned int i=0; i<listCompositions.size(); ++i) if (listCompositions[i].shaderCompositionId == id) return &listCompositions[i];

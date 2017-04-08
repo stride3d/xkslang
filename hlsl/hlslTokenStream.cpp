@@ -269,6 +269,14 @@ namespace glslang {
         fileTokenList = tokenBuffer;
     }
 
+    bool HlslTokenStream::CopyTokenBufferInto(TVector<HlslToken>& tokenList, int indexStart, int indexEnd)
+    {
+        if (indexStart < 0 || indexEnd >= tokenBuffer.size() || indexStart > indexEnd) return false;
+
+        for (int k = indexStart; k <= indexEnd; k++) tokenList.push_back(tokenBuffer[k]);
+        return true;
+    }
+
     void HlslTokenStream::pushTokenStream(const TVector<HlslToken>* tokens)
     {
         // not yet setup to interrupt a stream that has been receded

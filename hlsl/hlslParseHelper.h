@@ -56,10 +56,10 @@ public:
     void initializeExtensionBehavior() override;
 
     //XKSL extensions
-    bool parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TInputScanner& input, TVector<HlslToken>& fileTokenList);
-    bool parseXkslShaderNewTypesDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TVector<HlslToken>& tokenList);
-    bool parseXkslShaderMembersAndMethodDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TVector<HlslToken>& tokenList);
-    bool parseXkslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary, TPpContext&, TVector<HlslToken>& tokenList);
+    bool parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TInputScanner& input);
+    bool parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
+    bool parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
+    bool parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, HlslToken* expressionTokensList, int countTokens);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, TString& expressionString);
     void parseXkslShaderFinalize();
