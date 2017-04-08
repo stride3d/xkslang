@@ -1,5 +1,5 @@
 //Test
-load "TestMixin04_Base.xksl"
+convertAndLoad "TestMixin04_Base.xksl"
 
 mixer A
 A.mixin Base

@@ -1,5 +1,5 @@
 //Test
-load "TestMixin05_Base.xksl"
+convertAndLoad "TestMixin05_Base.xksl"
 
 mixer A
 A.mixin ShaderA

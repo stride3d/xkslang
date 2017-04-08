@@ -1,4 +1,4 @@
-load "TestReshuffleStreams01.xksl"
+convertAndLoad "TestReshuffleStreams01.xksl"
 
 mixer mixerMain
 mixerMain.mixin ShaderMain

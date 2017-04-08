@@ -1,4 +1,4 @@
-load "ShaderWithResources07.xksl"
+convertAndLoad "ShaderWithResources07.xksl"
 
 mixer m
 m.mixin ShaderA

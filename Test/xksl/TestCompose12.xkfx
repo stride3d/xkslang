@@ -1,4 +1,4 @@
-load "TestCompose12.xksl"
+convertAndLoad "TestCompose12.xksl"
 
 mixer A
 A.mixin ShaderA

@@ -1,4 +1,4 @@
-load "TestMixin06.xksl"
+convertAndLoad "TestMixin06.xksl"
 
 mixer A
 A.mixin Base

@@ -1,4 +1,4 @@
-load "CBuffer08.xksl"
+convertAndLoad "CBuffer08.xksl"
 
 mixer m
 m.mixin ShaderPSMain

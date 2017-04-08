@@ -1,4 +1,4 @@
-load "shaderWithForLoop.xksl"
+convertAndLoad "shaderWithForLoop.xksl"
 
 mixer A
 A.mixin Shader

@@ -29,10 +29,21 @@ string Utils::trim(const string& str, char c)
     return str.substr(first, (last - first + 1));
 }
 
+void Utils::replaceAll(string& str, const string& from, const string& to)
+{
+    if (from.empty()) return;
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != string::npos)
+    {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+}
+
 //========================================================================================
 //========================================================================================
 //files IO
-bool Utils::ReadFile(const string& path, string& output)
+bool Utils::ReadFile(const string& path, string& fileContent)
 {
     ifstream fstream(path, ios::in);
     if (fstream) {
@@ -43,7 +54,7 @@ bool Utils::ReadFile(const string& path, string& output)
         contents.assign((istreambuf_iterator<char>(fstream)),
             istreambuf_iterator<char>());
 
-        output = contents;
+        fileContent = contents;
         return true;
     }
 

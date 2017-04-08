@@ -1,4 +1,4 @@
-load "TestForEach01.xksl"
+convertAndLoad "TestForEach01.xksl"
 
 mixer A
 A.mixin ShaderA

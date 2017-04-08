@@ -1,6 +1,6 @@
 //Test instanciating composition shaders where some stage stream variables are defined
 
-load "TestMergeStreams01.xksl"
+convertAndLoad "TestMergeStreams01.xksl"
 
 mixer mixerComp
 mixerComp.mixin Color

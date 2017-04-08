@@ -1,6 +1,6 @@
 //Test "importing" a static lib when adding a composition
 
-load "TestCompose16.xksl"
+convertAndLoad "TestCompose16.xksl"
 
 mixer A
 A.mixin ShaderA

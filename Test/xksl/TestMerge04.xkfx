@@ -1,6 +1,6 @@
 //Test merging shader types only (no function declaration)
 
-load "TestMerge04_ShaderA.xksl"
+convertAndLoad "TestMerge04_ShaderA.xksl"
 
 mixer A
 A.mixin Base

@@ -2422,10 +2422,39 @@ static bool ParseXkslShaderRecursif(
 
                         if (shader == nullptr)
                         {
-                            int dsflkjsdl = 5454;
-                            error(parseContext, "PROUT PROUT UNKNOWN SHADER");
-                            success = false;
+                            //unknown shader. If we have a callback function: query its data and then recursively parse it
+                            if (callbackRequestDataForShader != nullptr)
+                            {
+                                std::string shaderData;
+                                if (!callbackRequestDataForShader(std::string(parentName->c_str()), shaderData))
+                                {
+                                    error(parseContext, "Failed to request data for shader: " + (*parentName));
+                                    success = false;
+                                }
+                                else
+                                {
+                                    success = ParseXkslShaderRecursif(
+                                        shaderLibrary,
+                                        shaderData,
+                                        parseContext,
+                                        ppContext,
+                                        infoSink,
+                                        intermediate,
+                                        resources,
+                                        options,
+                                        listGenericValues,
+                                        callbackRequestDataForShader);
+                                    if (!success) error(parseContext, "Failed to recursively parse the shader: " + (*parentName));
+                                }
+                            }
+                            else
+                            {
+                                error(parseContext, "Unknown shader: " + (*parentName));
+                                success = false;
+                            }
                         }
+
+                        if (!success) break;
                     }
                 }
             }

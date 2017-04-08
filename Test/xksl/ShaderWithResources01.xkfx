@@ -1,4 +1,4 @@
-load "ShaderWithResources01.xksl"
+convertAndLoad "ShaderWithResources01.xksl"
 
 mixer m
 m.mixin ShaderMain

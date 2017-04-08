@@ -1,4 +1,4 @@
-load "TestForEach04.xksl"
+convertAndLoad "TestForEach04.xksl"
 
 mixer comp
 comp.mixin ComputeColorA

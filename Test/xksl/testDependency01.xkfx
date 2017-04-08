@@ -1,6 +1,6 @@
 //Test "importing" a static lib when adding a composition
 
-load "testDependency01.xksl"
+convertAndLoad "testDependency01.xksl"
 
 mixer m
 m.mixin ShaderMain

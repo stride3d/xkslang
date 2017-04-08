@@ -43,7 +43,7 @@ static string expectedOutputDir;
 
 vector<XkslShaderToRecursivelyParse> vecXkslShaderToRecursivelyConvert = {
     //{ "dummyTest", "Shader" },
-    { "testDependency01", "ShaderMain" },
+    //{ "testDependency01", "ShaderMain" },
 };
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
@@ -92,7 +92,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
 
 struct XkfxEffectsToProcess {
     string effectName;
-    string input;
+    string inputFileName;
 };
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
@@ -114,7 +114,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge09", "TestMerge09.xkfx" },
     //{ "TestMerge10", "TestMerge10.xkfx" },
     //{ "TestMerge11", "TestMerge11.xkfx" },
-    //{ "TestMerge12", "TestMerge12.xkfx" },
+    { "TestMerge12", "TestMerge12.xkfx" },
     //{ "TestMerge13", "TestMerge13.xkfx" },
     
     //{ "TestCompose02", "TestCompose02.xkfx" },
@@ -560,9 +560,11 @@ bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
     return true;
 }
 
-bool RecusrsivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix, const vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
+bool RecusrsivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix, const vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
+    bool writeOutputsOnDisk, string& spxOutputFileName)
 {
     cout << "Parsing XKSL shader \"" << shaderName + "\" (" + filesPrefix + ")" << endl;
+    spxOutputFileName = "";
 
     ostringstream errorAndDebugMessages;
     ostringstream outputHumanReadableASTAndSPV;
@@ -589,8 +591,10 @@ bool RecusrsivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderNam
             const vector<uint32_t>& bytecodeList = spirXBytecode.getBytecodeStream();
             if (bytecodeList.size() > 0)
             {
-                const string newOutputFname = outputDir + filesPrefix + "_" + shaderName + ".spv";
-                glslang::OutputSpvBin(bytecodeList, newOutputFname.c_str());
+                const string newOutputFilename = filesPrefix + "_" + shaderName + ".spv";
+                const string newOutputFullname = outputDir + newOutputFilename;
+                glslang::OutputSpvBin(bytecodeList, newOutputFullname.c_str());
+                spxOutputFileName = newOutputFilename;
             }
 
             //output the AST and debug and HR spirv binary
@@ -680,18 +684,9 @@ bool parseStringIntoShaderGenericsValue(vector<ShaderGenericsValue>& listGeneric
     }
 }
 
-bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
+bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines)
 {
-    string effectName = effect.effectName;
-
     bool success = true;
-    const string inputFname = inputDir + "\\" + effect.input;
-    string effectCmdLines;
-    if (!Utils::ReadFile(inputFname, effectCmdLines))
-    {
-        cout << " Failed to read the file: " << inputFname << " !!!" << endl;
-        return false;
-    }
 
     vector<string> errorMsgs;
     DWORD time_before, time_after;
@@ -709,14 +704,14 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 
         stringstream lineSs(line);
         getline(lineSs, lineItem, ' ');
-        if (lineItem.compare("load") == 0)
+        if (lineItem.compare("convertAndLoad") == 0)
         {
             //convert and load xksl shaders
 
             //file to load
             string xkslInputFile;
             if (!getline(lineSs, xkslInputFile, ' ')) {
-                cout << "load: failed to get the xksl file name" << endl;
+                cout << "convertAndLoad: failed to get the xksl file name" << endl;
                 success = false; break;
             }
             xkslInputFile = Utils::trim(xkslInputFile, '\"');
@@ -727,7 +722,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
             if (getline(lineSs, genericsValueText))
             {
                 if (!parseStringIntoShaderGenericsValue(listGenericsValue, genericsValueText)) {
-                    cout << "load: failed to read the shader generics value from: " << genericsValueText << endl;
+                    cout << "convertAndLoad: failed to read the shader generics value from: " << genericsValueText << endl;
                     success = false; break;
                 }
             }
@@ -736,14 +731,14 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
             listAllParsedBytecode.push_back(spxBytecode);
             success = ParseAndConvertXkslFile(parser, xkslInputFile, listGenericsValue, *spxBytecode, true);
             if (!success) {
-                cout << "load: failed to convert the xksl file name: " << xkslInputFile << endl;
+                cout << "convertAndLoad: failed to convert the xksl file name: " << xkslInputFile << endl;
                 success = false; break;
             }
             
             vector<string> vecShaderName;
             if (!XkslMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShaderName, errorMsgs))
             {
-                cout << "load: failed to get the list of shader names from: " << xkslInputFile << endl;
+                cout << "convertAndLoad: failed to get the list of shader names from: " << xkslInputFile << endl;
                 success = false; break;
             }
 
@@ -757,7 +752,7 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         {
             string mixerName;
             if (!getline(lineSs, mixerName, ' ')) {
-                cout << "load: failed to get the xksl file name" << endl;
+                cout << "mixer: failed to get the xksl file name" << endl;
                 success = false; break;
             }
             mixerName = Utils::trim(mixerName, '\"');
@@ -934,6 +929,25 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     return success;
 }
 
+bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
+{
+    string effectName = effect.effectName;
+
+    bool success = true;
+    const string inputFname = inputDir + "\\" + effect.inputFileName;
+    string effectCmdLines;
+    if (!Utils::ReadFile(inputFname, effectCmdLines))
+    {
+        cout << " Failed to read the file: " << inputFname << " !!!" << endl;
+        return false;
+    }
+
+    //Utils::replaceAll(effectCmdLines, "load ", "convertAndLoad ");
+    //Utils::WriteFile(inputFname, effectCmdLines);
+
+    return ProcessEffect(parser, effectName, effectCmdLines);
+}
+
 void main(int argc, char** argv)
 {
 #ifdef _DEBUG
@@ -1006,8 +1020,13 @@ void main(int argc, char** argv)
 
             // parse and convert all xksl files
             SpxBytecode spirXBytecode;
+            string spxOutputFileName;
             vector<ShaderGenericsValue> listGenericsValue;
-            success = RecusrsivelyParseAndConvertXkslShader(&parser, shaderName, xkslFilesPrefix, listGenericsValue, spirXBytecode, true);
+            success = RecusrsivelyParseAndConvertXkslShader(&parser, shaderName, xkslFilesPrefix, listGenericsValue, spirXBytecode, true, spxOutputFileName);
+
+            //do default mixin with the shader
+            
+            
 
             if (success) countShadersSuccessful++;
             else listShaderFailed.push_back(shaderName + " (" + xkslFilesPrefix + ")");
@@ -1054,7 +1073,7 @@ void main(int argc, char** argv)
             bool success = true;
             int result = 0;
             XkfxEffectsToProcess effect = vecSpvFileToConvertToGlslAndHlsl[n];
-            string inputFileSpv = inputDir + effect.input;
+            string inputFileSpv = inputDir + effect.inputFileName;
 
             string xkslInput;
             if (!Utils::ReadFile(inputFileSpv, xkslInput))
@@ -1067,10 +1086,10 @@ void main(int argc, char** argv)
             {
                 //======================================================================
                 //GLSL
-                string outputNameGlsl = effect.input + ".glsl";
+                string outputNameGlsl = effect.inputFileName + ".glsl";
                 string outputFullNameGlsl = outputDir + outputNameGlsl;
 
-                cout << "Convert into GLSL: " << effect.input << endl;
+                cout << "Convert into GLSL: " << effect.inputFileName << endl;
                 result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameGlsl, ShaderLanguageEnum::GlslLanguage);
                 if (result != 0) success = false;
 
@@ -1079,10 +1098,10 @@ void main(int argc, char** argv)
 
                 //======================================================================
                 //HLSL
-                string outputNameHlsl = effect.input + ".hlsl";
+                string outputNameHlsl = effect.inputFileName + ".hlsl";
                 string outputFullNameHlsl = outputDir + outputNameHlsl;
 
-                cout << "Convert into GLSL: " << effect.input << endl;
+                cout << "Convert into GLSL: " << effect.inputFileName << endl;
                 result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameHlsl, ShaderLanguageEnum::HlslLanguage);
                 if (result != 0) success = false;
             }

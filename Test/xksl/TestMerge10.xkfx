@@ -1,7 +1,7 @@
 //Test merging shader types only (no function declaration)
 
-load "TestMerge10_ShaderA.xksl"
-load "TestMerge10_ShaderB.xksl"
+convertAndLoad "TestMerge10_ShaderA.xksl"
+convertAndLoad "TestMerge10_ShaderB.xksl"
 
 mixer A
 A.mixin ShaderA

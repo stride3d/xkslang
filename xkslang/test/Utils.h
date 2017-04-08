@@ -26,6 +26,7 @@ public:
     //string utils
     static std::string trim(const std::string& str);
     static std::string trim(const std::string& str, char c);
+    static void replaceAll(std::string& str, const std::string& from, const std::string& to);
 
     //Files IO
     // Reads the content of the file at the given |path|. On success, returns true

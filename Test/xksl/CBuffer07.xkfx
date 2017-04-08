@@ -1,4 +1,4 @@
-load "CBuffer07.xksl"
+convertAndLoad "CBuffer07.xksl"
 
 mixer A
 A.mixin ShaderComp

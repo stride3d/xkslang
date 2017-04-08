@@ -1,4 +1,4 @@
-load "TestCompose09.xksl"
+convertAndLoad "TestCompose09.xksl"
 
 mixer A
 A.mixin SubComp
