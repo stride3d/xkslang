@@ -3936,13 +3936,26 @@ XkslShaderDefinition* HlslGrammar::getShaderClassDefinition(const TString& shade
     return shader;
 }
 
-TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderName, const TString& typeName)
+TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderName, const TString& typeName, int uniqueId)
 {
+    if (uniqueId <= 0)
+    {
+        //used to avoid infinite loop if there are cyclic dependencies among shaders
+        dependencyUniqueCounter++;
+        if (dependencyUniqueCounter <= 0) dependencyUniqueCounter = 1;
+        uniqueId = dependencyUniqueCounter;
+    }
+
     XkslShaderDefinition* shader = getShaderClassDefinition(shaderName);
     if (shader == nullptr) {
-        error(TString("undeclared class:") + shaderName);
+        error("undeclared shader:" + shaderName);
         return nullptr;
     }
+    if (shader->tmpFlag == uniqueId) {
+        error("Cyclic dependency detected when parsing shader:" + shaderName);
+        return nullptr;
+    }
+    shader->tmpFlag = uniqueId;
 
     //look if the shader defined the type
     int countTypes = shader->listCustomTypes.size();
@@ -3958,7 +3971,7 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     int countParents = shader->listParentsName.size();
     for (int p = 0; p < countParents; p++)
     {
-        TType* type = getTypeDefinedByTheShaderOrItsParents(*(shader->listParentsName[p]), typeName);
+        TType* type = getTypeDefinedByTheShaderOrItsParents(*(shader->listParentsName[p]), typeName, uniqueId);
         if (type != nullptr) return type;
     }
 
@@ -4000,8 +4013,16 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
     return identifierLocation;
 }
 
-bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* accessorClassName, const TString& identifierName, bool lookForArraycomposition, TShaderCompositionVariable& compositionTargeted)
+bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* accessorClassName, const TString& identifierName, bool lookForArraycomposition, TShaderCompositionVariable& compositionTargeted, int uniqueId)
 {
+    if (uniqueId <= 0)
+    {
+        //used to avoid infinite loop if there are cyclic dependencies among shaders
+        dependencyUniqueCounter++;
+        if (dependencyUniqueCounter <= 0) dependencyUniqueCounter = 1;
+        uniqueId = dependencyUniqueCounter;
+    }
+
     TString* className = accessorClassName == nullptr? getCurrentShaderName() : accessorClassName;
     if (className == nullptr) return false;
 
@@ -4027,9 +4048,14 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
             return false;
         }
 
-        error(TString("undeclared class:") + (*className));
+        error("undeclared shader:" + (*className));
         return false;
     }
+    if (shader->tmpFlag == uniqueId) {
+        error("Cyclic dependency detected when parsing shader:" + (*className));
+        return false;
+    }
+    shader->tmpFlag = uniqueId;
 
     //look if the shader declare the composition variable
     int countCompositions = shader->listCompositions.size();
@@ -4051,7 +4077,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
     int countParents = shader->listParentsName.size();
     for (int p = 0; p < countParents; p++)
     {
-        if (isIdentifierRecordedAsACompositionVariableName(shader->listParentsName[p], identifierName, lookForArraycomposition, compositionTargeted)) return true;
+        if (isIdentifierRecordedAsACompositionVariableName(shader->listParentsName[p], identifierName, lookForArraycomposition, compositionTargeted, uniqueId)) return true;
     }
 
     return false;

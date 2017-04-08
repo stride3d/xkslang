@@ -165,7 +165,7 @@ public:
     };
 
 public:
-    XkslShaderDefinition() : parsingStatus(ShaderParsingStatusEnum::Undefined) {}
+    XkslShaderDefinition() : parsingStatus(ShaderParsingStatusEnum::Undefined), tmpFlag(0) {}
 
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
 
@@ -184,6 +184,7 @@ public:
 
     TVector<HlslToken> listTokens;
     ShaderParsingStatusEnum parsingStatus;
+    int tmpFlag;
 
     TShaderCompositionVariable* GetCompositionVariableForId(int id){
         for (unsigned int i=0; i<listCompositions.size(); ++i) if (listCompositions[i].shaderCompositionId == id) return &listCompositions[i];

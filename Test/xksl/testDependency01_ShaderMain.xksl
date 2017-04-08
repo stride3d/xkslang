@@ -1,5 +1,5 @@
 
-shader ShaderMain //: ShaderMain
+shader ShaderMain : ShaderA
 {
 	int function()
 	{
