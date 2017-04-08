@@ -149,8 +149,16 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
     return expressionNode;
 }
 
-bool HlslParseContext::parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TInputScanner& input)
+bool HlslParseContext::parseXkslShaderDeclaration(const char* xkslShaderData, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
 {
+    if (xkslShaderData == nullptr) return false;
+    size_t len = strlen(xkslShaderData);
+    if (len == 0) return false;
+
+    const char* t_strings[] = { xkslShaderData };
+    size_t t_length[] = { len };
+    TInputScanner input(1, t_strings, t_length, nullptr, 0, 0);
+
     currentScanner = &input;
     ppContext.clearAllInput();
     ppContext.setInput(input, true);

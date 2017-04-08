@@ -98,8 +98,13 @@ public:
     enum class ShaderParsingStatusEnum
     {
         Undefined = 0,
-        ShaderHeaderDeclarationParsed = 1,
-
+        HeaderDeclarationParsed,
+        GenericsResolved,
+        CustomTypeDeclared,
+        MembersAndMethodsDeclarationParsed,
+        MembersAndMethodsDeclarationRegistered,
+        MethodsDefinitionParsed,
+        ParsingCompleted
     };
 
     //Define the location of an identidier (member or method)
@@ -165,7 +170,7 @@ public:
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
 
     TString shaderName;
-    TIdentifierList shaderparentsName;
+    TIdentifierList listParentsName;
     TVector<TType*> listGenericTypes;
 
     TVector<TShaderCompositionVariable> listCompositions;  //list of compositions declared in the shader
@@ -190,8 +195,6 @@ class XkslShaderLibrary
 {
 public:
     TVector<XkslShaderDefinition*> listShaders;  //list of all shader parsed
-
-    TVector<TTypeLoc> streamBuffer;  //global buffer containing all the stream variables declared by the list of parsed shader
 };
 
 //

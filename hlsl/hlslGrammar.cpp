@@ -2435,7 +2435,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             shaderDefinition->shaderName = *shaderName;
             int countParents = parentsName == nullptr ? 0 : parentsName->size();
             for (int i = 0; i < countParents; ++i)
-                shaderDefinition->shaderparentsName.push_back(parentsName->at(i));
+                shaderDefinition->listParentsName.push_back(parentsName->at(i));
             shaderDefinition->listGenericTypes = listGenericTypes;
             this->xkslShaderCurrentlyParsed = shaderDefinition;
 
@@ -3955,10 +3955,10 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     }
 
     //type not found: we look in the parent classes
-    int countParents = shader->shaderparentsName.size();
+    int countParents = shader->listParentsName.size();
     for (int p = 0; p < countParents; p++)
     {
-        TType* type = getTypeDefinedByTheShaderOrItsParents(*(shader->shaderparentsName[p]), typeName);
+        TType* type = getTypeDefinedByTheShaderOrItsParents(*(shader->listParentsName[p]), typeName);
         if (type != nullptr) return type;
     }
 
@@ -3989,10 +3989,10 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
     if (identifierLocation.isUnknown())
     {
         //method not found: we look in the parent classes
-        int countParents = shader->shaderparentsName.size();
+        int countParents = shader->listParentsName.size();
         for (int p = 0; p < countParents; p++)
         {
-            identifierLocation = findShaderClassMethod(*(shader->shaderparentsName[p]), methodName);
+            identifierLocation = findShaderClassMethod(*(shader->listParentsName[p]), methodName);
             if (identifierLocation.isMember()) return identifierLocation;
         }
     }
@@ -4048,10 +4048,10 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
     }
 
     //look for the composition name is declared in the shader parents
-    int countParents = shader->shaderparentsName.size();
+    int countParents = shader->listParentsName.size();
     for (int p = 0; p < countParents; p++)
     {
-        if (isIdentifierRecordedAsACompositionVariableName(shader->shaderparentsName[p], identifierName, lookForArraycomposition, compositionTargeted)) return true;
+        if (isIdentifierRecordedAsACompositionVariableName(shader->listParentsName[p], identifierName, lookForArraycomposition, compositionTargeted)) return true;
     }
 
     return false;
@@ -4066,10 +4066,10 @@ bool HlslGrammar::IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslSh
 
     if (shader == maybeParent) return true;
 
-    int countParents = shader->shaderparentsName.size();
+    int countParents = shader->listParentsName.size();
     for (int p = 0; p < countParents; p++)
     {
-        XkslShaderDefinition* parentShader = getShaderClassDefinition(*(shader->shaderparentsName[p]));
+        XkslShaderDefinition* parentShader = getShaderClassDefinition(*(shader->listParentsName[p]));
         if (IsShaderEqualOrSubClassOf(parentShader, maybeParent)) return true;
     }
 
@@ -4110,10 +4110,10 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
     if (identifierLocation.isUnknown())
     {
         //member not found: we look in the parent classes
-        int countParents = shader->shaderparentsName.size();
+        int countParents = shader->listParentsName.size();
         for (int p = 0; p < countParents; p++)
         {
-            identifierLocation = findShaderClassMember(*(shader->shaderparentsName[p]), hasStreamAccessor, memberName);
+            identifierLocation = findShaderClassMember(*(shader->listParentsName[p]), hasStreamAccessor, memberName);
             if (identifierLocation.isMember()) return identifierLocation;
         }
     }
@@ -4140,14 +4140,14 @@ TString* HlslGrammar::getCurrentShaderName()
 int HlslGrammar::getCurrentShaderCountParents()
 {
     if (xkslShaderCurrentlyParsed == nullptr) return 0;
-    return xkslShaderCurrentlyParsed->shaderparentsName.size();
+    return xkslShaderCurrentlyParsed->listParentsName.size();
 }
 
 TString* HlslGrammar::getCurrentShaderParentName(int index)
 {
     if (xkslShaderCurrentlyParsed == nullptr) return nullptr;
-    assert(index >= 0 && index < (int)xkslShaderCurrentlyParsed->shaderparentsName.size());
-    return xkslShaderCurrentlyParsed->shaderparentsName[index];
+    assert(index >= 0 && index < (int)xkslShaderCurrentlyParsed->listParentsName.size());
+    return xkslShaderCurrentlyParsed->listParentsName[index];
 }
 
 bool HlslGrammar::isRecordedAsAShaderName(const TString& name)
@@ -4158,10 +4158,10 @@ bool HlslGrammar::isRecordedAsAShaderName(const TString& name)
         if (this->xkslShaderLibrary->listShaders.at(i)->shaderName.compare(name) == 0) return true;
     
         // Obsolete: if we have the parents, we have to know their declaration
-        /*int countParents = listDeclaredXkslShader[i]->shaderparentsName.size();
+        /*int countParents = listDeclaredXkslShader[i]->listParentsName.size();
         for (int k = 0; k < countParents; ++k)
         {
-            if (strcmp(listDeclaredXkslShader[i]->shaderparentsName[k].c_str(), name) == 0) return true;
+            if (strcmp(listDeclaredXkslShader[i]->listParentsName[k].c_str(), name) == 0) return true;
         }*/
     }
     return false;

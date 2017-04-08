@@ -56,7 +56,7 @@ public:
     void initializeExtensionBehavior() override;
 
     //XKSL extensions
-    bool parseXkslShaderDeclaration(XkslShaderLibrary* shaderLibrary, TPpContext&, TInputScanner& input);
+    bool parseXkslShaderDeclaration(const char* xkslShaderData, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
