@@ -3951,10 +3951,7 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
         error("undeclared shader:" + shaderName);
         return nullptr;
     }
-    if (shader->tmpFlag == uniqueId) {
-        error("Cyclic dependency detected when parsing shader:" + shaderName);
-        return nullptr;
-    }
+    if (shader->tmpFlag == uniqueId) return false; //the shader was already investigated
     shader->tmpFlag = uniqueId;
 
     //look if the shader defined the type
@@ -4051,10 +4048,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
         error("undeclared shader:" + (*className));
         return false;
     }
-    if (shader->tmpFlag == uniqueId) {
-        error("Cyclic dependency detected when parsing shader:" + (*className));
-        return false;
-    }
+    if (shader->tmpFlag == uniqueId) return false; //the shader was already investigated
     shader->tmpFlag = uniqueId;
 
     //look if the shader declare the composition variable

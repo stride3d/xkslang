@@ -3,10 +3,10 @@ shader ShaderMain : ShaderA
 {
 	int function()
 	{
-		return 1;//base.function();
+		return 1 + base.function();
 	}
 	
-	int main()
+	int PSMain()
 	{
 		return function();
 	}

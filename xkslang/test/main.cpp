@@ -34,6 +34,8 @@ struct XkslFilesToParseAndConvert {
 struct XkslShaderToRecursivelyParse {
     const char* filesPrefix;
     const char* shaderName;
+    const char* VSEntryPoint;
+    const char* PSEntryPoint;
 };
 
 static string inputDir = "glslang\\source\\Test\\xksl\\";
@@ -42,8 +44,8 @@ static string finalResultOutputDir;
 static string expectedOutputDir;
 
 vector<XkslShaderToRecursivelyParse> vecXkslShaderToRecursivelyConvert = {
-    //{ "dummyTest", "Shader" },
-    //{ "testDependency01", "ShaderMain" },
+    //{ "dummyTest", "Shader", nullptr, nullptr },
+    { "testDependency01", "ShaderMain", nullptr, "PSMain" },
 };
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
@@ -114,7 +116,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge09", "TestMerge09.xkfx" },
     //{ "TestMerge10", "TestMerge10.xkfx" },
     //{ "TestMerge11", "TestMerge11.xkfx" },
-    { "TestMerge12", "TestMerge12.xkfx" },
+    //{ "TestMerge12", "TestMerge12.xkfx" },
     //{ "TestMerge13", "TestMerge13.xkfx" },
     
     //{ "TestCompose02", "TestCompose02.xkfx" },
@@ -563,7 +565,7 @@ bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
 bool RecusrsivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix, const vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
     bool writeOutputsOnDisk, string& spxOutputFileName)
 {
-    cout << "Parsing XKSL shader \"" << shaderName + "\" (" + filesPrefix + ")" << endl;
+    cout << "Parsing XKSL shader \"" << filesPrefix + "\" (" + shaderName + ")" << endl;
     spxOutputFileName = "";
 
     ostringstream errorAndDebugMessages;
@@ -684,16 +686,35 @@ bool parseStringIntoShaderGenericsValue(vector<ShaderGenericsValue>& listGeneric
     }
 }
 
-bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines)
+bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines, vector<SpxBytecode>& listBytecodeToLoad)
 {
     bool success = true;
 
     vector<string> errorMsgs;
     DWORD time_before, time_after;
-    vector<SpxBytecode*> listAllParsedBytecode;
+    vector<SpxBytecode*> listAllocatedBytecodes;
     unordered_map<string, SpxBytecode*> mapShaderWithBytecode;
     unordered_map<string, EffectMixerObject*> mixerMap;
     int operationNum = 0;
+
+    //preload some spx files?
+    for (unsigned int k = 0; k < listBytecodeToLoad.size(); k++)
+    {
+        SpxBytecode& spxBytecode = listBytecodeToLoad[k];
+
+        vector<string> vecShaderName;
+        if (!XkslMixer::GetListAllShadersFromBytecode(spxBytecode, vecShaderName, errorMsgs))
+        {
+            cout << "preload: failed to get the list of shader names from: " << spxBytecode.GetName() << endl;
+            success = false; break;
+        }
+
+        for (unsigned int is = 0; is < vecShaderName.size(); ++is)
+        {
+            string shaderName = vecShaderName[is];
+            mapShaderWithBytecode[shaderName] = &spxBytecode;
+        }
+    }
 
     string line, lineItem;
     stringstream ss(effectCmdLines);
@@ -708,7 +729,7 @@ bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines)
         {
             //convert and load xksl shaders
 
-            //file to load
+            //file to convert
             string xkslInputFile;
             if (!getline(lineSs, xkslInputFile, ' ')) {
                 cout << "convertAndLoad: failed to get the xksl file name" << endl;
@@ -728,7 +749,7 @@ bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines)
             }
 
             SpxBytecode* spxBytecode = new SpxBytecode;
-            listAllParsedBytecode.push_back(spxBytecode);
+            listAllocatedBytecodes.push_back(spxBytecode);
             success = ParseAndConvertXkslFile(parser, xkslInputFile, listGenericsValue, *spxBytecode, true);
             if (!success) {
                 cout << "convertAndLoad: failed to convert the xksl file name: " << xkslInputFile << endl;
@@ -917,7 +938,7 @@ bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines)
     for (auto itm = mixerMap.begin(); itm != mixerMap.end(); itm++)
         delete (*itm).second;
 
-    for (auto itv = listAllParsedBytecode.begin(); itv != listAllParsedBytecode.end(); itv++)
+    for (auto itv = listAllocatedBytecodes.begin(); itv != listAllocatedBytecodes.end(); itv++)
         delete (*itv);
 
     if (errorMsgs.size() > 0)
@@ -945,7 +966,8 @@ bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     //Utils::replaceAll(effectCmdLines, "load ", "convertAndLoad ");
     //Utils::WriteFile(inputFname, effectCmdLines);
 
-    return ProcessEffect(parser, effectName, effectCmdLines);
+    vector<SpxBytecode> listBytecodeToLoad;
+    return ProcessEffect(parser, effectName, effectCmdLines, listBytecodeToLoad);
 }
 
 void main(int argc, char** argv)
@@ -978,7 +1000,7 @@ void main(int argc, char** argv)
     int countParsingProcessed = 0;
     int countParsingSuccessful = 0;
     vector<string> listXkslParsingFailed;
-    //Parse the shaders using XkslParser library
+    //Parse the xksl files using XkslParser library
     {
         for (unsigned int n = 0; n < vecXkslFilesToConvert.size(); ++n)
         {
@@ -1007,7 +1029,7 @@ void main(int argc, char** argv)
     int countShadersProcessed = 0;
     int countShadersSuccessful = 0;
     vector<string> listShaderFailed;
-    //Parse the shaders using XkslParser library
+    //Parse a xksl shaders using XkslParser library
     {
         for (unsigned int n = 0; n < vecXkslShaderToRecursivelyConvert.size(); ++n)
         {
@@ -1023,10 +1045,28 @@ void main(int argc, char** argv)
             string spxOutputFileName;
             vector<ShaderGenericsValue> listGenericsValue;
             success = RecusrsivelyParseAndConvertXkslShader(&parser, shaderName, xkslFilesPrefix, listGenericsValue, spirXBytecode, true, spxOutputFileName);
+           
+            if (success && spxOutputFileName.size() > 0)
+            {
+                //do a default mixin with the shader with just parsed
+                if (shaderToRecursivelyParse.PSEntryPoint != nullptr || shaderToRecursivelyParse.VSEntryPoint != nullptr)
+                {
+                    string effectName = xkslFilesPrefix + "_" + shaderName;
+                    string effectCmdLines = string("") +
+                        "mixer m\n" + 
+                        "m.mixin " + shaderName + "\n" +
+                        (shaderToRecursivelyParse.VSEntryPoint == nullptr ? "" : ("m.setStageEntryPoint Pixel \"" + string(shaderToRecursivelyParse.VSEntryPoint) + "\" \n")) +
+                        (shaderToRecursivelyParse.PSEntryPoint == nullptr ? "" : ("m.setStageEntryPoint Pixel \"" + string(shaderToRecursivelyParse.PSEntryPoint) + "\" \n")) +
+                        "m.compile\n";
+                    //cout << effectCmdLines << endl;
 
-            //do default mixin with the shader
-            
-            
+                    vector<SpxBytecode> listBytecodeToLoad;
+                    listBytecodeToLoad.push_back(spirXBytecode);
+                    XkslMixer::StartMixin();
+                    success = ProcessEffect(&parser, effectName, effectCmdLines, listBytecodeToLoad);
+                    XkslMixer::ReleaseMixin();
+                }
+            }
 
             if (success) countShadersSuccessful++;
             else listShaderFailed.push_back(shaderName + " (" + xkslFilesPrefix + ")");
