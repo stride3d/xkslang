@@ -1,12 +1,19 @@
 
-shader ShaderMain<int A1, int A2>: ShaderA<A1>, ShaderA<A2>
+shader ShaderMain : ShaderA, ShaderB
 {
-	int function()
+	TypeDeclaredInB var1;
+	
+	const int constI = ShaderD.constD;
+	
+	override int function()
 	{
-		return 1;//base.function();
+		int res = base.function();
+		res += var1.aInt;
+		res += constI;
+		return res;
 	}
 	
-	int main()
+	int PSMain()
 	{
 		return function();
 	}

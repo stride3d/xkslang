@@ -63,7 +63,8 @@ namespace glslang {
         HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
             xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined),
-            xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr), dependencyUniqueCounter(0){ }
+            xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr),
+            dependencyUniqueCounter(0), errorUnknownIdentifier(nullptr){}
         virtual ~HlslGrammar() { }
 
         bool parse();
@@ -73,6 +74,8 @@ namespace glslang {
         bool parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary* shaderLibrary);
         bool parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary);
         TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader);
+        bool hasAnyUnreportedError() { return errorUnknownIdentifier != nullptr; }
+        const char* GetUnknownIdentifier() { return errorUnknownIdentifier==nullptr? nullptr: errorUnknownIdentifier->c_str();}
 
     protected:
         HlslGrammar();
@@ -181,6 +184,8 @@ namespace glslang {
         XkslShaderLibrary* xkslShaderLibrary;
         TVector<TShaderVariableTargetingACompositionVariable> listForeachArrayCompositionVariable;  //if we parse a foreach loop: we pile (we can have nested foreach) the temporary variable composition name
         int dependencyUniqueCounter;
+
+        TString* errorUnknownIdentifier; //if an identifier is unknown while parsing, record it into this field (in some cases we can recover it)
     };
 
 } // end namespace glslang

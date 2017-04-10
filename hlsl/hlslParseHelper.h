@@ -60,7 +60,7 @@ public:
     bool parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
-    TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, HlslToken* expressionTokensList, int countTokens);
+    TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, TString& expressionString);
     void parseXkslShaderFinalize();
 

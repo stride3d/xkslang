@@ -131,7 +131,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
 }
 
 TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
-    TPpContext& ppContext, HlslToken* expressionTokensList, int countTokens)
+    TPpContext& ppContext, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier)
 {
     const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
     TInputScanner emptyInput(1, emptyString, emptyStringLen, nullptr, 0, 0);
@@ -145,6 +145,16 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
     grammar.importListParsedToken(expressionTokensList, countTokens);
 
     TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader);
+
+    unknownIdentifier = "";
+    if (grammar.hasAnyUnreportedError())
+    {
+        const char* pUnknownIdentifier = grammar.GetUnknownIdentifier();
+        if (pUnknownIdentifier != nullptr)
+        {
+            unknownIdentifier = TString(pUnknownIdentifier);
+        }
+    }
 
     return expressionNode;
 }

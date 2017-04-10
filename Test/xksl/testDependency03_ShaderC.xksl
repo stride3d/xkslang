@@ -1,5 +1,0 @@
-
-shader ShaderC
-{
-	static const int aConstValue = 4;
-}

@@ -1,5 +1,0 @@
-
-shader ShaderD
-{
-	static const int aConstValue = 5;
-}

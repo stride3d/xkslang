@@ -75,6 +75,7 @@ TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary
 
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements;
     this->xkslShaderLibrary = shaderLibrary;
+    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
     this->xkslShaderCurrentlyParsed = currentShader;
     this->functionCurrentlyParsed = nullptr;
 
@@ -117,7 +118,8 @@ bool HlslGrammar::parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary)
 
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderDeclarations; //Tell the parser to only parse shader declaration
     this->xkslShaderLibrary = shaderLibrary;
-    
+    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
+
     advanceUntilToken(EHTokShaderClass, true);  //skip all previous declaration
     bool res = acceptCompilationUnit();
     if (!res) return false;
@@ -136,6 +138,7 @@ bool HlslGrammar::parseXKslShaderNewTypesDefinition(XkslShaderLibrary* shaderLib
 
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition; //Tell the parser to only parse shader new types declaration
     this->xkslShaderLibrary = shaderLibrary;
+    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
 
     //advanceToken();
     advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
@@ -156,6 +159,7 @@ bool HlslGrammar::parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary*
 
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations; //Tell the parser to only parse shader members and methods declaration
     this->xkslShaderLibrary = shaderLibrary;
+    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
 
     //advanceToken();
     advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
@@ -176,6 +180,7 @@ bool HlslGrammar::parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibr
 
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition;  //Tell the parser to parse shader method definition
     this->xkslShaderLibrary = shaderLibrary;
+    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
 
     //advanceToken();
     advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
@@ -4298,7 +4303,13 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
 
                         if (!identifierLocation.isMember())
                         {
-                            error( (TString("Member: \"") + *idToken.string + TString("\" not found in the class (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
+                            //error( (TString("Member: \"") + *memberName + TString("\" not found in the class (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
+
+                            //unknown identifier, but in some cases we can resolve it (for example if the identifier is an unknown class and we have the possibility to recursively query them)
+                            if (this->errorUnknownIdentifier == nullptr)
+                            {
+                                this->errorUnknownIdentifier = NewPoolTString(memberName->c_str());
+                            }
                             return false;
                         }
 

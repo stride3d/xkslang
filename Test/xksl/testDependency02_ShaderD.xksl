@@ -1,0 +1,5 @@
+
+shader ShaderD
+{
+	static const int constD = 5;
+}

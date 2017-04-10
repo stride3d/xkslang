@@ -98,7 +98,7 @@ public:
     enum class ShaderParsingStatusEnum
     {
         Undefined = 0,
-        HeaderDeclarationParsed,
+        HeaderDeclarationProcessed,
         GenericsResolved,
         CustomTypeDeclared,
         MembersAndMethodsDeclarationParsed,
