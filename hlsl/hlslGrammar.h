@@ -89,6 +89,7 @@ namespace glslang {
         bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStreams, TShaderCompositionVariable& compositionTargeted);
         bool acceptShaderCustomType(const TString& shaderName, TType& type);
         bool acceptCompilationUnit();
+        bool acceptDeclarationList(TIntermNode*&);
         bool acceptDeclaration(TIntermNode*&);
         bool acceptControlDeclaration(TIntermNode*& node);
         bool acceptSamplerDeclarationDX9(TType&);
@@ -102,7 +103,7 @@ namespace glslang {
         bool acceptTemplateVecMatBasicType(TBasicType&);
         bool acceptVectorTemplateType(TType&);
         bool acceptMatrixTemplateType(TType&);
-        bool acceptTessellationDeclType();
+        bool acceptTessellationDeclType(TBuiltInVariable&);
         bool acceptTessellationPatchTemplateType(TType&);
         bool acceptStreamOutTemplateType(TType&, TLayoutGeometry&);
         bool acceptOutputPrimitiveGeometry(TLayoutGeometry&);
@@ -111,8 +112,7 @@ namespace glslang {
         bool acceptTextureType(TType&);
         bool acceptStructBufferType(TType&);
         bool acceptStruct(TType&, TIntermNode*& nodeList);
-        bool acceptStructDeclarationList(TTypeList*&, TIntermNode*& nodeList, const TString& typeName,
-                                         TVector<TFunctionDeclarator>&);
+        bool acceptStructDeclarationList(TTypeList*&, TIntermNode*& nodeList, TVector<TFunctionDeclarator>&);
         bool acceptMemberFunctionDefinition(TIntermNode*& nodeList, const TType&, const TString& memberName,
                                             TFunctionDeclarator&);
         bool acceptShaderClass(TType&);
@@ -133,8 +133,7 @@ namespace glslang {
         bool acceptPostfixExpression(TIntermTyped*&);
         bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor, bool hasStreamAccessor, TString* classAccessor, TShaderCompositionVariable& compositionTargeted);
         bool acceptConstructor(TIntermTyped*&);
-        bool acceptFunctionCall(HlslToken, TIntermTyped*&, TIntermTyped* objectBase = nullptr,
-                                const TSymbol* scope = nullptr);
+        bool acceptFunctionCall(const TSourceLoc&, TString& name, TIntermTyped*&, TIntermTyped* objectBase);
         bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, TShaderCompositionVariable* compositionTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);

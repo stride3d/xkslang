@@ -289,6 +289,7 @@ enum EHlslTokenClass {
     EHTokTBuffer,
     EHTokTypedef,
     EHTokThis,
+    EHTokNamespace,
     EHTokRGroup,
 
     // XKSL new type Token

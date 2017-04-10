@@ -85,9 +85,9 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "parseShaderWithStructs02.xksl" },
     //{ "parseShaderWithStructs03.xksl" },
     //{ "parseShaderWithStructs04.xksl" },
-    //{ "parseGeomShader01.xksl" },
-    //{ "parseGeomShader02.xksl" },
 
+    ////{ "parseGeomShader01.xksl" },
+    ////{ "parseGeomShader02.xksl" },
     ////{{"textureAndSampler.xksl"}, {"", nullptr}},
     ////{{"shaderTexturing.xksl"}, {"", nullptr}},
     ////{{"shaderBase.xksl"}, {"", nullptr}},
