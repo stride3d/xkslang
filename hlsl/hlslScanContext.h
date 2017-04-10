@@ -103,6 +103,7 @@ public:
         CustomTypeDeclared,
         MembersAndMethodsDeclarationParsed,
         MembersAndMethodsDeclarationRegistered,
+        UnresolvedConstsResolved,
         MethodsDefinitionParsed,
         ParsingCompleted
     };

@@ -296,6 +296,7 @@ public:
     virtual void relateToOperator(TOperator o) { assert(writable); op = o; }
     virtual TOperator getBuiltInOp() const { return op; }
     virtual void setDefined() { assert(writable); defined = true; }
+    virtual void setUnDefined() { assert(writable); defined = false; }
     virtual bool isDefined() const { return defined; }
     virtual void setPrototyped() { assert(writable); prototyped = true; }
     virtual bool isPrototyped() const { return prototyped; }

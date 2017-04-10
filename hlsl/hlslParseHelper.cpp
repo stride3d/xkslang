@@ -259,7 +259,7 @@ bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefi
     return numErrors == 0;
 }
 
-bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
+bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TString& unknownIdentifier)
 {
     //if (shader->parseStatus == -1 || true)
     //{
@@ -287,8 +287,18 @@ bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderDefinition* sh
 
     bool res = false;
     res = grammar.parseXKslShaderMethodsDefinition(shaderLibrary);
-    if (!res) return false;
 
+    unknownIdentifier = "";
+    if (grammar.hasAnyUnreportedError())
+    {
+        const char* pUnknownIdentifier = grammar.GetUnknownIdentifier();
+        if (pUnknownIdentifier != nullptr)
+        {
+            unknownIdentifier = TString(pUnknownIdentifier);
+        }
+    }
+
+    if (!res) return false;
     return numErrors == 0;
 }
 
@@ -1672,6 +1682,22 @@ void HlslParseContext::addInterstageIoToLinkage()
         if (var->getType().isLooseAndBuiltIn(language))
             trackLinkage(*var);
     }
+}
+
+bool HlslParseContext::unsetFunctionDefinition(const TSourceLoc& loc, TFunction& function)
+{
+    currentCaller = function.getMangledName();
+    TSymbol* symbol = symbolTable.find(function.getMangledName());
+    TFunction* prevDec = symbol ? symbol->getAsFunction() : nullptr;
+
+    if (!prevDec){
+        error(loc, "can't find function", function.getName().c_str(), "");
+        return false;
+    }
+
+    prevDec->setUnDefined();
+
+    return true;
 }
 
 //

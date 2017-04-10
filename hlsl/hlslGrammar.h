@@ -117,7 +117,7 @@ namespace glslang {
                                             TFunctionDeclarator&);
         bool acceptShaderClass(TType&);
         bool checkShaderGenericsList(TVector<TType*>& listGenericTypes);
-        bool acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration);
+        bool parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration);
         bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);

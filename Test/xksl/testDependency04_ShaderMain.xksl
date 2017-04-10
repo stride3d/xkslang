@@ -5,6 +5,11 @@ shader ShaderMain : ShaderA, ShaderB
 	
 	const int constI = ShaderD.constD;
 	
+	int PSMain()
+	{
+		return function();
+	}
+	
 	override int function()
 	{
 		int res = base.function();
@@ -13,10 +18,5 @@ shader ShaderMain : ShaderA, ShaderB
 		res += ShaderC.constC;
 		res += ShaderE.staticFunction();
 		return res;
-	}
-	
-	int PSMain()
-	{
-		return function();
 	}
 }

@@ -46,7 +46,11 @@ static string expectedOutputDir;
 vector<XkslShaderToRecursivelyParse> vecXkslShaderToRecursivelyConvert = {
     //{ "dummyTest", "Shader", nullptr, nullptr },
     //{ "testDependency01", "ShaderMain", nullptr, "PSMain" },
-    { "testDependency02", "ShaderMain", nullptr, "PSMain" },
+    //{ "testDependency02", "ShaderMain", nullptr, "PSMain" },
+    //{ "testDependency03", "ShaderMain", nullptr, "PSMain" },
+    //{ "testDependency04", "ShaderMain", nullptr, "PSMain" },
+    { "testDependency05", "ShaderMain", nullptr, "PSMain" },
+    //{ "testDependency06", "ShaderMain", nullptr, "PSMain" },
 };
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {

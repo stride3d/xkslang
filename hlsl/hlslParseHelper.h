@@ -59,7 +59,7 @@ public:
     bool parseXkslShaderDeclaration(const char* xkslShaderData, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
-    bool parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
+    bool parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&, TString& unknownIdentifier);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, TString& expressionString);
     void parseXkslShaderFinalize();
@@ -91,6 +91,7 @@ public:
     void assignLocations(TVariable& variable);
     void handleFunctionDeclarator(const TSourceLoc&, TFunction& function, bool prototype);
     TIntermAggregate* handleFunctionDefinition(const TSourceLoc&, TFunction&, const TAttributeMap&, TIntermNode*& entryPointTree);
+    bool unsetFunctionDefinition(const TSourceLoc&, TFunction&);
     TIntermNode* transformEntryPoint(const TSourceLoc&, TFunction&, const TAttributeMap&);
     void handleFunctionBody(const TSourceLoc&, TFunction&, TIntermNode* functionBody, TIntermNode*& node);
     void remapEntryPointIO(TFunction& function, TVariable*& returnValue, TVector<TVariable*>& inputs, TVector<TVariable*>& outputs);

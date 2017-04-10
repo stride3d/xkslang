@@ -427,6 +427,9 @@ bool HlslGrammar::acceptCompilationUnit()
 
         // externalDeclaration
         if (! acceptDeclaration(unitNode)){
+            if (this->errorUnknownIdentifier != nullptr)
+                return false; //failed due to an unknown identifier. Just return false, the error will be processed later.
+
             error("Failed to accept the declaration");
             return false;
         }
@@ -2485,13 +2488,13 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             TVector<TShaderClassFunction> listMethodDeclaration;  //list of functions declared by the shader
             TVector<TShaderClassFunction>* plistMethodDeclaration = nullptr;
             if (xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations) plistMethodDeclaration = &listMethodDeclaration;
-            if (!acceptShaderMembersAndMethodsDeclaration(shaderDefinition, plistMethodDeclaration)) {
-                error("failed to parse the shader's members and methods declarations");
-                return false;
-            }
+
+            bool success = parseShaderMembersAndMethods(shaderDefinition, plistMethodDeclaration);
+
+            this->xkslShaderCurrentlyParsed = nullptr;
 
             //Add all defined methods
-            if (plistMethodDeclaration != nullptr)
+            if (success && plistMethodDeclaration != nullptr)
             {
                 for (unsigned int i = 0; i < plistMethodDeclaration->size(); ++i)
                 {
@@ -2500,7 +2503,14 @@ bool HlslGrammar::acceptShaderClass(TType& type)
                 }
             }
 
-            this->xkslShaderCurrentlyParsed = nullptr;
+            if (!success)
+            {
+                if (this->errorUnknownIdentifier != nullptr)
+                    return false; //failed due to an unknown identifier. Just return false, the error will be processed later.
+
+                error("failed to parse the shader's members and methods declarations");
+                return false;
+            }
         }
         break;
 
@@ -2568,7 +2578,7 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, T
 }
 
 //Parse a shader class: check for all variables and functions declaration (don't parse into function definition)
-bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration)
+bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration)
 {
     const TString& shaderName = shader->shaderName;
 
@@ -2786,32 +2796,59 @@ bool HlslGrammar::acceptShaderMembersAndMethodsDeclaration(XkslShaderDefinition*
                             error("failed to retrieve the function in the shader list of declared functions");
                             return false;
                         }
-
                         shaderClassFunction->token = token;  //in case of the token was those from the function prototype
 
-                        //==============================================================================================================
-                        // start parsing a shader class method
-                        if (listForeachArrayCompositionVariable.size() > 0) {
-                            error("shader: list of foreach array composition variable should be empty"); return false;
-                        }
-
-                        this->functionCurrentlyParsed = function;
-
-                        declarator.function = function;
-                        TIntermNode* nodeList = nullptr;
-                        if (!acceptFunctionDefinition(declarator, nodeList, nullptr))
+                        if (shaderClassFunction->bodyNode != nullptr)
                         {
-                            error("shader: invalid function definition");
-                            this->functionCurrentlyParsed = nullptr;
-                            return false;
+                            //the shader method has already been processed (it already has a body), we can skip it
+                            advanceToken();
+                            if (!advanceUntilEndOfBlock(EHTokRightBrace)) {
+                                error("Error parsing until end of function block");
+                                return false;
+                            }
                         }
-                        this->functionCurrentlyParsed = nullptr;
+                        else
+                        {
+                            //==============================================================================================================
+                            // start parsing a shader class method
+                            if (listForeachArrayCompositionVariable.size() > 0) {
+                                error("shader: list of foreach array composition variable should be empty"); return false;
+                            }
 
-                        if (listForeachArrayCompositionVariable.size() > 0) {
-                            error("shader: list of foreach array composition variable should be empty"); return false;
+                            this->functionCurrentlyParsed = function;
+
+                            declarator.function = function;
+                            TIntermNode* nodeList = nullptr;
+                            if (!acceptFunctionDefinition(declarator, nodeList, nullptr))
+                            {
+                                this->functionCurrentlyParsed = nullptr;
+
+                                if (this->errorUnknownIdentifier != nullptr)
+                                {
+                                    //failed due to an unknown identifier. Just return false, the error will be processed later.
+
+                                    //unset the function, in the case of we wanna try to parse its definition again later on
+                                    if (!parseContext.unsetFunctionDefinition(declarator.loc, *declarator.function))
+                                    {
+                                        error("Failed to unset the function definition");
+                                        return false;
+                                    }
+                                }
+                                else
+                                {
+                                    error("shader: invalid function definition");
+                                }
+
+                                return false;
+                            }
+                            this->functionCurrentlyParsed = nullptr;
+
+                            if (listForeachArrayCompositionVariable.size() > 0) {
+                                error("shader: list of foreach array composition variable should be empty"); return false;
+                            }
+                            shaderClassFunction->bodyNode = nodeList;
+                            //==============================================================================================================
                         }
-                        shaderClassFunction->bodyNode = nodeList;
-                        //==============================================================================================================
                     }
                 }
                 break;
@@ -3549,7 +3586,10 @@ bool HlslGrammar::acceptFunctionBody(TFunctionDeclarator& declarator, TIntermNod
     // compound_statement
     TIntermNode* functionBody = nullptr;
     if (! acceptCompoundStatement(functionBody))
+    {
+        parseContext.popScope();
         return false;
+    }
 
     // this does a popScope()
     parseContext.handleFunctionBody(declarator.loc, *declarator.function, functionBody, functionNode);
@@ -3733,6 +3773,8 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
     // gets the right-to-left associativity.
     TIntermTyped* rightNode = nullptr;
     if (! acceptAssignmentExpression(rightNode)) {
+        if (this->errorUnknownIdentifier != nullptr) return false; //XKSl extensions: just return false. this error will be processed later
+
         expected("assignment expression");
         return false;
     }
@@ -5419,8 +5461,14 @@ bool HlslGrammar::acceptJumpStatement(TIntermNode*& statement)
         if (acceptExpression(node)) {
             // hook it up
             statement = parseContext.handleReturnValue(token.loc, node);
-        } else
+        }
+        else
+        {
+            if (this->errorUnknownIdentifier != nullptr)
+                return false; //failed due to an unknown identifier. Just return false, the error will be processed later.
+
             statement = intermediate.addBranch(EOpReturn, token.loc);
+        }
         break;
     }
 

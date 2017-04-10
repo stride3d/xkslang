@@ -1,0 +1,13 @@
+
+shader ShaderMain<int A1, int A2>: ShaderA<A1>, ShaderA<A2>
+{
+	int function()
+	{
+		return 1;//base.function();
+	}
+	
+	int main()
+	{
+		return function();
+	}
+}

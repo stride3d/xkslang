@@ -2614,6 +2614,9 @@ static bool ParseXkslShaderRecursif(
     //resolve all unresolved const members
     if (success)
     {
+        previousProcessingOperation = currentProcessingOperation;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::UnresolvedConstsResolved;
+
         TString unknownIdentifier; //if we parse a missing shader (not recorded in the shader library), we can recursively parse it and add it to our library
         bool keepLooping = true;
         while (keepLooping)
@@ -2665,6 +2668,19 @@ static bool ParseXkslShaderRecursif(
                 }
             }
         }
+
+        //Not doing anything, but done in order to keep with the same logic as every other parsing process
+        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        {
+            XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->parsingStatus == previousProcessingOperation)
+            {
+                shader->parsingStatus = currentProcessingOperation;
+            }
+        }
+
+        if (processUntilOperation == currentProcessingOperation) return success;
     }
 
     //==================================================================================================================
@@ -2675,19 +2691,68 @@ static bool ParseXkslShaderRecursif(
         previousProcessingOperation = currentProcessingOperation;
         currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::MethodsDefinitionParsed;
 
-        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
-        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        TString unknownIdentifier;
+        bool keepLooping = true;
+        while (keepLooping)
         {
-            XkslShaderDefinition* shader = listShaderParsed[s];
-            if (shader->parsingStatus == previousProcessingOperation)
-            {
-                shader->parsingStatus = currentProcessingOperation;
+            keepLooping = false;
 
-                success = parseContext->parseXkslShaderMethodsDefinition(shader, &shaderLibrary, ppContext);
-                if (!success)
+            bool checkIfUnknownIdentifierIsAShader = false;
+            TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+            for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+            {
+                XkslShaderDefinition* shader = listShaderParsed[s];
+                if (shader->parsingStatus == previousProcessingOperation)
                 {
-                    error(parseContext, "Failed to parse the shader method definition for: " + shader->shaderName);
-                    break;
+                    success = parseContext->parseXkslShaderMethodsDefinition(shader, &shaderLibrary, ppContext, unknownIdentifier);
+                    if (success)
+                    {
+                        shader->parsingStatus = currentProcessingOperation;
+                    }
+                    else
+                    {
+                        if (unknownIdentifier.size() == 0 || callbackRequestDataForShader == nullptr)
+                        {
+                            error(parseContext, "Failed to parse the shader method definition for: " + shader->shaderName);
+                            if (unknownIdentifier.size() > 0) error(parseContext, "Unknown identifier: " + unknownIdentifier);
+                            checkIfUnknownIdentifierIsAShader = false;
+                        }
+                        else
+                            checkIfUnknownIdentifierIsAShader = true;
+                        break;
+                    }
+                }
+            }
+
+            if (checkIfUnknownIdentifierIsAShader)
+            {
+                if (unknownIdentifier.size() > 0 && callbackRequestDataForShader != nullptr)
+                {
+                    //unknown identiefer. Check if it is a shader which can be recursively be parsed
+                    std::string shaderData;
+                    if (!callbackRequestDataForShader(std::string(unknownIdentifier.c_str()), shaderData))
+                    {
+                        error(parseContext, "Failed to request data for shader: " + unknownIdentifier);
+                        success = false;
+                    }
+                    else
+                    {
+                        success = ParseXkslShaderRecursif(
+                            shaderLibrary,
+                            shaderData,
+                            XkslShaderDefinition::ShaderParsingStatusEnum::UnresolvedConstsResolved, //have new shaders catch up until this process,
+                            parseContext,
+                            ppContext,
+                            infoSink,
+                            intermediate,
+                            resources,
+                            options,
+                            listGenericValues,
+                            callbackRequestDataForShader);
+
+                        if (success) keepLooping = true;
+                        else error(parseContext, "Failed to recursively parse the shader: " + unknownIdentifier);
+                    }
                 }
             }
         }
