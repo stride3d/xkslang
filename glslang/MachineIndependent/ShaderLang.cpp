@@ -2432,18 +2432,19 @@ static bool ParseXkslShaderRecursif(
                     unsigned int countParents = parsedShader->listParentsName.size();
                     for (unsigned int k = 0; k < countParents; k++)
                     {
+                        //check if the shader's parents exist in our shader library
                         const TString* parentName = parsedShader->listParentsName[k];
                         XkslShaderDefinition* shader = GetShaderFromLibrary(shaderLibrary, *parentName, nullptr);
 
                         if (shader == nullptr)
                         {
-                            //unknown shader. If we have a callback function: query its data and then recursively parse it
+                            //missing parent shader: If we have a callback function: query its data and then recursively parse it
                             if (callbackRequestDataForShader != nullptr)
                             {
                                 std::string shaderData;
                                 if (!callbackRequestDataForShader(std::string(parentName->c_str()), shaderData))
                                 {
-                                    error(parseContext, "No existing data for keyword: " + (*parentName));
+                                    error(parseContext, "No existing data for the identifier: " + (*parentName));
                                     success = false;
                                 }
                                 else
@@ -2461,6 +2462,13 @@ static bool ParseXkslShaderRecursif(
                                         listGenericValues,
                                         callbackRequestDataForShader);
                                     if (!success) error(parseContext, "Failed to recursively parse the shader: " + (*parentName));
+                                    else
+                                    {
+                                        if (GetShaderFromLibrary(shaderLibrary, *parentName, nullptr) == nullptr) {
+                                            error(parseContext, "Failed to get the missing shader after parsing the callback data: " + (*parentName));
+                                            success = false;
+                                        }
+                                    }
                                 }
                             }
                             else
@@ -2636,7 +2644,7 @@ static bool ParseXkslShaderRecursif(
                         std::string shaderData;
                         if (!callbackRequestDataForShader(std::string(unknownIdentifier.c_str()), shaderData))
                         {
-                            error(parseContext, "No existing data for keyword: " + unknownIdentifier);
+                            error(parseContext, "No existing data for the identifier: " + unknownIdentifier);
                             success = false;
                         }
                         else
@@ -2654,7 +2662,14 @@ static bool ParseXkslShaderRecursif(
                                 listGenericValues,
                                 callbackRequestDataForShader);
 
-                            if (success) keepLooping = true;
+                            if (success)
+                            {
+                                if (GetShaderFromLibrary(shaderLibrary, unknownIdentifier, nullptr) == nullptr) {
+                                    error(parseContext, "Failed to get the missing shader after parsing the callback data: " + unknownIdentifier);
+                                    success = false;
+                                }
+                                else keepLooping = true;
+                            }
                             else error(parseContext, "Failed to recursively parse the shader: " + unknownIdentifier);
                         }
                     }
@@ -2734,7 +2749,7 @@ static bool ParseXkslShaderRecursif(
                     std::string shaderData;
                     if (!callbackRequestDataForShader(std::string(unknownIdentifier.c_str()), shaderData))
                     {
-                        error(parseContext, "No existing data for keyword: " + unknownIdentifier);
+                        error(parseContext, "No existing data for the identifier: " + unknownIdentifier);
                         success = false;
                     }
                     else
@@ -2752,7 +2767,14 @@ static bool ParseXkslShaderRecursif(
                             listGenericValues,
                             callbackRequestDataForShader);
 
-                        if (success) keepLooping = true;
+                        if (success)
+                        {
+                            if (GetShaderFromLibrary(shaderLibrary, unknownIdentifier, nullptr) == nullptr) {
+                                error(parseContext, "Failed to get the missing shader after parsing the callback data: " + unknownIdentifier);
+                                success = false;
+                            }
+                            else keepLooping = true;
+                        }
                         else error(parseContext, "Failed to recursively parse the shader: " + unknownIdentifier);
                     }
                 }
@@ -2869,6 +2891,7 @@ static bool ParseXkslShaderFile(
     parseContext->initializeExtensionBehavior();
 
     // Push a new symbol allocation scope that will get used for the shader's globals.
+    int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
     symbolTable.push();
 
     //List of all declared shader
@@ -2894,6 +2917,14 @@ static bool ParseXkslShaderFile(
     parseContext->parseXkslShaderFinalize();
 
     symbolTable.pop(nullptr);
+    if (symbolTable.getCurrentLevelCount() != symbolTableInitialLevelCount) {
+        infoSink.info.message(EPrefixInternalError, "symbol table has an invalid number of levels");
+        return false;
+    }
+    ////Reset the symbol table at global level (when recursively parsing, the parser can returns without popping the symbol levels)
+    //while (symbolTable.getCurrentLevelCount() > symbolTable.getGlobalLevel()) {
+    //    symbolTable.pop(nullptr);
+    //}
 
     if (success)
     {

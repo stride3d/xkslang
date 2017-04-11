@@ -1,0 +1,8 @@
+
+shader UtilsD
+{
+	static int compute()
+	{
+		return 5;
+	}
+}

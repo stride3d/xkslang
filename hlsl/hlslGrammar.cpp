@@ -190,16 +190,22 @@ bool HlslGrammar::parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibr
 
 void HlslGrammar::expected(const char* syntax)
 {
+    if (this->hasAnyErrorToBeProcessedAtTheTop()) return; //The error will be processed later.
+
     parseContext.error(token.loc, "Expected", syntax, "");
 }
 
 void HlslGrammar::unimplemented(const char* error)
 {
+    if (this->hasAnyErrorToBeProcessedAtTheTop()) return; //The error will be processed later.
+
     parseContext.error(token.loc, "Unimplemented", error, "");
 }
 
 void HlslGrammar::error(const char* error)
 {
+    if (this->hasAnyErrorToBeProcessedAtTheTop()) return; //The error will be processed later.
+
     parseContext.error(token.loc, "Error", error, "");
 }
 
@@ -2476,7 +2482,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             {
                 if (this->xkslShaderLibrary->listShaders.at(i)->shaderName == *shaderName)
                 {
-                    error(TString("Shader is already declared: " + *shaderName).c_str());
+                    error(TString("The shader is already declared: " + *shaderName).c_str());
                     return false;
                 }
             }
@@ -2549,9 +2555,6 @@ bool HlslGrammar::acceptShaderClass(TType& type)
 
             if (!success)
             {
-                if (this->errorUnknownIdentifier != nullptr)
-                    return false; //failed due to an unknown identifier. Just return false, the error will be processed later.
-
                 error("failed to parse the shader's members and methods declarations");
                 return false;
             }
@@ -2867,13 +2870,14 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                             {
                                 this->functionCurrentlyParsed = nullptr;
 
-                                if (this->errorUnknownIdentifier != nullptr)
+                                if (this->hasAnyErrorToBeProcessedAtTheTop())
                                 {
                                     //failed due to an unknown identifier. Just return false, the error will be processed later.
 
                                     //unset the function, in the case of we wanna try to parse its definition again later on
                                     if (!parseContext.unsetFunctionDefinition(declarator.loc, *declarator.function))
                                     {
+                                        this->resetErrorsToBeProcessedAtTheTop();
                                         error("Failed to unset the function definition");
                                         return false;
                                     }
@@ -3818,8 +3822,6 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
     // gets the right-to-left associativity.
     TIntermTyped* rightNode = nullptr;
     if (! acceptAssignmentExpression(rightNode)) {
-        if (this->errorUnknownIdentifier != nullptr) return false; //XKSl extensions: just return false. this error will be processed later
-
         expected("assignment expression");
         return false;
     }
@@ -4399,9 +4401,9 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                             //error( (TString("Member: \"") + *memberName + TString("\" not found in the class (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
 
                             //unknown identifier, but in some cases we can resolve it (for example if the identifier is an unknown class and we have the possibility to recursively query them)
-                            if (this->errorUnknownIdentifier == nullptr)
+                            if (!hasAnyErrorToBeProcessedAtTheTop())
                             {
-                                this->errorUnknownIdentifier = NewPoolTString(memberName->c_str());
+                                setUnknownIdentifierToProcessAtTheTop(NewPoolTString(memberName->c_str()));
                             }
                             return false;
                         }
@@ -5100,6 +5102,8 @@ bool HlslGrammar::acceptStatement(TIntermNode*& statement)
             if (acceptDeclaration(statement))
                 return true;
 
+            if (this->hasAnyErrorToBeProcessedAtTheTop()) return false; //if we've met an unknown identifier: return false, the error will be processed later.
+
             // expression
             TIntermTyped* node;
             if (acceptExpression(node))
@@ -5469,6 +5473,13 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement)
         if (! acceptTokenClass(EHTokRightParen))
             expected(")");
 
+        if (this->hasAnyErrorToBeProcessedAtTheTop())
+        {
+            parseContext.popScope();
+            parseContext.unnestLooping();
+            return false;
+        }
+
         // statement
         if (! acceptScopedStatement(statement)) {
             expected("for sub-statement");
@@ -5531,9 +5542,7 @@ bool HlslGrammar::acceptJumpStatement(TIntermNode*& statement)
         }
         else
         {
-            if (this->errorUnknownIdentifier != nullptr)
-                return false; //failed due to an unknown identifier. Just return false, the error will be processed later.
-
+            if (this->hasAnyErrorToBeProcessedAtTheTop()) return false; //The error will be processed later.
             statement = intermediate.addBranch(EOpReturn, token.loc);
         }
         break;

@@ -560,7 +560,7 @@ bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
     const string inputFname = inputDir + shaderFilesPrefix + "_" + shaderName + ".xksl";
     if (!Utils::ReadFile(inputFname, shaderData))
     {
-        cout << " Failed to read the file: " << inputFname << endl;
+        cout << "Cannot read the file: " << inputFname << endl;
         return false;
     }
 

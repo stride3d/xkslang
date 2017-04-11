@@ -1,0 +1,8 @@
+
+shader UtilsK
+{
+	static int compute()
+	{
+		return 10;
+	}
+}

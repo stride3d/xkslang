@@ -1,8 +1,8 @@
 
-shader Utils
+shader UtilsN
 {
 	static int compute()
 	{
-		return 2;
+		return 3;
 	}
 }

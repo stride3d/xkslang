@@ -1,0 +1,8 @@
+
+shader UtilsF
+{
+	static int compute()
+	{
+		return 7;
+	}
+}

@@ -64,7 +64,7 @@ namespace glslang {
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
             xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined),
             xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr),
-            dependencyUniqueCounter(0), errorUnknownIdentifier(nullptr){}
+            dependencyUniqueCounter(0), unknownIdentifierToProcessAtTheTop(nullptr){}
         virtual ~HlslGrammar() { }
 
         bool parse();
@@ -74,8 +74,11 @@ namespace glslang {
         bool parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary* shaderLibrary);
         bool parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary);
         TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader);
-        bool hasAnyUnreportedError() { return errorUnknownIdentifier != nullptr; }
-        const char* GetUnknownIdentifier() { return errorUnknownIdentifier==nullptr? nullptr: errorUnknownIdentifier->c_str();}
+
+        void setUnknownIdentifierToProcessAtTheTop(TString* unknownIdentifier) { unknownIdentifierToProcessAtTheTop = unknownIdentifier; }
+        const char* getUnknownIdentifier() { return unknownIdentifierToProcessAtTheTop == nullptr ? nullptr : unknownIdentifierToProcessAtTheTop->c_str(); }
+        bool hasAnyErrorToBeProcessedAtTheTop() { return unknownIdentifierToProcessAtTheTop != nullptr; }
+        void resetErrorsToBeProcessedAtTheTop() { unknownIdentifierToProcessAtTheTop == nullptr; }
 
     protected:
         HlslGrammar();
@@ -184,7 +187,7 @@ namespace glslang {
         TVector<TShaderVariableTargetingACompositionVariable> listForeachArrayCompositionVariable;  //if we parse a foreach loop: we pile (we can have nested foreach) the temporary variable composition name
         int dependencyUniqueCounter;
 
-        TString* errorUnknownIdentifier; //if an identifier is unknown while parsing, record it into this field (in some cases we can recover it)
+        TString* unknownIdentifierToProcessAtTheTop; //when the parser meets an unknown identifier, in some case we want to stop parsing withouth throwing an error, and check if we can process it at the top level
     };
 
 } // end namespace glslang

@@ -1,9 +1,26 @@
 
 shader ShaderMain
 {
+	int function()
+	{
+		return UtilsA.compute();
+	}
+	
+	const int aTab[] = {0, 1, 2, 3, 4, 5};
+	
 	int PSMain()
 	{
-		return Utils.compute();
-		test more cases!!
+		int res = 0;
+		res += function() + 5 * (UtilsB.compute());
+		res += UtilsC.compute() == 4? UtilsD.compute(): UtilsE.compute();
+		if ( UtilsF.compute()) res += UtilsG.compute();
+		else res += UtilsH.compute();
+		res += aTab[UtilsI.compute()];
+		for (int i = UtilsJ.compute(); i < UtilsK.compute(); i += UtilsL.compute())
+			res += UtilsM.compute();
+		int k = 0;
+		while (k++ < UtilsN.compute()) res += UtilsO.compute();
+			
+		return res;
 	}
 }

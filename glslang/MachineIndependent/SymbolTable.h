@@ -623,6 +623,9 @@ public:
     bool atBuiltInLevel() { return isBuiltInLevel(currentLevel()); }
     bool atGlobalLevel()  { return isGlobalLevel(currentLevel()); }
 
+    int getGlobalLevel() { return globalLevel; }
+    int getCurrentLevelCount() { return table.size(); }
+
     void setNoBuiltInRedeclarations() { noBuiltInRedeclarations = true; }
     void setSeparateNameSpaces() { separateNameSpaces = true; }
 

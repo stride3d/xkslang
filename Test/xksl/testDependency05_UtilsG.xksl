@@ -1,0 +1,8 @@
+
+shader UtilsG
+{
+	static int compute()
+	{
+		return 8;
+	}
+}
