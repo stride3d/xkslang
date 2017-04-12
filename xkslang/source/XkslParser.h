@@ -42,6 +42,8 @@ public:
     bool ConvertShaderToSpx(const std::string shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
         std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV);
 
+    bool ConvertBytecodeToText(std::vector<uint32_t>& bytecode, std::string& text);
+
     //Convert a xksl file into a SPX bytecode
     //The shader string has to contain the shader and all its dependencies
     bool ConvertXkslFileToSpx(const std::string& shaderFileName, const std::string& data, const std::vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,

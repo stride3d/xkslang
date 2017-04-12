@@ -157,3 +157,13 @@ bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::Callb
     return success;
 }
 
+bool XkslParser::ConvertBytecodeToText(std::vector<uint32_t>& bytecode, std::string& text)
+{
+    if (bytecode.size() == 0) return true;
+
+    ostringstream disassembly_stream;
+    spv::Parameterize();
+    spv::Disassemble(disassembly_stream, bytecode);
+    text = disassembly_stream.str();
+    return true;
+}

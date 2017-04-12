@@ -50,12 +50,25 @@ namespace xkslang
     char* ConvertBytecodeToAscii(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize)
     {
         *asciiBufferSize = -1;
-        if (bytecode == nullptr || bytecodeSize <= 0) return nullptr;
+
+        if (bytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return nullptr; }
+        if (xkslParser == nullptr) { error("Xkslang has not been initialized"); return nullptr; }
+
+        string bytecodeText;
+        std::vector<uint32_t> vecBytecode;
+        for (int k = 0; k < bytecodeSize; k++) vecBytecode.push_back(bytecode[k]);
+        
+        if (!xkslParser->ConvertBytecodeToText(vecBytecode, bytecodeText)){
+            error("Failed to convert the bytecode to Ascii");
+            return nullptr;
+        }
+
+        int asciiBufferLen = bytecodeText.size();
+        if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
         //allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
-        int asciiBufferLen = bytecodeSize;
         char* asciiBuffer = (char*)LocalAlloc(0, asciiBufferLen * sizeof(char));
-        for (int i = 0; i < asciiBufferLen; ++i) asciiBuffer[i] = i; //asciiBuffer[i] = (char)bytecode[i];
+        strncpy(asciiBuffer, bytecodeText.c_str(), asciiBufferLen);
         *asciiBufferSize = asciiBufferLen;
         return asciiBuffer;
     }
