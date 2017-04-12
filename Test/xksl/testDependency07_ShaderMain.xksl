@@ -1,0 +1,14 @@
+
+shader ShaderMain<int A1, int A2>: ShaderA<A1>, ShaderA<A2>
+{
+	/*int function()
+	{
+		int a = ShaderA<5>.compute();
+		int b = ShaderA<6>.compute();
+	}*/
+	
+	int main()
+	{
+		return base.function();
+	}
+}

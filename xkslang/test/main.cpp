@@ -49,8 +49,8 @@ vector<XkslShaderToRecursivelyParse> vecXkslShaderToRecursivelyConvert = {
     //{ "testDependency02", "ShaderMain", nullptr, "PSMain" },
     //{ "testDependency03", "ShaderMain", nullptr, "PSMain" },
     //{ "testDependency04", "ShaderMain", nullptr, "PSMain" },
-    { "testDependency05", "ShaderMain", nullptr, "PSMain" },
-    //{ "testDependency06", "ShaderMain", nullptr, "PSMain" },
+    //{ "testDependency05", "ShaderMain", nullptr, "PSMain" },
+    { "testDependency06", "ShaderMain", nullptr, "PSMain" },
 };
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {

@@ -10,6 +10,7 @@
 #include "glslang/Public/ShaderLang.h"
 //#include "StandAlone/ResourceLimits.h"
 
+#include <sstream>
 #include "define.h"
 #include "SpxBytecode.h"
 

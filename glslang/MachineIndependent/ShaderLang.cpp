@@ -2415,7 +2415,7 @@ static bool ParseXkslShaderRecursif(
         currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::HeaderDeclarationProcessed;
 
         success = parseContext->parseXkslShaderDeclaration(xkslFileToParse.c_str(), &shaderLibrary, ppContext);
-        if (!success) error(parseContext, "Failed to parse shader declaration");
+        if (!success) error(parseContext, "Failed to parse the shader declaration");
 
         if (success)
         {

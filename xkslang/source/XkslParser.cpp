@@ -138,10 +138,8 @@ bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::Callb
     {
         ostringstream& stream = *errorAndDebugMessages;
 
-        stream << shaderName << "\n";
         for (unsigned int i = 0; i < errorMsgs.size(); ++i)
             stream << errorMsgs[i] << endl;
-        stream << "\n";
     }
 
     //output Human Readable form of AST and SPIV bytecode

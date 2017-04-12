@@ -78,7 +78,7 @@ namespace glslang {
         void setUnknownIdentifierToProcessAtTheTop(TString* unknownIdentifier) { unknownIdentifierToProcessAtTheTop = unknownIdentifier; }
         const char* getUnknownIdentifier() { return unknownIdentifierToProcessAtTheTop == nullptr ? nullptr : unknownIdentifierToProcessAtTheTop->c_str(); }
         bool hasAnyErrorToBeProcessedAtTheTop() { return unknownIdentifierToProcessAtTheTop != nullptr; }
-        void resetErrorsToBeProcessedAtTheTop() { unknownIdentifierToProcessAtTheTop == nullptr; }
+        void resetErrorsToBeProcessedAtTheTop() { unknownIdentifierToProcessAtTheTop = nullptr; }
 
     protected:
         HlslGrammar();

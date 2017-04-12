@@ -178,9 +178,9 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
 
 bool HlslParseContext::parseXkslShaderDeclaration(const char* xkslShaderData, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
 {
-    if (xkslShaderData == nullptr) return false;
+    if (xkslShaderData == nullptr) { infoSink.info << "Shader file is null\n"; return false; }
     size_t len = strlen(xkslShaderData);
-    if (len == 0) return false;
+    if (len == 0) { infoSink.info << "Shader file is empty\n"; return false; }
 
     const char* t_strings[] = { xkslShaderData };
     size_t t_length[] = { len };
