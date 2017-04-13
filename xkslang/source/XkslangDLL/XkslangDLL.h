@@ -6,13 +6,13 @@
 
 namespace xkslang
 {
-    typedef char* (__stdcall *ShaderDataGetterCallback)(const char* shaderName, int* dataLen);
+    typedef char* (__stdcall *ShaderSourceLoaderCallback)(const char* shaderName, int* dataLen);
 
     extern "C" __declspec(dllexport) bool InitializeXkslang();
 
     extern "C" __declspec(dllexport) void ReleaseXkslang();
 
-    extern "C" __declspec(dllexport) uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderDataGetterCallback shaderDependencyCallback, int* bytecodeSize);
+    extern "C" __declspec(dllexport) uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int* bytecodeSize);
 
     //Utility function to help converting a bytecode to a human-readable ascii file
     extern "C" __declspec(dllexport) char* ConvertBytecodeToAscii(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize);
@@ -46,7 +46,7 @@ public class BindingDllClass
     [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
     public static extern void GetErrorMessages(StringBuilder str, int bufferMaxLen);
 
-    public static StringBuilder ShaderDataGetterCallback(string shaderName, ref int len)
+    public static StringBuilder ShaderSourceLoaderCallback(string shaderName, ref int len)
     {
         StringBuilder shaderData = new StringBuilder("shader ShaderA{int varA;}");
         len = shaderData.Length;
@@ -71,7 +71,7 @@ public class BindingDllClass
         }
 
         int bytecodeLength = 0;
-        IntPtr pBytecodeBuffer = BindingDllClass.ConvertXkslShaderToSPX(shaderName, BindingDllClass.ShaderDataGetterCallback, ref bytecodeLength);
+        IntPtr pBytecodeBuffer = BindingDllClass.ConvertXkslShaderToSPX(shaderName, BindingDllClass.ShaderSourceLoaderCallback, ref bytecodeLength);
         if (pBytecodeBuffer == null || bytecodeLength < 0)
         {
             StringBuilder errorMsg = new StringBuilder(1024);

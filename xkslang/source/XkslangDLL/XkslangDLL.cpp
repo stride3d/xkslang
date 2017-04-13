@@ -99,7 +99,7 @@ namespace xkslang
         xkslangErrorMessages.clear();
     }
 
-    static ShaderDataGetterCallback externalShaderDataCallback = nullptr;
+    static ShaderSourceLoaderCallback externalShaderDataCallback = nullptr;
     static bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
     {
         if (externalShaderDataCallback == nullptr) return error("No callback function has been set");
@@ -113,7 +113,7 @@ namespace xkslang
         return true;
     }
 
-    uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderDataGetterCallback shaderDependencyCallback, int* bytecodeSize)
+    uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int* bytecodeSize)
     {
         *bytecodeSize = -1;
         if (xkslParser == nullptr) {error("Xkslang has not been initialized"); return nullptr;}
