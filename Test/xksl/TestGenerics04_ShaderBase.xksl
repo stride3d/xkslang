@@ -1,0 +1,7 @@
+shader ShaderBase
+{
+	int compute()
+	{
+		return 1;
+	}
+}

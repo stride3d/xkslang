@@ -100,6 +100,7 @@ public:
         Undefined = 0,
         HeaderDeclarationProcessed,
         GenericsResolved,
+        RecursivelyParseInheritedDependencies,
         CustomTypeDeclared,
         MembersAndMethodsDeclarationParsed,
         MembersAndMethodsDeclarationRegistered,
@@ -171,8 +172,8 @@ public:
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
 
     TString shaderName;
-    TIdentifierList listParentsName;
-    TVector<TType*> listGenericTypes;
+    TVector<ShaderGenericAttribute> listGenerics;
+    TVector<ShaderInheritedParentDefinition> listParents;
 
     TVector<TShaderCompositionVariable> listCompositions;  //list of compositions declared in the shader
 
@@ -215,6 +216,8 @@ public:
 
     void tokenize(HlslToken&);
     glslang::TBuiltInVariable mapSemantic(const char*);
+    
+    TString convertTokenToString(const HlslToken& token);
 
 protected:
     HlslScanContext(HlslScanContext&);

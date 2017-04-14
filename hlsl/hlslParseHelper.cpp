@@ -115,7 +115,8 @@ void HlslParseContext::setLimits(const TBuiltInResource& r)
     intermediate.setLimits(resources);
 }
 
-TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext& ppContext, TString& expressionString)
+TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext& ppContext, TString& expressionString,
+    bool errorWhenParsingUnidentifiedSymbol, bool canLookForMembersInChildrenClasses)
 {
     const char* stringsPtr[] = { expressionString.c_str() };
     size_t stringsLen[] = { expressionString.size() };
@@ -130,7 +131,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
-    TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader);
+    TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader, errorWhenParsingUnidentifiedSymbol, canLookForMembersInChildrenClasses);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
@@ -141,7 +142,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
 }
 
 TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
-    TPpContext& ppContext, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier)
+    TPpContext& ppContext, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier, bool errorWhenParsingUnidentifiedSymbol)
 {
     const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
     TInputScanner emptyInput(1, emptyString, emptyStringLen, nullptr, 0, 0);
@@ -156,7 +157,8 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
-    TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader);
+    bool canLookForMembersInChildrenClasses = false;
+    TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader, errorWhenParsingUnidentifiedSymbol, canLookForMembersInChildrenClasses);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
@@ -246,7 +248,7 @@ bool HlslParseContext::parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
     bool res = false;
-    res = grammar.parseXKslShaderNewTypesDefinition(shaderLibrary);
+    res = grammar.parseXKslShaderNewTypesDefinition(shaderLibrary, shader);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
@@ -286,7 +288,7 @@ bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefi
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
     bool res = false;
-    res = grammar.parseXKslShaderMembersAndMethodsDeclaration(shaderLibrary);
+    res = grammar.parseXKslShaderMembersAndMethodsDeclaration(shaderLibrary, shader);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
@@ -326,7 +328,7 @@ bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderDefinition* sh
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
     bool res = false;
-    res = grammar.parseXKslShaderMethodsDefinition(shaderLibrary);
+    res = grammar.parseXKslShaderMethodsDefinition(shaderLibrary, shader);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {

@@ -63,22 +63,23 @@ namespace glslang {
         HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
             xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined),
-            xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr),
-            dependencyUniqueCounter(0), unknownIdentifierToProcessAtTheTop(nullptr){}
+            xkslShaderToParse(nullptr), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr),
+            dependencyUniqueCounter(0), unknownIdentifierToProcessAtTheTop(nullptr), throwErrorWhenParsingUnidentifiedSymbol(true), canLookForMembersInChildrenClasses(false){}
         virtual ~HlslGrammar() { }
 
         bool parse();
 
         bool parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary);
-        bool parseXKslShaderNewTypesDefinition(XkslShaderLibrary* shaderLibrary);
-        bool parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary* shaderLibrary);
-        bool parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary);
-        TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader);
+        bool parseXKslShaderNewTypesDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
+        bool parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
+        bool parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
+        TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, bool errorWhenParsingUnidentifiedSymbol, bool lookForMembersInChildrenClasses);
 
         void setUnknownIdentifierToProcessAtTheTop(TString* unknownIdentifier) { unknownIdentifierToProcessAtTheTop = unknownIdentifier; }
         const char* getUnknownIdentifier() { return unknownIdentifierToProcessAtTheTop == nullptr ? nullptr : unknownIdentifierToProcessAtTheTop->c_str(); }
         bool hasAnyErrorToBeProcessedAtTheTop() { return unknownIdentifierToProcessAtTheTop != nullptr; }
         void resetErrorsToBeProcessedAtTheTop() { unknownIdentifierToProcessAtTheTop = nullptr; }
+        bool MustThrowAnErrorWhenParsingUnidentifiedSymbol() { return throwErrorWhenParsingUnidentifiedSymbol; }
 
     protected:
         HlslGrammar();
@@ -120,6 +121,7 @@ namespace glslang {
                                             TFunctionDeclarator&);
         bool acceptShaderClass(TType&);
         bool checkShaderGenericsList(TVector<TType*>& listGenericTypes);
+        bool checkShaderGenericValuesExpression(TVector<TString*>& listGenericValues);
         bool parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration);
         bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
         bool acceptFunctionParameters(TFunction&);
@@ -160,7 +162,7 @@ namespace glslang {
         bool captureBlockTokens(TVector<HlslToken>& tokens);
 
         //XKSL extensions
-        void acceptShaderClassParentsInheritance(TIdentifierList*& parents);
+        bool acceptShaderClassParentsInheritance(TVector<ShaderInheritedParentDefinition>& listParents);
         TString* getCurrentShaderName();
         TFunction* getFunctionCurrentlyParsed();
         XkslShaderDefinition* getShaderCurrentlyParsed();
@@ -180,6 +182,7 @@ namespace glslang {
         //XKSL extensions
         TString getLabelForTokenType(EHlslTokenClass tokenType);
         XkslShaderParsingOperationEnum xkslShaderParsingOperation;
+        XkslShaderDefinition* xkslShaderToParse;
         XkslShaderDefinition* xkslShaderCurrentlyParsed;
         TType* shaderMethodOrMemberTypeCurrentlyParsed;
         TFunction* functionCurrentlyParsed;
@@ -187,7 +190,9 @@ namespace glslang {
         TVector<TShaderVariableTargetingACompositionVariable> listForeachArrayCompositionVariable;  //if we parse a foreach loop: we pile (we can have nested foreach) the temporary variable composition name
         int dependencyUniqueCounter;
 
-        TString* unknownIdentifierToProcessAtTheTop; //when the parser meets an unknown identifier, in some case we want to stop parsing withouth throwing an error, and check if we can process it at the top level
+        bool canLookForMembersInChildrenClasses;        //in some very special cases (resolving generic expressions for example) we can look within children class when parsing an unidentified symbol
+        bool throwErrorWhenParsingUnidentifiedSymbol;   //if false, an unknown identifier won't throw an error, but will be pass to higher level
+        TString* unknownIdentifierToProcessAtTheTop;    //when the parser meets an unknown identifier, in some case we want to stop parsing withouth throwing an error, and check if we can process it at the top level
     };
 
 } // end namespace glslang

@@ -49,7 +49,7 @@ void XkslParser::Finalize()
 
 //Convert a xksl file into a SPX bytecode
 //The shader string has to contain the shader and all its dependencies
-bool XkslParser::ConvertXkslFileToSpx(const string& shaderFileName, const string& data, const vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
+bool XkslParser::ConvertXkslFileToSpx(const string& shaderFileName, const string& data, const vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode,
     std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV)
 {
     if (!isInitialized){
@@ -63,14 +63,20 @@ bool XkslParser::ConvertXkslFileToSpx(const string& shaderFileName, const string
     EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST);
     controls = static_cast<EShMessages>(controls | EShMsgVulkanRules);
 
-    //Convert ShaderGenericsValue to ClassGenericsValue
-    vector<ClassGenericsValue> listGenericsPerShader;
+    //Convert ShaderGenericValues to ClassGenericValues
+    vector<ClassGenericValues> listGenericsPerShader;
     for (unsigned int k = 0; k < listGenericsValue.size(); ++k)
     {
-        listGenericsPerShader.push_back(ClassGenericsValue());
-        ClassGenericsValue& sg = listGenericsPerShader.back();
+        listGenericsPerShader.push_back(ClassGenericValues());
+        ClassGenericValues& sg = listGenericsPerShader.back();
         sg.targetName = listGenericsValue[k].shaderName;
-        sg.genericsValue = listGenericsValue[k].genericsValue;
+        for (unsigned int g = 0; g < listGenericsValue[k].genericsValue.size(); ++g)
+        {
+            GenericLabelAndValue aGeneric;
+            aGeneric.label = listGenericsValue[k].genericsValue[g].label;
+            aGeneric.value = listGenericsValue[k].genericsValue[g].value;
+            sg.genericValues.push_back(aGeneric);
+        }
     }
 
     vector<uint32_t>& spxBytecode = spirXBytecode.getWritableBytecodeStream();
@@ -105,7 +111,7 @@ bool XkslParser::ConvertXkslFileToSpx(const string& shaderFileName, const string
 
 //Recursively convert a shader into SPX bytecode
 //If the shader requires some dependencies, xkslang will query their data through the callback function
-bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ShaderGenericsValue>& listGenericsValue, SpxBytecode& spirXBytecode,
+bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode,
     std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV)
 {
     if (!isInitialized) {
@@ -119,14 +125,20 @@ bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::Callb
     EShMessages controls = static_cast<EShMessages>(EShMsgCascadingErrors | EShMsgReadHlsl | EShMsgAST);
     controls = static_cast<EShMessages>(controls | EShMsgVulkanRules);
 
-    //Convert ShaderGenericsValue to ClassGenericsValue
-    vector<ClassGenericsValue> listGenericsPerShader;
+    //Convert ShaderGenericValues to ClassGenericValues
+    vector<ClassGenericValues> listGenericsPerShader;
     for (unsigned int k = 0; k < listGenericsValue.size(); ++k)
     {
-        listGenericsPerShader.push_back(ClassGenericsValue());
-        ClassGenericsValue& sg = listGenericsPerShader.back();
+        listGenericsPerShader.push_back(ClassGenericValues());
+        ClassGenericValues& sg = listGenericsPerShader.back();
         sg.targetName = listGenericsValue[k].shaderName;
-        sg.genericsValue = listGenericsValue[k].genericsValue;
+        for (unsigned int g = 0; g < listGenericsValue[k].genericsValue.size(); ++g)
+        {
+            GenericLabelAndValue aGeneric;
+            aGeneric.label = listGenericsValue[k].genericsValue[g].label;
+            aGeneric.value = listGenericsValue[k].genericsValue[g].value;
+            sg.genericValues.push_back(aGeneric);
+        }
     }
 
     vector<uint32_t>& spxBytecode = spirXBytecode.getWritableBytecodeStream();

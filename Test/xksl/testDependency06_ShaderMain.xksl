@@ -1,9 +1,4 @@
 
-shader ShaderA
-{
-	int varA;
-}
-
 shader ShaderMain: ShaderA, ShaderA
 {
 	int PSMain()

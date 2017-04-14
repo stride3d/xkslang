@@ -1,18 +1,15 @@
-
-shader ShaderBase<float offset>
+shader ShaderPS<int val>
 {
-	float compute()
-	{
-		return offset;
-	}
+	stage int PSMain() 
+    {
+		return val;
+    }
 }
 
-shader ShaderMain<int TapCount, float aFloat> : ShaderBase<aFloat>
-{
-	int array[TapCount];
-	
+shader ShaderVS<int val>
+{	
 	stage int VSMain() 
     {
-		return compute() + array[TapCount - 1];
+		return val;
     }
 }

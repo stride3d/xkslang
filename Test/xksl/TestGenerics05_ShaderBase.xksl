@@ -1,0 +1,9 @@
+shader ShaderBase<int offset>
+{
+	int aVar;
+	
+	int compute()
+	{
+		return aVar + offset;
+	}
+}

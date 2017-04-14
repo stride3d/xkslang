@@ -223,6 +223,26 @@ namespace glslang {
         return tokenBufferPos;
     }
 
+    HlslToken HlslTokenStream::getTokenAtIndex(int index)
+    {
+        if (index < 0 || index >= tokenBuffer.size()){
+            HlslToken invalidToken;
+            invalidToken.tokenClass = EHTokNone;
+            return invalidToken;
+        }
+
+        return tokenBuffer[index];
+    }
+
+    bool HlslTokenStream::convertTokenToString(const HlslToken& token, TString& str)
+    {
+        TString word = scanner.convertTokenToString(token);
+        if (word.size() == 0) return false;
+        
+        str = word;
+        return true;
+    }
+
     bool HlslTokenStream::recedeToTokenIndex(int index)
     {
         if (index < 0) index = 0;

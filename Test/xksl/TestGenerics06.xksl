@@ -1,0 +1,19 @@
+shader ShaderBase<int offset1, int offset2>
+{
+	float compute()
+	{
+		return offset + offset2;
+	}
+}
+
+shader ShaderMain<int G1, int G2> : ShaderBase<G2, (-G1 + G2 * 2)>
+{
+	int array[G1];
+	
+	stage int VSMain() 
+    {
+		return compute() + array[G1 - 1];
+    }
+}
+
+shader Toto<MemberName name> ?

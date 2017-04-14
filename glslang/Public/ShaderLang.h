@@ -166,9 +166,14 @@ typedef struct {
 } ShBindingTable;
 
 typedef struct {
+    std::string label;
+    std::string value;
+} GenericLabelAndValue;
+
+typedef struct {
     std::string targetName;
-    std::vector<std::string> genericsValue;
-} ClassGenericsValue;
+    std::vector<GenericLabelAndValue> genericValues;
+} ClassGenericValues;
 
 //
 // ShHandle held by but opaque to the driver.  It is allocated,
@@ -287,10 +292,10 @@ void FinalizeProcess();
 //XKSL extensions
 typedef bool(*CallbackRequestDataForShader)(const std::string&, std::string&);
 
-bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<ClassGenericsValue>& listGenericValues,
+bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<ClassGenericValues>& listGenericValues,
     const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs);
 
-bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ClassGenericsValue>& listGenericValues,
+bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ClassGenericValues>& listGenericValues,
     const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs);
 //=============================================================================================================================
 
@@ -419,7 +424,7 @@ public:
                bool forwardCompatible, EShMessages, Includer&);
 
     //XKSL extensions
-    //bool parseXkslShaderFile(const std::string& fileName, const std::vector<ClassGenericsValue>& listGenericValues, const TBuiltInResource* builtInResources, EShMessages messages);
+    //bool parseXkslShaderFile(const std::string& fileName, const std::vector<ClassGenericValues>& listGenericValues, const TBuiltInResource* builtInResources, EShMessages messages);
 
     // Equivalent to parse() without a default profile and without forcing defaults.
     // Provided for backwards compatibility.

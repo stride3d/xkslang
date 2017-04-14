@@ -122,7 +122,7 @@ namespace xkslang
         externalShaderDataCallback = shaderDependencyCallback;
 
         SpxBytecode spirXBytecode;
-        vector<ShaderGenericsValue> listGenericsValue;
+        vector<ShaderGenericValues> listGenericsValue;
         ostringstream errorMessages;
         bool success = xkslParser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, spirXBytecode, &errorMessages, nullptr);
 

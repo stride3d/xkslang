@@ -6270,10 +6270,14 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     ShaderClassData* shaderParent = GetShaderById(parentShaderId);
                     if (shaderParent == nullptr) { error(string("undeclared parent shader for Id: ") + to_string(parentShaderId)); break; }
 
-#ifdef XKSLANG_DEBUG_MODE
-                    if (shader->HasParent(shaderParent)) { error(string("shader: ") + shader->GetName() + string(" already inherits from parent: ") + shaderParent->GetName()); break; }
-#endif
-                    shader->AddParent(shaderParent);
+//#ifdef XKSLANG_DEBUG_MODE
+                    //A shader can inherit several time of the same shader, we just add it once
+                    //if (shader->HasParent(shaderParent)) { error(string("shader: ") + shader->GetName() + string(" already inherits from parent: ") + shaderParent->GetName()); break; }
+//#endif
+                    if (!shader->HasParent(shaderParent))
+                    {
+                        shader->AddParent(shaderParent);
+                    }
                 }
                 break;
             }

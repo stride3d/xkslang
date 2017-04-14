@@ -496,6 +496,42 @@ glslang::TBuiltInVariable HlslScanContext::mapSemantic(const char* upperCase)
         return glslang::EbvNone;
 }
 
+TString HlslScanContext::convertTokenToString(const HlslToken& token)
+{
+    switch (token.tokenClass)
+    {
+        case EHTokIdentifier: return *token.string;
+
+        case EHTokLeftParen:		return "(";
+        case EHTokRightParen:		return ")";
+        case EHTokLeftBracket:		return "[";
+        case EHTokRightBracket:		return "]";
+        case EHTokLeftBrace:		return "{";
+        case EHTokRightBrace:		return "}";
+        case EHTokDot:				return ".";
+        case EHTokComma:			return ",";
+        case EHTokColon:			return ":";
+        case EHTokColonColon:		return "::";
+        case EHTokSemicolon:        return ";";
+        case EHTokBang:				return "!";
+        case EHTokDash:				return "-";
+        case EHTokTilde:			return "~";
+        case EHTokPlus:				return "+";
+        case EHTokStar:				return "*";
+        case EHTokSlash:			return "/";
+        case EHTokPercent:			return "%";
+        case EHTokLeftAngle:		return "<";
+        case EHTokRightAngle:		return ">";
+        case EHTokVerticalBar:		return "|";
+        case EHTokCaret:			return "^";
+        case EHTokAmpersand:		return "&";
+        case EHTokQuestion:			return "?";
+    }
+
+    parseContext.error(loc, "unprocessed token class", "", "");
+    return "";
+}
+
 //
 // Fill in token information for the next token, except for the token class.
 // Returns the enum value of the token class of the next token found.

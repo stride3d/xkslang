@@ -415,6 +415,25 @@ public:
     TShaderVariableTargetingACompositionVariable(const TShaderCompositionVariable& compositionTargeted, const TString& variableName) :
         compositionTargeted(compositionTargeted), variableName(variableName) {}
 };
+
+class ShaderInheritedParentDefinition
+{
+public:
+    TString* parentName;
+    TVector<TString*>* listGenericsValue;
+
+    ShaderInheritedParentDefinition() : parentName(nullptr){}
+};
+
+class ShaderGenericAttribute
+{
+public:
+    TType* type;
+    TString expressionConstValue;
+
+    ShaderGenericAttribute() : type(nullptr) {}
+    ShaderGenericAttribute(TType* type) : type(type) {}
+};
 //======================================================================================
 
 class TQualifier {

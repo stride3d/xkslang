@@ -57,6 +57,9 @@ namespace glslang {
         void advanceUntilEndOfTokenList();
 
         int getTokenCurrentIndex();
+        HlslToken getTokenAtIndex(int index);
+        bool convertTokenToString(const HlslToken& token, TString& str);
+
         bool recedeToken();
         bool recedeToTokenIndex(int index);
         bool recedeToToken(HlslToken tok);

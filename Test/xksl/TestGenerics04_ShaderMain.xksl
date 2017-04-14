@@ -1,0 +1,7 @@
+shader ShaderMain<int G1, int G2> : ShaderBase
+{
+	stage int VSMain() 
+    {
+		return compute() + G1 + G2;
+    }
+}
