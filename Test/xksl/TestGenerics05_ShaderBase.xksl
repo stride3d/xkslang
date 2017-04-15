@@ -1,9 +1,9 @@
-shader ShaderBase<int offset>
+shader ShaderBase<int count, float offset>
 {
-	int aVar;
+	float aVar;
 	
-	int compute()
+	float compute()
 	{
-		return aVar + offset;
+		return aVar + offset + count;
 	}
 }

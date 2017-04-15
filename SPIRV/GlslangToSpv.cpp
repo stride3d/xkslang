@@ -2980,7 +2980,6 @@ bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequenc
         }
     }
 
-
     //========================================================================================================
     //We can now add decorations to all shader types
     for (auto its = listShaderType.begin(); its != listShaderType.end(); its++)

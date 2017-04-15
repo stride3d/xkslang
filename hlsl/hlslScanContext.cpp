@@ -502,30 +502,37 @@ TString HlslScanContext::convertTokenToString(const HlslToken& token)
     {
         case EHTokIdentifier: return *token.string;
 
-        case EHTokLeftParen:		return "(";
-        case EHTokRightParen:		return ")";
-        case EHTokLeftBracket:		return "[";
-        case EHTokRightBracket:		return "]";
-        case EHTokLeftBrace:		return "{";
-        case EHTokRightBrace:		return "}";
-        case EHTokDot:				return ".";
-        case EHTokComma:			return ",";
-        case EHTokColon:			return ":";
-        case EHTokColonColon:		return "::";
+        case EHTokLeftParen:        return "(";
+        case EHTokRightParen:       return ")";
+        case EHTokLeftBracket:      return "[";
+        case EHTokRightBracket:     return "]";
+        case EHTokLeftBrace:        return "{";
+        case EHTokRightBrace:       return "}";
+        case EHTokDot:              return ".";
+        case EHTokComma:            return ",";
+        case EHTokColon:            return ":";
+        case EHTokColonColon:       return "::";
         case EHTokSemicolon:        return ";";
-        case EHTokBang:				return "!";
-        case EHTokDash:				return "-";
-        case EHTokTilde:			return "~";
-        case EHTokPlus:				return "+";
-        case EHTokStar:				return "*";
-        case EHTokSlash:			return "/";
-        case EHTokPercent:			return "%";
-        case EHTokLeftAngle:		return "<";
-        case EHTokRightAngle:		return ">";
-        case EHTokVerticalBar:		return "|";
-        case EHTokCaret:			return "^";
-        case EHTokAmpersand:		return "&";
-        case EHTokQuestion:			return "?";
+        case EHTokBang:             return "!";
+        case EHTokDash:             return "-";
+        case EHTokTilde:            return "~";
+        case EHTokPlus:             return "+";
+        case EHTokStar:             return "*";
+        case EHTokSlash:            return "/";
+        case EHTokPercent:          return "%";
+        case EHTokLeftAngle:        return "<";
+        case EHTokRightAngle:       return ">";
+        case EHTokVerticalBar:      return "|";
+        case EHTokCaret:            return "^";
+        case EHTokAmpersand:        return "&";
+        case EHTokQuestion:         return "?";
+
+        case EHTokIntConstant:      return TString(std::to_string(token.i).c_str());
+        case EHTokUintConstant:     return TString(std::to_string(token.i).c_str());
+        case EHTokFloatConstant:    return TString(std::to_string(token.d).c_str());
+        case EHTokDoubleConstant:   return TString(std::to_string(token.d).c_str());
+        case EHTokBoolConstant:     return token.b? "true": "false";
+        case EHTokStringConstant:   return *token.string;
     }
 
     parseContext.error(loc, "unprocessed token class", "", "");

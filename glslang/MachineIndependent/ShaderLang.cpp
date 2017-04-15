@@ -1869,15 +1869,15 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
     // Members declaration: create and add the new shader structs
 
     //buffer of variables declared by the shader (cbuffer)
-    TString* cbufferStageGlobalBlockName = NewPoolTString((shader->shaderName + TString(".globalCBufferStage")).c_str());
+    TString* cbufferStageGlobalBlockName = NewPoolTString((shader->shaderFullName + TString(".globalCBufferStage")).c_str());
     TString* cbufferStageGlobalBlockVarName = NewPoolTString((*cbufferStageGlobalBlockName + TString("_var")).c_str());
-    TString* cbufferUnstageGlobalBlockName = NewPoolTString((shader->shaderName + TString(".globalCBufferUnstage")).c_str());
+    TString* cbufferUnstageGlobalBlockName = NewPoolTString((shader->shaderFullName + TString(".globalCBufferUnstage")).c_str());
     TString* cbufferUnstageGlobalBlockVarName = NewPoolTString((*cbufferUnstageGlobalBlockName + TString("_var")).c_str());
     TTypeList* cbufferStageGlobalStructTypeList = new TTypeList();
     TTypeList* cbufferUnstageGlobalStructTypeList = new TTypeList();
 
     //buffer of stream variables declared by the shader
-    TString* streamBufferStructName = NewPoolTString((shader->shaderName + TString(".streamBuffer")).c_str());
+    TString* streamBufferStructName = NewPoolTString((shader->shaderFullName + TString(".streamBuffer")).c_str());
     TString* streamBufferVarName = NewPoolTString((*streamBufferStructName + TString("_var")).c_str());
     TTypeList* streambufferStructTypeList = new TTypeList();
 
@@ -1885,7 +1885,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
     {
         XkslShaderDefinition::XkslShaderMember& member = shader->listParsedMembers[i];
         //member.type->setUserIdentifierName(member.type->getFieldName().c_str()); //declaration name is the field name
-        member.type->setOwnerClassName(shader->shaderName.c_str());
+        member.type->setOwnerClassName(shader->shaderFullName.c_str());
 
         bool isStream = member.type->getQualifier().isStream;
         bool isConst = member.type->getQualifier().storage == EvqConst;
@@ -1911,7 +1911,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
             if (canCreateVariable)
             {
                 //Create the const variable on global space
-                TString* variableName = NewPoolTString((TString("const_") + shader->shaderName + "_" + member.type->getFieldName()).c_str());
+                TString* variableName = NewPoolTString((TString("const_") + shader->shaderFullName + "_" + member.type->getFieldName()).c_str());
                 member.type->setFieldName(*variableName);
 
                 TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression, false);
@@ -1936,7 +1936,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
         else if (isStream)
         {
             //for stream variables: concatenate the shader class name in front of the variable field name
-            //TString* variableName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName()).c_str());
+            //TString* variableName = NewPoolTString((shader->shaderFullName + "_" + member.type->getFieldName()).c_str());
             //member.type->setFieldName(*variableName);
 
             if (!IsTypeValidForStream(member.type->getBasicType()))
@@ -1979,7 +1979,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
                                 return error(parseContext, "A cbuffer variable cannot directly be declared with \"stage\" attribute, you must set the \"stage\" attribute before the cbuffer. Variable: " + blockMemberType.getFieldName());
 
                             blockMemberType.setUserIdentifierName(blockMemberType.getFieldName().c_str());
-                            blockMemberType.setOwnerClassName(shader->shaderName.c_str());
+                            blockMemberType.setOwnerClassName(shader->shaderFullName.c_str());
 
                             XkslShaderDefinition::XkslShaderMember newShaderMember;
                             newShaderMember.shader = shader;
@@ -2011,7 +2011,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
                         blockQualifier.clear();
                         blockQualifier.storage = EvqUniform;
                         TString numberId = TString(std::to_string(shader->listDeclaredBlockNames.size()).c_str());
-                        TString* blockName = NewPoolTString((shader->shaderName + "_" + member.type->getFieldName() + "_" + numberId).c_str());  //name = class_name_num
+                        TString* blockName = NewPoolTString((shader->shaderFullName + "_" + member.type->getFieldName() + "_" + numberId).c_str());  //name = class_name_num
                         TString* blockVarName = NewPoolTString((*blockName + TString("_var")).c_str());
                         member.type->SetAsDefinedCBufferType();
 
@@ -2046,7 +2046,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
                                 return error(parseContext, "A cbuffer variable cannot directly be declared with \"stage\" attribute, you must set the \"stage\" attribute before the cbuffer. Variable: " + blockMemberType.getFieldName());
 
                             blockMemberType.setUserIdentifierName(blockMemberType.getFieldName().c_str());
-                            blockMemberType.setOwnerClassName(shader->shaderName.c_str());
+                            blockMemberType.setOwnerClassName(shader->shaderFullName.c_str());
 
                             XkslShaderDefinition::XkslShaderMember newShaderMember;
                             newShaderMember.shader = shader;
@@ -2097,12 +2097,12 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
             blockQualifier.clear();
             blockQualifier.storage = EvqUniform;
             blockQualifier.isStage = true;
-            TString& typeName = *cbufferStageGlobalBlockName; //shader->shaderName; //cbufferGlobalBlockName; //NewPoolTString("");
+            TString& typeName = *cbufferStageGlobalBlockName; //shader->shaderFullName; //cbufferGlobalBlockName; //NewPoolTString("");
             TType globalBlockType(cbufferStageGlobalStructTypeList, typeName, blockQualifier);
             globalBlockType.SetAsUndefinedCBufferType();
 
             globalBlockType.setUserIdentifierName("globalCbuffer");  //set a default user identifier name (doesn't matter if there is any name conflict)
-            globalBlockType.setOwnerClassName(shader->shaderName.c_str());
+            globalBlockType.setOwnerClassName(shader->shaderFullName.c_str());
 
             parseContext->declareBlock(shader->location, globalBlockType, cbufferStageGlobalBlockVarName);
             shader->listDeclaredBlockNames.push_back(cbufferStageGlobalBlockVarName);
@@ -2133,7 +2133,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
             globalBlockType.SetAsUndefinedCBufferType();
 
             globalBlockType.setUserIdentifierName("globalCbuffer");  //set a default user identifier name (doesn't matter if there is any name conflict)
-            globalBlockType.setOwnerClassName(shader->shaderName.c_str());
+            globalBlockType.setOwnerClassName(shader->shaderFullName.c_str());
 
             parseContext->declareBlock(shader->location, globalBlockType, cbufferUnstageGlobalBlockVarName);
             shader->listDeclaredBlockNames.push_back(cbufferUnstageGlobalBlockVarName);
@@ -2162,7 +2162,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
         type->getQualifier().storage = EvqGlobal;
 
         type->setUserIdentifierName(streamBufferStructName->c_str());
-        type->setOwnerClassName(shader->shaderName.c_str());
+        type->setOwnerClassName(shader->shaderFullName.c_str());
 
         //Add the variable
         parseContext->declareVariable(loc, *streamBufferVarName, *type, nullptr);
@@ -2185,19 +2185,21 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
         qualifier.clear();
         qualifier.storage = EvqGlobal;
         TTypeList* emptyList = new TTypeList();
-        TType* type = new TType(emptyList, shader->shaderName, qualifier, nullptr);
-        type->setUserIdentifierName(shader->shaderName.c_str());
+        TType* type = new TType(emptyList, shader->shaderFullName, qualifier, nullptr);
+        type->setUserIdentifierName(shader->shaderFullName.c_str());
         if (shader->listParents.size() > 0)
         {
             TIdentifierList listParentsName;
             for (unsigned int k = 0; k < shader->listParents.size(); ++k)
             {
-                listParentsName.push_back(shader->listParents[k].parentName);
+                if (shader->listParents[k].parentShader == nullptr)
+                    return error(parseContext, ("missing link to the shader parent"));
+                listParentsName.push_back( NewPoolTString(shader->listParents[k].parentShader->shaderFullName.c_str()));
             }
             type->SetParentsName(&listParentsName);
         }
         type->SetCompositionsList(&shader->listCompositions);
-        parseContext->declareVariable(shader->location, shader->shaderName, *type, nullptr);
+        parseContext->declareVariable(shader->location, shader->shaderFullName, *type, nullptr);
     }
 
     return true;
@@ -2208,7 +2210,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
 static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, const std::vector<ClassGenericValues>& listGenericValues, HlslParseContext* parseContext, TPpContext& ppContext)
 {
     unsigned int shaderCountGenerics = shader->listGenerics.size();
-    std::string shaderName = std::string(shader->shaderName.c_str());
+    std::string shaderFullName = std::string(shader->shaderFullName.c_str());
     if (shaderCountGenerics > 0)
     {
         //========================================================================================================
@@ -2216,17 +2218,17 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
         const ClassGenericValues* shaderGenericValues = nullptr;
         for (unsigned int sg = 0; sg < listGenericValues.size(); sg++)
         {
-            if (shaderName == listGenericValues[sg].targetName)
+            if (shaderFullName == listGenericValues[sg].targetName)
             {
                 shaderGenericValues = &(listGenericValues[sg]);
                 break;
             }
         }
         if (shaderGenericValues == nullptr) {
-            return error(parseContext, "No generics value have been set for the shader: " + shader->shaderName);
+            return error(parseContext, "No generics value have been set for the shader: " + shader->shaderFullName);
         }
         if (shaderGenericValues->genericValues.size() != shaderCountGenerics) {
-            return error(parseContext, "Invalid number of generics for the shader: " + shader->shaderName);
+            return error(parseContext, "Invalid number of generics for the shader: " + shader->shaderFullName);
         }
 
         //========================================================================================================
@@ -2320,7 +2322,7 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
             member.resolvedDeclaredExpression = expressionNode;
             member.memberLocation.memberLocationType = XkslShaderDefinition::MemberLocationTypeEnum::Const;
 
-            TString* variableName = NewPoolTString((shader->shaderName + "_generic_" + (*genericVariableName)).c_str());
+            TString* variableName = NewPoolTString((shader->shaderFullName + "_generic_" + (*genericVariableName)).c_str());
             member.type->setFieldName(*variableName);
 
             //add variable on the global space
@@ -2339,16 +2341,16 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
         }
 
         //Rename the shader according to their generics value (example: ShaderMain<int Count> will be renamed ShaderMain<5>, depending on Count value)
-        TString nameExtension = "<";
+        TString nameExtension = "_G";
         for (unsigned int g = 0; g < shaderCountGenerics; g++)
         {
             ShaderGenericAttribute& genericAttribute = shader->listGenerics[g];
             nameExtension += genericAttribute.expressionConstValue;
-            if (g == shaderCountGenerics - 1) nameExtension += ">";
-            else nameExtension += ",";
+            if (g == shaderCountGenerics - 1) nameExtension += "G";
+            else nameExtension += "_";
         }
 
-        shader->shaderName = shader->shaderName + nameExtension;
+        shader->shaderFullName = shader->shaderFullName + nameExtension;
     }
 
     return true;
@@ -2451,7 +2453,7 @@ static XkslShaderDefinition* GetShaderDefinition(XkslShaderLibrary& shaderLibrar
     for (unsigned int s = 0; s < listShaderParsed.size(); s++)
     {
         XkslShaderDefinition* shader = listShaderParsed[s];
-        if (shader->shaderName.compare(shaderName) == 0) return shader;
+        if (shader->shaderFullName.compare(shaderName) == 0) return shader;
     }
     return nullptr;
 }
@@ -2462,7 +2464,7 @@ static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibra
     for (unsigned int s = 0; s < listShaderParsed.size(); s++)
     {
         XkslShaderDefinition* shader = listShaderParsed[s];
-        if (shader->shaderName == shaderName) return shader;
+        if (shader->shaderFullName == shaderName) return shader;
     }
 
     return nullptr;
@@ -2527,7 +2529,7 @@ static bool ParseXkslShaderRecursif(
 
                 success = XkslResolveGenericsForShader(shaderLibrary, shader, listGenericValues, parseContext, ppContext);
                 if (!success) {
-                    error(parseContext, "Failed to resolve the generics for shader: " + shader->shaderName);
+                    error(parseContext, "Failed to resolve the generics for shader: " + shader->shaderFullName);
                     break;
                 }
             }
@@ -2538,15 +2540,18 @@ static bool ParseXkslShaderRecursif(
 
     //==================================================================================================================
     //==================================================================================================================
-    //for new shader having inheritance dependencies: recursively parse them if they don't already exist in the shader library
+    //link shaders with their parents
+    //for new shader with some inheritance dependencies: recursively parse them if they don't already exist in the shader library
     if (success)
     {
         previousProcessingOperation = currentProcessingOperation;
-        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::RecursivelyParseInheritedDependencies;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::ProcessedInheritance;
 
         TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
         for (unsigned int s = 0; s < listShaderParsed.size(); s++)
         {
+            if (!success) break;
+
             XkslShaderDefinition* parsedShader = listShaderParsed[s];
 
             if (parsedShader->parsingStatus == previousProcessingOperation)
@@ -2556,13 +2561,21 @@ static bool ParseXkslShaderRecursif(
                 unsigned int countParents = parsedShader->listParents.size();
                 for (unsigned int p = 0; p < countParents; p++)
                 {
-                    ShaderInheritedParentDefinition& parent = parsedShader->listParents[p];
+                    XkslShaderDefinition::ParentInformation& aParentInfo = parsedShader->listParents[p];
+                    if (aParentInfo.parentShader != nullptr) {
+                        error(parseContext, "A link to the parent has already been set"); success = false; break;
+                    }
 
                     //check if the shader's parents exist in our shader library
-                    const TString* parentName = parent.parentName;
-                    XkslShaderDefinition* shader = GetShaderFromLibrary(shaderLibrary, *parentName, nullptr);
+                    ShaderInheritedParentDefinition& parentDefinition = aParentInfo.parentDefinition;
+                    const TString* parentName = parentDefinition.parentName;
+                    XkslShaderDefinition* parentShader = GetShaderFromLibrary(shaderLibrary, *parentName, nullptr);
 
-                    if (shader == nullptr)
+                    if (parentShader != nullptr)
+                    {
+                        aParentInfo.parentShader = parentShader;
+                    }
+                    else
                     {
                         //missing parent shader: If we have a callback function: query its data and then recursively parse it
                         if (callbackRequestDataForShader != nullptr)
@@ -2577,15 +2590,15 @@ static bool ParseXkslShaderRecursif(
                             {
                                 //build the generic values to pass to the parent shader
                                 std::vector<ClassGenericValues> listGenerics;                                
-                                if (parent.listGenericsValue != nullptr)
+                                if (parentDefinition.listGenericsValue != nullptr)
                                 {
                                     listGenerics.push_back(ClassGenericValues());
                                     ClassGenericValues& parentGenericValues = listGenerics.back();
                                     parentGenericValues.targetName = std::string(parentName->c_str());
-                                    for (unsigned int g = 0; g < parent.listGenericsValue->size(); ++g)
+                                    for (unsigned int g = 0; g < parentDefinition.listGenericsValue->size(); ++g)
                                     {
                                         GenericLabelAndValue aGenericValue;
-                                        aGenericValue.value = std::string(parent.listGenericsValue->at(g)->c_str());
+                                        aGenericValue.value = std::string(parentDefinition.listGenericsValue->at(g)->c_str());
                                         parentGenericValues.genericValues.push_back(aGenericValue);
                                     }
                                     
@@ -2606,7 +2619,33 @@ static bool ParseXkslShaderRecursif(
                                 if (!success) error(parseContext, "Failed to recursively parse the shader: " + (*parentName));
                                 else
                                 {
-                                    if (GetShaderFromLibrary(shaderLibrary, *parentName, nullptr) == nullptr) {
+                                    //parentShader = GetShaderFromLibrary(shaderLibrary, *parentName, nullptr);
+
+                                    //Find the parent shader
+                                    //name is not necessarly matching (due to generics), so we look for new shaders (having parsingStatus == GenericsResolved)
+                                    for (unsigned int ks = 0; ks < shaderLibrary.listShaders.size(); ks++)
+                                    {
+                                        XkslShaderDefinition* anotherShader = shaderLibrary.listShaders[ks];
+                                        if (anotherShader->parsingStatus == XkslShaderDefinition::ShaderParsingStatusEnum::GenericsResolved &&
+                                            anotherShader->shaderOriginalName == *parentName)
+                                        {
+                                            if (parentShader == nullptr) parentShader = anotherShader;
+                                            else
+                                            {
+                                                error(parseContext, "Found 2 shaders with a name matching the parent shader name: " + (*parentName));
+                                                success = false;
+                                                parentShader = nullptr;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    if (parentShader != nullptr)
+                                    {
+                                        aParentInfo.parentShader = parentShader;
+                                    }
+                                    else
+                                    {
                                         error(parseContext, "Failed to get the missing shader after parsing the callback data: " + (*parentName));
                                         success = false;
                                     }
@@ -2661,13 +2700,13 @@ static bool ParseXkslShaderRecursif(
                         }
 
                         type->setUserIdentifierName(typeName->c_str());
-                        TString* newTypeName = NewPoolTString((shader->shaderName + "_" + *typeName).c_str());
+                        TString* newTypeName = NewPoolTString((shader->shaderFullName + "_" + *typeName).c_str());
                         type->setTypeName(*newTypeName);
                     }
                 }
                 else
                 {
-                    error(parseContext, "Failed to parse the shaders new types definition for: " + shader->shaderName);
+                    error(parseContext, "Failed to parse the shaders new types definition for: " + shader->shaderFullName);
                     break;
                 }
             }
@@ -2696,7 +2735,7 @@ static bool ParseXkslShaderRecursif(
                 success = parseContext->parseXkslShaderMembersAndMethodDeclaration(shader, &shaderLibrary, ppContext);
                 if (!success)
                 {
-                    error(parseContext, "Failed to parse the shaders' members and method declaration for the shader: " + shader->shaderName);
+                    error(parseContext, "Failed to parse the shaders' members and method declaration for the shader: " + shader->shaderFullName);
                     break;
                 }
             }
@@ -2724,7 +2763,7 @@ static bool ParseXkslShaderRecursif(
 
                 success = ProcessDeclarationOfMembersAndMethodsForShader(shader, parseContext);
                 if (!success) {
-                    error(parseContext, "Failed to process the declaration of all shader members and methods for the shader: " + shader->shaderName);
+                    error(parseContext, "Failed to process the declaration of all shader members and methods for the shader: " + shader->shaderFullName);
                     break;
                 }
             }
@@ -2844,7 +2883,7 @@ static bool ParseXkslShaderRecursif(
                     {
                         if (unknownIdentifier.size() == 0 || callbackRequestDataForShader == nullptr)
                         {
-                            error(parseContext, "Failed to parse the shader method definition for: " + shader->shaderName);
+                            error(parseContext, "Failed to parse the shader method definition for: " + shader->shaderFullName);
                             if (unknownIdentifier.size() > 0) error(parseContext, "Unknown identifier: " + unknownIdentifier);
                             checkIfUnknownIdentifierIsAShader = false;
                         }
@@ -2915,6 +2954,9 @@ static bool ParseXkslShaderRecursif(
             {
                 shader->parsingStatus = currentProcessingOperation;
 
+                //update the shader type parents' name (used by glslangToSpv)
+                
+
                 //Add all methods in the global tree root (and set all methods nodes as node aggregator)
                 int countFunctionNodes = shader->listMethods.size();
                 for (int i = 0; i< countFunctionNodes; i++)
@@ -2929,7 +2971,7 @@ static bool ParseXkslShaderRecursif(
                             glslang::TIntermAggregate* functionNode = sequence[k]->getAsAggregate();
 
                             TType& functionType = functionNode->getAsAggregate()->getWritableType();
-                            functionType.setOwnerClassName(shader->shaderName.c_str());
+                            functionType.setOwnerClassName(shader->shaderFullName.c_str());
                             treeRootNode = intermediate->growAggregate(treeRootNode, functionNode);
                         }
                     }

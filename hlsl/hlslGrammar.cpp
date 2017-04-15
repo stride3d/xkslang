@@ -1750,7 +1750,7 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
             int tokenIndex = getTokenCurrentIndex();
             XkslShaderDefinition* shader = getShaderCurrentlyParsed();
             if (shader != nullptr) {
-                if (acceptShaderCustomType(shader->shaderName, type))
+                if (acceptShaderCustomType(shader->shaderFullName, type))
                     return true;
             }
             if (!recedeToTokenIndex(tokenIndex)) error("Failed to recede to token index");
@@ -2557,7 +2557,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             //make sure the shader has not already been declared
             for (unsigned int i = 0; i < this->xkslShaderLibrary->listShaders.size(); ++i)
             {
-                if (this->xkslShaderLibrary->listShaders.at(i)->shaderName == *shaderName)
+                if (this->xkslShaderLibrary->listShaders.at(i)->shaderFullName == *shaderName)
                 {
                     error(TString("The shader is already declared: " + *shaderName).c_str());
                     return false;
@@ -2567,14 +2567,15 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             //Create the new shader declaration
             XkslShaderDefinition* shaderDefinition = new XkslShaderDefinition();
             shaderDefinition->location = token.loc;
-            shaderDefinition->shaderName = *shaderName;
+            shaderDefinition->shaderOriginalName = *shaderName;
+            shaderDefinition->shaderFullName = *shaderName;
             unsigned int countGenerics = listGenericTypes.size();
             for (unsigned int i = 0; i < countGenerics; ++i) {
                 shaderDefinition->listGenerics.push_back(ShaderGenericAttribute(listGenericTypes[i]));
             }
             unsigned int countParents = listParents.size();
             for (unsigned int i = 0; i < countParents; ++i) {
-                shaderDefinition->listParents.push_back(listParents[i]);
+                shaderDefinition->AddParent(listParents[i]);
             }
 
             if (!advanceUntilEndOfBlock(EHTokRightBrace))
@@ -2699,7 +2700,7 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, T
 //Parse a shader class: check for all variables and functions declaration (don't parse into function definition)
 bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration)
 {
-    const TString& shaderName = shader->shaderName;
+    const TString& shaderName = shader->shaderFullName;
 
     do {
         // some extra SEMI_COLON?
@@ -2729,7 +2730,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
             {
                 TShaderCompositionVariable composition;
                 composition.location = token.loc;
-                composition.shaderOwnerName = shader->shaderName;
+                composition.shaderOwnerName = shader->shaderFullName;
                 if (!acceptXkslShaderComposition(composition)) {
                     error("Failed to accept the composition declaration");
                     return false;
@@ -4096,7 +4097,7 @@ XkslShaderDefinition* HlslGrammar::getShaderClassDefinition(const TString& shade
     int countShaders = this->xkslShaderLibrary->listShaders.size();
     for (int i = 0; i < countShaders; ++i)
     {
-        if (this->xkslShaderLibrary->listShaders.at(i)->shaderName.compare(shaderClassName) == 0)
+        if (this->xkslShaderLibrary->listShaders.at(i)->shaderFullName.compare(shaderClassName) == 0)
         {
             shader = this->xkslShaderLibrary->listShaders.at(i);
             break;
@@ -4138,8 +4139,13 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     int countParents = shader->listParents.size();
     for (int p = 0; p < countParents; p++)
     {
-        TString* parentName = shader->listParents[p].parentName;
-        TType* type = getTypeDefinedByTheShaderOrItsParents(*parentName, typeName, uniqueId);
+        if (shader->listParents[p].parentShader == nullptr) {
+            error("missing link to parent shader for:" + shaderName);
+            return nullptr;
+        }
+
+        TString& parentName = shader->listParents[p].parentShader->shaderFullName;
+        TType* type = getTypeDefinedByTheShaderOrItsParents(parentName, typeName, uniqueId);
         if (type != nullptr) return type;
     }
 
@@ -4173,8 +4179,13 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
         int countParents = shader->listParents.size();
         for (int p = 0; p < countParents; p++)
         {
-            TString* parentName = shader->listParents[p].parentName;
-            identifierLocation = findShaderClassMethod(*parentName, methodName);
+            if (shader->listParents[p].parentShader == nullptr) {
+                error("missing link to parent shader for:" + shaderClassName);
+                return identifierLocation;
+            }
+
+            TString& parentName = shader->listParents[p].parentShader->shaderFullName;
+            identifierLocation = findShaderClassMethod(parentName, methodName);
             if (identifierLocation.isMember()) return identifierLocation;
         }
     }
@@ -4243,8 +4254,13 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
     int countParents = shader->listParents.size();
     for (int p = 0; p < countParents; p++)
     {
-        TString* parentName = shader->listParents[p].parentName;
-        if (isIdentifierRecordedAsACompositionVariableName(parentName, identifierName, lookForArraycomposition, compositionTargeted, uniqueId)) return true;
+        if (shader->listParents[p].parentShader == nullptr) {
+            error("missing link to parent shader for:" + shader->shaderFullName);
+            return false;
+        }
+
+        TString& parentName = shader->listParents[p].parentShader->shaderFullName;
+        if (isIdentifierRecordedAsACompositionVariableName(&parentName, identifierName, lookForArraycomposition, compositionTargeted, uniqueId)) return true;
     }
 
     return false;
@@ -4262,9 +4278,11 @@ bool HlslGrammar::IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslSh
     int countParents = shader->listParents.size();
     for (int p = 0; p < countParents; p++)
     {
-        TString* parentName = shader->listParents[p].parentName;
-        XkslShaderDefinition* parentShader = getShaderClassDefinition(*parentName);
-        if (IsShaderEqualOrSubClassOf(parentShader, maybeParent)) return true;
+        if (shader->listParents[p].parentShader == nullptr) {
+            error("missing link to parent shader for:" + shader->shaderFullName);
+            return false;
+        }
+        if (IsShaderEqualOrSubClassOf(shader->listParents[p].parentShader, maybeParent)) return true;
     }
 
     return false;
@@ -4307,8 +4325,13 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
         int countParents = shader->listParents.size();
         for (int p = 0; p < countParents; p++)
         {
-            TString* parentName = shader->listParents[p].parentName;
-            identifierLocation = findShaderClassMember(*parentName, hasStreamAccessor, memberName);
+            if (shader->listParents[p].parentShader == nullptr) {
+                error("missing link to parent shader for:" + shader->shaderFullName);
+                return identifierLocation;
+            }
+            TString& parentName = shader->listParents[p].parentShader->shaderFullName;
+
+            identifierLocation = findShaderClassMember(parentName, hasStreamAccessor, memberName);
             if (identifierLocation.isMember()) return identifierLocation;
         }
     }
@@ -4329,7 +4352,7 @@ XkslShaderDefinition* HlslGrammar::getShaderCurrentlyParsed()
 TString* HlslGrammar::getCurrentShaderName()
 {
     if (xkslShaderCurrentlyParsed == nullptr) return nullptr;
-    return &(xkslShaderCurrentlyParsed->shaderName);
+    return &(xkslShaderCurrentlyParsed->shaderFullName);
 }
 
 int HlslGrammar::getCurrentShaderCountParents()
@@ -4342,7 +4365,12 @@ TString* HlslGrammar::getCurrentShaderParentName(int index)
 {
     if (xkslShaderCurrentlyParsed == nullptr) return nullptr;
     assert(index >= 0 && index < (int)xkslShaderCurrentlyParsed->listParents.size());
-    return xkslShaderCurrentlyParsed->listParents[index].parentName;
+
+    if (xkslShaderCurrentlyParsed->listParents[index].parentShader == nullptr) {
+        error("missing link to parent shader for:" + xkslShaderCurrentlyParsed->shaderFullName);
+        return nullptr;
+    }
+    return &(xkslShaderCurrentlyParsed->listParents[index].parentShader->shaderFullName);
 }
 
 bool HlslGrammar::isRecordedAsAShaderName(const TString& name)
@@ -4350,7 +4378,7 @@ bool HlslGrammar::isRecordedAsAShaderName(const TString& name)
     int countShaders = this->xkslShaderLibrary->listShaders.size();
     for (int i = 0; i < countShaders; ++i)
     {
-        if (this->xkslShaderLibrary->listShaders.at(i)->shaderName.compare(name) == 0) return true;
+        if (this->xkslShaderLibrary->listShaders.at(i)->shaderFullName.compare(name) == 0) return true;
     
         // Obsolete: if we have the parents, we have to know their declaration
         /*int countParents = listDeclaredXkslShader[i]->listParentsName.size();
@@ -4529,8 +4557,8 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                                     }
 
                                     if (!IsShaderEqualOrSubClassOf(shaderBeingParsed, shaderOwningTheVariable)) {
-                                        error(TString("Shader: ") + shaderBeingParsed->shaderName + TString(" cannot access the variable ")
-                                            + shaderOwningTheVariable->shaderName + TString(".") + (*identifierLocation.memberName) );
+                                        error(TString("Shader: ") + shaderBeingParsed->shaderFullName + TString(" cannot access the variable ")
+                                            + shaderOwningTheVariable->shaderFullName + TString(".") + (*identifierLocation.memberName) );
                                         return false;
                                     }
                                 }
@@ -4900,8 +4928,8 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
                 }
 
                 if (!IsShaderEqualOrSubClassOf(shaderBeingParsed, shaderOwningTheComposition)) {
-                    error(TString("Shader: ") + shaderBeingParsed->shaderName + TString(" cannot access the composition: ") +
-                        shaderOwningTheComposition->shaderName + "." + compositionTargeted->variableName);
+                    error(TString("Shader: ") + shaderBeingParsed->shaderFullName + TString(" cannot access the composition: ") +
+                        shaderOwningTheComposition->shaderFullName + "." + compositionTargeted->variableName);
                     return false;
                 }
             }
@@ -4931,7 +4959,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
                     }
 
                     if (!IsShaderEqualOrSubClassOf(shaderBeingParsed, shaderOwningTheFunction)) {
-                        error(TString("invalid function call. Shader: ") + shaderBeingParsed->shaderName + TString(" is not related to shader: ") + shaderOwningTheFunction->shaderName);
+                        error(TString("invalid function call. Shader: ") + shaderBeingParsed->shaderFullName + TString(" is not related to shader: ") + shaderOwningTheFunction->shaderFullName);
                         return false;
                     }
                 }

@@ -156,11 +156,13 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
     //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
 
-    { "TestGenerics01", "TestGenerics01.xkfx" },
+    //{ "TestGenerics01", "TestGenerics01.xkfx" },
     //{ "TestGenerics02", "TestGenerics02.xkfx" },
     //{ "TestGenerics03", "TestGenerics03.xkfx" },
     //{ "TestGenerics04", "TestGenerics04.xkfx" },
-    //{ "TestGenerics05", "TestGenerics05.xkfx" },
+    { "TestGenerics05", "TestGenerics05.xkfx" },
+
+    ////{ "TestGenerics07", "TestGenerics07.xkfx" },
 
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
@@ -181,6 +183,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
 
     //{ "testDependency01", "testDependency01.xkfx" },
+    //{ "testDependency02", "testDependency02.xkfx" },  test static class Utils having some inherited dependencies!!
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -202,7 +205,7 @@ enum class ShaderLanguageEnum
     HlslLanguage
 };
 
-int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguageEnum language)
+static int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguageEnum language)
 {
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
@@ -248,7 +251,7 @@ int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguage
     return 0;
 }
 
-bool SetupTestDirectories()
+static bool SetupTestDirectories()
 {
     //Get app directories
     WCHAR fileName[MAX_PATH];
@@ -276,7 +279,7 @@ enum class BytecodeFileFormat
     Text,
 };
 
-void WriteBytecode(const SpvBytecode& bytecode, const string& outputDir, const string& outputFileName, BytecodeFileFormat format)
+static void WriteBytecode(const SpvBytecode& bytecode, const string& outputDir, const string& outputFileName, BytecodeFileFormat format)
 {
     const vector<uint32_t>& bytecodeList = bytecode.getBytecodeStream();
     const string outputFullName = outputDir + outputFileName;
@@ -301,7 +304,7 @@ void WriteBytecode(const SpvBytecode& bytecode, const string& outputDir, const s
     }
 }
 
-void SaveCurrentMixerBytecode(XkslMixer* mixer, string outputDirPath, string outputFileName)
+static void SaveCurrentMixerBytecode(XkslMixer* mixer, string outputDirPath, string outputFileName)
 {
     vector<string> errorMsgs;
     SpxBytecode mixinBytecode;
@@ -322,7 +325,7 @@ void SaveCurrentMixerBytecode(XkslMixer* mixer, string outputDirPath, string out
     }
 }
 
-bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
+static bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
 {
     DWORD time_before, time_after;
     bool success = true;
@@ -503,7 +506,7 @@ bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecod
     return success;
 }
 
-bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
+static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
 {
     cout << "Parsing XKSL file \"" << xkslInputFile << "\"" << endl;
 
@@ -559,7 +562,7 @@ bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const ve
 }
 
 static string shaderFilesPrefix;
-bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
+static bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
 {
     const string inputFname = inputDir + shaderFilesPrefix + "_" + shaderName + ".xksl";
     if (!Utils::ReadFile(inputFname, shaderData))
@@ -571,7 +574,7 @@ bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
     return true;
 }
 
-bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix, const vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode,
+static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix, const vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode,
     bool writeOutputsOnDisk, string& spxOutputFileName)
 {
     cout << "Parsing XKSL shader \"" << filesPrefix + "\" (" + shaderName + ")" << endl;
@@ -621,7 +624,7 @@ bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName
     return success;
 }
 
-bool SeparateAdotB(const string str, string& A, string& B)
+static bool SeparateAdotB(const string str, string& A, string& B)
 {
     size_t pdot = str.find_first_of('.');
     if (pdot == string::npos) return false;
@@ -630,7 +633,7 @@ bool SeparateAdotB(const string str, string& A, string& B)
     return true;
 }
 
-bool GetShadingStageForString(string& str, ShadingStageEnum& stage)
+static bool GetShadingStageForString(string& str, ShadingStageEnum& stage)
 {
     if (str.compare("Vertex") == 0) {stage = ShadingStageEnum::Vertex; return true;}
     if (str.compare("Pixel") == 0) {stage = ShadingStageEnum::Pixel; return true;}
@@ -651,7 +654,7 @@ public:
     ~EffectMixerObject() {delete mixer;}
 };
 
-bool parseShaderWithGenericValuesFromString(vector<ShaderGenericValues>& listGenericsValue, string& txt)
+static bool parseShaderWithGenericValuesFromString(vector<ShaderGenericValues>& listGenericsValue, string& txt)
 {
     int len = txt.size();
     int pos = 0, end = 0;
@@ -712,7 +715,7 @@ bool parseShaderWithGenericValuesFromString(vector<ShaderGenericValues>& listGen
     }
 }
 
-bool getNextWord(stringstream& stream, string& word)
+static bool getNextWord(stringstream& stream, string& word)
 {
     while (stream.peek() == ' ') stream.get(); // skip spaces
     if (!getline(stream, word, ' ')) {
@@ -721,14 +724,70 @@ bool getNextWord(stringstream& stream, string& word)
     return true;
 }
 
-bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines, vector<SpxBytecode>& listBytecodeToLoad)
+static string getShaderUnmangledName(const string& shaderFullName)
+{
+    size_t pos = shaderFullName.find_first_of('<');
+    if (pos == string::npos) return shaderFullName;
+    return shaderFullName.substr(0, pos);
+}
+
+static SpxBytecode* GetSpxBytecodeForShader(string shaderName, string& shaderFullName, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode, bool canLookIfUnmangledNameMatch)
+{
+    auto it = mapShaderNameWithBytecode.find(shaderName);
+    if (it != mapShaderNameWithBytecode.end())
+    {
+        SpxBytecode* spxBytecode = it->second;
+        shaderFullName = it->first;
+        return spxBytecode;
+    }
+
+    if (canLookIfUnmangledNameMatch)
+    {
+        SpxBytecode* spxBytecode = nullptr;
+        string shaderUnmangledName = getShaderUnmangledName(shaderName);
+        for (auto it = mapShaderNameWithBytecode.begin(); it != mapShaderNameWithBytecode.end(); it++)
+        {
+            string aName = getShaderUnmangledName(it->first);
+            if (aName == shaderUnmangledName)
+            {
+                if (spxBytecode == nullptr)
+                {
+                    spxBytecode = it->second;
+                    shaderFullName = it->first;
+                }
+                else
+                {
+                    cout << "2 or more shaders match the unmangled shader name: " << shaderUnmangledName << endl;
+                    return nullptr;
+                }
+            }
+        }
+        return spxBytecode;
+    }
+    
+    return nullptr;
+}
+    
+static bool RecordSPXShaderBytecode(string shaderFullName, SpxBytecode* spxBytecode, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode)
+{
+    //auto it = mapShaderNameWithBytecode.find(fullShaderName);
+    //if (it != mapShaderNameWithBytecode.end()) {
+    //    cout << "Shader is already recorded in the map: " << fullShaderName;
+    //    return false;
+    //}
+
+    mapShaderNameWithBytecode[shaderFullName] = spxBytecode;
+    return true;
+}
+
+static bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines, vector<SpxBytecode>& listBytecodeToLoad)
 {
     bool success = true;
 
     vector<string> errorMsgs;
     DWORD time_before, time_after;
     vector<SpxBytecode*> listAllocatedBytecodes;
-    unordered_map<string, SpxBytecode*> mapShaderWithBytecode;
+    unordered_map<string, SpxBytecode*> mapShaderNameWithBytecode;
     unordered_map<string, EffectMixerObject*> mixerMap;
     int operationNum = 0;
 
@@ -747,7 +806,11 @@ bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines,
         for (unsigned int is = 0; is < vecShaderName.size(); ++is)
         {
             string shaderName = vecShaderName[is];
-            mapShaderWithBytecode[shaderName] = &spxBytecode;
+            if (!RecordSPXShaderBytecode(shaderName, &spxBytecode, mapShaderNameWithBytecode))
+            {
+                cout << "Can't add the shader into the bytecode: " << shaderName;
+                return false;
+            }
         }
     }
 
@@ -808,7 +871,11 @@ bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines,
             for (unsigned int is = 0; is < vecShaderName.size(); ++is)
             {
                 string shaderName = vecShaderName[is];
-                mapShaderWithBytecode[shaderName] = spxBytecode;
+                if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameWithBytecode))
+                {
+                    cout << "Can't add the shader into the bytecode: " << shaderName;
+                    return false;
+                }
             }
         }
         else if (lineItem.compare("convertAndLoad") == 0)
@@ -852,7 +919,11 @@ bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines,
             for (unsigned int is = 0; is < vecShaderName.size(); ++is)
             {
                 string shaderName = vecShaderName[is];
-                mapShaderWithBytecode[shaderName] = spxBytecode;
+                if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameWithBytecode))
+                {
+                    cout << "Can't add the shader into the bytecode: " << shaderName;
+                    return false;
+                }
             }
         }
         else if (lineItem.compare("mixer") == 0)
@@ -896,24 +967,25 @@ bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines,
                 SpxBytecode* spxBytecode = nullptr;
                 vector<string> listShaderToMix;
                 string shaderName;
-                while (getNextWord(lineSs, shaderName)) {
-                    listShaderToMix.push_back(shaderName);
-
-                    auto it = mapShaderWithBytecode.find(shaderName);
-                    if (it == mapShaderWithBytecode.end())
+                string shaderFullName;
+                while (getNextWord(lineSs, shaderName))
+                {
+                    SpxBytecode* aShaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
+                    if (aShaderBytecode == nullptr)
                     {
-                        cout << "cannot find a bytecode in the shader librady for shader named: " << shaderName << endl;
+                        cout << "cannot find a bytecode in the shader librady for the shader: " << shaderName << endl;
                         success = false; break;
                     }
-                    SpxBytecode* aShaderBytecode = it->second;
                     if (spxBytecode == nullptr) spxBytecode = aShaderBytecode;
                     else
                     {
                         if (spxBytecode != aShaderBytecode) {
-                            cout << "2 shader to mix are defined in different bytecode (we could merge them)" << endl;
+                            cout << "2 shaders to mix are defined in different bytecode (maybe we could merge them)" << endl;
                             success = false; break;
                         }
                     }
+
+                    listShaderToMix.push_back(shaderFullName);
                 }
                 if (spxBytecode == nullptr)
                 {
@@ -1036,7 +1108,7 @@ bool ProcessEffect(XkslParser* parser, string effectName, string effectCmdLines,
     return success;
 }
 
-bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
+static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 {
     string effectName = effect.effectName;
 

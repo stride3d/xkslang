@@ -1,7 +1,7 @@
-shader ShaderMain<int G1, int G2> : ShaderBase<G1>
+shader ShaderMain: ShaderBase<2, 5>
 {
-	stage int VSMain() 
+	stage float VSMain() 
     {
-		return compute() + (G1 + G2)
+		return compute() + aVar;
     }
 }

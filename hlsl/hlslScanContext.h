@@ -100,7 +100,7 @@ public:
         Undefined = 0,
         HeaderDeclarationProcessed,
         GenericsResolved,
-        RecursivelyParseInheritedDependencies,
+        ProcessedInheritance,
         CustomTypeDeclared,
         MembersAndMethodsDeclarationParsed,
         MembersAndMethodsDeclarationRegistered,
@@ -149,6 +149,15 @@ public:
         }
     };
 
+    class ParentInformation
+    {
+    public:
+        ShaderInheritedParentDefinition parentDefinition;
+        XkslShaderDefinition* parentShader;
+
+        ParentInformation() : parentShader(nullptr) {}
+    };
+
     class XkslShaderMember
     {
     public:
@@ -171,9 +180,10 @@ public:
 
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
 
-    TString shaderName;
+    TString shaderOriginalName;
+    TString shaderFullName;        //shader name plus generics value (ie ShaderMain<5>)
     TVector<ShaderGenericAttribute> listGenerics;
-    TVector<ShaderInheritedParentDefinition> listParents;
+    TVector<ParentInformation> listParents;
 
     TVector<TShaderCompositionVariable> listCompositions;  //list of compositions declared in the shader
 
@@ -191,6 +201,12 @@ public:
     TShaderCompositionVariable* GetCompositionVariableForId(int id){
         for (unsigned int i=0; i<listCompositions.size(); ++i) if (listCompositions[i].shaderCompositionId == id) return &listCompositions[i];
         return nullptr;
+    }
+
+    void AddParent(ShaderInheritedParentDefinition& parentDefinition)
+    {
+        listParents.push_back(ParentInformation());
+        listParents.back().parentDefinition = parentDefinition;
     }
 };
 
