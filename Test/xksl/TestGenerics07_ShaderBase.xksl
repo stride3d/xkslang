@@ -1,0 +1,12 @@
+shader ShaderBase<int offset>
+{
+	cbuffer PreDraw
+	{
+		int aVar;
+	}
+
+	int compute()
+	{
+		return aVar + offset;
+	}
+}
