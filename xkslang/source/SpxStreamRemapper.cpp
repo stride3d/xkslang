@@ -4035,12 +4035,20 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
             {
                 const TypeStructMember& cbufferMember = cbuffer->members[memberIndex];
 
+                string memberName = cbufferMember.declarationName;
+                //validate the member name (for example rename Shader<8>_var to Shader_8__var)
+                unsigned int memberNameSize = memberName.size();
+                for (unsigned int k = 0; k < memberNameSize; k++){
+                    char c = memberName[k];
+                    if (c == '<' || c == '>') memberName[k] = '_';
+                }
+
                 //member name
-                spv::Instruction memberName(spv::OpMemberName);
-                memberName.addIdOperand(cbuffer->structTypeId);
-                memberName.addImmediateOperand(memberIndex);
-                memberName.addStringOperand(cbufferMember.declarationName.c_str()); //use declaration name
-                memberName.dump(bytecodeNewNamesAndDecocates->bytecode);
+                spv::Instruction memberNameInstr(spv::OpMemberName);
+                memberNameInstr.addIdOperand(cbuffer->structTypeId);
+                memberNameInstr.addImmediateOperand(memberIndex);
+                memberNameInstr.addStringOperand(memberName.c_str()); //use declaration name
+                memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
             }
 #endif
 

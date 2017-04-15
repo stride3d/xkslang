@@ -116,7 +116,7 @@ void HlslParseContext::setLimits(const TBuiltInResource& r)
 }
 
 TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext& ppContext, TString& expressionString,
-    bool errorWhenParsingUnidentifiedSymbol, bool canLookForMembersInChildrenClasses)
+    bool errorWhenParsingUnidentifiedSymbol, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound)
 {
     const char* stringsPtr[] = { expressionString.c_str() };
     size_t stringsLen[] = { expressionString.size() };
@@ -131,7 +131,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
-    TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader, errorWhenParsingUnidentifiedSymbol, canLookForMembersInChildrenClasses);
+    TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader, errorWhenParsingUnidentifiedSymbol, shaderWhereSomeMembersCanBeFound);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
@@ -156,9 +156,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
     grammar.importListParsedToken(expressionTokensList, countTokens);
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
-
-    bool canLookForMembersInChildrenClasses = false;
-    TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader, errorWhenParsingUnidentifiedSymbol, canLookForMembersInChildrenClasses);
+    TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader, errorWhenParsingUnidentifiedSymbol, nullptr);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {

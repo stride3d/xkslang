@@ -2207,7 +2207,8 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
 
 //resolve the shader generics with the value passed by the user
 //This step is done after parsing the shader's declaration, but before parsing their definition
-static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, const std::vector<ClassGenericValues>& listGenericValues, HlslParseContext* parseContext, TPpContext& ppContext)
+static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, const std::vector<ClassGenericValues>& listGenericValues,
+    HlslParseContext* parseContext, TPpContext& ppContext, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound)
 {
     unsigned int shaderCountGenerics = shader->listGenerics.size();
     std::string shaderFullName = std::string(shader->shaderFullName.c_str());
@@ -2254,9 +2255,8 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
             //========================================================================================================
             //parse the generic value expression
             bool errorWhenParsingUnidentifiedSymbol = true;
-            bool canLookForMembersInChildrenClasses = true;
             TIntermTyped* expressionNode = parseContext->parseXkslExpression(&shaderLibrary, shader, ppContext, genericFullAssignementExpression,
-                errorWhenParsingUnidentifiedSymbol, canLookForMembersInChildrenClasses);
+                errorWhenParsingUnidentifiedSymbol, shaderWhereSomeMembersCanBeFound);
 
             if (expressionNode == nullptr) return error(parseContext, "Failed to parse the generic expression: " + genericFullAssignementExpression);
             TIntermConstantUnion* expressionNodeConstantUnion = expressionNode->getAsConstantUnion();
@@ -2341,12 +2341,13 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
         }
 
         //Rename the shader according to their generics value (example: ShaderMain<int Count> will be renamed ShaderMain<5>, depending on Count value)
-        TString nameExtension = "_G";
+        //Warning: some program expect this format tosplit the shaderMain
+        TString nameExtension = "<";
         for (unsigned int g = 0; g < shaderCountGenerics; g++)
         {
             ShaderGenericAttribute& genericAttribute = shader->listGenerics[g];
             nameExtension += genericAttribute.expressionConstValue;
-            if (g == shaderCountGenerics - 1) nameExtension += "G";
+            if (g == shaderCountGenerics - 1) nameExtension += ">";
             else nameExtension += "_";
         }
 
@@ -2473,6 +2474,7 @@ static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibra
 static bool ParseXkslShaderRecursif(
     XkslShaderLibrary& shaderLibrary,
     const std::string& xkslFileToParse,
+    XkslShaderDefinition* shaderRequiringADependency,
     XkslShaderDefinition::ShaderParsingStatusEnum processUntilOperation,
     HlslParseContext* parseContext,
     TPpContext& ppContext,
@@ -2527,7 +2529,7 @@ static bool ParseXkslShaderRecursif(
             {
                 shader->parsingStatus = currentProcessingOperation;
 
-                success = XkslResolveGenericsForShader(shaderLibrary, shader, listGenericValues, parseContext, ppContext);
+                success = XkslResolveGenericsForShader(shaderLibrary, shader, listGenericValues, parseContext, ppContext, shaderRequiringADependency);
                 if (!success) {
                     error(parseContext, "Failed to resolve the generics for shader: " + shader->shaderFullName);
                     break;
@@ -2601,12 +2603,12 @@ static bool ParseXkslShaderRecursif(
                                         aGenericValue.value = std::string(parentDefinition.listGenericsValue->at(g)->c_str());
                                         parentGenericValues.genericValues.push_back(aGenericValue);
                                     }
-                                    
                                 }
 
                                 success = ParseXkslShaderRecursif(
                                     shaderLibrary,
                                     shaderData,
+                                    parsedShader,
                                     XkslShaderDefinition::ShaderParsingStatusEnum::GenericsResolved, //have new shaders catch up until this process
                                     parseContext,
                                     ppContext,
@@ -2805,6 +2807,7 @@ static bool ParseXkslShaderRecursif(
                             success = ParseXkslShaderRecursif(
                                 shaderLibrary,
                                 shaderData,
+                                nullptr,
                                 XkslShaderDefinition::ShaderParsingStatusEnum::MembersAndMethodsDeclarationRegistered, //have new shaders catch up until this process,
                                 parseContext,
                                 ppContext,
@@ -2868,6 +2871,7 @@ static bool ParseXkslShaderRecursif(
             keepLooping = false;
 
             bool checkIfUnknownIdentifierIsAShader = false;
+            XkslShaderDefinition* shaderMissingADependency = nullptr;
             TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
             for (unsigned int s = 0; s < listShaderParsed.size(); s++)
             {
@@ -2888,7 +2892,10 @@ static bool ParseXkslShaderRecursif(
                             checkIfUnknownIdentifierIsAShader = false;
                         }
                         else
+                        {
                             checkIfUnknownIdentifierIsAShader = true;
+                            shaderMissingADependency = shader;
+                        }
                         break;
                     }
                 }
@@ -2910,6 +2917,7 @@ static bool ParseXkslShaderRecursif(
                         success = ParseXkslShaderRecursif(
                             shaderLibrary,
                             shaderData,
+                            shaderMissingADependency,
                             XkslShaderDefinition::ShaderParsingStatusEnum::UnresolvedConstsResolved, //have new shaders catch up until this process,
                             parseContext,
                             ppContext,
@@ -3058,6 +3066,7 @@ static bool ParseXkslShaderFile(
     bool success = ParseXkslShaderRecursif(
         shaderLibrary,
         xkslFileToParse,
+        nullptr,
         XkslShaderDefinition::ShaderParsingStatusEnum::ParsingCompleted,
         parseContext,
         ppContext,

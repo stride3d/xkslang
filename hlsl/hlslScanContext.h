@@ -203,10 +203,15 @@ public:
         return nullptr;
     }
 
-    void AddParent(ShaderInheritedParentDefinition& parentDefinition)
-    {
+    void AddParent(ShaderInheritedParentDefinition& parentDefinition) {
         listParents.push_back(ParentInformation());
         listParents.back().parentDefinition = parentDefinition;
+    }
+
+    bool HasForParent(XkslShaderDefinition* aShader) {
+        for (unsigned int p = 0; p < listParents.size(); ++p)
+            if (listParents[p].parentShader == aShader) return true;
+        return false;
     }
 };
 

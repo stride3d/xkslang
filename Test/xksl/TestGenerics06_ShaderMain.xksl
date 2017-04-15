@@ -1,0 +1,14 @@
+shader ShaderMain<int G1, int G2> : ShaderBase<G2, (-G1 + G2 * 2)>
+{
+	stream int aStream;
+	
+	int compute()
+	{
+		return base.compute();
+	}
+	
+	stage void VSMain() 
+    {
+		streams.aStream = compute() + (G1 + G2);
+    }
+}

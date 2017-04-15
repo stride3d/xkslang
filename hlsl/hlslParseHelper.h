@@ -63,7 +63,7 @@ public:
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
         TPpContext&, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier, bool errorWhenParsingUnidentifiedSymbol);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
-        TPpContext&, TString& expressionString, bool errorWhenParsingUnidentifiedSymbol, bool canLookForMembersInChildrenClasses);
+        TPpContext&, TString& expressionString, bool errorWhenParsingUnidentifiedSymbol, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound);
     void parseXkslShaderFinalize();
 
     void setLimits(const TBuiltInResource&) override;

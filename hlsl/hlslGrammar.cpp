@@ -65,7 +65,8 @@ bool HlslGrammar::parse()
     return acceptCompilationUnit();
 }
 
-TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, bool errorWhenParsingUnidentifiedSymbol, bool lookForMembersInChildrenClasses)
+TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
+    bool errorWhenParsingUnidentifiedSymbol, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound)
 {
     if (xkslShaderCurrentlyParsed != nullptr || xkslShaderLibrary != nullptr)
     {
@@ -75,9 +76,9 @@ TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary
 
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements;
     this->throwErrorWhenParsingUnidentifiedSymbol = errorWhenParsingUnidentifiedSymbol;
-    this->canLookForMembersInChildrenClasses = lookForMembersInChildrenClasses;
+    this->shaderWhereMembersCanBeFound = shaderWhereSomeMembersCanBeFound;
     this->xkslShaderLibrary = shaderLibrary;
-    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
+    ResetShaderLibraryFlag();
     this->xkslShaderCurrentlyParsed = currentShader;
     this->functionCurrentlyParsed = nullptr;
 
@@ -121,7 +122,7 @@ bool HlslGrammar::parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary)
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderDeclarations; //Tell the parser to only parse shader declaration
     this->throwErrorWhenParsingUnidentifiedSymbol = true;
     this->xkslShaderLibrary = shaderLibrary;
-    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
+    ResetShaderLibraryFlag();
 
     advanceUntilToken(EHTokShaderClass, true);  //skip all previous declaration
     bool res = acceptCompilationUnit();
@@ -143,7 +144,7 @@ bool HlslGrammar::parseXKslShaderNewTypesDefinition(XkslShaderLibrary* shaderLib
     this->throwErrorWhenParsingUnidentifiedSymbol = true;
     this->xkslShaderLibrary = shaderLibrary;
     this->xkslShaderToParse = shaderToParse;
-    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
+    ResetShaderLibraryFlag();
 
     //advanceToken();
     advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
@@ -166,7 +167,7 @@ bool HlslGrammar::parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary*
     this->throwErrorWhenParsingUnidentifiedSymbol = true;
     this->xkslShaderLibrary = shaderLibrary;
     this->xkslShaderToParse = shaderToParse;
-    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
+    ResetShaderLibraryFlag();
 
     //advanceToken();
     advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
@@ -189,7 +190,7 @@ bool HlslGrammar::parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibr
     this->throwErrorWhenParsingUnidentifiedSymbol = false;
     this->xkslShaderLibrary = shaderLibrary;
     this->xkslShaderToParse = shaderToParse;
-    for (unsigned int s = 0; s < shaderLibrary->listShaders.size(); s++) shaderLibrary->listShaders[s]->tmpFlag = 0;
+    ResetShaderLibraryFlag();
 
     //advanceToken();
     advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
@@ -4113,7 +4114,7 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     {
         //used to avoid infinite loop if there are cyclic dependencies among shaders
         dependencyUniqueCounter++;
-        if (dependencyUniqueCounter <= 0) dependencyUniqueCounter = 1;
+        if (dependencyUniqueCounter <= 0) ResetShaderLibraryFlag();
         uniqueId = dependencyUniqueCounter;
     }
 
@@ -4199,7 +4200,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
     {
         //used to avoid infinite loop if there are cyclic dependencies among shaders
         dependencyUniqueCounter++;
-        if (dependencyUniqueCounter <= 0) dependencyUniqueCounter = 1;
+        if (dependencyUniqueCounter <= 0) ResetShaderLibraryFlag();
         uniqueId = dependencyUniqueCounter;
     }
 
@@ -4288,8 +4289,24 @@ bool HlslGrammar::IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslSh
     return false;
 }
 
-XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName)
+void HlslGrammar::ResetShaderLibraryFlag()
 {
+    dependencyUniqueCounter = 1;
+    if (xkslShaderLibrary == nullptr) return;
+    for (unsigned int s = 0; s < xkslShaderLibrary->listShaders.size(); s++)
+        xkslShaderLibrary->listShaders[s]->tmpFlag = 0;
+}
+
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName, int uniqueId)
+{
+    if (uniqueId <= 0)
+    {
+        //used to avoid infinite loop if there are cyclic dependencies among shaders
+        dependencyUniqueCounter++;
+        if (dependencyUniqueCounter <= 0) ResetShaderLibraryFlag();
+        uniqueId = dependencyUniqueCounter;
+    }
+
     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
 
     XkslShaderDefinition* shader = getShaderClassDefinition(shaderClassName);
@@ -4297,6 +4314,8 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
         error(TString("undeclared class:") + shaderClassName);
         return identifierLocation;
     }
+    if (shader->tmpFlag == uniqueId) return identifierLocation; //the shader was already investigated
+    shader->tmpFlag = uniqueId;
 
     //look if the shader did declare the identifier
     int countMembers = shader->listAllDeclaredMembers.size();
@@ -4321,6 +4340,18 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
 
     if (identifierLocation.isUnknown())
     {
+        if (this->shaderWhereMembersCanBeFound != nullptr)
+        {
+            if (this->shaderWhereMembersCanBeFound->tmpFlag != uniqueId)
+            {
+                identifierLocation = findShaderClassMember(this->shaderWhereMembersCanBeFound->shaderFullName, hasStreamAccessor, memberName, uniqueId);
+                if (identifierLocation.isMember()) return identifierLocation;
+            }
+        }
+    }
+
+    if (identifierLocation.isUnknown())
+    {
         //member not found: we look in the parent classes
         int countParents = shader->listParents.size();
         for (int p = 0; p < countParents; p++)
@@ -4331,7 +4362,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
             }
             TString& parentName = shader->listParents[p].parentShader->shaderFullName;
 
-            identifierLocation = findShaderClassMember(parentName, hasStreamAccessor, memberName);
+            identifierLocation = findShaderClassMember(parentName, hasStreamAccessor, memberName, uniqueId);
             if (identifierLocation.isMember()) return identifierLocation;
         }
     }

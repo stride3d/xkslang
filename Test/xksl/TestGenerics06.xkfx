@@ -1,4 +1,4 @@
-convertAndLoad "TestGenerics05.xksl" ShaderMain<5>  
+convertAndLoadRecursif "TestGenerics06" ShaderMain<3 + 4, 4> 
 
 mixer mixerMain
 mixerMain.mixin ShaderMain

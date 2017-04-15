@@ -247,9 +247,9 @@ bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string
         return error(messages, "Analysing the streams failed");
     }
 
-    if (vecMixerOutputStages[0].outputStage->stage != ShadingStageEnum::Vertex)
+    if (vecMixerOutputStages.size() == 1 && (vecMixerOutputStages[0].outputStage->stage == ShadingStageEnum::Vertex || vecMixerOutputStages[0].outputStage->stage == ShadingStageEnum::Pixel))
     {
-        //Missing this stage would normally returns an error in the streams validation, but we just skip this step for now to allow compilation of partial sample effects
+        //this would normally returns an error in the streams validation, but we just skip this step for now to allow compilation of partial sample effects
     }
     else
     {
