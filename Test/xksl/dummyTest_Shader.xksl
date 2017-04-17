@@ -1,7 +1,0 @@
-shader ShaderMain
-{
-	int main()
-	{
-		return 1;
-	}
-}

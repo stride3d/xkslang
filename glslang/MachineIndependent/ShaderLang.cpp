@@ -2157,7 +2157,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
     if (streambufferStructTypeList->size() > 0)
     {
         //Add the type
-        TSourceLoc loc;
+        TSourceLoc loc; loc.init();
         TType* type = new TType(streambufferStructTypeList, *streamBufferStructName);   //struct type
         type->getQualifier().storage = EvqGlobal;
 
@@ -2358,7 +2358,7 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
             ShaderGenericAttribute& genericAttribute = shader->listGenerics[g];
             nameExtension += genericAttribute.expressionConstValue;
             if (g == shaderCountGenerics - 1) nameExtension += ">";
-            else nameExtension += "_";
+            else nameExtension += ",";
         }
 
         shader->shaderFullName = shader->shaderFullName + nameExtension;

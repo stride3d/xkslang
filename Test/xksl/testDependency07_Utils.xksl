@@ -1,0 +1,13 @@
+
+shader Utils : UtilsBase
+{
+	static int compute()
+	{
+		return base.compute();
+	}
+	
+	static int prout()
+	{
+		return 5;
+	}
+}

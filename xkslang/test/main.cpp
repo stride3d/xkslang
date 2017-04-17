@@ -43,17 +43,6 @@ static string outputDir;
 static string finalResultOutputDir;
 static string expectedOutputDir;
 
-vector<XkslShaderToRecursivelyParse> vecXkslShaderToRecursivelyConvert = {
-    //{ "dummyTest", "Shader", nullptr, nullptr },
-    //{ "testDependency01", "ShaderMain", nullptr, "PSMain" },
-    //{ "testDependency02", "ShaderMain", nullptr, "PSMain" },
-    //{ "testDependency03", "ShaderMain", nullptr, "PSMain" },
-    //{ "testDependency04", "ShaderMain", nullptr, "PSMain" },
-    //{ "testDependency05", "ShaderMain", nullptr, "PSMain" },
-    //{ "testDependency06", "ShaderMain", nullptr, "PSMain" },
-    //{ "testDependency07", "ShaderMain", nullptr, "PSMain" },
-};
-
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "shaderOnly.xksl" },
     //{ "shaderWithVariable.xksl" },
@@ -110,7 +99,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin04", "TestMixin04.xkfx" },
     //{ "TestMixin05", "TestMixin05.xkfx" },
     //{ "TestMixin06", "TestMixin06.xkfx" },
-    { "TestMixin07", "TestMixin07.xkfx" },
+    //{ "TestMixin07", "TestMixin07.xkfx" },
 
     //{ "TestMerge01", "TestMerge01.xkfx" },
     //{ "TestMerge02", "TestMerge02.xkfx" },
@@ -163,7 +152,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics04", "TestGenerics04.xkfx" },
     //{ "TestGenerics05", "TestGenerics05.xkfx" },
     //{ "TestGenerics06", "TestGenerics06.xkfx" },
-    //////////////////////////////////////{ "TestGenerics07", "TestGenerics07.xkfx" },
+    //{ "TestGenerics07", "TestGenerics07.xkfx" },
+    ////////////////////////////{ "TestGenerics08", "TestGenerics08.xkfx" },
 
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
@@ -184,7 +174,12 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
 
     //{ "testDependency01", "testDependency01.xkfx" },
-    ////////////////////////////////{ "testDependency02", "testDependency02.xkfx" },  test static class Utils having some inherited dependencies!!
+    //{ "testDependency02", "testDependency02.xkfx" },
+    //{ "testDependency03", "testDependency03.xkfx" },
+    //{ "testDependency04", "testDependency04.xkfx" },
+    //{ "testDependency05", "testDependency05.xkfx" },
+    //{ "testDependency06", "testDependency06.xkfx" },
+    //{ "testDependency07", "testDependency07.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -745,11 +740,10 @@ static SpxBytecode* GetSpxBytecodeForShader(string shaderName, string& shaderFul
     if (canLookIfUnmangledNameMatch)
     {
         SpxBytecode* spxBytecode = nullptr;
-        string shaderUnmangledName = getShaderUnmangledName(shaderName);
         for (auto it = mapShaderNameWithBytecode.begin(); it != mapShaderNameWithBytecode.end(); it++)
         {
-            string aName = getShaderUnmangledName(it->first);
-            if (aName == shaderUnmangledName)
+            string anUnmangledShaderName = getShaderUnmangledName(it->first);
+            if (anUnmangledShaderName == shaderName)
             {
                 if (spxBytecode == nullptr)
                 {
@@ -758,7 +752,7 @@ static SpxBytecode* GetSpxBytecodeForShader(string shaderName, string& shaderFul
                 }
                 else
                 {
-                    cout << "2 or more shaders match the unmangled shader name: " << shaderUnmangledName << endl;
+                    cout << "2 or more shaders match the unmangled shader name: " << anUnmangledShaderName << endl;
                     return nullptr;
                 }
             }
@@ -791,6 +785,8 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
     unordered_map<string, SpxBytecode*> mapShaderNameWithBytecode;
     unordered_map<string, EffectMixerObject*> mixerMap;
     int operationNum = 0;
+
+    cout << "Effect: " << effectName << endl;
 
     //preload some spx files?
     for (unsigned int k = 0; k < listBytecodeToLoad.size(); k++)
@@ -1183,59 +1179,6 @@ void main(int argc, char** argv)
 
     //====================================================================================================================
     //====================================================================================================================
-    cout << "___________________________________________________________________________________" << endl;
-    cout << "Recursively parse and convert shaders:" << endl << endl;
-    int countShadersProcessed = 0;
-    int countShadersSuccessful = 0;
-    vector<string> listShaderFailed;
-    //Parse a xksl shaders using XkslParser library
-    {
-        for (unsigned int n = 0; n < vecXkslShaderToRecursivelyConvert.size(); ++n)
-        {
-            countShadersProcessed++;
-            bool success = true;
-
-            XkslShaderToRecursivelyParse& shaderToRecursivelyParse = vecXkslShaderToRecursivelyConvert[n];
-            string xkslFilesPrefix = shaderToRecursivelyParse.filesPrefix;
-            string shaderName = shaderToRecursivelyParse.shaderName;
-
-            // parse and convert all xksl files
-            SpxBytecode spirXBytecode;
-            string spxOutputFileName;
-            vector<ShaderGenericValues> listGenericsValue;
-            success = RecursivelyParseAndConvertXkslShader(&parser, shaderName, xkslFilesPrefix, listGenericsValue, spirXBytecode, true, spxOutputFileName);
-           
-            if (success && spxOutputFileName.size() > 0)
-            {
-                //do a default mixin with the shader with just parsed
-                if (shaderToRecursivelyParse.PSEntryPoint != nullptr || shaderToRecursivelyParse.VSEntryPoint != nullptr)
-                {
-                    string effectName = xkslFilesPrefix + "_" + shaderName;
-                    string effectCmdLines = string("") +
-                        "mixer m\n" + 
-                        "m.mixin " + shaderName + "\n" +
-                        (shaderToRecursivelyParse.VSEntryPoint == nullptr ? "" : ("m.setStageEntryPoint Pixel \"" + string(shaderToRecursivelyParse.VSEntryPoint) + "\" \n")) +
-                        (shaderToRecursivelyParse.PSEntryPoint == nullptr ? "" : ("m.setStageEntryPoint Pixel \"" + string(shaderToRecursivelyParse.PSEntryPoint) + "\" \n")) +
-                        "m.compile\n";
-                    //cout << effectCmdLines << endl;
-
-                    vector<SpxBytecode> listBytecodeToLoad;
-                    listBytecodeToLoad.push_back(spirXBytecode);
-                    XkslMixer::StartMixin();
-                    success = ProcessEffect(&parser, effectName, effectCmdLines, listBytecodeToLoad);
-                    XkslMixer::ReleaseMixin();
-                }
-            }
-
-            if (success) countShadersSuccessful++;
-            else listShaderFailed.push_back(shaderName + " (" + xkslFilesPrefix + ")");
-
-            cout << endl;
-        }
-    }
-
-    //====================================================================================================================
-    //====================================================================================================================
     cout << endl;
     cout << "___________________________________________________________________________________" << endl;
     cout << "Process XKFX Effect  Files:" << endl << endl;
@@ -1321,16 +1264,6 @@ void main(int argc, char** argv)
     {
         cout << "  Failed Xksl Files:" << endl;
         for (unsigned int i = 0; i<listXkslParsingFailed.size(); ++i) cout << listXkslParsingFailed[i] << endl;
-    }
-    cout << endl;
-
-    //==========================================================
-    cout << "Count Shader processed: " << countShadersProcessed << endl;
-    cout << "Count Shader successful: " << countShadersSuccessful << endl;
-    if (listShaderFailed.size() > 0)
-    {
-        cout << "  Failed Shader:" << endl;
-        for (unsigned int i = 0; i<listShaderFailed.size(); ++i) cout << listShaderFailed[i] << endl;
     }
     cout << endl;
 

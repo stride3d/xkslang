@@ -1,6 +1,6 @@
 shader ShaderMain<int G1, int G2> : ShaderBase<G1>, ShaderBase<G2>
 {
-	int compute()
+	override int compute()
 	{
 		return base.compute();
 	}
@@ -9,4 +9,5 @@ shader ShaderMain<int G1, int G2> : ShaderBase<G1>, ShaderBase<G2>
     {
 		return compute();
     }
+	
 }

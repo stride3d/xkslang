@@ -1,8 +1,8 @@
 
-shader ShaderMain<int A1, int A2> //: ShaderA<A1>, ShaderA<A2>
+shader ShaderMain
 {
 	int PSMain()
 	{
-		return base.function();
+		return Utils.compute();
 	}
 }

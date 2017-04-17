@@ -1,7 +1,8 @@
-convertAndLoadRecursif "TestGenerics08" ShaderMain<1, 2> 
+//Reuse shaders from TestGenerics07, just change the generics value to have identical one
+convertAndLoadRecursif "TestGenerics07" ShaderMain<1, 1> 
 
 mixer mixerMain
-mixerMain.mixin ShaderMain<4> 
+mixerMain.mixin ShaderMain
 
 mixerMain.setStageEntryPoint Vertex "VSMain"
 

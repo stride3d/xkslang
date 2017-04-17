@@ -1,0 +1,8 @@
+
+shader UtilsBase
+{
+	static int compute()
+	{
+		return Utils.prout();
+	}
+}

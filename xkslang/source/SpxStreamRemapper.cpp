@@ -4040,7 +4040,7 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                 unsigned int memberNameSize = memberName.size();
                 for (unsigned int k = 0; k < memberNameSize; k++){
                     char c = memberName[k];
-                    if (c == '<' || c == '>') memberName[k] = '_';
+                    if (c == '<' || c == '>' || c == ',') memberName[k] = '_';
                 }
 
                 //member name

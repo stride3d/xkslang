@@ -1,5 +1,5 @@
 //reference test
-convertAndLoadRecursif "testDependency01" ShaderMain
+convertAndLoadRecursif "testDependency05" ShaderMain
 
 mixer m
 m.mixin ShaderMain
