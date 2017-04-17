@@ -2951,7 +2951,7 @@ bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequenc
         {
             glslang::TIntermSequence& nodeSequence = node->getSequence();
 
-            for (int a = 0; a < nodeSequence.size(); ++a)
+            for (unsigned int a = 0; a < nodeSequence.size(); ++a)
             {
                 glslang::TIntermSymbol* symbol = nodeSequence[a]->getAsSymbolNode();
                 if (symbol != nullptr && symbol->getType().getBasicType() == glslang::EbtShaderClass)
@@ -2993,7 +2993,7 @@ bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequenc
             if (parentsName->size() > 0)
             {
                 std::vector<spv::Id> vectorParents;
-                for (int i = 0; i<parentsName->size(); ++i)
+                for (unsigned int i = 0; i<parentsName->size(); ++i)
                 {
                     std::string parentName(parentsName->at(i)->c_str());
                     auto fit = shaderClassMap.find(parentName);
@@ -3012,7 +3012,7 @@ bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequenc
         const glslang::TVector<glslang::TShaderCompositionVariable>* compositionsList = shaderType->getCompositionsList();
         if (compositionsList != nullptr)
         {
-            for (int index = 0; index<compositionsList->size(); ++index)
+            for (unsigned int index = 0; index<compositionsList->size(); ++index)
             {
                 const glslang::TShaderCompositionVariable& composition = compositionsList->at(index);
 
@@ -3685,7 +3685,7 @@ spv::Id TGlslangToSpvTraverser::handleUserFunctionCall(const glslang::TIntermAgg
     }
     else
     {
-        result = builder.createFunctionCall(function, spvArgs, targetBaseShaderClassFunction);
+        result = builder.createFunctionCall(function, spvArgs, targetBaseShaderClassFunction, targetStaticShaderClassFunction);
     }
     builder.setPrecision(result, TranslatePrecisionDecoration(node->getType()));
 
