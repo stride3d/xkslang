@@ -180,7 +180,7 @@ public:
 
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
 
-    TString shaderOriginalName;
+    TString shaderBaseName;
     TString shaderFullName;        //shader name plus generics value (ie ShaderMain<5>)
     TVector<ShaderGenericAttribute> listGenerics;
     TVector<ParentInformation> listParents;
@@ -219,6 +219,9 @@ class XkslShaderLibrary
 {
 public:
     TVector<XkslShaderDefinition*> listShaders;  //list of all shader parsed
+
+    int GetCountShaderInLibrary() {return listShaders.size();}
+    void AddNewShader(XkslShaderDefinition* shader){listShaders.push_back(shader);}
 };
 
 //

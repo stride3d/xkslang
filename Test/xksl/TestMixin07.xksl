@@ -1,0 +1,43 @@
+shader A
+{
+	void X() {}
+}
+
+shader B : A
+{
+	override void X()
+	{
+		base.X();
+		A.X();
+	}
+
+}
+
+shader C : A
+{
+	override void X()
+	{
+		base.X();
+		A.X();
+	}
+}
+
+shader D : A
+{
+	override void X()
+	{
+		base.X();
+		A.X();
+	}
+}
+
+shader E : B, C, D 
+{
+	override void X()
+	{
+		base.X();
+		B.X();
+	}
+	
+	void main(){X();}
+}

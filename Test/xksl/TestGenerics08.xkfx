@@ -1,0 +1,8 @@
+convertAndLoadRecursif "TestGenerics08" ShaderMain<1, 2> 
+
+mixer mixerMain
+mixerMain.mixin ShaderMain<4> 
+
+mixerMain.setStageEntryPoint Vertex "VSMain"
+
+mixerMain.compile

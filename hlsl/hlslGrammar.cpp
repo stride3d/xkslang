@@ -294,7 +294,7 @@ bool HlslGrammar::acceptShaderCustomType(const TString& shaderName, TType& type)
 }
 
 //Process class accessor: this, base, Knwon ClassName, composition variable name, ...
-bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStream, TShaderCompositionVariable& compositionTargeted)
+bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isACallThroughStaticShaderClassName, bool& isStream, TShaderCompositionVariable& compositionTargeted)
 {
     if (getCurrentShaderName() == nullptr) return false;
 
@@ -344,6 +344,7 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
             {
                 //The token is a known shader class (ShaderA.XXX)
                 className = NewPoolTString(token.string->c_str());
+                isACallThroughStaticShaderClassName = true;
                 advanceToken();
                 break;
             }
@@ -2568,7 +2569,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             //Create the new shader declaration
             XkslShaderDefinition* shaderDefinition = new XkslShaderDefinition();
             shaderDefinition->location = token.loc;
-            shaderDefinition->shaderOriginalName = *shaderName;
+            shaderDefinition->shaderBaseName = *shaderName;
             shaderDefinition->shaderFullName = *shaderName;
             unsigned int countGenerics = listGenericTypes.size();
             for (unsigned int i = 0; i < countGenerics; ++i) {
@@ -2590,8 +2591,9 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             CopyTokenBufferInto(shaderDefinition->listTokens, tokenStart, tokenEnd);
             //shaderDefinition->listTokens[shaderDefinition->listTokens.size() - 1].tokenClass = EHTokNone;
 
-            //Add the shader definition in the list of parsed shader
-            this->xkslShaderLibrary->listShaders.push_back(shaderDefinition);
+            //Add the shader definition at the END (warning: new shaders must be added at the end) of the list of parsed shader
+            this->xkslShaderLibrary->AddNewShader(shaderDefinition);
+
 
             break;
         }
@@ -4425,7 +4427,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
 {
     TShaderCompositionVariable composition;
     composition.shaderCompositionId = -1;
-    return acceptPostfixExpression(node, false, false, nullptr, composition);
+    return acceptPostfixExpression(node, false, false, false, nullptr, composition);
 }
 
 // postfix_expression
@@ -4441,7 +4443,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
 //      | postfix_expression INC_OP
 //      | postfix_expression DEC_OP
 //
-bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAccessor, bool hasStreamAccessor, TString* classAccessorName, TShaderCompositionVariable& compositionTargeted)
+bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessorName, TShaderCompositionVariable& compositionTargeted)
 {
     // Not implemented as self-recursive:
     // The logical "right recursion" is done with a loop at the end
@@ -4450,6 +4452,14 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
     HlslToken idToken;
 
     bool hasComposition = compositionTargeted.shaderCompositionId >= 0? true: false;
+    int countAccessor = 0;
+    if (hasBaseAccessor) countAccessor++;
+    if (callThroughStaticShaderClassName) countAccessor++;
+    if (hasStreamAccessor) countAccessor++;
+    if (countAccessor > 1) {
+        error("Found too many class accessors");
+        return false;
+    }
 
     // Find something before the postfix operations, as they can't operate
     // on nothing.  So, no "return true", they fall through, only "return false".
@@ -4468,9 +4478,9 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
     } else if (acceptConstructor(node)) {
         // constructor (nothing else to do yet)
     }
-    else if (acceptClassReferenceAccessor(classAccessorName, hasBaseAccessor, hasStreamAccessor, compositionTargeted))
+    else if (acceptClassReferenceAccessor(classAccessorName, hasBaseAccessor, callThroughStaticShaderClassName, hasStreamAccessor, compositionTargeted))
     {
-        return acceptPostfixExpression(node, hasBaseAccessor, hasStreamAccessor, classAccessorName, compositionTargeted);
+        return acceptPostfixExpression(node, hasBaseAccessor, callThroughStaticShaderClassName, hasStreamAccessor, classAccessorName, compositionTargeted);
     }
     else if (acceptIdentifier(idToken))
     {
@@ -4499,12 +4509,12 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             else
             {
                 TSymbol* symbol = nullptr;
-                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition)
+                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition && !hasBaseAccessor && !callThroughStaticShaderClassName)
                 {
                     symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
                 }
                 
-                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition)
+                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition || hasBaseAccessor || callThroughStaticShaderClassName)
                 {
                     if (hasComposition) {
                         //maybe we can authorize this later?
@@ -4534,7 +4544,14 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
 
                         if (!identifierLocation.isMember())
                         {
-                            if (MustThrowAnErrorWhenParsingUnidentifiedSymbol())
+                            bool throwAnError = MustThrowAnErrorWhenParsingUnidentifiedSymbol();
+                            if (!throwAnError){
+                                if (classAccessorName != nullptr || hasStreamAccessor || hasComposition){
+                                    throwAnError = true;
+                                }
+                            }
+
+                            if (throwAnError)
                             {
                                 error( (TString("Member: \"") + *memberName + TString("\" not found in the class (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
                             }
@@ -4700,12 +4717,12 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             else
             {
                 TSymbol* symbol = nullptr;
-                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition)
+                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition && !hasBaseAccessor && !callThroughStaticShaderClassName)
                 {
                     symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
                 }
 
-                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition)
+                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition || hasBaseAccessor || callThroughStaticShaderClassName)
                 {
                     //No known symbol or a class accessor: we look for the appropriate method in our xksl shader library
 
@@ -4717,7 +4734,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
 
                     TString accessorClassName = classAccessorName == nullptr ? *referenceShaderName : *classAccessorName;
                     TShaderCompositionVariable* pCompositionTargeted = hasComposition? &compositionTargeted: nullptr;
-                    if (acceptXkslFunctionCall(accessorClassName, hasBaseAccessor, pCompositionTargeted, idToken, node, nullptr)) {
+                    if (acceptXkslFunctionCall(accessorClassName, hasBaseAccessor, callThroughStaticShaderClassName, pCompositionTargeted, idToken, node, nullptr)) {
                         // function_call (nothing else to do yet)
                     }
                     else {
@@ -4901,8 +4918,8 @@ bool HlslGrammar::acceptXkslShaderComposition(TShaderCompositionVariable& compos
     return true;
 }
 
-bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, TShaderCompositionVariable* compositionTargeted,
-    HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
+bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, bool isACallThroughStaticShaderClassName,
+    TShaderCompositionVariable* compositionTargeted, HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
 {
     // arguments
     TFunction* function = new TFunction(idToken.string, TType(EbtVoid));
@@ -4998,7 +5015,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         }
         //============================================================================
 
-        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments, callToFunctionFromBaseShaderClass, compositionTargeted);
+        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments, callToFunctionFromBaseShaderClass, isACallThroughStaticShaderClassName, compositionTargeted);
     }
     else
     {

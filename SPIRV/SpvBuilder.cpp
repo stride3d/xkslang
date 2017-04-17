@@ -1458,10 +1458,11 @@ Id Builder::createFunctionCallThroughCompositionVariable(spv::Function* function
     return op->getResultId();
 }
 
-Id Builder::createFunctionCall(spv::Function* function, const std::vector<spv::Id>& args, bool targetBaseShaderClassFunction)
+Id Builder::createFunctionCall(spv::Function* function, const std::vector<spv::Id>& args, bool targetBaseShaderClassFunction, bool targetStaticShaderClassFunction)
 {
     Instruction* op;
     if (targetBaseShaderClassFunction) op = new Instruction(getUniqueId(), function->getReturnType(), OpFunctionCallBaseUnresolved);
+    else if (targetStaticShaderClassFunction) op = new Instruction(getUniqueId(), function->getReturnType(), OpFunctionCallThroughStaticShaderClassCall);
     else op = new Instruction(getUniqueId(), function->getReturnType(), OpFunctionCall);
     op->addIdOperand(function->getId());
     for (int a = 0; a < (int)args.size(); ++a)

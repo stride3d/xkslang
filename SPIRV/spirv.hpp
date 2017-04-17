@@ -982,9 +982,10 @@ enum Op {
     OpForEachCompositionStartLoop = 4620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 46021,
 
-    OpFunctionCallBaseUnresolved = 4630,              //an unresolved function call with base accessor
-    OpFunctionCallBaseResolved = 4631,                //a resolved function call with base accessor
-    OpFunctionCallThroughCompositionVariable = 4632,  //a function is called through a composition variable
+    OpFunctionCallBaseUnresolved = 4630,                 //an unresolved function call with base accessor
+    OpFunctionCallBaseResolved = 4631,                   //a resolved function call with base accessor
+    OpFunctionCallThroughCompositionVariable = 4632,     //a function is called through a composition variable
+    OpFunctionCallThroughStaticShaderClassCall = 4633,   //a function is called through a static shader class (ShaderA.compute()), this kind of function call will never get overriden
     //================================================================================================
 
     OpMax = 0x7fffffff,

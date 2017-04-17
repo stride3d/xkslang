@@ -5,8 +5,8 @@ shader ShaderMain<int G1, int G2> : ShaderBase<G1>, ShaderBase<G2>
 		return base.compute();
 	}
 	
-	stage void VSMain() 
+	stage int VSMain() 
     {
-		streams.aStream = compute();
+		return compute();
     }
 }

@@ -1,5 +1,7 @@
 shader ShaderBase<int offset>
 {
+	stream int aStream;
+
 	cbuffer PreDraw
 	{
 		int aVar;
@@ -7,6 +9,6 @@ shader ShaderBase<int offset>
 
 	int compute()
 	{
-		return aVar + offset;
+		return aVar + offset + streams.aStream;
 	}
 }

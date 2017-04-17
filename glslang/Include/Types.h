@@ -1462,6 +1462,11 @@ public:
         return *fieldName;
     }
 
+    virtual TString* GetFieldNamePtr() const
+    {
+        return fieldName;
+    }
+
     TString* getUserIdentifierName() const { return userIdentifierName; }
     TString* getUserDefinedSemantic() const { return userDefinedSemantic; }
     TString* getTypeDefinitionExpression() const { return typeDefinitionExpression; }

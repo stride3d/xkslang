@@ -1097,8 +1097,8 @@ typedef TVector<int> TQualifierList;
 //
 class TIntermAggregate : public TIntermOperator {
 public:
-    TIntermAggregate() : TIntermOperator(EOpNull), userDefined(false), pragmaTable(0), targetBaseShaderClass(false), isAForEachLoopBlockStatement(false){ }
-    TIntermAggregate(TOperator o) : TIntermOperator(o), pragmaTable(0), targetBaseShaderClass(false), isAForEachLoopBlockStatement(false) { }
+    TIntermAggregate() : TIntermOperator(EOpNull), userDefined(false), pragmaTable(0), targetBaseShaderClass(false), targetStaticShaderClass(false), isAForEachLoopBlockStatement(false){ }
+    TIntermAggregate(TOperator o) : TIntermOperator(o), pragmaTable(0), targetBaseShaderClass(false), targetStaticShaderClass(false), isAForEachLoopBlockStatement(false) { }
     ~TIntermAggregate() { delete pragmaTable; }
     virtual       TIntermAggregate* getAsAggregate()       { return this; }
     virtual const TIntermAggregate* getAsAggregate() const { return this; }
@@ -1121,6 +1121,8 @@ public:
 
     void SetTargetBaseShaderClass(bool b) { targetBaseShaderClass = b; }
     bool GetTargetBaseShaderClass() const { return targetBaseShaderClass; }
+    void SetTargetStaticShaderClass(bool b) { targetStaticShaderClass = b; }
+    bool GetTargetStaticShaderClass() const { return targetStaticShaderClass; }
     TShaderCompositionVariable& GetWritableCompositionVariable() { return functionCalledThroughComposition; }
     TShaderCompositionVariable GetCompositionVariable() const { return functionCalledThroughComposition; }
     bool IsAFunctionCallThroughCompositionVariable() const { return functionCalledThroughComposition.shaderCompositionId != -1; }
@@ -1143,6 +1145,7 @@ protected:
     //======================================================================================
     //xksl extensions
     bool targetBaseShaderClass; //if we call a method with base accessor, we need to record this information (to make sure the function call can't get overriden)
+    bool targetStaticShaderClass; //if we call a method through a static shader class name, we need to record it
     TShaderCompositionVariable functionCalledThroughComposition;  //the method has been called though a composition variable
 
     bool isAForEachLoopBlockStatement;

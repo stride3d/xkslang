@@ -444,8 +444,8 @@ namespace spv {
                     const std::string  name = literalString(start+2);
                     nameMap[name] = target;
 
-                } else if (opCode == spv::Op::OpFunctionCall || opCode == spv::Op::OpFunctionCallBaseUnresolved ||
-                           opCode == spv::Op::OpFunctionCallBaseResolved || opCode == spv::Op::OpFunctionCallThroughCompositionVariable) {
+                } else if (opCode == spv::Op::OpFunctionCall || opCode == spv::Op::OpFunctionCallBaseUnresolved || opCode == spv::Op::OpFunctionCallBaseResolved
+                           || opCode == spv::Op::OpFunctionCallThroughCompositionVariable || opCode == spv::Op::OpFunctionCallThroughStaticShaderClassCall) {
                     ++fnCalls[asId(start + 3)];
                 } else if (opCode == spv::Op::OpEntryPoint) {
                     entryPoint = asId(start + 2);
@@ -790,6 +790,7 @@ namespace spv {
                 case spv::OpFunctionCall:
                 case spv::OpFunctionCallBaseUnresolved:
                 case spv::OpFunctionCallBaseResolved:
+                case spv::OpFunctionCallThroughStaticShaderClassCall:
                 case spv::OpFunctionCallThroughCompositionVariable:
                     ++opCounter[opCode];
                     idCounter = 0;
@@ -1038,8 +1039,8 @@ namespace spv {
                     // decrease counts of called functions
                     process(
                         [&](spv::Op opCode, unsigned start) {
-                            if (opCode == spv::Op::OpFunctionCall || opCode == spv::Op::OpFunctionCallBaseUnresolved ||
-                                opCode == spv::Op::OpFunctionCallBaseResolved || opCode == spv::Op::OpFunctionCallThroughCompositionVariable) {
+                            if (opCode == spv::Op::OpFunctionCall || opCode == spv::Op::OpFunctionCallBaseUnresolved || opCode == spv::Op::OpFunctionCallBaseResolved ||
+                                 opCode == spv::Op::OpFunctionCallThroughCompositionVariable || opCode == spv::Op::OpFunctionCallThroughStaticShaderClassCall) {
                                 const auto call_it = fnCalls.find(asId(start + 3));
                                 if (call_it != fnCalls.end()) {
                                     if (--call_it->second <= 0)

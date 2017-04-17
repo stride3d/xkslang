@@ -90,7 +90,7 @@ namespace glslang {
         void error(const char*);
         void error(const TString&);
         bool acceptIdentifier(HlslToken&);
-        bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isStreams, TShaderCompositionVariable& compositionTargeted);
+        bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isACallThroughStaticShaderClassName, bool& isStreams, TShaderCompositionVariable& compositionTargeted);
         bool acceptShaderCustomType(const TString& shaderName, TType& type);
         bool acceptCompilationUnit();
         bool acceptDeclarationList(TIntermNode*&);
@@ -136,10 +136,10 @@ namespace glslang {
         bool acceptBinaryExpression(TIntermTyped*&, PrecedenceLevel);
         bool acceptUnaryExpression(TIntermTyped*&);
         bool acceptPostfixExpression(TIntermTyped*&);
-        bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor, bool hasStreamAccessor, TString* classAccessor, TShaderCompositionVariable& compositionTargeted);
+        bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessor, TShaderCompositionVariable& compositionTargeted);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(const TSourceLoc&, TString& name, TIntermTyped*&, TIntermTyped* objectBase);
-        bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, TShaderCompositionVariable* compositionTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
+        bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
         bool acceptLiteral(TIntermTyped*&);

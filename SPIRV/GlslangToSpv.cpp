@@ -3598,6 +3598,7 @@ spv::Id TGlslangToSpvTraverser::handleUserFunctionCall(const glslang::TIntermAgg
     const glslang::TIntermSequence& glslangArgs = node->getSequence();
     const glslang::TQualifierList& qualifiers = node->getQualifierList();
     bool targetBaseShaderClassFunction = node->GetTargetBaseShaderClass();
+    bool targetStaticShaderClassFunction = node->GetTargetStaticShaderClass();
 
     //  See comments in makeFunctions() for details about the semantics for parameter passing.
     //

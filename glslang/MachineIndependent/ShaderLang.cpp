@@ -2322,21 +2322,31 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
             member.resolvedDeclaredExpression = expressionNode;
             member.memberLocation.memberLocationType = XkslShaderDefinition::MemberLocationTypeEnum::Const;
 
-            TString* variableName = NewPoolTString((shader->shaderFullName + "_generic_" + (*genericVariableName)).c_str());
-            member.type->setFieldName(*variableName);
+            //Set the generic const variable name
+            //the class fullname is not set yet (fullname depends on generics value), so we can have some name collision sometimes
+            int countClassesWithSameBaseName = 0;
+            for (unsigned int ks = 0; ks < shaderLibrary.listShaders.size(); ks++)
+            {
+                XkslShaderDefinition* anotherShader = shaderLibrary.listShaders[ks];
+                if (anotherShader->shaderBaseName == shader->shaderBaseName) countClassesWithSameBaseName++;
+            }
+
+            TString variableName = shader->shaderFullName + "_generic_" + (*genericVariableName) + "_" + TString(std::to_string(countClassesWithSameBaseName).c_str());
+            member.type->setFieldName(variableName);
+            TString* variableNamePtr = member.type->GetFieldNamePtr();
 
             //add variable on the global space
-            TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression, false);
+            TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableNamePtr, *(member.type), member.resolvedDeclaredExpression, false);
 
             //check that the variable exists
-            TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
+            TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableNamePtr);
             TVariable* constVariable = constVariableSymbol == nullptr ? nullptr : constVariableSymbol->getAsVariable();
             if (constVariable == nullptr)
             {
                 return error(parseContext, "Failed to create the generic const variable: " + *genericVariableName);
             }
 
-            member.memberLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
+            member.memberLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::Const, variableNamePtr, -1);
             shader->listAllDeclaredMembers.push_back(member);
         }
 
@@ -2585,7 +2595,7 @@ static bool ParseXkslShaderRecursif(
                             std::string shaderData;
                             if (!callbackRequestDataForShader(std::string(parentName->c_str()), shaderData))
                             {
-                                error(parseContext, "No existing data for the identifier: " + (*parentName));
+                                error(parseContext, "unknwon identifier: " + (*parentName));
                                 success = false;
                             }
                             else
@@ -2605,6 +2615,7 @@ static bool ParseXkslShaderRecursif(
                                     }
                                 }
 
+                                int countShadersInLibraryBeforeParsing = shaderLibrary.GetCountShaderInLibrary();
                                 success = ParseXkslShaderRecursif(
                                     shaderLibrary,
                                     shaderData,
@@ -2623,18 +2634,18 @@ static bool ParseXkslShaderRecursif(
                                 {
                                     //parentShader = GetShaderFromLibrary(shaderLibrary, *parentName, nullptr);
 
-                                    //Find the parent shader
-                                    //name is not necessarly matching (due to generics), so we look for new shaders (having parsingStatus == GenericsResolved)
-                                    for (unsigned int ks = 0; ks < shaderLibrary.listShaders.size(); ks++)
+                                    //Find the parent shader among the new shader (using countShadersInLibraryBeforeParsing and checking that parsingStatus == GenericsResolved)
+                                    //(fullname is not necessarly matching the base name (due to generics))
+                                    for (unsigned int ks = countShadersInLibraryBeforeParsing; ks < shaderLibrary.listShaders.size(); ks++)
                                     {
                                         XkslShaderDefinition* anotherShader = shaderLibrary.listShaders[ks];
                                         if (anotherShader->parsingStatus == XkslShaderDefinition::ShaderParsingStatusEnum::GenericsResolved &&
-                                            anotherShader->shaderOriginalName == *parentName)
+                                            anotherShader->shaderBaseName == *parentName)
                                         {
                                             if (parentShader == nullptr) parentShader = anotherShader;
                                             else
                                             {
-                                                error(parseContext, "Found 2 shaders with a name matching the parent shader name: " + (*parentName));
+                                                error(parseContext, "Found 2 shader candidates with a base name matching the parent shader name: " + (*parentName));
                                                 success = false;
                                                 parentShader = nullptr;
                                                 break;
@@ -2799,7 +2810,7 @@ static bool ParseXkslShaderRecursif(
                         std::string shaderData;
                         if (!callbackRequestDataForShader(std::string(unknownIdentifier.c_str()), shaderData))
                         {
-                            error(parseContext, "No existing data for the identifier: " + unknownIdentifier);
+                            error(parseContext, "unknwon identifier: " + unknownIdentifier);
                             success = false;
                         }
                         else
@@ -2909,7 +2920,7 @@ static bool ParseXkslShaderRecursif(
                     std::string shaderData;
                     if (!callbackRequestDataForShader(std::string(unknownIdentifier.c_str()), shaderData))
                     {
-                        error(parseContext, "No existing data for the identifier: " + unknownIdentifier);
+                        error(parseContext, "unknwon identifier: " + unknownIdentifier);
                         success = false;
                     }
                     else

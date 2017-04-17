@@ -219,12 +219,6 @@ bool HlslParseContext::parseXkslShaderDeclaration(const char* xkslShaderData, Xk
 
 bool HlslParseContext::parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
 {
-    //if (shader->parseStatus == -1 || true)
-    //{
-    //    infoSink.info << "PROUT";
-    //    return false;
-    //}
-
     //reparse the list of token previously parsed
     TVector<HlslToken>& tokenList = shader->listTokens;
     if (tokenList.size() == 0) return true;
@@ -259,12 +253,6 @@ bool HlslParseContext::parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* 
 
 bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
 {
-    //if (shader->parseStatus == -1 || true)
-    //{
-    //    infoSink.info << "PROUT";
-    //    return false;
-    //}
-
     //reparse the list of token previously parsed
     TVector<HlslToken>& tokenList = shader->listTokens;
     if (tokenList.size() == 0) return true;
@@ -299,12 +287,6 @@ bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefi
 
 bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TString& unknownIdentifier)
 {
-    //if (shader->parseStatus == -1 || true)
-    //{
-    //    infoSink.info << "PROUT";
-    //    return false;
-    //}
-
     //reparse the list of token previously parsed
     TVector<HlslToken>& tokenList = shader->listTokens;
     if (tokenList.size() == 0) return true;
@@ -4215,7 +4197,7 @@ void HlslParseContext::decomposeIntrinsic(const TSourceLoc& loc, TIntermTyped*& 
 //  - subroutine call (not implemented yet)
 //
 TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunction* function, TIntermTyped* arguments,
-    bool callToFunctionFromBaseShaderClass, TShaderCompositionVariable* calledThroughCompositionVariable)
+    bool callToFunctionFromBaseShaderClass, bool callThroughStaticShaderClassName, TShaderCompositionVariable* calledThroughCompositionVariable)
 {
     TIntermTyped* result = nullptr;
 
@@ -4296,6 +4278,7 @@ TIntermTyped* HlslParseContext::handleFunctionCall(const TSourceLoc& loc, TFunct
                 result = intermediate.setAggregateOperator(arguments, EOpFunctionCall, fnCandidate->getType(), loc);
                 TIntermAggregate* call = result->getAsAggregate();
                 call->setName(fnCandidate->getMangledName());
+                call->SetTargetStaticShaderClass(callThroughStaticShaderClassName);
                 call->SetTargetBaseShaderClass(callToFunctionFromBaseShaderClass);
                 if (calledThroughCompositionVariable != nullptr)
                     call->GetWritableCompositionVariable() = *calledThroughCompositionVariable;

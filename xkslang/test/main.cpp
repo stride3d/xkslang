@@ -110,6 +110,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin04", "TestMixin04.xkfx" },
     //{ "TestMixin05", "TestMixin05.xkfx" },
     //{ "TestMixin06", "TestMixin06.xkfx" },
+    { "TestMixin07", "TestMixin07.xkfx" },
 
     //{ "TestMerge01", "TestMerge01.xkfx" },
     //{ "TestMerge02", "TestMerge02.xkfx" },
@@ -162,7 +163,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics04", "TestGenerics04.xkfx" },
     //{ "TestGenerics05", "TestGenerics05.xkfx" },
     //{ "TestGenerics06", "TestGenerics06.xkfx" },
-    { "TestGenerics07", "TestGenerics07.xkfx" },
+    //////////////////////////////////////{ "TestGenerics07", "TestGenerics07.xkfx" },
 
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
@@ -183,7 +184,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
 
     //{ "testDependency01", "testDependency01.xkfx" },
-    //{ "testDependency02", "testDependency02.xkfx" },  test static class Utils having some inherited dependencies!!
+    ////////////////////////////////{ "testDependency02", "testDependency02.xkfx" },  test static class Utils having some inherited dependencies!!
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {

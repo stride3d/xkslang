@@ -1222,22 +1222,23 @@ const char* OpcodeString(int op)
     case 5007: return "OpGroupSMaxNonUniformAMD";
 #endif
 
-    case (OpDeclarationName):                         return "OpDeclarationName";
-    case (OpShaderInheritance):                       return "OpShaderInheritance";
-    case (OpBelongsToShader):                         return "OpBelongsToShader";
-    case (OpMethodProperties):                        return "OpMethodProperties";
-    case (OpMemberProperties):                        return "OpMemberProperties";
-    case (OpMemberSemanticName):                      return "OpMemberSemanticName";
-    case (OpCBufferMemberProperties):                 return "OpCBufferMemberProperties";
-    case (OpGSMethodProperties):                      return "OpGSMethodProperties";
+    case (OpDeclarationName):                           return "OpDeclarationName";
+    case (OpShaderInheritance):                         return "OpShaderInheritance";
+    case (OpBelongsToShader):                           return "OpBelongsToShader";
+    case (OpMethodProperties):                          return "OpMethodProperties";
+    case (OpMemberProperties):                          return "OpMemberProperties";
+    case (OpMemberSemanticName):                        return "OpMemberSemanticName";
+    case (OpCBufferMemberProperties):                   return "OpCBufferMemberProperties";
+    case (OpGSMethodProperties):                        return "OpGSMethodProperties";
 
-    case (OpFunctionCallBaseUnresolved):              return "OpFunctionCallBaseUnres";
-    case (OpFunctionCallBaseResolved):                return "OpFunctionCallBaseRes";
-    case (OpShaderCompositionDeclaration):            return "OpShaderCompositionDeclaration";
-    case (OpShaderCompositionInstance):               return "OpShaderCompositionInstance";
-    case (OpFunctionCallThroughCompositionVariable):  return "OpFunctionCallThroughCompositionVar";
-    case (OpForEachCompositionStartLoop):             return "OpForEachCompositionStartLoop";
-    case (OpForEachCompositionEndLoop):               return "OpForEachCompositionEndLoop";
+    case (OpFunctionCallBaseUnresolved):                return "OpFunctionCallBaseUnres";
+    case (OpFunctionCallBaseResolved):                  return "OpFunctionCallBaseRes";
+    case (OpShaderCompositionDeclaration):              return "OpShaderCompositionDeclaration";
+    case (OpShaderCompositionInstance):                 return "OpShaderCompositionInstance";
+    case (OpFunctionCallThroughCompositionVariable):    return "OpFunctionCallThroughCompositionVar";
+    case (OpFunctionCallThroughStaticShaderClassCall):  return "OpFunctionCallThroughStaticShaderClassCall";
+    case (OpForEachCompositionStartLoop):               return "OpForEachCompositionStartLoop";
+    case (OpForEachCompositionEndLoop):                 return "OpForEachCompositionEndLoop";
     
     case OpcodeCeiling:
     default:
@@ -1388,7 +1389,9 @@ void Parameterize()
 
     InstructionDesc[OpFunctionCallBaseUnresolved].setResultAndType(true, true);
     InstructionDesc[OpFunctionCallBaseResolved].setResultAndType(true, true);
+    InstructionDesc[OpFunctionCallThroughStaticShaderClassCall].setResultAndType(true, true);
     InstructionDesc[OpFunctionCallThroughCompositionVariable].setResultAndType(true, true);
+
     //=======================================================================================
 
     // Specific additional context-dependent operands
@@ -1949,6 +1952,8 @@ void Parameterize()
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
     InstructionDesc[OpFunctionCallBaseResolved].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallBaseResolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
+    InstructionDesc[OpFunctionCallThroughStaticShaderClassCall].operands.push(OperandId, "'Function'");
+    InstructionDesc[OpFunctionCallThroughStaticShaderClassCall].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandId, "'Composition Shader owner'");
     InstructionDesc[OpFunctionCallThroughCompositionVariable].operands.push(OperandLiteralNumber, "'Composition Id'");

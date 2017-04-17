@@ -4474,6 +4474,7 @@ bool SpxStreamRemapper::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<
 
                     case spv::OpFunctionCall:
                     case spv::OpFunctionCallBaseResolved:
+                    case spv::OpFunctionCallThroughStaticShaderClassCall:
                     {
                         //pile the function to go check it later
                         spv::Id functionCalledId = asId(start + 3);
@@ -4539,6 +4540,7 @@ bool SpxStreamRemapper::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<
                     {
                         case spv::OpFunctionCall:
                         case spv::OpFunctionCallBaseResolved:
+                        case spv::OpFunctionCallThroughStaticShaderClassCall:
                         {
                             spv::Id functionCalledId = asId(start + 3);
                             FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
@@ -4644,6 +4646,7 @@ bool SpxStreamRemapper::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& out
                 {
                     case spv::OpFunctionCall:
                     case spv::OpFunctionCallBaseResolved:
+                    case spv::OpFunctionCallThroughStaticShaderClassCall:
                     {
                         spv::Id functionCalledId = asId(start + 3);
                         FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
@@ -5075,7 +5078,7 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
 
         switch (opCode)
         {
-            // call to base function (OpFunctionCallBaseResolved, OpFunctionCallBaseUnresolved) are ignored
+            // call to base function (OpFunctionCallBaseResolved, OpFunctionCallBaseUnresolved, OpFunctionCallThroughStaticShaderClassCall) are ignored
 
             case spv::OpFunctionCall:
             case spv::OpFunctionCallThroughCompositionVariable:
@@ -5218,6 +5221,7 @@ bool SpxStreamRemapper::GetShadersFullDependencies(SpxStreamRemapper* bytecodeSo
                     case spv::OpFunctionCall:
                     case spv::OpFunctionCallBaseResolved:
                     case spv::OpFunctionCallBaseUnresolved:
+                    case spv::OpFunctionCallThroughStaticShaderClassCall:
                     case spv::OpFunctionCallThroughCompositionVariable:
                     {
                         spv::Id functionCalledId = bytecodeSource->asId(start + 3);
@@ -5451,8 +5455,9 @@ bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
                 break;
             }
             case spv::OpFunctionCallBaseResolved:
+            case spv::OpFunctionCallThroughStaticShaderClassCall:
             {
-                //change OpFunctionCallBaseResolved to OpFunctionCall
+                //change OpCode to OpFunctionCall
                 setOpCode(start, spv::OpFunctionCall);
                 break;
             }
@@ -5605,6 +5610,7 @@ bool SpxStreamRemapper::GenerateBytecodeForStage(XkslMixerOutputStage& stage, ve
                 {
                     case spv::OpFunctionCall:
                     case spv::OpFunctionCallBaseResolved:
+                    case spv::OpFunctionCallThroughStaticShaderClassCall:
                     {
                         //pile the function to go check it later
                         spv::Id functionCalledId = asId(start + 3);
@@ -6838,6 +6844,7 @@ bool SpxStreamRemapper::GetListAllFunctionCallInstructions(vector<FunctionCallIn
                 case spv::OpFunctionCall:
                 case spv::OpFunctionCallBaseResolved:
                 case spv::OpFunctionCallBaseUnresolved:
+                case spv::OpFunctionCallThroughStaticShaderClassCall:
                 case spv::OpFunctionCallThroughCompositionVariable:
                 {
                     spv::Id functionCalledId = asId(start + 3);
