@@ -75,8 +75,9 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "parseShaderWithStructs02.xksl" },
     //{ "parseShaderWithStructs03.xksl" },
     //{ "parseShaderWithStructs04.xksl" },
-
+    
     //{ "textureAndSampler.xksl" },
+
     ////{ "parseGeomShader01.xksl" },
     ////{ "parseGeomShader02.xksl" },
     ////{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -172,6 +173,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
+    { "ShaderWithResources08", "ShaderWithResources08.xkfx" },
 
     //{ "testDependency01", "testDependency01.xkfx" },
     //{ "testDependency02", "testDependency02.xkfx" },
@@ -181,7 +183,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testDependency06", "testDependency06.xkfx" },
     //{ "testDependency07", "testDependency07.xkfx" },
 
-    { "Effect01", "Effect01.xkfx" },
+    //{ "Effect01", "Effect01.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
