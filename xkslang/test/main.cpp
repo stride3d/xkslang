@@ -76,7 +76,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "parseShaderWithStructs03.xksl" },
     //{ "parseShaderWithStructs04.xksl" },
 
-    ////{ { "textureAndSampler.xksl" },{ "", nullptr } },
+    //{ "textureAndSampler.xksl" },
     ////{ "parseGeomShader01.xksl" },
     ////{ "parseGeomShader02.xksl" },
     ////{{"shaderTexturing.xksl"}, {"", nullptr}},
@@ -153,7 +153,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics05", "TestGenerics05.xkfx" },
     //{ "TestGenerics06", "TestGenerics06.xkfx" },
     //{ "TestGenerics07", "TestGenerics07.xkfx" },
-    ////////////////////////////{ "TestGenerics08", "TestGenerics08.xkfx" },
+    //{ "TestGenerics08", "TestGenerics08.xkfx" },
 
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
@@ -180,6 +180,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testDependency05", "testDependency05.xkfx" },
     //{ "testDependency06", "testDependency06.xkfx" },
     //{ "testDependency07", "testDependency07.xkfx" },
+
+    { "Effect01", "Effect01.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -558,16 +560,27 @@ static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, c
 }
 
 static string shaderFilesPrefix;
+static vector<string> libraryResourcesFolders;
 static bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
 {
-    const string inputFname = inputDir + shaderFilesPrefix + "_" + shaderName + ".xksl";
-    if (!Utils::ReadFile(inputFname, shaderData))
+    for (int i = 0; i < 2; i++)
     {
-        cout << "Cannot read the file: " << inputFname << endl;
-        return false;
-    }
+        string filePrefix = (i==0? "": (shaderFilesPrefix + "_"));
 
-    return true;
+        for (unsigned int k = 0; k < libraryResourcesFolders.size(); ++k)
+        {
+            string& folder = libraryResourcesFolders[k];
+
+            const string inputFname = folder + filePrefix + shaderName + ".xksl";
+            if (Utils::ReadFile(inputFname, shaderData))
+            {
+                return true;
+            }
+        }
+    }
+    
+    cout << "Cannot find data for shader: " << shaderName << endl;
+    return false;
 }
 
 static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix, const vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode,
@@ -580,6 +593,7 @@ static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& sha
     ostringstream outputHumanReadableASTAndSPV;
 
     shaderFilesPrefix = filesPrefix; //set for the callback function
+
     DWORD time_before, time_after;
     time_before = GetTickCount();
     bool success = parser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
@@ -786,6 +800,10 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
     unordered_map<string, EffectMixerObject*> mixerMap;
     int operationNum = 0;
 
+    //init library resource folders
+    libraryResourcesFolders.clear();
+    libraryResourcesFolders.push_back(inputDir);
+
     cout << "Effect: " << effectName << endl;
 
     //preload some spx files?
@@ -820,7 +838,20 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
 
         stringstream lineSs(line);
         getNextWord(lineSs, lineItem);
-        if (lineItem.compare("convertAndLoadRecursif") == 0)
+
+        if (lineItem.compare("addResourcesLibrary") == 0)
+        {
+            string folder;
+            if (!getNextWord(lineSs, folder)) {
+                cout << "convertAndLoad: failed to get the library resource folder" << endl;
+                success = false; break;
+            }
+            folder = Utils::trim(folder, '\"');
+
+            string path = inputDir + folder + "\\";
+            libraryResourcesFolders.push_back(path);
+        }
+        else if (lineItem.compare("convertAndLoadRecursif") == 0)
         {
             //recursively convert and load xksl shaders
 

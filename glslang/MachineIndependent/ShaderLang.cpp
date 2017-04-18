@@ -1855,7 +1855,7 @@ static bool IsTypeValidForStream(const TBasicType& type)
     return true;
 }
 
-static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition* shader, HlslParseContext* parseContext)
+static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, HlslParseContext* parseContext)
 {
     //======================================================================================
     //Method declaration: add the shader methods prototype in the table of symbol
@@ -1865,10 +1865,17 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
         parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
     }
 
+    ////number to make sure we don't have name collisions
+    //int totalNumberOfBlocksDeclared = 0;
+    //for (unsigned int s = 0; s < shaderLibrary.listShaders.size(); s++)
+    //    totalNumberOfBlocksDeclared += shaderLibrary.listShaders[s]->listDeclaredBlockNames.size();
+
     //======================================================================================
     // Members declaration: create and add the new shader structs
 
     //buffer of variables declared by the shader (cbuffer)
+    ////TString cbufferStageNumberId = TString(std::to_string(++totalNumberOfBlocksDeclared).c_str());
+    ////TString cbufferUnstageNumberId = TString(std::to_string(++totalNumberOfBlocksDeclared).c_str());
     TString* cbufferStageGlobalBlockName = NewPoolTString((shader->shaderFullName + TString(".globalCBufferStage")).c_str());
     TString* cbufferStageGlobalBlockVarName = NewPoolTString((*cbufferStageGlobalBlockName + TString("_var")).c_str());
     TString* cbufferUnstageGlobalBlockName = NewPoolTString((shader->shaderFullName + TString(".globalCBufferUnstage")).c_str());
@@ -2097,7 +2104,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderDefinition*
             blockQualifier.clear();
             blockQualifier.storage = EvqUniform;
             blockQualifier.isStage = true;
-            TString& typeName = *cbufferStageGlobalBlockName; //shader->shaderFullName; //cbufferGlobalBlockName; //NewPoolTString("");
+            TString& typeName = *cbufferStageGlobalBlockName;
             TType globalBlockType(cbufferStageGlobalStructTypeList, typeName, blockQualifier);
             globalBlockType.SetAsUndefinedCBufferType();
 
@@ -2382,6 +2389,8 @@ static bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shader
     for (unsigned int s = 0; s < shaderLibrary.listShaders.size(); s++)
     {
         XkslShaderDefinition* shader = shaderLibrary.listShaders[s];
+        if (shader->isValid == false) continue;
+
         for (unsigned int i = 0; i < shader->listAllDeclaredMembers.size(); ++i)
         {
             XkslShaderDefinition::XkslShaderMember& member = shader->listAllDeclaredMembers[i];
@@ -2517,6 +2526,7 @@ static bool ParseXkslShaderRecursif(
             if (parsedShader->parsingStatus == previousProcessingOperation)
             {
                 parsedShader->parsingStatus = currentProcessingOperation;
+                parsedShader->isValid = true;
             }
         }
 
@@ -2544,6 +2554,17 @@ static bool ParseXkslShaderRecursif(
                     error(parseContext, "Failed to resolve the generics for shader: " + shader->shaderFullName);
                     break;
                 }
+
+                //Check if the shader is a duplicate of a previous shader
+                //We do this after resolving generics value (a shader is defined by its name plus the value of its generics)
+                for (unsigned int ps = 0; ps < s; ps++)
+                {
+                    XkslShaderDefinition* anotherShader = shaderLibrary.listShaders[ps];
+                    if (anotherShader->shaderFullName == shader->shaderFullName)
+                    {
+                        shader->isValid = false; //the shader is a duplicate, invalidate it
+                    }
+                }
             }
         }
 
@@ -2565,6 +2586,7 @@ static bool ParseXkslShaderRecursif(
             if (!success) break;
 
             XkslShaderDefinition* parsedShader = listShaderParsed[s];
+            if (parsedShader->isValid == false) continue;
 
             if (parsedShader->parsingStatus == previousProcessingOperation)
             {
@@ -2692,6 +2714,7 @@ static bool ParseXkslShaderRecursif(
         for (unsigned int s = 0; s < listShaderParsed.size(); s++)
         {
             XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
 
             if (shader->parsingStatus == previousProcessingOperation)
             {
@@ -2740,6 +2763,7 @@ static bool ParseXkslShaderRecursif(
         for (unsigned int s = 0; s < listShaderParsed.size(); s++)
         {
             XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
 
             if (shader->parsingStatus == previousProcessingOperation)
             {
@@ -2769,12 +2793,13 @@ static bool ParseXkslShaderRecursif(
         for (unsigned int s = 0; s < listShaderParsed.size(); s++)
         {
             XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
 
             if (shader->parsingStatus == previousProcessingOperation)
             {
                 shader->parsingStatus = currentProcessingOperation;
 
-                success = ProcessDeclarationOfMembersAndMethodsForShader(shader, parseContext);
+                success = ProcessDeclarationOfMembersAndMethodsForShader(shaderLibrary, shader, parseContext);
                 if (!success) {
                     error(parseContext, "Failed to process the declaration of all shader members and methods for the shader: " + shader->shaderFullName);
                     break;
@@ -2887,6 +2912,8 @@ static bool ParseXkslShaderRecursif(
             for (unsigned int s = 0; s < listShaderParsed.size(); s++)
             {
                 XkslShaderDefinition* shader = listShaderParsed[s];
+                if (shader->isValid == false) continue;
+
                 if (shader->parsingStatus == previousProcessingOperation)
                 {
                     success = parseContext->parseXkslShaderMethodsDefinition(shader, &shaderLibrary, ppContext, unknownIdentifier);
@@ -2969,13 +2996,12 @@ static bool ParseXkslShaderRecursif(
         for (unsigned int s = 0; s < listShaderParsed.size(); s++)
         {
             XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
+
             if (shader->parsingStatus == previousProcessingOperation)
             {
                 shader->parsingStatus = currentProcessingOperation;
-
-                //update the shader type parents' name (used by glslangToSpv)
                 
-
                 //Add all methods in the global tree root (and set all methods nodes as node aggregator)
                 int countFunctionNodes = shader->listMethods.size();
                 for (int i = 0; i< countFunctionNodes; i++)

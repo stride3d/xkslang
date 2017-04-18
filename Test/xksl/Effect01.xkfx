@@ -1,0 +1,11 @@
+//Reuse shaders from TestGenerics07, just change the generics value to have identical one
+
+addResourcesLibrary "library"
+convertAndLoadRecursif "Effect01" CustomEffect
+
+mixer m
+m.mixin Effect
+
+m.setStageEntryPoint Vertex "VSMain"
+
+m.compile

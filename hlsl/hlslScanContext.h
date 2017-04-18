@@ -176,8 +176,9 @@ public:
     };
 
 public:
-    XkslShaderDefinition() : parsingStatus(ShaderParsingStatusEnum::Undefined), tmpFlag(0) {}
+    XkslShaderDefinition() : parsingStatus(ShaderParsingStatusEnum::Undefined), tmpFlag(0), isValid(true){}
 
+    bool isValid;
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
 
     TString shaderBaseName;
