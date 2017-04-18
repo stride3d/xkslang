@@ -48,15 +48,15 @@ public:
 
     //Recursively convert a shader into SPX bytecode
     //If the shader misses some dependencies, xkslang will query their data through the callback function
-    bool ConvertShaderToSpx(const std::string shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode,
-        std::ostringstream* errorAndDebugMessages, std::ostringstream* outputHumanReadableASTAndSPV);
+    bool ConvertShaderToSpx(const std::string shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ShaderGenericValues>& listGenericsValue,
+        SpxBytecode& spirXBytecode, std::ostringstream* errorAndDebugMessages);
 
-    bool ConvertBytecodeToText(std::vector<uint32_t>& bytecode, std::string& text);
+    bool ConvertBytecodeToText(const std::vector<uint32_t>& bytecode, std::string& text);
 
     //Convert a xksl file into a SPX bytecode
     //The shader string has to contain the shader and all its dependencies
     bool ConvertXkslFileToSpx(const std::string& shaderFileName, const std::string& data, const std::vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode,
-        std::ostringstream* errorAndDebugMessages , std::ostringstream* outputHumanReadableASTAndSPV);
+        std::ostringstream* errorAndDebugMessages);
 };
 
 }  // namespace xkslang

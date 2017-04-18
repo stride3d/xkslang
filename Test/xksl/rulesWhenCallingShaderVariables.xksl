@@ -2,7 +2,7 @@
 
 shader Comp
 {
-	void Compute();
+	void Compute(){}
 }
 
 shader Utils
@@ -79,7 +79,6 @@ shader Shader : BaseShader
 		//compVar.Compute();		
     }
 };      
-
 
 shader ShaderSup : Shader
 {

@@ -75,7 +75,6 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "parseShaderWithStructs02.xksl" },
     //{ "parseShaderWithStructs03.xksl" },
     //{ "parseShaderWithStructs04.xksl" },
-    
     //{ "textureAndSampler.xksl" },
 
     ////{ "parseGeomShader01.xksl" },
@@ -173,7 +172,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
-    { "ShaderWithResources08", "ShaderWithResources08.xkfx" },
+    //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
 
     //{ "testDependency01", "testDependency01.xkfx" },
     //{ "testDependency02", "testDependency02.xkfx" },
@@ -183,7 +182,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testDependency06", "testDependency06.xkfx" },
     //{ "testDependency07", "testDependency07.xkfx" },
 
-    //{ "Effect01", "Effect01.xkfx" },
+    { "Effect01", "Effect01.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -348,7 +347,7 @@ static bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStage
     }
     else
     {
-        cout << "OK. time: " << (time_after - time_before) << " ms" << endl;
+        cout << "OK. time: " << (time_after - time_before) << "ms" << endl;
     }
 
     //output the compiled intermediary bytecodes
@@ -413,7 +412,7 @@ static bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStage
                 time_after = GetTickCount();
                 if (result != 0) success = false;
 
-                if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+                if (success) cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
                 else cout << " Failed to convert the SPIRV file to GLSL" << endl;
 
                 //======================================================================================================
@@ -464,7 +463,7 @@ static bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStage
                 time_after = GetTickCount();
                 if (result != 0) success = false;
 
-                if (success) cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+                if (success) cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
                 else cout << " Failed to convert the SPIRV file to HLSL" << endl;
 
                 //======================================================================================================
@@ -522,26 +521,27 @@ static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, c
     //======================================================================================================
     // Parse and convert XKSL shaders to SPIRX bytecode
     ostringstream errorAndDebugMessages;
-    ostringstream outputHumanReadableASTAndSPV;
 
     DWORD time_before, time_after;
     time_before = GetTickCount();
-    bool success = parser->ConvertXkslFileToSpx(xkslInputFile, xkslInput, listGenericsValue, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
+    bool success = parser->ConvertXkslFileToSpx(xkslInputFile, xkslInput, listGenericsValue, spirXBytecode, &errorAndDebugMessages);
     time_after = GetTickCount();
+
+    string infoMsg = errorAndDebugMessages.str();
+    if (infoMsg.size() > 0) cout << infoMsg;
 
     if (!success) {
         cout << " Failed to parse the xksl file" << endl;
-        cout << errorAndDebugMessages.str() << endl;
         return false;
     }
     else
     {
-        cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+        cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
 
         //output binary and debug info
         if (writeOutputsOnDisk)
         {
-            //output the SPIRX binary
+            //write the SPIRX binary
             const vector<uint32_t>& bytecodeList = spirXBytecode.getBytecodeStream();
             if (bytecodeList.size() > 0)
             {
@@ -549,11 +549,16 @@ static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, c
                 glslang::OutputSpvBin(bytecodeList, newOutputFname.c_str());
             }
 
-            //output the AST and debug and HR spirv binary
+            //dissassemble the bytecode to display and save it
+            string bytecodeTxt;
+            parser->ConvertBytecodeToText(bytecodeList, bytecodeTxt);
+            //cout << "SPX bytecode:" << endl;
+            //cout << bytecodeTxt << endl;
+
+            //write the dissassembled bytecode
             const string outputFileName = xkslInputFile + ".hr.spv";
             const string outputFullName = outputDir + outputFileName;
-            errorAndDebugMessages << outputHumanReadableASTAndSPV.str();
-            xkslangtest::Utils::WriteFile(outputFullName, errorAndDebugMessages.str());
+            xkslangtest::Utils::WriteFile(outputFullName, bytecodeTxt);
             cout << " output: \"" << outputFileName << "\"" << endl;
         }
     }
@@ -592,28 +597,29 @@ static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& sha
     string outputFileName = "";
 
     ostringstream errorAndDebugMessages;
-    ostringstream outputHumanReadableASTAndSPV;
 
     shaderFilesPrefix = filesPrefix; //set for the callback function
 
     DWORD time_before, time_after;
     time_before = GetTickCount();
-    bool success = parser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, spirXBytecode, &errorAndDebugMessages, &outputHumanReadableASTAndSPV);
+    bool success = parser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, spirXBytecode, &errorAndDebugMessages);
     time_after = GetTickCount();
+
+    string infoMsg = errorAndDebugMessages.str();
+    if (infoMsg.size() > 0) cout << infoMsg;
 
     if (!success) {
         cout << " Failed to parse the xksl shader" << endl;
-        cout << errorAndDebugMessages.str() << endl;
         return false;
     }
     else
     {
-        cout << " OK. time: " << (time_after - time_before) << " ms" << endl;
+        cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
 
         //output binary and debug info
         if (writeOutputsOnDisk)
         {
-            //output the SPIRX binary
+            //write the SPIRX binary
             const vector<uint32_t>& bytecodeList = spirXBytecode.getBytecodeStream();
             if (bytecodeList.size() > 0)
             {
@@ -623,11 +629,16 @@ static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& sha
                 outputFileName = newOutputFilename;
             }
 
-            //output the AST and debug and HR spirv binary
+            //dissassemble the bytecode to display and save it
+            string bytecodeTxt;
+            parser->ConvertBytecodeToText(bytecodeList, bytecodeTxt);
+            //cout << "SPX bytecode:" << endl;
+            //cout << bytecodeTxt << endl;
+
+            //write the dissassembled bytecode
             const string outputFileName = filesPrefix + "_" + shaderName + ".hr.spv";
             const string outputFullName = outputDir + outputFileName;
-            errorAndDebugMessages << outputHumanReadableASTAndSPV.str();
-            xkslangtest::Utils::WriteFile(outputFullName, errorAndDebugMessages.str());
+            xkslangtest::Utils::WriteFile(outputFullName, bytecodeTxt);
             cout << " output: \"" << outputFileName << "\"" << endl;
         }
     }
@@ -1033,7 +1044,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
                 SaveCurrentMixerBytecode(mixerTarget->mixer, outputDir, outputFileName);
 
                 if (success)
-                    cout << " OK. Time:  " << (time_after - time_before) << " ms" << endl;
+                    cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
                 else
                     cout << "Mixin failed" << endl;
             }
@@ -1073,7 +1084,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
                 SaveCurrentMixerBytecode(mixerTarget->mixer, outputDir, outputFileName);
 
                 if (success)
-                    cout << " OK. Time:  " << (time_after - time_before) << " ms" << endl;
+                    cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
                 else
                     cout << "Failed to add the composition to the mixer" << endl;
             }

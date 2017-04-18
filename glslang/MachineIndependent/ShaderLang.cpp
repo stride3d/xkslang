@@ -3246,7 +3246,8 @@ static bool ParseXkslShaderFile(
     {
         //finalize the AST
         success = intermediate->postProcess(intermediate->getTreeRoot(), parseContext->getLanguage());
-        intermediate->output(parseContext->infoSink, true);
+
+        //intermediate->output(parseContext->infoSink, true); output the AST into infosink.debug
     }
 
     //=====================================================================================
@@ -3261,16 +3262,23 @@ static bool ParseXkslShaderFile(
 }
 
 bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ClassGenericValues>& listGenericValues,
-    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs)
+    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>* infoMsgs, std::vector<std::string>* astMsgs)
 {
-    errorMsgs.clear();
-    if (shaderName.size() == 0) { errorMsgs.push_back("shaderName is empty"); return false; }
-    if (callbackRequestDataForShader == nullptr) { errorMsgs.push_back("callback function is missing");return false; }
+    if (infoMsgs != nullptr) infoMsgs->clear();
+    if (astMsgs != nullptr) astMsgs->clear();
+    if (shaderName.size() == 0) {
+        if (infoMsgs != nullptr) infoMsgs->push_back("shaderName is empty");
+        return false;
+    }
+    if (callbackRequestDataForShader == nullptr) {
+        if (infoMsgs != nullptr) infoMsgs->push_back("callback function is missing");
+        return false;
+    }
 
     std::string shaderData;
     if (!callbackRequestDataForShader(shaderName, shaderData))
     {
-        errorMsgs.push_back("Failed to query data for shader: " + shaderName);
+        if (infoMsgs != nullptr) infoMsgs->push_back("Failed to query data for shader: " + shaderName);
         return false;
     }
 
@@ -3282,10 +3290,16 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
     TIntermediate* ast = new TIntermediate(EShLangFragment);  //glslang needs to know the stage but it won't be used (set fragment by default)
     bool success = ParseXkslShaderFile(shaderData, *infoSink, ast, builtInResources, options, listGenericValues, callbackRequestDataForShader);
 
-    const char* infoStr = infoSink->info.c_str();
-    if (infoStr != nullptr && strlen(infoStr) > 0) errorMsgs.push_back(infoStr);
-    const char* debugStr = infoSink->debug.c_str();
-    if (debugStr != nullptr && strlen(debugStr) > 0) errorMsgs.push_back(debugStr);
+    if (infoMsgs != nullptr)
+    {
+        const char* infoStr = infoSink->info.c_str();
+        if (infoStr != nullptr && strlen(infoStr) > 0) infoMsgs->push_back(infoStr);
+    }
+    if (astMsgs != nullptr)
+    {
+        const char* debugStr = infoSink->debug.c_str();
+        if (debugStr != nullptr && strlen(debugStr) > 0) astMsgs->push_back(debugStr);
+    }
 
     if (success)
     {
@@ -3294,7 +3308,9 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
         spv::SpvBuildLogger logger;
         glslang::GlslangToSpv(*ast, spxBytecode, &logger);
         if (logger.hasAnyError()) success = false;
-        logger.getAllMessages(errorMsgs);
+        if (infoMsgs != nullptr) {
+            logger.getAllMessages(*infoMsgs);
+        }
     }
 
     delete infoSink;
@@ -3305,10 +3321,14 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
 }
 
 bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& xkslFile, const std::vector<ClassGenericValues>& listGenericValues,
-    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs)
+    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>* infoMsgs, std::vector<std::string>* astMsgs)
 {
-    errorMsgs.clear();
-    if (xkslFile.size() == 0) { errorMsgs.push_back("xksl file is empty"); return false; }
+    if (infoMsgs != nullptr) infoMsgs->clear();
+    if (astMsgs != nullptr) astMsgs->clear();
+    if (xkslFile.size() == 0) {
+        if (infoMsgs != nullptr) infoMsgs->push_back("xksl file is empty");
+        return false;
+    }
 
     if (!InitThread()) return false;
     TPoolAllocator* pool = new TPoolAllocator();
@@ -3318,10 +3338,16 @@ bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& xkslFi
     TIntermediate* ast = new TIntermediate(EShLangFragment);  //glslang needs to know the stage but it won't be used (set fragment by default)
     bool success = ParseXkslShaderFile(xkslFile, *infoSink, ast, builtInResources, options, listGenericValues, nullptr);
 
-    const char* infoStr = infoSink->info.c_str();
-    if (infoStr != nullptr && strlen(infoStr) > 0) errorMsgs.push_back(infoStr);
-    const char* debugStr = infoSink->debug.c_str();
-    if (debugStr != nullptr && strlen(debugStr) > 0) errorMsgs.push_back(debugStr);
+    if (infoMsgs != nullptr)
+    {
+        const char* infoStr = infoSink->info.c_str();
+        if (infoStr != nullptr && strlen(infoStr) > 0) infoMsgs->push_back(infoStr);
+    }
+    if (astMsgs != nullptr)
+    {
+        const char* debugStr = infoSink->debug.c_str();
+        if (debugStr != nullptr && strlen(debugStr) > 0) astMsgs->push_back(debugStr);
+    }
 
     if (success)
     {
@@ -3330,7 +3356,9 @@ bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& xkslFi
         spv::SpvBuildLogger logger;
         glslang::GlslangToSpv(*ast, spxBytecode, &logger);
         if (logger.hasAnyError()) success = false;
-        logger.getAllMessages(errorMsgs);
+        if (infoMsgs != nullptr) {
+            logger.getAllMessages(*infoMsgs);
+        }
     }
 
     delete infoSink;

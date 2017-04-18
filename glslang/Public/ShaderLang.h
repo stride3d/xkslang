@@ -293,10 +293,10 @@ void FinalizeProcess();
 typedef bool(*CallbackRequestDataForShader)(const std::string&, std::string&);
 
 bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& shaderString, const std::vector<ClassGenericValues>& listGenericValues,
-    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs);
+    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>* infoMsgs, std::vector<std::string>* astMsgs);
 
 bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ClassGenericValues>& listGenericValues,
-    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>& errorMsgs);
+    const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>* infoMsgs, std::vector<std::string>* astMsgs);
 //=============================================================================================================================
 
 // Make one TShader per shader that you will link into a program.  Then provide

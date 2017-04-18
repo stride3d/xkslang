@@ -555,6 +555,12 @@ bool HlslGrammar::acceptSamplerState()
             }
         } else if (stateName == "bordercolor") {
             return false;
+        } else if (stateName == "comparisonfunc") { //XKSL extension
+            HlslToken compFunc;
+            if (!acceptIdentifier(compFunc)) {
+                expected("comparison function");
+                return false;
+            }
         } else {
             expected("texture state");
             return false;
@@ -4482,7 +4488,6 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
     int countAccessor = 0;
     if (hasBaseAccessor) countAccessor++;
     if (callThroughStaticShaderClassName) countAccessor++;
-    if (hasStreamAccessor) countAccessor++;
     if (countAccessor > 1) {
         error("Found too many class accessors");
         return false;
