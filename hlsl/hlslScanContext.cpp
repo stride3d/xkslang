@@ -533,9 +533,87 @@ TString HlslScanContext::convertTokenToString(const HlslToken& token)
         case EHTokDoubleConstant:   return TString(std::to_string(token.d).c_str());
         case EHTokBoolConstant:     return token.b? "true": "false";
         case EHTokStringConstant:   return *token.string;
+
+        case EHTokPublic:             return "public";
+        case EHTokPrivate:            return "private";
+        case EHTokProtected:          return "protected";
+        case EHTokInternal:           return "internal";
+        case EHTokStage:              return "stage";
+        case EHTokStream:             return "stream";
+        case EHTokOverride:           return "override";
+        case EHTokAbstract:           return "abstract";
+        case EHTokClone:              return "clone";
+        case EHTokBase:               return "base";
+        case EHTokStreams:            return "streams";
+        case EHTokCompose:            return "compose";
+        case EHTokForEach:            return "foreach";
+                                     
+        case EHTokClass:              return "class";
+        case EHTokStruct:             return "struct";
+        case EHTokCBuffer:            return "cbuffer";
+        case EHTokTBuffer:            return "tbuffer";
+        case EHTokTypedef:            return "typedef";
+        case EHTokThis:               return "this";
+        case EHTokNamespace:          return "namespace";
+        case EHTokRGroup:             return "rgroup";
+                                     
+        case EHTokShaderClass:        return "shader";
+                                     
+        case EHTokFor:                return "for";
+        case EHTokDo:                 return "do";
+        case EHTokWhile:              return "while";
+        case EHTokBreak:              return "break";
+        case EHTokContinue:           return "continue";
+        case EHTokIf:                 return "if";
+        case EHTokElse:               return "else";
+        case EHTokDiscard:            return "discard";
+        case EHTokReturn:             return "return";
+        case EHTokSwitch:             return "switch";
+        case EHTokCase:               return "case";
+        case EHTokDefault:            return "default";
+
+        case EHTokStatic:             return "static";
+        case EHTokConst:              return "const";
+        case EHTokUnorm:              return "unorm";
+        case EHTokSNorm:              return "snorm";
+        case EHTokExtern:             return "extern";
+        case EHTokUniform:            return "uniform";
+        case EHTokVolatile:           return "volatile";
+        case EHTokPrecise:            return "precise";
+        case EHTokShared:             return "shared";
+        case EHTokGroupShared:        return "groupshared";
+        case EHTokLinear:             return "linear";
+        case EHTokCentroid:           return "centroid";
+        case EHTokNointerpolation:    return "nointerpolation";
+        case EHTokNoperspective:      return "noperspective";
+        case EHTokSample:             return "sample";
+        case EHTokRowMajor:           return "row_major";
+        case EHTokColumnMajor:        return "column_major";
+        case EHTokPackOffset:         return "packoffset";
+        case EHTokIn:                 return "in";
+        case EHTokOut:                return "out";
+        case EHTokInOut:              return "inout";
+        case EHTokLayout:             return "layout";
+        case EHTokGloballyCoherent:   return "globallycoherent";
+        case EHTokInline:             return "inline";
+
+        case EHTokPoint:              return "point";
+        case EHTokLine:               return "line";
+        case EHTokTriangle:           return "triangle";
+        case EHTokLineAdj:            return "lineadj";
+        case EHTokTriangleAdj:        return "triangleadj";
+        case EHTokPointStream:        return "PointStream";
+        case EHTokLineStream:         return "LineStream";
+        case EHTokTriangleStream:     return "TriangleStream";
+        case EHTokInputPatch:         return "InputPatch";
+        case EHTokOutputPatch:        return "OutputPatch";
+        case EHTokBuffer:             return "Buffer";
+        case EHTokVector:             return "vector";
+        case EHTokMatrix:             return "matrix";
+
+        default: return "";
     }
 
-    parseContext.error(loc, "unprocessed token class", "", "");
     return "";
 }
 

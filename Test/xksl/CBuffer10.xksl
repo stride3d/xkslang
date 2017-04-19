@@ -1,0 +1,31 @@
+shader ShaderMain
+{
+	stream stage float aStream1: STREAM1;
+	stream float aStream2;
+	stream float aStream3;
+
+    cbuffer PerLighting
+    {
+        float var1;
+        float var2;
+    }
+
+    cbuffer PerLighting
+    {
+        float var3;
+        float var4;
+    }
+
+	float var5;
+	float var6;
+
+	stage void VSMain() 
+    {
+        streams.aStream2 = streams.aStream1 + var1;
+    }
+	
+    stage void PSMain() 
+    {
+        streams.aStream3 = streams.aStream2 + var5;
+    }
+};

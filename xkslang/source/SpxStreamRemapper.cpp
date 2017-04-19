@@ -2323,22 +2323,86 @@ bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputSt
     return true;
 }
 
+void SpxStreamRemapper::MakeIntConstant(spv::Id newUniqueId, spv::Id typeId, unsigned value, vector<unsigned int>& bytecodeInstructions)
+{
+    spv::Op opcode = spv::OpConstant;
+
+    spv::Instruction constant(newUniqueId, typeId, spv::OpConstant);
+    constant.addImmediateOperand(value);
+
+    constant.dump(bytecodeInstructions);   
+}
+
+spv::Id SpxStreamRemapper::GetOrCreateTypeDefaultConstInstructions(spv::Id& newId, TypeInstruction* type, vector<unsigned int>& bytecodeInstructions)
+{
+    spv::Op opCode = asOpCode(type->GetBytecodeStartPosition());
+
+    switch (opCode)
+    {
+        case spv::OpTypeInt:
+            break;
+    }
+
+    return 0;
+}
+
 bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamReadyForReschuffling) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamReschuffled;
 
-    //get global stream buffer object
+    //get the global stream buffer object
     if (globalListOfMergedStreamVariables.countMembers() == 0) return true; //no stream variables to reshuffle
     TypeInstruction* globalStreamType = GetTypeById(globalListOfMergedStreamVariables.structTypeId);
     if (globalStreamType == nullptr)
         return error(string("Cannot retrieve the global stream type. Id: ") + to_string(globalListOfMergedStreamVariables.structTypeId));
 
+    //=============================================================================================================
+    //Check the list of used members, and init some of their data
+    int countStreamMemberUsed = 0;
+    for (unsigned int k = 0; k < globalListOfMergedStreamVariables.members.size(); k++) globalListOfMergedStreamVariables.members[k].isUsed = false;
+
+    for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
+    {
+        XkslMixerOutputStage& stage = outputStages[iStage];
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (stage.listStreamVariablesAccessed.size() != globalListOfMergedStreamVariables.countMembers()) return error("invalid stream variable accessed list size");
+#endif
+
+        for (unsigned int index = 0; index < stage.listStreamVariablesAccessed.size(); ++index)
+        {
+            const MemberAccessDetails& memberAccess = stage.listStreamVariablesAccessed[index];
+            if (memberAccess.IsBeingAccessed())
+            {
+                if (!globalListOfMergedStreamVariables.members[index].isUsed)
+                {
+                    globalListOfMergedStreamVariables.members[index].isUsed = true;
+                    countStreamMemberUsed++;
+
+                    TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+                    if (streamMember.memberType == nullptr)
+                    {
+                        TypeInstruction* memberType = GetTypeById(streamMember.memberTypeId);
+                        if (memberType == nullptr) return error("failed to find the member type for member: " + streamMember.GetDeclarationNameOrSemantic());
+                        streamMember.memberType = memberType;
+                    }
+
+                    //if (streamMember.memberType->GetBytecodeEndPosition() > bestPosToInsertNewDefaultConstInstructions)
+                    //    bestPosToInsertNewDefaultConstInstructions = streamMember.memberType->GetBytecodeEndPosition();
+                }
+            }
+        }
+    }
+    if (countStreamMemberUsed == 0) return true; //no stream members being used at all, can return immediatly
+
+    //=============================================================================================================
     //Reset some functions parameters needed for the algo
     for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
         FunctionInstruction* aFunction = *itsf;
         aFunction->functionProcessingStreamForStage = ShadingStageEnum::Undefined;
         aFunction->streamIOStructVariableResultId = 0;
+        aFunction->streamIOStructConstantCompositeId = 0;
         aFunction->functionVariablesStartingPosition = 0;
     }
 
@@ -2454,6 +2518,37 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
     //=============================================================================================================
     //=============================================================================================================
+    //Get or create the default const object for all used stream members
+    {
+        vector<unsigned int> bytecodeNewInstructions;
+        for (unsigned int index = 0; index < globalListOfMergedStreamVariables.members.size(); index++)
+        {
+            if (globalListOfMergedStreamVariables.members[index].isUsed)
+            {
+                TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+                if (streamMember.memberDefaultConstantTypeId == spvUndefinedId)
+                {
+                    spv::Id memberDefaultConstId = GetOrCreateTypeDefaultConstInstructions(newId, streamMember.memberType, bytecodeNewInstructions);
+                    if (memberDefaultConstId == 0)
+                        return error("failed to create const default instructions for the member: " + streamMember.GetDeclarationNameOrSemantic());
+                    streamMember.memberDefaultConstantTypeId = memberDefaultConstId;
+
+                    //in the case of we have some other members with the same type
+                    for (unsigned int index2 = index + 1; index2 < globalListOfMergedStreamVariables.members.size(); index2++)
+                    {
+                        TypeStructMember& anotherStreamMember = globalListOfMergedStreamVariables.members[index2];
+                        if (anotherStreamMember.memberDefaultConstantTypeId == spvUndefinedId && anotherStreamMember.memberTypeId == streamMember.memberTypeId)
+                        {
+                            anotherStreamMember.memberDefaultConstantTypeId = streamMember.memberDefaultConstantTypeId;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //=============================================================================================================
+    //=============================================================================================================
     //The current stage's outputs structId will be used as inputs for the next stage
     spv::Id previousStageOutputStructTypeId = spvUndefinedId;
     spv::Id previousStageOutputStructPointerTypeId = spvUndefinedId;
@@ -2467,11 +2562,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         ShadingStageEnum shadingStageEnum = stage.outputStage->stage;
 
         bool canOutputStreams = true;
-        if (iStage == outputStages.size() - 1) canOutputStreams = false;  //last stage (Pixel) does not output streams
-
-#ifdef XKSLANG_DEBUG_MODE
-        if (stage.listStreamVariablesAccessed.size() != globalListOfMergedStreamVariables.countMembers()) return error("invalid stream variable accessed list size");
-#endif
+        //if (iStage == outputStages.size() - 1) canOutputStreams = false;  //last stage (Pixel) does not output streams
 
         //===============================================================================
         //Find back which members are needed for which IOs
@@ -2542,6 +2633,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         spv::Id streamOutputStructTypeId = spvUndefinedId;
         spv::Id streamOutputStructPointerTypeId = spvUndefinedId;
         spv::Id streamIOStructTypeId = spvUndefinedId;
+        spv::Id streamIOStructConstantCompositeId = spvUndefinedId;
         spv::Id streamIOStructPointerTypeId = spvUndefinedId;
         //spv::Id entryFunctionIOStreamVariableResultId = spvUndefinedId;  //entryFunction->streamIOStructVariableResultId
         spv::Id entryFunctionInputStreamParameterResultId = spvUndefinedId;
@@ -2698,29 +2790,44 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         //create the function's stream IO structure
         {
             //make the struct type
-            spv::Instruction structType(newId++, spv::NoType, spv::OpTypeStruct);
-            for (unsigned int k = 0; k < vecStageIOMembersIndex.size(); ++k)
             {
-                const unsigned int index = vecStageIOMembersIndex[k];
-                const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
-                structType.addIdOperand(streamMember.memberTypeId);
+                spv::Instruction structType(newId++, spv::NoType, spv::OpTypeStruct);
+                for (unsigned int k = 0; k < vecStageIOMembersIndex.size(); ++k)
+                {
+                    const unsigned int index = vecStageIOMembersIndex[k];
+                    const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+                    structType.addIdOperand(streamMember.memberTypeId);
+                }
+                structType.dump(bytecodeNewTypes->bytecode);
+
+                //make the struct function pointer type
+                spv::Instruction structPointerType(newId++, spv::NoType, spv::OpTypePointer);
+                structPointerType.addImmediateOperand(spv::StorageClass::StorageClassFunction);
+                structPointerType.addIdOperand(structType.getResultId());
+                structPointerType.dump(bytecodeNewTypes->bytecode);
+
+                streamIOStructTypeId = structType.getResultId();
+                streamIOStructPointerTypeId = structPointerType.getResultId();
+
+                //make the streamIO struct constant composite type
+                spv::Instruction structDefaultConstCompositeInstr(newId++, streamIOStructTypeId, spv::OpConstantComposite);
+                for (unsigned int k = 0; k < vecStageIOMembersIndex.size(); ++k)
+                {
+                    const unsigned int index = vecStageIOMembersIndex[k];
+                    const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+                    if (streamMember.memberDefaultConstantTypeId == spvUndefinedId) error("The stream member type has no default const type: " + streamMember.GetDeclarationNameOrSemantic());
+                    structDefaultConstCompositeInstr.addIdOperand(streamMember.memberDefaultConstantTypeId);
+                }
+                structDefaultConstCompositeInstr.dump(bytecodeNewTypes->bytecode);
+
+                streamIOStructConstantCompositeId = structDefaultConstCompositeInstr.getResultId();
             }
-            structType.dump(bytecodeNewTypes->bytecode);
-
-            //make the struct function pointer type
-            spv::Instruction structPointerType(newId++, spv::NoType, spv::OpTypePointer);
-            structPointerType.addImmediateOperand(spv::StorageClass::StorageClassFunction);
-            structPointerType.addIdOperand(structType.getResultId());
-            structPointerType.dump(bytecodeNewTypes->bytecode);
-
-            streamIOStructTypeId = structType.getResultId();
-            streamIOStructPointerTypeId = structPointerType.getResultId();
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
             //struct name
             string stagePrefix = GetShadingStageLabelShort(shadingStageEnum) + "_STREAMS";
             spv::Instruction structName(spv::OpName);
-            structName.addIdOperand(structType.getResultId());
+            structName.addIdOperand(streamIOStructTypeId);
             structName.addStringOperand(stagePrefix.c_str());
             structName.dump(bytecodeNames->bytecode);
 
@@ -2732,7 +2839,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
                 //member name
                 spv::Instruction memberName(spv::OpMemberName);
-                memberName.addIdOperand(structType.getResultId());
+                memberName.addIdOperand(streamIOStructTypeId);
                 memberName.addImmediateOperand(k);
                 memberName.addStringOperand((streamMember.GetDeclarationNameOrSemantic() + "_id" + to_string(k)).c_str());
                 memberName.dump(bytecodeNames->bytecode);
@@ -2797,6 +2904,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             functionIOStreamVariable.addImmediateOperand(spv::StorageClassFunction);
             functionIOStreamVariable.dump(functionStartingInstructionsChunk->bytecode);
             entryFunction->streamIOStructVariableResultId = functionIOStreamVariable.getResultId();
+            entryFunction->streamIOStructConstantCompositeId = streamIOStructConstantCompositeId;
             entryFunction->functionVariablesStartingPosition = functionLabelInstrEndPos; //so that we can retrieve this position later on to add more variables if need
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
@@ -2893,14 +3001,21 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 returnValueInstruction.dump(functionFinalInstructionsChunk->bytecode);
             }
 
-            //===============================================================================
-            //copy all input streams into the stage IO stream
+            //============================================================================================================
+            //============================================================================================================
+            //init the stage IO stream (set to 0 and copy all input stream)
             if (vecStageInputMembersIndex.size() > 0)
             {
 #ifdef XKSLANG_DEBUG_MODE
                 if (entryFunctionInputStreamParameterResultId == spvUndefinedId) return error("Invalid entryFunctionInputStreamParameterResultId");
                 if (entryFunction->streamIOStructVariableResultId == spvUndefinedId) return error("Invalid entryFunction->streamIOStructVariableResultId");
 #endif
+                //assign the struct with the default const value
+                spv::Instruction SetInputMemberEmptyInstr(spv::OpStore);
+                SetInputMemberEmptyInstr.addIdOperand(entryFunction->streamIOStructVariableResultId);
+                SetInputMemberEmptyInstr.addIdOperand(entryFunction->streamIOStructConstantCompositeId);
+                SetInputMemberEmptyInstr.dump(functionStartingInstructionsChunk->bytecode);
+
                 for (unsigned int ki = 0; ki < vecStageInputMembersIndex.size(); ++ki)
                 {
                     TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[vecStageInputMembersIndex[ki]];
@@ -3649,10 +3764,10 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                                 spv::Id structIdAccessed = asId(start + 3);
 
                                 VariableInstruction* variable = GetVariableById(structIdAccessed);
-                                if (variable == nullptr) { error("Failed to find the variable object for id: " + to_string(structIdAccessed)); break; }
+                                //if (variable == nullptr) { error("Failed to find the variable object for id: " + to_string(structIdAccessed)); break; }
 
-                                //are we accessing the global stream buffer?
-                                if (variable->tmpFlag == 1)
+                                //are we accessing the a cbuffer variable
+                                if (variable != nullptr && variable->tmpFlag == 1)
                                 {
                                     //spv::Id resultId = asId(start + 2);
                                     spv::Id indexConstId = asId(start + 4);

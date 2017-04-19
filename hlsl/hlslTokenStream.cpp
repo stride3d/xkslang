@@ -234,6 +234,11 @@ namespace glslang {
         return tokenBuffer[index];
     }
 
+    TString HlslTokenStream::convertTokenToString(const HlslToken& token)
+    {
+        return scanner.convertTokenToString(token);
+    }
+
     bool HlslTokenStream::convertTokenToString(const HlslToken& token, TString& str)
     {
         TString word = scanner.convertTokenToString(token);

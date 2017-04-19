@@ -2793,8 +2793,8 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                 continue;
             }
             else
-            {
-                error("invalid keyword, member or function type: " + (token.tokenClass == EHTokIdentifier? *(token.string): ""));
+            {   
+                error("invalid keyword, member or function type: " + convertTokenToString(token));
                 return false;
             }
         }

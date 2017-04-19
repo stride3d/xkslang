@@ -164,6 +164,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer07", "CBuffer07.xkfx" },
     //{ "CBuffer08", "CBuffer08.xkfx" },
     //{ "CBuffer09", "CBuffer09.xkfx" },
+    //{ "CBuffer10", "CBuffer10.xkfx" },
 
     //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
     //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
@@ -182,7 +183,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testDependency06", "testDependency06.xkfx" },
     //{ "testDependency07", "testDependency07.xkfx" },
 
-    { "Effect01", "Effect01.xkfx" },
+    //{ "Effect01", "Effect01.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {

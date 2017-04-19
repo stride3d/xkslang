@@ -337,7 +337,8 @@ public:
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
             : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
-            flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined), streamIOStructVariableResultId(0), functionVariablesStartingPosition(0){}
+            flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined), streamIOStructVariableResultId(0), streamIOStructConstantCompositeId(0),
+            functionVariablesStartingPosition(0){}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -373,7 +374,8 @@ public:
 
         //those variables are used when reshuffling stream members
         ShadingStageEnum functionProcessingStreamForStage;  //when a stage calls a function using stream, the stage will reserves the function (another stage calling the function will return an error)
-        spv::Id streamIOStructVariableResultId;   //the id of the IO stream struct function parameter
+        spv::Id streamIOStructVariableResultId;    //the id of the IO stream struct function parameter
+        spv::Id streamIOStructConstantCompositeId; //the id of the IO stream struct constant composite
 
         friend class SpxStreamRemapper;
     };
@@ -406,13 +408,14 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spvUndefinedId),
+        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberDefaultConstantTypeId(spvUndefinedId),
             newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), memberSize(-1), memberAlignment(-1), memberType(nullptr),
             variableAccessTypeId(0){}
 
         spv::Id structTypeId;             //Id of the struct type containing the member
         int structMemberIndex;            //Id of the member within the struct
         spv::Id memberTypeId;             //Type Id of the member
+        spv::Id memberDefaultConstantTypeId;       
         TypeInstruction* memberType;      //member type
 
         bool isStream;
@@ -690,6 +693,9 @@ private:
     bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
     static bool IsResourceType(const spv::Op& opCode);
 
+    void MakeIntConstant(spv::Id newUniqueId, spv::Id typeId, unsigned value, std::vector<unsigned int>& bytecodeInstructions);
+    spv::Id GetOrCreateTypeDefaultConstInstructions(spv::Id& newId, TypeInstruction* type, std::vector<unsigned int>& bytecodeInstructions);
+
     bool GetStructTypeMembersTypeIdList(TypeInstruction* structType, std::vector<spv::Id>& membersTypeList);
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
     bool GetFunctionLabelInstructionPosition(FunctionInstruction* function, unsigned int& labelPos);
@@ -826,14 +832,14 @@ public:
         stageIONeeded |= (((int)MemberIOEnum::Input) + ((int)MemberIOEnum::Output) + ((int)MemberIOEnum::PassThrough));
     }
 
-    bool IsNeededAsInput() { return (stageIONeeded & ((int)MemberIOEnum::Input)) != 0; }
-    bool IsNeededAsOutput() { return (stageIONeeded & ((int)MemberIOEnum::Output)) != 0; }
-    bool IsInputOnly() { return (stageIONeeded == (int)MemberIOEnum::Input); }
+    bool IsNeededAsInput() const { return (stageIONeeded & ((int)MemberIOEnum::Input)) != 0; }
+    bool IsNeededAsOutput() const { return (stageIONeeded & ((int)MemberIOEnum::Output)) != 0; }
+    bool IsInputOnly() const { return (stageIONeeded == (int)MemberIOEnum::Input); }
 
     //bool HasWriteAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Write)); }
-    bool IsWriteFirstStream() { return firstAccess == MemberFirstAccessEnum::WriteFirst; }
-    bool IsReadFirstStream() { return firstAccess == MemberFirstAccessEnum::ReadFirst; }
-    bool IsBeingAccessed() { return firstAccess != MemberFirstAccessEnum::Undefined; }
+    bool IsWriteFirstStream() const { return firstAccess == MemberFirstAccessEnum::WriteFirst; }
+    bool IsReadFirstStream() const { return firstAccess == MemberFirstAccessEnum::ReadFirst; }
+    bool IsBeingAccessed() const { return firstAccess != MemberFirstAccessEnum::Undefined; }
 };
 
 //Contains output stage info (stage + entrypoint), bytecode, plus additionnal data processed by the mixer during compilation

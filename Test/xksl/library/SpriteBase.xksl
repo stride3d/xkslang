@@ -7,13 +7,13 @@ shader SpriteBase : ShaderBase, Texturing
     // -------------------------------------
     stage stream float4 Position : POSITION;
 
-    cbuffer PerDraw
+    stage cbuffer PerDraw
     {
         // -------------------------------------
         // uniforms
         // -------------------------------------
         // A general transformation matrix
-        stage float4x4 MatrixTransform;
+        float4x4 MatrixTransform;
     }
         
     // -------------------------------------
