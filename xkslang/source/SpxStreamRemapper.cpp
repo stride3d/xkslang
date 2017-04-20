@@ -2541,6 +2541,9 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamReadyForReschuffling) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamReschuffled;
 
+    //Should we init or not the new struct we insert into the function?
+    bool initStreamStructsWithZeroValues = true;
+
     //get the global stream buffer object
     if (globalListOfMergedStreamVariables.countMembers() == 0) return true; //no stream variables to reshuffle
     TypeInstruction* globalStreamType = GetTypeById(globalListOfMergedStreamVariables.structTypeId);
@@ -2577,9 +2580,6 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                         if (memberType == nullptr) return error("failed to find the member type for member: " + streamMember.GetDeclarationNameOrSemantic());
                         streamMember.memberType = memberType;
                     }
-
-                    //if (streamMember.memberType->GetBytecodeEndPosition() > bestPosToInsertNewDefaultConstInstructions)
-                    //    bestPosToInsertNewDefaultConstInstructions = streamMember.memberType->GetBytecodeEndPosition();
                 }
             }
         }
@@ -2709,10 +2709,9 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     //=============================================================================================================
     //=============================================================================================================
     //Get or create the default const object for all used stream members
+    if (initStreamStructsWithZeroValues)
     {
-        //unordered_map<uint32_t, pairIdPos> bytecodeConstsHashMap;
-        //if (!this->BuildConstsHashmap(bytecodeConstsHashMap)) return error("Error building consts hashmap");
-
+        //get all existing const (to reuse them if we have duplicate)
         vector<ConstInstruction*> listAllConsts;
         for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it) {
             ObjectInstructionBase* obj = *it;
@@ -2722,6 +2721,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             }
         }
 
+        //Get or create new const for the used stream members
         vector<spv::Instruction> listNewConstInstructionsToAdd;
         for (unsigned int index = 0; index < globalListOfMergedStreamVariables.members.size(); index++)
         {
@@ -2748,6 +2748,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             }
         }
 
+        //Did we create any new bytecode instructions?
         if (listNewConstInstructionsToAdd.size() > 0)
         {
             vector<unsigned int> bytecodeInstructionsForNewConsts;
@@ -2846,6 +2847,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         spv::Id streamInputStructPointerTypeId = spvUndefinedId;
         spv::Id streamOutputStructTypeId = spvUndefinedId;
         spv::Id streamOutputStructPointerTypeId = spvUndefinedId;
+        spv::Id streamOutputStructConstantCompositeId = spvUndefinedId;
         spv::Id streamIOStructTypeId = spvUndefinedId;
         spv::Id streamIOStructConstantCompositeId = spvUndefinedId;
         spv::Id streamIOStructPointerTypeId = spvUndefinedId;
@@ -2959,6 +2961,21 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             streamOutputStructTypeId = structType.getResultId();
             streamOutputStructPointerTypeId = structPointerType.getResultId();
 
+            //make the output struct constant composite type
+            if (initStreamStructsWithZeroValues)
+            {
+                spv::Instruction structDefaultConstCompositeInstr(newId++, streamOutputStructTypeId, spv::OpConstantComposite);
+                for (unsigned int k = 0; k < vecStageOutputMembersIndex.size(); ++k)
+                {
+                    const unsigned int index = vecStageOutputMembersIndex[k];
+                    const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+                    if (streamMember.memberDefaultConstantTypeId == spvUndefinedId) error("The stream member type has no default const type: " + streamMember.GetDeclarationNameOrSemantic());
+                    structDefaultConstCompositeInstr.addIdOperand(streamMember.memberDefaultConstantTypeId);
+                }
+                structDefaultConstCompositeInstr.dump(bytecodeNewTypes->bytecode);
+                streamOutputStructConstantCompositeId = structDefaultConstCompositeInstr.getResultId();
+            }
+
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
             //struct name
             string stagePrefix = GetShadingStageLabelShort(shadingStageEnum) + "_OUT";
@@ -3023,17 +3040,20 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 streamIOStructTypeId = structType.getResultId();
                 streamIOStructPointerTypeId = structPointerType.getResultId();
 
-                //make the streamIO struct constant composite type
-                spv::Instruction structDefaultConstCompositeInstr(newId++, streamIOStructTypeId, spv::OpConstantComposite);
-                for (unsigned int k = 0; k < vecStageIOMembersIndex.size(); ++k)
+                //make the stream IO struct constant composite type
+                if (initStreamStructsWithZeroValues)
                 {
-                    const unsigned int index = vecStageIOMembersIndex[k];
-                    const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
-                    if (streamMember.memberDefaultConstantTypeId == spvUndefinedId) error("The stream member type has no default const type: " + streamMember.GetDeclarationNameOrSemantic());
-                    structDefaultConstCompositeInstr.addIdOperand(streamMember.memberDefaultConstantTypeId);
+                    spv::Instruction structDefaultConstCompositeInstr(newId++, streamIOStructTypeId, spv::OpConstantComposite);
+                    for (unsigned int k = 0; k < vecStageIOMembersIndex.size(); ++k)
+                    {
+                        const unsigned int index = vecStageIOMembersIndex[k];
+                        const TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+                        if (streamMember.memberDefaultConstantTypeId == spvUndefinedId) error("The stream member type has no default const type: " + streamMember.GetDeclarationNameOrSemantic());
+                        structDefaultConstCompositeInstr.addIdOperand(streamMember.memberDefaultConstantTypeId);
+                    }
+                    structDefaultConstCompositeInstr.dump(bytecodeNewTypes->bytecode);
+                    streamIOStructConstantCompositeId = structDefaultConstCompositeInstr.getResultId();
                 }
-                structDefaultConstCompositeInstr.dump(bytecodeNewTypes->bytecode);
-                streamIOStructConstantCompositeId = structDefaultConstCompositeInstr.getResultId();
             }
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
@@ -3110,15 +3130,17 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             unsigned int functionLabelInstrEndPos = functionLabelInstrPos + asWordCount(functionLabelInstrPos); //go at the end of the label instruction
             if (asOpCode(functionReturnInstrPos) != spv::OpReturn) return error("Invalid function end. Expecting OpReturn instructions.");  //entry function must have OpReturn (not another return type)
 
+            //bytecode chunks to insert new types at the beginning of the function
+            BytecodeChunk* functionStartNewTypeInstructionsChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionLabelInstrEndPos, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
+            if (functionStartNewTypeInstructionsChunk == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionLabelInstrEndPos));
+
             //Add the stream variable into the function variables list
-            BytecodeChunk* functionStartingInstructionsChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionLabelInstrEndPos, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
-            if (functionStartingInstructionsChunk == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionLabelInstrEndPos));
             spv::Instruction functionIOStreamVariable(newId++, streamIOStructPointerTypeId, spv::OpVariable);
             functionIOStreamVariable.addImmediateOperand(spv::StorageClassFunction);
-            functionIOStreamVariable.dump(functionStartingInstructionsChunk->bytecode);
+            functionIOStreamVariable.dump(functionStartNewTypeInstructionsChunk->bytecode);
             entryFunction->streamIOStructVariableResultId = functionIOStreamVariable.getResultId();
             entryFunction->streamIOStructConstantCompositeId = streamIOStructConstantCompositeId;
-            entryFunction->functionVariablesStartingPosition = functionLabelInstrEndPos; //so that we can retrieve this position later on to add more variables if need
+            entryFunction->functionVariablesStartingPosition = functionLabelInstrEndPos;  //so that we can retrieve this position later on to add more variables if need
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
             //stream variable name
@@ -3132,11 +3154,15 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             if (streamOutputStructTypeId != spvUndefinedId)
             {
                 //===============================================================================
-                //Add the output variable into the functions
+                //Add the output struct variable into the functions
                 spv::Instruction functionOutputVariable(newId++, streamOutputStructPointerTypeId, spv::OpVariable);
                 functionOutputVariable.addImmediateOperand(spv::StorageClassFunction);
-                functionOutputVariable.dump(functionStartingInstructionsChunk->bytecode);
+                functionOutputVariable.dump(functionStartNewTypeInstructionsChunk->bytecode);
                 entryFunctionOutputStreamVariableResultId = functionOutputVariable.getResultId();
+
+                //these field will be used to init this output variables
+                entryFunction->streamOutputStructVariableResultId = functionOutputVariable.getResultId();
+                entryFunction->streamOutputStructConstantCompositeId = streamOutputStructConstantCompositeId;
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
                 //output variable name
@@ -3148,8 +3174,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 //update the function return type (must be equal to the function declaration type's return type)
                 bytecodeUpdateController.SetNewAtomicValueUpdate(entryFunction->bytecodeStartPosition + 1, streamOutputStructTypeId);
 
-                //===============================================================================
-                //copy the IO streams into the output variable
+                //chunck to insert new stuff at the end of the function
                 BytecodeChunk* functionFinalInstructionsChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionReturnInstrPos, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull, 1); //1 because the OpReturn will be removed and replaced
                 if (functionFinalInstructionsChunk == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionReturnInstrPos));
 
@@ -3157,6 +3182,18 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 if (entryFunctionOutputStreamVariableResultId == spvUndefinedId) return error("Invalid entryFunctionOutputStreamVariableResultId");
                 if (entryFunction->streamIOStructVariableResultId == 0) return error("Invalid entryFunction->streamIOStructVariableResultId");
 #endif
+                //===============================================================================
+                //assign the output stream struct with its default const value
+                if (entryFunction->streamOutputStructConstantCompositeId != 0 && entryFunction->streamOutputStructConstantCompositeId != spvUndefinedId)
+                {
+                    spv::Instruction setOutputStreamStructEmptyInstr(spv::OpStore);
+                    setOutputStreamStructEmptyInstr.addIdOperand(entryFunction->streamOutputStructVariableResultId);
+                    setOutputStreamStructEmptyInstr.addIdOperand(entryFunction->streamOutputStructConstantCompositeId);
+                    setOutputStreamStructEmptyInstr.dump(functionFinalInstructionsChunk->bytecode);
+                }
+
+                //===============================================================================
+                //copy the IO streams into the output variable
                 for (unsigned int kout = 0; kout < vecStageOutputMembersIndex.size(); ++kout)
                 {
                     TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[vecStageOutputMembersIndex[kout]];
@@ -3214,23 +3251,24 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 returnValueInstruction.dump(functionFinalInstructionsChunk->bytecode);
             }
 
+            //assign the IO stream struct with its default const value
+            if (entryFunction->streamIOStructConstantCompositeId != 0 && entryFunction->streamIOStructConstantCompositeId != spvUndefinedId)
+            {
+                spv::Instruction setIOStreamStructEmptyInstr(spv::OpStore);
+                setIOStreamStructEmptyInstr.addIdOperand(entryFunction->streamIOStructVariableResultId);
+                setIOStreamStructEmptyInstr.addIdOperand(entryFunction->streamIOStructConstantCompositeId);
+                setIOStreamStructEmptyInstr.dump(functionStartNewTypeInstructionsChunk->bytecode);
+            }
+
             //============================================================================================================
             //============================================================================================================
-            //init the stage IO stream (set to 0 and copy all input stream)
+            //init the stage IO stream (copy all input stream to the IO stream)
             if (vecStageInputMembersIndex.size() > 0)
             {
 #ifdef XKSLANG_DEBUG_MODE
                 if (entryFunctionInputStreamParameterResultId == spvUndefinedId) return error("Invalid entryFunctionInputStreamParameterResultId");
                 if (entryFunction->streamIOStructVariableResultId == spvUndefinedId) return error("Invalid entryFunction->streamIOStructVariableResultId");
 #endif
-                //assign the struct with its default const value
-                if (entryFunction->streamIOStructConstantCompositeId != 0 && entryFunction->streamIOStructConstantCompositeId != spvUndefinedId)
-                {
-                    spv::Instruction SetInputMemberEmptyInstr(spv::OpStore);
-                    SetInputMemberEmptyInstr.addIdOperand(entryFunction->streamIOStructVariableResultId);
-                    SetInputMemberEmptyInstr.addIdOperand(entryFunction->streamIOStructConstantCompositeId);
-                    SetInputMemberEmptyInstr.dump(functionStartingInstructionsChunk->bytecode);
-                }
 
                 for (unsigned int ki = 0; ki < vecStageInputMembersIndex.size(); ++ki)
                 {
@@ -3246,12 +3284,12 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                     spv::Instruction accessInputStreamInstr(newId++, memberPointerFunctionTypeId, spv::OpAccessChain);
                     accessInputStreamInstr.addIdOperand(entryFunctionInputStreamParameterResultId);
                     accessInputStreamInstr.addImmediateOperand(inputMemberIndexConstTypeId);
-                    accessInputStreamInstr.dump(functionStartingInstructionsChunk->bytecode);
+                    accessInputStreamInstr.dump(functionStartNewTypeInstructionsChunk->bytecode);
                     
                     //Load the member input value
                     spv::Instruction loadStreamMemberInstr(newId++, memberTypeId, spv::OpLoad);
                     loadStreamMemberInstr.addIdOperand(accessInputStreamInstr.getResultId());
-                    loadStreamMemberInstr.dump(functionStartingInstructionsChunk->bytecode);
+                    loadStreamMemberInstr.dump(functionStartNewTypeInstructionsChunk->bytecode);
 
                     //find the index of the corresponding member within the IO stream struct
                     int ioStreamMemberIndexConstTypeId = -1;
@@ -3269,13 +3307,13 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                     spv::Instruction accessIOStreamInstr(newId++, memberPointerFunctionTypeId, spv::OpAccessChain);
                     accessIOStreamInstr.addIdOperand(entryFunction->streamIOStructVariableResultId);
                     accessIOStreamInstr.addImmediateOperand(ioStreamMemberIndexConstTypeId);
-                    accessIOStreamInstr.dump(functionStartingInstructionsChunk->bytecode);
+                    accessIOStreamInstr.dump(functionStartNewTypeInstructionsChunk->bytecode);
 
                     //store the member value into IO stream
                     spv::Instruction storeStreamMemberInstr(spv::OpStore);
                     storeStreamMemberInstr.addIdOperand(accessIOStreamInstr.getResultId());
                     storeStreamMemberInstr.addIdOperand(loadStreamMemberInstr.getResultId());
-                    storeStreamMemberInstr.dump(functionStartingInstructionsChunk->bytecode);
+                    storeStreamMemberInstr.dump(functionStartNewTypeInstructionsChunk->bytecode);
                 }
             }
         }
@@ -6355,7 +6393,7 @@ bool SpxStreamRemapper::BuildConstsHashmap(unordered_map<uint32_t, pairIdPos>& m
             uint32_t hashval = hashType(start);
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (hashval == 0) error("Failed to get the hashval for a const. constId: " + to_string(id));
+            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const. constId: " + to_string(id));
 #endif
 
             //we don't mind if we have several candidates with the same hashType (several identical consts)
@@ -6403,7 +6441,7 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
             uint32_t hashval = hashType(start);
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (hashval == 0) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
+            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
             if (mapHashPos.find(hashval) != mapHashPos.end())
             {
                 // Warning: might cause some conflicts sometimes?

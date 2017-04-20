@@ -20,11 +20,11 @@ struct VS_STREAMS
 
 VS_OUT main(VS_IN __input__)
 {
-    VS_STREAMS _streams;
+    VS_STREAMS _streams = VS_STREAMS(vec2(0.0), vec2(0.0), 0.0);
     _streams.VertexPosition_id1 = __input__.VertexPosition_id0;
     _streams.aFloat_id2 = __input__.aFloat_id1;
     _streams.Position_id0 = vec2(0.0, 1.0 + _streams.aFloat_id2) + _streams.VertexPosition_id1;
-    VS_OUT __output__;
+    VS_OUT __output__ = VS_OUT(vec2(0.0));
     __output__.Position_id0 = _streams.Position_id0;
     return __output__;
 }

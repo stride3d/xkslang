@@ -1303,7 +1303,7 @@ namespace spv {
 
         default:
             //error("unknown type opcode");
-            return 0;
+            return unused;
         }
     }
 
