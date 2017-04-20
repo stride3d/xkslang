@@ -9,6 +9,7 @@
 #include <stack>
 #include <sstream>
 
+#include "SPIRV/spvIR.h"
 #include "SPIRV/SPVRemapper.h"
 
 #include "define.h"
@@ -693,8 +694,10 @@ private:
     bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
     static bool IsResourceType(const spv::Op& opCode);
 
-    void MakeIntConstant(spv::Id newUniqueId, spv::Id typeId, unsigned value, std::vector<unsigned int>& bytecodeInstructions);
-    spv::Id GetOrCreateTypeDefaultConstInstructions(spv::Id& newId, TypeInstruction* type, std::vector<unsigned int>& bytecodeInstructions);
+    spv::Id GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const std::vector<ConstInstruction*>& listAllConsts,
+        std::vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter = 0);
+    ConstInstruction* FindConstFromList(const std::vector<ConstInstruction*>& listConsts, spv::Op opCode, spv::Id typeId, const std::vector<unsigned int>& values);
+    //std::uint32_t getBasicConstTypeHashmapValue(spv::Op opCode, TypeInstruction* constType, unsigned int wordCount, unsigned int* values);
 
     bool GetStructTypeMembersTypeIdList(TypeInstruction* structType, std::vector<spv::Id>& membersTypeList);
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
@@ -707,6 +710,7 @@ private:
     bool BuildAllMaps();
     bool UpdateAllMaps();
     bool UpdateAllObjectsPositionInTheBytecode();
+    bool BuildConstsHashmap(std::unordered_map<std::uint32_t, pairIdPos>& mapHashPos);
     bool BuildTypesAndConstsHashmap(std::unordered_map<std::uint32_t, pairIdPos>& mapHashPos);
     bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
     ObjectInstructionBase* CreateAndAddNewObjectFor(ParsedObjectData& parsedData);

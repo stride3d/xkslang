@@ -1,0 +1,43 @@
+//Test having different kind of stream members, to check that we initialize the stream struct correctly
+
+shader ShaderMain
+{
+	struct Toto
+	{
+		float2 toto1;
+		float4 toto2;
+		int toto3[2];
+	};
+	
+	stage stream double aDouble : ADOUBLE;
+	stage stream int aInt : AINT;
+	stage stream int aBool : ABOOL;
+	stage stream float4 aF4Tab[4] : AF4Tab;
+	stage stream float2 aF2 : AF2;
+	stage stream float4 aF4: AF4;
+	stage stream float2 aF2b: AF2b;
+	stage stream float aFloat: AF;
+	stage stream Toto aToto1 : ATOTO;
+	stage stream Toto aTotoTab[2] : ATOTOTAB;
+	stage stream float4x4 aMat44 : AMAT44; 
+	stage stream float4x1 aMat44Tab[2] : AMAT44TAB; 
+	
+	stage void VSMain() 
+    {
+        streams.aF2 = float2(0.0f, 1.0f + streams.aFloat) + streams.aF2b;
+    }
+
+    stage void PSMain() 
+    {
+		double dd = 0.0;
+		double d = streams.aDouble;
+		float4 aaa = streams.aF4Tab[0];
+		Toto toto = streams.aToto1;
+		Toto toto2 = streams.aTotoTab[1];
+		//Toto toto3 = streams.aToto1.totoTab[0];
+		float4x4 aMat = streams.aMat44;
+		bool b = streams.aBool;
+        streams.aF4 = float4(streams.aF2.xy, 0, 1);
+		float4x1 amat2 = streams.aMat44Tab[2];
+    }
+}

@@ -29,6 +29,7 @@ struct PS_STREAMS
 };
 struct VS_STREAMS 
 {
+    float aFloat_id3;
     float2 VertexPosition_id2;
     float2 Position_id0;
 };
@@ -38,6 +39,7 @@ struct VS_OUTPUT
 };
 struct VS_INPUT 
 {
+    float aFloat_id3 : V_AFLOAT;
     float2 VertexPosition_id2 : V_POSITION;
 };
 void PSMain(VS_OUTPUT __input__)
@@ -49,8 +51,9 @@ void PSMain(VS_OUTPUT __input__)
 VS_OUTPUT VSMain(VS_INPUT __input__)
 {
     VS_STREAMS _streams = (VS_STREAMS)0;
+    _streams.aFloat_id3 = __input__.aFloat_id3;
     _streams.VertexPosition_id2 = __input__.VertexPosition_id2;
-    _streams.Position_id0 = float2(0.0f, 1.0f) + _streams.VertexPosition_id2;
+    _streams.Position_id0 = float2(0.0f, 1.0f + _streams.aFloat_id3) + _streams.VertexPosition_id2;
     VS_OUTPUT __output__ = (VS_OUTPUT)0;
     __output__.Position_id0 = _streams.Position_id0;
     return __output__;

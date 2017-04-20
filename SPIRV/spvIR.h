@@ -82,6 +82,15 @@ class Instruction {
 public:
     Instruction(Id resultId, Id typeId, Op opCode) : resultId(resultId), typeId(typeId), opCode(opCode), block(nullptr) { }
     explicit Instruction(Op opCode) : resultId(NoResult), typeId(NoType), opCode(opCode), block(nullptr) { }
+    Instruction(const Instruction& instr) {
+        resultId       = instr.resultId;
+        typeId         = instr.typeId;
+        opCode         = instr.opCode;
+        operands       = instr.operands;
+        originalString = instr.originalString;
+        block          = instr.block;
+    }
+
     virtual ~Instruction() {}
     void addIdOperand(Id id) { operands.push_back(id); }
     void addImmediateOperand(unsigned int immediate) { operands.push_back(immediate); }
@@ -121,6 +130,12 @@ public:
     Id getIdOperand(int op) const { return operands[op]; }
     unsigned int getImmediateOperand(int op) const { return operands[op]; }
     const char* getStringOperand() const { return originalString.c_str(); }
+    const std::vector<Id>& GetOperands() const {return operands;}
+
+    void SetOpCode(Op op){ opCode = op; }
+    void SetResultId(Id rid) { resultId = rid; }
+    void SetTypeId(Id tid) { typeId = tid; }
+    void SetResultTypeAndOpCode(Id rid, Id tid, Op op) { resultId = rid; typeId = tid; opCode = op; }
 
     // Write out the binary form.
     void dump(std::vector<unsigned int>& out) const
@@ -146,7 +161,6 @@ public:
     }
 
 protected:
-    Instruction(const Instruction&);
     Id resultId;
     Id typeId;
     Op opCode;

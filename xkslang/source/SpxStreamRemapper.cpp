@@ -2323,27 +2323,217 @@ bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputSt
     return true;
 }
 
-void SpxStreamRemapper::MakeIntConstant(spv::Id newUniqueId, spv::Id typeId, unsigned value, vector<unsigned int>& bytecodeInstructions)
+SpxStreamRemapper::ConstInstruction* SpxStreamRemapper::FindConstFromList(const vector<ConstInstruction*>& listConsts, spv::Op opCode, spv::Id typeId, const vector<unsigned int>& values)
 {
-    spv::Op opcode = spv::OpConstant;
+    for (auto it = listConsts.begin(); it != listConsts.end(); it++)
+    {
+        ConstInstruction* aConst = *it;
 
-    spv::Instruction constant(newUniqueId, typeId, spv::OpConstant);
-    constant.addImmediateOperand(value);
+        if (aConst->GetOpCode() == opCode && aConst->GetTypeId() == typeId)
+        {
+#ifdef XKSLANG_DEBUG_MODE
+            //some sanity check
+            if (asOpCode(aConst->GetBytecodeStartPosition()) != opCode) { error("Corrupted bytecode: the const opCode is not matching the bytecode"); return nullptr; }
+#endif
 
-    constant.dump(bytecodeInstructions);   
+            unsigned int wordCount = asWordCount(aConst->GetBytecodeStartPosition());
+            unsigned int countValues = wordCount - 3;
+            if (countValues == values.size())
+            {
+                bool gotIt = true;
+
+                unsigned int startingPos = aConst->GetBytecodeStartPosition() + 3;
+                for (unsigned int k = 0; k < countValues; ++k)
+                {
+                    if (asLiteralValue(startingPos + k) != values[k])
+                    {
+                        gotIt = false;
+                        break;
+                    }
+                }
+
+                if (gotIt)
+                {
+                    return aConst;
+                }
+            }
+        }
+    }
+
+    return nullptr;
 }
 
-spv::Id SpxStreamRemapper::GetOrCreateTypeDefaultConstInstructions(spv::Id& newId, TypeInstruction* type, vector<unsigned int>& bytecodeInstructions)
+spv::Id SpxStreamRemapper::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const vector<ConstInstruction*>& listAllConsts,
+    vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter)
 {
-    spv::Op opCode = asOpCode(type->GetBytecodeStartPosition());
+    if (iterationCounter > 10) { error("Too many nested type (infinite type redirection in the bytecode?)"); return 0; }
 
-    switch (opCode)
+    const spv::Op& typeOpCode = type->opCode;
+    const spv::Id& typeId = type->GetId();
+    spv::Id typeConstId = 0;
+
+#ifdef XKSLANG_DEBUG_MODE
+    //some sanity check
+    if (asOpCode(type->GetBytecodeStartPosition()) != typeOpCode) {error("Corrupted bytecode: type opcode is not matching the bytecode"); return 0;}
+#endif
+
+    spv::Instruction newConstInstruction(spv::OpUndef);
+
+    switch (typeOpCode)
     {
         case spv::OpTypeInt:
+        case spv::OpTypeFloat:
+        {
+            unsigned int width = asLiteralValue(type->GetBytecodeStartPosition() + 2);
+            unsigned int countOperands = (width == 16? 1 : width >> 5);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (!(width == 16 || width % 32 == 0)) { error("Invalid width size for the type"); return 0; }
+#endif
+
+            newConstInstruction.SetResultTypeAndOpCode(newId++, typeId, spv::OpConstant);
+            for (unsigned int k = 0; k < countOperands; k++) newConstInstruction.addImmediateOperand(0);
+        }
+        break;
+
+        case spv::OpTypeBool:
+        {
+            newConstInstruction.SetResultTypeAndOpCode(newId++, typeId, spv::OpConstantFalse);
+        }
+        break;
+
+        case spv::OpTypeMatrix:
+        case spv::OpTypeVector:
+        case spv::OpTypeArray:
+        {
+            spv::Id vectorElementTypeId = asId(type->GetBytecodeStartPosition() + 2);
+
+            int countElems = 0;
+            if (typeOpCode == spv::OpTypeArray)
+            {
+                //array size is set with a const instruction
+                spv::Id sizeConstTypeId = asLiteralValue(type->GetBytecodeStartPosition() + 3);
+                ConstInstruction* constObject = GetConstById(sizeConstTypeId);
+                if (constObject == nullptr) { error("cannot get const object for Id: " + to_string(sizeConstTypeId)); return 0; }
+
+                spv::Id constTypeId = constObject->GetTypeId();
+                TypeInstruction* constTypeObject = GetTypeById(constTypeId);
+                if (constTypeObject == nullptr) { error("no type exist for const typeId: " + to_string(constTypeId)); return 0; }
+                spv::Op typeOpCode = asOpCode(constTypeObject->bytecodeStartPosition);
+                unsigned int width = asLiteralValue(constTypeObject->bytecodeStartPosition + 2);
+                if (typeOpCode != spv::OpTypeInt) { error("the type of the const defining the size of the array has an invalid type (OpTypeInt expected)"); return 0; }
+                if (width != 32) { error("the size of the type of the const defining the size of the array is incorrect (32 expected)"); return 0; }
+
+                countElems = asLiteralValue(constObject->GetBytecodeStartPosition() + 3);
+            }
+            else
+            {
+                countElems = asLiteralValue(type->GetBytecodeStartPosition() + 3);
+            }
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (countElems <= 0) { error("Invalid OpTypeVector size"); return 0; }
+#endif
+            TypeInstruction* vectorElemType = GetTypeById(vectorElementTypeId);
+            if (vectorElemType == nullptr) { error("failed to find the vector type for id: " + to_string(vectorElementTypeId)); return 0; }
+
+            spv::Id elemConstValueId = GetOrCreateTypeDefaultConstValue(newId, vectorElemType, listAllConsts, listNewConstInstructionsToAdd, iterationCounter + 1);
+            if (elemConstValueId == 0) return 0;
+            
+            newConstInstruction.SetResultTypeAndOpCode(newId++, typeId, spv::OpConstantComposite);
+            for (int k = 0; k < countElems; ++k) newConstInstruction.addIdOperand(elemConstValueId);
+        }
+        break;
+
+        case spv::OpTypeStruct:
+        {
+            int wordCount = asWordCount(type->GetBytecodeStartPosition());
+            int countElems = wordCount - 2;
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (countElems <= 0) { error("Invalid OpTypeStruct size"); return 0; }
+#endif
+
+            unsigned int posElemStart = type->GetBytecodeStartPosition() + 2;
+            vector<spv::Id> vecStructElemsConstsId;
+            for (int k = 0; k < countElems; ++k)
+            {
+                spv::Id structElemTypeId = asId(posElemStart + k);
+                TypeInstruction* structElemType = GetTypeById(structElemTypeId);
+                if (structElemType == nullptr) { error("failed to find the struct element type for id: " + to_string(structElemTypeId)); return 0; }
+
+                spv::Id elemConstValueId = GetOrCreateTypeDefaultConstValue(newId, structElemType, listAllConsts, listNewConstInstructionsToAdd, iterationCounter + 1);
+                if (elemConstValueId == 0) return 0;
+                vecStructElemsConstsId.push_back(elemConstValueId);
+            }
+
+            newConstInstruction.SetResultTypeAndOpCode(newId++, typeId, spv::OpConstantComposite);
+            for (unsigned int k = 0; k < vecStructElemsConstsId.size(); ++k) newConstInstruction.addIdOperand(vecStructElemsConstsId[k]);
+        }
+        break;
+
+        default:       
+            error("Cannot create a default const value, unprocessed or invalid type");
             break;
     }
 
-    return 0;
+    if (newConstInstruction.getOpCode() == spv::OpUndef)
+    {
+        error("No const instruction has been created");
+        return 0;
+    }
+
+    //check if a duplicate const already exists in our list of consts
+    ConstInstruction* existingConst = FindConstFromList(listAllConsts, newConstInstruction.getOpCode(), newConstInstruction.getTypeId(), newConstInstruction.GetOperands());
+    if (existingConst != nullptr)
+    {
+        newId--;
+        typeConstId = existingConst->GetResultId();
+    }
+    else
+    {
+        //check that the new const has not already been recursively created in this function
+
+        int index = -1;
+        for (unsigned int n = 0; n < listNewConstInstructionsToAdd.size(); n++)
+        {
+            const spv::Instruction& anInstruction = listNewConstInstructionsToAdd[n];
+            if (anInstruction.getOpCode() == newConstInstruction.getOpCode() && anInstruction.getTypeId() == newConstInstruction.getTypeId())
+            {
+                bool sameInstruction = true;
+                unsigned int numOperands = newConstInstruction.getNumOperands();
+                if (anInstruction.getNumOperands() == numOperands)
+                {
+                    for (unsigned int op = 0; op < numOperands; ++op)
+                    {
+                        if (anInstruction.getImmediateOperand(op) != newConstInstruction.getImmediateOperand(op)) {
+                            sameInstruction = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (sameInstruction)
+                {
+                    index = n;
+                    break;
+                }
+            }
+        }
+
+        if (index != -1)
+        {
+            newId--;
+            typeConstId = listNewConstInstructionsToAdd[index].getResultId();
+        }
+        else
+        {
+            listNewConstInstructionsToAdd.push_back(newConstInstruction);
+            typeConstId = newConstInstruction.getResultId();
+        }
+    }
+
+    return typeConstId;
 }
 
 bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
@@ -2520,7 +2710,19 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
     //=============================================================================================================
     //Get or create the default const object for all used stream members
     {
-        vector<unsigned int> bytecodeNewInstructions;
+        //unordered_map<uint32_t, pairIdPos> bytecodeConstsHashMap;
+        //if (!this->BuildConstsHashmap(bytecodeConstsHashMap)) return error("Error building consts hashmap");
+
+        vector<ConstInstruction*> listAllConsts;
+        for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it) {
+            ObjectInstructionBase* obj = *it;
+            if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Const) {
+                ConstInstruction* constObject = dynamic_cast<ConstInstruction*>(obj);
+                listAllConsts.push_back(constObject);
+            }
+        }
+
+        vector<spv::Instruction> listNewConstInstructionsToAdd;
         for (unsigned int index = 0; index < globalListOfMergedStreamVariables.members.size(); index++)
         {
             if (globalListOfMergedStreamVariables.members[index].isUsed)
@@ -2528,7 +2730,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
                 if (streamMember.memberDefaultConstantTypeId == spvUndefinedId)
                 {
-                    spv::Id memberDefaultConstId = GetOrCreateTypeDefaultConstInstructions(newId, streamMember.memberType, bytecodeNewInstructions);
+                    spv::Id memberDefaultConstId = GetOrCreateTypeDefaultConstValue(newId, streamMember.memberType, listAllConsts, listNewConstInstructionsToAdd);
                     if (memberDefaultConstId == 0)
                         return error("failed to create const default instructions for the member: " + streamMember.GetDeclarationNameOrSemantic());
                     streamMember.memberDefaultConstantTypeId = memberDefaultConstId;
@@ -2544,6 +2746,18 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                     }
                 }
             }
+        }
+
+        if (listNewConstInstructionsToAdd.size() > 0)
+        {
+            vector<unsigned int> bytecodeInstructionsForNewConsts;
+            for (auto it = listNewConstInstructionsToAdd.begin(); it != listNewConstInstructionsToAdd.end(); it++)
+            {
+                const spv::Instruction& instruction = *it;
+                instruction.dump(bytecodeInstructionsForNewConsts);
+            }
+            
+            bytecodeNewTypes->bytecode.insert(bytecodeNewTypes->bytecode.end(), bytecodeInstructionsForNewConsts.begin(), bytecodeInstructionsForNewConsts.end());
         }
     }
 
@@ -2819,7 +3033,6 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                     structDefaultConstCompositeInstr.addIdOperand(streamMember.memberDefaultConstantTypeId);
                 }
                 structDefaultConstCompositeInstr.dump(bytecodeNewTypes->bytecode);
-
                 streamIOStructConstantCompositeId = structDefaultConstCompositeInstr.getResultId();
             }
 
@@ -3010,11 +3223,14 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 if (entryFunctionInputStreamParameterResultId == spvUndefinedId) return error("Invalid entryFunctionInputStreamParameterResultId");
                 if (entryFunction->streamIOStructVariableResultId == spvUndefinedId) return error("Invalid entryFunction->streamIOStructVariableResultId");
 #endif
-                //assign the struct with the default const value
-                spv::Instruction SetInputMemberEmptyInstr(spv::OpStore);
-                SetInputMemberEmptyInstr.addIdOperand(entryFunction->streamIOStructVariableResultId);
-                SetInputMemberEmptyInstr.addIdOperand(entryFunction->streamIOStructConstantCompositeId);
-                SetInputMemberEmptyInstr.dump(functionStartingInstructionsChunk->bytecode);
+                //assign the struct with its default const value
+                if (entryFunction->streamIOStructConstantCompositeId != 0 && entryFunction->streamIOStructConstantCompositeId != spvUndefinedId)
+                {
+                    spv::Instruction SetInputMemberEmptyInstr(spv::OpStore);
+                    SetInputMemberEmptyInstr.addIdOperand(entryFunction->streamIOStructVariableResultId);
+                    SetInputMemberEmptyInstr.addIdOperand(entryFunction->streamIOStructConstantCompositeId);
+                    SetInputMemberEmptyInstr.dump(functionStartingInstructionsChunk->bytecode);
+                }
 
                 for (unsigned int ki = 0; ki < vecStageInputMembersIndex.size(); ++ki)
                 {
@@ -6111,6 +6327,47 @@ bool SpxStreamRemapper::SpxStreamRemapper::InitDefaultHeader()
     return true;
 }
 
+bool SpxStreamRemapper::BuildConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
+{
+    mapHashPos.clear();
+
+    //We build the hashmap table for all types and consts
+    //except for OpTypeXlslShaderClass types: (this type is only informational, never used as a type or result)
+    unsigned int start = header_size;
+    const unsigned int end = spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        spv::Id id = spvUndefinedId;
+        if (isConstOp(opCode))
+        {
+            id = asId(start + 2);
+        }
+        else if (opCode == spv::OpFunction)
+        {
+            break; //no more consts after this point
+        }
+
+        if (id != spvUndefinedId)
+        {
+            uint32_t hashval = hashType(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (hashval == 0) error("Failed to get the hashval for a const. constId: " + to_string(id));
+#endif
+
+            //we don't mind if we have several candidates with the same hashType (several identical consts)
+            mapHashPos[hashval] = pairIdPos(id, start);
+        }
+
+        start += wordCount;
+    }
+
+    return true;
+}
+
 bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
 {
     mapHashPos.clear();
@@ -6135,12 +6392,18 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
             {
                 id = asId(start + 1);
             }
+            else if (opCode == spv::OpFunction)
+            {
+                break; //no more consts after this point
+            }
         }
 
         if (id != spvUndefinedId)
         {
             uint32_t hashval = hashType(start);
+
 #ifdef XKSLANG_DEBUG_MODE
+            if (hashval == 0) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
             if (mapHashPos.find(hashval) != mapHashPos.end())
             {
                 // Warning: might cause some conflicts sometimes?
