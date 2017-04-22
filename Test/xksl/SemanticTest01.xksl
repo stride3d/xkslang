@@ -1,0 +1,17 @@
+shader ShaderMain
+{
+    stage stream float4 Position : POSITION;
+	stage stream float4 ShadingPosition : SV_Position;
+    stage stream float4 ColorTarget : SV_Target0;
+
+	stage void VSMain() 
+    {
+        streams.ShadingPosition = streams.Position;
+    }
+
+    stage void PSMain() 
+    {
+        float depth = streams.ShadingPosition.z;
+        streams.ColorTarget = float4(depth, 0, 0, 1);
+    }
+};

@@ -89,7 +89,7 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::ValuesIn(std::vector<FileNameEntryPointPair>{
         
         //{"hlsl.test.geom", "" },
-        {"hlsl.test.frag", "VSMain" },
+        {"hlsl.test.frag", "main" },
         //{"hlsl.struct.test01.frag", ""},
         //{"functionsWithIOStruct01.frag", "" },
 
