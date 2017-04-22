@@ -117,7 +117,7 @@ public:
                           const glslang::TString* component);
     void handleRegister(const TSourceLoc&, TQualifier&, const glslang::TString* profile, const glslang::TString& desc,
                         int subComponent, const glslang::TString*);
-    TIntermTyped* convertConditionalExpression(const TSourceLoc&, TIntermTyped*);
+    TIntermTyped* convertConditionalExpression(const TSourceLoc&, TIntermTyped*, bool mustBeScalar = true);
     TIntermAggregate* handleSamplerTextureCombine(const TSourceLoc& loc, TIntermTyped* argTex, TIntermTyped* argSampler);
 
     bool parseMatrixSwizzleSelector(const TSourceLoc&, const TString&, int cols, int rows, TSwizzleSelectors<TMatrixSelector>&);
@@ -163,6 +163,7 @@ public:
     TIntermTyped* constructAggregate(TIntermNode*, const TType&, int, const TSourceLoc&);
     TIntermTyped* constructBuiltIn(const TType&, TOperator, TIntermTyped*, const TSourceLoc&, bool subset);
     void declareBlock(const TSourceLoc&, TType&, const TString* instanceName = 0, TArraySizes* arraySizes = 0);
+    void declareStructBufferCounter(const TSourceLoc& loc, const TType& bufferType, const TString& name);
     void fixBlockLocations(const TSourceLoc&, TQualifier&, TTypeList&, bool memberWithLocation, bool memberWithoutLocation);
     void fixBlockXfbOffsets(TQualifier&, TTypeList&);
     void fixBlockUniformOffsets(const TQualifier&, TTypeList&);
@@ -267,6 +268,7 @@ protected:
     TVariable* getSplitIoVar(int id) const;
     void addInterstageIoToLinkage();
     void addPatchConstantInvocation();
+    TIntermTyped* makeIntegerIndex(TIntermTyped*);
 
     void fixBuiltInIoType(TType&);
 
@@ -292,10 +294,18 @@ protected:
     TType* getStructBufferContentType(const TType& type) const;
     bool isStructBufferType(const TType& type) const { return getStructBufferContentType(type) != nullptr; }
     TIntermTyped* indexStructBufferContent(const TSourceLoc& loc, TIntermTyped* buffer) const;
+    TIntermTyped* getStructBufferCounter(const TSourceLoc& loc, TIntermTyped* buffer);
 
     // Return true if this type is a reference.  This is not currently a type method in case that's
     // a language specific answer.
     bool isReference(const TType& type) const { return isStructBufferType(type); }
+
+    // Return true if this a buffer type that has an associated counter buffer.
+    bool hasStructBuffCounter(const TString& name) const;
+
+    // Finalization step: remove unused buffer blocks from linkage (we don't know until the
+    // shader is entirely compiled)
+    void removeUnusedStructBufferCounters();
 
     // Pass through to base class after remembering builtin mappings.
     using TParseContextBase::trackLinkage;
@@ -384,6 +394,9 @@ protected:
 
     // Structuredbuffer shared types.  Typically there are only a few.
     TVector<TType*> structBufferTypes;
+    
+    TMap<TString, TBuiltInVariable> structBufferBuiltIn;
+    TMap<TString, bool> structBufferCounter;
 
     // The builtin interstage IO map considers e.g, EvqPosition on input and output separately, so that we
     // can build the linkage correctly if position appears on both sides.  Otherwise, multiple positions

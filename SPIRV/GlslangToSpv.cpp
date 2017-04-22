@@ -249,7 +249,7 @@ spv::ExecutionModel TranslateExecutionModel(EShLanguage stage)
 }
 
 // Translate glslang type to SPIR-V storage class.
-spv::StorageClass TranslateStorageClass(const glslang::TType& type)
+spv::StorageClass TranslateStorageClass(const glslang::TType& type, bool useStorageBuffer)
 {
     if (type.getQualifier().isPipeInput())
         return spv::StorageClassInput;
@@ -259,6 +259,8 @@ spv::StorageClass TranslateStorageClass(const glslang::TType& type)
         return spv::StorageClassAtomicCounter;
     else if (type.containsOpaque())
         return spv::StorageClassUniformConstant;
+    else if (useStorageBuffer && type.getQualifier().storage == glslang::EvqBuffer)
+        return spv::StorageClassStorageBuffer;
     else if (type.getQualifier().isUniformOrBuffer()) {
         if (type.getQualifier().layoutPushConstant)
             return spv::StorageClassPushConstant;
@@ -314,12 +316,12 @@ spv::Decoration TranslatePrecisionDecoration(const glslang::TType& type)
 }
 
 // Translate glslang type to SPIR-V block decorations.
-spv::Decoration TranslateBlockDecoration(const glslang::TType& type)
+spv::Decoration TranslateBlockDecoration(const glslang::TType& type, bool useStorageBuffer)
 {
     if (type.getBasicType() == glslang::EbtBlock) {
         switch (type.getQualifier().storage) {
         case glslang::EvqUniform:      return spv::DecorationBlock;
-        case glslang::EvqBuffer:       return spv::DecorationBufferBlock;
+        case glslang::EvqBuffer:       return useStorageBuffer ? spv::DecorationBlock : spv::DecorationBufferBlock;
         case glslang::EvqVaryingIn:    return spv::DecorationBlock;
         case glslang::EvqVaryingOut:   return spv::DecorationBlock;
         default:
@@ -2114,7 +2116,7 @@ spv::Id TGlslangToSpvTraverser::createSpvVariable(const glslang::TIntermSymbol* 
     }
 
     // Now, handle actual variables
-    spv::StorageClass storageClass = TranslateStorageClass(node->getType());
+    spv::StorageClass storageClass = TranslateStorageClass(node->getType(), glslangIntermediate->usingStorageBuffer());
     spv::Id spvType = convertGlslangToSpvType(node->getType());
 
 #ifdef AMD_EXTENSIONS
@@ -2606,7 +2608,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     
     // Decorate the structure
     addDecoration(spvType, TranslateLayoutDecoration(type, qualifier.layoutMatrix));
-    addDecoration(spvType, TranslateBlockDecoration(type));
+    addDecoration(spvType, TranslateBlockDecoration(type, glslangIntermediate->usingStorageBuffer()));
     if (type.getQualifier().hasStream() && glslangIntermediate->isMultiStream()) {
         builder.addCapability(spv::CapabilityGeometryStreams);
         builder.addDecoration(spvType, spv::DecorationStream, type.getQualifier().layoutStream);
@@ -3068,7 +3070,7 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
                 (paramType.getBasicType() == glslang::EbtBlock &&
                  paramType.getQualifier().storage == glslang::EvqBuffer) ||  // SSBO
                 (p == 0 && implicitThis))                                    // implicit 'this'
-                typeId = builder.makePointer(TranslateStorageClass(paramType), typeId);
+                typeId = builder.makePointer(TranslateStorageClass(paramType, glslangIntermediate->usingStorageBuffer()), typeId);
             else if (paramType.getQualifier().storage != glslang::EvqConstReadOnly)
                 typeId = builder.makePointer(spv::StorageClassFunction, typeId);
             else

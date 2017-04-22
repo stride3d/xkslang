@@ -29,15 +29,15 @@ shader ShaderTestMember
 	stage stream float4 ShadingPosition : SV_Position;
 	
 	//only check post-declaration keywords, const initialization values will be done later
-	static const int constValue;
-	const static int constValue01;
-	private static const int constArray[5];
+	static const int constValue = 0;
+	const static int constValue01 = 0;
+	private static const int constArray[5] = {0,0,0,0,0};
 	
 	static double aStatic;
 	const double aConst;
 	
 	//That one probably don't make any sense (just to test the parser)
-	private static const stage stream float mixWithEverything;
+	private static const stage stream float mixWithEverything = 0.0f;
 };
 
 shader TestShaderMethod

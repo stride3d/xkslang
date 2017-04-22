@@ -299,6 +299,7 @@ INSTANTIATE_TEST_CASE_P(
         //"spv.precise.tese",
         //"spv.precise.tesc",
         //"spv.pushConstantAnon.vert",
+        "spv.storageBuffer.vert",
     })),
     FileNameAsCustomTestSuffix
 );
