@@ -7,6 +7,8 @@ layout(std140) uniform cb
     int ShaderB_lightIndex;
 } cb_var;
 
+uniform samplerBuffer ShaderB_PointLights;
+
 void main()
 {
     int realLightIndex = int(texelFetch(ShaderB_LightIndices, cb_var.ShaderB_lightIndex.xyz).x);
