@@ -414,7 +414,7 @@ public:
     public:
         TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberDefaultConstantTypeId(spvUndefinedId),
             newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), memberSize(-1), memberAlignment(-1), memberType(nullptr),
-            variableAccessTypeId(0){}
+            variableAccessTypeId(0), memberTypePointerInputId(0), memberTypePointerOutputId(0), memberStageInputVariableId(0), memberStageOutputVariableId(0){}
 
         spv::Id structTypeId;             //Id of the struct type containing the member
         int structMemberIndex;            //Id of the member within the struct
@@ -428,8 +428,12 @@ public:
         std::string semantic;
 
         //some stream member properties
-        int memberPointerFunctionTypeId;  //id of the member's pointer type (with Function storage class)
+        int memberPointerFunctionTypeId;  //id of the member's pointer type (TypePointer with Function storage class)
         std::vector<unsigned int> listBuiltInSemantics; //list of builtin semantics set to the member
+        spv::Id memberTypePointerInputId;      //if the member is a stage input, and if we use an input variable for the member
+        spv::Id memberTypePointerOutputId;     //if the member is a stage output, and if we use an output variable for the member
+        spv::Id memberStageInputVariableId;
+        spv::Id memberStageOutputVariableId;
 
         //some cbuffer members properties
         int memberSize;
@@ -841,6 +845,7 @@ public:
 
     bool IsNeededAsInput() const { return (stageIONeeded & ((int)MemberIOEnum::Input)) != 0; }
     bool IsNeededAsOutput() const { return (stageIONeeded & ((int)MemberIOEnum::Output)) != 0; }
+    bool IsNeededAsInputOrOutput() const { return stageIONeeded != 0; }
     bool IsInputOnly() const { return (stageIONeeded == (int)MemberIOEnum::Input); }
 
     //bool HasWriteAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Write)); }

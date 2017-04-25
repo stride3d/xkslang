@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\..\source\define.cpp" />
     <ClCompile Include="..\..\..\source\SpxBytecode.cpp" />
     <ClCompile Include="..\..\..\source\SpxStreamRemapper.cpp" />
+    <ClCompile Include="..\..\..\source\SpxStreamRemapper_streams.cpp" />
     <ClCompile Include="..\..\..\source\XkslMixer.cpp" />
     <ClCompile Include="..\..\..\source\XkslParser.cpp" />
   </ItemGroup>

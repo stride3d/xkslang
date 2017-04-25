@@ -1,0 +1,9 @@
+convertAndLoad "SemanticTest02.xksl"
+
+mixer m
+m.mixin ShaderMain
+
+m.setStageEntryPoint Vertex "VSMain"
+m.setStageEntryPoint Pixel "PSMain"
+
+m.compile

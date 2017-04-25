@@ -1,0 +1,13 @@
+shader ShaderMain
+{
+    stage stream float4 color : COLOR0;
+	stage stream float fragCoord : VPOS;
+	
+	stage void VSMain() 
+	{}
+	
+    stage void PSMain() 
+    {
+        streams.color = streams.fragCoord;
+    }
+};

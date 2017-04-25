@@ -185,6 +185,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testDependency07", "testDependency07.xkfx" },
 
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
+    { "SemanticTest02", "SemanticTest02.xkfx" },
     //{ "Effect01", "Effect01.xkfx" },
 };
 
