@@ -4046,6 +4046,12 @@ bool SpxStreamRemapper::GenerateBytecodeForStage(XkslMixerOutputStage& stage, ve
     entryPointInstr.addImmediateOperand(model);
     entryPointInstr.addIdOperand(entryFunction->GetResultId());
     entryPointInstr.addStringOperand(stage.outputStage->entryPointName.c_str());
+    //Add all input variables Ids
+    for (unsigned int k = 0; k < stage.listStageInputVariableInfo.size(); k++)
+        entryPointInstr.addIdOperand(stage.listStageInputVariableInfo[k].spvVariableId);
+    //Add all output variables Ids
+    for (unsigned int k = 0; k < stage.listStageOutputVariableInfo.size(); k++)
+        entryPointInstr.addIdOperand(stage.listStageOutputVariableInfo[k].spvVariableId);
     entryPointInstr.dump(header);
 
     //add the execution modes

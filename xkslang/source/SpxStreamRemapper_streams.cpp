@@ -1518,7 +1518,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
                 spv::Id stageVariableId = memberOutputVariable.getResultId();
                 streamMember.memberStageOutputVariableId = stageVariableId;
                 XkslMixerOutputStage::OutputStageIOVariable stageVariable(stageVariableId, index, k);
-                stage.listStageOutputVariableinfo.push_back(stageVariable);
+                stage.listStageOutputVariableInfo.push_back(stageVariable);
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
                 string outputVariableName = shadingStageLabelStr + "_OUT_" + streamMember.GetDeclarationNameOrSemantic();
@@ -1530,9 +1530,9 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             }
 
             //Add output variables location decorate
-            for (unsigned int k = 0; k < stage.listStageOutputVariableinfo.size(); ++k)
+            for (unsigned int k = 0; k < stage.listStageOutputVariableInfo.size(); ++k)
             {
-                const XkslMixerOutputStage::OutputStageIOVariable& stageVariable = stage.listStageOutputVariableinfo[k];
+                const XkslMixerOutputStage::OutputStageIOVariable& stageVariable = stage.listStageOutputVariableInfo[k];
 
                 spv::Instruction inputVariableLocation(spv::OpDecorate);
                 inputVariableLocation.addIdOperand(stageVariable.spvVariableId);
@@ -2334,13 +2334,13 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         XkslMixerOutputStage& previousStage = outputStages[iStage - 1];
 
         unsigned int stageCountInputVariables = stage.listStageInputVariableInfo.size();
-        if (stageCountInputVariables != previousStage.listStageOutputVariableinfo.size())
+        if (stageCountInputVariables != previousStage.listStageOutputVariableInfo.size())
             return error("a stage has more input variables than the previous stage output variables");
 
         for (unsigned int k = 0; k < stageCountInputVariables; ++k)
         {
             const XkslMixerOutputStage::OutputStageIOVariable& stageInputVariable = stage.listStageInputVariableInfo[k];
-            const XkslMixerOutputStage::OutputStageIOVariable& previousStageOutputVariable = previousStage.listStageOutputVariableinfo[k];
+            const XkslMixerOutputStage::OutputStageIOVariable& previousStageOutputVariable = previousStage.listStageOutputVariableInfo[k];
 
             if (stageInputVariable.globalStreamMemberIndex != previousStageOutputVariable.globalStreamMemberIndex)
                 return error("a stage input variable does not match the previous stage's expected output variable");

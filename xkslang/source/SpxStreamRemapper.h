@@ -878,7 +878,7 @@ public:
     };
 
     std::vector<OutputStageIOVariable> listStageInputVariableInfo;
-    std::vector<OutputStageIOVariable> listStageOutputVariableinfo;
+    std::vector<OutputStageIOVariable> listStageOutputVariableInfo;
 
     XkslMixerOutputStage(OutputStageBytecode* outputStage) : outputStage(outputStage) {}
 };

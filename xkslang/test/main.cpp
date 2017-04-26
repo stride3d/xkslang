@@ -187,7 +187,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
     //{ "SemanticTest02", "SemanticTest02.xkfx" },
 
-    //{ "Effect01", "Effect01.xkfx" },
+    { "Effect01", "Effect01.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -390,6 +390,7 @@ static bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStage
     string glslAllOutputs;
     string hlslAllOutputs;
     bool someExpectedOutputsDifferent = false;
+    bool someExpectedOutputsAreMissing = false;
     for (unsigned int i = 0; i<outputStages.size(); ++i)
     {
         string labelStage = GetShadingStageLabel(outputStages[i].stage);
@@ -445,8 +446,8 @@ static bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStage
                             }
                         }
                         else {
-                            cout << " Warning: No expected output file for: " << fileNameGlsl << endl;
-                            success = false;
+                            cout << " !!! Warning: No expected output file for: " << fileNameGlsl << endl;
+                            someExpectedOutputsAreMissing = true;
                         }
                     }
                     else {
@@ -493,6 +494,7 @@ static bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStage
     }
     
     if (someExpectedOutputsDifferent) success = false;
+    if (someExpectedOutputsAreMissing) success = false;
 
     if (glslAllOutputs.size() > 0)
     {
