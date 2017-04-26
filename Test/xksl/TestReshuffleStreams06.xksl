@@ -20,7 +20,7 @@ shader ShaderMain
 	stage stream Toto aToto1 : ATOTO;
 	stage stream Toto aTotoTab[2] : ATOTOTAB;
 	stage stream float4x4 aMat44 : AMAT44; 
-	stage stream float4x1 aMat44Tab[2] : AMAT44TAB; 
+	//stage stream float4x1 aMat44Tab[2] : AMAT44TAB;   //array of matrix used as input/output is unsupported
 	
 	stage void VSMain() 
     {
@@ -38,6 +38,6 @@ shader ShaderMain
 		float4x4 aMat = streams.aMat44;
 		bool b = streams.aBool;
         streams.aF4 = float4(streams.aF2.xy, 0, 1);
-		float4x1 amat2 = streams.aMat44Tab[2];
+		//float4x1 amat2 = streams.aMat44Tab[2];
     }
 }

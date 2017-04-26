@@ -9,14 +9,13 @@ struct PS_OUT
 struct PS_IN
 {
     float4 in_fragCoord : VPOS;
-	float2 in_F2 : IN_F2;
 };
 
 PS_OUT main(PS_IN psin)
 {
     PS_OUT output;
+	output.out_f2 = 1;
     output.out_color = psin.in_fragCoord;
-	output.out_f2 = psin.in_F2;
     return output;
 }
 
@@ -37,13 +36,12 @@ PS_OUT main(PS_IN psin)
                               ExecutionMode 4 OriginUpperLeft
                               Source HLSL 500
                               Name 4  "main"
-                              Name 9  "PS_IN"
-                              MemberName 9(PS_IN) 0  "in_fragCoord"
-                              MemberName 9(PS_IN) 1  "in_F2"
+                              Name 8  "PS_IN"
+                              MemberName 8(PS_IN) 0  "in_fragCoord"
                               Name 11  "PS_OUT"
                               MemberName 11(PS_OUT) 0  "out_color"
                               MemberName 11(PS_OUT) 1  "out_f2"
-                              Name 14  "@main(struct-PS_IN-vf4-vf21;"
+                              Name 14  "@main(struct-PS_IN-vf41;"
                               Name 13  "psin"
                               Name 17  "output"
                               Name 32  "psin"
@@ -59,52 +57,52 @@ PS_OUT main(PS_IN psin)
                3:             TypeFunction 2
                6:             TypeFloat 32
                7:             TypeVector 6(float) 4
-               8:             TypeVector 6(float) 2
-        9(PS_IN):             TypeStruct 7(fvec4) 8(fvec2)
-              10:             TypePointer Function 9(PS_IN)
-      11(PS_OUT):             TypeStruct 7(fvec4) 8(fvec2)
-              12:             TypeFunction 11(PS_OUT) 10(ptr)
+        8(PS_IN):             TypeStruct 7(fvec4)
+               9:             TypePointer Function 8(PS_IN)
+              10:             TypeVector 6(float) 2
+      11(PS_OUT):             TypeStruct 7(fvec4) 10(fvec2)
+              12:             TypeFunction 11(PS_OUT) 9(ptr)
               16:             TypePointer Function 11(PS_OUT)
               18:             TypeInt 32 1
-              19:     18(int) Constant 0
-              20:             TypePointer Function 7(fvec4)
-              24:     18(int) Constant 1
-              25:             TypePointer Function 8(fvec2)
-              33:             TypePointer Input 9(PS_IN)
+              19:     18(int) Constant 1
+              20:    6(float) Constant 1065353216
+              21:   10(fvec2) ConstantComposite 20 20
+              22:             TypePointer Function 10(fvec2)
+              24:     18(int) Constant 0
+              25:             TypePointer Function 7(fvec4)
+              33:             TypePointer Input 8(PS_IN)
         34(psin):     33(ptr) Variable Input
               40:             TypePointer Output 7(fvec4)
    41(out_color):     40(ptr) Variable Output
-              44:             TypePointer Output 8(fvec2)
+              44:             TypePointer Output 10(fvec2)
       45(out_f2):     44(ptr) Variable Output
          4(main):           2 Function None 3
                5:             Label
-        32(psin):     10(ptr) Variable Function
+        32(psin):      9(ptr) Variable Function
  36(flattenTemp):     16(ptr) Variable Function
-       37(param):     10(ptr) Variable Function
-              35:    9(PS_IN) Load 34(psin)
+       37(param):      9(ptr) Variable Function
+              35:    8(PS_IN) Load 34(psin)
                               Store 32(psin) 35
-              38:    9(PS_IN) Load 32(psin)
+              38:    8(PS_IN) Load 32(psin)
                               Store 37(param) 38
-              39:  11(PS_OUT) FunctionCall 14(@main(struct-PS_IN-vf4-vf21;) 37(param)
+              39:  11(PS_OUT) FunctionCall 14(@main(struct-PS_IN-vf41;) 37(param)
                               Store 36(flattenTemp) 39
-              42:     20(ptr) AccessChain 36(flattenTemp) 19
+              42:     25(ptr) AccessChain 36(flattenTemp) 24
               43:    7(fvec4) Load 42
                               Store 41(out_color) 43
-              46:     25(ptr) AccessChain 36(flattenTemp) 24
-              47:    8(fvec2) Load 46
+              46:     22(ptr) AccessChain 36(flattenTemp) 19
+              47:   10(fvec2) Load 46
                               Store 45(out_f2) 47
                               Return
                               FunctionEnd
-14(@main(struct-PS_IN-vf4-vf21;):  11(PS_OUT) Function None 12
-        13(psin):     10(ptr) FunctionParameter
+14(@main(struct-PS_IN-vf41;):  11(PS_OUT) Function None 12
+        13(psin):      9(ptr) FunctionParameter
               15:             Label
       17(output):     16(ptr) Variable Function
-              21:     20(ptr) AccessChain 13(psin) 19
-              22:    7(fvec4) Load 21
-              23:     20(ptr) AccessChain 17(output) 19
-                              Store 23 22
+              23:     22(ptr) AccessChain 17(output) 19
+                              Store 23 21
               26:     25(ptr) AccessChain 13(psin) 24
-              27:    8(fvec2) Load 26
+              27:    7(fvec4) Load 26
               28:     25(ptr) AccessChain 17(output) 24
                               Store 28 27
               29:  11(PS_OUT) Load 17(output)
@@ -118,28 +116,36 @@ PS_OUT main(PS_IN psin)
 /*
 #version 450
 
-struct PS_OUT
+struct PS_IN
 {
-    vec4 color;
-    float depth;
+    vec4 in_fragCoord;
 };
 
-layout(location = 0) out vec4 color;
-layout(location = 1) out float depth;
+struct PS_OUT
+{
+    vec4 out_color;
+    vec2 out_f2;
+};
 
-PS_OUT _main()
+layout(location = 0) in PS_IN psin;
+layout(location = 0) out vec4 out_color;
+layout(location = 1) out vec2 out_f2;
+
+PS_OUT _main(PS_IN psin_1)
 {
     PS_OUT _output;
-    _output.color = vec4(0.0, 0.0, 1.0, 1.0);
-    _output.depth = 1.0;
+    _output.out_f2 = vec2(1.0);
+    _output.out_color = psin_1.in_fragCoord;
     return _output;
 }
 
 void main()
 {
-    PS_OUT flattenTemp = _main();
-    color = flattenTemp.color;
-    depth = flattenTemp.depth;
+    PS_IN psin_1 = psin;
+    PS_IN param = psin_1;
+    PS_OUT flattenTemp = _main(param);
+    out_color = flattenTemp.out_color;
+    out_f2 = flattenTemp.out_f2;
 }
 
 
@@ -151,16 +157,18 @@ void main()
 /*
 struct PS_IN
 {
-    float4 fragCoord;
+    float4 in_fragCoord;
 };
 
 struct PS_OUT
 {
-    float4 color;
+    float4 out_color;
+    float2 out_f2;
 };
 
 static PS_IN psin;
-static float4 color;
+static float4 out_color;
+static float2 out_f2;
 
 struct SPIRV_Cross_Input
 {
@@ -169,13 +177,14 @@ struct SPIRV_Cross_Input
 
 struct SPIRV_Cross_Output
 {
-    float4 color : COLOR0;
+    float4 out_color : COLOR0;
+    float2 out_f2 : COLOR1;
 };
 
 PS_OUT _main(PS_IN psin_1)
 {
     PS_OUT output;
-    output.color = psin_1.fragCoord;
+    output.out_color = psin_1.in_fragCoord;
     return output;
 }
 
@@ -183,7 +192,9 @@ void frag_main()
 {
     PS_IN psin_1 = psin;
     PS_IN param = psin_1;
-    color = _main(param).color;
+    PS_OUT flattenTemp = _main(param);
+    out_color = flattenTemp.out_color;
+    out_f2 = flattenTemp.out_f2;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
@@ -191,9 +202,9 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     psin = stage_input.psin;
     frag_main();
     SPIRV_Cross_Output stage_output;
-    stage_output.color = color;
+    stage_output.out_color = out_color;
+    stage_output.out_f2 = out_f2;
     return stage_output;
 }
-
 
 */

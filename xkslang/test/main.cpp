@@ -185,7 +185,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testDependency07", "testDependency07.xkfx" },
 
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
-    { "SemanticTest02", "SemanticTest02.xkfx" },
+    //{ "SemanticTest02", "SemanticTest02.xkfx" },
+
     //{ "Effect01", "Effect01.xkfx" },
 };
 
@@ -444,7 +445,8 @@ static bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStage
                             }
                         }
                         else {
-                            cout << " !!!!! Warning: No expected output file for: " << fileNameGlsl << endl;
+                            cout << " Warning: No expected output file for: " << fileNameGlsl << endl;
+                            success = false;
                         }
                     }
                     else {

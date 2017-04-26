@@ -6173,3 +6173,16 @@ bool SpxStreamRemapper::ApplyBytecodeUpdateController(BytecodeUpdateController& 
     if (errorMessages.size() > 0) return false;
     return true;
 }
+
+bool SpxStreamRemapper::IsResourceType(const spv::Op& opCode)
+{
+    switch (opCode)
+    {
+    case spv::OpTypeImage:
+    case spv::OpTypeSampler:
+    case spv::OpTypeSampledImage:
+        return true;
+    }
+
+    return false;
+}

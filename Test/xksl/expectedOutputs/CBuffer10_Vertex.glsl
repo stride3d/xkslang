@@ -1,15 +1,5 @@
 #version 450
 
-struct VS_IN
-{
-    float aStream1_id0;
-};
-
-struct VS_OUT
-{
-    float aStream2_id0;
-};
-
 struct VS_STREAMS
 {
     float aStream1_id0;
@@ -22,13 +12,14 @@ layout(std140) uniform PerLighting
     float ShaderMain_var2;
 } PerLighting_var;
 
-VS_OUT main(VS_IN __input__)
+layout(location = 0) in float VS_IN_aStream1;
+layout(location = 0) out float VS_OUT_aStream2;
+
+void main()
 {
     VS_STREAMS _streams = VS_STREAMS(0.0, 0.0);
-    _streams.aStream1_id0 = __input__.aStream1_id0;
+    _streams.aStream1_id0 = VS_IN_aStream1;
     _streams.aStream2_id1 = _streams.aStream1_id0 + PerLighting_var.ShaderMain_var1;
-    VS_OUT __output__ = VS_OUT(0.0);
-    __output__.aStream2_id0 = _streams.aStream2_id1;
-    return __output__;
+    VS_OUT_aStream2 = _streams.aStream2_id1;
 }
 

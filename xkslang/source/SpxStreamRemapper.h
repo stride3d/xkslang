@@ -866,6 +866,20 @@ public:
     std::vector<SpxStreamRemapper::FunctionInstruction*> listFunctionsCalledAndAccessingStreamMembers;  //list of functions called by the stage, accessing some stream members
     std::vector<SpxStreamRemapper::ShaderTypeData*> listCBuffersAccessed;
 
+    class OutputStageIOVariable
+    {
+    public:
+        spv::Id spvVariableId;
+        int globalStreamMemberIndex;
+        int locationNum;
+
+        OutputStageIOVariable(spv::Id spvVariableId, int globalStreamMemberIndex, int locationNum) :
+            spvVariableId(spvVariableId), globalStreamMemberIndex(globalStreamMemberIndex) , locationNum(locationNum){}
+    };
+
+    std::vector<OutputStageIOVariable> listStageInputVariableInfo;
+    std::vector<OutputStageIOVariable> listStageOutputVariableinfo;
+
     XkslMixerOutputStage(OutputStageBytecode* outputStage) : outputStage(outputStage) {}
 };
 

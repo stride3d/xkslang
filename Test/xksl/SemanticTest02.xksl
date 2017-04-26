@@ -1,13 +1,17 @@
 shader ShaderMain
 {
+	stage stream float4 inCol : VPOS;
+	stage stream float f1 : IN_F1;
+	
     stage stream float4 color : COLOR0;
-	stage stream float fragCoord : VPOS;
+	stage stream float f2 : OUT_F1;
 	
 	stage void VSMain() 
 	{}
 	
     stage void PSMain() 
     {
-        streams.color = streams.fragCoord;
+		streams.f2 = streams.f1;
+        streams.color = streams.inCol;
     }
 };
