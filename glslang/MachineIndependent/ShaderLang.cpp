@@ -1849,6 +1849,12 @@ bool error(HlslParseContext* parseContext, const TString& txt)
     return false;
 }
 
+bool warning(HlslParseContext* parseContext, const TString& txt)
+{
+    parseContext->infoSink.info.message(EPrefixWarning, txt);
+    return false;
+}
+
 static bool IsTypeValidForBuffer(const TBasicType& type, bool isRGroup)
 {
     switch (type)
@@ -1996,14 +2002,20 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                         for (unsigned int indexInBlock = 0; indexInBlock < typeList->size(); ++indexInBlock)
                         {
                             TType& blockMemberType = *(typeList->at(indexInBlock).type);
+                            bool isStageMember = isStageBlock;
 
                             if (!IsTypeValidForBuffer(blockMemberType.getBasicType(), isRGroupBlock))
                                 return error(parseContext, "The variable has an invalid type to be declared in a " + TString(isRGroupBlock ? "rgroup: " : "cbuffer: ") + blockMemberType.getFieldName());
                             if (blockMemberType.getQualifier().isStream)
                                 return error(parseContext, "A stream variable cannot be declared in a cbuffer or rgroup block. Variable: " + blockMemberType.getFieldName());
+
                             //XKSL Rules: we set stage in front of the cbuffer declaration, not in front of its members
                             if (blockMemberType.getQualifier().isStage)
-                                return error(parseContext, "A cbuffer or rgroup variable cannot directly be declared with \"stage\" attribute, you must set the \"stage\" attribute before the cbuffer or rgroup. Variable: " + blockMemberType.getFieldName());
+                            {
+                                //this should normally be an error, we accept it for now to be compatible with Xenko current xksl shaders
+                                warning(parseContext, "A cbuffer or resource variable should not directly be declared with \"stage\" attribute, you must set the \"stage\" attribute before the cbuffer or rgroup. Variable: " + blockMemberType.getFieldName());
+                                isStageMember = true;
+                            }
 
                             blockMemberType.setUserIdentifierName(blockMemberType.getFieldName().c_str());
                             blockMemberType.setOwnerClassName(shader->shaderFullName.c_str());
@@ -2017,7 +2029,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                             TTypeLoc typeLoc = { &blockMemberType, member.loc };
                             if (isRGroupBlock)
                             {
-                                if (isStageBlock)
+                                if (isStageMember)
                                 {
                                     rgroupStageGlobalStructTypeList->push_back(typeLoc);
                                     int indexInBuffer = rgroupStageGlobalStructTypeList->size() - 1;
@@ -2032,7 +2044,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                             }
                             else
                             {
-                                if (isStageBlock)
+                                if (isStageMember)
                                 {
                                     cbufferStageGlobalStructTypeList->push_back(typeLoc);
                                     int indexInBuffer = cbufferStageGlobalStructTypeList->size() - 1;
@@ -2052,30 +2064,11 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                     }
                     else
                     {
-                        //directly insert the new cbuffer block, then add the block members separatly in the shader (to be able to retrieve their access)
-                        TQualifier blockQualifier;
-                        blockQualifier.clear();
-                        blockQualifier.storage = EvqUniform;
+                        //the member is a defined block (cbuffer or rgroup): we insert the new cbuffer block, then add the block members separatly in the shader (to be able to retrieve their access)
                         TString numberId = TString(std::to_string(shader->listDeclaredBlockNames.size()).c_str());
                         TString* blockName = NewPoolTString((shader->shaderFullName + "_" + member.type->getFieldName() + "_" + numberId).c_str());  //name = class_name_num
                         TString* blockVarName = NewPoolTString((*blockName + TString("_var")).c_str());
-                        member.type->SetAsDefinedCBufferType();
-
-                        parseContext->declareBlock(member.loc, *(member.type), blockVarName);
-                        shader->listDeclaredBlockNames.push_back(blockVarName);
-
-                        TSymbol* symbol = parseContext->symbolTable.find(*blockVarName);
-                        if (symbol == nullptr || symbol->getAsVariable() == nullptr)
-                        {
-                            return error(parseContext, "Error creating the block cbuffer variable");
-                        }
-                        else
-                        {
-                            symbol->getWritableType().setTypeName(*blockName);  //set the type name
-                            //set the userName to the variable (needed to retrieve variables id when mixing shaders)
-                            TVariable* variableSymbol = symbol->getAsVariable();
-                            variableSymbol->SetUserDefinedName(blockVarName->c_str());
-                        }
+                        bool forceMemberToHaveStageOrUnstageDeclaration = false; //for retro-compatibility if some shader still put stage in front of declared cbuffer members
 
                         //Individually add the block members in the shader list of member
                         TTypeList* typeList = member.type->getWritableStruct();
@@ -2087,9 +2080,27 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                                 return error(parseContext, "The variable has an invalid type to be declared in a " + TString(isRGroupBlock ? "rgroup: " : "cbuffer: ") + blockMemberType.getFieldName());
                             if (blockMemberType.getQualifier().isStream)
                                 return error(parseContext, "A stream variable cannot be declared in a cbuffer block. Variable: " + blockMemberType.getFieldName());
+
                             //XKSL Rules: we set stage in front of the cbuffer declaration, not in front of its members
                             if (blockMemberType.getQualifier().isStage)
-                                return error(parseContext, "A cbuffer variable cannot directly be declared with \"stage\" attribute, you must set the \"stage\" attribute before the cbuffer. Variable: " + blockMemberType.getFieldName());
+                            {
+                                //this should normally be an error, we accept it for now to be compatible with Xenko current xksl shaders
+                                warning(parseContext, "A cbuffer or rgoup variable should not directly be declared with \"stage\" attribute, you should set the \"stage\" attribute before the cbuffer or rgroup. Variable: " + blockMemberType.getFieldName());
+                                forceMemberToHaveStageOrUnstageDeclaration = true;
+
+                                if (indexInBlock == 0)
+                                {
+                                    //set the whole block as Stage
+                                    isStageBlock = true;
+                                    member.type->getQualifier().isStage = true;
+                                }                                
+                            }
+
+                            if (forceMemberToHaveStageOrUnstageDeclaration)
+                            {
+                                if (blockMemberType.getQualifier().isStage != isStageBlock)
+                                    return error(parseContext, "A cbuffer or rgoup container cannot mix both stage and unstage members");
+                            }
 
                             blockMemberType.setUserIdentifierName(blockMemberType.getFieldName().c_str());
                             blockMemberType.setOwnerClassName(shader->shaderFullName.c_str());
@@ -2103,6 +2114,28 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                             identifierLocation.SetMemberLocation(shader, blockMemberType.getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, blockVarName, indexInBlock);
                             newShaderMember.memberLocation = identifierLocation;
                             shader->listAllDeclaredMembers.push_back(newShaderMember);
+                        }
+
+                        //declare the new block
+                        TQualifier blockQualifier;
+                        blockQualifier.clear();
+                        blockQualifier.storage = EvqUniform;
+                        member.type->SetAsDefinedCBufferType();
+
+                        parseContext->declareBlock(member.loc, *(member.type), blockVarName);
+                        shader->listDeclaredBlockNames.push_back(blockVarName);
+
+                        TSymbol* symbol = parseContext->symbolTable.find(*blockVarName);
+                        if (symbol == nullptr || symbol->getAsVariable() == nullptr)
+                        {
+                            return error(parseContext, "Error creating the block cbuffer variable");
+                        }
+                        else
+                        {
+                            symbol->getWritableType().setTypeName(*blockName);  //set the type name
+                                                                                //set the userName to the variable (needed to retrieve variables id when mixing shaders)
+                            TVariable* variableSymbol = symbol->getAsVariable();
+                            variableSymbol->SetUserDefinedName(blockVarName->c_str());
                         }
                     }
                 }

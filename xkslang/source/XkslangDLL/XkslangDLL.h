@@ -6,19 +6,44 @@
 
 namespace xkslang
 {
+    //To be called to get the error messages after an operation failed
+    extern "C" __declspec(dllexport) void GetErrorMessages(char *buffer, int bufferLength);
+
+    //=====================================================================================================================
+    //=====================================================================================================================
+    // Parsing and conversion functions: convert xksl shaders to SPX bytecode
+
+    //callback function prototype
     typedef char* (__stdcall *ShaderSourceLoaderCallback)(const char* shaderName, int* dataLen);
 
-    extern "C" __declspec(dllexport) bool InitializeXkslang();
+    //Xkslang initialization: To be called before calling parsing functions
+    extern "C" __declspec(dllexport) bool InitializeParser();
 
-    extern "C" __declspec(dllexport) void ReleaseXkslang();
+    //To be called when we finish parsing a file
+    extern "C" __declspec(dllexport) void ReleaseParser();
 
+    //Convert an xksl shader into SPX bytecode
+    // shaderName: name of the shader to convert
+    // shaderDependencyCallback: callback function, called by xkslang everytime the parser requests data for a shader (shaderName at first, then all its dependencies if any)
+    // Return:
+    //  null: if the conversion failed (user can call GetErrorMessages function to get more details)
+    //  pointer to the bytecode if the operation succeeded
+    //    The pointer is allocated on the dll side (using LocalAlloc function), and has to be deleted by the caller
+    //    bytecodeSize parameter contains the length of the bytecode buffer
     extern "C" __declspec(dllexport) uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int* bytecodeSize);
 
     //Utility function to help converting a bytecode to a human-readable ascii file
     extern "C" __declspec(dllexport) char* ConvertBytecodeToAscii(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize);
 
-    //Return the error messages
-    extern "C" __declspec(dllexport) void GetErrorMessages(char *buffer, int bufferLength);
+    //=====================================================================================================================
+    //=====================================================================================================================
+    // Mixin functions: Mix SPX shaders to generate SPV bytecode for specific output stages
+
+    //Create a new mixin object
+    // Return: the mixin object handle Id, or 0 if there is any error
+    extern "C" __declspec(dllexport) uint32_t CreateMixer();
+
+    extern "C" __declspec(dllexport) bool DeleteMixer(uint32_t handleId);
 }
 
 
