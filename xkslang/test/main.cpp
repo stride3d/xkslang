@@ -264,7 +264,7 @@ static bool SetupTestDirectories()
     wstring ws(fileName);
     string fullName(ws.begin(), ws.end());
 
-    //WARNIG: UNCLEAN AND HARDCODED FOR NOW!!
+    //WARNING: UNCLEAN AND HARDCODED FOR NOW!!
     const size_t pos = fullName.find("glslang");
     if (pos >= fullName.size()) return false;
 
