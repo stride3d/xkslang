@@ -18,7 +18,7 @@
 #include "../source/SpxBytecode.h"
 #include "../source/OutputStageBytecode.h"
 #include "../source/XkslParser.h"
-#include "../source/XkslMixer.h"
+#include "../source/SpxMixer.h"
 
 #include "../source/XkslangDLL/XkslangDLL.h"
 
@@ -309,7 +309,7 @@ static void WriteBytecode(const SpvBytecode& bytecode, const string& outputDir, 
     }
 }
 
-static void SaveCurrentMixerBytecode(XkslMixer* mixer, string outputDirPath, string outputFileName)
+static void SaveCurrentMixerBytecode(SpxMixer* mixer, string outputDirPath, string outputFileName)
 {
     vector<string> errorMsgs;
     SpxBytecode mixinBytecode;
@@ -330,7 +330,7 @@ static void SaveCurrentMixerBytecode(XkslMixer* mixer, string outputDirPath, str
     }
 }
 
-static bool CompileMixer(string effectName, XkslMixer* mixer, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
+static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
 {
     DWORD time_before, time_after;
     bool success = true;
@@ -579,6 +579,8 @@ static string shaderFilesPrefix;
 static vector<string> libraryResourcesFolders;
 static bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
 {
+    cout << " Parsing shader file: " << shaderName << endl;
+
     for (int i = 0; i < 2; i++)
     {
         string filePrefix = (i==0? "": (shaderFilesPrefix + "_"));
@@ -679,10 +681,10 @@ static bool GetShadingStageForString(string& str, ShadingStageEnum& stage)
 class EffectMixerObject
 {
 public:
-    XkslMixer* mixer;
+    SpxMixer* mixer;
     unordered_map<int, string> stagesEntryPoints;
 
-    EffectMixerObject(XkslMixer* mixer): mixer(mixer){}
+    EffectMixerObject(SpxMixer* mixer): mixer(mixer){}
     ~EffectMixerObject() {delete mixer;}
 };
 
@@ -834,7 +836,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
         SpxBytecode& spxBytecode = listBytecodeToLoad[k];
 
         vector<string> vecShaderName;
-        if (!XkslMixer::GetListAllShadersFromBytecode(spxBytecode, vecShaderName, errorMsgs))
+        if (!SpxMixer::GetListAllShadersFromBytecode(spxBytecode, vecShaderName, errorMsgs))
         {
             cout << "preload: failed to get the list of shader names from: " << spxBytecode.GetName() << endl;
             success = false; break;
@@ -912,7 +914,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
             }
 
             vector<string> vecShaderName;
-            if (!XkslMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShaderName, errorMsgs))
+            if (!SpxMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShaderName, errorMsgs))
             {
                 cout << "convertAndLoadRecursif: failed to get the list of shader names from: " << xkslInputFilePrefix << endl;
                 success = false; break;
@@ -960,7 +962,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
             }
             
             vector<string> vecShaderName;
-            if (!XkslMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShaderName, errorMsgs))
+            if (!SpxMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShaderName, errorMsgs))
             {
                 cout << "convertAndLoad: failed to get the list of shader names from: " << xkslInputFile << endl;
                 success = false; break;
@@ -990,7 +992,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
                 success = false; break;
             }
 
-            XkslMixer* mixer = new XkslMixer();
+            SpxMixer* mixer = new SpxMixer();
             mixerMap[mixerName] = new EffectMixerObject(mixer);
         }
         else if (lineItem.size() >= 2 && lineItem[0] == '/' && lineItem[1] == '/')
@@ -1246,9 +1248,9 @@ void main(int argc, char** argv)
             XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
             countEffectsProcessed++;
 
-            XkslMixer::StartMixin();
+            SpxMixer::StartMixin();
             bool success = ProcessEffect(&parser, effect);
-            XkslMixer::ReleaseMixin();
+            SpxMixer::ReleaseMixin();
 
             if (success) countEffectsSuccessful++;
             else listEffectsFailed.push_back(effect.effectName);

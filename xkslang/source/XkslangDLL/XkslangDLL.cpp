@@ -1,7 +1,7 @@
 
 #include "XkslangDLL.h"
 #include "../XkslParser.h"
-#include "../XkslMixer.h"
+#include "../SpxMixer.h"
 
 using namespace std;
 
@@ -153,39 +153,55 @@ namespace xkslang
     //=====================================================================================================================
     // Mixin functions
 
-    std::vector<XkslMixer*> listMixers;
+    static std::vector<SpxMixer*> listSpxMixers;
+
+    static SpxMixer* GetMixerForHandleId(uint32_t _handleId)
+    {
+        uint32_t handleId = _handleId - 1;
+        if (_handleId == 0 || handleId >= listSpxMixers.size()) return nullptr;
+
+        SpxMixer* mixer = listSpxMixers[handleId];
+        if (mixer == nullptr) return nullptr;
+
+        return mixer;
+    }
 
     uint32_t CreateMixer()
     {
-        XkslMixer* mixer = new XkslMixer();
-        uint32_t handleId = listMixers.size();
-        listMixers.push_back(mixer);
+        SpxMixer* mixer = new SpxMixer();
+        uint32_t handleId = listSpxMixers.size();
+        listSpxMixers.push_back(mixer);
 
         return handleId + 1;
     }
 
-    bool DeleteMixer(uint32_t _handleId)
+    bool ReleaseMixer(uint32_t _handleId)
     {
         uint32_t handleId = _handleId - 1;
-        if (_handleId == 0 || handleId >= listMixers.size())
+        if (_handleId == 0 || handleId >= listSpxMixers.size())
             return error("Invalid mixer handle");
 
-        XkslMixer* mixer = listMixers[handleId];
+        SpxMixer* mixer = listSpxMixers[handleId];
         if (mixer == nullptr)
             return error("Invalid mixer handle");
 
         delete mixer;
-        listMixers[handleId] = nullptr;
+        listSpxMixers[handleId] = nullptr;
 
-        int indexLastValidElement = listMixers.size() - 1;
-        while (indexLastValidElement >= 0 && listMixers[indexLastValidElement] == nullptr) indexLastValidElement--;
+        int indexLastValidElement = listSpxMixers.size() - 1;
+        while (indexLastValidElement >= 0 && listSpxMixers[indexLastValidElement] == nullptr) indexLastValidElement--;
 
-        if (indexLastValidElement != listMixers.size() - 1)
+        if (indexLastValidElement != listSpxMixers.size() - 1)
         {
-            if (indexLastValidElement < 0) listMixers.clear();
-            else listMixers.resize(indexLastValidElement + 1);
+            if (indexLastValidElement < 0) listSpxMixers.clear();
+            else listSpxMixers.resize(indexLastValidElement + 1);
         }
 
         return true;
+    }
+
+    bool Mixin(uint32_t mixerHandleId, char* shaderName, uint32_t* spxBytecode)
+    {
+        return false;
     }
 }

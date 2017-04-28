@@ -14,7 +14,7 @@
 #include "SPIRV/doc.h"
 #include "SPIRV/SPVRemapper.h"
 
-#include "XkslMixer.h"
+#include "SpxMixer.h"
 #include "SpxStreamRemapper.h"
 
 using namespace std;
@@ -33,28 +33,28 @@ static void warning(vector<string>& msgs, string msg)
 //=============================================================================================================//
 //=============================================================================================================//
 
-void XkslMixer::StartMixin()
+void SpxMixer::StartMixin()
 {
     SpxStreamRemapper::ResetMergeOperationId();
 }
 
-void XkslMixer::ReleaseMixin()
+void SpxMixer::ReleaseMixin()
 {
 
 }
 
-XkslMixer::XkslMixer()
+SpxMixer::SpxMixer()
 {
     spxStreamRemapper = nullptr;
     //listSpxStream.clear();
 }
 
-XkslMixer::~XkslMixer()
+SpxMixer::~SpxMixer()
 {
     if (spxStreamRemapper != nullptr) delete spxStreamRemapper;
 }
 
-bool XkslMixer::GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, vector<string>& vecShaderName, vector<string>& msgs)
+bool SpxMixer::GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, vector<string>& vecShaderName, vector<string>& msgs)
 {
     vecShaderName.clear();
     SpxStreamRemapper bytecodeStream;
@@ -90,7 +90,7 @@ bool XkslMixer::GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, vector<s
     return true;
 }
 
-bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, vector<string>& msgs)
+bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, vector<string>& msgs)
 {
     //listMixins.push_back(spirXBytecode);
 
@@ -106,14 +106,14 @@ bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, vector<string>& msgs)
     //return true;
 }
 
-bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName, vector<string>& msgs)
+bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName, vector<string>& msgs)
 {
     vector<string> shaders;
     shaders.push_back(shaderName);
     return Mixin(spirXBytecode, shaders, msgs);
 }
 
-bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& shaders, vector<string>& msgs)
+bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& shaders, vector<string>& msgs)
 {
     if (spxStreamRemapper == nullptr) spxStreamRemapper = new SpxStreamRemapper();
 
@@ -126,7 +126,7 @@ bool XkslMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& sh
     return true;
 }
 
-bool XkslMixer::AddComposition(const string& shaderName, const string& variableName, XkslMixer* mixerSource, vector<string>& msgs)
+bool SpxMixer::AddComposition(const string& shaderName, const string& variableName, SpxMixer* mixerSource, vector<string>& msgs)
 {
     if (spxStreamRemapper == nullptr) {
         return error(msgs, "mixer is empty");
@@ -149,7 +149,7 @@ bool XkslMixer::AddComposition(const string& shaderName, const string& variableN
     return true;
 }
 
-bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& messages)
+bool SpxMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& messages)
 {
     if (spxStreamRemapper == nullptr)
         return error(messages, "you must process some mixin first");
@@ -159,7 +159,7 @@ bool XkslMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& mes
     return true;
 }
 
-bool XkslMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>& messages,
+bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>& messages,
     SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* finalSpv, SpvBytecode* errorLatestSpv)
 {
     if (spxStreamRemapper == nullptr)

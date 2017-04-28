@@ -15,14 +15,14 @@ namespace xkslang
 {
 
 //=============================================================================================================//
-//==============================================  XkslMixer  =================================================//
+//==============================================  SpxMixer  ==================================================//
 //============================================================================================================//
 class SpxStreamRemapper;
-class XkslMixer
+class SpxMixer
 {
 public:
-    XkslMixer();
-    virtual ~XkslMixer();
+    SpxMixer();
+    virtual ~SpxMixer();
 
     //TMP?
     static void StartMixin();
@@ -37,7 +37,7 @@ public:
     bool Mixin(const SpxBytecode& spirXBytecode, const std::string& shaderName, std::vector<std::string>& messages);
     bool Mixin(const SpxBytecode& spirXBytecode, const std::vector<std::string>& shaders, std::vector<std::string>& messages);
 
-    bool AddComposition(const std::string& shaderName, const std::string& variableName, XkslMixer* mixerSource, std::vector<std::string>& messages);
+    bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxMixer* mixerSource, std::vector<std::string>& messages);
 
     bool GetCurrentMixinBytecode(SpxBytecode& output, std::vector<std::string>& messages);
 

@@ -23,14 +23,14 @@
     <ClCompile Include="..\..\..\source\SpxBytecode.cpp" />
     <ClCompile Include="..\..\..\source\SpxStreamRemapper.cpp" />
     <ClCompile Include="..\..\..\source\SpxStreamRemapper_streams.cpp" />
-    <ClCompile Include="..\..\..\source\XkslMixer.cpp" />
+    <ClCompile Include="..\..\..\source\SpxMixer.cpp" />
     <ClCompile Include="..\..\..\source\XkslParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\define.h" />
     <ClInclude Include="..\..\..\source\SpxBytecode.h" />
     <ClInclude Include="..\..\..\source\SpxStreamRemapper.h" />
-    <ClInclude Include="..\..\..\source\XkslMixer.h" />
+    <ClInclude Include="..\..\..\source\SpxMixer.h" />
     <ClInclude Include="..\..\..\source\OutputStageBytecode.h" />
     <ClInclude Include="..\..\..\source\XkslParser.h" />
   </ItemGroup>

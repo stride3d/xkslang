@@ -790,7 +790,7 @@ private:
         vec.insert(vec.end(), start, end);
     }
 
-    friend class XkslMixer;
+    friend class SpxMixer;
 };
 
 class SPVHeaderStageExecutionMode

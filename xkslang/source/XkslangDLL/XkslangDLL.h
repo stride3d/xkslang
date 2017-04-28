@@ -43,7 +43,9 @@ namespace xkslang
     // Return: the mixin object handle Id, or 0 if there is any error
     extern "C" __declspec(dllexport) uint32_t CreateMixer();
 
-    extern "C" __declspec(dllexport) bool DeleteMixer(uint32_t handleId);
+    extern "C" __declspec(dllexport) bool ReleaseMixer(uint32_t mixerHandleId);
+
+    extern "C" __declspec(dllexport) bool Mixin(uint32_t mixerHandleId, char* shaderName, uint32_t* spxBytecode);
 }
 
 

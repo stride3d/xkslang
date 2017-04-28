@@ -17,9 +17,6 @@
     <ClInclude Include="..\..\..\source\XkslParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\XkslMixer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\source\SpxBytecode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -29,12 +26,12 @@
     <ClInclude Include="..\..\..\source\OutputStageBytecode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\source\SpxMixer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\XkslParser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\XkslMixer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\source\define.cpp">
@@ -47,6 +44,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\source\SpxStreamRemapper_streams.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
