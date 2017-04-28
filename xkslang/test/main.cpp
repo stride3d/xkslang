@@ -15,10 +15,10 @@
 #include "SPIRV/GlslangToSpv.h"
 
 #include "Utils.h"
-#include "../source/SpxBytecode.h"
-#include "../source/OutputStageBytecode.h"
-#include "../source/XkslParser.h"
-#include "../source/SpxMixer.h"
+#include "../source/Common/SpxBytecode.h"
+#include "../source/XkslParser/XkslParser.h"
+#include "../source/SpxMixer/OutputStageBytecode.h"
+#include "../source/SpxMixer/SpxMixer.h"
 
 #include "../source/XkslangDLL/XkslangDLL.h"
 

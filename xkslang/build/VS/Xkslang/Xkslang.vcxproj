@@ -19,20 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\define.cpp" />
-    <ClCompile Include="..\..\..\source\SpxBytecode.cpp" />
-    <ClCompile Include="..\..\..\source\SpxStreamRemapper.cpp" />
-    <ClCompile Include="..\..\..\source\SpxStreamRemapper_streams.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer.cpp" />
-    <ClCompile Include="..\..\..\source\XkslParser.cpp" />
+    <ClCompile Include="..\..\..\source\Common\define.cpp" />
+    <ClCompile Include="..\..\..\source\Common\SpxBytecode.cpp" />
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxMixer.cpp" />
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper.cpp" />
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper_streams.cpp" />
+    <ClCompile Include="..\..\..\source\XkslParser\XkslParser.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\source\define.h" />
-    <ClInclude Include="..\..\..\source\SpxBytecode.h" />
-    <ClInclude Include="..\..\..\source\SpxStreamRemapper.h" />
-    <ClInclude Include="..\..\..\source\SpxMixer.h" />
-    <ClInclude Include="..\..\..\source\OutputStageBytecode.h" />
-    <ClInclude Include="..\..\..\source\XkslParser.h" />
+    <ClInclude Include="..\..\..\source\Common\define.h" />
+    <ClInclude Include="..\..\..\source\Common\SpxBytecode.h" />
+    <ClInclude Include="..\..\..\source\SpxMixer\OutputStageBytecode.h" />
+    <ClInclude Include="..\..\..\source\SpxMixer\SpxMixer.h" />
+    <ClInclude Include="..\..\..\source\SpxMixer\SpxStreamRemapper.h" />
+    <ClInclude Include="..\..\..\source\XkslParser\XkslParser.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{227A8054-E16B-48DA-A361-9316B8752E4E}</ProjectGuid>

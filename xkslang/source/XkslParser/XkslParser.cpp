@@ -18,10 +18,6 @@
 
 #include "XkslParser.h"
 
-//TMP
-#include "../test/Utils.h"
-#include "../test/define.h"
-
 using namespace std;
 using namespace xkslang;
 

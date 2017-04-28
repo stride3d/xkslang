@@ -1,7 +1,7 @@
 
 #include "XkslangDLL.h"
-#include "../XkslParser.h"
-#include "../SpxMixer.h"
+#include "../XkslParser/XkslParser.h"
+#include "../SpxMixer/SpxMixer.h"
 
 using namespace std;
 

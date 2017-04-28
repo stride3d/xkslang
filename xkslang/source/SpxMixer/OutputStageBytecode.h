@@ -7,8 +7,8 @@
 #include <vector>
 #include <string>
 
-#include "define.h"
-#include "SpxBytecode.h"
+#include "../Common/define.h"
+#include "../Common/SpxBytecode.h"
 
 namespace xkslang
 {

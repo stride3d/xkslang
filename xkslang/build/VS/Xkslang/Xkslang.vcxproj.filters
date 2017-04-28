@@ -1,53 +1,54 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="XkslParser">
+      <UniqueIdentifier>{4d638175-7163-443b-b840-466969334fb7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    <Filter Include="Common">
+      <UniqueIdentifier>{2a6f6c0a-1239-40a6-887b-982dc85d9089}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SpxMixer">
+      <UniqueIdentifier>{1bed1d10-4ce0-4d56-bfcf-912c7c6c048f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\source\define.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\..\source\XkslParser\XkslParser.h">
+      <Filter>XkslParser</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\XkslParser.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\..\source\Common\define.h">
+      <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\SpxBytecode.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\..\source\Common\SpxBytecode.h">
+      <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\SpxStreamRemapper.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\..\source\SpxMixer\OutputStageBytecode.h">
+      <Filter>SpxMixer</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\OutputStageBytecode.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\..\source\SpxMixer\SpxMixer.h">
+      <Filter>SpxMixer</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\SpxMixer.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\..\source\SpxMixer\SpxStreamRemapper.h">
+      <Filter>SpxMixer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\XkslParser.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\..\source\XkslParser\XkslParser.cpp">
+      <Filter>XkslParser</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\define.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\..\source\Common\define.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\SpxBytecode.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\..\source\Common\SpxBytecode.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\SpxStreamRemapper.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper_streams.cpp">
+      <Filter>SpxMixer</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\SpxStreamRemapper_streams.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxMixer.cpp">
+      <Filter>SpxMixer</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\SpxMixer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper.cpp">
+      <Filter>SpxMixer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
