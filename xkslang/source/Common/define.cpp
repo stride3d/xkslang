@@ -15,6 +15,22 @@ bool xkslang::IsPow2(int pow2)
     return (pow2 & (pow2 - 1)) == 0;
 }
 
+bool xkslang::IsAValidOutputStage(ShadingStageEnum stage)
+{
+    switch (stage)
+    {
+        case ShadingStageEnum::Vertex:
+        case ShadingStageEnum::Pixel:
+        case ShadingStageEnum::TessControl:
+        case ShadingStageEnum::TessEvaluation:
+        case ShadingStageEnum::Geometry:
+        case ShadingStageEnum::Compute:
+            return true;
+    }
+
+    return false;
+}
+
 string xkslang::GetShadingStageLabel(ShadingStageEnum stage)
 {
     switch (stage)

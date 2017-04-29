@@ -155,8 +155,11 @@ namespace xkslang
 
         //allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
         uint32_t* byteBuffer = (uint32_t*)LocalAlloc(0, bytecodeLen * sizeof(uint32_t));
-        for (int i = 0; i < bytecodeLen; ++i) byteBuffer[i] = bytecode[i];
+        //for (int i = 0; i < bytecodeLen; ++i) byteBuffer[i] = bytecode[i];
         *bytecodeSize = bytecodeLen;
+        uint32_t* pDest = byteBuffer;
+        const uint32_t* pSrc = &bytecode[0];
+        while (bytecodeLen-- > 0) *pDest++ = *pSrc++;
         return byteBuffer;
     }
 
@@ -164,24 +167,37 @@ namespace xkslang
     //=====================================================================================================================
     // Mixin functions
 
-    static std::vector<SpxMixer*> listSpxMixers;
+    //A mixer and its outputs bytecode
+    class MixerData
+    {
+    public:
+        SpxMixer* mixer;
+        vector<OutputStageBytecode> stagesCompiledData;
 
-    static SpxMixer* GetMixerForHandleId(uint32_t mixerHandleId)
+        MixerData(SpxMixer* mixer) : mixer(mixer) {}
+        ~MixerData() { if (mixer != nullptr) delete mixer; }
+    };
+
+    static std::vector<MixerData*> listMixerData;
+
+    static MixerData* GetMixerForHandleId(uint32_t mixerHandleId)
     {
         uint32_t index = mixerHandleId - 1;
-        if (mixerHandleId == 0 || index >= listSpxMixers.size()) return nullptr;
+        if (mixerHandleId == 0 || index >= listMixerData.size()) return nullptr;
 
-        SpxMixer* mixer = listSpxMixers[index];
-        if (mixer == nullptr) return nullptr;
+        MixerData* mixerData = listMixerData[index];
+        if (mixerData == nullptr) return nullptr;
 
-        return mixer;
+        return mixerData;
     }
 
     uint32_t CreateSpxShaderMixer()
     {
         SpxMixer* mixer = new SpxMixer();
-        uint32_t handleId = listSpxMixers.size();
-        listSpxMixers.push_back(mixer);
+        MixerData* mixerData = new MixerData(mixer);
+
+        uint32_t handleId = listMixerData.size();
+        listMixerData.push_back(mixerData);
 
         return handleId + 1;
     }
@@ -190,24 +206,24 @@ namespace xkslang
     {
         errorMessages.clear();
 
-        SpxMixer* mixer = GetMixerForHandleId(mixerHandleId);
-        if (mixer == nullptr)
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr)
             return error("Invalid mixer handle");
 
         uint32_t index = mixerHandleId - 1;
-        if (mixerHandleId == 0 || index >= listSpxMixers.size())
+        if (mixerHandleId == 0 || index >= listMixerData.size())
             return error("Invalid mixer handle");
 
-        delete mixer;
-        listSpxMixers[index] = nullptr;
+        delete mixerData;
+        listMixerData[index] = nullptr;
 
-        int indexLastValidElement = listSpxMixers.size() - 1;
-        while (indexLastValidElement >= 0 && listSpxMixers[indexLastValidElement] == nullptr) indexLastValidElement--;
+        int indexLastValidElement = listMixerData.size() - 1;
+        while (indexLastValidElement >= 0 && listMixerData[indexLastValidElement] == nullptr) indexLastValidElement--;
 
-        if (indexLastValidElement != listSpxMixers.size() - 1)
+        if (indexLastValidElement != listMixerData.size() - 1)
         {
-            if (indexLastValidElement < 0) listSpxMixers.clear();
-            else listSpxMixers.resize(indexLastValidElement + 1);
+            if (indexLastValidElement < 0) listMixerData.clear();
+            else listMixerData.resize(indexLastValidElement + 1);
         }
 
         return true;
@@ -218,8 +234,9 @@ namespace xkslang
         errorMessages.clear();
         if (shaderSpxBytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return false; }
 
-        SpxMixer* mixer = GetMixerForHandleId(mixerHandleId);
-        if (mixer == nullptr) return error("Invalid mixer handle");
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) return error("Invalid mixer handle");
+        SpxMixer* mixer = mixerData->mixer;
 
         SpxBytecode spxBytecode(shaderName);
         std::vector<uint32_t>& bytecode = spxBytecode.getWritableBytecodeStream();
@@ -242,8 +259,70 @@ namespace xkslang
     bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int countStages)
     {
         errorMessages.clear();
-        error("PROUT PROUT Output stages: " + to_string(countStages) + " " + stageEntryPointArray[0].entryPointName + " " + stageEntryPointArray[1].entryPointName
-            + " " + to_string((int)(stageEntryPointArray[0].stage)) + " " + to_string((int)(stageEntryPointArray[1].stage)));
-        return false;
+
+        if (countStages <= 0) return error("Invalid number of output stages");
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) return error("Invalid mixer handle");
+        SpxMixer* mixer = mixerData->mixer;
+
+        for (int s = 0; s < countStages; s++)
+        {
+            if (!IsAValidOutputStage(stageEntryPointArray[s].stage)) return error("Output stage is not valid: " + to_string((int)(stageEntryPointArray[s].stage)));
+            mixerData->stagesCompiledData.push_back(OutputStageBytecode(stageEntryPointArray[s].stage, string(stageEntryPointArray[s].entryPointName)));
+        }
+
+        SpvBytecode finalSpv;
+        vector<string> errorMsgs;
+        mixerData->stagesCompiledData.clear();
+
+        asdfasdf;
+        //for (int s = 0; s < countStages; s++)
+        //{
+        //    if (!IsAValidOutputStage(stageEntryPointArray[s].stage)) return error("Output stage is not valid: " + to_string((int)(stageEntryPointArray[s].stage)));
+        //    outputStages.push_back(OutputStageBytecode(stageEntryPointArray[s].stage, string(stageEntryPointArray[s].entryPointName)));
+        //}
+
+        bool success = mixer->Compile(mixerData->stagesCompiledData, errorMsgs, nullptr, nullptr, nullptr, nullptr, &finalSpv, nullptr);
+        if (!success)
+        {
+            for (unsigned int k = 0; k < errorMsgs.size(); ++k)
+                error(errorMsgs[k]);
+            return false;
+        }
+
+        return true;
+    }
+
+    uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int* bytecodeSize)
+    {
+        errorMessages.clear();
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) {error("Invalid mixer handle"); return nullptr;}
+        
+        OutputStageBytecode* outputStageBytecode = nullptr;
+        for (unsigned int k = 0; k < mixerData->stagesCompiledData.size(); k++)
+        {
+            if (mixerData->stagesCompiledData[k].stage == stage)
+            {
+                outputStageBytecode = &(mixerData->stagesCompiledData[k]);
+                break;
+            }
+        }
+        if (outputStageBytecode == nullptr || outputStageBytecode->resultingBytecode.GetBytecodeSize() == 0) {
+            error("The mixer has not been compiled for the given stage");
+            return nullptr;
+        }
+
+        /// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
+        const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
+        unsigned int bytecodeLen = bytecode.size();
+        *bytecodeSize = bytecodeLen;
+        uint32_t* byteBuffer = (uint32_t*)LocalAlloc(0, bytecodeLen * sizeof(uint32_t));
+        uint32_t* pDest = byteBuffer;
+        const uint32_t* pSrc = &bytecode[0];
+        while (bytecodeLen-- > 0) *pDest++ = *pSrc++;
+        return byteBuffer;
     }
 }

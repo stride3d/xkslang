@@ -23,6 +23,7 @@ namespace xkslang
         Compute = 5,
     };
 
+    bool IsAValidOutputStage(ShadingStageEnum stage);
     std::string GetShadingStageLabel(ShadingStageEnum stage);
     std::string GetShadingStageLabelShort(ShadingStageEnum stage);
 

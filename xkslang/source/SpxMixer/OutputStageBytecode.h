@@ -20,7 +20,7 @@ public:
     std::string entryPointName;
     SpvBytecode resultingBytecode;
 
-    OutputStageBytecode(ShadingStageEnum stage, std::string entryPointName) : stage(stage), entryPointName(entryPointName) {}
+    OutputStageBytecode(ShadingStageEnum stage, const std::string& entryPointName) : stage(stage), entryPointName(entryPointName) {}
 };
 
 }  // namespace xkslang
