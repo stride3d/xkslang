@@ -476,7 +476,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
     //===============================================================================================================================================
     //parse and init the bytecode to merge
     SpxStreamRemapper bytecodeToMerge;
-    if (!bytecodeToMerge.SetBytecode(sourceBytecode)) return false;
+    if (!bytecodeToMerge.SetBytecode(sourceBytecode)) return error("Failed to set the bytecode");
 
     if (!bytecodeToMerge.BuildAllMaps()) {
         bytecodeToMerge.copyMessagesTo(errorMessages);

@@ -4,9 +4,17 @@
 #include <iostream>
 #include <objbase.h>
 
+#include "../Common/define.h"
+
 namespace xkslang
 {
-    //To be called to get the error messages after an operation failed
+    struct OutputStageEntryPoint
+    {
+        ShadingStageEnum stage;
+        const char* entryPointName;
+    };
+
+    //Return the error messages after an operation failed
     extern "C" __declspec(dllexport) void GetErrorMessages(char *buffer, int bufferLength);
 
     //=====================================================================================================================
@@ -41,11 +49,13 @@ namespace xkslang
 
     //Create a new mixin object
     // Return: the mixin object handle Id, or 0 if there is any error
-    extern "C" __declspec(dllexport) uint32_t CreateMixer();
+    extern "C" __declspec(dllexport) uint32_t CreateSpxShaderMixer();
 
-    extern "C" __declspec(dllexport) bool ReleaseMixer(uint32_t mixerHandleId);
+    extern "C" __declspec(dllexport) bool ReleaseSpxShaderMixer(uint32_t mixerHandleId);
 
-    extern "C" __declspec(dllexport) bool Mixin(uint32_t mixerHandleId, char* shaderName, uint32_t* spxBytecode);
+    extern "C" __declspec(dllexport) bool MixinShader(uint32_t mixerHandleId, const char* shaderName, uint32_t* shaderSpxBytecode, int bytecodeSize);
+
+    extern "C" __declspec(dllexport) bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int countStages);
 }
 
 

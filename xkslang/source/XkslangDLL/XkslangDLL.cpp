@@ -5,9 +5,11 @@
 
 using namespace std;
 
+#pragma warning(disable:4996)  //disable annoying deprecation warnings
+
 namespace xkslang
 {
-    static vector<string> xkslangParserErrorMessages;
+    static vector<string> errorMessages;
     static XkslParser* xkslParser = nullptr;
 
     void GetErrorMessages(char *buffer, int maxBufferLength)
@@ -15,11 +17,11 @@ namespace xkslang
         maxBufferLength--;
         if (maxBufferLength <= 0) return;
 
-        unsigned int offset = 0;
+        int offset = 0;
         int remainingLen = maxBufferLength;
-        for (unsigned int n = 0; n < xkslangParserErrorMessages.size(); ++n)
+        for (unsigned int n = 0; n < errorMessages.size(); ++n)
         {
-            string& errorMsg = xkslangParserErrorMessages[n];
+            string& errorMsg = errorMessages[n];
             int len = (int)errorMsg.size();
 
             if (len > remainingLen) len = remainingLen;
@@ -43,11 +45,17 @@ namespace xkslang
     //=====================================================================================================================
     // Parsing and conversion functions
 
+    static bool error(const string& errorMsg)
+    {
+        errorMessages.push_back(errorMsg);
+        return false;
+    }
+
     static bool error(const char* errorMsg)
     {
         //cout << "XkslangDLL Error: " << errorMsg << endl;
         if (errorMsg == 0 || strlen(errorMsg) == 0) return false;
-        xkslangParserErrorMessages.push_back(string(errorMsg));
+        errorMessages.push_back(string(errorMsg));
 
         return false;
     }
@@ -56,7 +64,7 @@ namespace xkslang
     {
         if (xkslParser != nullptr) return error("Xkslang Parser has already been initialized");
 
-        xkslangParserErrorMessages.clear();
+        errorMessages.clear();
 
         xkslParser = new XkslParser();
         if (!xkslParser->InitialiseXkslang())
@@ -77,11 +85,12 @@ namespace xkslang
             xkslParser = nullptr;
         }
 
-        xkslangParserErrorMessages.clear();
+        errorMessages.clear();
     }
 
     char* ConvertBytecodeToAscii(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize)
     {
+        errorMessages.clear();
         *asciiBufferSize = -1;
 
         if (bytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return nullptr; }
@@ -122,7 +131,9 @@ namespace xkslang
 
     uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int* bytecodeSize)
     {
+        errorMessages.clear();
         *bytecodeSize = -1;
+
         if (xkslParser == nullptr) {error("Xkslang parser has not been initialized"); return nullptr;}
         if (shaderName == nullptr) {error("shaderName is null"); return nullptr;}
         if (shaderDependencyCallback == nullptr) {error("The callback function is null"); return nullptr;}
@@ -155,18 +166,18 @@ namespace xkslang
 
     static std::vector<SpxMixer*> listSpxMixers;
 
-    static SpxMixer* GetMixerForHandleId(uint32_t _handleId)
+    static SpxMixer* GetMixerForHandleId(uint32_t mixerHandleId)
     {
-        uint32_t handleId = _handleId - 1;
-        if (_handleId == 0 || handleId >= listSpxMixers.size()) return nullptr;
+        uint32_t index = mixerHandleId - 1;
+        if (mixerHandleId == 0 || index >= listSpxMixers.size()) return nullptr;
 
-        SpxMixer* mixer = listSpxMixers[handleId];
+        SpxMixer* mixer = listSpxMixers[index];
         if (mixer == nullptr) return nullptr;
 
         return mixer;
     }
 
-    uint32_t CreateMixer()
+    uint32_t CreateSpxShaderMixer()
     {
         SpxMixer* mixer = new SpxMixer();
         uint32_t handleId = listSpxMixers.size();
@@ -175,18 +186,20 @@ namespace xkslang
         return handleId + 1;
     }
 
-    bool ReleaseMixer(uint32_t _handleId)
+    bool ReleaseSpxShaderMixer(uint32_t mixerHandleId)
     {
-        uint32_t handleId = _handleId - 1;
-        if (_handleId == 0 || handleId >= listSpxMixers.size())
-            return error("Invalid mixer handle");
+        errorMessages.clear();
 
-        SpxMixer* mixer = listSpxMixers[handleId];
+        SpxMixer* mixer = GetMixerForHandleId(mixerHandleId);
         if (mixer == nullptr)
             return error("Invalid mixer handle");
 
+        uint32_t index = mixerHandleId - 1;
+        if (mixerHandleId == 0 || index >= listSpxMixers.size())
+            return error("Invalid mixer handle");
+
         delete mixer;
-        listSpxMixers[handleId] = nullptr;
+        listSpxMixers[index] = nullptr;
 
         int indexLastValidElement = listSpxMixers.size() - 1;
         while (indexLastValidElement >= 0 && listSpxMixers[indexLastValidElement] == nullptr) indexLastValidElement--;
@@ -200,8 +213,37 @@ namespace xkslang
         return true;
     }
 
-    bool Mixin(uint32_t mixerHandleId, char* shaderName, uint32_t* spxBytecode)
+    bool MixinShader(uint32_t mixerHandleId, const char* shaderName, uint32_t* shaderSpxBytecode, int bytecodeSize)
     {
+        errorMessages.clear();
+        if (shaderSpxBytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return false; }
+
+        SpxMixer* mixer = GetMixerForHandleId(mixerHandleId);
+        if (mixer == nullptr) return error("Invalid mixer handle");
+
+        SpxBytecode spxBytecode(shaderName);
+        std::vector<uint32_t>& bytecode = spxBytecode.getWritableBytecodeStream();
+        bytecode.insert(bytecode.end(), shaderSpxBytecode, shaderSpxBytecode + bytecodeSize);
+
+        vector<string> listShaderToMix;
+        listShaderToMix.push_back(shaderName);
+
+        vector<string> errorMsgs;
+        bool success = mixer->Mixin(spxBytecode, listShaderToMix, errorMsgs);
+
+        if (!success)
+        {
+            for (unsigned int k = 0; k < errorMsgs.size(); ++k) error(errorMsgs[k]);
+        }
+
+        return success;
+    }
+
+    bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int countStages)
+    {
+        errorMessages.clear();
+        error("PROUT PROUT Output stages: " + to_string(countStages) + " " + stageEntryPointArray[0].entryPointName + " " + stageEntryPointArray[1].entryPointName
+            + " " + to_string((int)(stageEntryPointArray[0].stage)) + " " + to_string((int)(stageEntryPointArray[1].stage)));
         return false;
     }
 }
