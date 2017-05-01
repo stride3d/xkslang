@@ -89,7 +89,7 @@ namespace xkslang
         errorMessages.clear();
     }
 
-    char* ConvertBytecodeToAscii(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize)
+    char* ConvertSpvToAsciiText(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize)
     {
         errorMessages.clear();
         *asciiBufferSize = -1;
@@ -100,7 +100,7 @@ namespace xkslang
         std::vector<uint32_t> vecBytecode;
         for (int k = 0; k < bytecodeSize; k++) vecBytecode.push_back(bytecode[k]);
         
-        if (!Converter::ConvertBytecodeToAscii(vecBytecode, bytecodeText)){
+        if (!Converter::ConvertSpvToAsciiText(vecBytecode, bytecodeText)){
             error("Failed to convert the bytecode to Ascii");
             return nullptr;
         }

@@ -95,101 +95,101 @@ struct XkfxEffectsToProcess {
 };
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
-    //{ "TestMixin01", "TestMixin01.xkfx" },
-    //{ "TestMixin02", "TestMixin02.xkfx" },
-    //{ "TestMixin03", "TestMixin03.xkfx" },
-    //{ "TestMixin04", "TestMixin04.xkfx" },
-    //{ "TestMixin05", "TestMixin05.xkfx" },
-    //{ "TestMixin06", "TestMixin06.xkfx" },
-    //{ "TestMixin07", "TestMixin07.xkfx" },
+    { "TestMixin01", "TestMixin01.xkfx" },
+    { "TestMixin02", "TestMixin02.xkfx" },
+    { "TestMixin03", "TestMixin03.xkfx" },
+    { "TestMixin04", "TestMixin04.xkfx" },
+    { "TestMixin05", "TestMixin05.xkfx" },
+    { "TestMixin06", "TestMixin06.xkfx" },
+    { "TestMixin07", "TestMixin07.xkfx" },
 
-    //{ "TestMerge01", "TestMerge01.xkfx" },
-    //{ "TestMerge02", "TestMerge02.xkfx" },
-    //{ "TestMerge03", "TestMerge03.xkfx" },
-    //{ "TestMerge04", "TestMerge04.xkfx" },
-    //{ "TestMerge05", "TestMerge05.xkfx" },
-    //{ "TestMerge06", "TestMerge06.xkfx" },
-    //{ "TestMerge07", "TestMerge07.xkfx" },
-    //{ "TestMerge08", "TestMerge08.xkfx" },
-    //{ "TestMerge09", "TestMerge09.xkfx" },
-    //{ "TestMerge10", "TestMerge10.xkfx" },
-    //{ "TestMerge11", "TestMerge11.xkfx" },
-    //{ "TestMerge12", "TestMerge12.xkfx" },
-    //{ "TestMerge13", "TestMerge13.xkfx" },
+    { "TestMerge01", "TestMerge01.xkfx" },
+    { "TestMerge02", "TestMerge02.xkfx" },
+    { "TestMerge03", "TestMerge03.xkfx" },
+    { "TestMerge04", "TestMerge04.xkfx" },
+    { "TestMerge05", "TestMerge05.xkfx" },
+    { "TestMerge06", "TestMerge06.xkfx" },
+    { "TestMerge07", "TestMerge07.xkfx" },
+    { "TestMerge08", "TestMerge08.xkfx" },
+    { "TestMerge09", "TestMerge09.xkfx" },
+    { "TestMerge10", "TestMerge10.xkfx" },
+    { "TestMerge11", "TestMerge11.xkfx" },
+    { "TestMerge12", "TestMerge12.xkfx" },
+    { "TestMerge13", "TestMerge13.xkfx" },
     
-    //{ "TestCompose02", "TestCompose02.xkfx" },
-    //{ "TestCompose03", "TestCompose03.xkfx" },
-    //{ "TestCompose04", "TestCompose04.xkfx" },
-    //{ "TestCompose05", "TestCompose05.xkfx" },
-    //{ "TestCompose06", "TestCompose06.xkfx" },
-    //{ "TestCompose07", "TestCompose07.xkfx" },
-    //{ "TestCompose08", "TestCompose08.xkfx" },
-    //{ "TestCompose09", "TestCompose09.xkfx" },
-    //{ "TestCompose10", "TestCompose10.xkfx" },
-    //{ "TestCompose11", "TestCompose11.xkfx" },
-    //{ "TestCompose12", "TestCompose12.xkfx" },
-    //{ "TestCompose13", "TestCompose13.xkfx" },
-    //{ "TestCompose14", "TestCompose14.xkfx" },
-    //{ "TestCompose15", "TestCompose15.xkfx" },
-    //{ "TestCompose16", "TestCompose16.xkfx" },
+    { "TestCompose02", "TestCompose02.xkfx" },
+    { "TestCompose03", "TestCompose03.xkfx" },
+    { "TestCompose04", "TestCompose04.xkfx" },
+    { "TestCompose05", "TestCompose05.xkfx" },
+    { "TestCompose06", "TestCompose06.xkfx" },
+    { "TestCompose07", "TestCompose07.xkfx" },
+    { "TestCompose08", "TestCompose08.xkfx" },
+    { "TestCompose09", "TestCompose09.xkfx" },
+    { "TestCompose10", "TestCompose10.xkfx" },
+    { "TestCompose11", "TestCompose11.xkfx" },
+    { "TestCompose12", "TestCompose12.xkfx" },
+    { "TestCompose13", "TestCompose13.xkfx" },
+    { "TestCompose14", "TestCompose14.xkfx" },
+    { "TestCompose15", "TestCompose15.xkfx" },
+    { "TestCompose16", "TestCompose16.xkfx" },
 
-    //{ "TestForLoop", "TestForLoop.xkfx" },
-    //{ "TestForEach01", "TestForEach01.xkfx" },
-    //{ "TestForEach02", "TestForEach02.xkfx" },
-    //{ "TestForEach03", "TestForEach03.xkfx" },
-    //{ "TestForEach04", "TestForEach04.xkfx" },
-    //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
-    //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
-    //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
+    { "TestForLoop", "TestForLoop.xkfx" },
+    { "TestForEach01", "TestForEach01.xkfx" },
+    { "TestForEach02", "TestForEach02.xkfx" },
+    { "TestForEach03", "TestForEach03.xkfx" },
+    { "TestForEach04", "TestForEach04.xkfx" },
+    { "TestForEachCompose01", "TestForEachCompose01.xkfx" },
+    { "TestForEachCompose02", "TestForEachCompose02.xkfx" },
+    { "TestMergeStreams01", "TestMergeStreams01.xkfx" },
 
-    //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
-    //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
-    //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
-    //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
-    //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
-    //{ "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
+    { "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
+    { "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
+    { "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
+    { "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
+    { "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
+    { "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
 
-    //{ "TestGenerics01", "TestGenerics01.xkfx" },
-    //{ "TestGenerics02", "TestGenerics02.xkfx" },
-    //{ "TestGenerics03", "TestGenerics03.xkfx" },
-    //{ "TestGenerics04", "TestGenerics04.xkfx" },
-    //{ "TestGenerics05", "TestGenerics05.xkfx" },
-    //{ "TestGenerics06", "TestGenerics06.xkfx" },
-    //{ "TestGenerics07", "TestGenerics07.xkfx" },
-    //{ "TestGenerics08", "TestGenerics08.xkfx" },
+    { "TestGenerics01", "TestGenerics01.xkfx" },
+    { "TestGenerics02", "TestGenerics02.xkfx" },
+    { "TestGenerics03", "TestGenerics03.xkfx" },
+    { "TestGenerics04", "TestGenerics04.xkfx" },
+    { "TestGenerics05", "TestGenerics05.xkfx" },
+    { "TestGenerics06", "TestGenerics06.xkfx" },
+    { "TestGenerics07", "TestGenerics07.xkfx" },
+    { "TestGenerics08", "TestGenerics08.xkfx" },
 
-    //{ "CBuffer01", "CBuffer01.xkfx" },
-    //{ "CBuffer02", "CBuffer02.xkfx" },
-    //{ "CBuffer03", "CBuffer03.xkfx" },
-    //{ "CBuffer04", "CBuffer04.xkfx" },
-    //{ "CBuffer05", "CBuffer05.xkfx" },
-    //{ "CBuffer06", "CBuffer06.xkfx" },
-    //{ "CBuffer07", "CBuffer07.xkfx" },
-    //{ "CBuffer08", "CBuffer08.xkfx" },
-    //{ "CBuffer09", "CBuffer09.xkfx" },
-    //{ "CBuffer10", "CBuffer10.xkfx" },
+    { "CBuffer01", "CBuffer01.xkfx" },
+    { "CBuffer02", "CBuffer02.xkfx" },
+    { "CBuffer03", "CBuffer03.xkfx" },
+    { "CBuffer04", "CBuffer04.xkfx" },
+    { "CBuffer05", "CBuffer05.xkfx" },
+    { "CBuffer06", "CBuffer06.xkfx" },
+    { "CBuffer07", "CBuffer07.xkfx" },
+    { "CBuffer08", "CBuffer08.xkfx" },
+    { "CBuffer09", "CBuffer09.xkfx" },
+    { "CBuffer10", "CBuffer10.xkfx" },
 
-    //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
-    //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
-    //{ "ShaderWithResources03", "ShaderWithResources03.xkfx" },
-    //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
-    //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
-    //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
+    { "ShaderWithResources01", "ShaderWithResources01.xkfx" },
+    { "ShaderWithResources02", "ShaderWithResources02.xkfx" },
+    { "ShaderWithResources03", "ShaderWithResources03.xkfx" },
+    { "ShaderWithResources04", "ShaderWithResources04.xkfx" },
+    { "ShaderWithResources05", "ShaderWithResources05.xkfx" },
+    { "ShaderWithResources06", "ShaderWithResources06.xkfx" },
     { "ShaderWithResources07", "ShaderWithResources07.xkfx" },
-    //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
+    { "ShaderWithResources08", "ShaderWithResources08.xkfx" },
 
-    //{ "testDependency01", "testDependency01.xkfx" },
-    //{ "testDependency02", "testDependency02.xkfx" },
-    //{ "testDependency03", "testDependency03.xkfx" },
-    //{ "testDependency04", "testDependency04.xkfx" },
-    //{ "testDependency05", "testDependency05.xkfx" },
-    //{ "testDependency06", "testDependency06.xkfx" },
-    //{ "testDependency07", "testDependency07.xkfx" },
+    { "testDependency01", "testDependency01.xkfx" },
+    { "testDependency02", "testDependency02.xkfx" },
+    { "testDependency03", "testDependency03.xkfx" },
+    { "testDependency04", "testDependency04.xkfx" },
+    { "testDependency05", "testDependency05.xkfx" },
+    { "testDependency06", "testDependency06.xkfx" },
+    { "testDependency07", "testDependency07.xkfx" },
 
-    //{ "SemanticTest01", "SemanticTest01.xkfx" },
-    //{ "SemanticTest02", "SemanticTest02.xkfx" },
+    { "SemanticTest01", "SemanticTest01.xkfx" },
+    { "SemanticTest02", "SemanticTest02.xkfx" },
 
-    //{ "Effect01", "Effect01.xkfx" },
+    { "Effect01", "Effect01.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -205,7 +205,46 @@ enum class ShaderLanguageEnum
     HlslLanguage
 };
 
-static int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguageEnum language)
+static int ConvertSpvToHlsl(const string& spvFile, const  string& outputFile)
+{
+    pair<bool, vector<uint32_t>> result = Utils::ReadSpvBinaryFile(spvFile);
+    if (!result.first){
+        cout << " Failed to open the SPV file: \"" << spvFile << "\"" << endl;
+        return -1;
+    }
+    const vector<uint32_t>& bytecode = result.second;
+    string hlslShader;
+    int shaderModel = 40;
+    int res = spirv_cross::SPIRV_CROSS::convertSpvBytecodeToHlsl(bytecode, shaderModel, hlslShader);
+    if (res == 0)
+    {
+        xkslangtest::Utils::WriteFile(outputFile, hlslShader);
+        cout << " output: \"" << outputFile << "\"" << endl;
+    }
+
+    return res;
+}
+
+static int ConvertSpvToGlsl(const string& spvFile, const  string& outputFile)
+{
+    pair<bool, vector<uint32_t>> result = Utils::ReadSpvBinaryFile(spvFile);
+    if (!result.first) {
+        cout << " Failed to open the SPV file: \"" << spvFile << "\"" << endl;
+        return -1;
+    }
+    const vector<uint32_t>& bytecode = result.second;
+    string glslShader;
+    int res = spirv_cross::SPIRV_CROSS::convertSpvBytecodeToGlsl(bytecode, glslShader);
+    if (res == 0)
+    {
+        xkslangtest::Utils::WriteFile(outputFile, glslShader);
+        cout << " output: \"" << outputFile << "\"" << endl;
+    }
+
+    return res;
+}
+
+/*static int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguageEnum language)
 {
     int argc;
     char **argv;
@@ -287,7 +326,7 @@ static int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderL
     /// CloseHandle(pi.hThread);
     /// 
     /// return 0;
-}
+}*/
 
 static bool SetupTestDirectories()
 {
@@ -402,19 +441,6 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
         string outputFullnameFinalSpv = outputDir + outputFileNameFinalSpv;
         WriteBytecode(finalSpv, outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
         WriteBytecode(finalSpv, outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
-
-        //if (success)
-        //{
-        //    string fileNameGlsl = effectName + "_compileFinal.glsl";
-        //    string fullNameGlsl = outputDir + fileNameGlsl;
-        //
-        //    cout << "Final SPV bytecode: Convert into GLSL." << endl;
-        //
-        //    time_before = GetTickCount();
-        //    int result = ConvertSpvToGlsl(outputFullnameFinalSpv, fullNameGlsl);
-        //    time_after = GetTickCount();
-        //    if (result != 0) success = false;
-        //}
     }
 
     if (!success) return false;
@@ -448,7 +474,8 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
                 string fullNameGlsl = outputDir + fileNameGlsl;
                 cout << labelStage << " stage: Convert into GLSL." << endl;
                 time_before = GetTickCount();
-                int result = ConvertSpvToShaderLanguage(outputFullnameSpv, fullNameGlsl, ShaderLanguageEnum::GlslLanguage);
+                //int result = ConvertSpvToShaderLanguage(outputFullnameSpv, fullNameGlsl, ShaderLanguageEnum::GlslLanguage);
+                int result = ConvertSpvToGlsl(outputFullnameSpv, fullNameGlsl);
                 time_after = GetTickCount();
                 if (result != 0) success = false;
 
@@ -500,7 +527,8 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
                 string fullNameHlsl = outputDir + fileNameHlsl;
                 cout << labelStage << " stage: Convert into HLSL." << endl;
                 time_before = GetTickCount();
-                int result = ConvertSpvToShaderLanguage(outputFullnameSpv, fullNameHlsl, ShaderLanguageEnum::HlslLanguage);
+                //int result = ConvertSpvToShaderLanguage(outputFullnameSpv, fullNameHlsl, ShaderLanguageEnum::HlslLanguage);
+                int result = ConvertSpvToHlsl(outputFullnameSpv, fullNameHlsl);
                 time_after = GetTickCount();
                 if (result != 0) success = false;
 
@@ -593,7 +621,7 @@ static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, c
 
             //dissassemble the bytecode to display and save it
             string bytecodeTxt;
-            Converter::ConvertBytecodeToAscii(bytecodeList, bytecodeTxt);
+            Converter::ConvertSpvToAsciiText(bytecodeList, bytecodeTxt);
             //cout << "SPX bytecode:" << endl;
             //cout << bytecodeTxt << endl;
 
@@ -675,7 +703,7 @@ static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& sha
 
             //dissassemble the bytecode to display and save it
             string bytecodeTxt;
-            Converter::ConvertBytecodeToAscii(bytecodeList, bytecodeTxt);
+            Converter::ConvertSpvToAsciiText(bytecodeList, bytecodeTxt);
             //cout << "SPX bytecode:" << endl;
             //cout << bytecodeTxt << endl;
 
@@ -1320,7 +1348,8 @@ void main(int argc, char** argv)
                 string outputFullNameGlsl = outputDir + outputNameGlsl;
 
                 cout << "Convert into GLSL: " << effect.inputFileName << endl;
-                result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameGlsl, ShaderLanguageEnum::GlslLanguage);
+                //result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameGlsl, ShaderLanguageEnum::GlslLanguage);
+                result = ConvertSpvToGlsl(inputFileSpv, outputFullNameGlsl);
                 if (result != 0) success = false;
 
                 if (success) cout << " OK." << endl;
@@ -1331,8 +1360,9 @@ void main(int argc, char** argv)
                 string outputNameHlsl = effect.inputFileName + ".hlsl";
                 string outputFullNameHlsl = outputDir + outputNameHlsl;
 
-                cout << "Convert into GLSL: " << effect.inputFileName << endl;
-                result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameHlsl, ShaderLanguageEnum::HlslLanguage);
+                cout << "Convert into HLSL: " << effect.inputFileName << endl;
+                //result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameHlsl, ShaderLanguageEnum::HlslLanguage);
+                result = ConvertSpvToHlsl(inputFileSpv, outputFullNameHlsl);
                 if (result != 0) success = false;
             }
 

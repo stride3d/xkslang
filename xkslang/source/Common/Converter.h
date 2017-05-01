@@ -15,7 +15,9 @@ namespace xkslang
 class Converter
 {
 public:
-    static bool ConvertBytecodeToAscii(const std::vector<uint32_t>& bytecode, std::string& text);
+    static bool ConvertSpvToAsciiText(const std::vector<uint32_t>& bytecode, std::string& text);
+
+    static bool ConvertSpvToHLSL(const std::vector<uint32_t>& bytecode, std::string& hlslShader);
 };
 
 }  // namespace xkslang

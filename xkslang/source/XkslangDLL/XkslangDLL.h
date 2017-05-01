@@ -41,7 +41,7 @@ namespace xkslang
     extern "C" __declspec(dllexport) uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int* bytecodeSize);
 
     //Utility function to help converting a bytecode to a human-readable ascii file
-    extern "C" __declspec(dllexport) char* ConvertBytecodeToAscii(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize);
+    extern "C" __declspec(dllexport) char* ConvertSpvToAsciiText(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize);
 
     //=====================================================================================================================
     //=====================================================================================================================
