@@ -21,7 +21,8 @@
 #include "../source/SpxMixer/OutputStageBytecode.h"
 #include "../source/SpxMixer/SpxMixer.h"
 
-#include "../source/XkslangDLL/XkslangDLL.h"
+#include "../source/SPIRV-Cross/spirv_cross.hpp"
+//#include "../source/XkslangDLL/XkslangDLL.h"
 
 using namespace std;
 using namespace xkslangtest;
@@ -174,7 +175,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
-    //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
+    { "ShaderWithResources07", "ShaderWithResources07.xkfx" },
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
 
     //{ "testDependency01", "testDependency01.xkfx" },
@@ -188,7 +189,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
     //{ "SemanticTest02", "SemanticTest02.xkfx" },
 
-    { "Effect01", "Effect01.xkfx" },
+    //{ "Effect01", "Effect01.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -198,13 +199,6 @@ vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
     //{ "test", "xcross.spv" },
 };
 
-#ifdef _DEBUG
-static string spirvCrossExeGlsl = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe";
-static string spirvCrossExeHlsl = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe --hlsl";
-#else
-static string spirvCrossExe = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross.exe";
-#endif
-
 enum class ShaderLanguageEnum
 {
     GlslLanguage,
@@ -213,48 +207,86 @@ enum class ShaderLanguageEnum
 
 static int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguageEnum language)
 {
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
-
-    string exeInstr = (language == ShaderLanguageEnum::GlslLanguage)? spirvCrossExeGlsl : spirvCrossExeHlsl;
-    string commandLine = exeInstr + string(" --output ") + outputFile + string(" ") + spvFile;
-
-    const char* cl = commandLine.c_str();
-    wchar_t wtext[256];
-    size_t size;
-    errno_t error = mbstowcs_s(&size, wtext, cl, strlen(cl) + 1);
-    LPWSTR ptr = wtext;
-
-    // Start the child process. 
-    if (!CreateProcess(NULL,     // No module name (use command line)
-        ptr,                     // Command line
-        NULL,                    // Process handle not inheritable
-        NULL,                    // Thread handle not inheritable
-        FALSE,                   // Set handle inheritance to FALSE
-        0,                       // No creation flags
-        NULL,                    // Use parent's environment block
-        NULL,                    // Use parent's starting directory 
-        &si,                     // Pointer to STARTUPINFO structure
-        &pi)                     // Pointer to PROCESS_INFORMATION structure
-        )
+    int argc;
+    char **argv;
+    
+    if (language == ShaderLanguageEnum::GlslLanguage)
     {
-        int error = GetLastError();
-        printf("CreateProcess failed (%d).\n", error);
-        return error;
+        argc = 4;
+        const char *args[] = {
+            "spirv_cross.lib",
+            "--output",
+            outputFile.c_str(),
+            spvFile.c_str()
+        };
+        argv = (char**)args;
+    }
+    else
+    {
+        argc = 7;
+        const char *args[] = {
+            "spirv_cross.lib",
+            "--hlsl",
+            "--shader-model",
+            "40",
+            "--output",
+            outputFile.c_str(),
+            spvFile.c_str()
+        };
+        argv = (char**)args;
     }
 
-    // Wait until child process exits.
-    WaitForSingleObject(pi.hProcess, INFINITE);
+    return spirv_cross::SPIRV_CROSS::executeCmd(argc, argv);
 
-    // Close process and thread handles. 
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+    /// #ifdef _DEBUG
+    ///     static string spirvCrossExeGlsl = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe";
+    ///     static string spirvCrossExeHlsl = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe --hlsl";
+    /// #else
+    ///     static string spirvCrossExe = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross.exe";
+    /// #endif
 
-    return 0;
+    /// STARTUPINFO si;
+    /// PROCESS_INFORMATION pi;
+    /// 
+    /// ZeroMemory(&si, sizeof(si));
+    /// si.cb = sizeof(si);
+    /// ZeroMemory(&pi, sizeof(pi));
+    /// 
+    /// string exeInstr = (language == ShaderLanguageEnum::GlslLanguage)? spirvCrossExeGlsl : spirvCrossExeHlsl;
+    /// string commandLine = exeInstr + string(" --output ") + outputFile + string(" ") + spvFile;
+    /// 
+    /// const char* cl = commandLine.c_str();
+    /// wchar_t wtext[256];
+    /// size_t size;
+    /// errno_t error = mbstowcs_s(&size, wtext, cl, strlen(cl) + 1);
+    /// LPWSTR ptr = wtext;
+    /// 
+    /// // Start the child process. 
+    /// if (!CreateProcess(NULL,     // No module name (use command line)
+    ///     ptr,                     // Command line
+    ///     NULL,                    // Process handle not inheritable
+    ///     NULL,                    // Thread handle not inheritable
+    ///     FALSE,                   // Set handle inheritance to FALSE
+    ///     0,                       // No creation flags
+    ///     NULL,                    // Use parent's environment block
+    ///     NULL,                    // Use parent's starting directory 
+    ///     &si,                     // Pointer to STARTUPINFO structure
+    ///     &pi)                     // Pointer to PROCESS_INFORMATION structure
+    ///     )
+    /// {
+    ///     int error = GetLastError();
+    ///     printf("CreateProcess failed (%d).\n", error);
+    ///     return error;
+    /// }
+    /// 
+    /// // Wait until child process exits.
+    /// WaitForSingleObject(pi.hProcess, INFINITE);
+    /// 
+    /// // Close process and thread handles. 
+    /// CloseHandle(pi.hProcess);
+    /// CloseHandle(pi.hThread);
+    /// 
+    /// return 0;
 }
 
 static bool SetupTestDirectories()
