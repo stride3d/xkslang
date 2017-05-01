@@ -2,6 +2,7 @@
 #include "XkslangDLL.h"
 #include "../XkslParser/XkslParser.h"
 #include "../SpxMixer/SpxMixer.h"
+#include "../Common/Converter.h"
 
 using namespace std;
 
@@ -94,13 +95,12 @@ namespace xkslang
         *asciiBufferSize = -1;
 
         if (bytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return nullptr; }
-        if (xkslParser == nullptr) { error("Xkslang parser has not been initialized"); return nullptr; }
 
         string bytecodeText;
         std::vector<uint32_t> vecBytecode;
         for (int k = 0; k < bytecodeSize; k++) vecBytecode.push_back(bytecode[k]);
         
-        if (!xkslParser->ConvertBytecodeToText(vecBytecode, bytecodeText)){
+        if (!Converter::ConvertBytecodeToAscii(vecBytecode, bytecodeText)){
             error("Failed to convert the bytecode to Ascii");
             return nullptr;
         }
@@ -274,14 +274,14 @@ namespace xkslang
 
         SpvBytecode finalSpv;
         vector<string> errorMsgs;
-        mixerData->stagesCompiledData.clear();
 
-        asdfasdf;
-        //for (int s = 0; s < countStages; s++)
-        //{
-        //    if (!IsAValidOutputStage(stageEntryPointArray[s].stage)) return error("Output stage is not valid: " + to_string((int)(stageEntryPointArray[s].stage)));
-        //    outputStages.push_back(OutputStageBytecode(stageEntryPointArray[s].stage, string(stageEntryPointArray[s].entryPointName)));
-        //}
+        //set the mixer's stages to compile
+        mixerData->stagesCompiledData.clear();
+        for (int s = 0; s < countStages; s++)
+        {
+            if (!IsAValidOutputStage(stageEntryPointArray[s].stage)) return error("Output stage is not valid: " + to_string((int)(stageEntryPointArray[s].stage)));
+            mixerData->stagesCompiledData.push_back(OutputStageBytecode(stageEntryPointArray[s].stage, string(stageEntryPointArray[s].entryPointName)));
+        }
 
         bool success = mixer->Compile(mixerData->stagesCompiledData, errorMsgs, nullptr, nullptr, nullptr, nullptr, &finalSpv, nullptr);
         if (!success)
@@ -317,12 +317,47 @@ namespace xkslang
 
         /// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
         const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
-        unsigned int bytecodeLen = bytecode.size();
+        int bytecodeLen = bytecode.size();
         *bytecodeSize = bytecodeLen;
         uint32_t* byteBuffer = (uint32_t*)LocalAlloc(0, bytecodeLen * sizeof(uint32_t));
         uint32_t* pDest = byteBuffer;
         const uint32_t* pSrc = &bytecode[0];
         while (bytecodeLen-- > 0) *pDest++ = *pSrc++;
         return byteBuffer;
+    }
+
+    bool GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, uint32_t* bytecodeBuffer, int bufferSize)
+    {
+        errorMessages.clear();
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) { error("Invalid mixer handle"); return false; }
+
+        OutputStageBytecode* outputStageBytecode = nullptr;
+        for (unsigned int k = 0; k < mixerData->stagesCompiledData.size(); k++)
+        {
+            if (mixerData->stagesCompiledData[k].stage == stage)
+            {
+                outputStageBytecode = &(mixerData->stagesCompiledData[k]);
+                break;
+            }
+        }
+        if (outputStageBytecode == nullptr || outputStageBytecode->resultingBytecode.GetBytecodeSize() == 0) {
+            error("The mixer has not been compiled for the given stage");
+            return false;
+        }
+
+        /// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
+        const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
+        int bytecodeLen = bytecode.size();
+
+        if (bytecodeLen != bufferSize) {
+            error("Buffer has an invalid size. Expected: " + to_string(bufferSize));
+            return false;
+        }
+        uint32_t* pDest = bytecodeBuffer;
+        const uint32_t* pSrc = &bytecode[0];
+        while (bytecodeLen-- > 0) *pDest++ = *pSrc++;
+        return true;
     }
 }

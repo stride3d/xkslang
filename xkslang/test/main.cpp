@@ -16,6 +16,7 @@
 
 #include "Utils.h"
 #include "../source/Common/SpxBytecode.h"
+#include "../source/Common/Converter.h"
 #include "../source/XkslParser/XkslParser.h"
 #include "../source/SpxMixer/OutputStageBytecode.h"
 #include "../source/SpxMixer/SpxMixer.h"
@@ -560,7 +561,7 @@ static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, c
 
             //dissassemble the bytecode to display and save it
             string bytecodeTxt;
-            parser->ConvertBytecodeToText(bytecodeList, bytecodeTxt);
+            Converter::ConvertBytecodeToAscii(bytecodeList, bytecodeTxt);
             //cout << "SPX bytecode:" << endl;
             //cout << bytecodeTxt << endl;
 
@@ -642,7 +643,7 @@ static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& sha
 
             //dissassemble the bytecode to display and save it
             string bytecodeTxt;
-            parser->ConvertBytecodeToText(bytecodeList, bytecodeTxt);
+            Converter::ConvertBytecodeToAscii(bytecodeList, bytecodeTxt);
             //cout << "SPX bytecode:" << endl;
             //cout << bytecodeTxt << endl;
 

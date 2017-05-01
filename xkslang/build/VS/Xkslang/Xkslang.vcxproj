@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\source\Common\Converter.cpp" />
     <ClCompile Include="..\..\..\source\Common\define.cpp" />
     <ClCompile Include="..\..\..\source\Common\SpxBytecode.cpp" />
     <ClCompile Include="..\..\..\source\SpxMixer\SpxMixer.cpp" />
@@ -27,6 +28,7 @@
     <ClCompile Include="..\..\..\source\XkslParser\XkslParser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\source\Common\Converter.h" />
     <ClInclude Include="..\..\..\source\Common\define.h" />
     <ClInclude Include="..\..\..\source\Common\SpxBytecode.h" />
     <ClInclude Include="..\..\..\source\SpxMixer\OutputStageBytecode.h" />

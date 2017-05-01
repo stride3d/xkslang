@@ -1,20 +1,7 @@
 //
 // Copyright (C)
 
-#include <cassert>
-#include <iostream>
-#include <memory>
-#include <string>
-
-#include "glslang/Public/ShaderLang.h"
-#include "glslang/MachineIndependent/localintermediate.h"
-//#include "glslang/include/intermediate.h"
 #include "StandAlone/ResourceLimits.h"
-
-#include "SPIRV/GlslangToSpv.h"
-#include "SPIRV/disassemble.h"
-#include "SPIRV/doc.h"
-#include "SPIRV/SPVRemapper.h"
 
 #include "XkslParser.h"
 
@@ -139,15 +126,4 @@ bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::Callb
     }
 
     return success;
-}
-
-bool XkslParser::ConvertBytecodeToText(const std::vector<uint32_t>& bytecode, std::string& text)
-{
-    if (bytecode.size() == 0) return true;
-
-    ostringstream disassembly_stream;
-    spv::Parameterize();
-    spv::Disassemble(disassembly_stream, bytecode);
-    text = disassembly_stream.str();
-    return true;
 }

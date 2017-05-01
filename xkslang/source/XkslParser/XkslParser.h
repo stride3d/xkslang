@@ -9,7 +9,6 @@
 #include <sstream>
 
 #include "glslang/Public/ShaderLang.h"
-//#include "StandAlone/ResourceLimits.h"
 
 #include "../Common/define.h"
 #include "../Common/SpxBytecode.h"
@@ -50,8 +49,6 @@ public:
     //If the shader misses some dependencies, xkslang will query their data through the callback function
     bool ConvertShaderToSpx(const std::string shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ShaderGenericValues>& listGenericsValue,
         SpxBytecode& spirXBytecode, std::ostringstream* errorAndDebugMessages);
-
-    bool ConvertBytecodeToText(const std::vector<uint32_t>& bytecode, std::string& text);
 
     //Convert a xksl file into a SPX bytecode
     //The shader string has to contain the shader and all its dependencies
