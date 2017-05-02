@@ -15,7 +15,7 @@
 using namespace std;
 using namespace xkslang;
 
-bool Converter::ConvertSpvToAsciiText(const vector<uint32_t>& bytecode, string& text)
+bool Converter::ConvertBytecodeToAsciiText(const vector<uint32_t>& bytecode, string& text)
 {
     if (bytecode.size() == 0) return true;
 
@@ -26,29 +26,14 @@ bool Converter::ConvertSpvToAsciiText(const vector<uint32_t>& bytecode, string& 
     return true;
 }
 
-bool Converter::ConvertSpvToHLSL(const vector<uint32_t>& bytecode, string& hlslShader)
+bool Converter::ConvertBytecodeToHlsl(const vector<uint32_t>& bytecode, int shaderModel, string& hlslShader)
 {
-    int argc;
-    char **argv;
-    
-    string outputFile;
-    string spvFile;
+    int res = spirv_cross::SPIRV_CROSS::convertSpvBytecodeToHlsl(bytecode, shaderModel, hlslShader);
+    return (res == 0);
+}
 
-    {
-        argc = 7;
-        const char *args[] = {
-            "spirv_cross.lib",
-            "--hlsl",
-            "--shader-model",
-            "40",
-            "--output",
-            outputFile.c_str(),
-            spvFile.c_str()
-        };
-        argv = (char**)args;
-    }
-
-    return spirv_cross::SPIRV_CROSS::executeCmd(argc, argv);
-
-    return true;
+bool Converter::ConvertBytecodeToGlsl(const vector<uint32_t>& bytecode, string& glslShader)
+{
+    int res = spirv_cross::SPIRV_CROSS::convertSpvBytecodeToGlsl(bytecode, glslShader);
+    return (res == 0);
 }

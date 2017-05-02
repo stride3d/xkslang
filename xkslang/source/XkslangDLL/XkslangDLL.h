@@ -40,8 +40,14 @@ namespace xkslang
     //    bytecodeSize parameter contains the length of the bytecode buffer
     extern "C" __declspec(dllexport) uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int* bytecodeSize);
 
+    //=====================================================================================================================
+    //=====================================================================================================================
     //Utility function to help converting a bytecode to a human-readable ascii file
-    extern "C" __declspec(dllexport) char* ConvertSpvToAsciiText(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize);
+    extern "C" __declspec(dllexport) char* ConvertBytecodeToAsciiText(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize);
+
+    extern "C" __declspec(dllexport) char* ConvertBytecodeToGlsl(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize);
+
+    extern "C" __declspec(dllexport) char* ConvertBytecodeToHlsl(uint32_t* bytecode, int bytecodeSize, int shaderModel, int* asciiBufferSize);
 
     //=====================================================================================================================
     //=====================================================================================================================
@@ -57,9 +63,13 @@ namespace xkslang
 
     extern "C" __declspec(dllexport) bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int countStages);
 
+    //Return the compiled bytecode for the given stage
+    //The bytecode buffer is allocated on the dll side, and has to be released on the caller side
     extern "C" __declspec(dllexport) uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int* bytecodeSize);
 
-    //extern "C" __declspec(dllexport) bool GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, uint32_t* bytecodeBuffer, int bufferSize);
+    //We can use the following function to get the size of stage compiled bytecode buffer, then to copy its data into a buffer allocated by the caller
+    extern "C" __declspec(dllexport) int GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, ShadingStageEnum stage);
+    extern "C" __declspec(dllexport) int CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, uint32_t* bytecodeBuffer, int bufferSize);
 }
 
 
