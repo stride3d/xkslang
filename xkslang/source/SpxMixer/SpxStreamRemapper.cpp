@@ -4229,6 +4229,7 @@ bool SpxStreamRemapper::GenerateBytecodeForStage(XkslMixerOutputStage& stage, ve
                 case spv::OpMemberName:
                 case spv::OpDecorate:
                 case spv::OpMemberDecorate:
+                case spv::OpSemanticName: //keep the semantics name
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsUsed[id] == true)
