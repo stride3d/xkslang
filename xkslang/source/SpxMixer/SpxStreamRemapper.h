@@ -429,7 +429,7 @@ public:
 
         //some stream member properties
         int memberPointerFunctionTypeId;  //id of the member's pointer type (TypePointer with Function storage class)
-        std::vector<unsigned int> listBuiltInSemantics; //list of builtin semantics set to the member
+        //std::vector<unsigned int> listBuiltInSemantics; //list of builtin semantics set to the member
         spv::Id memberTypePointerInputId;      //if the member is a stage input, and if we use an input variable for the member
         spv::Id memberTypePointerOutputId;     //if the member is a stage output, and if we use an output variable for the member
         spv::Id memberStageInputVariableId;
@@ -872,9 +872,10 @@ public:
         spv::Id spvVariableId;
         int globalStreamMemberIndex;
         int locationNum;
+        std::string semanticName;
 
-        OutputStageIOVariable(spv::Id spvVariableId, int globalStreamMemberIndex, int locationNum) :
-            spvVariableId(spvVariableId), globalStreamMemberIndex(globalStreamMemberIndex) , locationNum(locationNum){}
+        OutputStageIOVariable(spv::Id spvVariableId, int globalStreamMemberIndex, int locationNum, std::string semanticName) :
+            spvVariableId(spvVariableId), globalStreamMemberIndex(globalStreamMemberIndex) , locationNum(locationNum), semanticName(semanticName){}
     };
 
     std::vector<OutputStageIOVariable> listStageInputVariableInfo;

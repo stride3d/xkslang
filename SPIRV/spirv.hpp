@@ -975,9 +975,10 @@ enum Op {
     OpShaderCompositionInstance = 4604,      //Declare a composition instance. [OpShaderCompositionInstance shaderOwnerId compositionNum instanceNum instanceShaderId]
     OpMethodProperties = 4605,               //Add XKSL properties to a method: cf XkslPropertyEnum
     OpMemberProperties = 4606,               //Add XKSL properties to a member: cf XkslPropertyEnum
-    OpMemberSemanticName = 4607,             //Record the semantic name as declared by the user
-    OpCBufferMemberProperties = 4608,        //Additionnal data when defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts, size And alignment for each member
-    OpGSMethodProperties = 4609,             //Additonnal data for GS methods. GSInputType GSOuputType
+    OpMemberSemanticName = 4607,             //Record the semantic name of a struct member, as declared by the user
+    OpSemanticName = 4608,                   //Record the semantic name of a type, as declared by the user
+    OpCBufferMemberProperties = 4609,        //Additionnal data when defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts, size And alignment for each member
+    OpGSMethodProperties = 4610,             //Additonnal data for GS methods. GSInputType GSOuputType
 
     OpForEachCompositionStartLoop = 4620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 46021,

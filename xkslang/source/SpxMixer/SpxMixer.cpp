@@ -324,6 +324,9 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     }
 #endif
 
+    if (finalSpv != nullptr)
+        clonedSpxStream->GetMixinBytecode(finalSpv->getWritableBytecodeStream());
+
     //===================================================================================================================
     // Build SPV bytecode for each output stages
     //===================================================================================================================
@@ -335,9 +338,6 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
         return error(messages, "Fail to finalize the mixin");
     }
 
-    if (finalSpv != nullptr)
-        clonedSpxStream->GetMixinBytecode(finalSpv->getWritableBytecodeStream());
-    
     delete clonedSpxStream;
     //=============================================================================================================================================
     //=============================================================================================================================================

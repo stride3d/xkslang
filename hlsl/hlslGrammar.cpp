@@ -6001,6 +6001,10 @@ bool HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                 parseContext.handleRegister(registerDesc.loc, qualifier, profile.string, *registerDesc.string, subComponent, spaceDesc.string);
             } else {
                 // semantic, in idToken.string
+                TString semanticUpperCase = *idToken.string;
+                std::transform(semanticUpperCase.begin(), semanticUpperCase.end(), semanticUpperCase.begin(), ::toupper);
+                parseContext.handleSemantic(idToken.loc, qualifier, mapSemantic(semanticUpperCase.c_str()), semanticUpperCase);
+
                 if (userDefinedSemantic != nullptr)
                 {
                     if (userDefinedSemantic->length() > 0){
@@ -6009,7 +6013,6 @@ bool HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                     }
                     *userDefinedSemantic = *idToken.string;
                 }
-
             }
         } else if (peekTokenClass(EHTokLeftAngle)) {
             found = true;

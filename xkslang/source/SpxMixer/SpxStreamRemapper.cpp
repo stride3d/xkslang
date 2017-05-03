@@ -279,6 +279,7 @@ bool SpxStreamRemapper::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shad
                 case spv::OpMemberProperties:
                 case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
+                case spv::OpSemanticName:
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
@@ -413,6 +414,7 @@ bool SpxStreamRemapper::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderT
                 case spv::OpMemberProperties:
                 case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
+                case spv::OpSemanticName:
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
@@ -1078,6 +1080,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpMemberProperties:
                 case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
+                case spv::OpSemanticName:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
@@ -1191,6 +1194,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
                 case spv::OpMemberProperties:
                 case spv::OpCBufferMemberProperties:
                 case spv::OpMemberSemanticName:
+                case spv::OpSemanticName:
                 {
                     posToInsertNewNames = start;
                     start = end;
@@ -3779,6 +3783,7 @@ bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
 
     //===================================================================================================================
     //Convert SPIRX to SPIRV (remove all SPIRX extended instructions). So we don't need to repeat it for every stages
+    //One exception: we keep the instruction: OpSemanticName
     vector<range_t> vecStripRanges;
     unsigned int start = header_size;
     const unsigned int end = spv.size();
@@ -3837,6 +3842,11 @@ bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
                 stripInst(vecStripRanges, start);
                 break;
             }
+
+            //Keep variable's semantic name information
+            //case spv::OpSemanticName:
+            //{
+            //}
         }
         start += wordCount;
     }
@@ -3901,7 +3911,6 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
     {
         XkslMixerOutputStage& outputStage = outputStages[i];
 
-        //Clean the bytecode of all unused stuff!
         if (!GenerateBytecodeForStage(outputStage, listCBufferIds))
         {
             error("Failed to set and clean the stage bytecode");
