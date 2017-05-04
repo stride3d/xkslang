@@ -8,7 +8,7 @@ shader ShaderMain
     stage stream float4 Position : POSITION;
 	stage stream float4 ShadingPosition : SV_Position;
 	stage stream float4 ColorTarget : SV_Target0;
-	stage stream float Depth : SV_DEPTH;
+	stage stream float Depth : SV_Depth;
 	stage stream float CustomStream : SV_CUSTOM;
 	stage stream float UnusedStream : SV_UNUSED;
 	

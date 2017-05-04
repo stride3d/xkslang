@@ -979,7 +979,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         return error(string("Cannot retrieve the global stream type. Id: ") + to_string(globalListOfMergedStreamVariables.structTypeId));
 
     //=============================================================================================================
-    //Check the list of used members, and init some of their data
+    //Check the list of used stream members, and init some of their data
     int countStreamMemberUsed = 0;
     for (unsigned int k = 0; k < globalListOfMergedStreamVariables.members.size(); k++) globalListOfMergedStreamVariables.members[k].isUsed = false;
 
@@ -1137,7 +1137,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
 
     //=============================================================================================================
     //=============================================================================================================
-    //Create the OpTypePointer: Output and Input types for all used streamed members
+    //Create the OpTypePointer: Output and Input types for all used stream members
 #if STREAM_MEMBERS_IO_MODE == PROCESS_INPUT_OUTPUT_STREAM_MEMBERS_USING_IO_VARIABLES
     for (unsigned int iStage = 0; iStage < outputStages.size(); ++iStage)
     {
@@ -1269,9 +1269,6 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
             streamMember.memberStageInputVariableId = 0;
         }
 
-        bool canOutputStreams = true;
-        //if (iStage == outputStages.size() - 1) canOutputStreams = false;  //last stage (Pixel) does not output streams
-
         //===============================================================================
         //Find back which members are needed for which IOs
         vector<unsigned int> vecStageInputMembersIndex;
@@ -1280,18 +1277,36 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         for (unsigned int index = 0; index < stage.listStreamVariablesAccessed.size(); ++index)
         {
             bool memberAdded = false;
-            if (stage.listStreamVariablesAccessed[index].IsNeededAsInput()) {
+            if (stage.listStreamVariablesAccessed[index].IsNeededAsInput())
+            {
                 vecStageInputMembersIndex.push_back(index);
                 vecStageIOMembersIndex.push_back(index);
                 memberAdded = true;
             }
-            if (stage.listStreamVariablesAccessed[index].IsNeededAsOutput()) {
-                if (canOutputStreams) vecStageOutputMembersIndex.push_back(index);
+            if (stage.listStreamVariablesAccessed[index].IsNeededAsOutput())
+            {
+                bool canOutputStream = true;
+
+                // if PS: pixel output is only SV_Targetx and SV_Depth, everything else are intermediate variable
+                if (shadingStageEnum == ShadingStageEnum::Pixel)
+                {
+                    TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
+                    const string targetStr = "SV_Target";
+                    const string depthStr = "SV_Depth";
+                    if (streamMember.semantic.substr(0, targetStr.size()) != targetStr && streamMember.semantic != depthStr)
+                    {
+                        canOutputStream = false;
+                    }
+                }
+
+                if (canOutputStream) vecStageOutputMembersIndex.push_back(index);
                 if (!memberAdded) vecStageIOMembersIndex.push_back(index);
                 memberAdded = true;
             }
+
             //in some case a stream can be accessed without being needed as input or output (so we just add the member in the IO struct)
-            if (!memberAdded && stage.listStreamVariablesAccessed[index].IsBeingAccessed()) {
+            if (!memberAdded && stage.listStreamVariablesAccessed[index].IsBeingAccessed())
+            {
                 vecStageIOMembersIndex.push_back(index);
                 memberAdded = true;
             }
