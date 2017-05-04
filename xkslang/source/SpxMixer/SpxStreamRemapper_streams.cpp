@@ -1270,7 +1270,7 @@ bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& o
         }
 
         //===============================================================================
-        //Find back which members are needed for which IOs
+        //Find which members are needed for which IOs
         vector<unsigned int> vecStageInputMembersIndex;
         vector<unsigned int> vecStageOutputMembersIndex;
         vector<unsigned int> vecStageIOMembersIndex;

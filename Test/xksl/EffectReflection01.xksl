@@ -1,0 +1,34 @@
+shader ShaderMain
+{
+	stage float depthOffset;
+	stage float unusedVar;
+	
+	cbuffer PerDraw
+    {
+        stage float4x4 MatrixTransform;
+    }
+	
+	cbuffer PerDraw
+    {
+        [Color]
+        stage float3 ColorFront;
+		stage float3 ColorBack;
+        stage float ColorBlend;
+    }
+	
+    stage stream float4 Position : POSITION;
+	stage stream float4 ShadingPosition : SV_Position;
+	stage stream float4 ColorTarget : SV_Target0;
+	stage stream float Depth : SV_Depth;
+	
+	stage void VSMain() 
+	{
+		streams.ShadingPosition = mul(streams.Position, MatrixTransform);
+	}
+	
+    stage void PSMain() 
+    {
+        streams.Depth = streams.ShadingPosition.w + depthOffset;
+        streams.ColorTarget = float4(streams.ShadingPosition.x, streams.ShadingPosition.y, 1.0, 1.0);
+    }
+};

@@ -186,8 +186,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testDependency06", "testDependency06.xkfx" },
     //{ "testDependency07", "testDependency07.xkfx" },
 
-    { "SemanticTest01", "SemanticTest01.xkfx" },
-    //{ "SemanticTest02", "SemanticTest02.xkfx" },
+    //{ "SemanticTest01", "SemanticTest01.xkfx" },
+
+    { "EffectReflection01", "EffectReflection01.xkfx" },
 
     //{ "Effect01", "Effect01.xkfx" },
 };
@@ -231,7 +232,7 @@ static bool ConvertBytecodeToGlsl(const string& spvFile, const  string& outputFi
     pair<bool, vector<uint32_t>> result = Utils::ReadSpvBinaryFile(spvFile);
     if (!result.first) {
         cout << " Failed to open the SPV file: \"" << spvFile << "\"" << endl;
-        return -1;
+        return false;
     }
     const vector<uint32_t>& bytecode = result.second;
     string glslShader;

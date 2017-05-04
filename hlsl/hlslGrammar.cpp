@@ -224,6 +224,16 @@ void HlslGrammar::error(const TString& str)
     error(str.c_str());
 }
 
+void HlslGrammar::warning(const char* warning)
+{
+    parseContext.warn(token.loc, "Warning", warning, "");
+}
+
+void HlslGrammar::warning(const TString& str)
+{
+    warning(str.c_str());
+}
+
 bool HlslGrammar::acceptShaderCustomType(const TString& shaderName, TType& type)
 {
     switch (peek())
@@ -3464,6 +3474,17 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
     
         bool declarator_list = false;
 
+        // xksl extensions: struct members can have attributes
+        TString attributeName;
+        if (!checkForXkslStructMemberAttribute(attributeName)) {
+            error("failed to check the struct member attribute");
+            return false;
+        }
+        if (attributeName.length() > 0)
+        {
+            warning("Members attribute are not implemented yet: " + attributeName);
+        }
+
         // fully_specified_type
         TType memberType;
         if (!acceptFullySpecifiedType(memberType, nodeList)) {
@@ -5327,6 +5348,32 @@ bool HlslGrammar::acceptStatement(TIntermNode*& statement)
         }
     }
 
+    return true;
+}
+
+bool HlslGrammar::checkForXkslStructMemberAttribute(TString& attributeName)
+{
+    // For now, accept the [ XXX ] syntax
+    HlslToken idToken;
+
+    // LEFT_BRACKET?
+    if (!acceptTokenClass(EHTokLeftBracket))
+        return true;
+
+    // attribute
+    if (!acceptIdentifier(idToken)) {
+        expected("identifier");
+        return false;
+    }
+
+    // RIGHT_BRACKET
+    if (!acceptTokenClass(EHTokRightBracket)) {
+        expected("]");
+        return false;
+    }
+
+    //attributes.setAttribute(idToken.string, nullptr);
+    attributeName = *idToken.string;
     return true;
 }
 

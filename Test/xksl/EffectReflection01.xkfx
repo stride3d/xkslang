@@ -1,4 +1,4 @@
-convertAndLoad "SemanticTest01.xksl"
+convertAndLoad "EffectReflection01.xksl"
 
 mixer m
 m.mixin ShaderMain

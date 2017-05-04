@@ -26,7 +26,6 @@ layout(location = 3) in vec2 PS_IN_aF2;
 layout(location = 4) in ShaderMain_Toto PS_IN_aToto1;
 layout(location = 5) in ShaderMain_Toto PS_IN_aTotoTab[2];
 layout(location = 6) in mat4 PS_IN_aMat44;
-layout(location = 0) out vec4 PS_OUT_aF4;
 
 void main()
 {
@@ -46,6 +45,5 @@ void main()
     mat4 aMat = _streams.aMat44_id7;
     bool b = _streams.aBool_id1 != int(0u);
     _streams.aF4_id4 = vec4(_streams.aF2_id3, 0.0, 1.0);
-    PS_OUT_aF4 = _streams.aF4_id4;
 }
 

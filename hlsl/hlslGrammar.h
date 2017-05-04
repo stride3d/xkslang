@@ -89,6 +89,8 @@ namespace glslang {
         void unimplemented(const char*);
         void error(const char*);
         void error(const TString&);
+        void warning(const char*);
+        void warning(const TString&);
         bool acceptIdentifier(HlslToken&);
         bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isACallThroughStaticShaderClassName, bool& isStreams, TShaderCompositionVariable& compositionTargeted);
         bool acceptShaderCustomType(const TString& shaderName, TType& type);
@@ -149,6 +151,7 @@ namespace glslang {
         bool acceptScopedCompoundStatement(TIntermNode*&);
         bool acceptNestedStatement(TIntermNode*&);
         void acceptAttributes(TAttributeMap&);
+        bool checkForXkslStructMemberAttribute(TString& attributeName);
         bool acceptSelectionStatement(TIntermNode*&);
         bool acceptSwitchStatement(TIntermNode*&);
         bool acceptIterationStatement(TIntermNode*&);

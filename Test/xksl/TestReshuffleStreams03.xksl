@@ -1,8 +1,8 @@
 
 shader ShaderMain
 {
-	stage stream float2 Position : POSITION;
-	stage stream float4 ColorTarget: SV_OUTPUT;
+	stage stream float2 Position : SV_Target1;
+	stage stream float4 ColorTarget: SV_Target0;
 	
 	stage void VSMain() 
     {
