@@ -3480,16 +3480,17 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
             error("failed to check the struct member attribute");
             return false;
         }
-        if (attributeName.length() > 0)
-        {
-            warning("Members attribute are not implemented yet: " + attributeName);
-        }
 
         // fully_specified_type
         TType memberType;
         if (!acceptFullySpecifiedType(memberType, nodeList)) {
             expected("member type");
             return false;
+        }
+
+        if (attributeName.length() > 0)
+        {
+            memberType.setMemberAttribute(attributeName.c_str());
         }
 
         // struct_declarator COMMA struct_declarator ...

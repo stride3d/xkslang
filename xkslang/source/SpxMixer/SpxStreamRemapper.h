@@ -15,6 +15,7 @@
 #include "../Common/define.h"
 #include "../Common/SpxBytecode.h"
 #include "OutputStageBytecode.h"
+#include "EffectReflection.h"
 
 namespace xkslang
 {
@@ -426,6 +427,7 @@ public:
         bool isStage;
         std::string declarationName;
         std::string semantic;
+        std::string attribute;
 
         //some stream member properties
         int memberPointerFunctionTypeId;  //id of the member's pointer type (TypePointer with Function storage class)
@@ -680,6 +682,9 @@ private:
     bool SetBytecode(const SpxBytecode& bytecode);
     bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
 
+    //validate a member name (for example Shader<8>_var will return Shader_8__var)
+    std::string validateName(const std::string& name);
+
     bool ValidateSpxBytecodeAndData();
     bool ValidateHeader();
     bool ProcessBytecodeAndDataSanityCheck();
@@ -698,7 +703,7 @@ private:
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
     bool RemoveAndConvertSPXExtensions();
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
-    bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
+    bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages, std::vector<EffectReflection::ConstantBuffer>& constantBuffers);
     static bool IsResourceType(const spv::Op& opCode);
 
     spv::Id GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const std::vector<ConstInstruction*>& listAllConsts,

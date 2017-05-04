@@ -1192,7 +1192,8 @@ public:
                    bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1203,7 +1204,8 @@ public:
           bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1216,7 +1218,8 @@ public:
                             basicType(p.basicType),
                             vectorSize(p.vectorSize), matrixCols(p.matrixCols), matrixRows(p.matrixRows), vector1(false),
                             arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 if (basicType == EbtSampler)
                                     sampler = p.sampler;
@@ -1232,7 +1235,8 @@ public:
     TType(const TSampler& sampler, TStorageQualifier q = EvqUniform, TArraySizes* as = nullptr) :
         basicType(EbtSampler), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
         arraySizes(as), structure(nullptr), fieldName(nullptr), typeName(nullptr), sampler(sampler),
-        ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
+        ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+        compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
     {
         qualifier.clear();
         qualifier.storage = q;
@@ -1280,7 +1284,8 @@ public:
     TType(TTypeList* userDef, const TString& n) :
                             basicType(EbtStruct), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1290,7 +1295,8 @@ public:
     TType(TTypeList* userDef, const TString& n, const TQualifier& q) :
                             basicType(EbtBlock), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 sampler.clear();
                                 typeName = NewPoolTString(n.c_str());
@@ -1300,7 +1306,8 @@ public:
 	TType(TTypeList* userDef, const TString& n, const TQualifier& q, TIdentifierList* parentsName) :
 		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
 		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-        ownerClassName(nullptr), parentsName(parentsName), userIdentifierName(nullptr), userDefinedSemantic(nullptr), compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
+        ownerClassName(nullptr), parentsName(parentsName), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+        compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
 	{
 		sampler.clear();
 		typeName = NewPoolTString(n.c_str());
@@ -1325,6 +1332,7 @@ public:
         fieldName = copyOf.fieldName;
         userIdentifierName = copyOf.userIdentifierName;
         userDefinedSemantic = copyOf.userDefinedSemantic;
+        memberAttribute = copyOf.memberAttribute;
         typeDefinitionExpression = copyOf.typeDefinitionExpression;
         typeName = copyOf.typeName;
 		ownerClassName = copyOf.ownerClassName;
@@ -1361,6 +1369,9 @@ public:
 
         if (copyOf.userDefinedSemantic)
             userDefinedSemantic = NewPoolTString(copyOf.userDefinedSemantic->c_str());
+
+        if (copyOf.memberAttribute)
+            memberAttribute = NewPoolTString(copyOf.memberAttribute->c_str());
 
         if (copyOf.typeDefinitionExpression)
             typeDefinitionExpression = NewPoolTString(copyOf.typeDefinitionExpression->c_str());
@@ -1428,6 +1439,12 @@ public:
         else userDefinedSemantic = nullptr;
     }
 
+    virtual void setMemberAttribute(const char* attribute)
+    {
+        if (attribute != nullptr) memberAttribute = NewPoolTString(attribute);
+        else memberAttribute = nullptr;
+    }
+
     virtual void setTypeDefinitionExpression(const char* expression)
     {
         if (expression != nullptr) typeDefinitionExpression = NewPoolTString(expression);
@@ -1469,6 +1486,7 @@ public:
 
     TString* getUserIdentifierName() const { return userIdentifierName; }
     TString* getUserDefinedSemantic() const { return userDefinedSemantic; }
+    TString* getMemberAttribute() const { return memberAttribute; }
     TString* getTypeDefinitionExpression() const { return typeDefinitionExpression; }
 
     bool IsTypeDefinedByShader() const { return isTypeDefinedByShader; }
@@ -2153,6 +2171,7 @@ protected:
 	TString*         ownerClassName;      // class to which the type or function belongs to
     TString*         userIdentifierName;  // user identifier name of the variable or function using the type (fieldname can be different depending how we organize the variables)
     TString*         userDefinedSemantic;
+    TString*         memberAttribute;
     TString*         typeDefinitionExpression;
     TVector<TShaderCompositionVariable>* compositionsList;  // nullptr unless a shaderclass declaring compositions (can it be shared among type?)
 };

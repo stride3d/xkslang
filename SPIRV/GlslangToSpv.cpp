@@ -2546,6 +2546,11 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
                 {
                     builder.addMemberSemanticName(spvType, member, glslangMember.getUserDefinedSemantic()->c_str());
                 }
+                
+                if (glslangMember.getMemberAttribute() != nullptr)
+                {
+                    builder.addMemberAttribute(spvType, member, glslangMember.getMemberAttribute()->c_str());
+                }
             }
 
 #ifdef NV_EXTENSIONS

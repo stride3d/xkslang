@@ -6,6 +6,8 @@ shader ShaderMain
 	cbuffer PerDraw
     {
         stage float4x4 MatrixTransform;
+		[Color]
+        stage float3 ColorMatrix;
     }
 	
 	cbuffer PerDraw

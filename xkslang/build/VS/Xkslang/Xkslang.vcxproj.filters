@@ -33,6 +33,9 @@
     <ClInclude Include="..\..\..\source\Common\Converter.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\source\SpxMixer\EffectReflection.h">
+      <Filter>SpxMixer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\XkslParser\XkslParser.cpp">
@@ -55,6 +58,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\source\Common\Converter.cpp">
       <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper_cbuffers.cpp">
+      <Filter>SpxMixer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer\EffectReflection.cpp">
+      <Filter>SpxMixer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

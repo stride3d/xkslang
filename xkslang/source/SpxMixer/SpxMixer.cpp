@@ -281,7 +281,8 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     // Process cbuffers
     //===================================================================================================================
     // remove unused cbuffers, merge used cbuffers havind same name
-    if (!clonedSpxStream->ProcessCBuffers(vecMixerOutputStages))
+    vector<EffectReflection::ConstantBuffer> listConstantBuffers;
+    if (!clonedSpxStream->ProcessCBuffers(vecMixerOutputStages, listConstantBuffers))
     {
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());

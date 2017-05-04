@@ -1228,6 +1228,7 @@ const char* OpcodeString(int op)
     case (OpBelongsToShader):                           return "OpBelongsToShader";
     case (OpMethodProperties):                          return "OpMethodProperties";
     case (OpMemberProperties):                          return "OpMemberProperties";
+    case (OpMemberAttribute):                           return "OpMemberAttribute";
     case (OpMemberSemanticName):                        return "OpMemberSemanticName";
     case (OpSemanticName):                              return "OpSemanticName";
     case (OpCBufferMemberProperties):                   return "OpCBufferMemberProperties";
@@ -1384,6 +1385,7 @@ void Parameterize()
     InstructionDesc[OpMethodProperties].setResultAndType(false, false);
     InstructionDesc[OpGSMethodProperties].setResultAndType(false, false);
     InstructionDesc[OpMemberProperties].setResultAndType(false, false);
+    InstructionDesc[OpMemberAttribute].setResultAndType(false, false);
     InstructionDesc[OpMemberSemanticName].setResultAndType(false, false);
     InstructionDesc[OpSemanticName].setResultAndType(false, false);
     InstructionDesc[OpCBufferMemberProperties].setResultAndType(false, false);
@@ -1941,6 +1943,10 @@ void Parameterize()
     InstructionDesc[OpMemberProperties].operands.push(OperandLiteralNumber, "'Member'");
     InstructionDesc[OpMemberProperties].operands.push(XkslShaderDataProperties, "'Property 0', +\n'Property 1', +\n...");
     
+    InstructionDesc[OpMemberAttribute].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpMemberAttribute].operands.push(OperandLiteralNumber, "'Member'");
+    InstructionDesc[OpMemberAttribute].operands.push(OperandLiteralString, "'Attribute'");
+
     InstructionDesc[OpMemberSemanticName].operands.push(OperandId, "'Type'");
     InstructionDesc[OpMemberSemanticName].operands.push(OperandLiteralNumber, "'Member'");
     InstructionDesc[OpMemberSemanticName].operands.push(OperandLiteralString, "'SemanticName'");

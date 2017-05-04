@@ -968,6 +968,7 @@ enum Op {
     
     //================================================================================================
     //XKSL extensions
+    // WARNING: changing the IDs here requires to duplicate into SPIRV-Cross IDs
     OpDeclarationName = 4600,                //declaration name for shader, shaders' functions and shaders' block types
     OpShaderInheritance = 4601,              //List of a shader inheritance
     OpBelongsToShader = 4602,                //Link the functions and types with the shader that created them
@@ -975,10 +976,11 @@ enum Op {
     OpShaderCompositionInstance = 4604,      //Declare a composition instance. [OpShaderCompositionInstance shaderOwnerId compositionNum instanceNum instanceShaderId]
     OpMethodProperties = 4605,               //Add XKSL properties to a method: cf XkslPropertyEnum
     OpMemberProperties = 4606,               //Add XKSL properties to a member: cf XkslPropertyEnum
-    OpMemberSemanticName = 4607,             //Record the semantic name of a struct member, as declared by the user
-    OpSemanticName = 4608,                   //Record the semantic name of a type, as declared by the user
-    OpCBufferMemberProperties = 4609,        //Additionnal data when defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts, size And alignment for each member
-    OpGSMethodProperties = 4610,             //Additonnal data for GS methods. GSInputType GSOuputType
+    OpMemberAttribute = 4607,                //Add an attribute to a member
+    OpMemberSemanticName = 4608,             //Record the semantic name of a struct member, as declared by the user
+    OpSemanticName = 4609,                   //Record the semantic name of a type, as declared by the user
+    OpCBufferMemberProperties = 4610,        //Additionnal data when defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts, size And alignment for each member
+    OpGSMethodProperties = 4611,             //Additonnal data for GS methods. GSInputType GSOuputType
 
     OpForEachCompositionStartLoop = 4620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 46021,
