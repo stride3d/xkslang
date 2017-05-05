@@ -53,6 +53,10 @@ namespace xkslang
     //=====================================================================================================================
     // Mixin functions: Mix SPX shaders to generate SPV bytecode for specific output stages
 
+    extern "C" __declspec(dllexport) bool InitializeMixer();
+
+    extern "C" __declspec(dllexport) void ReleaseMixer();
+
     //Create a new mixin object
     // Return: the mixin object handle Id, or 0 if there is any error
     extern "C" __declspec(dllexport) uint32_t CreateSpxShaderMixer();

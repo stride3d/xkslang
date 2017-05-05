@@ -236,8 +236,18 @@ namespace xkslang
         MixerData(SpxMixer* mixer) : mixer(mixer) {}
         ~MixerData() { if (mixer != nullptr) delete mixer; }
     };
-
     static std::vector<MixerData*> listMixerData;
+
+    bool InitializeMixer()
+    {
+        SpxMixer::StartMixinEffect();
+        return true;
+    }
+
+    void ReleaseMixer()
+    {
+        SpxMixer::StopMixinEffect();
+    }
 
     static MixerData* GetMixerForHandleId(uint32_t mixerHandleId)
     {

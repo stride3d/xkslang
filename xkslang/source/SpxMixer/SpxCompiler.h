@@ -688,13 +688,13 @@ private:
     //validate a member name (for example Shader<8>_var will return Shader_8__var)
     std::string validateName(const std::string& name);
     bool SetReflectionTypeForMember(TypeStructMember& member);
+    unsigned int GetUniqueMergeOperationId();
+    static void ResetMergeOperationId();
 
     bool ValidateSpxBytecodeAndData();
     bool ValidateHeader();
     bool ProcessBytecodeAndDataSanityCheck();
 
-    unsigned int GetUniqueMergeOperationId();
-    static void ResetMergeOperationId();
     bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
 

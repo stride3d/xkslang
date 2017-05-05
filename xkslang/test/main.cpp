@@ -1310,9 +1310,9 @@ void main(int argc, char** argv)
             XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
             countEffectsProcessed++;
 
-            SpxMixer::StartMixin();
+            SpxMixer::StartMixinEffect();
             bool success = ProcessEffect(&parser, effect);
-            SpxMixer::ReleaseMixin();
+            SpxMixer::StopMixinEffect();
 
             if (success) countEffectsSuccessful++;
             else listEffectsFailed.push_back(effect.effectName);

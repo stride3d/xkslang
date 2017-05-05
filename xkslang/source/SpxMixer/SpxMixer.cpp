@@ -33,12 +33,12 @@ static void warning(vector<string>& msgs, string msg)
 //=============================================================================================================//
 //=============================================================================================================//
 
-void SpxMixer::StartMixin()
+void SpxMixer::StartMixinEffect()
 {
     SpxCompiler::ResetMergeOperationId();
 }
 
-void SpxMixer::ReleaseMixin()
+void SpxMixer::StopMixinEffect()
 {
 
 }

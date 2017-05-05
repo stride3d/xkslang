@@ -24,9 +24,8 @@ public:
     SpxMixer();
     virtual ~SpxMixer();
 
-    //TMP?
-    static void StartMixin();
-    static void ReleaseMixin();
+    static void StartMixinEffect();
+    static void StopMixinEffect();
 
     static bool GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, std::vector<std::string>& vecShaderName, std::vector<std::string>& messages);
 
