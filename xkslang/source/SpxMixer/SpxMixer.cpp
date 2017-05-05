@@ -15,7 +15,7 @@
 #include "SPIRV/SPVRemapper.h"
 
 #include "SpxMixer.h"
-#include "SpxStreamRemapper.h"
+#include "SpxCompiler.h"
 
 using namespace std;
 using namespace xkslang;
@@ -35,7 +35,7 @@ static void warning(vector<string>& msgs, string msg)
 
 void SpxMixer::StartMixin()
 {
-    SpxStreamRemapper::ResetMergeOperationId();
+    SpxCompiler::ResetMergeOperationId();
 }
 
 void SpxMixer::ReleaseMixin()
@@ -45,25 +45,25 @@ void SpxMixer::ReleaseMixin()
 
 SpxMixer::SpxMixer()
 {
-    spxStreamRemapper = nullptr;
+    spxCompiler = nullptr;
     //listSpxStream.clear();
 }
 
 SpxMixer::~SpxMixer()
 {
-    if (spxStreamRemapper != nullptr) delete spxStreamRemapper;
+    if (spxCompiler != nullptr) delete spxCompiler;
 }
 
 bool SpxMixer::GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, vector<string>& vecShaderName, vector<string>& msgs)
 {
     vecShaderName.clear();
-    SpxStreamRemapper bytecodeStream;
+    SpxCompiler bytecodeStream;
     if (!bytecodeStream.SetBytecode(spxBytecode)) {
         bytecodeStream.copyMessagesTo(msgs);
         return false;
     }
 
-    vector<SpxStreamRemapper::ParsedObjectData> listParsedObjectsData;
+    vector<SpxCompiler::ParsedObjectData> listParsedObjectsData;
     bool res = bytecodeStream.BuildDeclarationNameMapsAndObjectsDataList(listParsedObjectsData);
     if (!res) {
         msgs.push_back("Failed to build the bytecode declaration map");
@@ -74,8 +74,8 @@ bool SpxMixer::GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, vector<st
     int countParsedObjects = listParsedObjectsData.size();
     for (int i = 0; i < countParsedObjects; ++i)
     {
-        SpxStreamRemapper::ParsedObjectData& parsedData = listParsedObjectsData[i];
-        if (parsedData.kind == SpxStreamRemapper::ObjectInstructionTypeEnum::Shader)
+        SpxCompiler::ParsedObjectData& parsedData = listParsedObjectsData[i];
+        if (parsedData.kind == SpxCompiler::ObjectInstructionTypeEnum::Shader)
         {
             string declarationName;
             bool hasDeclarationName = bytecodeStream.GetDeclarationNameForId(parsedData.resultId, declarationName);
@@ -90,22 +90,6 @@ bool SpxMixer::GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, vector<st
     return true;
 }
 
-bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, vector<string>& msgs)
-{
-    //listMixins.push_back(spirXBytecode);
-
-    if (spxStreamRemapper == nullptr) spxStreamRemapper = new SpxStreamRemapper();
-
-    return false;
-
-    //if (!spxStreamRemapper->MixWithBytecode(spirXBytecode))
-    //{
-    //    spxStreamRemapper->copyMessagesTo(msgs);
-    //    return error(msgs, string("Fail to mix the bytecode:" + spirXBytecode.GetName()) );
-    //}
-    //return true;
-}
-
 bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName, vector<string>& msgs)
 {
     vector<string> shaders;
@@ -115,11 +99,11 @@ bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName,
 
 bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& shaders, vector<string>& msgs)
 {
-    if (spxStreamRemapper == nullptr) spxStreamRemapper = new SpxStreamRemapper();
+    if (spxCompiler == nullptr) spxCompiler = new SpxCompiler();
 
-    if (!spxStreamRemapper->MixWithShadersFromBytecode(spirXBytecode, shaders))
+    if (!spxCompiler->MixWithShadersFromBytecode(spirXBytecode, shaders))
     {
-        spxStreamRemapper->copyMessagesTo(msgs);
+        spxCompiler->copyMessagesTo(msgs);
         return error(msgs, string("Fail to mix the shaders from bytecode: " + spirXBytecode.GetName()));
     }
 
@@ -128,10 +112,10 @@ bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& sha
 
 bool SpxMixer::AddComposition(const string& shaderName, const string& variableName, SpxMixer* mixerSource, vector<string>& msgs)
 {
-    if (spxStreamRemapper == nullptr) {
+    if (spxCompiler == nullptr) {
         return error(msgs, "mixer is empty");
     }
-    if (mixerSource == nullptr || mixerSource->spxStreamRemapper == nullptr) {
+    if (mixerSource == nullptr || mixerSource->spxCompiler == nullptr) {
         return error(msgs, "mixerSource is null");
     }
     if (shaderName.size() == 0) {
@@ -141,9 +125,9 @@ bool SpxMixer::AddComposition(const string& shaderName, const string& variableNa
         return error(msgs, "variableName is invalid");
     }
 
-    if (!spxStreamRemapper->AddComposition(shaderName, variableName, mixerSource->spxStreamRemapper, msgs))
+    if (!spxCompiler->AddComposition(shaderName, variableName, mixerSource->spxCompiler, msgs))
     {
-        spxStreamRemapper->copyMessagesTo(msgs);
+        spxCompiler->copyMessagesTo(msgs);
         return error(msgs, "Failed to add the composition to the mixer");
     }
     return true;
@@ -151,10 +135,10 @@ bool SpxMixer::AddComposition(const string& shaderName, const string& variableNa
 
 bool SpxMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& messages)
 {
-    if (spxStreamRemapper == nullptr)
+    if (spxCompiler == nullptr)
         return error(messages, "you must process some mixin first");
 
-    spxStreamRemapper->GetMixinBytecode(output.getWritableBytecodeStream());
+    spxCompiler->GetMixinBytecode(output.getWritableBytecodeStream());
 
     return true;
 }
@@ -162,7 +146,7 @@ bool SpxMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& mess
 bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>& messages,
     SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* finalSpv, SpvBytecode* errorLatestSpv)
 {
-    if (spxStreamRemapper == nullptr)
+    if (spxCompiler == nullptr)
         return error(messages, "you must process some mixin first");
 
     if (outputStages.size() == 0)
@@ -172,7 +156,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     //put the output stages in the correct order
     vector<ShadingStageEnum> stagePipeline;
     vector<XkslMixerOutputStage> vecMixerOutputStages;
-    SpxStreamRemapper::GetStagesPipeline(stagePipeline);
+    SpxCompiler::GetStagesPipeline(stagePipeline);
     for (unsigned int iStage=0; iStage < stagePipeline.size(); ++iStage)
     {
         ShadingStageEnum stage = stagePipeline[iStage];
@@ -192,8 +176,8 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     }
 
     //We clone the stream before compiling it: we want to keep the original stream as it is, so that user can keep mixin and updating it if need
-    SpxStreamRemapper* clonedSpxStream = spxStreamRemapper->Clone();
-    if (clonedSpxStream == nullptr) return error(messages, "Failed to clone the SpxStreamRemapper");
+    SpxCompiler* clonedSpxStream = spxCompiler->Clone();
+    if (clonedSpxStream == nullptr) return error(messages, "Failed to clone the spxCompiler");
 
     //===================================================================================================================
     //===================================================================================================================
@@ -225,7 +209,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     // Process streams
     //===================================================================================================================
     // merge all stream variables into a global single struct
-    SpxStreamRemapper::TypeStructMemberArray globalListOfMergedStreamVariables;
+    SpxCompiler::TypeStructMemberArray globalListOfMergedStreamVariables;
     if (!clonedSpxStream->MergeStreamMembers(globalListOfMergedStreamVariables))
     {
         clonedSpxStream->copyMessagesTo(messages);

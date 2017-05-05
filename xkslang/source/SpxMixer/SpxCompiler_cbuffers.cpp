@@ -13,13 +13,13 @@
 //#include "SPIRV/disassemble.h"
 //#include "SPIRV/SPVRemapper.h"
 
-#include "SpxStreamRemapper.h"
+#include "SpxCompiler.h"
 
 using namespace std;
 using namespace xkslang;
 
 //Remove unused cbuffers, merge used cbuffers havind the same name, take resources type out of the cbuffer
-bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages, vector<EffectReflection::ConstantBuffer>& constantBuffers)
+bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages, vector<EffectReflection::ConstantBuffer>& constantBuffers)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamReschuffled && status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAndCBuffersAnalysed) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_CBuffersValidated;

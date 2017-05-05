@@ -27,13 +27,13 @@
     <ClInclude Include="..\..\..\source\SpxMixer\SpxMixer.h">
       <Filter>SpxMixer</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\SpxMixer\SpxStreamRemapper.h">
-      <Filter>SpxMixer</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\source\Common\Converter.h">
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\source\SpxMixer\EffectReflection.h">
+      <Filter>SpxMixer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\SpxMixer\SpxCompiler.h">
       <Filter>SpxMixer</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,22 +47,25 @@
     <ClCompile Include="..\..\..\source\Common\SpxBytecode.cpp">
       <Filter>Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper_streams.cpp">
-      <Filter>SpxMixer</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\SpxMixer\SpxMixer.cpp">
-      <Filter>SpxMixer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper.cpp">
       <Filter>SpxMixer</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\source\Common\Converter.cpp">
       <Filter>Common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper_cbuffers.cpp">
+    <ClCompile Include="..\..\..\source\SpxMixer\EffectReflection.cpp">
       <Filter>SpxMixer</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\SpxMixer\EffectReflection.cpp">
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_mixin.cpp">
+      <Filter>SpxMixer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_cbuffers.cpp">
+      <Filter>SpxMixer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_reflection.cpp">
+      <Filter>SpxMixer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_streams.cpp">
       <Filter>SpxMixer</Filter>
     </ClCompile>
   </ItemGroup>

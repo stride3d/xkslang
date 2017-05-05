@@ -41,7 +41,7 @@
 #include <cstdlib>
 
 namespace xkslang{
-    class SpxStreamRemapper;
+    class SpxCompiler;
 }
 
 namespace spv {
@@ -320,7 +320,7 @@ private:
    static logfn_t   logHandler;
 
    //XKSL extensions
-   friend class xkslang::SpxStreamRemapper;
+   friend class xkslang::SpxCompiler;
 };
 
 } // namespace SPV

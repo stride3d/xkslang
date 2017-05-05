@@ -24,9 +24,10 @@
     <ClCompile Include="..\..\..\source\Common\SpxBytecode.cpp" />
     <ClCompile Include="..\..\..\source\SpxMixer\EffectReflection.cpp" />
     <ClCompile Include="..\..\..\source\SpxMixer\SpxMixer.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper_cbuffers.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxStreamRemapper_streams.cpp" />
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_mixin.cpp" />
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_cbuffers.cpp" />
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_reflection.cpp" />
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_streams.cpp" />
     <ClCompile Include="..\..\..\source\XkslParser\XkslParser.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -36,7 +37,7 @@
     <ClInclude Include="..\..\..\source\SpxMixer\EffectReflection.h" />
     <ClInclude Include="..\..\..\source\SpxMixer\OutputStageBytecode.h" />
     <ClInclude Include="..\..\..\source\SpxMixer\SpxMixer.h" />
-    <ClInclude Include="..\..\..\source\SpxMixer\SpxStreamRemapper.h" />
+    <ClInclude Include="..\..\..\source\SpxMixer\SpxCompiler.h" />
     <ClInclude Include="..\..\..\source\XkslParser\XkslParser.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

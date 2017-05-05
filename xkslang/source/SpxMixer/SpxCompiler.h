@@ -87,7 +87,7 @@ public:
 
 //In order to update the bytecode, we first store all new codes we want to insert, plus all values we want to change
 //Then we'll update the bytecode at once, after all updates have been set
-class SpxStreamRemapper;
+class SpxCompiler;
 class BytecodeUpdateController
 {
 public:
@@ -113,11 +113,11 @@ public:
 };
 
 //==============================================================================================================//
-//===========================================  SpxStreamRemapper  ==============================================//
+//===============================================  SpxCompiler  ================================================//
 //==============================================================================================================//
 
 class XkslMixerOutputStage;
-class SpxStreamRemapper : public spv::spirvbin_t
+class SpxCompiler : public spv::spirvbin_t
 {
 public:
     typedef std::pair<spv::Id, int> pairIdPos;
@@ -159,7 +159,7 @@ public:
     class ObjectInstructionBase
     {
     public:
-        ObjectInstructionBase(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+        ObjectInstructionBase(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId), name(name), shaderOwner(nullptr),
             bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition), bytecodeSource(source){}
         virtual ~ObjectInstructionBase(){}
@@ -189,19 +189,19 @@ public:
         spv::Id resultId;
         spv::Id typeId;
         ShaderClassData* shaderOwner;  //some object can belong to a shader
-        SpxStreamRemapper* bytecodeSource;
+        SpxCompiler* bytecodeSource;
 
         //those fields can change when we mix bytecodes
         unsigned int bytecodeStartPosition;
         unsigned int bytecodeEndPosition;
 
-        friend class SpxStreamRemapper;
+        friend class SpxCompiler;
     };
 
     class HeaderPropertyInstruction : public ObjectInstructionBase
     {
     public:
-        HeaderPropertyInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+        HeaderPropertyInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source) {}
         virtual ~HeaderPropertyInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
@@ -213,7 +213,7 @@ public:
     class ConstInstruction : public ObjectInstructionBase
     {
     public:
-        ConstInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source, bool isS32, int valueS32)
+        ConstInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source, bool isS32, int valueS32)
             : ObjectInstructionBase(parsedData, name, source), isS32(isS32), valueS32(valueS32) {}
         virtual ~ConstInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
@@ -264,7 +264,7 @@ public:
     class TypeInstruction : public ObjectInstructionBase
     {
     public:
-        TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+        TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr){}
         virtual ~TypeInstruction() {
             if (cbufferData != nullptr) delete cbufferData;
@@ -303,13 +303,13 @@ public:
         //int cbufferCountMembers;
         //std::string cbufferOwnerName; //shader owning the cbuffer (for stage cbuffer, cbuffers will share the same owner)
 
-        friend class SpxStreamRemapper;
+        friend class SpxCompiler;
     };
 
     class VariableInstruction : public ObjectInstructionBase
     {
     public:
-        VariableInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+        VariableInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source), variableTo(nullptr) {}
         virtual ~VariableInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
@@ -324,7 +324,7 @@ public:
         TypeInstruction* variableTo;
         int tmpFlag;
 
-        friend class SpxStreamRemapper;
+        friend class SpxCompiler;
     };
 
     class FunctionInstruction : public ObjectInstructionBase
@@ -337,7 +337,7 @@ public:
             Processed,
         };
 
-        FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+        FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
             flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined),
             streamIOStructVariableResultId(0), streamIOStructConstantCompositeId(0), streamOutputStructVariableResultId(0), streamOutputStructConstantCompositeId(0),
@@ -382,7 +382,7 @@ public:
         spv::Id streamOutputStructVariableResultId;    //the id of the Output stream struct function parameter
         spv::Id streamOutputStructConstantCompositeId; //the id of the output stream struct constant composite
 
-        friend class SpxStreamRemapper;
+        friend class SpxCompiler;
     };
 
     class FunctionCallInstructionData
@@ -528,7 +528,7 @@ public:
                 variableName(variableName), isArray(isArray), countInstances(countInstances){}
 
     private:
-        friend class SpxStreamRemapper;
+        friend class SpxCompiler;
     };
 
     class CompositionInstanceData
@@ -570,7 +570,7 @@ public:
         };
 
     public:
-        ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxStreamRemapper* source)
+        ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
         }
         virtual ~ShaderClassData() {
@@ -647,7 +647,7 @@ public:
         int flag, flag1;
         ShaderDependencyTypeEnum dependencyType;  //dependency type (static or not), set by GetShadersFullDependencies algorithm.
 
-    friend class SpxStreamRemapper;
+    friend class SpxCompiler;
     };
 
     class ShaderToMergeData
@@ -663,15 +663,15 @@ public:
     //============================================================================================================================================
 
 public:
-    SpxStreamRemapper(int verbose = 0);
-    virtual ~SpxStreamRemapper();
+    SpxCompiler(int verbose = 0);
+    virtual ~SpxCompiler();
 
-    SpxStreamRemapper* Clone();
+    SpxCompiler* Clone();
 
     //bool MixWithBytecode(const SpxBytecode& bytecode);
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& nameOfShadersToMix);
 
-    bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxStreamRemapper* source, std::vector<std::string>& messages);
+    bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxCompiler* source, std::vector<std::string>& messages);
     void GetMixinBytecode(std::vector<std::uint32_t>& bytecodeStream);
 
     static void GetStagesPipeline(std::vector<ShadingStageEnum>& pipeline);
@@ -683,7 +683,7 @@ public:
 
 private:
     bool SetBytecode(const SpxBytecode& bytecode);
-    bool MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
+    bool MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
 
     //validate a member name (for example Shader<8>_var will return Shader_8__var)
     std::string validateName(const std::string& name);
@@ -741,7 +741,7 @@ private:
 
     void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
     void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);
-    static bool GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const std::vector<ShaderClassData*>& listShaders, std::vector<ShaderClassData*>& fullDependencies);
+    static bool GetShadersFullDependencies(SpxCompiler* bytecodeSource, const std::vector<ShaderClassData*>& listShaders, std::vector<ShaderClassData*>& fullDependencies);
 
     static bool parseInstruction(const std::vector<std::uint32_t>& bytecode, unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds, std::string& errorMsg);
     bool parseInstruction(unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, std::vector<spv::Id>& listIds);
@@ -753,7 +753,7 @@ private:
     bool GenerateBytecodeForStage(XkslMixerOutputStage& stage, std::vector<spv::Id>& listObjectIdsToKeep);
 
 private:
-    //static variable share between all SpxStreamRemapper instances
+    //static variable share between all SpxCompiler instances
     static unsigned int currentMergeOperationId;
 
     SpxRemapperStatusEnum status;
@@ -869,11 +869,11 @@ class XkslMixerOutputStage
 public:
     OutputStageBytecode* outputStage; //set by the user
 
-    SpxStreamRemapper::FunctionInstruction* entryFunction;  //set when initializing the compilation process
+    SpxCompiler::FunctionInstruction* entryFunction;  //set when initializing the compilation process
 
     std::vector<MemberAccessDetails> listStreamVariablesAccessed;  //list of stream variables accessed by the stage, set by AnalyseStreams method
-    std::vector<SpxStreamRemapper::FunctionInstruction*> listFunctionsCalledAndAccessingStreamMembers;  //list of functions called by the stage, accessing some stream members
-    std::vector<SpxStreamRemapper::ShaderTypeData*> listCBuffersAccessed;
+    std::vector<SpxCompiler::FunctionInstruction*> listFunctionsCalledAndAccessingStreamMembers;  //list of functions called by the stage, accessing some stream members
+    std::vector<SpxCompiler::ShaderTypeData*> listCBuffersAccessed;
 
     class OutputStageIOVariable
     {

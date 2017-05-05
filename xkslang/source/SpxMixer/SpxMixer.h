@@ -17,7 +17,7 @@ namespace xkslang
 //=============================================================================================================//
 //==============================================  SpxMixer  ==================================================//
 //============================================================================================================//
-class SpxStreamRemapper;
+class SpxCompiler;
 class SpxMixer
 {
 public:
@@ -29,9 +29,6 @@ public:
     static void ReleaseMixin();
 
     static bool GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, std::vector<std::string>& vecShaderName, std::vector<std::string>& messages);
-
-    //Mix all shaders from spirXBytecode
-    bool Mixin(const SpxBytecode& spirXBytecode, std::vector<std::string>& messages);
 
     //Mix shaders linked to shaderName
     bool Mixin(const SpxBytecode& spirXBytecode, const std::string& shaderName, std::vector<std::string>& messages);
@@ -48,7 +45,7 @@ public:
         SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* finalSpv, SpvBytecode* errorLatestSpv);
 
 private:
-    SpxStreamRemapper* spxStreamRemapper;
+    SpxCompiler* spxCompiler;
 };
 
 }  // namespace xkslang

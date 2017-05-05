@@ -13,7 +13,7 @@
 //#include "SPIRV/disassemble.h"
 //#include "SPIRV/SPVRemapper.h"
 
-#include "SpxStreamRemapper.h"
+#include "SpxCompiler.h"
 
 using namespace std;
 using namespace xkslang;
@@ -25,7 +25,7 @@ static const string functionOutputVariableDefaultName = "__output__";
 static const string functionStreamVariableDefaultName = "_streams";
 static const string functionParamVariableDefaultName = "param";
 
-bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedStreamVariables)
+bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     vector<TypeInstruction*> listAllShaderTypeHoldingStreamVariables;
     bool success = true;
@@ -609,7 +609,7 @@ bool SpxStreamRemapper::MergeStreamMembers(TypeStructMemberArray& globalListOfMe
     return success;
 }
 
-bool SpxStreamRemapper::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAndCBuffersAnalysed;
@@ -850,7 +850,7 @@ bool SpxStreamRemapper::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<
     return true;
 }
 
-bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+bool SpxCompiler::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAndCBuffersAnalysed) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamReadyForReschuffling;
@@ -964,7 +964,7 @@ bool SpxStreamRemapper::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputSt
 #define PROCESS_INPUT_OUTPUT_STREAM_MEMBERS_USING_IO_VARIABLES 2
 #define STREAM_MEMBERS_IO_MODE PROCESS_INPUT_OUTPUT_STREAM_MEMBERS_USING_IO_VARIABLES
 
-bool SpxStreamRemapper::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamReadyForReschuffling) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamReschuffled;

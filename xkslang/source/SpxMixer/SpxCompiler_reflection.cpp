@@ -13,12 +13,12 @@
 //#include "SPIRV/disassemble.h"
 //#include "SPIRV/SPVRemapper.h"
 
-#include "SpxStreamRemapper.h"
+#include "SpxCompiler.h"
 
 using namespace std;
 using namespace xkslang;
 
-bool SpxStreamRemapper::SetReflectionTypeForMember(TypeStructMember& member)
+bool SpxCompiler::SetReflectionTypeForMember(TypeStructMember& member)
 {
     if (member.memberType == nullptr)
     {

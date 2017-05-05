@@ -13,19 +13,19 @@
 //#include "SPIRV/disassemble.h"
 //#include "SPIRV/SPVRemapper.h"
 
-#include "SpxStreamRemapper.h"
+#include "SpxCompiler.h"
 
 using namespace std;
 using namespace xkslang;
 
 //=====================================================================================================================================
 //=====================================================================================================================================
-void SpxStreamRemapper::copyMessagesTo(vector<string>& list)
+void SpxCompiler::copyMessagesTo(vector<string>& list)
 {
     list.insert(list.end(), errorMessages.begin(), errorMessages.end());
 }
 
-bool SpxStreamRemapper::error(const string& txt)
+bool SpxCompiler::error(const string& txt)
 {
     errorMessages.push_back(txt);
     return false;
@@ -36,19 +36,19 @@ bool SpxStreamRemapper::error(const string& txt)
 //static const auto spx_inst_fn_nop = [](spv::Op, unsigned) { return false; };
 //static const auto spx_op_fn_nop = [](spv::Id&) {};
 
-unsigned int SpxStreamRemapper::currentMergeOperationId = 0;
+unsigned int SpxCompiler::currentMergeOperationId = 0;
 
-unsigned int SpxStreamRemapper::GetUniqueMergeOperationId()
+unsigned int SpxCompiler::GetUniqueMergeOperationId()
 {
-    return SpxStreamRemapper::currentMergeOperationId++;
+    return SpxCompiler::currentMergeOperationId++;
 }
 
-void SpxStreamRemapper::ResetMergeOperationId()
+void SpxCompiler::ResetMergeOperationId()
 {
-    SpxStreamRemapper::currentMergeOperationId = 0;
+    SpxCompiler::currentMergeOperationId = 0;
 }
 
-spv::ExecutionModel SpxStreamRemapper::GetShadingStageExecutionMode(ShadingStageEnum stage)
+spv::ExecutionModel SpxCompiler::GetShadingStageExecutionMode(ShadingStageEnum stage)
 {
     switch (stage) {
     case ShadingStageEnum::Vertex:           return spv::ExecutionModelVertex;
@@ -62,7 +62,7 @@ spv::ExecutionModel SpxStreamRemapper::GetShadingStageExecutionMode(ShadingStage
     }
 }
 
-string SpxStreamRemapper::validateName(const string& name)
+string SpxCompiler::validateName(const string& name)
 {
     //return a validated name (for example rename Shader<8>_var will return Shader_8__var)
     string validateName = name;
@@ -76,19 +76,19 @@ string SpxStreamRemapper::validateName(const string& name)
 //=====================================================================================================================================
 //=====================================================================================================================================
 
-SpxStreamRemapper::SpxStreamRemapper(int verbose) : spirvbin_t(verbose)
+SpxCompiler::SpxCompiler(int verbose) : spirvbin_t(verbose)
 {
     status = SpxRemapperStatusEnum::WaitingForMixin;
 }
 
-SpxStreamRemapper::~SpxStreamRemapper()
+SpxCompiler::~SpxCompiler()
 {
     ReleaseAllMaps();
 }
 
-SpxStreamRemapper* SpxStreamRemapper::Clone()
+SpxCompiler* SpxCompiler::Clone()
 {
-    SpxStreamRemapper* clonedSpxRemapper = new SpxStreamRemapper();
+    SpxCompiler* clonedSpxRemapper = new SpxCompiler();
     clonedSpxRemapper->spv = this->spv;
     clonedSpxRemapper->listAllObjects.resize(listAllObjects.size(), nullptr);
 
@@ -218,7 +218,7 @@ SpxStreamRemapper* SpxStreamRemapper::Clone()
     return clonedSpxRemapper;
 }
 
-bool SpxStreamRemapper::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderTypeToRemove, vector<range_t>& vecStripRanges)
+bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderTypeToRemove, vector<range_t>& vecStripRanges)
 {
     ShaderClassData* shaderOwner = shaderTypeToRemove->shaderOwner;
 
@@ -313,7 +313,7 @@ bool SpxStreamRemapper::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shad
     return true;
 }
 
-bool SpxStreamRemapper::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemove, vector<range_t>& vecStripRanges)
+bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemove, vector<range_t>& vecStripRanges)
 {
     spv::Id shaderId = shaderToRemove->GetId();
     if (GetShaderById(shaderId) != shaderToRemove) return error(string("Failed to find the shader to remove: ") + shaderToRemove->GetName());
@@ -449,7 +449,7 @@ bool SpxStreamRemapper::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderT
     return true;
 }
 
-void SpxStreamRemapper::ReleaseAllMaps()
+void SpxCompiler::ReleaseAllMaps()
 {
     unsigned int size = listAllObjects.size();
     for (unsigned int i = 0; i < size; ++i)
@@ -463,7 +463,7 @@ void SpxStreamRemapper::ReleaseAllMaps()
     mapDeclarationName.clear();
 }
 
-bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const vector<string>& nameOfShadersToMix)
+bool SpxCompiler::MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const vector<string>& nameOfShadersToMix)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
@@ -491,7 +491,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
     //===============================================================================================================================================
     //===============================================================================================================================================
     //parse and init the bytecode to merge
-    SpxStreamRemapper bytecodeToMerge;
+    SpxCompiler bytecodeToMerge;
     if (!bytecodeToMerge.SetBytecode(sourceBytecode)) return error("Failed to set the bytecode");
 
     if (!bytecodeToMerge.BuildAllMaps()) {
@@ -518,7 +518,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
     }
 
     vector<ShaderClassData*> shadersFullDependencies;
-    if (!SpxStreamRemapper::GetShadersFullDependencies(&bytecodeToMerge, listShader, shadersFullDependencies)){
+    if (!SpxCompiler::GetShadersFullDependencies(&bytecodeToMerge, listShader, shadersFullDependencies)){
         bytecodeToMerge.copyMessagesTo(errorMessages);
         return error(string("Failed to get the shaders dependencies"));
     }
@@ -567,7 +567,7 @@ bool SpxStreamRemapper::MixWithShadersFromBytecode(const SpxBytecode& sourceByte
     return true;
 }
 
-bool SpxStreamRemapper::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassData*>& listNewShaders)
+bool SpxCompiler::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassData*>& listNewShaders)
 {
     if (!ValidateSpxBytecodeAndData())
     {
@@ -600,7 +600,7 @@ bool SpxStreamRemapper::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassD
     return true;
 }
 
-bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMerge, const vector<ShaderToMergeData>& listShadersToMerge, string allInstancesPrefixToAdd)
+bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const vector<ShaderToMergeData>& listShadersToMerge, string allInstancesPrefixToAdd)
 {
     //if (&bytecodeToMerge == this) {
     //    return error("Cannot merge a bytecode into its own code");
@@ -1262,7 +1262,7 @@ bool SpxStreamRemapper::MergeShadersIntoBytecode(SpxStreamRemapper& bytecodeToMe
     return true;
 }
 
-bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
+bool SpxCompiler::SetBytecode(const SpxBytecode& bytecode)
 {
     const vector<uint32_t>& spx = bytecode.getBytecodeStream();
     spv.clear();
@@ -1274,7 +1274,7 @@ bool SpxStreamRemapper::SetBytecode(const SpxBytecode& bytecode)
     return true;
 }
 
-bool SpxStreamRemapper::ValidateHeader()
+bool SpxCompiler::ValidateHeader()
 {
     if (spv.size() < header_size) {
         return error("file too short");
@@ -1296,7 +1296,7 @@ bool SpxStreamRemapper::ValidateHeader()
     return true;
 }
 
-bool SpxStreamRemapper::ProcessBytecodeAndDataSanityCheck()
+bool SpxCompiler::ProcessBytecodeAndDataSanityCheck()
 {  
     vector<unsigned int> listAllTypesConstsAndVariablesPosition;
     vector<unsigned int> listAllResultIdsPosition;
@@ -1403,7 +1403,7 @@ bool SpxStreamRemapper::ProcessBytecodeAndDataSanityCheck()
     return true;
 }
 
-bool SpxStreamRemapper::ValidateSpxBytecodeAndData()
+bool SpxCompiler::ValidateSpxBytecodeAndData()
 {
     if (!ValidateHeader()) return error("Failed to validate the header");
 
@@ -1434,7 +1434,7 @@ bool SpxStreamRemapper::ValidateSpxBytecodeAndData()
     return true;
 }
 
-bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& variableName, SpxStreamRemapper* source, vector<string>& msgs)
+bool SpxCompiler::AddComposition(const string& shaderName, const string& variableName, SpxCompiler* source, vector<string>& msgs)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
@@ -1467,7 +1467,7 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
     vector<ShaderClassData*> listShader;
     vector<ShaderClassData*> shadersFullDependencies;
     listShader.push_back(mainShaderTypeMergedToMergeFromSource);
-    if (!SpxStreamRemapper::GetShadersFullDependencies(source, listShader, shadersFullDependencies)) {
+    if (!SpxCompiler::GetShadersFullDependencies(source, listShader, shadersFullDependencies)) {
         source->copyMessagesTo(errorMessages);
         return error(string("Failed to get the shaders dependencies"));
     }
@@ -1594,12 +1594,12 @@ bool SpxStreamRemapper::AddComposition(const string& shaderName, const string& v
 }
 
 
-void SpxStreamRemapper::GetStagesPipeline(vector<ShadingStageEnum>& pipeline)
+void SpxCompiler::GetStagesPipeline(vector<ShadingStageEnum>& pipeline)
 {
     pipeline = { ShadingStageEnum::Vertex, ShadingStageEnum::TessControl, ShadingStageEnum::TessEvaluation, ShadingStageEnum::Geometry , ShadingStageEnum::Pixel };
 }
 
-bool SpxStreamRemapper::InitializeCompilationProcess(vector<XkslMixerOutputStage>& outputStages)
+bool SpxCompiler::InitializeCompilationProcess(vector<XkslMixerOutputStage>& outputStages)
 {
     //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_Initialized;
@@ -1610,7 +1610,7 @@ bool SpxStreamRemapper::InitializeCompilationProcess(vector<XkslMixerOutputStage
 #ifdef XKSLANG_DEBUG_MODE
     //check that the output stages are in the correct order
     vector<ShadingStageEnum> stagePipeline;
-    SpxStreamRemapper::GetStagesPipeline(stagePipeline);
+    SpxCompiler::GetStagesPipeline(stagePipeline);
 
     int lastStageMatched = -1;
     for (unsigned int i = 0; i<outputStages.size(); ++i)
@@ -1643,7 +1643,7 @@ bool SpxStreamRemapper::InitializeCompilationProcess(vector<XkslMixerOutputStage
     return true;
 }
 
-SpxStreamRemapper::ConstInstruction* SpxStreamRemapper::FindConstFromList(const vector<ConstInstruction*>& listConsts, spv::Op opCode, spv::Id typeId, const vector<unsigned int>& values)
+SpxCompiler::ConstInstruction* SpxCompiler::FindConstFromList(const vector<ConstInstruction*>& listConsts, spv::Op opCode, spv::Id typeId, const vector<unsigned int>& values)
 {
     for (auto it = listConsts.begin(); it != listConsts.end(); it++)
     {
@@ -1683,7 +1683,7 @@ SpxStreamRemapper::ConstInstruction* SpxStreamRemapper::FindConstFromList(const 
     return nullptr;
 }
 
-spv::Id SpxStreamRemapper::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const vector<ConstInstruction*>& listAllConsts,
+spv::Id SpxCompiler::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const vector<ConstInstruction*>& listAllConsts,
     vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter)
 {
     if (iterationCounter > 10) { error("Too many nested type (infinite type redirection in the bytecode?)"); return 0; }
@@ -1857,7 +1857,7 @@ spv::Id SpxStreamRemapper::GetOrCreateTypeDefaultConstValue(spv::Id& newId, Type
 }
 
 //parse an OpStruct instruction to get its list of membes typeId
-bool SpxStreamRemapper::GetStructTypeMembersTypeIdList(TypeInstruction* structType, vector<spv::Id>& membersTypeList)
+bool SpxCompiler::GetStructTypeMembersTypeIdList(TypeInstruction* structType, vector<spv::Id>& membersTypeList)
 {
 #ifdef XKSLANG_DEBUG_MODE
     if (structType == nullptr) return error("null parameter");
@@ -1887,7 +1887,7 @@ bool SpxStreamRemapper::GetStructTypeMembersTypeIdList(TypeInstruction* structTy
     return true;
 }
 
-bool SpxStreamRemapper::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputStages)
+bool SpxCompiler::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputStages)
 {
     //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved;
@@ -2041,7 +2041,7 @@ bool SpxStreamRemapper::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& out
     return true;
 }
 
-bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
+bool SpxCompiler::ApplyCompositionInstancesToBytecode()
 {
     //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_CompositionInstancesProcessed;
@@ -2312,7 +2312,7 @@ bool SpxStreamRemapper::ApplyCompositionInstancesToBytecode()
 }
 
 //For every call to a function using base accessor (base.function()), we check if we need to redirect to another overriding method
-bool SpxStreamRemapper::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
+bool SpxCompiler::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
 {
     unsigned int start = header_size;
     const unsigned int end = spv.size();
@@ -2351,7 +2351,7 @@ bool SpxStreamRemapper::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
     return true;
 }
 
-bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
+bool SpxCompiler::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
 {
     vector<FunctionInstruction*> vecFunctionIdBeingOverriden;
     vecFunctionIdBeingOverriden.resize(bound(), nullptr);
@@ -2406,7 +2406,7 @@ bool SpxStreamRemapper::UpdateOpFunctionCallTargetsInstructionsToOverridingFunct
     return true;
 }
 
-void SpxStreamRemapper::GetShaderChildrenList(ShaderClassData* shader, vector<ShaderClassData*>& children)
+void SpxCompiler::GetShaderChildrenList(ShaderClassData* shader, vector<ShaderClassData*>& children)
 {
     children.clear();
     for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
@@ -2422,7 +2422,7 @@ void SpxStreamRemapper::GetShaderChildrenList(ShaderClassData* shader, vector<Sh
 // - the complete family tree (parents of all shaders)
 // - the composition type and instances of all shaders
 // - for all shaders: parse the function's bytecode and detect if they're calling any other shaders
-bool SpxStreamRemapper::GetShadersFullDependencies(SpxStreamRemapper* bytecodeSource, const vector<ShaderClassData*>& listShaders, vector<ShaderClassData*>& fullDependencies)
+bool SpxCompiler::GetShadersFullDependencies(SpxCompiler* bytecodeSource, const vector<ShaderClassData*>& listShaders, vector<ShaderClassData*>& fullDependencies)
 {
     fullDependencies.clear();
 
@@ -2551,7 +2551,7 @@ bool SpxStreamRemapper::GetShadersFullDependencies(SpxStreamRemapper* bytecodeSo
     return true;
 }
 
-void SpxStreamRemapper::GetShaderFamilyTree(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)
+void SpxCompiler::GetShaderFamilyTree(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)
 {
     shaderFamilyTree.clear();
 
@@ -2580,12 +2580,12 @@ void SpxStreamRemapper::GetShaderFamilyTree(ShaderClassData* shaderFromFamily, v
     }
 }
 
-static bool shaderLevelSortFunction(SpxStreamRemapper::ShaderClassData* sa, SpxStreamRemapper::ShaderClassData* sb)
+static bool shaderLevelSortFunction(SpxCompiler::ShaderClassData* sa, SpxCompiler::ShaderClassData* sb)
 {
     return (sa->level < sb->level);
 }
 
-bool SpxStreamRemapper::UpdateOverridenFunctionMap(vector<ShaderClassData*>& listShadersMerged)
+bool SpxCompiler::UpdateOverridenFunctionMap(vector<ShaderClassData*>& listShadersMerged)
 {
     if (listShadersMerged.size() == 0) return true;
 
@@ -2643,13 +2643,13 @@ bool SpxStreamRemapper::UpdateOverridenFunctionMap(vector<ShaderClassData*>& lis
     return true;
 }
 
-void SpxStreamRemapper::GetMixinBytecode(vector<uint32_t>& bytecodeStream)
+void SpxCompiler::GetMixinBytecode(vector<uint32_t>& bytecodeStream)
 {
     bytecodeStream.clear();
     bytecodeStream.insert(bytecodeStream.end(), spv.begin(), spv.end());
 }
 
-bool SpxStreamRemapper::GetFunctionLabelInstructionPosition(FunctionInstruction* function, unsigned int& labelPos)
+bool SpxCompiler::GetFunctionLabelInstructionPosition(FunctionInstruction* function, unsigned int& labelPos)
 {
     unsigned int start = function->bytecodeStartPosition;
     const unsigned int end = function->bytecodeEndPosition;
@@ -2672,7 +2672,7 @@ bool SpxStreamRemapper::GetFunctionLabelInstructionPosition(FunctionInstruction*
     return false;
 }
 
-bool SpxStreamRemapper::GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos)
+bool SpxCompiler::GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos)
 {
     int state = 0;
     unsigned int start = function->bytecodeStartPosition;
@@ -2707,7 +2707,7 @@ bool SpxStreamRemapper::GetFunctionLabelAndReturnInstructionsPosition(FunctionIn
     return true;
 }
 
-SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForEntryPoint(string entryPointName)
+SpxCompiler::FunctionInstruction* SpxCompiler::GetShaderFunctionForEntryPoint(string entryPointName)
 {
     // Search for the entry point function (assume the first function with the name is the one)
     FunctionInstruction* entryPointFunction = nullptr;
@@ -2730,7 +2730,7 @@ SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetShaderFunctionForE
     return entryPointFunction;
 }
 
-bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
+bool SpxCompiler::RemoveAndConvertSPXExtensions()
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_ConvertedToSPV;
@@ -2816,7 +2816,7 @@ bool SpxStreamRemapper::RemoveAndConvertSPXExtensions()
 }
 
 //Mixin is finalized: no more updates will be brought to the mixin bytecode after
-bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage>& outputStages)
+bool SpxCompiler::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage>& outputStages)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_ConvertedToSPV) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_SPXBytecodeRemoved;
@@ -2878,7 +2878,7 @@ bool SpxStreamRemapper::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage
     return true;
 }
 
-bool SpxStreamRemapper::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<spv::Id>& listObjectIdsToKeep)
+bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<spv::Id>& listObjectIdsToKeep)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_SPXBytecodeRemoved) return error("Invalid remapper status");
     FunctionInstruction* entryFunction = stage.entryFunction;
@@ -3279,7 +3279,7 @@ bool SpxStreamRemapper::GenerateBytecodeForStage(XkslMixerOutputStage& stage, ve
     return true;
 }
 
-bool SpxStreamRemapper::SpxStreamRemapper::InitDefaultHeader()
+bool SpxCompiler::SpxCompiler::InitDefaultHeader()
 {
     if (spv.size() > 0) {
         return error("Bytecode must by empty");
@@ -3308,7 +3308,7 @@ bool SpxStreamRemapper::SpxStreamRemapper::InitDefaultHeader()
     return true;
 }
 
-bool SpxStreamRemapper::BuildConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
+bool SpxCompiler::BuildConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
 {
     mapHashPos.clear();
 
@@ -3349,7 +3349,7 @@ bool SpxStreamRemapper::BuildConstsHashmap(unordered_map<uint32_t, pairIdPos>& m
     return true;
 }
 
-bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
+bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
 {
     mapHashPos.clear();
 
@@ -3403,7 +3403,7 @@ bool SpxStreamRemapper::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairI
 }
 
 //Update the start and end position for all objects
-bool SpxStreamRemapper::UpdateAllObjectsPositionInTheBytecode()
+bool SpxCompiler::UpdateAllObjectsPositionInTheBytecode()
 {
     //Parse the list of all object data
     vector<ParsedObjectData> listParsedObjectsData;
@@ -3430,7 +3430,7 @@ bool SpxStreamRemapper::UpdateAllObjectsPositionInTheBytecode()
     return true;
 }
 
-bool SpxStreamRemapper::UpdateAllMaps()
+bool SpxCompiler::UpdateAllMaps()
 {
     //Parse the list of all object data
     vector<ParsedObjectData> listParsedObjectsData;
@@ -3485,7 +3485,7 @@ bool SpxStreamRemapper::UpdateAllMaps()
     return true;
 }
 
-bool SpxStreamRemapper::BuildAllMaps()
+bool SpxCompiler::BuildAllMaps()
 {
     //cout << "BuildAllMaps!!" << endl;
 
@@ -3530,7 +3530,7 @@ bool SpxStreamRemapper::BuildAllMaps()
     return true;
 }
 
-bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
+bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 {
     //======================================================================================================
     // Decorate objects attributes and relations
@@ -3756,7 +3756,7 @@ bool SpxStreamRemapper::DecorateObjects(vector<bool>& vectorIdsToDecorate)
     return true;
 }
 
-SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObjectFor(ParsedObjectData& parsedData)
+SpxCompiler::ObjectInstructionBase* SpxCompiler::CreateAndAddNewObjectFor(ParsedObjectData& parsedData)
 {
     spv::Id resultId = parsedData.resultId;
     if (resultId <= 0 || resultId == spv::NoResult || resultId >= listAllObjects.size()) {
@@ -3891,7 +3891,7 @@ SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::CreateAndAddNewObje
     return newObject;
 }
 
-bool SpxStreamRemapper::ComputeShadersLevel()
+bool SpxCompiler::ComputeShadersLevel()
 {
     //===================================================================================================================
     // Set the shader levels (also detects cyclic shader inheritance)
@@ -3946,7 +3946,7 @@ bool SpxStreamRemapper::ComputeShadersLevel()
     return true;
 }
 
-bool SpxStreamRemapper::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObjectData>& listParsedObjectsData)
+bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObjectData>& listParsedObjectsData)
 {
     mapDeclarationName.clear();
     idPosR.clear();
@@ -4048,7 +4048,7 @@ bool SpxStreamRemapper::BuildDeclarationNameMapsAndObjectsDataList(vector<Parsed
 
 //===========================================================================================================================//
 //===========================================================================================================================//
-string SpxStreamRemapper::GetDeclarationNameForId(spv::Id id)
+string SpxCompiler::GetDeclarationNameForId(spv::Id id)
 {
     auto it = mapDeclarationName.find(id);
     if (it == mapDeclarationName.end())
@@ -4059,7 +4059,7 @@ string SpxStreamRemapper::GetDeclarationNameForId(spv::Id id)
     return it->second;
 }
 
-bool SpxStreamRemapper::GetDeclarationNameForId(spv::Id id, string& name)
+bool SpxCompiler::GetDeclarationNameForId(spv::Id id, string& name)
 {
     auto it = mapDeclarationName.find(id);
     if (it == mapDeclarationName.end())
@@ -4069,7 +4069,7 @@ bool SpxStreamRemapper::GetDeclarationNameForId(spv::Id id, string& name)
     return true;
 }
 
-SpxStreamRemapper::HeaderPropertyInstruction* SpxStreamRemapper::GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const string& name)
+SpxCompiler::HeaderPropertyInstruction* SpxCompiler::GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const string& name)
 {
     if (name.size() == 0) return nullptr;
 
@@ -4085,7 +4085,7 @@ SpxStreamRemapper::HeaderPropertyInstruction* SpxStreamRemapper::GetHeaderProper
     return nullptr;
 }
 
-SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const string& name)
+SpxCompiler::FunctionInstruction* SpxCompiler::GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const string& name)
 {
     FunctionInstruction* function = shader->GetFunctionByName(name);
     if (function != nullptr) {
@@ -4102,7 +4102,7 @@ SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetTargetedFunctionBy
     return nullptr;
 }
 
-SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const string& name)
+SpxCompiler::ShaderClassData* SpxCompiler::GetShaderByName(const string& name)
 {
     if (name.size() == 0) return nullptr;
 
@@ -4117,14 +4117,14 @@ SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderByName(const str
     return nullptr;
 }
 
-SpxStreamRemapper::ShaderComposition* SpxStreamRemapper::GetCompositionById(spv::Id shaderId, int compositionId)
+SpxCompiler::ShaderComposition* SpxCompiler::GetCompositionById(spv::Id shaderId, int compositionId)
 {
     ShaderClassData* shader = GetShaderById(shaderId);
     if (shader == nullptr) return nullptr;
     return shader->GetShaderCompositionById(compositionId);
 }
 
-bool SpxStreamRemapper::GetAllCompositionForEachLoops(vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel)
+bool SpxCompiler::GetAllCompositionForEachLoops(vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel)
 {
     vecForEachLoops.clear();
     maxForEachLoopsNestedLevel = -1;
@@ -4183,7 +4183,7 @@ bool SpxStreamRemapper::GetAllCompositionForEachLoops(vector<CompositionForEachL
     return true;
 }
 
-bool SpxStreamRemapper::GetListAllFunctionCallInstructions(vector<FunctionCallInstructionData>& listFunctionCallInstructions)
+bool SpxCompiler::GetListAllFunctionCallInstructions(vector<FunctionCallInstructionData>& listFunctionCallInstructions)
 {
     listFunctionCallInstructions.clear();
     for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++)
@@ -4223,7 +4223,7 @@ bool SpxStreamRemapper::GetListAllFunctionCallInstructions(vector<FunctionCallIn
     return true;
 }
 
-bool SpxStreamRemapper::GetAllShaderInstancesForComposition(const ShaderComposition* composition, vector<ShaderClassData*>& instances)
+bool SpxCompiler::GetAllShaderInstancesForComposition(const ShaderComposition* composition, vector<ShaderClassData*>& instances)
 {
     spv::Id compositionShaderOwnerId = composition->compositionShaderOwner->GetId();
     int compositionShaderId = composition->compositionShaderId;
@@ -4283,7 +4283,7 @@ bool SpxStreamRemapper::GetAllShaderInstancesForComposition(const ShaderComposit
     return true;
 }
 
-SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)
+SpxCompiler::ShaderClassData* SpxCompiler::GetShaderById(spv::Id id)
 {
     if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
@@ -4296,7 +4296,7 @@ SpxStreamRemapper::ShaderClassData* SpxStreamRemapper::GetShaderById(spv::Id id)
     return nullptr;
 }
 
-SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableByName(const string& name)
+SpxCompiler::VariableInstruction* SpxCompiler::GetVariableByName(const string& name)
 {
     if (name.size() == 0) return nullptr;
 
@@ -4312,14 +4312,14 @@ SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableByName(con
     return nullptr;
 }
 
-SpxStreamRemapper::ObjectInstructionBase* SpxStreamRemapper::GetObjectById(spv::Id id)
+SpxCompiler::ObjectInstructionBase* SpxCompiler::GetObjectById(spv::Id id)
 {
     if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
     return obj;
 }
 
-SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetFunctionById(spv::Id id)
+SpxCompiler::FunctionInstruction* SpxCompiler::GetFunctionById(spv::Id id)
 {
     if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
@@ -4332,7 +4332,7 @@ SpxStreamRemapper::FunctionInstruction* SpxStreamRemapper::GetFunctionById(spv::
     return nullptr;
 }
 
-SpxStreamRemapper::ConstInstruction* SpxStreamRemapper::GetConstById(spv::Id id)
+SpxCompiler::ConstInstruction* SpxCompiler::GetConstById(spv::Id id)
 {
     if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
@@ -4345,7 +4345,7 @@ SpxStreamRemapper::ConstInstruction* SpxStreamRemapper::GetConstById(spv::Id id)
     return nullptr;
 }
 
-SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypeById(spv::Id id)
+SpxCompiler::TypeInstruction* SpxCompiler::GetTypeById(spv::Id id)
 {
     if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
@@ -4358,7 +4358,7 @@ SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypeById(spv::Id id)
     return nullptr;
 }
 
-SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableById(spv::Id id)
+SpxCompiler::VariableInstruction* SpxCompiler::GetVariableById(spv::Id id)
 {
     if (id >= listAllObjects.size()) return nullptr;
     ObjectInstructionBase* obj = listAllObjects[id];
@@ -4371,7 +4371,7 @@ SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariableById(spv::
     return nullptr;
 }
 
-SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypePointingTo(TypeInstruction* targetType)
+SpxCompiler::TypeInstruction* SpxCompiler::GetTypePointingTo(TypeInstruction* targetType)
 {
     if (targetType == nullptr) return nullptr;
 
@@ -4392,7 +4392,7 @@ SpxStreamRemapper::TypeInstruction* SpxStreamRemapper::GetTypePointingTo(TypeIns
     return res;
 }
 
-SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariablePointingTo(TypeInstruction* targetType)
+SpxCompiler::VariableInstruction* SpxCompiler::GetVariablePointingTo(TypeInstruction* targetType)
 {
     if (targetType == nullptr) return nullptr;
 
@@ -4413,7 +4413,7 @@ SpxStreamRemapper::VariableInstruction* SpxStreamRemapper::GetVariablePointingTo
     return res;
 }
 
-void SpxStreamRemapper::stripBytecode(vector<range_t>& ranges)
+void SpxCompiler::stripBytecode(vector<range_t>& ranges)
 {
     if (ranges.empty()) // nothing to do
         return;
@@ -4437,7 +4437,7 @@ void SpxStreamRemapper::stripBytecode(vector<range_t>& ranges)
     spv.resize(strippedPos);
 }
 
-bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned int begin, unsigned int end, const vector<spv::Id>& remapTable)
+bool SpxCompiler::remapAllIds(vector<uint32_t>& bytecode, unsigned int begin, unsigned int end, const vector<spv::Id>& remapTable)
 {
     string errorMsg;
     if (!remapAllIds(bytecode, begin, end, remapTable, errorMsg))
@@ -4448,7 +4448,7 @@ bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned int beg
     return true;
 }
 
-bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned int begin, unsigned int end, const vector<spv::Id>& remapTable, string& errorMsg)
+bool SpxCompiler::remapAllIds(vector<uint32_t>& bytecode, unsigned int begin, unsigned int end, const vector<spv::Id>& remapTable, string& errorMsg)
 {
     unsigned int pos = begin;
     unsigned int wordCount = 0;
@@ -4462,7 +4462,7 @@ bool SpxStreamRemapper::remapAllIds(vector<uint32_t>& bytecode, unsigned int beg
 }
 
 // inspired by spirvbin_t::processInstruction. Allow us to remap the instruction Ids
-bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsigned int word, unsigned int& wordCount, const vector<spv::Id>& remapTable, string& errorMsg)
+bool SpxCompiler::remapAllInstructionIds(vector<uint32_t>& bytecode, unsigned int word, unsigned int& wordCount, const vector<spv::Id>& remapTable, string& errorMsg)
 {
     const unsigned int instructionStart = word;
     wordCount = opWordCount(bytecode[instructionStart]);
@@ -4655,7 +4655,7 @@ bool SpxStreamRemapper::remapAllInstructionIds(vector<uint32_t>& bytecode, unsig
     return true;
 }
 
-bool SpxStreamRemapper::flagAllIdsFromInstruction(unsigned int word, spv::Op& opCode, unsigned int& wordCount, std::vector<bool>& listIdsUsed)
+bool SpxCompiler::flagAllIdsFromInstruction(unsigned int word, spv::Op& opCode, unsigned int& wordCount, std::vector<bool>& listIdsUsed)
 {
     wordCount = opWordCount(spv[word]);
     opCode = opOpCode(spv[word]);
@@ -4806,7 +4806,7 @@ bool SpxStreamRemapper::flagAllIdsFromInstruction(unsigned int word, spv::Op& op
 }
 
 // inspired by spirvbin_t::processInstruction. Allow us to store the instruction data and ids
-bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds, string& errorMsg)
+bool SpxCompiler::parseInstruction(const vector<uint32_t>& bytecode, unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds, string& errorMsg)
 {
     const unsigned int instructionStart = word;
     wordCount = opWordCount(bytecode[instructionStart]);
@@ -4960,7 +4960,7 @@ bool SpxStreamRemapper::parseInstruction(const vector<uint32_t>& bytecode, unsig
 }
 
 // inspired by spirvbin_t::processInstruction. Allow us to store the instruction data and ids
-bool SpxStreamRemapper::parseInstruction(unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds)
+bool SpxCompiler::parseInstruction(unsigned int word, spv::Op& opCode, unsigned int& wordCount, spv::Id& type, spv::Id& result, vector<spv::Id>& listIds)
 {
     string errorMsg;
     if (!parseInstruction(spv, word, opCode, wordCount, type, result, listIds, errorMsg))
@@ -5048,7 +5048,7 @@ BytecodeChunk* BytecodeUpdateController::GetBytecodeChunkAt(unsigned int positio
     return nullptr;
 }
 
-bool SpxStreamRemapper::ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController)
+bool SpxCompiler::ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController)
 {
     unsigned int bytecodeOriginalSize = spv.size();
 
@@ -5145,7 +5145,7 @@ bool SpxStreamRemapper::ApplyBytecodeUpdateController(BytecodeUpdateController& 
     return true;
 }
 
-bool SpxStreamRemapper::IsResourceType(const spv::Op& opCode)
+bool SpxCompiler::IsResourceType(const spv::Op& opCode)
 {
     switch (opCode)
     {
