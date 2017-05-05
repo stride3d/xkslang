@@ -6,13 +6,6 @@
 #include <memory>
 #include <string>
 
-#include "glslang/Public/ShaderLang.h"
-#include "StandAlone/ResourceLimits.h"
-
-#include "SPIRV/doc.h"
-//#include "SPIRV/disassemble.h"
-//#include "SPIRV/SPVRemapper.h"
-
 #include "SpxCompiler.h"
 
 using namespace std;

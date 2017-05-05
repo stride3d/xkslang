@@ -6,13 +6,6 @@
 #include <memory>
 #include <string>
 
-#include "glslang/Public/ShaderLang.h"
-#include "StandAlone/ResourceLimits.h"
-
-#include "SPIRV/doc.h"
-//#include "SPIRV/disassemble.h"
-//#include "SPIRV/SPVRemapper.h"
-
 #include "SpxCompiler.h"
 
 using namespace std;
@@ -1028,7 +1021,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages, ve
     }
 
     //=========================================================================================================================
-    //for Reflection: store the new ConstantBuffer in the function output parameter
+    //for Reflection: get the type of all cbuffer members
     {
         for (auto itcb = listNewCbuffers.begin(); itcb != listNewCbuffers.end(); itcb++)
         {
@@ -1043,16 +1036,18 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages, ve
             {
                 TypeStructMember& member = cbuffer->members[m];
 
-                if (!SetReflectionTypeForMember(member)) {
-                    error("Failed to set the reflection type for member: " + member.GetDeclarationNameOrSemantic());
+                TypeReflectionDescription typeReflection;
+                if (!GetReflectionTypeForMember(member, typeReflection)) {
+                    error("Failed to get the reflection type for the member: " + member.GetDeclarationNameOrSemantic());
                     break;
                 }
 
-                EffectReflection::ConstantBufferMember constantBufferMember(member.declarationName, member.memberSize, member.memberOffset, member.memberAlignment);
-                constantBuffer.AddMember(constantBufferMember);
+                //EffectReflection::ConstantBufferMember constantBufferMember(member.declarationName, member.memberSize, member.memberOffset, member.memberAlignment);
+                //constantBuffer.AddMember(constantBufferMember);
             }
+
+            if (errorMessages.size() > 0) { success = false; break; }
         }
-        if (errorMessages.size() > 0) success = false;
     }
 
     //=========================================================================================================================

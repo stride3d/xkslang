@@ -265,7 +265,7 @@ public:
     {
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
-            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr){}
+            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr) {}
         virtual ~TypeInstruction() {
             if (cbufferData != nullptr) delete cbufferData;
         }
@@ -295,13 +295,6 @@ public:
 
         //used if the type is a cbuffer struct
         CBufferTypeData* cbufferData;
-
-        //bool isCbuffer;
-        //bool isCbufferUsed;
-        //int cbufferType;
-        //bool cbufferStage;
-        //int cbufferCountMembers;
-        //std::string cbufferOwnerName; //shader owning the cbuffer (for stage cbuffer, cbuffers will share the same owner)
 
         friend class SpxCompiler;
     };
@@ -687,7 +680,8 @@ private:
 
     //validate a member name (for example Shader<8>_var will return Shader_8__var)
     std::string validateName(const std::string& name);
-    bool SetReflectionTypeForMember(TypeStructMember& member);
+    bool GetReflectionTypeForMember(TypeStructMember& member, TypeReflectionDescription& typeReflection);
+    bool GetReflectionTypeFor(TypeInstruction* memberType, TypeReflectionDescription& typeReflection, int iterationNum);
     unsigned int GetUniqueMergeOperationId();
     static void ResetMergeOperationId();
 

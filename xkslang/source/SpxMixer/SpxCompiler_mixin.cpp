@@ -6,12 +6,7 @@
 #include <memory>
 #include <string>
 
-#include "glslang/Public/ShaderLang.h"
-#include "StandAlone/ResourceLimits.h"
-
 #include "SPIRV/doc.h"
-//#include "SPIRV/disassemble.h"
-//#include "SPIRV/SPVRemapper.h"
 
 #include "SpxCompiler.h"
 
@@ -1752,7 +1747,7 @@ spv::Id SpxCompiler::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstru
             }
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (countElems <= 0) { error("Invalid OpTypeVector size"); return 0; }
+            if (countElems <= 0) { error("Invalid countElems size"); return 0; }
 #endif
             TypeInstruction* vectorElemType = GetTypeById(vectorElementTypeId);
             if (vectorElemType == nullptr) { error("failed to find the vector type for id: " + to_string(vectorElementTypeId)); return 0; }

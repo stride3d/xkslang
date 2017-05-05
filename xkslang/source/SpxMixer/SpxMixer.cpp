@@ -6,14 +6,6 @@
 #include <memory>
 #include <string>
 
-#include "glslang/Public/ShaderLang.h"
-#include "StandAlone/ResourceLimits.h"
-
-#include "SPIRV/GlslangToSpv.h"
-#include "SPIRV/disassemble.h"
-#include "SPIRV/doc.h"
-#include "SPIRV/SPVRemapper.h"
-
 #include "SpxMixer.h"
 #include "SpxCompiler.h"
 
