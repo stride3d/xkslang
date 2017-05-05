@@ -530,21 +530,16 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
                             else
                             {
                                 memberNewIndex = combinedCbuffer->members.size();
-                                spv::Id memberTypeId = memberToMerge.memberTypeId;
-                                combinedCbuffer->members.push_back(TypeStructMember());
+
+                                combinedCbuffer->members.push_back(TypeStructMember(memberToMerge));
                                 TypeStructMember& newMember = combinedCbuffer->members.back();
 
                                 newMember.structMemberIndex = memberNewIndex;
-                                newMember.memberTypeId = memberTypeId;
                                 newMember.isStage = isMemberStaged;
                                 newMember.listMemberDecoration = memberToMerge.listMemberDecoration;
-                                newMember.declarationName = memberToMerge.declarationName;
-                                newMember.attribute = memberToMerge.attribute;
                                 newMember.shaderOwnerName = cbufferToMerge->shaderOwnerName;
                         
                                 //compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment
-                                newMember.memberSize = memberToMerge.memberSize;
-                                newMember.memberAlignment = memberToMerge.memberAlignment;
                                 int memberOffset = 0;
                                 if (memberNewIndex > 0)
                                 {
@@ -1034,23 +1029,30 @@ bool SpxStreamRemapper::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStag
 
     //=========================================================================================================================
     //for Reflection: store the new ConstantBuffer in the function output parameter
-    for (auto itcb = listNewCbuffers.begin(); itcb != listNewCbuffers.end(); itcb++)
     {
-        TypeStructMemberArray* cbuffer = *itcb;
-        string& cbufferName = cbuffer->declarationName;
-
-        constantBuffers.push_back(EffectReflection::ConstantBuffer(cbufferName));
-        EffectReflection::ConstantBuffer& constantBuffer = constantBuffers.back();
-
-        toto;
-        unsigned int countMembers = cbuffer->countMembers();
-        for (unsigned int m = 0; m < countMembers; ++m)
+        for (auto itcb = listNewCbuffers.begin(); itcb != listNewCbuffers.end(); itcb++)
         {
-            TypeStructMember& member = cbuffer->members[m];
+            TypeStructMemberArray* cbuffer = *itcb;
+            string& cbufferName = cbuffer->declarationName;
 
-            EffectReflection::ConstantBufferMember constantBufferMember(member.declarationName, member.memberSize, member.memberOffset, member.memberAlignment);
-            constantBuffer.AddMember(constantBufferMember);
+            constantBuffers.push_back(EffectReflection::ConstantBuffer(cbufferName));
+            EffectReflection::ConstantBuffer& constantBuffer = constantBuffers.back();
+
+            unsigned int countMembers = cbuffer->countMembers();
+            for (unsigned int m = 0; m < countMembers; ++m)
+            {
+                TypeStructMember& member = cbuffer->members[m];
+
+                if (!SetReflectionTypeForMember(member)) {
+                    error("Failed to set the reflection type for member: " + member.GetDeclarationNameOrSemantic());
+                    break;
+                }
+
+                EffectReflection::ConstantBufferMember constantBufferMember(member.declarationName, member.memberSize, member.memberOffset, member.memberAlignment);
+                constantBuffer.AddMember(constantBufferMember);
+            }
         }
+        if (errorMessages.size() > 0) success = false;
     }
 
     //=========================================================================================================================

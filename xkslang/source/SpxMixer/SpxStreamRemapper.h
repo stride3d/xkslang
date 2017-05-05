@@ -20,7 +20,7 @@
 namespace xkslang
 {
 
-static const spv::Id spvUndefinedId = spv::Id(-10001);
+static const spv::Id spvUndefinedId = 0;
 static const unsigned int MagicNumber = 0x07230203;
 static const unsigned int Version = 0x00010000;
 static const unsigned int Revision = 8;
@@ -413,9 +413,12 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : structMemberIndex(-1), isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberDefaultConstantTypeId(spvUndefinedId),
-            newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1), memberSize(-1), memberAlignment(-1), memberType(nullptr),
-            variableAccessTypeId(0), memberTypePointerInputId(0), memberTypePointerOutputId(0), memberStageInputVariableId(0), memberStageOutputVariableId(0){}
+        TypeStructMember() : structTypeId(spvUndefinedId), structMemberIndex(-1),
+            isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberType(nullptr),
+            memberDefaultConstantTypeId(spvUndefinedId), memberSize(-1), memberAlignment(-1), memberOffset(0),
+            newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1),
+            variableAccessTypeId(0), memberTypePointerInputId(0), memberTypePointerOutputId(0), memberStageInputVariableId(0), memberStageOutputVariableId(0),
+            isUsed(false) {}
 
         spv::Id structTypeId;             //Id of the struct type containing the member
         int structMemberIndex;            //Id of the member within the struct
@@ -684,6 +687,7 @@ private:
 
     //validate a member name (for example Shader<8>_var will return Shader_8__var)
     std::string validateName(const std::string& name);
+    bool SetReflectionTypeForMember(TypeStructMember& member);
 
     bool ValidateSpxBytecodeAndData();
     bool ValidateHeader();
