@@ -452,6 +452,7 @@ public:
         //====================================================
         bool HasSemantic() const { return semantic.size() > 0; }
         bool HasDeclarationName() const { return declarationName.size() > 0; }
+        bool HasAttribute() const { return attribute.size() > 0; }
 
         const std::string& GetSemanticOrDeclarationName() const { return HasSemantic()? semantic: declarationName; }
         const std::string& GetDeclarationNameOrSemantic() const { return HasDeclarationName() ? declarationName : semantic; }
@@ -681,13 +682,16 @@ private:
     //validate a member name (for example Shader<8>_var will return Shader_8__var)
     std::string validateName(const std::string& name);
     bool GetReflectionTypeForMember(TypeStructMember& member, TypeReflectionDescription& typeReflection);
-    bool GetReflectionTypeFor(TypeInstruction* memberType, TypeReflectionDescription& typeReflection, int iterationNum);
+    bool GetReflectionTypeFor(TypeInstruction* memberType, TypeReflectionDescription& typeReflection, const std::string& attribute, int iterationNum);
     unsigned int GetUniqueMergeOperationId();
     static void ResetMergeOperationId();
 
     bool ValidateSpxBytecodeAndData();
     bool ValidateHeader();
     bool ProcessBytecodeAndDataSanityCheck();
+
+    bool GetBytecodeReflectionData();
+    bool GetCBufferBytecodeReflectionData();
 
     bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
@@ -701,7 +705,7 @@ private:
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
     bool RemoveAndConvertSPXExtensions();
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
-    bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages, std::vector<EffectReflection::ConstantBuffer>& constantBuffers);
+    bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
     static bool IsResourceType(const spv::Op& opCode);
 
     spv::Id GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const std::vector<ConstInstruction*>& listAllConsts,

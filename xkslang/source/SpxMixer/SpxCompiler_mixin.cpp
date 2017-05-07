@@ -2732,7 +2732,10 @@ bool SpxCompiler::RemoveAndConvertSPXExtensions()
 
     //===================================================================================================================
     //Convert SPIRX to SPIRV (remove all SPIRX extended instructions). So we don't need to repeat it for every stages
-    //One exception: we keep the instruction: OpSemanticName
+    //Some exceptions, we keep the instructions:
+    // -OpSemanticName: to let SPIRV-Cross set the semantic name as it was defined by the user in the original xksl shaders
+    // -OpCBufferMemberProperties: to let us retrieve the list of cbuffers from the SPV files
+    // -OpMemberAttribute: to let us correctly process the types reflection
     vector<range_t> vecStripRanges;
     unsigned int start = header_size;
     const unsigned int end = spv.size();
@@ -2785,16 +2788,16 @@ bool SpxCompiler::RemoveAndConvertSPXExtensions()
             case spv::OpMethodProperties:
             case spv::OpGSMethodProperties:
             case spv::OpMemberProperties:
-            case spv::OpMemberAttribute:
-            case spv::OpCBufferMemberProperties:
             case spv::OpMemberSemanticName:
             {
                 stripInst(vecStripRanges, start);
                 break;
             }
 
-            //Keep variable's semantic name information
+            //Keep the following SPX extensions:
             //case spv::OpSemanticName:
+            //case spv::OpCBufferMemberProperties:
+            //case spv::OpMemberAttribute:
             //{
             //}
         }

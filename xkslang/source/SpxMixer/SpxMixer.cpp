@@ -257,8 +257,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     // Process cbuffers
     //===================================================================================================================
     // remove unused cbuffers, merge used cbuffers havind same name
-    vector<EffectReflection::ConstantBuffer> listConstantBuffers;
-    if (!clonedSpxStream->ProcessCBuffers(vecMixerOutputStages, listConstantBuffers))
+    if (!clonedSpxStream->ProcessCBuffers(vecMixerOutputStages))
     {
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
@@ -303,6 +302,18 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
 
     if (finalSpv != nullptr)
         clonedSpxStream->GetMixinBytecode(finalSpv->getWritableBytecodeStream());
+
+    //===================================================================================================================
+    //===================================================================================================================
+    //Reflection: get all reflection information from the final extended SPV bytecode
+    if (!clonedSpxStream->GetBytecodeReflectionData())
+    {
+        clonedSpxStream->copyMessagesTo(messages);
+        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        delete clonedSpxStream;
+        return error(messages, "Fail to build the reflection data from the extended SPV bytecode");
+    }
+    //===================================================================================================================
 
     //===================================================================================================================
     // Build SPV bytecode for each output stages

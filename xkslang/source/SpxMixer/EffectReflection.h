@@ -282,13 +282,12 @@ enum class TypeReflectionClass
     Color = 13,
 };
 
-class TypeMemberReflectionDescription;
 class TypeReflectionDescription
 {
 public:
-    TypeReflectionDescription() : Class(TypeReflectionClass::Undefined), Type(TypeReflectionType::Undefined), RowCount(0), ColumnCount(0), Elements(0), ElementSize(0), Members(nullptr){}
+    TypeReflectionDescription() : Class(TypeReflectionClass::Undefined), Type(TypeReflectionType::Undefined), RowCount(0), ColumnCount(0), Elements(0), ElementSize(0) {}
     ~TypeReflectionDescription() {
-        if (Members != nullptr) delete[] Members;
+        //if (Members != nullptr) delete[] Members;
     }
 
     bool isValid() {return Class != TypeReflectionClass::Undefined;}
@@ -335,6 +334,11 @@ public:
     int ElementSize;
 
     /// <summary>
+    /// Alignment of this element.
+    /// </summary>
+    int ElementAlignment;
+
+    /// <summary>
     /// Name of this structure type.
     /// </summary>
     std::string Name;
@@ -342,9 +346,10 @@ public:
     /// <summary>
     /// Members in the structure.
     /// </summary>
-    TypeMemberReflectionDescription* Members;
+    //TypeMemberReflectionDescription* Members;
 };
 
+/*
 class TypeMemberReflectionDescription
 {
 public:
@@ -366,36 +371,37 @@ public:
     /// </summary>
     TypeReflectionDescription Type;
 };
+*/
+
+class ConstantBufferMemberReflectionDescription
+{
+public:
+    std::string KeyName;
+
+    int Offset;
+    TypeReflectionDescription Type;
+
+    ConstantBufferMemberReflectionDescription(const std::string& KeyName) : KeyName(KeyName) {}
+};
+
+class ConstantBufferReflectionDescription
+{
+public:
+    std::string cbufferName;
+    std::vector<ConstantBufferMemberReflectionDescription> members;
+
+    ConstantBufferReflectionDescription(const std::string& cbufferName) : cbufferName(cbufferName) {}
+
+    ConstantBufferReflectionDescription(const ConstantBufferReflectionDescription& cb) {
+        int glfdsj = 545;
+    }
+};
 
 class EffectReflection
 {
 public:
 
-    class ConstantBufferMember
-    {
-    public:
-        std::string keyName;
-        int size;
-        int offset;
-        int alignment;
-
-        //MemberType type;
-
-        ConstantBufferMember(const std::string& keyName, int size, int offset, int alignment) : keyName(keyName), size(size), offset(offset), alignment(alignment) {}
-    };
-
-    class ConstantBuffer
-    {
-    public:
-        std::string cbufferName;
-        std::vector<ConstantBufferMember> members;
-
-        ConstantBuffer(const std::string& cbufferName) : cbufferName(cbufferName) {}
-
-        void AddMember(ConstantBufferMember& member) {
-            members .push_back(member);
-        }
-    };
+    
 
 public:
     EffectReflection() {}

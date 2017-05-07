@@ -12,7 +12,7 @@ using namespace std;
 using namespace xkslang;
 
 //Remove unused cbuffers, merge used cbuffers havind the same name, take resources type out of the cbuffer
-bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages, vector<EffectReflection::ConstantBuffer>& constantBuffers)
+bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamReschuffled && status != SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAndCBuffersAnalysed) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_CBuffersValidated;
@@ -764,6 +764,12 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages, ve
                 structDecorateInstr.addImmediateOperand(spv::DecorationBlock);
                 structDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
 
+                //cbuffer declaration name
+                spv::Instruction cbufferDeclarationNameInstr(spv::OpDeclarationName);
+                cbufferDeclarationNameInstr.addIdOperand(cbuffer->structTypeId);
+                cbufferDeclarationNameInstr.addStringOperand(cbufferName.c_str());
+                cbufferDeclarationNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+
                 //cbuffer properties (block / cbuffer)
                 spv::Instruction structCBufferPropertiesInstr(spv::OpCBufferMemberProperties);
                 structCBufferPropertiesInstr.addIdOperand(cbuffer->structTypeId);
@@ -820,6 +826,16 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages, ve
             for (unsigned int memberIndex = 0; memberIndex < cbuffer->members.size(); ++memberIndex)
             {
                 const TypeStructMember& cbufferMember = cbuffer->members[memberIndex];
+
+                //member attribute (if any)
+                if (cbufferMember.HasAttribute())
+                {
+                    spv::Instruction memberNameInstr(spv::OpMemberAttribute);
+                    memberNameInstr.addIdOperand(cbuffer->structTypeId);
+                    memberNameInstr.addImmediateOperand(memberIndex);
+                    memberNameInstr.addStringOperand(cbufferMember.attribute.c_str());
+                    memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }
 
                 //member decorate (offset)
                 spv::Instruction memberOffsetDecorateInstr(spv::OpMemberDecorate);
@@ -1017,36 +1033,6 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages, ve
             }
 
             if (errorMessages.size() > 0) success = false;
-        }
-    }
-
-    //=========================================================================================================================
-    //for Reflection: get the type of all cbuffer members
-    {
-        for (auto itcb = listNewCbuffers.begin(); itcb != listNewCbuffers.end(); itcb++)
-        {
-            TypeStructMemberArray* cbuffer = *itcb;
-            string& cbufferName = cbuffer->declarationName;
-
-            constantBuffers.push_back(EffectReflection::ConstantBuffer(cbufferName));
-            EffectReflection::ConstantBuffer& constantBuffer = constantBuffers.back();
-
-            unsigned int countMembers = cbuffer->countMembers();
-            for (unsigned int m = 0; m < countMembers; ++m)
-            {
-                TypeStructMember& member = cbuffer->members[m];
-
-                TypeReflectionDescription typeReflection;
-                if (!GetReflectionTypeForMember(member, typeReflection)) {
-                    error("Failed to get the reflection type for the member: " + member.GetDeclarationNameOrSemantic());
-                    break;
-                }
-
-                //EffectReflection::ConstantBufferMember constantBufferMember(member.declarationName, member.memberSize, member.memberOffset, member.memberAlignment);
-                //constantBuffer.AddMember(constantBufferMember);
-            }
-
-            if (errorMessages.size() > 0) { success = false; break; }
         }
     }
 

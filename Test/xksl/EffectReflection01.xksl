@@ -9,6 +9,8 @@ shader ShaderMain
 		stage float4x3 Matrix4_3;
 		[Color]
         stage float3 ColorMatrix;
+		[Color]
+		stage float4 ColorArray[2];
     }
 	
 	cbuffer PerDraw
@@ -26,7 +28,7 @@ shader ShaderMain
 	
 	stage void VSMain() 
 	{
-		streams.ShadingPosition = mul(streams.Position, MatrixTransform);
+		streams.ShadingPosition = mul(streams.Position, MatrixTransform) + ColorArray[1];
 	}
 	
     stage void PSMain() 
