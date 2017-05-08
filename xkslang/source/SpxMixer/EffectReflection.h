@@ -12,7 +12,7 @@
 namespace xkslang
 {
 
-enum class TypeReflectionType
+enum class EffectParameterReflectionType
 {
     Undefined = -1,
 
@@ -207,7 +207,7 @@ enum class TypeReflectionType
     ConsumeStructuredBuffer = 51,
 };
 
-enum class TypeReflectionClass
+enum class EffectParameterReflectionClass
 {
     Undefined = -1,
 
@@ -285,16 +285,16 @@ enum class TypeReflectionClass
 class TypeReflectionDescription
 {
 public:
-    TypeReflectionDescription() : Class(TypeReflectionClass::Undefined), Type(TypeReflectionType::Undefined), RowCount(0), ColumnCount(0), Elements(0), ElementSize(0) {}
+    TypeReflectionDescription() : Class(EffectParameterReflectionClass::Undefined), Type(EffectParameterReflectionType::Undefined), RowCount(0), ColumnCount(0), Elements(0), ElementSize(0) {}
     ~TypeReflectionDescription() {
         //if (Members != nullptr) delete[] Members;
     }
 
-    bool isValid() {return Class != TypeReflectionClass::Undefined;}
+    bool isValid() {return Class != EffectParameterReflectionClass::Undefined;}
 
-    bool isScalarType() {return Class == TypeReflectionClass::Scalar;}
+    bool isScalarType() {return Class == EffectParameterReflectionClass::Scalar;}
 
-    void Set(TypeReflectionClass c, TypeReflectionType t, int countRow, int countColumn)
+    void Set(EffectParameterReflectionClass c, EffectParameterReflectionType t, int countRow, int countColumn)
     {
         this->Class = c;
         this->Type = t;
@@ -304,14 +304,14 @@ public:
 
 public:
     /// <summary>
-    /// The <see cref="TypeReflectionClass"/> of this parameter.
+    /// The <see cref="EffectParameterReflectionClass"/> of this parameter.
     /// </summary>
-    TypeReflectionClass Class;
+    EffectParameterReflectionClass Class;
 
     /// <summary>
-    /// The <see cref="TypeReflectionType"/> of this parameter.
+    /// The <see cref="EffectParameterReflectionType"/> of this parameter.
     /// </summary>
-    TypeReflectionType Type;
+    EffectParameterReflectionType Type;
 
     /// <summary>
     /// Number of rows for this element.
@@ -381,35 +381,41 @@ public:
     int Offset;
     TypeReflectionDescription Type;
 
-    ConstantBufferMemberReflectionDescription(const std::string& KeyName) : KeyName(KeyName) {}
+    ConstantBufferMemberReflectionDescription(){}
 };
 
 class ConstantBufferReflectionDescription
 {
 public:
-    std::string cbufferName;
-    std::vector<ConstantBufferMemberReflectionDescription> members;
+    int Size;
+    std::string CbufferName;
+    std::vector<ConstantBufferMemberReflectionDescription> Members;
 
-    ConstantBufferReflectionDescription(const std::string& cbufferName) : cbufferName(cbufferName) {}
+    ConstantBufferReflectionDescription() : Size(0){}
+};
 
-    ConstantBufferReflectionDescription(const ConstantBufferReflectionDescription& cb) {
-        int glfdsj = 545;
-    }
+class EffectResourceBindingDescription
+{
+public:
+    std::string KeyName;
+    EffectParameterReflectionClass Class;
+    EffectParameterReflectionType Type;
+    ShadingStageEnum Stage;
 };
 
 class EffectReflection
 {
 public:
-
-    
+    std::vector<ConstantBufferReflectionDescription> ConstantBuffers;
+    std::vector<EffectResourceBindingDescription> ResourceBindings;
 
 public:
     EffectReflection() {}
 
-    //std::vector<ConstantBuffer> ConstantBuffers;
+    void Clear();
 
-    static std::string GetTypeReflectionClassLabel(TypeReflectionClass typeReflectionClass);
-    static std::string GetTypeReflectionTypeLabel(TypeReflectionType typeReflectionType);
+    static std::string GetEffectParameterReflectionClassLabel(EffectParameterReflectionClass parameterClass);
+    static std::string GetEffectParameterReflectionTypeLabel(EffectParameterReflectionType parameterType);
 };
 
 }  // namespace xkslang

@@ -2725,10 +2725,10 @@ SpxCompiler::FunctionInstruction* SpxCompiler::GetShaderFunctionForEntryPoint(st
     return entryPointFunction;
 }
 
-bool SpxCompiler::RemoveAndConvertSPXExtensions()
+bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages)
 {
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
-    status = SpxRemapperStatusEnum::MixinBeingCompiled_ConvertedToSPV;
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_Finalized;
 
     //===================================================================================================================
     //Convert SPIRX to SPIRV (remove all SPIRX extended instructions). So we don't need to repeat it for every stages
@@ -2807,6 +2807,33 @@ bool SpxCompiler::RemoveAndConvertSPXExtensions()
     if (errorMessages.size() > 0) return false;
 
     stripBytecode(vecStripRanges);
+
+    //============================================================================================================
+    //Add the entry points for each output stages
+    vector<uint32_t> entryPointInstructions;
+    for (unsigned int i = 0; i<outputStages.size(); ++i)
+    {
+        XkslMixerOutputStage& stage = outputStages[i];
+        FunctionInstruction* entryFunction = stage.entryFunction;
+        if (entryFunction == nullptr) return error("The stage has no entry function");
+
+        spv::ExecutionModel model = GetShadingStageExecutionMode(stage.outputStage->stage);
+        if (model == spv::ExecutionModelMax) return error("Unknown stage");
+        spv::Instruction entryPointInstr(spv::OpEntryPoint);
+        entryPointInstr.addImmediateOperand(model);
+        entryPointInstr.addIdOperand(entryFunction->GetResultId());
+        entryPointInstr.addStringOperand(stage.outputStage->entryPointName.c_str());
+        //Add all input variables Ids
+        for (unsigned int k = 0; k < stage.listStageInputVariableInfo.size(); k++)
+            entryPointInstr.addIdOperand(stage.listStageInputVariableInfo[k].spvVariableId);
+        //Add all output variables Ids
+        for (unsigned int k = 0; k < stage.listStageOutputVariableInfo.size(); k++)
+            entryPointInstr.addIdOperand(stage.listStageOutputVariableInfo[k].spvVariableId);
+        entryPointInstr.dump(entryPointInstructions);
+    }
+    spv.insert(spv.begin() + header_size, entryPointInstructions.begin(), entryPointInstructions.end());
+
+    //============================================================================================================
     if (!UpdateAllMaps()) return error("RemoveAndConvertSPXExtensions: failed to update all maps");
 
     if (errorMessages.size() > 0) return false;
@@ -2816,8 +2843,7 @@ bool SpxCompiler::RemoveAndConvertSPXExtensions()
 //Mixin is finalized: no more updates will be brought to the mixin bytecode after
 bool SpxCompiler::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage>& outputStages)
 {
-    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_ConvertedToSPV) return error("Invalid remapper status");
-    status = SpxRemapperStatusEnum::MixinBeingCompiled_SPXBytecodeRemoved;
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_Finalized) return error("Invalid remapper status");
 
     if (outputStages.size() == 0) return error("no output stages defined");
 
@@ -2878,9 +2904,51 @@ bool SpxCompiler::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage>& out
 
 bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<spv::Id>& listObjectIdsToKeep)
 {
-    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_SPXBytecodeRemoved) return error("Invalid remapper status");
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_Finalized) return error("Invalid remapper status");
     FunctionInstruction* entryFunction = stage.entryFunction;
     if (entryFunction == nullptr) return error("The stage has no entry function");
+
+    //Find the output stage entryPoint
+    vector<uint32_t> stageEntryPointInstr;
+    {
+        spv::ExecutionModel outputModel = GetShadingStageExecutionMode(stage.outputStage->stage);
+        if (outputModel == spv::ExecutionModelMax) return error("Unknown stage");
+
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            //By default: copy memoryModel and external import (this might change later depending on the stage)
+            switch (opCode)
+            {
+                case spv::OpEntryPoint:
+                {
+                    spv::ExecutionModel model = (spv::ExecutionModel)asLiteralValue(start + 1);
+                    if (model == outputModel)
+                    {
+                        stageEntryPointInstr.insert(stageEntryPointInstr.begin(), spv.begin() + start, spv.begin() + start + wordCount);
+                        start = end;
+                    }
+                    break;
+                }
+                
+                case spv::OpName:
+                case spv::OpMemberName:
+                case spv::OpFunction:
+                case spv::OpConstant:
+                {
+                    start = end;
+                    break;
+                }
+            }
+
+            start += wordCount;
+        }
+        if (stageEntryPointInstr.size() == 0) return error("Failed to find the stage's entry point instruction");
+    }
 
     //======================================================================================================
     //Find all functions being called by the stage
@@ -2912,8 +2980,6 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
                 switch (opCode)
                 {
                     case spv::OpFunctionCall:
-                    case spv::OpFunctionCallBaseResolved:
-                    case spv::OpFunctionCallThroughStaticShaderClassCall:
                     {
                         //pile the function to go check it later
                         spv::Id functionCalledId = asId(start + 3);
@@ -2926,6 +2992,8 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
                         break;
                     }
 
+                    case spv::OpFunctionCallBaseResolved:
+                    case spv::OpFunctionCallThroughStaticShaderClassCall:
                     case spv::OpFunctionCallThroughCompositionVariable:
                     case spv::OpFunctionCallBaseUnresolved:
                     {
@@ -3002,19 +3070,7 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
     }
 
     //Add the entry point instruction
-    spv::ExecutionModel model = GetShadingStageExecutionMode(stage.outputStage->stage);
-    if (model == spv::ExecutionModelMax) return error("Unknown stage");
-    spv::Instruction entryPointInstr(spv::OpEntryPoint);
-    entryPointInstr.addImmediateOperand(model);
-    entryPointInstr.addIdOperand(entryFunction->GetResultId());
-    entryPointInstr.addStringOperand(stage.outputStage->entryPointName.c_str());
-    //Add all input variables Ids
-    for (unsigned int k = 0; k < stage.listStageInputVariableInfo.size(); k++)
-        entryPointInstr.addIdOperand(stage.listStageInputVariableInfo[k].spvVariableId);
-    //Add all output variables Ids
-    for (unsigned int k = 0; k < stage.listStageOutputVariableInfo.size(); k++)
-        entryPointInstr.addIdOperand(stage.listStageOutputVariableInfo[k].spvVariableId);
-    entryPointInstr.dump(header);
+    header.insert(header.end(), stageEntryPointInstr.begin(), stageEntryPointInstr.end());
 
     //add the execution modes
     for (auto itc = executionModes.begin(); itc != executionModes.end(); itc++)

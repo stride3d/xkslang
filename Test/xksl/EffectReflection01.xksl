@@ -28,7 +28,7 @@ shader ShaderMain
 	
 	stage void VSMain() 
 	{
-		streams.ShadingPosition = mul(streams.Position, MatrixTransform) + ColorArray[1];
+		streams.ShadingPosition = mul(streams.Position, MatrixTransform) + float4(ColorArray[1].xyz, depthOffset);
 	}
 	
     stage void PSMain() 

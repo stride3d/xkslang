@@ -11,20 +11,23 @@
 using namespace std;
 using namespace xkslang;
 
-bool SpxCompiler::GetBytecodeReflectionData()
+bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
 {
+    effectReflection.Clear();
+
     bool success;
-    success = GetCBufferBytecodeReflectionData();
+    success = GetAllCBufferReflectionDataFromBytecode(effectReflection);
 
     if (!success) return error("Failed to get the CBuffer reflection data from the bytecode");
 
     return true;
 }
 
-bool SpxCompiler::GetCBufferBytecodeReflectionData()
+bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effectReflection)
 {
     bool success = true;
 
+    //=========================================================================================================================
     //=========================================================================================================================
     //get ALL cbuffers
     vector<CBufferTypeData*> listAllCBuffers;
@@ -186,39 +189,58 @@ bool SpxCompiler::GetCBufferBytecodeReflectionData()
     }
 
     //=========================================================================================================================
-    //get the type for all cbuffer members
-    vector<ConstantBufferReflectionDescription> constantBuffers;
+    //=========================================================================================================================
+    //Get and init the reflection type for all cbuffer members
+
+    effectReflection.ConstantBuffers.resize(listAllCBuffers.size());
     if (success)
     {
-        for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
+        for (unsigned int k = 0; k < listAllCBuffers.size(); k++)
         {
-            CBufferTypeData* cbufferData = *itcb;
-
-            constantBuffers.push_back(ConstantBufferReflectionDescription(cbufferData->cbufferName));
-            ConstantBufferReflectionDescription& cbufferReflection = constantBuffers.back();
-
-            
-
+            CBufferTypeData* cbufferData = listAllCBuffers[k];
             unsigned int countMembers = cbufferData->cbufferCountMembers;
-            for (unsigned int m = 0; m < countMembers; ++m)
+
+            ConstantBufferReflectionDescription& cbufferReflection = effectReflection.ConstantBuffers[k];
+            cbufferReflection.CbufferName = cbufferData->cbufferName;
+            cbufferReflection.Members.resize(countMembers);
+
+            for (unsigned int mIndex = 0; mIndex < countMembers; ++mIndex)
             {
-                TypeStructMember& member = cbufferData->cbufferMembersData->members[m];
-    
-                TypeReflectionDescription typeReflection;
-                if (!GetReflectionTypeForMember(member, typeReflection)) {
+                TypeStructMember& member = cbufferData->cbufferMembersData->members[mIndex];
+                ConstantBufferMemberReflectionDescription& memberReflection = cbufferReflection.Members[mIndex];
+                memberReflection.KeyName = member.GetDeclarationNameOrSemantic();
+
+                if (!GetReflectionTypeForMember(member, memberReflection.Type)) {
                     error("Failed to get the reflection type for the member: " + member.GetDeclarationNameOrSemantic());
+                    break;
                 }
+
+                //compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment
+                int memberOffset = 0;
+                if (mIndex > 0)
+                {
+                    ConstantBufferMemberReflectionDescription& previousMemberReflection = cbufferReflection.Members[mIndex - 1];
+                    int previousMemberOffset = previousMemberReflection.Offset;
+                    int previousMemberSize = previousMemberReflection.Type.ElementSize;
+
+                    memberOffset = previousMemberOffset + previousMemberSize;
+                    int memberAlignment = memberReflection.Type.ElementAlignment;
+                    //round to pow2
+                    memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1));
+                }
+                memberReflection.Offset = memberOffset;
+                cbufferReflection.Size = memberOffset + memberReflection.Type.ElementSize;
             }
     
             if (errorMessages.size() > 0) { success = false; break; }
         }
     }
 
-    if (success)
-    {
-        //set the size and offset for all members
-    }
+    //=========================================================================================================================
+    //=========================================================================================================================
+    //Find which cbuffer resource is used by which output stage
 
+    //=========================================================================================================================
     //=========================================================================================================================
     //delete allocated data
     for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
@@ -263,9 +285,9 @@ bool SpxCompiler::GetReflectionTypeFor(TypeInstruction* memberType, TypeReflecti
 
             switch (width)
             {
-                case 16: typeReflection.Set(TypeReflectionClass::Scalar, TypeReflectionType::Float, 1, 1); break;  //should we create a special type?
-                case 32: typeReflection.Set(TypeReflectionClass::Scalar, TypeReflectionType::Float, 1, 1); break;
-                case 64: typeReflection.Set(TypeReflectionClass::Scalar, TypeReflectionType::Double, 1, 1); break;
+                case 16: typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Float, 1, 1); break;  //should we create a special type?
+                case 32: typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Float, 1, 1); break;
+                case 64: typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Double, 1, 1); break;
                 default: return error("OpTypeFloat: invalid type width: " + to_string(width));
             }
             break;
@@ -276,31 +298,31 @@ bool SpxCompiler::GetReflectionTypeFor(TypeInstruction* memberType, TypeReflecti
             int width = asLiteralValue(memberType->GetBytecodeStartPosition() + 2);
             int sign = asLiteralValue(memberType->GetBytecodeStartPosition() + 3);
 
-            TypeReflectionType reflectionType;
+            EffectParameterReflectionType reflectionType;
             if (sign == 1)
             {
-                reflectionType = TypeReflectionType::Int;
+                reflectionType = EffectParameterReflectionType::Int;
             }
             else
             {
-                if (width == 8) reflectionType = TypeReflectionType::UInt8;
-                else reflectionType = TypeReflectionType::UInt;
+                if (width == 8) reflectionType = EffectParameterReflectionType::UInt8;
+                else reflectionType = EffectParameterReflectionType::UInt;
             }
 
             //Maybe we can differenciate some Int type later (signed/unsigned, int 16,32,64,...)
-            typeReflection.Set(TypeReflectionClass::Scalar, reflectionType, 1, 1);
+            typeReflection.Set(EffectParameterReflectionClass::Scalar, reflectionType, 1, 1);
             break;
         }
 
         case spv::OpTypeBool:
         {
-            typeReflection.Set(TypeReflectionClass::Scalar, TypeReflectionType::Bool, 1, 1);
+            typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Bool, 1, 1);
             break;
         }
 
         case spv::OpTypeVoid:
         {
-            typeReflection.Set(TypeReflectionClass::Scalar, TypeReflectionType::Void, 1, 1);
+            typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Void, 1, 1);
             break;
         }
 
@@ -319,13 +341,13 @@ bool SpxCompiler::GetReflectionTypeFor(TypeInstruction* memberType, TypeReflecti
             if (!GetReflectionTypeFor(subElementType, subElementTypeReflection, attribute, iterationNum + 1))
                 return error("failed to get the reflection type for the sub-element: " + to_string(subElementTypeId));
 
-            if (subElementTypeReflection.Class != TypeReflectionClass::Vector && subElementTypeReflection.Class != TypeReflectionClass::Color)
-                return error("OpTypeMatrix: The sub-element class must be a Vector or Color. class: " + EffectReflection::GetTypeReflectionClassLabel(subElementTypeReflection.Class));
-            //if (subElementTypeReflection.Type != TypeReflectionType::Float)
-            //    return error("The sub-element type must be Float. Type: " + EffectReflection::GetTypeReflectionTypeLabel(subElementTypeReflection.Type));
+            if (subElementTypeReflection.Class != EffectParameterReflectionClass::Vector && subElementTypeReflection.Class != EffectParameterReflectionClass::Color)
+                return error("OpTypeMatrix: The sub-element class must be a Vector or Color. class: " + EffectReflection::GetEffectParameterReflectionClassLabel(subElementTypeReflection.Class));
+            //if (subElementTypeReflection.Type != EffectParameterReflectionType::Float)
+            //    return error("The sub-element type must be Float. Type: " + EffectReflection::GetEffectParameterReflectionTypeLabel(subElementTypeReflection.Type));
             int countColumns = subElementTypeReflection.ColumnCount;
             
-            typeReflection.Set(TypeReflectionClass::MatrixColumns, subElementTypeReflection.Type, countRows, countColumns);
+            typeReflection.Set(EffectParameterReflectionClass::MatrixColumns, subElementTypeReflection.Type, countRows, countColumns);
 
             break;
         }
@@ -376,12 +398,12 @@ bool SpxCompiler::GetReflectionTypeFor(TypeInstruction* memberType, TypeReflecti
                 return error("failed to get the reflection type for the sub-element: " + to_string(subElementTypeId));
 
             if (!subElementTypeReflection.isScalarType())
-                return error("OpTypeVector: The sub-element class must be scalar. class: " + EffectReflection::GetTypeReflectionClassLabel(subElementTypeReflection.Class));
+                return error("OpTypeVector: The sub-element class must be scalar. class: " + EffectReflection::GetEffectParameterReflectionClassLabel(subElementTypeReflection.Class));
 
-            TypeReflectionClass vectorClass = TypeReflectionClass::Vector;
-            if (subElementTypeReflection.Type == TypeReflectionType::Float && (countElements >= 2 && countElements <= 4)) {
+            EffectParameterReflectionClass vectorClass = EffectParameterReflectionClass::Vector;
+            if (subElementTypeReflection.Type == EffectParameterReflectionType::Float && (countElements >= 2 && countElements <= 4)) {
                 if (attribute == "Color") {
-                    vectorClass = TypeReflectionClass::Color;
+                    vectorClass = EffectParameterReflectionClass::Color;
                 }
             }
 

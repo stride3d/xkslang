@@ -279,9 +279,9 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     }
 
     //===================================================================================================================
-    // Convert SPX to SPV
+    // Finalize the compilation
     //===================================================================================================================
-    if (!clonedSpxStream->RemoveAndConvertSPXExtensions())
+    if (!clonedSpxStream->FinalizeCompilation(vecMixerOutputStages))
     {
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
@@ -306,7 +306,8 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     //===================================================================================================================
     //===================================================================================================================
     //Reflection: get all reflection information from the final extended SPV bytecode
-    if (!clonedSpxStream->GetBytecodeReflectionData())
+    EffectReflection effectReflection;
+    if (!clonedSpxStream->GetBytecodeReflectionData(effectReflection))
     {
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());

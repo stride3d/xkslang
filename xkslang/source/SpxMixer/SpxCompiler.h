@@ -40,8 +40,7 @@ enum class SpxRemapperStatusEnum
     MixinBeingCompiled_CBuffersValidated,
     MixinBeingCompiled_ResourcesProcessed,
     MixinBeingCompiled_UnusedShaderRemoved,
-    MixinBeingCompiled_ConvertedToSPV,
-    MixinBeingCompiled_SPXBytecodeRemoved,
+    MixinBeingCompiled_Finalized,
     MixinFinalized
 };
 
@@ -690,8 +689,8 @@ private:
     bool ValidateHeader();
     bool ProcessBytecodeAndDataSanityCheck();
 
-    bool GetBytecodeReflectionData();
-    bool GetCBufferBytecodeReflectionData();
+    bool GetBytecodeReflectionData(EffectReflection& effectReflection);
+    bool GetAllCBufferReflectionDataFromBytecode(EffectReflection& effectReflection);
 
     bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
@@ -703,7 +702,7 @@ private:
     bool ValidateStagesStreamMembersFlow(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool ReshuffleStreamVariables(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
-    bool RemoveAndConvertSPXExtensions();
+    bool FinalizeCompilation(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
     static bool IsResourceType(const spv::Op& opCode);
