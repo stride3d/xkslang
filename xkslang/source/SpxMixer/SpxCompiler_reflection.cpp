@@ -15,15 +15,56 @@ bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
 {
     effectReflection.Clear();
 
+    //Find all output stages entry point
+    vector<OutputStageEntryPoint> listEntryPoints;
+    {
+        unsigned int start = header_size;
+        const unsigned int end = spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
+            {
+                case spv::OpEntryPoint:
+                {
+                    spv::ExecutionModel model = (spv::ExecutionModel)asLiteralValue(start + 1);
+                    ShadingStageEnum stage = GetShadingStageForExecutionMode(model);
+
+                    spv::Id entryFunctionId = asId(start + 2);
+                    FunctionInstruction* entryFunction = GetFunctionById(entryFunctionId);
+                    
+                    if (stage == ShadingStageEnum::Undefined) return error("Failed to read the stage from the entry point");
+                    if (entryFunction == nullptr) return error("Failed to find the entry function for id: " + to_string(entryFunctionId));
+
+                    listEntryPoints.push_back(OutputStageEntryPoint(stage, entryFunction));
+                    break;
+                }
+
+                case spv::OpName:
+                case spv::OpMemberName:
+                case spv::OpFunction:
+                case spv::OpConstant:
+                {
+                    start = end;
+                    break;
+                }
+            }
+            start += wordCount;
+        }
+        if (listEntryPoints.size() == 0) return error("No entry points found in the compiled bytecode");
+    }
+
     bool success;
-    success = GetAllCBufferReflectionDataFromBytecode(effectReflection);
+    success = GetAllCBufferReflectionDataFromBytecode(effectReflection, listEntryPoints);
 
     if (!success) return error("Failed to get the CBuffer reflection data from the bytecode");
 
     return true;
 }
 
-bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effectReflection)
+bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effectReflection, vector<OutputStageEntryPoint>& listEntryPoints)
 {
     bool success = true;
 
@@ -48,8 +89,17 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
 
 #ifdef XKSLANG_DEBUG_MODE
                 if (cbufferData->cbufferMembersData != nullptr) { error("a cbuffer members data has already been initialized"); break; }
+                if (cbufferData->cbufferCountMembers <= 0) { error("invalid cbuffer member count"); break; }
+#endif
+
+                cbufferData->cbufferTypeObject = type;
+                cbufferData->cbufferPointerTypeObject = GetTypePointingTo(type);
+                cbufferData->cbufferVariableTypeObject = GetVariablePointingTo(cbufferData->cbufferPointerTypeObject);
+                if (cbufferData->cbufferVariableTypeObject == nullptr) { error("Failed to find the variable pointing to the cbuffer: " + to_string(type->GetId())); break; }
+
+#ifdef XKSLANG_DEBUG_MODE
                 if (type->GetId() >= vectorCBuffersIds.size()) { error("cbuffer type id is out of bound. Id: " + to_string(type->GetId())); break; }
-                if (cbufferData->cbufferCountMembers <= 0) { error("invalid count members for cbuffer"); break; }
+                if (cbufferData->cbufferVariableTypeObject->GetId() >= vectorCBuffersIds.size()) { error("cbuffer variable type id is out of bound. Id: " + to_string(type->GetId())); break; }
 #endif
 
                 cbufferData->cbufferMembersData = new TypeStructMemberArray();
@@ -57,6 +107,7 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
 
                 listAllCBuffers.push_back(cbufferData);
                 vectorCBuffersIds[type->GetId()] = cbufferData;
+                //vectorCBuffersIds[cbufferData->cbufferVariableTypeObject->GetId()] = cbufferData;
             }
         }
 
@@ -78,6 +129,17 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
 
             switch (opCode)
             {
+                case spv::OpName:
+                {
+                    const spv::Id id = asId(start + 1);
+                    if (vectorCBuffersIds[id] != nullptr)
+                    {
+                        CBufferTypeData* cbufferData = vectorCBuffersIds[id];
+                        const string name = literalString(start + 2);
+                        cbufferData->cbufferName = name;
+                    }
+                    break;
+                }
                 case spv::OpMemberAttribute:
                 {
                     const spv::Id id = asId(start + 1);
@@ -190,11 +252,11 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
 
     //=========================================================================================================================
     //=========================================================================================================================
-    //Get and init the reflection type for all cbuffer members
-
-    effectReflection.ConstantBuffers.resize(listAllCBuffers.size());
+    //Set the reflection data for all cbuffer and their members
     if (success)
     {
+        effectReflection.ConstantBuffers.resize(listAllCBuffers.size());
+
         for (unsigned int k = 0; k < listAllCBuffers.size(); k++)
         {
             CBufferTypeData* cbufferData = listAllCBuffers[k];
@@ -238,7 +300,105 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
 
     //=========================================================================================================================
     //=========================================================================================================================
-    //Find which cbuffer resource is used by which output stage
+    //Find which cbuffer resources is used by which output stage
+    if (success)
+    {
+        //we access the cbuffer through their variable
+        for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
+        {
+            CBufferTypeData* cbufferData = *itcb;
+            vectorCBuffersIds[cbufferData->cbufferTypeObject->GetId()] = nullptr;
+            vectorCBuffersIds[cbufferData->cbufferVariableTypeObject->GetId()] = cbufferData;
+        }
+
+        for (unsigned int iStage = 0; iStage < listEntryPoints.size(); ++iStage)
+        {
+            FunctionInstruction* stageEntryFunction = listEntryPoints[iStage].entryFunction;
+            ShadingStageEnum stage = listEntryPoints[iStage].stage;
+
+            //reset the cbuffer flag (we insert a cbuffer once per stage)
+            for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
+            {
+                CBufferTypeData* cbufferData = *itcb;
+                cbufferData->tmpFlag = 0;
+            }
+
+            //Set all functions flag to 0 (to check a function only once)
+            for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
+                FunctionInstruction* aFunction = *itsf;
+                aFunction->flag1 = 0;
+            }
+
+            //Find all functions being called by the stage
+            vector<FunctionInstruction*> listAllFunctionsCalledByTheStage;
+
+            vector<FunctionInstruction*> vectorFunctionsToCheck;
+            vectorFunctionsToCheck.push_back(stageEntryFunction);
+            stageEntryFunction->flag1 = 1;
+            while (vectorFunctionsToCheck.size() > 0)
+            {
+                FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
+                vectorFunctionsToCheck.pop_back();
+                listAllFunctionsCalledByTheStage.push_back(aFunctionCalled);
+
+                //check if the function is calling any other function
+                unsigned int start = aFunctionCalled->bytecodeStartPosition;
+                const unsigned int end = aFunctionCalled->bytecodeEndPosition;
+                while (start < end)
+                {
+                    unsigned int wordCount = asWordCount(start);
+                    spv::Op opCode = asOpCode(start);
+                    switch (opCode)
+                    {
+                        case spv::OpAccessChain:
+                        {
+                            spv::Id structIdAccessed = asId(start + 3);
+
+                            //are we accessing a cbuffer that we just merged?
+                            if (vectorCBuffersIds[structIdAccessed] != nullptr)
+                            {
+                                CBufferTypeData* cbufferData = vectorCBuffersIds[structIdAccessed];
+                                if (cbufferData->tmpFlag == 0)
+                                {
+                                    cbufferData->tmpFlag = 1;
+                                    effectReflection.ResourceBindings.push_back(
+                                        EffectResourceBindingDescription(
+                                            stage,
+                                            cbufferData->cbufferName,
+                                            EffectParameterReflectionClass::ConstantBuffer,
+                                            EffectParameterReflectionType::ConstantBuffer
+                                        ));
+                                }
+                            }
+                            break;
+                        }
+
+                        case spv::OpFunctionCall:
+                        {
+                            //pile the function to go check it later
+                            spv::Id functionCalledId = asId(start + 3);
+                            FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+                            if (anotherFunctionCalled == nullptr) {
+                                error("Failed to find the function for id: " + to_string(functionCalledId));
+                            }
+                            else
+                            {
+                                if (anotherFunctionCalled->flag1 == 0) {
+                                    anotherFunctionCalled->flag1 = 1;
+                                    vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                    start += wordCount;
+                }
+            }
+
+            if (errorMessages.size() > 0) { success = false; break; }
+        }
+    }
 
     //=========================================================================================================================
     //=========================================================================================================================

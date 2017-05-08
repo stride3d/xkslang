@@ -34,6 +34,6 @@ shader ShaderMain
     stage void PSMain() 
     {
         streams.Depth = streams.ShadingPosition.w + depthOffset;
-        streams.ColorTarget = float4(streams.ShadingPosition.x, streams.ShadingPosition.y, 1.0, 1.0);
+        streams.ColorTarget = float4(streams.ShadingPosition.x, streams.ShadingPosition.y, 1.0, depthOffset);
     }
 };

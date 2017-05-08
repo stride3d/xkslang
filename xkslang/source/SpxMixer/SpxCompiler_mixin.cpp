@@ -43,19 +43,32 @@ void SpxCompiler::ResetMergeOperationId()
     SpxCompiler::currentMergeOperationId = 0;
 }
 
-spv::ExecutionModel SpxCompiler::GetShadingStageExecutionMode(ShadingStageEnum stage)
+spv::ExecutionModel SpxCompiler::GetExecutionModeForShadingStage(ShadingStageEnum stage)
 {
     switch (stage) {
-    case ShadingStageEnum::Vertex:           return spv::ExecutionModelVertex;
-    case ShadingStageEnum::Pixel:            return spv::ExecutionModelFragment;
-    case ShadingStageEnum::TessControl:      return spv::ExecutionModelTessellationControl;
-    case ShadingStageEnum::TessEvaluation:   return spv::ExecutionModelTessellationEvaluation;
-    case ShadingStageEnum::Geometry:         return spv::ExecutionModelGeometry;
-    case ShadingStageEnum::Compute:          return spv::ExecutionModelGLCompute;
-    default:
-        return spv::ExecutionModelMax;
+        case ShadingStageEnum::Vertex:           return spv::ExecutionModelVertex;
+        case ShadingStageEnum::Pixel:            return spv::ExecutionModelFragment;
+        case ShadingStageEnum::TessControl:      return spv::ExecutionModelTessellationControl;
+        case ShadingStageEnum::TessEvaluation:   return spv::ExecutionModelTessellationEvaluation;
+        case ShadingStageEnum::Geometry:         return spv::ExecutionModelGeometry;
+        case ShadingStageEnum::Compute:          return spv::ExecutionModelGLCompute;
+        default:                                 return spv::ExecutionModelMax;
     }
 }
+
+ShadingStageEnum SpxCompiler::GetShadingStageForExecutionMode(spv::ExecutionModel model)
+{
+    switch (model) {
+        case spv::ExecutionModelVertex:                 return ShadingStageEnum::Vertex;        
+        case spv::ExecutionModelFragment:               return ShadingStageEnum::Pixel;         
+        case spv::ExecutionModelTessellationControl:    return ShadingStageEnum::TessControl;   
+        case spv::ExecutionModelTessellationEvaluation: return ShadingStageEnum::TessEvaluation;
+        case spv::ExecutionModelGeometry:               return ShadingStageEnum::Geometry;      
+        case spv::ExecutionModelGLCompute:              return ShadingStageEnum::Compute;       
+        default:                                        return ShadingStageEnum::Undefined;
+    }
+}
+
 
 string SpxCompiler::validateName(const string& name)
 {
@@ -1257,14 +1270,13 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     return true;
 }
 
-bool SpxCompiler::SetBytecode(const SpxBytecode& bytecode)
+bool SpxCompiler::SetBytecode(const SpvBytecode& bytecode)
 {
     const vector<uint32_t>& spx = bytecode.getBytecodeStream();
     spv.clear();
     spv.insert(spv.end(), spx.begin(), spx.end());
 
-    if (!ValidateSpxBytecodeAndData())
-        return error(string("Invalid bytecode: ") + bytecode.GetName());
+    if (!ValidateHeader()) return error(string("Invalid bytecode header for: ") + bytecode.GetName());
 
     return true;
 }
@@ -2817,7 +2829,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
         FunctionInstruction* entryFunction = stage.entryFunction;
         if (entryFunction == nullptr) return error("The stage has no entry function");
 
-        spv::ExecutionModel model = GetShadingStageExecutionMode(stage.outputStage->stage);
+        spv::ExecutionModel model = GetExecutionModeForShadingStage(stage.outputStage->stage);
         if (model == spv::ExecutionModelMax) return error("Unknown stage");
         spv::Instruction entryPointInstr(spv::OpEntryPoint);
         entryPointInstr.addImmediateOperand(model);
@@ -2911,7 +2923,7 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
     //Find the output stage entryPoint
     vector<uint32_t> stageEntryPointInstr;
     {
-        spv::ExecutionModel outputModel = GetShadingStageExecutionMode(stage.outputStage->stage);
+        spv::ExecutionModel outputModel = GetExecutionModeForShadingStage(stage.outputStage->stage);
         if (outputModel == spv::ExecutionModelMax) return error("Unknown stage");
 
         unsigned int start = header_size;
@@ -4033,14 +4045,12 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
 
         if (opCode == spv::Op::OpName)
         {
-        /*
-#ifdef XKSLANG_DEBUG_MODE
-            const spv::Id target = asId(start + 1);
-            const string name = literalString(start + 2);
-
-            if (mapDeclarationName.find(target) == mapDeclarationName.end())
-                mapDeclarationName[target] = name;
-#endif*/
+            //const spv::Id target = asId(start + 1);
+            //if (mapDeclarationName.find(target) == mapDeclarationName.end())
+            //{
+            //    const string name = literalString(start + 2);
+            //    mapDeclarationName[target] = name;
+            //}
         }
         else if (opCode == spv::Op::OpDeclarationName)
         {

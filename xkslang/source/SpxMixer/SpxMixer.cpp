@@ -136,7 +136,7 @@ bool SpxMixer::GetCurrentMixinBytecode(SpxBytecode& output, vector<string>& mess
 }
 
 bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>& messages,
-    SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* finalSpv, SpvBytecode* errorLatestSpv)
+    SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* compiledBytecode, SpvBytecode* errorLatestSpv)
 {
     if (spxCompiler == nullptr)
         return error(messages, "you must process some mixin first");
@@ -300,20 +300,20 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     }
 #endif
 
-    if (finalSpv != nullptr)
-        clonedSpxStream->GetMixinBytecode(finalSpv->getWritableBytecodeStream());
+    if (compiledBytecode != nullptr)
+        clonedSpxStream->GetMixinBytecode(compiledBytecode->getWritableBytecodeStream());
 
     //===================================================================================================================
     //===================================================================================================================
     //Reflection: get all reflection information from the final extended SPV bytecode
-    EffectReflection effectReflection;
-    if (!clonedSpxStream->GetBytecodeReflectionData(effectReflection))
-    {
-        clonedSpxStream->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
-        delete clonedSpxStream;
-        return error(messages, "Fail to build the reflection data from the extended SPV bytecode");
-    }
+    //EffectReflection effectReflection;
+    //if (!clonedSpxStream->GetBytecodeReflectionData(effectReflection))
+    //{
+    //    clonedSpxStream->copyMessagesTo(messages);
+    //    if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+    //    delete clonedSpxStream;
+    //    return error(messages, "Fail to build the reflection data from the extended SPV bytecode");
+    //}
     //===================================================================================================================
 
     //===================================================================================================================
@@ -330,6 +330,30 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     delete clonedSpxStream;
     //=============================================================================================================================================
     //=============================================================================================================================================
+
+    return true;
+}
+
+bool SpxMixer::GetCompiledBytecodeReflection(SpvBytecode& compiledBytecode, EffectReflection& effectReflection, vector<string>& errorMessages)
+{
+    SpxCompiler spxCompiler;
+    if (!spxCompiler.SetBytecode(compiledBytecode))
+    {
+        spxCompiler.copyMessagesTo(errorMessages);
+        return error(errorMessages, "Fail to initialize the mixer with the bytecode");
+    }
+
+    if (!spxCompiler.BuildAllMaps())
+    {
+        spxCompiler.copyMessagesTo(errorMessages);
+        return error(errorMessages, "Fail to build all maps");
+    }
+
+    if (!spxCompiler.GetBytecodeReflectionData(effectReflection))
+    {
+        spxCompiler.copyMessagesTo(errorMessages);
+        return error(errorMessages, "Fail to build the reflection data from the bytecode");
+    }
 
     return true;
 }

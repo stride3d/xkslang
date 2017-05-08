@@ -302,6 +302,8 @@ public:
         this->ColumnCount = countColumn;
     }
 
+    std::string Print();
+
 public:
     /// <summary>
     /// The <see cref="EffectParameterReflectionClass"/> of this parameter.
@@ -382,6 +384,9 @@ public:
     TypeReflectionDescription Type;
 
     ConstantBufferMemberReflectionDescription(){}
+
+public:
+    std::string Print();
 };
 
 class ConstantBufferReflectionDescription
@@ -397,10 +402,15 @@ public:
 class EffectResourceBindingDescription
 {
 public:
+    ShadingStageEnum Stage;
     std::string KeyName;
     EffectParameterReflectionClass Class;
     EffectParameterReflectionType Type;
-    ShadingStageEnum Stage;
+
+public:
+    EffectResourceBindingDescription(){}
+    EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, EffectParameterReflectionClass c, EffectParameterReflectionType t)
+        : Stage(stage), KeyName(keyName), Class(c), Type(t) {}
 };
 
 class EffectReflection
@@ -416,6 +426,7 @@ public:
 
     static std::string GetEffectParameterReflectionClassLabel(EffectParameterReflectionClass parameterClass);
     static std::string GetEffectParameterReflectionTypeLabel(EffectParameterReflectionType parameterType);
+    std::string Print();
 };
 
 }  // namespace xkslang

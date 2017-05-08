@@ -228,6 +228,8 @@ public:
     //extra data recorded when a shaderType defines a cbuffer
     class TypeStructMemberArray;
     class ShaderTypeData;
+    class TypeInstruction;
+    class VariableInstruction;
     class CBufferTypeData
     {
     public:
@@ -245,10 +247,15 @@ public:
         ShaderTypeData* correspondingShaderType;
         int posOpNameType;
         int posOpNameVariable;
+        TypeInstruction* cbufferTypeObject;
+        TypeInstruction* cbufferPointerTypeObject;
+        VariableInstruction* cbufferVariableTypeObject;
+        int tmpFlag;
 
         CBufferTypeData(std::string shaderOwnerName, std::string cbufferName, int cbufferType, bool isStage, int cbufferCountMembers) :
             shaderOwnerName(shaderOwnerName), cbufferName(cbufferName), cbufferType(cbufferType), isStage(isStage), cbufferCountMembers(cbufferCountMembers),
-            isUsed(false), cbufferMembersData(nullptr), correspondingShaderType(nullptr){}
+            isUsed(false), cbufferMembersData(nullptr), correspondingShaderType(nullptr), posOpNameType(0), posOpNameVariable(0),
+            cbufferTypeObject(nullptr), cbufferPointerTypeObject(nullptr), cbufferVariableTypeObject(nullptr), tmpFlag(0){}
         virtual ~CBufferTypeData() { if (cbufferMembersData != nullptr) delete cbufferMembersData; }
 
         virtual CBufferTypeData* Clone() {
@@ -652,6 +659,16 @@ public:
         ShaderToMergeData(ShaderClassData* shaderToMerge): shader(shaderToMerge), instantiateShader(false) {}
         ShaderToMergeData(ShaderClassData* shader, bool instantiateShader) : shader(shader), instantiateShader(instantiateShader) {}
     };
+
+    class OutputStageEntryPoint
+    {
+    public:
+        ShadingStageEnum stage;
+        FunctionInstruction* entryFunction;
+
+        OutputStageEntryPoint() : stage(ShadingStageEnum::Undefined), entryFunction(nullptr) {}
+        OutputStageEntryPoint(ShadingStageEnum stage, FunctionInstruction* entryFunction) : stage(stage), entryFunction(entryFunction) {}
+    };
     //============================================================================================================================================
     //============================================================================================================================================
 
@@ -672,10 +689,11 @@ public:
     bool error(const std::string& txt);
     void copyMessagesTo(std::vector<std::string>& list);
 
-    spv::ExecutionModel GetShadingStageExecutionMode(ShadingStageEnum stage);
+    spv::ExecutionModel GetExecutionModeForShadingStage(ShadingStageEnum stage);
+    ShadingStageEnum GetShadingStageForExecutionMode(spv::ExecutionModel model);
 
 private:
-    bool SetBytecode(const SpxBytecode& bytecode);
+    bool SetBytecode(const SpvBytecode& bytecode);
     bool MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
 
     //validate a member name (for example Shader<8>_var will return Shader_8__var)
@@ -690,7 +708,7 @@ private:
     bool ProcessBytecodeAndDataSanityCheck();
 
     bool GetBytecodeReflectionData(EffectReflection& effectReflection);
-    bool GetAllCBufferReflectionDataFromBytecode(EffectReflection& effectReflection);
+    bool GetAllCBufferReflectionDataFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
 
     bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);

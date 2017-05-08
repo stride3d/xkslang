@@ -1,6 +1,8 @@
 //
 // Copyright (C)
 
+#include <sstream>
+
 #include "EffectReflection.h"
 
 using namespace std;
@@ -9,6 +11,49 @@ using namespace xkslang;
 void EffectReflection::Clear()
 {
     ConstantBuffers.clear();
+}
+
+string TypeReflectionDescription::Print()
+{
+    std::ostringstream stream;
+    stream << "Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(Class) << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(Type)
+        << " Size=" << ElementSize << " Alignment=" << ElementAlignment
+        << " Elements=" << Elements << " Rows=" << RowCount << " Columns=" << ColumnCount;
+    return stream.str();
+}
+
+string ConstantBufferMemberReflectionDescription::Print()
+{
+    std::ostringstream stream;
+    stream << "Name=\"" << KeyName << "\" Offset=" << Offset << ". " << Type.Print();
+    return stream.str();
+}
+
+string EffectReflection::Print()
+{
+    std::ostringstream stream;
+    stream << "ConstantBuffers. Count=" << ConstantBuffers.size() << endl;
+    for (unsigned int cb = 0; cb < ConstantBuffers.size(); ++cb)
+    {
+        ConstantBufferReflectionDescription& cbuffer = ConstantBuffers[cb];
+        stream << " Name=\"" << cbuffer.CbufferName << "\" Size=" << cbuffer.Size << " MembersCount=" << cbuffer.Members.size() << endl;
+
+        for (unsigned int im = 0; im < cbuffer.Members.size(); im++)
+        {
+            ConstantBufferMemberReflectionDescription& member = cbuffer.Members[im];
+            stream << "  " << member.Print() << endl;
+        }
+    }
+    stream << "ResourceBindings. Count=" << ResourceBindings.size() << endl;
+    for (unsigned int rb = 0; rb < ResourceBindings.size(); ++rb)
+    {
+        EffectResourceBindingDescription& bindings = ResourceBindings[rb];
+        stream << " Stage=" << GetShadingStageLabel(bindings.Stage) << " Name=\"" << bindings.KeyName << "\""
+            << " Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(bindings.Class)
+            << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(bindings.Type) << endl;
+    }
+
+    return stream.str();
 }
 
 string EffectReflection::GetEffectParameterReflectionClassLabel(EffectParameterReflectionClass parameterClass)

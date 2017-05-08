@@ -20,6 +20,7 @@
 #include "../source/XkslParser/XkslParser.h"
 #include "../source/SpxMixer/OutputStageBytecode.h"
 #include "../source/SpxMixer/SpxMixer.h"
+#include "../source/SpxMixer/EffectReflection.h"
 
 #include "../source/SPIRV-Cross/spirv_cross.hpp"
 //#include "../source/XkslangDLL/XkslangDLL.h"
@@ -179,9 +180,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
 
     //{ "testDependency01", "testDependency01.xkfx" },
-    //{ "testDependency02", "testDependency02.xkfx" },
+    { "testDependency02", "testDependency02.xkfx" },
     //{ "testDependency03", "testDependency03.xkfx" },
-    //{ "testDependency04", "testDependency04.xkfx" },
+    { "testDependency04", "testDependency04.xkfx" },
     //{ "testDependency05", "testDependency05.xkfx" },
     //{ "testDependency06", "testDependency06.xkfx" },
     //{ "testDependency07", "testDependency07.xkfx" },
@@ -414,11 +415,11 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
     SpvBytecode streamsMergedSpv;
     SpvBytecode streamsReshuffledSpv;
     SpvBytecode mergedCBuffersSpv;
-    SpvBytecode finalSpv;
+    SpvBytecode compiledBytecode;
     SpvBytecode errorSpv;
     cout << "Compile Mixin: ";
     time_before = GetTickCount();
-    success = mixer->Compile(outputStages, errorMsgs, &composedSpv, &streamsMergedSpv, &streamsReshuffledSpv, &mergedCBuffersSpv, &finalSpv, &errorSpv);
+    success = mixer->Compile(outputStages, errorMsgs, &composedSpv, &streamsMergedSpv, &streamsReshuffledSpv, &mergedCBuffersSpv, &compiledBytecode, &errorSpv);
     time_after = GetTickCount();
 
     if (!success)
@@ -442,11 +443,22 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
         string outputFileNameFinalSpv = effectName + "_compile4_final.spv";
         string outputFileNameFinalSpvHr = effectName + "_compile4_final.hr.spv";
         string outputFullnameFinalSpv = outputDir + outputFileNameFinalSpv;
-        WriteBytecode(finalSpv, outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
-        WriteBytecode(finalSpv, outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
+        WriteBytecode(compiledBytecode, outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
+        WriteBytecode(compiledBytecode, outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
     }
 
     if (!success) return false;
+
+    //get the reflection data from the compiled bytecode
+    EffectReflection effectReflection;
+    success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
+    if (!success)
+    {
+        cout << "Failed to get the reflection data from the compiled bytecode" << endl;
+        return false;
+    }
+    //cout << endl << "EffectReflection:" << endl;
+    //cout << effectReflection.Print() << endl;
 
     //convert and output every stages
     string glslAllOutputs;
@@ -560,6 +572,7 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
 
     if (glslAllOutputs.size() > 0)
     {
+        glslAllOutputs = "/*\n" + effectReflection.Print() + "*/\n\n" + glslAllOutputs;
         string fileNameAllGlsl = effectName + ".glsl";
         string fullNameAllGlsl = finalResultOutputDir + fileNameAllGlsl;
         xkslangtest::Utils::WriteFile(fullNameAllGlsl, glslAllOutputs);
@@ -567,6 +580,7 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
     }
     if (hlslAllOutputs.size() > 0)
     {
+        hlslAllOutputs = "/*\n" + effectReflection.Print() + "*/\n\n" + hlslAllOutputs;
         string fileNameAllHlsl = effectName + ".hlsl";
         string fullNameAllHlsl = finalResultOutputDir + fileNameAllHlsl;
         xkslangtest::Utils::WriteFile(fullNameAllHlsl, hlslAllOutputs);
