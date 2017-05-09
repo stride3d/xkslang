@@ -282,13 +282,18 @@ enum class EffectParameterReflectionClass
     Color = 13,
 };
 
+class TypeMemberReflectionDescription;
 class TypeReflectionDescription
 {
 public:
-    TypeReflectionDescription() : Class(EffectParameterReflectionClass::Undefined), Type(EffectParameterReflectionType::Undefined), RowCount(0), ColumnCount(0), Elements(0), ElementSize(0) {}
-    ~TypeReflectionDescription() {
-        //if (Members != nullptr) delete[] Members;
-    }
+    TypeReflectionDescription() : Class(EffectParameterReflectionClass::Undefined), Type(EffectParameterReflectionType::Undefined),
+        RowCount(0), ColumnCount(0), Elements(0), ElementSize(0), ElementAlignment(0), Members(nullptr), CountMembers(0){}
+
+    TypeReflectionDescription(const TypeReflectionDescription& t) : Class(t.Class), Type(t.Type),
+        RowCount(t.RowCount), ColumnCount(t.ColumnCount), Elements(t.Elements), ElementSize(t.ElementSize), ElementAlignment(t.ElementAlignment), Members(nullptr), CountMembers(0)
+    {}
+
+    ~TypeReflectionDescription();
 
     bool isValid() {return Class != EffectParameterReflectionClass::Undefined;}
 
@@ -348,10 +353,10 @@ public:
     /// <summary>
     /// Members in the structure.
     /// </summary>
-    //TypeMemberReflectionDescription* Members;
+    TypeMemberReflectionDescription* Members;
+    int CountMembers;
 };
 
-/*
 class TypeMemberReflectionDescription
 {
 public:
@@ -373,7 +378,6 @@ public:
     /// </summary>
     TypeReflectionDescription Type;
 };
-*/
 
 class ConstantBufferMemberReflectionDescription
 {

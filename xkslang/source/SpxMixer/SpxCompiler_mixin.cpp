@@ -3908,6 +3908,13 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::CreateAndAddNewObjectFor(Parsed
                 }
                 type->SetTypePointed(pointedType);
             }
+
+            //get the size and alignment for the type
+            //if (!SetNewTypeObjectSizeAndAlignment(type))
+            //{
+            //    error(string("Failed to set the size and alignment for the new type: ") + to_string(parsedData.targetId));
+            //}
+
             newObject = type;
 
             break;

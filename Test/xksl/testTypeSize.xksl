@@ -1,0 +1,46 @@
+shader ShaderMain
+{
+	/*struct StructBasicType
+	{
+		void aVoid;
+		half aHalf;
+		bool aBool;
+		int aInt;
+		float aFloat;
+		double aDouble;
+	};
+	
+	struct StructVector
+	{
+		float2 aFloat2;
+		float3 aFloat3;
+		float4 aFloat4;
+	};*/
+	
+	struct StructMatrix
+	{
+		float4x4 aMat44;
+	};
+	
+	/*struct StructArray
+	{
+		float4 ColorArray[2];
+	};*/
+	
+	//stage StructBasicType s1;
+	//stage StructVector s2;
+	stage StructMatrix s3;
+	//stage StructArray s4;
+	
+	stage stream float4 ColorTarget : SV_Target0;
+	
+	stage void VSMain()
+	{
+	
+	}
+	
+	stage void PSMain()
+	{
+		//streams.ColorTarget.x = s1.aFloat;
+	}
+};

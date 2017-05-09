@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+#include "SPIRV/doc.h"
+
 #include "SpxCompiler.h"
 
 using namespace std;
@@ -574,11 +576,36 @@ bool SpxCompiler::GetReflectionTypeFor(TypeInstruction* memberType, TypeReflecti
 
         case spv::OpTypeStruct:
         {
-            return error("OpTypeStruct: not implemented yet");
+            int wordCount = asWordCount(memberType->GetBytecodeStartPosition());
+            int countMembers = wordCount - 2;
+
+            if (countMembers <= 0 || countMembers > 256) return error("Invalid OpTypeStruct size");
+
+            typeReflection.Set(EffectParameterReflectionClass::Struct, EffectParameterReflectionType::Void, 1, 1);
+            typeReflection.Members = new TypeMemberReflectionDescription[countMembers];
+            typeReflection.CountMembers = countMembers;
+
+            return error("PROUT PROUT Missing struct members size and alignment!!!");
+
+            //unsigned int posElemStart = memberType->GetBytecodeStartPosition() + 2;
+            //for (int k = 0; k < countMembers; ++k)
+            //{
+            //    spv::Id structMemberTypeId = asId(posElemStart + k);
+            //    TypeInstruction* structMemberType = GetTypeById(structMemberTypeId);
+            //    if (structMemberType == nullptr) return error("failed to find the struct member type for id: " + to_string(structMemberTypeId));
+            //
+            //    TypeReflectionDescription& memberTypeReflection = typeReflection.Members[k].Type;
+            //    if (!GetReflectionTypeFor(structMemberType, memberTypeReflection, attribute, iterationNum + 1))
+            //        return error("failed to get the reflection type for the sub-element: " + to_string(structMemberTypeId));
+            //
+            //    error("PROUT PROUT Missing struct members size and alignment!!!");
+            //}
+
+            break;
         }
 
         default:
-            return error("Unprocessed or invalid member type OpCode: " + to_string(memberType->opCode));
+            return error(string("Unprocessed or invalid member type OpCode: ") + spv::OpcodeString(memberType->GetOpCode()));
     }
 
     return true;

@@ -8,6 +8,15 @@
 using namespace std;
 using namespace xkslang;
 
+TypeReflectionDescription::~TypeReflectionDescription()
+{
+    if (Members != nullptr)
+    {
+        delete[] Members;
+        Members = nullptr;
+    }
+}
+
 void EffectReflection::Clear()
 {
     ConstantBuffers.clear();

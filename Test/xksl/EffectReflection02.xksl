@@ -1,0 +1,24 @@
+shader ShaderMain
+{
+	struct StructType
+	{
+		float4 aF4;
+		float4 ColorArray[2];
+		bool aBool;
+	};
+	
+	stage StructType var1;
+	stage float4 toto;
+	
+	stage stream float4 ColorTarget : SV_Target0;
+	
+	stage void VSMain()
+	{
+	
+	}
+	
+	stage void PSMain()
+	{
+		streams.ColorTarget = toto + var1.aF4;
+	}
+};

@@ -271,15 +271,26 @@ public:
     {
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
-            : ObjectInstructionBase(parsedData, name, source), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr) {}
+            : ObjectInstructionBase(parsedData, name, source),
+            typeSize(-1), typeAlignment(-1), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr) {}
         virtual ~TypeInstruction() {
             if (cbufferData != nullptr) delete cbufferData;
         }
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
+            obj->typeSize = typeSize;
+            obj->typeAlignment = typeAlignment;
             if (cbufferData != nullptr) obj->cbufferData = cbufferData->Clone();
             return obj;
         }
+
+        //void SetSizeAndAlignment(int size, int alignment){
+        //    typeSize = size;
+        //    typeAlignment = alignment;
+        //}
+        //bool HasValidSizeAndAlignment(){
+        //    return typeSize >= 0 && typeAlignment >= 0;
+        //}
 
         void SetTypePointed(TypeInstruction* type) { pointerTo = type; }
         TypeInstruction* GetTypePointed() const { return pointerTo; }
@@ -291,6 +302,8 @@ public:
         CBufferTypeData* GetCBufferData() { return cbufferData; }
 
     private:
+        int typeSize;
+        int typeAlignment;
         TypeInstruction* pointerTo;
 
         //used by some algo to fill the type buffer
@@ -745,6 +758,7 @@ private:
     bool BuildTypesAndConstsHashmap(std::unordered_map<std::uint32_t, pairIdPos>& mapHashPos);
     bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
     ObjectInstructionBase* CreateAndAddNewObjectFor(ParsedObjectData& parsedData);
+    //bool SetNewTypeObjectSizeAndAlignment(TypeInstruction* type);
     bool DecorateObjects(std::vector<bool>& vectorIdsToDecorate);
 
     bool UpdateOverridenFunctionMap(std::vector<ShaderClassData*>& listShadersMerged);
