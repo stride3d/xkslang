@@ -419,7 +419,7 @@ public:
     public:
         TypeStructMember() : structTypeId(spvUndefinedId), structMemberIndex(-1),
             isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberType(nullptr),
-            memberDefaultConstantTypeId(spvUndefinedId), memberSize(-1), memberAlignment(-1), memberOffset(0),
+            memberDefaultConstantTypeId(spvUndefinedId), memberSize(-1), memberAlignment(-1), memberOffset(-1),
             newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1),
             variableAccessTypeId(0), memberTypePointerInputId(0), memberTypePointerOutputId(0), memberStageInputVariableId(0), memberStageOutputVariableId(0),
             isUsed(false) {}
@@ -731,7 +731,8 @@ private:
 
     static bool IsResourceType(const spv::Op& opCode);
     static bool IsScalarType(const spv::Op& opCode);
-    static bool IsVectorType(const spv::Op& opCode);
+    static bool IsVectorType(const spv::Op& opCode) { return opCode == spv::OpTypeVector; }
+    static bool IsMatrixType(const spv::Op& opCode) { return opCode == spv::OpTypeMatrix; }
     int GetVectorTypeCountElements(TypeInstruction* vectorType);
 
     bool GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool isRowMajor, int& size, int& alignment, int& stride, int iterationCounter = 0);

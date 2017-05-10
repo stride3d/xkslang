@@ -3737,17 +3737,15 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::CreateAndAddNewObjectFor(Parsed
             }
 
             //get the size and alignment for the type
-            if (type->GetOpCode() == spv::OpTypeArray)
-            {
-                fggsdgdsfg;
-                int size, alignment, stride;
-                if (!GetTypeObjectBaseSizeAndAlignment(type, true, size, alignment, stride))
-                {
-                    error(string("Failed to get the size and alignment for the new type: ") + to_string(parsedData.targetId));
-                }
-                int glkfjgds = 453425;
-                //error("PROUT");
-            }
+            ///if (type->GetOpCode() == spv::OpTypeStruct)
+            ///{
+            ///    int size, alignment, stride;
+            ///    if (!GetTypeObjectBaseSizeAndAlignment(type, true, size, alignment, stride))
+            ///    {
+            ///        error(string("Failed to get the size and alignment for the new type: ") + to_string(parsedData.targetId));
+            ///    }
+            ///    int glkfjgds = 453425;
+            ///}
 
             newObject = type;
 

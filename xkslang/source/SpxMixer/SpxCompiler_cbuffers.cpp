@@ -239,11 +239,14 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 #endif
                         if (dec == spv::DecorationOffset)
                         {
+                            //skip it: the offset will be recomputed for all cbuffer members
+                            /*
 #ifdef XKSLANG_DEBUG_MODE
                             if (wordCount <= 4) { error("Invalid wordCount"); break; }
 #endif
                             const unsigned int offsetValue = asLiteralValue(start + 4);
                             cbufferData->cbufferMembersData->members[index].memberOffset = offsetValue;
+                            */
                         }
                         else
                         {
@@ -837,7 +840,13 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
 
-                //member decorate (offset)
+                if (cbufferMember.memberOffset < 0)
+                {
+                    error("An offset has not been set for the member: " + cbufferMember.GetDeclarationNameOrSemantic());
+                    break;
+                }
+
+                //member decorate: offset
                 spv::Instruction memberOffsetDecorateInstr(spv::OpMemberDecorate);
                 memberOffsetDecorateInstr.addIdOperand(cbuffer->structTypeId);
                 memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
@@ -845,7 +854,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.memberOffset);
                 memberOffsetDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
             
-                //member extra decorate (if any)
+                //member extra decorates
                 if (cbufferMember.listMemberDecoration.size() > 0)
                 {
                     unsigned int cur = 0;

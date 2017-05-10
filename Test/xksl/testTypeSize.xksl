@@ -1,6 +1,6 @@
 shader ShaderMain
 {
-
+/*
 	struct StructBasicType
 	{
 		void aVoid;       //size:4, align:4
@@ -10,14 +10,14 @@ shader ShaderMain
 		float aFloat;     //size:4, align:4
 		double aDouble;   //size:8, align:8
 	};
-	
+	*/
 	struct StructVector
 	{
 		float2 aFloat2;	 //size:8, align:8
 		float3 aFloat3;  //size:12, align:16
 		float4 aFloat4;  //size:16, align:16
 	};
-	
+	/*
 	//(std140: Matrix alignment is 16 minimum)
 	struct StructMatrix
 	{
@@ -37,11 +37,37 @@ shader ShaderMain
 		int IntArray[3];		//size:48, align:16, stride: 16
 		float2x3 aMatArray[4];  //size:192, align:16, stride: 48
 	};
+	*/
 	
-	stage StructBasicType s1;
-	stage StructVector s2;
-	stage StructMatrix s3;
-	stage StructSimpleArray s4;
+	struct StructOfStruct
+	{
+		struct
+		{
+			float4x3 aMat43;
+			float2x2 aMat22;
+		} s0;  //size:80, align:16
+		struct
+		{
+			int i;
+			float4 f4;
+			bool b;
+		} s1;  //size:48, align:16
+	};
+	
+	//struct StructOfStruct
+	//{
+	//	StructBasicType s1;
+	//	StructVector s2;
+	//	StructMatrix s3;
+	//	StructSimpleArray s4;
+	//};
+	
+	//stage StructBasicType s1;
+	//stage StructVector s2;
+	//stage StructMatrix s3;
+	//stage StructSimpleArray s4;
+	//stage StructVector s2Array[2];
+	stage StructOfStruct s6;
 	
 	//float2x3 aMat23_b;
 	
@@ -54,9 +80,13 @@ shader ShaderMain
 	{
 		float f = 0;
 		
-		f += s1.aFloat;
-		f += s2.aFloat2.x;
-		f += s3.aMat23._m00;
-		f += s4.ColorArray[0].x;
+		//f += s1.aFloat;
+		//f += s2.aFloat2.x;
+		//f += s3.aMat23._m00;
+		//f += s4.ColorArray[0].x;
+		
+		f += s6.s1.f4.x;
+		
+		//f += s2Array[0].aFloat2.x;
 	}
 };

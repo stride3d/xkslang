@@ -39,17 +39,6 @@ bool SpxCompiler::IsScalarType(const spv::Op& opCode)
     return false;
 }
 
-bool SpxCompiler::IsVectorType(const spv::Op& opCode)
-{
-    switch (opCode)
-    {
-    case spv::OpTypeVector:
-        return true;
-    }
-
-    return false;
-}
-
 int SpxCompiler::GetVectorTypeCountElements(TypeInstruction* vectorType)
 {
     if (vectorType->GetOpCode() != spv::OpTypeVector) return -1;
@@ -388,9 +377,36 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
 
         case spv::OpTypeStruct:
         {
-            //fdsfsgdfg;
-            size = 999;
-            alignment = 999;
+            int wordCount = asWordCount(type->GetBytecodeStartPosition());
+            int countElems = wordCount - 2;
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (countElems <= 0) { error("Invalid OpTypeStruct size"); return 0; }
+#endif
+            size = 0;
+            int maxAlignment = useStd140Rules ? baseAlignmentVec4Std140 : 0;
+            unsigned int posElemStart = type->GetBytecodeStartPosition() + 2;
+            for (unsigned int m = 0; m < countElems; ++m)
+            {
+                spv::Id structElemTypeId = asId(posElemStart + m);
+                TypeInstruction* structElemType = GetTypeById(structElemTypeId);
+                if (structElemType == nullptr) return error("failed to find the struct element type for id: " + to_string(structElemTypeId));
+
+                if (IsMatrixType(structElemType->GetOpCode())) return error("Got to find the matric RowMajor decorate!!");
+
+                int subElemSize, subElemAlign, subElemStride;
+                if (!GetTypeObjectBaseSizeAndAlignment(structElemType, isRowMajor, subElemSize, subElemAlign, subElemStride, iterationCounter + 1))
+                    return error("Failed to get the size and alignment for the struct's member type");
+
+                maxAlignment = std::max(maxAlignment, subElemAlign);
+                size = RoundToPow2(size, subElemAlign);
+                size += subElemSize;
+            }
+
+            // The structure may have padding at the end;
+            // the base offset of the member following the sub-structure is rounded up to the next multiple of the base alignment of the structure.
+            size = RoundToPow2(size, maxAlignment);
+            alignment = maxAlignment;
             break;
         }
 
