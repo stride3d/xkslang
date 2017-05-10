@@ -149,6 +149,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
     //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
     //{ "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
+    //{ "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
 
     //{ "TestGenerics01", "TestGenerics01.xkfx" },
     //{ "TestGenerics02", "TestGenerics02.xkfx" },
@@ -192,8 +193,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection02", "EffectReflection02.xkfx" },
 
     //{ "Effect01", "Effect01.xkfx" },
-
-    ////{ "testTypeSize", "testTypeSize.xkfx" },
+    { "testTypeSize", "testTypeSize.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {

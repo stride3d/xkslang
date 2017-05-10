@@ -1690,179 +1690,6 @@ SpxCompiler::ConstInstruction* SpxCompiler::FindConstFromList(const vector<Const
     return nullptr;
 }
 
-spv::Id SpxCompiler::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const vector<ConstInstruction*>& listAllConsts,
-    vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter)
-{
-    if (iterationCounter > 10) { error("Too many nested type (infinite type redirection in the bytecode?)"); return 0; }
-
-    const spv::Op& typeOpCode = type->opCode;
-    const spv::Id& typeId = type->GetId();
-    spv::Id typeConstId = 0;
-
-#ifdef XKSLANG_DEBUG_MODE
-    //some sanity check
-    if (asOpCode(type->GetBytecodeStartPosition()) != typeOpCode) {error("Corrupted bytecode: type opcode is not matching the bytecode"); return 0;}
-#endif
-
-    spv::Instruction newConstInstruction(spv::OpUndef);
-
-    switch (typeOpCode)
-    {
-        case spv::OpTypeInt:
-        case spv::OpTypeFloat:
-        {
-            unsigned int width = asLiteralValue(type->GetBytecodeStartPosition() + 2);
-            unsigned int countOperands = (width == 16? 1 : width >> 5);
-
-#ifdef XKSLANG_DEBUG_MODE
-            if (!(width == 16 || width % 32 == 0)) { error("Invalid width size for the type"); return 0; }
-#endif
-
-            newConstInstruction.SetResultTypeAndOpCode(newId++, typeId, spv::OpConstant);
-            for (unsigned int k = 0; k < countOperands; k++) newConstInstruction.addImmediateOperand(0);
-        }
-        break;
-
-        case spv::OpTypeBool:
-        {
-            newConstInstruction.SetResultTypeAndOpCode(newId++, typeId, spv::OpConstantFalse);
-        }
-        break;
-
-        case spv::OpTypeMatrix:
-        case spv::OpTypeVector:
-        case spv::OpTypeArray:
-        {
-            spv::Id vectorElementTypeId = asId(type->GetBytecodeStartPosition() + 2);
-
-            int countElems = 0;
-            if (typeOpCode == spv::OpTypeArray)
-            {
-                //array size is set with a const instruction
-                spv::Id sizeConstTypeId = asLiteralValue(type->GetBytecodeStartPosition() + 3);
-                ConstInstruction* constObject = GetConstById(sizeConstTypeId);
-                if (constObject == nullptr) { error("cannot get const object for Id: " + to_string(sizeConstTypeId)); return 0; }
-
-                spv::Id constTypeId = constObject->GetTypeId();
-                TypeInstruction* constTypeObject = GetTypeById(constTypeId);
-                if (constTypeObject == nullptr) { error("no type exist for const typeId: " + to_string(constTypeId)); return 0; }
-                spv::Op typeOpCode = asOpCode(constTypeObject->bytecodeStartPosition);
-                unsigned int width = asLiteralValue(constTypeObject->bytecodeStartPosition + 2);
-                if (typeOpCode != spv::OpTypeInt) { error("the type of the const defining the size of the array has an invalid type (OpTypeInt expected)"); return 0; }
-                if (width != 32) { error("the size of the type of the const defining the size of the array is incorrect (32 expected)"); return 0; }
-
-                countElems = asLiteralValue(constObject->GetBytecodeStartPosition() + 3);
-            }
-            else
-            {
-                countElems = asLiteralValue(type->GetBytecodeStartPosition() + 3);
-            }
-
-#ifdef XKSLANG_DEBUG_MODE
-            if (countElems <= 0) { error("Invalid countElems size"); return 0; }
-#endif
-            TypeInstruction* vectorElemType = GetTypeById(vectorElementTypeId);
-            if (vectorElemType == nullptr) { error("failed to find the vector type for id: " + to_string(vectorElementTypeId)); return 0; }
-
-            spv::Id elemConstValueId = GetOrCreateTypeDefaultConstValue(newId, vectorElemType, listAllConsts, listNewConstInstructionsToAdd, iterationCounter + 1);
-            if (elemConstValueId == 0) return 0;
-            
-            newConstInstruction.SetResultTypeAndOpCode(newId++, typeId, spv::OpConstantComposite);
-            for (int k = 0; k < countElems; ++k) newConstInstruction.addIdOperand(elemConstValueId);
-        }
-        break;
-
-        case spv::OpTypeStruct:
-        {
-            int wordCount = asWordCount(type->GetBytecodeStartPosition());
-            int countElems = wordCount - 2;
-
-#ifdef XKSLANG_DEBUG_MODE
-            if (countElems <= 0) { error("Invalid OpTypeStruct size"); return 0; }
-#endif
-
-            unsigned int posElemStart = type->GetBytecodeStartPosition() + 2;
-            vector<spv::Id> vecStructElemsConstsId;
-            for (int k = 0; k < countElems; ++k)
-            {
-                spv::Id structElemTypeId = asId(posElemStart + k);
-                TypeInstruction* structElemType = GetTypeById(structElemTypeId);
-                if (structElemType == nullptr) { error("failed to find the struct element type for id: " + to_string(structElemTypeId)); return 0; }
-
-                spv::Id elemConstValueId = GetOrCreateTypeDefaultConstValue(newId, structElemType, listAllConsts, listNewConstInstructionsToAdd, iterationCounter + 1);
-                if (elemConstValueId == 0) return 0;
-                vecStructElemsConstsId.push_back(elemConstValueId);
-            }
-
-            newConstInstruction.SetResultTypeAndOpCode(newId++, typeId, spv::OpConstantComposite);
-            for (unsigned int k = 0; k < vecStructElemsConstsId.size(); ++k) newConstInstruction.addIdOperand(vecStructElemsConstsId[k]);
-        }
-        break;
-
-        default:       
-            error("Cannot create a default const value, unprocessed or invalid type");
-            break;
-    }
-
-    if (newConstInstruction.getOpCode() == spv::OpUndef)
-    {
-        error("No const instruction has been created");
-        return 0;
-    }
-
-    //check if a duplicate const already exists in our list of consts
-    ConstInstruction* existingConst = FindConstFromList(listAllConsts, newConstInstruction.getOpCode(), newConstInstruction.getTypeId(), newConstInstruction.GetOperands());
-    if (existingConst != nullptr)
-    {
-        newId--;
-        typeConstId = existingConst->GetResultId();
-    }
-    else
-    {
-        //check that the new const has not already been recursively created in this function
-
-        int index = -1;
-        for (unsigned int n = 0; n < listNewConstInstructionsToAdd.size(); n++)
-        {
-            const spv::Instruction& anInstruction = listNewConstInstructionsToAdd[n];
-            if (anInstruction.getOpCode() == newConstInstruction.getOpCode() && anInstruction.getTypeId() == newConstInstruction.getTypeId())
-            {
-                bool sameInstruction = true;
-                unsigned int numOperands = newConstInstruction.getNumOperands();
-                if (anInstruction.getNumOperands() == numOperands)
-                {
-                    for (unsigned int op = 0; op < numOperands; ++op)
-                    {
-                        if (anInstruction.getImmediateOperand(op) != newConstInstruction.getImmediateOperand(op)) {
-                            sameInstruction = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (sameInstruction)
-                {
-                    index = n;
-                    break;
-                }
-            }
-        }
-
-        if (index != -1)
-        {
-            newId--;
-            typeConstId = listNewConstInstructionsToAdd[index].getResultId();
-        }
-        else
-        {
-            listNewConstInstructionsToAdd.push_back(newConstInstruction);
-            typeConstId = newConstInstruction.getResultId();
-        }
-    }
-
-    return typeConstId;
-}
-
 //parse an OpStruct instruction to get its list of membes typeId
 bool SpxCompiler::GetStructTypeMembersTypeIdList(TypeInstruction* structType, vector<spv::Id>& membersTypeList)
 {
@@ -3910,10 +3737,17 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::CreateAndAddNewObjectFor(Parsed
             }
 
             //get the size and alignment for the type
-            //if (!SetNewTypeObjectSizeAndAlignment(type))
-            //{
-            //    error(string("Failed to set the size and alignment for the new type: ") + to_string(parsedData.targetId));
-            //}
+            if (type->GetOpCode() == spv::OpTypeArray)
+            {
+                fggsdgdsfg;
+                int size, alignment, stride;
+                if (!GetTypeObjectBaseSizeAndAlignment(type, true, size, alignment, stride))
+                {
+                    error(string("Failed to get the size and alignment for the new type: ") + to_string(parsedData.targetId));
+                }
+                int glkfjgds = 453425;
+                //error("PROUT");
+            }
 
             newObject = type;
 
@@ -5214,17 +5048,4 @@ bool SpxCompiler::ApplyBytecodeUpdateController(BytecodeUpdateController& byteco
 
     if (errorMessages.size() > 0) return false;
     return true;
-}
-
-bool SpxCompiler::IsResourceType(const spv::Op& opCode)
-{
-    switch (opCode)
-    {
-    case spv::OpTypeImage:
-    case spv::OpTypeSampler:
-    case spv::OpTypeSampledImage:
-        return true;
-    }
-
-    return false;
 }

@@ -68,5 +68,11 @@
     <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_streams.cpp">
       <Filter>SpxMixer</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_backup.cpp">
+      <Filter>SpxMixer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_types.cpp">
+      <Filter>SpxMixer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,0 +1,17 @@
+//Check if a stream matrix is correctly decorated
+//(Apparently no decoration for this kind of object)
+
+shader ShaderMain
+{
+	stage stream float2x3 aMat23 : AMAT23; 
+	
+	stage void VSMain() 
+    {
+
+    }
+
+    stage void PSMain() 
+    {
+		float f = streams.aMat23._m00;
+    }
+}

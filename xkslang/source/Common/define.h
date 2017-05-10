@@ -28,6 +28,7 @@ namespace xkslang
     std::string GetShadingStageLabelShort(ShadingStageEnum stage);
 
     bool IsPow2(int pow2);
+    int RoundToPow2(int number, int powerOf2);
 
 } //namespace xkslang
 

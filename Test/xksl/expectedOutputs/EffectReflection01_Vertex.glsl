@@ -10,6 +10,7 @@ layout(std140) uniform PerDraw
 {
     layout(row_major) mat4 ShaderMain_MatrixTransform;
     layout(row_major) mat4x3 ShaderMain_Matrix4_3;
+    layout(row_major) mat2x3 ShaderMain_Matrix2_3;
     vec3 ShaderMain_ColorMatrix;
     vec4 ShaderMain_ColorArray[2];
 } PerDraw_var;

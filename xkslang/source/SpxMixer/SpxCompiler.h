@@ -20,6 +20,10 @@
 namespace xkslang
 {
 
+static const bool useStd140Rules = true;  //set as true for now, to follow glslang
+static const int baseAlignmentVec4Std140 = 16;
+static const int maxMatrixSize = 4;
+static const int maxArraySize = 2048;
 static const spv::Id spvUndefinedId = 0;
 static const unsigned int MagicNumber = 0x07230203;
 static const unsigned int Version = 0x00010000;
@@ -272,25 +276,15 @@ public:
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source),
-            typeSize(-1), typeAlignment(-1), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr) {}
+            pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr) {}
         virtual ~TypeInstruction() {
             if (cbufferData != nullptr) delete cbufferData;
         }
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
-            obj->typeSize = typeSize;
-            obj->typeAlignment = typeAlignment;
             if (cbufferData != nullptr) obj->cbufferData = cbufferData->Clone();
             return obj;
         }
-
-        //void SetSizeAndAlignment(int size, int alignment){
-        //    typeSize = size;
-        //    typeAlignment = alignment;
-        //}
-        //bool HasValidSizeAndAlignment(){
-        //    return typeSize >= 0 && typeAlignment >= 0;
-        //}
 
         void SetTypePointed(TypeInstruction* type) { pointerTo = type; }
         TypeInstruction* GetTypePointed() const { return pointerTo; }
@@ -302,8 +296,6 @@ public:
         CBufferTypeData* GetCBufferData() { return cbufferData; }
 
     private:
-        int typeSize;
-        int typeAlignment;
         TypeInstruction* pointerTo;
 
         //used by some algo to fill the type buffer
@@ -736,8 +728,14 @@ private:
     bool FinalizeCompilation(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
-    static bool IsResourceType(const spv::Op& opCode);
 
+    static bool IsResourceType(const spv::Op& opCode);
+    static bool IsScalarType(const spv::Op& opCode);
+    static bool IsVectorType(const spv::Op& opCode);
+    int GetVectorTypeCountElements(TypeInstruction* vectorType);
+
+    bool GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool isRowMajor, int& size, int& alignment, int& stride, int iterationCounter = 0);
+    bool GetIntegerConstTypeExpressionValue(ConstInstruction* constObject, int& constValue);
     spv::Id GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const std::vector<ConstInstruction*>& listAllConsts,
         std::vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter = 0);
     ConstInstruction* FindConstFromList(const std::vector<ConstInstruction*>& listConsts, spv::Op opCode, spv::Id typeId, const std::vector<unsigned int>& values);
@@ -758,7 +756,6 @@ private:
     bool BuildTypesAndConstsHashmap(std::unordered_map<std::uint32_t, pairIdPos>& mapHashPos);
     bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
     ObjectInstructionBase* CreateAndAddNewObjectFor(ParsedObjectData& parsedData);
-    //bool SetNewTypeObjectSizeAndAlignment(TypeInstruction* type);
     bool DecorateObjects(std::vector<bool>& vectorIdsToDecorate);
 
     bool UpdateOverridenFunctionMap(std::vector<ShaderClassData*>& listShadersMerged);

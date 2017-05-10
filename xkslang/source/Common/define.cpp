@@ -15,6 +15,13 @@ bool xkslang::IsPow2(int pow2)
     return (pow2 & (pow2 - 1)) == 0;
 }
 
+int xkslang::RoundToPow2(int number, int powerOf2)
+{
+    if (!IsPow2(powerOf2)) return -1;
+    int res = (number + powerOf2 - 1) & ~(powerOf2 - 1);
+    return res;
+}
+
 bool xkslang::IsAValidOutputStage(ShadingStageEnum stage)
 {
     switch (stage)

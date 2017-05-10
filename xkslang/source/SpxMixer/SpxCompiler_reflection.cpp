@@ -521,14 +521,9 @@ bool SpxCompiler::GetReflectionTypeFor(TypeInstruction* memberType, TypeReflecti
             ConstInstruction* constObject = GetConstById(sizeConstTypeId);
             if (constObject == nullptr) return error("cannot get const object for Id: " + to_string(sizeConstTypeId));
 
-            spv::Id constTypeId = constObject->GetTypeId();
-            TypeInstruction* constTypeObject = GetTypeById(constTypeId);
-            if (constTypeObject == nullptr) return error("no type exist for const typeId: " + to_string(constTypeId));
-            spv::Op typeOpCode = asOpCode(constTypeObject->bytecodeStartPosition);
-            unsigned int width = asLiteralValue(constTypeObject->bytecodeStartPosition + 2);
-            if (typeOpCode != spv::OpTypeInt) return error("the type of the const defining the size of the array has an invalid type (OpTypeInt expected)");
-            if (width != 32) return error("the size of the type of the const defining the size of the array is incorrect (32 expected)");
-            int arrayCountElems = asLiteralValue(constObject->GetBytecodeStartPosition() + 3);
+            int arrayCountElems;
+            if (!GetIntegerConstTypeExpressionValue(constObject, arrayCountElems))
+                return error("Failed to get the integer const object literal value for: " + to_string(sizeConstTypeId));
 
             //sub-element
             spv::Id subElementTypeId = asId(memberType->GetBytecodeStartPosition() + 2);
