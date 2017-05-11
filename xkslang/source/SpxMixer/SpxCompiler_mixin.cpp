@@ -3638,7 +3638,8 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 string shaderOwnerName = "";
                 if (type->shaderOwner != nullptr) shaderOwnerName = type->shaderOwner->GetName();
 
-                CBufferTypeData* cbufferData = new CBufferTypeData(typeId, shaderOwnerName, type->GetName(), cbufferType, cbufferStage == spv::CBufferStage ? true : false, countMembers);
+                CBufferTypeData* cbufferData = new CBufferTypeData(typeId, shaderOwnerName, type->GetName(),
+                    cbufferType == spv::CBufferDefined? true : false, cbufferStage == spv::CBufferStage ? true : false, countMembers);
                 type->SetCBufferData(cbufferData);
 
                 break;

@@ -46,7 +46,7 @@ static string outputDir;
 static string finalResultOutputDir;
 static string expectedOutputDir;
 
-static bool buildEffectReflection = false;
+static bool buildEffectReflection = true;
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "shaderOnly.xksl" },
@@ -192,7 +192,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
     //{ "EffectReflection01", "EffectReflection01.xkfx" },
-    //{ "EffectReflection02", "EffectReflection02.xkfx" },
+    { "EffectReflection02", "EffectReflection02.xkfx" },
 
     //{ "Effect01", "Effect01.xkfx" },
     //{ "testTypeSize", "testTypeSize.xkfx" },

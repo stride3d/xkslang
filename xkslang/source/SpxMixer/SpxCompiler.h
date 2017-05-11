@@ -239,7 +239,7 @@ public:
     public:
         //used if the type is a cbuffer struct
         spv::Id cbufferTypeId;
-        int cbufferType;
+        bool isDefine;
         bool isStage;
         int cbufferCountMembers;
         std::string cbufferName;
@@ -257,14 +257,14 @@ public:
         VariableInstruction* cbufferVariableTypeObject;
         int tmpFlag;
 
-        CBufferTypeData(spv::Id cbufferTypeId, std::string shaderOwnerName, std::string cbufferName, int cbufferType, bool isStage, int cbufferCountMembers) :
-            cbufferTypeId(cbufferTypeId), shaderOwnerName(shaderOwnerName), cbufferName(cbufferName), cbufferType(cbufferType), isStage(isStage),
+        CBufferTypeData(spv::Id cbufferTypeId, std::string shaderOwnerName, std::string cbufferName, bool isDefine, bool isStage, int cbufferCountMembers) :
+            cbufferTypeId(cbufferTypeId), shaderOwnerName(shaderOwnerName), cbufferName(cbufferName), isDefine(isDefine), isStage(isStage),
             cbufferCountMembers(cbufferCountMembers), isUsed(false), cbufferMembersData(nullptr), correspondingShaderType(nullptr), posOpNameType(0), posOpNameVariable(0),
             cbufferTypeObject(nullptr), cbufferPointerTypeObject(nullptr), cbufferVariableTypeObject(nullptr), tmpFlag(0){}
         virtual ~CBufferTypeData() { if (cbufferMembersData != nullptr) delete cbufferMembersData; }
 
         virtual CBufferTypeData* Clone() {
-            CBufferTypeData* cbufferData = new CBufferTypeData(cbufferTypeId, shaderOwnerName, cbufferName, cbufferType, isStage, cbufferCountMembers);
+            CBufferTypeData* cbufferData = new CBufferTypeData(cbufferTypeId, shaderOwnerName, cbufferName, isDefine, isStage, cbufferCountMembers);
             cbufferData->isUsed = isUsed;
             return cbufferData;
         }

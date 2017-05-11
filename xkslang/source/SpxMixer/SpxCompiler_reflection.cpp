@@ -106,6 +106,7 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
 
                 cbufferData->cbufferMembersData = new TypeStructMemberArray();
                 cbufferData->cbufferMembersData->members.resize(cbufferData->cbufferCountMembers);
+                cbufferData->isUsed = true;
 
                 listAllCBuffers.push_back(cbufferData);
                 vectorCBuffersIds[type->GetId()] = cbufferData;
@@ -142,6 +143,7 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
                     }
                     break;
                 }
+
                 case spv::OpMemberAttribute:
                 {
                     const spv::Id id = asId(start + 1);
@@ -176,7 +178,8 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
                     break;
                 }
 
-                case spv::OpCBufferProperties:
+                //we're not getting the size / alignment from this instruction anymore
+                /*case spv::OpCBufferProperties:
                 {
                     const spv::Id typeId = asId(start + 1);
 
@@ -208,32 +211,45 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
                         }
                     }
                     break;
-                }
+                }*/
 
-                case spv::OpTypeStruct:
+                case spv::OpMemberDecorate:
                 {
                     spv::Id id = asId(start + 1);
                     if (vectorCBuffersIds[id] != nullptr)
                     {
                         CBufferTypeData* cbufferData = vectorCBuffersIds[id];
 
-                        int countMembers = wordCount - 2;
+                        const unsigned int index = asLiteralValue(start + 2);
+                        const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
-                        if (countMembers != cbufferData->cbufferMembersData->members.size()) { error("inconsistent number of members between OpTypeStruct instruction and cbuffer properties"); break; }
+                        if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
-                        for (int m = 0; m < countMembers; ++m)
+
+                        switch (dec)
                         {
-                            TypeStructMember& member = cbufferData->cbufferMembersData->members[m];
-                            spv::Id memberTypeId = asLiteralValue(start + 2 + m);
-                            member.memberTypeId = memberTypeId;
-
-                            //get the member type object
-                            TypeInstruction* memberType = GetTypeById(memberTypeId);
-                            if (memberType == nullptr) { error("failed to find the member type for memberTypeId: " + to_string(memberTypeId)); break; }
-                            member.memberType = memberType;
-
-                            //check if the member type is a resource
-                            member.isResourceType = IsResourceType(memberType->opCode);
+                            case spv::DecorationOffset:
+                            {
+                                //skip it: the offset will be recomputed for all cbuffer members
+                                /*
+                                #ifdef XKSLANG_DEBUG_MODE
+                                if (wordCount <= 4) { error("Invalid wordCount"); break; }
+                                #endif
+                                const unsigned int offsetValue = asLiteralValue(start + 4);
+                                cbufferData->cbufferMembersData->members[index].memberOffset = offsetValue;
+                                */
+                                break;
+                            }
+                            case spv::DecorationRowMajor:
+                            {
+                                cbufferData->cbufferMembersData->members[index].matrixLayoutDecoration = (int)(spv::DecorationRowMajor);
+                                break;
+                            }
+                            case spv::DecorationColMajor:
+                            {
+                                cbufferData->cbufferMembersData->members[index].matrixLayoutDecoration = (int)(spv::DecorationColMajor);
+                                break;
+                            }
                         }
                     }
                     break;
@@ -247,6 +263,67 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
                 }
             }
             start += wordCount;
+        }
+
+        if (errorMessages.size() > 0) success = false;
+    }
+
+    //set the members' size and alignment for all cbuffers
+    if (success)
+    {
+        for (unsigned int i = 0; i < listAllCBuffers.size(); i++)
+        {
+            CBufferTypeData* cbufferData = listAllCBuffers[i];
+            if (cbufferData->isUsed)
+            {
+                TypeInstruction* cbufferType = cbufferData->cbufferTypeObject;
+
+                spv::Op opCode = asOpCode(cbufferType->GetBytecodeStartPosition());
+                int wordCount = asWordCount(cbufferType->GetBytecodeStartPosition());
+                int countMembers = wordCount - 2;
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (opCode != spv::OpTypeStruct) { error(string("Invalid OpCode type for the cbuffer instruction (expected OpTypeStruct): ") + OpcodeString(opCode)); break; }
+                if (countMembers != cbufferData->cbufferCountMembers) { error("Invalid cbuffer count members property"); break; }
+#endif
+                if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
+
+                //find the size and alignment for the cbuffer members
+                unsigned int posElemStart = cbufferType->GetBytecodeStartPosition() + 2;
+                for (int m = 0; m < countMembers; ++m)
+                {
+                    TypeStructMember& member = cbufferData->cbufferMembersData->members[m];
+
+                    //get the member type object
+                    spv::Id cbufferMemberTypeId = asId(posElemStart + m);
+                    TypeInstruction* cbufferMemberType = GetTypeById(cbufferMemberTypeId);
+                    if (cbufferMemberType == nullptr) return error("failed to find the cbuffer element type for id: " + to_string(cbufferMemberTypeId));
+
+                    member.memberTypeId = cbufferMemberTypeId;
+                    member.memberType = cbufferMemberType;
+
+                    //check if the member type is a resource
+                    member.isResourceType = IsResourceType(cbufferMemberType->opCode);
+
+                    bool isMatrixRowMajor = true;
+                    if (cbufferMemberType->IsMatrixType())
+                    {
+                        if (member.matrixLayoutDecoration == (int)(spv::DecorationRowMajor)) isMatrixRowMajor = true;
+                        else if (member.matrixLayoutDecoration == (int)(spv::DecorationColMajor)) isMatrixRowMajor = false;
+                        else { error("undefined matrix member layout"); break; }
+                    }
+
+                    int memberSize, memberAlignment, memberStride;
+                    if (!GetTypeObjectBaseSizeAndAlignment(cbufferMemberType, isMatrixRowMajor, memberSize, memberAlignment, memberStride))
+                    {
+                        error("Failed to get the size and alignment for the cbuffer member: " + to_string(cbufferMemberTypeId));
+                        break;
+                    }
+
+                    cbufferData->cbufferMembersData->members[m].memberSize = memberSize;
+                    cbufferData->cbufferMembersData->members[m].memberAlignment = memberAlignment;
+                }
+            }
         }
 
         if (errorMessages.size() > 0) success = false;

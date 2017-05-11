@@ -452,7 +452,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             CBufferTypeData* cbufferA = listAllShaderCBuffers[i];
 
             if (cbufferA->isUsed == false) continue; //cbuffer A is not used
-            bool mergingUndefinedCbuffers = cbufferA->cbufferType == spv::CBufferUndefined;
+            bool mergingUndefinedCbuffers = (cbufferA->isDefine == false);
 
             vector<CBufferTypeData*> someCBuffersToMerge;
             someCBuffersToMerge.push_back(cbufferA); //for consistency purpose, we will recreate every used cbuffers, even if it's not merged with another one
@@ -464,7 +464,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 CBufferTypeData* cbufferB = listAllShaderCBuffers[j];
 
                 if (cbufferB->isUsed == false) continue; //cbuffer B is not used
-                bool isBUndefinedCbuffer = cbufferB->cbufferType == spv::CBufferUndefined;
+                bool isBUndefinedCbuffer = (cbufferB->isDefine == false);
 
                 if (mergingUndefinedCbuffers)
                 {
