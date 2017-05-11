@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+#include "SPIRV/doc.h"
+
 #include "SpxCompiler.h"
 
 using namespace std;
@@ -184,7 +186,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     break;
                 }
 
-                case spv::OpCBufferMemberProperties:
+                //we're not getting the size / alignment from this instruction anymore
+                /*case spv::OpCBufferProperties:
                 {
                     const spv::Id typeId = asId(start + 1);
 
@@ -206,7 +209,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 #endif
 
                         if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
-                        if (remainingBytes != countMembers * 2) { error("OpCBufferMemberProperties instruction has an invalid number of bytes"); break; }
+                        if (remainingBytes != countMembers * 2) { error("OpCBufferProperties instruction has an invalid number of bytes"); break; }
                         
                         for (unsigned int m = 0; m < countMembers; m++)
                         {
@@ -219,7 +222,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         }
                     }
                     break;
-                }
+                }*/
 
                 case spv::OpMemberDecorate:
                 {
@@ -237,32 +240,52 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         if (cbufferData->correspondingShaderType->type->GetId() != id) { error("Invalid instruction Id"); break; }
                         if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
-                        if (dec == spv::DecorationOffset)
+
+                        switch (dec)
                         {
-                            //skip it: the offset will be recomputed for all cbuffer members
-                            /*
+                            case spv::DecorationOffset:
+                            {
+                                //skip it: the offset will be recomputed for all cbuffer members
+                                /*
 #ifdef XKSLANG_DEBUG_MODE
-                            if (wordCount <= 4) { error("Invalid wordCount"); break; }
+                                if (wordCount <= 4) { error("Invalid wordCount"); break; }
 #endif
-                            const unsigned int offsetValue = asLiteralValue(start + 4);
-                            cbufferData->cbufferMembersData->members[index].memberOffset = offsetValue;
-                            */
-                        }
-                        else
-                        {
+                                const unsigned int offsetValue = asLiteralValue(start + 4);
+                                cbufferData->cbufferMembersData->members[index].memberOffset = offsetValue;
+                                */
+                                break;
+                            }
+                            case spv::DecorationRowMajor:
+                            {
+                                cbufferData->cbufferMembersData->members[index].matrixLayoutDecoration = (int)(spv::DecorationRowMajor);
+                                break;
+                            }
+                            case spv::DecorationColMajor:
+                            {
+                                cbufferData->cbufferMembersData->members[index].matrixLayoutDecoration = (int)(spv::DecorationColMajor);
+                                break;
+                            }
+                            default:
+                            {
+                                //add the decorations in the list of member decorations to pass
 #ifdef XKSLANG_DEBUG_MODE
-                            if (wordCount <= 3) { error("Invalid wordCount"); break; }
+                                if (wordCount <= 3) { error("Invalid wordCount"); break; }
 #endif
-                            unsigned int countRemainingBytes = wordCount - 3;
-                            std::vector<unsigned int>& listMemberDecoration = cbufferData->cbufferMembersData->members[index].listMemberDecoration;
-                            listMemberDecoration.push_back(countRemainingBytes);
-                            for (unsigned int i=0; i<countRemainingBytes; i++)
-                                listMemberDecoration.push_back(asLiteralValue(start + 3 + i));
+                                unsigned int countRemainingBytes = wordCount - 3;
+                                std::vector<unsigned int>& listMemberDecoration = cbufferData->cbufferMembersData->members[index].listMemberDecoration;
+                                listMemberDecoration.push_back(countRemainingBytes);
+                                for (unsigned int i = 0; i < countRemainingBytes; i++)
+                                    listMemberDecoration.push_back(asLiteralValue(start + 3 + i));
+
+                                break;
+                            }
                         }
                     }
                     break;
                 }
 
+                //done below instead
+                /*
                 case spv::OpTypeStruct:
                 {
                     spv::Id id = asId(start + 1);
@@ -292,6 +315,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     }
                     break;
                 }
+                */
 
                 case spv::OpFunction:
                 {
@@ -309,6 +333,68 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
         if (errorMessages.size() > 0) success = false;
     }
 
+    //set the members' size and alignment for all used cbuffers
+    if (success)
+    {
+        for (unsigned int i = 0; i < listAllShaderCBuffers.size(); i++)
+        {
+            CBufferTypeData* cbufferData = listAllShaderCBuffers[i];
+            if (cbufferData->isUsed)
+            {
+                TypeInstruction* cbufferType = GetTypeById(cbufferData->cbufferTypeId);
+                if (cbufferType == nullptr) { error("failed to find the cbuffer type for cbufferTypeId: " + to_string(cbufferData->cbufferTypeId)); break; }
+
+                spv::Op opCode = asOpCode(cbufferType->GetBytecodeStartPosition());
+                int wordCount = asWordCount(cbufferType->GetBytecodeStartPosition());
+                int countMembers = wordCount - 2;
+                
+#ifdef XKSLANG_DEBUG_MODE
+                if (opCode != spv::OpTypeStruct) { error(string("Invalid OpCode type for the cbuffer instruction (expected OpTypeStruct): ") + OpcodeString(opCode)); break; }
+                if (countMembers != cbufferData->cbufferCountMembers) { error("Invalid cbuffer count members property"); break; }
+#endif
+                if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
+
+                //find the size and alignment for the cbuffer members
+                unsigned int posElemStart = cbufferType->GetBytecodeStartPosition() + 2;
+                for (int m = 0; m < countMembers; ++m)
+                {
+                    TypeStructMember& member = cbufferData->cbufferMembersData->members[m];
+
+                    //get the member type object
+                    spv::Id cbufferMemberTypeId = asId(posElemStart + m);
+                    TypeInstruction* cbufferMemberType = GetTypeById(cbufferMemberTypeId);
+                    if (cbufferMemberType == nullptr) return error("failed to find the cbuffer element type for id: " + to_string(cbufferMemberTypeId));
+
+                    member.memberTypeId = cbufferMemberTypeId;
+                    member.memberType = cbufferMemberType;
+
+                    //check if the member type is a resource
+                    member.isResourceType = IsResourceType(cbufferMemberType->opCode);
+
+                    bool isMatrixRowMajor = true;
+                    if (cbufferMemberType->IsMatrixType())
+                    {
+                        if (member.matrixLayoutDecoration == (int)(spv::DecorationRowMajor)) isMatrixRowMajor = true;
+                        else if (member.matrixLayoutDecoration == (int)(spv::DecorationColMajor)) isMatrixRowMajor = false;
+                        else { error("undefined matrix member layout"); break; }
+                    }
+                    
+                    int memberSize, memberAlignment, memberStride;
+                    if (!GetTypeObjectBaseSizeAndAlignment(cbufferMemberType, isMatrixRowMajor, memberSize, memberAlignment, memberStride))
+                    {
+                        error("Failed to get the size and alignment for the cbuffer member: " + to_string(cbufferMemberTypeId));
+                        break;
+                    }
+
+                    cbufferData->cbufferMembersData->members[m].memberSize = memberSize;
+                    cbufferData->cbufferMembersData->members[m].memberAlignment = memberAlignment;
+                }
+            }
+        }
+
+        if (errorMessages.size() > 0) success = false;
+    }
+
 #ifdef XKSLANG_DEBUG_MODE
     //some sanity check in debug mode
     if (success)
@@ -321,10 +407,19 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 if (cbufferData->cbufferCountMembers != cbufferData->cbufferMembersData->countMembers()) {error("inconsistent number of members");}
                 for (unsigned int m = 0; m < cbufferData->cbufferMembersData->countMembers(); ++m)
                 {
-                    if (cbufferData->cbufferMembersData->members[m].memberSize < 0) { error("undefined size for a cbuffer member"); }
-                    if (!IsPow2(cbufferData->cbufferMembersData->members[m].memberAlignment)) { error("invalid member alignment"); }
-                    if (cbufferData->cbufferMembersData->members[m].memberTypeId == spvUndefinedId) { error("undefined member type id for a cbuffer member"); }
-                    if (cbufferData->cbufferMembersData->members[m].memberType == nullptr) { error("undefined member type for a cbuffer member"); }
+                    const TypeStructMember& member = cbufferData->cbufferMembersData->members[m];
+
+                    if (member.memberType == nullptr) { error("undefined member type for a cbuffer member"); }
+                    if (member.memberTypeId == spvUndefinedId) { error("undefined member type id for a cbuffer member"); }
+                    if (IsMatrixType(member.memberType) || IsMatrixArrayType(member.memberType)) {
+                        if (member.matrixLayoutDecoration == -1) { error("undefined matrix member layout"); }
+                    }
+                    else {
+                        if (member.matrixLayoutDecoration != -1) { error("got a defined matrix layout for a non-matrix member"); }
+                    }
+                    if (member.memberSize < 0) { error("undefined size for a cbuffer member"); }
+                    if (!IsPow2(member.memberAlignment)) { error("invalid member alignment"); }
+                    
                 }
             }
         }
@@ -774,17 +869,17 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 cbufferDeclarationNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
 
                 //cbuffer properties (block / cbuffer)
-                spv::Instruction structCBufferPropertiesInstr(spv::OpCBufferMemberProperties);
+                spv::Instruction structCBufferPropertiesInstr(spv::OpCBufferProperties);
                 structCBufferPropertiesInstr.addIdOperand(cbuffer->structTypeId);
                 structCBufferPropertiesInstr.addImmediateOperand(spv::CBufferDefined);
                 structCBufferPropertiesInstr.addImmediateOperand(spv::CBufferUnstage);
                 structCBufferPropertiesInstr.addImmediateOperand(cbuffer->countMembers());
-                for (unsigned int m = 0; m < cbuffer->members.size(); ++m)
-                {
-                    //add size and alignment for each members
-                    structCBufferPropertiesInstr.addImmediateOperand(cbuffer->members[m].memberSize);
-                    structCBufferPropertiesInstr.addImmediateOperand(cbuffer->members[m].memberAlignment);
-                }
+                //for (unsigned int m = 0; m < cbuffer->members.size(); ++m)
+                //{
+                //    //add size and alignment for each members
+                //    structCBufferPropertiesInstr.addImmediateOperand(cbuffer->members[m].memberSize);
+                //    structCBufferPropertiesInstr.addImmediateOperand(cbuffer->members[m].memberAlignment);
+                //}
                 structCBufferPropertiesInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
             }
 
@@ -840,8 +935,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
 
-                if (cbufferMember.memberOffset < 0)
-                {
+                if (cbufferMember.memberOffset < 0) {
                     error("An offset has not been set for the member: " + cbufferMember.GetDeclarationNameOrSemantic());
                     break;
                 }
@@ -853,7 +947,17 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 memberOffsetDecorateInstr.addImmediateOperand(spv::DecorationOffset);
                 memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.memberOffset);
                 memberOffsetDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
-            
+
+                //member decorate: matrix layout
+                if (cbufferMember.matrixLayoutDecoration != -1)
+                {
+                    spv::Instruction memberOffsetDecorateInstr(spv::OpMemberDecorate);
+                    memberOffsetDecorateInstr.addIdOperand(cbuffer->structTypeId);
+                    memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
+                    memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.matrixLayoutDecoration);
+                    memberOffsetDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }
+
                 //member extra decorates
                 if (cbufferMember.listMemberDecoration.size() > 0)
                 {

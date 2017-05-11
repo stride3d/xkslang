@@ -298,7 +298,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
                 case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
                 case spv::OpMemberAttribute:
-                case spv::OpCBufferMemberProperties:
+                case spv::OpCBufferProperties:
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
                 {
@@ -434,7 +434,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
                 case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
                 case spv::OpMemberAttribute:
-                case spv::OpCBufferMemberProperties:
+                case spv::OpCBufferProperties:
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
                 {
@@ -1101,7 +1101,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
                 case spv::OpMemberAttribute:
-                case spv::OpCBufferMemberProperties:
+                case spv::OpCBufferProperties:
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
                 {
@@ -1216,7 +1216,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
                 case spv::OpMemberAttribute:
-                case spv::OpCBufferMemberProperties:
+                case spv::OpCBufferProperties:
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
                 {
@@ -2573,7 +2573,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
     //Convert SPIRX to SPIRV (remove all SPIRX extended instructions). So we don't need to repeat it for every stages
     //Some exceptions, we keep the instructions:
     // -OpSemanticName: to let SPIRV-Cross set the semantic name as it was defined by the user in the original xksl shaders
-    // -OpCBufferMemberProperties: to let us retrieve the list of cbuffers from the SPV files
+    // -OpCBufferProperties: to let us retrieve the list of cbuffers from the SPV files
     // -OpMemberAttribute: to let us correctly process the types reflection
     vector<range_t> vecStripRanges;
     unsigned int start = header_size;
@@ -2635,7 +2635,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
 
             //Keep the following SPX extensions:
             //case spv::OpSemanticName:
-            //case spv::OpCBufferMemberProperties:
+            //case spv::OpCBufferProperties:
             //case spv::OpMemberAttribute:
             //{
             //}
@@ -3450,9 +3450,9 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 break;
             }*/
 
-            case spv::Op::OpCBufferMemberProperties:
+            case spv::Op::OpCBufferProperties:
             {
-                //we look for decorate with Block property (defining a cbuffer)
+                //will process this at the end, to make sure the types connection to their shader owner have been done
                 const spv::Id typeId = asId(start + 1);
                 if (typeId < 0 || typeId >= vectorIdsToDecorate.size()) break;
                 if (!vectorIdsToDecorate[typeId]) break;
@@ -3619,7 +3619,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
         switch (opCode)
         {
-            case spv::OpCBufferMemberProperties:
+            case spv::OpCBufferProperties:
             {
                 const spv::Id typeId = asId(start + 1);
                 spv::XkslPropertyEnum cbufferType = (spv::XkslPropertyEnum)asLiteralValue(start + 2);
@@ -3638,8 +3638,9 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 string shaderOwnerName = "";
                 if (type->shaderOwner != nullptr) shaderOwnerName = type->shaderOwner->GetName();
 
-                CBufferTypeData* cbufferData = new CBufferTypeData(shaderOwnerName, type->GetName(), cbufferType, cbufferStage == spv::CBufferStage ? true : false, countMembers);
+                CBufferTypeData* cbufferData = new CBufferTypeData(typeId, shaderOwnerName, type->GetName(), cbufferType, cbufferStage == spv::CBufferStage ? true : false, countMembers);
                 type->SetCBufferData(cbufferData);
+
                 break;
             }
         }
@@ -3735,17 +3736,6 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::CreateAndAddNewObjectFor(Parsed
                 }
                 type->SetTypePointed(pointedType);
             }
-
-            //get the size and alignment for the type
-            ///if (type->GetOpCode() == spv::OpTypeStruct)
-            ///{
-            ///    int size, alignment, stride;
-            ///    if (!GetTypeObjectBaseSizeAndAlignment(type, true, size, alignment, stride))
-            ///    {
-            ///        error(string("Failed to get the size and alignment for the new type: ") + to_string(parsedData.targetId));
-            ///    }
-            ///    int glkfjgds = 453425;
-            ///}
 
             newObject = type;
 

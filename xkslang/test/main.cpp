@@ -46,6 +46,8 @@ static string outputDir;
 static string finalResultOutputDir;
 static string expectedOutputDir;
 
+static bool buildEffectReflection = false;
+
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "shaderOnly.xksl" },
     //{ "shaderWithVariable.xksl" },
@@ -133,7 +135,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose14", "TestCompose14.xkfx" },
     //{ "TestCompose15", "TestCompose15.xkfx" },
     //{ "TestCompose16", "TestCompose16.xkfx" },
-
+    
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
     //{ "TestForEach02", "TestForEach02.xkfx" },
@@ -142,7 +144,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
     //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
     //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
-
+    
     //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
     //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
     //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
@@ -150,7 +152,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
     //{ "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
     //{ "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
-
+    
     //{ "TestGenerics01", "TestGenerics01.xkfx" },
     //{ "TestGenerics02", "TestGenerics02.xkfx" },
     //{ "TestGenerics03", "TestGenerics03.xkfx" },
@@ -159,7 +161,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics06", "TestGenerics06.xkfx" },
     //{ "TestGenerics07", "TestGenerics07.xkfx" },
     //{ "TestGenerics08", "TestGenerics08.xkfx" },
-
+    
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
     //{ "CBuffer03", "CBuffer03.xkfx" },
@@ -193,7 +195,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection02", "EffectReflection02.xkfx" },
 
     //{ "Effect01", "Effect01.xkfx" },
-    { "testTypeSize", "testTypeSize.xkfx" },
+    //{ "testTypeSize", "testTypeSize.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -453,14 +455,18 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
 
     //get the reflection data from the compiled bytecode
     EffectReflection effectReflection;
-    success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
-    if (!success)
+    if (buildEffectReflection)
     {
-        cout << "Failed to get the reflection data from the compiled bytecode" << endl;
-        return false;
+        success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
+        if (!success)
+        {
+            cout << "Failed to get the reflection data from the compiled bytecode" << endl;
+            return false;
+        }
+
+        //cout << endl << "EffectReflection:" << endl;
+        //cout << effectReflection.Print() << endl;
     }
-    //cout << endl << "EffectReflection:" << endl;
-    //cout << effectReflection.Print() << endl;
 
     //convert and output every stages
     string glslAllOutputs;
@@ -574,7 +580,7 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
 
     if (glslAllOutputs.size() > 0)
     {
-        glslAllOutputs = "/*\n" + effectReflection.Print() + "*/\n\n" + glslAllOutputs;
+        if (buildEffectReflection) glslAllOutputs = "/*\n" + effectReflection.Print() + "*/\n\n" + glslAllOutputs;
         string fileNameAllGlsl = effectName + ".glsl";
         string fullNameAllGlsl = finalResultOutputDir + fileNameAllGlsl;
         xkslangtest::Utils::WriteFile(fullNameAllGlsl, glslAllOutputs);
@@ -582,7 +588,7 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
     }
     if (hlslAllOutputs.size() > 0)
     {
-        hlslAllOutputs = "/*\n" + effectReflection.Print() + "*/\n\n" + hlslAllOutputs;
+        if (buildEffectReflection) hlslAllOutputs = "/*\n" + effectReflection.Print() + "*/\n\n" + hlslAllOutputs;
         string fileNameAllHlsl = effectName + ".hlsl";
         string fullNameAllHlsl = finalResultOutputDir + fileNameAllHlsl;
         xkslangtest::Utils::WriteFile(fullNameAllHlsl, hlslAllOutputs);

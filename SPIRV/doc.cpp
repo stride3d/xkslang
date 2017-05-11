@@ -1231,7 +1231,7 @@ const char* OpcodeString(int op)
     case (OpMemberAttribute):                           return "OpMemberAttribute";
     case (OpMemberSemanticName):                        return "OpMemberSemanticName";
     case (OpSemanticName):                              return "OpSemanticName";
-    case (OpCBufferMemberProperties):                   return "OpCBufferMemberProperties";
+    case (OpCBufferProperties):                         return "OpCBufferProperties";
     case (OpGSMethodProperties):                        return "OpGSMethodProperties";
 
     case (OpFunctionCallBaseUnresolved):                return "OpFunctionCallBaseUnres";
@@ -1388,7 +1388,7 @@ void Parameterize()
     InstructionDesc[OpMemberAttribute].setResultAndType(false, false);
     InstructionDesc[OpMemberSemanticName].setResultAndType(false, false);
     InstructionDesc[OpSemanticName].setResultAndType(false, false);
-    InstructionDesc[OpCBufferMemberProperties].setResultAndType(false, false);
+    InstructionDesc[OpCBufferProperties].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionStartLoop].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionEndLoop].setResultAndType(false, false);
 
@@ -1954,11 +1954,11 @@ void Parameterize()
     InstructionDesc[OpSemanticName].operands.push(OperandId, "'Type'");
     InstructionDesc[OpSemanticName].operands.push(OperandLiteralString, "'SemanticName'");
 
-    InstructionDesc[OpCBufferMemberProperties].operands.push(OperandId, "'Type'");
-    InstructionDesc[OpCBufferMemberProperties].operands.push(XkslShaderDataProperty, "'CbufferType'");
-    InstructionDesc[OpCBufferMemberProperties].operands.push(XkslShaderDataProperty, "'CbufferStage'");
-    InstructionDesc[OpCBufferMemberProperties].operands.push(OperandLiteralNumber, "'CountMembers'");
-    InstructionDesc[OpCBufferMemberProperties].operands.push(OperandVariableLiterals, "'SizeAndAlignment'");
+    InstructionDesc[OpCBufferProperties].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpCBufferProperties].operands.push(XkslShaderDataProperty, "'CbufferType'");
+    InstructionDesc[OpCBufferProperties].operands.push(XkslShaderDataProperty, "'CbufferStage'");
+    InstructionDesc[OpCBufferProperties].operands.push(OperandLiteralNumber, "'CountMembers'");
+    //InstructionDesc[OpCBufferProperties].operands.push(OperandVariableLiterals, "'SizeAndAlignment'");
 
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");

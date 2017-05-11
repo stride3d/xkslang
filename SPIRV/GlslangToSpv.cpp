@@ -2582,17 +2582,17 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
         unsigned int countMembers = glslangMembers->size();
 
         //Get the size and alignment of the cbuffer members
-        std::vector<unsigned int> membersSizeAndAlignment;
-        for (unsigned int m = 0; m < countMembers; m++)
-        {
-            const glslang::TType& glslangMember = *(*glslangMembers)[m].type;
-            const glslang::TQualifier& memberQualifier = glslangMember.getQualifier();
-
-            int memberSize, dummyStride;
-            int memberAlignment = glslangIntermediate->getBaseAlignment(glslangMember, memberSize, dummyStride, explicitLayout == glslang::ElpStd140, memberQualifier.layoutMatrix == glslang::ElmRowMajor);
-            membersSizeAndAlignment.push_back(memberSize);
-            membersSizeAndAlignment.push_back(memberAlignment);
-        }
+        //std::vector<unsigned int> membersSizeAndAlignment;
+        //for (unsigned int m = 0; m < countMembers; m++)
+        //{
+        //    const glslang::TType& glslangMember = *(*glslangMembers)[m].type;
+        //    const glslang::TQualifier& memberQualifier = glslangMember.getQualifier();
+        //
+        //    int memberSize, dummyStride;
+        //    int memberAlignment = glslangIntermediate->getBaseAlignment(glslangMember, memberSize, dummyStride, explicitLayout == glslang::ElpStd140, memberQualifier.layoutMatrix == glslang::ElmRowMajor);
+        //    membersSizeAndAlignment.push_back(memberSize);
+        //    membersSizeAndAlignment.push_back(memberAlignment);
+        //}
 
         int cbufferType = -1;
         if (type.IsUndefinedCBufferType()) cbufferType = spv::CBufferUndefined;
@@ -2607,7 +2607,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 
         if (cbufferType != -1)
         {
-            builder.addCBufferProperties(spvType, cbufferType, cbufferStage, countMembers, membersSizeAndAlignment);
+            builder.addCBufferProperties(spvType, cbufferType, cbufferStage, countMembers);
         }
     }
     

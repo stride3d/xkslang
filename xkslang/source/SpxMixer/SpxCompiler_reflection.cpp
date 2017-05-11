@@ -176,7 +176,7 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
                     break;
                 }
 
-                case spv::OpCBufferMemberProperties:
+                case spv::OpCBufferProperties:
                 {
                     const spv::Id typeId = asId(start + 1);
 
@@ -195,7 +195,7 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
 #endif
 
                         if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
-                        if (remainingBytes != countMembers * 2) { error("OpCBufferMemberProperties instruction has an invalid number of bytes"); break; }
+                        if (remainingBytes != countMembers * 2) { error("OpCBufferProperties instruction has an invalid number of bytes"); break; }
 
                         for (unsigned int m = 0; m < countMembers; m++)
                         {

@@ -238,6 +238,7 @@ public:
     {
     public:
         //used if the type is a cbuffer struct
+        spv::Id cbufferTypeId;
         int cbufferType;
         bool isStage;
         int cbufferCountMembers;
@@ -256,14 +257,14 @@ public:
         VariableInstruction* cbufferVariableTypeObject;
         int tmpFlag;
 
-        CBufferTypeData(std::string shaderOwnerName, std::string cbufferName, int cbufferType, bool isStage, int cbufferCountMembers) :
-            shaderOwnerName(shaderOwnerName), cbufferName(cbufferName), cbufferType(cbufferType), isStage(isStage), cbufferCountMembers(cbufferCountMembers),
-            isUsed(false), cbufferMembersData(nullptr), correspondingShaderType(nullptr), posOpNameType(0), posOpNameVariable(0),
+        CBufferTypeData(spv::Id cbufferTypeId, std::string shaderOwnerName, std::string cbufferName, int cbufferType, bool isStage, int cbufferCountMembers) :
+            cbufferTypeId(cbufferTypeId), shaderOwnerName(shaderOwnerName), cbufferName(cbufferName), cbufferType(cbufferType), isStage(isStage),
+            cbufferCountMembers(cbufferCountMembers), isUsed(false), cbufferMembersData(nullptr), correspondingShaderType(nullptr), posOpNameType(0), posOpNameVariable(0),
             cbufferTypeObject(nullptr), cbufferPointerTypeObject(nullptr), cbufferVariableTypeObject(nullptr), tmpFlag(0){}
         virtual ~CBufferTypeData() { if (cbufferMembersData != nullptr) delete cbufferMembersData; }
 
         virtual CBufferTypeData* Clone() {
-            CBufferTypeData* cbufferData = new CBufferTypeData(shaderOwnerName, cbufferName, cbufferType, isStage, cbufferCountMembers);
+            CBufferTypeData* cbufferData = new CBufferTypeData(cbufferTypeId, shaderOwnerName, cbufferName, cbufferType, isStage, cbufferCountMembers);
             cbufferData->isUsed = isUsed;
             return cbufferData;
         }
@@ -294,6 +295,8 @@ public:
             cbufferData = data;
         }
         CBufferTypeData* GetCBufferData() { return cbufferData; }
+
+        bool IsMatrixType(){ return SpxCompiler::IsMatrixType(GetOpCode()); }
 
     private:
         TypeInstruction* pointerTo;
@@ -419,7 +422,7 @@ public:
     public:
         TypeStructMember() : structTypeId(spvUndefinedId), structMemberIndex(-1),
             isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberType(nullptr),
-            memberDefaultConstantTypeId(spvUndefinedId), memberSize(-1), memberAlignment(-1), memberOffset(-1),
+            memberDefaultConstantTypeId(spvUndefinedId), memberSize(-1), memberAlignment(-1), memberOffset(-1), matrixLayoutDecoration(-1),
             newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1),
             variableAccessTypeId(0), memberTypePointerInputId(0), memberTypePointerOutputId(0), memberStageInputVariableId(0), memberStageOutputVariableId(0),
             isUsed(false) {}
@@ -448,6 +451,7 @@ public:
         int memberSize;
         int memberAlignment;
         int memberOffset;
+        int matrixLayoutDecoration; //a matrix layout is either RowMajor (DecorationRowMajor) or ColMajor (DecorationColMajor), or -1 if undefined
         std::vector<unsigned int> listMemberDecoration;  //extra decorate properties set with the member (for example: RowMajor, MatrixStride, ... set for cbuffer members)
         bool isUsed; //in some case we need to know which members are actually used or not
         bool isResourceType;
@@ -733,6 +737,8 @@ private:
     static bool IsScalarType(const spv::Op& opCode);
     static bool IsVectorType(const spv::Op& opCode) { return opCode == spv::OpTypeVector; }
     static bool IsMatrixType(const spv::Op& opCode) { return opCode == spv::OpTypeMatrix; }
+    bool IsMatrixType(TypeInstruction* type) { return IsMatrixType(type->GetOpCode()); }
+    bool IsMatrixArrayType(TypeInstruction* type);
     int GetVectorTypeCountElements(TypeInstruction* vectorType);
 
     bool GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool isRowMajor, int& size, int& alignment, int& stride, int iterationCounter = 0);

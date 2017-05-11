@@ -26,6 +26,17 @@ bool SpxCompiler::IsResourceType(const spv::Op& opCode)
     return false;
 }
 
+bool SpxCompiler::IsMatrixArrayType(TypeInstruction* type)
+{
+    if (type->GetOpCode() != spv::OpTypeArray) return false;
+
+    spv::Id arrayElementTypeId = asId(type->GetBytecodeStartPosition() + 2);
+    TypeInstruction* elemType = GetTypeById(arrayElementTypeId);
+    if (elemType == nullptr) return error("failed to find the vector element type for id: " + to_string(arrayElementTypeId));
+
+    return (elemType->GetOpCode() == spv::OpTypeMatrix);
+}
+
 bool SpxCompiler::IsScalarType(const spv::Op& opCode)
 {
     switch (opCode)
@@ -235,9 +246,11 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
     switch (type->GetOpCode())
     {
         //===================================================================================
-        //Scalars
+        //Scalars and pointer
         case spv::OpTypeBool:
         case spv::OpTypeVoid:
+        case spv::OpTypeSampler:
+        case spv::OpTypeImage:
         {
             size = 4;
             alignment = 4;

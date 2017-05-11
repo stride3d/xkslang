@@ -979,7 +979,7 @@ enum Op {
     OpMemberAttribute = 4607,                //Add an attribute to a member
     OpMemberSemanticName = 4608,             //Record the semantic name of a struct member, as declared by the user
     OpSemanticName = 4609,                   //Record the semantic name of a type, as declared by the user
-    OpCBufferMemberProperties = 4610,        //Additionnal data when defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts, size And alignment for each member
+    OpCBufferProperties = 4610,              //Data defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts
     OpGSMethodProperties = 4611,             //Additonnal data for GS methods. GSInputType GSOuputType
 
     OpForEachCompositionStartLoop = 4620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)

@@ -293,7 +293,7 @@ public:
         RowCount(t.RowCount), ColumnCount(t.ColumnCount), Elements(t.Elements), ElementSize(t.ElementSize), ElementAlignment(t.ElementAlignment), Members(nullptr), CountMembers(0)
     {}
 
-    ~TypeReflectionDescription();
+    virtual ~TypeReflectionDescription();
 
     bool isValid() {return Class != EffectParameterReflectionClass::Undefined;}
 
