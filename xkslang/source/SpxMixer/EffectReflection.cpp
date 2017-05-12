@@ -26,7 +26,7 @@ string TypeReflectionDescription::Print()
 {
     std::ostringstream stream;
     stream << "Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(Class) << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(Type)
-        << " Size=" << ElementSize << " Alignment=" << ElementAlignment
+        << " Size=" << Size << " Alignment=" << Alignment << " Stride=" << Stride
         << " Elements=" << Elements << " Rows=" << RowCount << " Columns=" << ColumnCount;
     return stream.str();
 }
@@ -34,7 +34,7 @@ string TypeReflectionDescription::Print()
 string ConstantBufferMemberReflectionDescription::Print()
 {
     std::ostringstream stream;
-    stream << "Name=\"" << KeyName << "\" Offset=" << Offset << ". " << Type.Print();
+    stream << "Name=\"" << KeyName << "\" Offset=" << Offset << ". " << ReflectionType.Print();
     return stream.str();
 }
 

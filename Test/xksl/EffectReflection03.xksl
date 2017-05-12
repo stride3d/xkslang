@@ -1,32 +1,33 @@
+/*
+ConstantBuffers. Count=1
+ Name="PerDraw" Size=256 MembersCount=4
+  Name="ShaderMain_aMat23" Offset=0. Class=MatrixRows Type=Float Size=96 Alignment=16 Stride=48 Elements=2 Rows=3 Columns=2
+  Name="ShaderMain_aMat23_rm" Offset=96. Class=MatrixColumns Type=Float Size=64 Alignment=16 Stride=32 Elements=2 Rows=2 Columns=3
+  Name="ShaderMain_Color" Offset=160. Class=Vector Type=Undefined Size=64 Alignment=16 Stride=16 Elements=4 Rows=1 Columns=4
+  Name="ShaderMain_ColorArray" Offset=224. Class=Color Type=Undefined Size=32 Alignment=16 Stride=16 Elements=2 Rows=1 Columns=4
+ResourceBindings. Count=1
+ Stage=Pixel Name="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+*/
+
+//Test reflection on arrays
 shader ShaderMain
 {
-	struct StructType
-	{
-		float4x4 MatrixTransform;
-		[Color]
-        float3 ColorMatrix;
-		float4 ColorArray[2];
-		bool aBool;
-	};
-
-	stage StructType struct1;
-	
 	cbuffer PerDraw
-    {
-        stage StructType struct2;
-    }
-	
-    stage stream float4 Position : POSITION;
-	stage stream float4 ShadingPosition : SV_Position;
+	{
+		stage float2x3 aMat23[2];  //size:48, align:16, stride: 16
+		stage row_major float2x3 aMat23_rm[2];  //size:32, align:16, stride: 16
+		stage float4 Color[4];
+		[Color]
+		stage float4 ColorArray[2];
+	}
+
 	stage stream float4 ColorTarget : SV_Target0;
 	
-	stage void VSMain() 
-	{
-		streams.ShadingPosition = mul(streams.Position, struct1.MatrixTransform) + struct2.ColorArray[1];
-	}
+	stage void VSMain() {}
 	
-    stage void PSMain() 
-    {
-        streams.ColorTarget = streams.ShadingPosition;
-    }
+	stage void PSMain()
+	{
+		streams.ColorTarget = Color[1];
+	}
 };
+

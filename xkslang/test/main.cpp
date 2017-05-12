@@ -192,7 +192,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
     //{ "EffectReflection01", "EffectReflection01.xkfx" },
-    { "EffectReflection02", "EffectReflection02.xkfx" },
+    //{ "EffectReflection02", "EffectReflection02.xkfx" },
+    { "EffectReflection03", "EffectReflection03.xkfx" },
 
     //{ "Effect01", "Effect01.xkfx" },
     //{ "testTypeSize", "testTypeSize.xkfx" },

@@ -287,10 +287,10 @@ class TypeReflectionDescription
 {
 public:
     TypeReflectionDescription() : Class(EffectParameterReflectionClass::Undefined), Type(EffectParameterReflectionType::Undefined),
-        RowCount(0), ColumnCount(0), Elements(0), ElementSize(0), ElementAlignment(0), Members(nullptr), CountMembers(0){}
+        RowCount(0), ColumnCount(0), Elements(0), Size(0), Alignment(0), Stride(0), Members(nullptr), CountMembers(0){}
 
     TypeReflectionDescription(const TypeReflectionDescription& t) : Class(t.Class), Type(t.Type),
-        RowCount(t.RowCount), ColumnCount(t.ColumnCount), Elements(t.Elements), ElementSize(t.ElementSize), ElementAlignment(t.ElementAlignment), Members(nullptr), CountMembers(0)
+        RowCount(t.RowCount), ColumnCount(t.ColumnCount), Elements(t.Elements), Size(t.Size), Alignment(t.Alignment), Stride(t.Stride), Members(nullptr), CountMembers(0)
     {}
 
     virtual ~TypeReflectionDescription();
@@ -299,12 +299,16 @@ public:
 
     bool isScalarType() {return Class == EffectParameterReflectionClass::Scalar;}
 
-    void Set(EffectParameterReflectionClass c, EffectParameterReflectionType t, int countRow, int countColumn)
+    void Set(EffectParameterReflectionClass c, EffectParameterReflectionType t, int countRow, int countColumn, int size, int alignment, int stride, int elements)
     {
         this->Class = c;
         this->Type = t;
         this->RowCount = countRow;
         this->ColumnCount = countColumn;
+        this->Size = size;
+        this->Alignment = alignment;
+        this->Stride = stride;
+        this->Elements = elements;
     }
 
     std::string Print();
@@ -338,12 +342,17 @@ public:
     /// <summary>
     /// Size of this element (non-aligned).
     /// </summary>
-    int ElementSize;
+    int Size;
 
     /// <summary>
     /// Alignment of this element.
     /// </summary>
-    int ElementAlignment;
+    int Alignment;
+
+    /// <summary>
+    /// Stride of this element (for Arrays)
+    /// </summary>
+    int Stride;
 
     /// <summary>
     /// Name of this structure type.
@@ -385,7 +394,7 @@ public:
     std::string KeyName;
 
     int Offset;
-    TypeReflectionDescription Type;
+    TypeReflectionDescription ReflectionType;
 
     ConstantBufferMemberReflectionDescription(){}
 

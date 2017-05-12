@@ -372,22 +372,24 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     member.isResourceType = IsResourceType(cbufferMemberType->opCode);
 
                     bool isMatrixRowMajor = true;
-                    if (cbufferMemberType->IsMatrixType())
+                    if (IsMatrixType(cbufferMemberType) || IsMatrixArrayType(cbufferMemberType))
                     {
                         if (member.matrixLayoutDecoration == (int)(spv::DecorationRowMajor)) isMatrixRowMajor = true;
                         else if (member.matrixLayoutDecoration == (int)(spv::DecorationColMajor)) isMatrixRowMajor = false;
                         else { error("undefined matrix member layout"); break; }
                     }
                     
-                    int memberSize, memberAlignment, memberStride;
-                    if (!GetTypeObjectBaseSizeAndAlignment(cbufferMemberType, isMatrixRowMajor, memberSize, memberAlignment, memberStride))
                     {
-                        error("Failed to get the size and alignment for the cbuffer member: " + to_string(cbufferMemberTypeId));
-                        break;
-                    }
+                        TypeReflectionDescription typeReflectionData;
+                        if (!GetTypeObjectBaseSizeAndAlignment(cbufferMemberType, isMatrixRowMajor, member.attribute, typeReflectionData))
+                        {
+                            error("Failed to get the size and alignment for the cbuffer member: " + to_string(cbufferMemberTypeId));
+                            break;
+                        }
 
-                    cbufferData->cbufferMembersData->members[m].memberSize = memberSize;
-                    cbufferData->cbufferMembersData->members[m].memberAlignment = memberAlignment;
+                        cbufferData->cbufferMembersData->members[m].memberSize = typeReflectionData.Size;
+                        cbufferData->cbufferMembersData->members[m].memberAlignment = typeReflectionData.Alignment;
+                    }
                 }
             }
         }

@@ -230,14 +230,11 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
                         {
                             case spv::DecorationOffset:
                             {
-                                //skip it: the offset will be recomputed for all cbuffer members
-                                /*
-                                #ifdef XKSLANG_DEBUG_MODE
+#ifdef XKSLANG_DEBUG_MODE
                                 if (wordCount <= 4) { error("Invalid wordCount"); break; }
-                                #endif
+#endif
                                 const unsigned int offsetValue = asLiteralValue(start + 4);
                                 cbufferData->cbufferMembersData->members[index].memberOffset = offsetValue;
-                                */
                                 break;
                             }
                             case spv::DecorationRowMajor:
@@ -268,113 +265,98 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
         if (errorMessages.size() > 0) success = false;
     }
 
-    //set the members' size and alignment for all cbuffers
+    //Get the reflection data for all cbuffer members
     if (success)
     {
-        for (unsigned int i = 0; i < listAllCBuffers.size(); i++)
-        {
-            CBufferTypeData* cbufferData = listAllCBuffers[i];
-            if (cbufferData->isUsed)
-            {
-                TypeInstruction* cbufferType = cbufferData->cbufferTypeObject;
+        const unsigned int countCbuffers = listAllCBuffers.size();
+        effectReflection.ConstantBuffers.resize(countCbuffers);
 
-                spv::Op opCode = asOpCode(cbufferType->GetBytecodeStartPosition());
-                int wordCount = asWordCount(cbufferType->GetBytecodeStartPosition());
-                int countMembers = wordCount - 2;
+        for (unsigned int icb = 0; icb < countCbuffers; icb++)
+        {
+            CBufferTypeData* cbufferData = listAllCBuffers[icb];
+
+            TypeInstruction* cbufferType = cbufferData->cbufferTypeObject;
+            spv::Op opCode = asOpCode(cbufferType->GetBytecodeStartPosition());
+            int wordCount = asWordCount(cbufferType->GetBytecodeStartPosition());
+            int countMembers = wordCount - 2;
 
 #ifdef XKSLANG_DEBUG_MODE
-                if (opCode != spv::OpTypeStruct) { error(string("Invalid OpCode type for the cbuffer instruction (expected OpTypeStruct): ") + OpcodeString(opCode)); break; }
-                if (countMembers != cbufferData->cbufferCountMembers) { error("Invalid cbuffer count members property"); break; }
+            if (opCode != spv::OpTypeStruct) { error(string("Invalid OpCode type for the cbuffer instruction (expected OpTypeStruct): ") + OpcodeString(opCode)); break; }
+            if (countMembers != cbufferData->cbufferCountMembers) { error("Invalid cbuffer count members property"); break; }
 #endif
-                if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
+            if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
 
-                //find the size and alignment for the cbuffer members
-                unsigned int posElemStart = cbufferType->GetBytecodeStartPosition() + 2;
-                for (int m = 0; m < countMembers; ++m)
-                {
-                    TypeStructMember& member = cbufferData->cbufferMembersData->members[m];
-
-                    //get the member type object
-                    spv::Id cbufferMemberTypeId = asId(posElemStart + m);
-                    TypeInstruction* cbufferMemberType = GetTypeById(cbufferMemberTypeId);
-                    if (cbufferMemberType == nullptr) return error("failed to find the cbuffer element type for id: " + to_string(cbufferMemberTypeId));
-
-                    member.memberTypeId = cbufferMemberTypeId;
-                    member.memberType = cbufferMemberType;
-
-                    //check if the member type is a resource
-                    member.isResourceType = IsResourceType(cbufferMemberType->opCode);
-
-                    bool isMatrixRowMajor = true;
-                    if (cbufferMemberType->IsMatrixType())
-                    {
-                        if (member.matrixLayoutDecoration == (int)(spv::DecorationRowMajor)) isMatrixRowMajor = true;
-                        else if (member.matrixLayoutDecoration == (int)(spv::DecorationColMajor)) isMatrixRowMajor = false;
-                        else { error("undefined matrix member layout"); break; }
-                    }
-
-                    int memberSize, memberAlignment, memberStride;
-                    if (!GetTypeObjectBaseSizeAndAlignment(cbufferMemberType, isMatrixRowMajor, memberSize, memberAlignment, memberStride))
-                    {
-                        error("Failed to get the size and alignment for the cbuffer member: " + to_string(cbufferMemberTypeId));
-                        break;
-                    }
-
-                    cbufferData->cbufferMembersData->members[m].memberSize = memberSize;
-                    cbufferData->cbufferMembersData->members[m].memberAlignment = memberAlignment;
-                }
-            }
-        }
-
-        if (errorMessages.size() > 0) success = false;
-    }
-
-    //=========================================================================================================================
-    //=========================================================================================================================
-    //Set the reflection data for all cbuffer and their members
-    if (success)
-    {
-        effectReflection.ConstantBuffers.resize(listAllCBuffers.size());
-
-        for (unsigned int k = 0; k < listAllCBuffers.size(); k++)
-        {
-            CBufferTypeData* cbufferData = listAllCBuffers[k];
-            unsigned int countMembers = cbufferData->cbufferCountMembers;
-
-            ConstantBufferReflectionDescription& cbufferReflection = effectReflection.ConstantBuffers[k];
+            //Set the cbuffer name
+            ConstantBufferReflectionDescription& cbufferReflection = effectReflection.ConstantBuffers[icb];
             cbufferReflection.CbufferName = cbufferData->cbufferName;
             cbufferReflection.Members.resize(countMembers);
 
-            for (unsigned int mIndex = 0; mIndex < countMembers; ++mIndex)
+            //Get the reflection data for all cbuffer members
+            unsigned int posElemStart = cbufferType->GetBytecodeStartPosition() + 2;
+            for (int mIndex = 0; mIndex < countMembers; ++mIndex)
             {
                 TypeStructMember& member = cbufferData->cbufferMembersData->members[mIndex];
                 ConstantBufferMemberReflectionDescription& memberReflection = cbufferReflection.Members[mIndex];
                 memberReflection.KeyName = member.GetDeclarationNameOrSemantic();
 
-                if (!GetReflectionTypeForMember(member, memberReflection.Type)) {
-                    error("Failed to get the reflection type for the member: " + member.GetDeclarationNameOrSemantic());
+                //get the member type object
+                spv::Id cbufferMemberTypeId = asId(posElemStart + mIndex);
+                TypeInstruction* cbufferMemberType = GetTypeById(cbufferMemberTypeId);
+                if (cbufferMemberType == nullptr) return error("failed to find the cbuffer element type for id: " + member.GetDeclarationNameOrSemantic());
+
+                member.memberTypeId = cbufferMemberTypeId;
+                member.memberType = cbufferMemberType;
+
+                //check if the member type is a resource
+                member.isResourceType = IsResourceType(cbufferMemberType->opCode);
+
+                bool isMatrixRowMajor = true;
+                if (IsMatrixType(cbufferMemberType) || IsMatrixArrayType(cbufferMemberType))
+                {
+                    if (member.matrixLayoutDecoration == (int)(spv::DecorationRowMajor)) isMatrixRowMajor = true;
+                    else if (member.matrixLayoutDecoration == (int)(spv::DecorationColMajor)) isMatrixRowMajor = false;
+                    else { error("undefined matrix member layout"); break; }
+                }
+
+                if (!GetTypeObjectBaseSizeAndAlignment(cbufferMemberType, isMatrixRowMajor, member.attribute, memberReflection.ReflectionType))
+                {
+                    error("Failed to get the reflexon data for the cbuffer member: " + member.GetDeclarationNameOrSemantic());
                     break;
                 }
 
-                //compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment
+                //we can retrieve the offset from the bytecode, no need to recompute it
+                if (member.memberOffset == -1) {
+                    error("a cbuffer member is missing its offset decoration" + member.GetDeclarationNameOrSemantic());
+                    break;
+                }
+
+#ifdef XKSLANG_DEBUG_MODE
+                //double check: we can also compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment)
                 int memberOffset = 0;
                 if (mIndex > 0)
                 {
                     ConstantBufferMemberReflectionDescription& previousMemberReflection = cbufferReflection.Members[mIndex - 1];
                     int previousMemberOffset = previousMemberReflection.Offset;
-                    int previousMemberSize = previousMemberReflection.Type.ElementSize;
+                    int previousMemberSize = previousMemberReflection.ReflectionType.Size;
 
                     memberOffset = previousMemberOffset + previousMemberSize;
-                    int memberAlignment = memberReflection.Type.ElementAlignment;
+                    int memberAlignment = memberReflection.ReflectionType.Alignment;
                     //round to pow2
                     memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1));
                 }
-                memberReflection.Offset = memberOffset;
-                cbufferReflection.Size = memberOffset + memberReflection.Type.ElementSize;
+                cbufferReflection.Size = memberOffset + memberReflection.ReflectionType.Size;
+
+                if (memberOffset != member.memberOffset) {
+                    error("Offsets between reflection data and bytecode are not similar for the member:" + member.GetDeclarationNameOrSemantic());
+                    break;
+                }
+#endif
+                memberReflection.Offset = member.memberOffset;
+                
             }
-    
-            if (errorMessages.size() > 0) { success = false; break; }
         }
+
+        if (errorMessages.size() > 0) success = false;
     }
 
     //=========================================================================================================================
@@ -493,192 +475,4 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
     }
 
     return success;
-}
-
-bool SpxCompiler::GetReflectionTypeForMember(TypeStructMember& member, TypeReflectionDescription& typeReflection)
-{
-    TypeInstruction* memberType = member.memberType;
-    if (memberType == nullptr)
-    {
-        memberType = GetTypeById(member.memberTypeId);
-        if (memberType == nullptr) return error("failed to find the member type for memberTypeId: " + to_string(member.memberTypeId));
-        member.memberType = memberType;
-    }
-
-    if (!GetReflectionTypeFor(memberType, typeReflection, member.attribute, 0)) return false;
-    typeReflection.ElementSize = member.memberSize;
-    typeReflection.ElementAlignment = member.memberAlignment;
-
-    return true;
-}
-
-bool SpxCompiler::GetReflectionTypeFor(TypeInstruction* memberType, TypeReflectionDescription& typeReflection, const string& attribute, int iterationNum)
-{
-    if (iterationNum >= 5) return error("invalid iteration number");
-
-    switch (memberType->opCode)
-    {
-        case spv::Op::OpTypeFloat:
-        {
-            unsigned int width = asLiteralValue(memberType->GetBytecodeStartPosition() + 2);
-
-            switch (width)
-            {
-                case 16: typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Float, 1, 1); break;  //should we create a special type?
-                case 32: typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Float, 1, 1); break;
-                case 64: typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Double, 1, 1); break;
-                default: return error("OpTypeFloat: invalid type width: " + to_string(width));
-            }
-            break;
-        }
-
-        case spv::Op::OpTypeInt:
-        {
-            int width = asLiteralValue(memberType->GetBytecodeStartPosition() + 2);
-            int sign = asLiteralValue(memberType->GetBytecodeStartPosition() + 3);
-
-            EffectParameterReflectionType reflectionType;
-            if (sign == 1)
-            {
-                reflectionType = EffectParameterReflectionType::Int;
-            }
-            else
-            {
-                if (width == 8) reflectionType = EffectParameterReflectionType::UInt8;
-                else reflectionType = EffectParameterReflectionType::UInt;
-            }
-
-            //Maybe we can differenciate some Int type later (signed/unsigned, int 16,32,64,...)
-            typeReflection.Set(EffectParameterReflectionClass::Scalar, reflectionType, 1, 1);
-            break;
-        }
-
-        case spv::OpTypeBool:
-        {
-            typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Bool, 1, 1);
-            break;
-        }
-
-        case spv::OpTypeVoid:
-        {
-            typeReflection.Set(EffectParameterReflectionClass::Scalar, EffectParameterReflectionType::Void, 1, 1);
-            break;
-        }
-
-        case spv::Op::OpTypeMatrix:
-        {
-            spv::Id subElementTypeId = asId(memberType->GetBytecodeStartPosition() + 2);
-            int countRows = asLiteralValue(memberType->GetBytecodeStartPosition() + 3);
-
-#ifdef XKSLANG_DEBUG_MODE
-            if (countRows <= 0) return error("Invalid countRows");
-#endif
-            TypeInstruction* subElementType = GetTypeById(subElementTypeId);
-            if (subElementType == nullptr) return error("failed to find the element type for id: " + to_string(subElementTypeId));
-
-            TypeReflectionDescription subElementTypeReflection;
-            if (!GetReflectionTypeFor(subElementType, subElementTypeReflection, attribute, iterationNum + 1))
-                return error("failed to get the reflection type for the sub-element: " + to_string(subElementTypeId));
-
-            if (subElementTypeReflection.Class != EffectParameterReflectionClass::Vector && subElementTypeReflection.Class != EffectParameterReflectionClass::Color)
-                return error("OpTypeMatrix: The sub-element class must be a Vector or Color. class: " + EffectReflection::GetEffectParameterReflectionClassLabel(subElementTypeReflection.Class));
-            //if (subElementTypeReflection.Type != EffectParameterReflectionType::Float)
-            //    return error("The sub-element type must be Float. Type: " + EffectReflection::GetEffectParameterReflectionTypeLabel(subElementTypeReflection.Type));
-            int countColumns = subElementTypeReflection.ColumnCount;
-            
-            typeReflection.Set(EffectParameterReflectionClass::MatrixColumns, subElementTypeReflection.Type, countRows, countColumns);
-
-            break;
-        }
-
-        case spv::Op::OpTypeArray:
-        {
-            //array size is set with a const instruction: read its value
-            spv::Id sizeConstTypeId = asLiteralValue(memberType->GetBytecodeStartPosition() + 3);
-            ConstInstruction* constObject = GetConstById(sizeConstTypeId);
-            if (constObject == nullptr) return error("cannot get const object for Id: " + to_string(sizeConstTypeId));
-
-            int arrayCountElems;
-            if (!GetIntegerConstTypeExpressionValue(constObject, arrayCountElems))
-                return error("Failed to get the integer const object literal value for: " + to_string(sizeConstTypeId));
-
-            //sub-element
-            spv::Id subElementTypeId = asId(memberType->GetBytecodeStartPosition() + 2);
-            TypeInstruction* subElementType = GetTypeById(subElementTypeId);
-            if (subElementType == nullptr) return error("failed to find the element type for id: " + to_string(subElementTypeId));
-
-            if (!GetReflectionTypeFor(subElementType, typeReflection, attribute, iterationNum + 1))
-                return error("failed to get the reflection type for the sub-element: " + to_string(subElementTypeId));
-
-            if (typeReflection.Elements != 0) return error("OpTypeArray: sub-element reflection type cannot be another array");
-            typeReflection.Elements = arrayCountElems;
-
-            break;
-        }
-
-        case spv::Op::OpTypeVector:
-        {
-            spv::Id subElementTypeId = asId(memberType->GetBytecodeStartPosition() + 2);
-            int countElements = asLiteralValue(memberType->GetBytecodeStartPosition() + 3);
-
-#ifdef XKSLANG_DEBUG_MODE
-            if (countElements <= 0) return error("OpTypeVector: Invalid countElements: " + to_string(countElements));
-#endif
-            TypeInstruction* subElementType = GetTypeById(subElementTypeId);
-            if (subElementType == nullptr) return error("failed to find the element type for id: " + to_string(subElementTypeId));
-
-            TypeReflectionDescription subElementTypeReflection;
-            if (!GetReflectionTypeFor(subElementType, subElementTypeReflection, attribute, iterationNum + 1))
-                return error("failed to get the reflection type for the sub-element: " + to_string(subElementTypeId));
-
-            if (!subElementTypeReflection.isScalarType())
-                return error("OpTypeVector: The sub-element class must be scalar. class: " + EffectReflection::GetEffectParameterReflectionClassLabel(subElementTypeReflection.Class));
-
-            EffectParameterReflectionClass vectorClass = EffectParameterReflectionClass::Vector;
-            if (subElementTypeReflection.Type == EffectParameterReflectionType::Float && (countElements >= 2 && countElements <= 4)) {
-                if (attribute == "Color") {
-                    vectorClass = EffectParameterReflectionClass::Color;
-                }
-            }
-
-            typeReflection.Set(vectorClass, subElementTypeReflection.Type, 1, countElements);
-
-            break;
-        }
-
-        case spv::OpTypeStruct:
-        {
-            int wordCount = asWordCount(memberType->GetBytecodeStartPosition());
-            int countMembers = wordCount - 2;
-
-            if (countMembers <= 0 || countMembers > 256) return error("Invalid OpTypeStruct size");
-
-            typeReflection.Set(EffectParameterReflectionClass::Struct, EffectParameterReflectionType::Void, 1, 1);
-            typeReflection.Members = new TypeMemberReflectionDescription[countMembers];
-            typeReflection.CountMembers = countMembers;
-
-            return error("PROUT PROUT Missing struct members size and alignment!!!");
-
-            //unsigned int posElemStart = memberType->GetBytecodeStartPosition() + 2;
-            //for (int k = 0; k < countMembers; ++k)
-            //{
-            //    spv::Id structMemberTypeId = asId(posElemStart + k);
-            //    TypeInstruction* structMemberType = GetTypeById(structMemberTypeId);
-            //    if (structMemberType == nullptr) return error("failed to find the struct member type for id: " + to_string(structMemberTypeId));
-            //
-            //    TypeReflectionDescription& memberTypeReflection = typeReflection.Members[k].Type;
-            //    if (!GetReflectionTypeFor(structMemberType, memberTypeReflection, attribute, iterationNum + 1))
-            //        return error("failed to get the reflection type for the sub-element: " + to_string(structMemberTypeId));
-            //
-            //    error("PROUT PROUT Missing struct members size and alignment!!!");
-            //}
-
-            break;
-        }
-
-        default:
-            return error(string("Unprocessed or invalid member type OpCode: ") + spv::OpcodeString(memberType->GetOpCode()));
-    }
-
-    return true;
 }

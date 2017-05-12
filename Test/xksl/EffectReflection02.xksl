@@ -1,24 +1,19 @@
+//Test reflection on Matrix, using a rowMajor or ColMajor properties
 shader ShaderMain
 {
-	struct StructType
+	cbuffer PerDraw
 	{
-		float4 aF4;
-		float4 ColorArray[2];
-		bool aBool;
-	};
-	
-	stage StructType var1;
-	stage float4 toto;
-	
+		stage float2x3 aMat23;  //size:48, align:16, stride: 16
+		stage row_major float2x3 aMat23_rm;  //size:32, align:16, stride: 16
+		stage float4 Color;
+	}
+
 	stage stream float4 ColorTarget : SV_Target0;
 	
-	stage void VSMain()
-	{
-	
-	}
+	stage void VSMain() {}
 	
 	stage void PSMain()
 	{
-		streams.ColorTarget = toto + var1.aF4;
+		streams.ColorTarget = Color;
 	}
 };

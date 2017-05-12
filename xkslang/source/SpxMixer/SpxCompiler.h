@@ -707,10 +707,11 @@ private:
 
     //validate a member name (for example Shader<8>_var will return Shader_8__var)
     std::string validateName(const std::string& name);
-    bool GetReflectionTypeForMember(TypeStructMember& member, TypeReflectionDescription& typeReflection);
-    bool GetReflectionTypeFor(TypeInstruction* memberType, TypeReflectionDescription& typeReflection, const std::string& attribute, int iterationNum);
     unsigned int GetUniqueMergeOperationId();
     static void ResetMergeOperationId();
+
+    //bool GetReflectionTypeForMember(TypeStructMember& member, TypeReflectionDescription& typeReflection);
+    //bool GetReflectionTypeFor(TypeInstruction* memberType, TypeReflectionDescription& typeReflection, const std::string& attribute, int iterationNum);
 
     bool ValidateSpxBytecodeAndData();
     bool ValidateHeader();
@@ -741,7 +742,7 @@ private:
     bool IsMatrixArrayType(TypeInstruction* type);
     int GetVectorTypeCountElements(TypeInstruction* vectorType);
 
-    bool GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool isRowMajor, int& size, int& alignment, int& stride, int iterationCounter = 0);
+    bool GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool isRowMajor, const std::string& memberAttribute, TypeReflectionDescription& typeReflection, int iterationCounter = 0);
     bool GetIntegerConstTypeExpressionValue(ConstInstruction* constObject, int& constValue);
     spv::Id GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const std::vector<ConstInstruction*>& listAllConsts,
         std::vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter = 0);
