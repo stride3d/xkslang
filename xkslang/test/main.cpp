@@ -179,7 +179,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
-    //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
+    /////////////////////////{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },  //SPIRV-Cross crash
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
 
     //{ "testDependency01", "testDependency01.xkfx" },
@@ -193,7 +193,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
     //{ "EffectReflection01", "EffectReflection01.xkfx" },
     //{ "EffectReflection02", "EffectReflection02.xkfx" },
-    { "EffectReflection03", "EffectReflection03.xkfx" },
+    //{ "EffectReflection03", "EffectReflection03.xkfx" },
 
     //{ "Effect01", "Effect01.xkfx" },
     //{ "testTypeSize", "testTypeSize.xkfx" },

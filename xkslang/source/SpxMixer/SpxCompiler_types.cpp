@@ -500,6 +500,8 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
                 maxAlignment = std::max(maxAlignment, subElementReflection.Alignment);
                 memberSize = RoundToPow2(memberSize, subElementReflection.Alignment);
                 memberSize += subElementReflection.Size;
+
+                error("PLOP PLOP ADD THE MEMBERS!");
             }
 
             // The structure may have padding at the end;
