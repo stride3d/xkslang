@@ -422,7 +422,7 @@ public:
     public:
         TypeStructMember() : structTypeId(spvUndefinedId), structMemberIndex(-1),
             isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberType(nullptr),
-            memberDefaultConstantTypeId(spvUndefinedId), memberSize(-1), memberAlignment(-1), memberOffset(-1), matrixLayoutDecoration(-1),
+            memberDefaultConstantTypeId(spvUndefinedId), memberSize(-1), memberAlignment(-1), memberOffset(-1), matrixLayoutDecoration(-1), matrixStride(0),
             newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1),
             variableAccessTypeId(0), memberTypePointerInputId(0), memberTypePointerOutputId(0), memberStageInputVariableId(0), memberStageOutputVariableId(0),
             isUsed(false) {}
@@ -452,6 +452,7 @@ public:
         int memberAlignment;
         int memberOffset;
         int matrixLayoutDecoration; //a matrix layout is either RowMajor (DecorationRowMajor) or ColMajor (DecorationColMajor), or -1 if undefined
+        int matrixStride;           //set the stride for matrix types
         std::vector<unsigned int> listMemberDecoration;  //extra decorate properties set with the member (for example: RowMajor, MatrixStride, ... set for cbuffer members)
         bool isUsed; //in some case we need to know which members are actually used or not
         bool isResourceType;

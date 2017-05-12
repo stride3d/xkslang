@@ -26,8 +26,8 @@ string TypeReflectionDescription::Print()
 {
     std::ostringstream stream;
     stream << "Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(Class) << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(Type)
-        << " Size=" << Size << " Alignment=" << Alignment << " Stride=" << Stride
-        << " Elements=" << Elements << " Rows=" << RowCount << " Columns=" << ColumnCount;
+        << " Size=" << Size << " Alignment=" << Alignment << " ArrayStride=" << ArrayStride << " MatrixStride=" << MatrixStride
+        << " ArrayElements=" << ArrayElements << " Rows=" << RowCount << " Columns=" << ColumnCount;
     return stream.str();
 }
 

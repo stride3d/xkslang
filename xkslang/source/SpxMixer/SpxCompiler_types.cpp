@@ -245,7 +245,8 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
 
     int memberSize = 0;
     int memberAlignment = 0;
-    int stride = 0;
+    int arrayStride = 0;
+    int matrixStride = 0;
     int countRows = 1;
     int countCols = 1;
     int countElementsInArray = 0;
@@ -359,6 +360,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
                 memberAlignment = subElementReflection.Alignment * 4;
             }
 
+            memberType = subElementReflection.Type;
             memberClass = EffectParameterReflectionClass::Vector;
             if (subElementReflection.Type == EffectParameterReflectionType::Float && (countElements >= 2 && countElements <= 4)) {
                 if (memberAttribute == "Color") {
@@ -394,13 +396,14 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
             TypeReflectionDescription subElementReflection;
             if (!GetTypeObjectBaseSizeAndAlignment(elemType, isRowMajor, memberAttribute, subElementReflection, iterationCounter + 1))
                 return error("Failed to get the reflection data for the array element type");
-            if (subElementReflection.Elements != 0) return error("OpTypeArray: sub-element reflection type cannot be another array");
+            if (subElementReflection.ArrayElements != 0) return error("OpTypeArray: sub-element reflection type cannot be another array");
 
             int subElementAlign = subElementReflection.Alignment;
             if (useStd140Rules) subElementAlign = std::max(baseAlignmentVec4Std140, subElementAlign);
 
-            stride = RoundToPow2(subElementReflection.Size, subElementAlign);
-            memberSize = stride * arrayCountElems;
+            matrixStride = subElementReflection.MatrixStride;
+            arrayStride = RoundToPow2(subElementReflection.Size, subElementAlign);
+            memberSize = arrayStride * arrayCountElems;
             memberAlignment = subElementAlign;
 
             memberType = subElementReflection.Type;
@@ -464,7 +467,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
             rowVectorSize = RoundToPow2(rowVectorSize, rowVectorAlignment);
             if (rowVectorSize < 0) return error("Failed to compute the matrix row vector size");
             
-            stride = rowVectorSize;
+            matrixStride = rowVectorSize;
             memberSize = rowVectorSize * countRows;
             memberAlignment = rowVectorAlignment;
             
@@ -509,7 +512,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
         default: return error(string("Unknowns type OpCode: ") + spv::OpcodeString(type->GetOpCode()));
     }
 
-    typeReflection.Set(memberClass, memberType, countRows, countCols, memberSize, memberAlignment, stride, countElementsInArray);
+    typeReflection.Set(memberClass, memberType, countRows, countCols, memberSize, memberAlignment, arrayStride, matrixStride, countElementsInArray);
 
     return true;
 }

@@ -265,6 +265,18 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                 cbufferData->cbufferMembersData->members[index].matrixLayoutDecoration = (int)(spv::DecorationColMajor);
                                 break;
                             }
+                            case spv::DecorationMatrixStride:
+                            {
+                                //skip it: the matrixStride will be recomputed for all cbuffer members
+                                /*
+#ifdef XKSLANG_DEBUG_MODE
+                                if (wordCount <= 4) { error("Invalid wordCount"); break; }
+#endif
+                                const unsigned int matrixStride = asLiteralValue(start + 4);
+                                cbufferData->cbufferMembersData->members[index].matrixStride = matrixStride;
+                                */
+                                break;
+                            }
                             default:
                             {
                                 //add the decorations in the list of member decorations to pass
@@ -389,6 +401,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                         cbufferData->cbufferMembersData->members[m].memberSize = typeReflectionData.Size;
                         cbufferData->cbufferMembersData->members[m].memberAlignment = typeReflectionData.Alignment;
+                        cbufferData->cbufferMembersData->members[m].matrixStride = typeReflectionData.MatrixStride;
                     }
                 }
             }
@@ -415,9 +428,11 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     if (member.memberTypeId == spvUndefinedId) { error("undefined member type id for a cbuffer member"); }
                     if (IsMatrixType(member.memberType) || IsMatrixArrayType(member.memberType)) {
                         if (member.matrixLayoutDecoration == -1) { error("undefined matrix member layout"); }
+                        if (member.matrixStride == 0) { error("undefined matrix stride"); }
                     }
                     else {
                         if (member.matrixLayoutDecoration != -1) { error("got a defined matrix layout for a non-matrix member"); }
+                        if (member.matrixStride != 0) { error("got a defined matrix stride for a non-matrix member"); }
                     }
                     if (member.memberSize < 0) { error("undefined size for a cbuffer member"); }
                     if (!IsPow2(member.memberAlignment)) { error("invalid member alignment"); }
@@ -943,12 +958,14 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 }
 
                 //member decorate: offset
-                spv::Instruction memberOffsetDecorateInstr(spv::OpMemberDecorate);
-                memberOffsetDecorateInstr.addIdOperand(cbuffer->structTypeId);
-                memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
-                memberOffsetDecorateInstr.addImmediateOperand(spv::DecorationOffset);
-                memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.memberOffset);
-                memberOffsetDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                {
+                    spv::Instruction memberOffsetDecorateInstr(spv::OpMemberDecorate);
+                    memberOffsetDecorateInstr.addIdOperand(cbuffer->structTypeId);
+                    memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
+                    memberOffsetDecorateInstr.addImmediateOperand(spv::DecorationOffset);
+                    memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.memberOffset);
+                    memberOffsetDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }
 
                 //member decorate: matrix layout
                 if (cbufferMember.matrixLayoutDecoration != -1)
@@ -958,6 +975,16 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
                     memberOffsetDecorateInstr.addImmediateOperand(cbufferMember.matrixLayoutDecoration);
                     memberOffsetDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }
+
+                if (cbufferMember.matrixStride > 0)
+                {
+                    spv::Instruction memberMatrixStrideDecorateInstr(spv::OpMemberDecorate);
+                    memberMatrixStrideDecorateInstr.addIdOperand(cbuffer->structTypeId);
+                    memberMatrixStrideDecorateInstr.addImmediateOperand(cbufferMember.structMemberIndex);
+                    memberMatrixStrideDecorateInstr.addImmediateOperand(spv::DecorationMatrixStride);
+                    memberMatrixStrideDecorateInstr.addImmediateOperand(cbufferMember.matrixStride);
+                    memberMatrixStrideDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
 
                 //member extra decorates

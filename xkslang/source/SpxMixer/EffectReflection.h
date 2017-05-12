@@ -287,10 +287,11 @@ class TypeReflectionDescription
 {
 public:
     TypeReflectionDescription() : Class(EffectParameterReflectionClass::Undefined), Type(EffectParameterReflectionType::Undefined),
-        RowCount(0), ColumnCount(0), Elements(0), Size(0), Alignment(0), Stride(0), Members(nullptr), CountMembers(0){}
+        RowCount(0), ColumnCount(0), ArrayElements(0), Size(0), Alignment(0), ArrayStride(0), MatrixStride(0), Members(nullptr), CountMembers(0){}
 
     TypeReflectionDescription(const TypeReflectionDescription& t) : Class(t.Class), Type(t.Type),
-        RowCount(t.RowCount), ColumnCount(t.ColumnCount), Elements(t.Elements), Size(t.Size), Alignment(t.Alignment), Stride(t.Stride), Members(nullptr), CountMembers(0)
+        RowCount(t.RowCount), ColumnCount(t.ColumnCount), ArrayElements(t.ArrayElements), Size(t.Size), Alignment(t.Alignment),
+        ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), Members(nullptr), CountMembers(0)
     {}
 
     virtual ~TypeReflectionDescription();
@@ -299,7 +300,7 @@ public:
 
     bool isScalarType() {return Class == EffectParameterReflectionClass::Scalar;}
 
-    void Set(EffectParameterReflectionClass c, EffectParameterReflectionType t, int countRow, int countColumn, int size, int alignment, int stride, int elements)
+    void Set(EffectParameterReflectionClass c, EffectParameterReflectionType t, int countRow, int countColumn, int size, int alignment, int arrayStride, int matrixStride, int arrayElements)
     {
         this->Class = c;
         this->Type = t;
@@ -307,8 +308,9 @@ public:
         this->ColumnCount = countColumn;
         this->Size = size;
         this->Alignment = alignment;
-        this->Stride = stride;
-        this->Elements = elements;
+        this->ArrayStride = arrayStride;
+        this->MatrixStride = matrixStride;
+        this->ArrayElements = arrayElements;
     }
 
     std::string Print();
@@ -337,7 +339,7 @@ public:
     /// <summary>
     /// Number of elements for arrays (0 if not an array).
     /// </summary>
-    int Elements;
+    int ArrayElements;
 
     /// <summary>
     /// Size of this element (non-aligned).
@@ -352,7 +354,12 @@ public:
     /// <summary>
     /// Stride of this element (for Arrays)
     /// </summary>
-    int Stride;
+    int ArrayStride;
+
+    /// <summary>
+    /// Stride of this element (for Matrices)
+    /// </summary>
+    int MatrixStride;
 
     /// <summary>
     /// Name of this structure type.
