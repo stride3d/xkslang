@@ -279,6 +279,10 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             }
                             default:
                             {
+                                error(string("Unprocessed decoration: ") + DecorationString(dec));
+                                break;
+
+                                /*
                                 //add the decorations in the list of member decorations to pass
 #ifdef XKSLANG_DEBUG_MODE
                                 if (wordCount <= 3) { error("Invalid wordCount"); break; }
@@ -290,6 +294,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                     listMemberDecoration.push_back(asLiteralValue(start + 3 + i));
 
                                 break;
+                                */
                             }
                         }
                     }
@@ -392,16 +397,17 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     }
                     
                     {
-                        TypeReflectionDescription typeReflectionData;
-                        if (!GetTypeObjectBaseSizeAndAlignment(cbufferMemberType, isMatrixRowMajor, member.attribute, typeReflectionData))
+                        TypeReflectionDescription* typeReflectionData = new TypeReflectionDescription();
+                        if (!GetTypeObjectBaseSizeAndAlignment(cbufferMemberType, isMatrixRowMajor, member.attribute, *typeReflectionData))
                         {
                             error("Failed to get the size and alignment for the cbuffer member: " + to_string(cbufferMemberTypeId));
                             break;
                         }
 
-                        cbufferData->cbufferMembersData->members[m].memberSize = typeReflectionData.Size;
-                        cbufferData->cbufferMembersData->members[m].memberAlignment = typeReflectionData.Alignment;
-                        cbufferData->cbufferMembersData->members[m].matrixStride = typeReflectionData.MatrixStride;
+                        cbufferData->cbufferMembersData->members[m].memberSize = typeReflectionData->Size;
+                        cbufferData->cbufferMembersData->members[m].memberAlignment = typeReflectionData->Alignment;
+                        cbufferData->cbufferMembersData->members[m].matrixStride = typeReflectionData->MatrixStride;
+                        cbufferData->cbufferMembersData->members[m].arrayStride = typeReflectionData->ArrayStride;
                     }
                 }
             }
@@ -426,6 +432,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                     if (member.memberType == nullptr) { error("undefined member type for a cbuffer member"); }
                     if (member.memberTypeId == spvUndefinedId) { error("undefined member type id for a cbuffer member"); }
+                    if (member.memberSize < 0) { error("undefined size for a cbuffer member"); }
+                    if (!IsPow2(member.memberAlignment)) { error("invalid member alignment"); }
                     if (IsMatrixType(member.memberType) || IsMatrixArrayType(member.memberType)) {
                         if (member.matrixLayoutDecoration == -1) { error("undefined matrix member layout"); }
                         if (member.matrixStride == 0) { error("undefined matrix stride"); }
@@ -434,9 +442,11 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         if (member.matrixLayoutDecoration != -1) { error("got a defined matrix layout for a non-matrix member"); }
                         if (member.matrixStride != 0) { error("got a defined matrix stride for a non-matrix member"); }
                     }
-                    if (member.memberSize < 0) { error("undefined size for a cbuffer member"); }
-                    if (!IsPow2(member.memberAlignment)) { error("invalid member alignment"); }
-                    
+                    if (IsArrayType(member.memberType))
+                    {
+                        //It could happen if someday we change type layout settings (to be different from glslang layouts), but we should then update all arrayStride decorate)
+                        if (member.memberType->arrayStride != member.arrayStride) { error("inconsistent arrayStride for a cbuffer member type"); }
+                    }
                 }
             }
         }
@@ -644,7 +654,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                                 newMember.structMemberIndex = memberNewIndex;
                                 newMember.isStage = isMemberStaged;
-                                newMember.listMemberDecoration = memberToMerge.listMemberDecoration;
+                                //newMember.listMemberDecoration = memberToMerge.listMemberDecoration;
                                 newMember.shaderOwnerName = cbufferToMerge->shaderOwnerName;
                         
                                 //compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment
@@ -988,7 +998,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 }
 
                 //member extra decorates
-                if (cbufferMember.listMemberDecoration.size() > 0)
+                /*if (cbufferMember.listMemberDecoration.size() > 0)
                 {
                     unsigned int cur = 0;
                     while (cur < cbufferMember.listMemberDecoration.size())
@@ -1008,7 +1018,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                         cur += decorateCount;
                     }
-                }
+                }*/
             }
         }
 

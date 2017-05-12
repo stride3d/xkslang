@@ -3440,11 +3440,36 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
         switch (opCode)
         {
+            case spv::OpDecorate:
+            {
+                const spv::Id typeId = asId(start + 1);
+                if (typeId >= vectorIdsToDecorate.size()) break;
+                if (!vectorIdsToDecorate[typeId]) break;
+
+                spv::Decoration decoration = (spv::Decoration)asLiteralValue(start + 2);
+                switch (decoration)
+                {
+                    case spv::Decoration::DecorationArrayStride:
+                    {
+                        TypeInstruction* type = GetTypeById(typeId);
+                        if (type != nullptr)
+                        {
+                            if (!IsArrayType(type)) { error(string("An arrayStride decoration is applied to a non-array type: ") + to_string(typeId)); break; }
+                            int arrayStride = asLiteralValue(start + 3);
+                            type->arrayStride = arrayStride;
+                        }
+                        break;
+                    }
+                }
+
+                break;
+            }
+
             /*case spv::OpMemberProperties:
             {
                 //if the member has a stream property, define the type as a stream struct
                 const spv::Id typeId = asId(start + 1);
-                if (typeId < 0 || typeId >= vectorIdsToDecorate.size()) break;
+                if (typeId >= vectorIdsToDecorate.size()) break;
                 if (!vectorIdsToDecorate[typeId]) break;
 
                 break;
@@ -3454,7 +3479,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
             {
                 //will process this at the end, to make sure the types connection to their shader owner have been done
                 const spv::Id typeId = asId(start + 1);
-                if (typeId < 0 || typeId >= vectorIdsToDecorate.size()) break;
+                if (typeId >= vectorIdsToDecorate.size()) break;
                 if (!vectorIdsToDecorate[typeId]) break;
                 vectorInstructionsToProcessAtTheEnd.push_back(start);
                 break;
@@ -3465,7 +3490,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 const spv::Id shaderId = asId(start + 1);
                 const spv::Id objectId = asId(start + 2);
 
-                if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) break;
+                if (shaderId >= vectorIdsToDecorate.size()) break;
                 if (!vectorIdsToDecorate[shaderId]) break;
 
                 ShaderClassData* shaderOwner = GetShaderById(shaderId);
@@ -3523,7 +3548,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 //A shader inherits from some shader parents
                 const spv::Id shaderId = asId(start + 1);
 
-                if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) break;
+                if (shaderId >= vectorIdsToDecorate.size()) break;
                 if (!vectorIdsToDecorate[shaderId]) break;
 
                 ShaderClassData* shader = GetShaderById(shaderId);
@@ -3552,7 +3577,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
             {
                 const spv::Id shaderId = asId(start + 1);
 
-                if (shaderId < 0 || shaderId >= vectorIdsToDecorate.size()) break;
+                if (shaderId >= vectorIdsToDecorate.size()) break;
                 if (!vectorIdsToDecorate[shaderId]) break;
 
                 ShaderClassData* shaderCompositionOwner = GetShaderById(shaderId);
@@ -3585,7 +3610,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 //a function is defined with some properties
                 const spv::Id functionId = asId(start + 1);
 
-                if (functionId < 0 || functionId >= vectorIdsToDecorate.size()) break;
+                if (functionId >= vectorIdsToDecorate.size()) break;
                 if (!vectorIdsToDecorate[functionId]) break;
 
                 FunctionInstruction* function = GetFunctionById(functionId);
@@ -3605,6 +3630,14 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                         break;
                     }
                 }
+                break;
+            }
+
+            case spv::OpTypeFunction:
+            case spv::OpFunction:
+            {
+                //no more decorations after this OpInstructions
+                start = end;
                 break;
             }
         }

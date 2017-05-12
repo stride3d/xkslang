@@ -20,7 +20,7 @@
 namespace xkslang
 {
 
-static const bool useStd140Rules = true;  //set as true for now, to follow glslang
+static const bool useStd140Rules = true;  //set as true for now (to be consistent with glslang)
 static const int baseAlignmentVec4Std140 = 16;
 static const int maxMatrixSize = 4;
 static const int maxArraySize = 2048;
@@ -277,12 +277,13 @@ public:
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source),
-            pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr) {}
+            arrayStride(0), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr) {}
         virtual ~TypeInstruction() {
             if (cbufferData != nullptr) delete cbufferData;
         }
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
+            obj->arrayStride = arrayStride;
             if (cbufferData != nullptr) obj->cbufferData = cbufferData->Clone();
             return obj;
         }
@@ -296,10 +297,9 @@ public:
         }
         CBufferTypeData* GetCBufferData() { return cbufferData; }
 
-        bool IsMatrixType(){ return SpxCompiler::IsMatrixType(GetOpCode()); }
-
     private:
-        TypeInstruction* pointerTo;
+        int arrayStride; //set if the type is an array
+        TypeInstruction* pointerTo;  //set if the type is a pointer
 
         //used by some algo to fill the type buffer
         TypeStructMemberArray* streamStructData;
@@ -421,8 +421,8 @@ public:
     {
     public:
         TypeStructMember() : structTypeId(spvUndefinedId), structMemberIndex(-1),
-            isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberType(nullptr),
-            memberDefaultConstantTypeId(spvUndefinedId), memberSize(-1), memberAlignment(-1), memberOffset(-1), matrixLayoutDecoration(-1), matrixStride(0),
+            isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberType(nullptr), memberDefaultConstantTypeId(spvUndefinedId),
+            memberSize(-1), memberAlignment(-1), memberOffset(-1), matrixLayoutDecoration(-1), matrixStride(0), arrayStride(0),
             newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1),
             variableAccessTypeId(0), memberTypePointerInputId(0), memberTypePointerOutputId(0), memberStageInputVariableId(0), memberStageOutputVariableId(0),
             isUsed(false) {}
@@ -452,8 +452,11 @@ public:
         int memberAlignment;
         int memberOffset;
         int matrixLayoutDecoration; //a matrix layout is either RowMajor (DecorationRowMajor) or ColMajor (DecorationColMajor), or -1 if undefined
-        int matrixStride;           //set the stride for matrix types
-        std::vector<unsigned int> listMemberDecoration;  //extra decorate properties set with the member (for example: RowMajor, MatrixStride, ... set for cbuffer members)
+        int matrixStride;           //set the stride for matrix types (or array of matrices)
+        int arrayStride;            //set the stride for array types
+
+        //std::vector<unsigned int> listMemberDecoration;  //extra decorate properties set with the member (for example: RowMajor, MatrixStride, ... set for cbuffer members)
+
         bool isUsed; //in some case we need to know which members are actually used or not
         bool isResourceType;
         std::string shaderOwnerName;  //name of the shader owning the cbuffer member (for stage cbuffer, instantiated cbuffers will keep the name of the original shader class)
@@ -739,6 +742,8 @@ private:
     static bool IsScalarType(const spv::Op& opCode);
     static bool IsVectorType(const spv::Op& opCode) { return opCode == spv::OpTypeVector; }
     static bool IsMatrixType(const spv::Op& opCode) { return opCode == spv::OpTypeMatrix; }
+    static bool IsArrayType(const spv::Op& opCode) { return opCode == spv::OpTypeArray; }
+    bool IsArrayType(TypeInstruction* type) { return IsArrayType(type->GetOpCode()); }
     bool IsMatrixType(TypeInstruction* type) { return IsMatrixType(type->GetOpCode()); }
     bool IsMatrixArrayType(TypeInstruction* type);
     int GetVectorTypeCountElements(TypeInstruction* vectorType);
