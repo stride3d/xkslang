@@ -290,6 +290,7 @@ enum EHlslTokenClass {
     EHTokTypedef,
     EHTokThis,
     EHTokNamespace,
+    EHTokConstantBuffer,
     EHTokRGroup,
 
     // XKSL new type Token

@@ -283,6 +283,7 @@ INSTANTIATE_TEST_CASE_P(
         //"spv.uniformArray.frag",
         //"spv.variableArrayIndex.frag",
         //"spv.varyingArray.frag",
+        //"spv.textureBuffer.vert",
         //"spv.varyingArrayIndirect.frag",
         //"spv.voidFunction.frag",
         //"spv.whileLoop.frag",
