@@ -49,7 +49,7 @@ static string expectedOutputDir;
 static bool buildEffectReflection = true;
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
-    { "shaderOnly.xksl" },
+    //{ "shaderOnly.xksl" },
     //{ "shaderWithVariable.xksl" },
     //{ "shaderWithManyVariables.xksl" },
     //{ "manySimpleShaders.xksl" },
@@ -183,9 +183,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
 
     //{ "testDependency01", "testDependency01.xkfx" },
-    //{ "testDependency02", "testDependency02.xkfx" },
+    { "testDependency02", "testDependency02.xkfx" },
     //{ "testDependency03", "testDependency03.xkfx" },
-    //{ "testDependency04", "testDependency04.xkfx" },
+    { "testDependency04", "testDependency04.xkfx" },
     //{ "testDependency05", "testDependency05.xkfx" },
     //{ "testDependency06", "testDependency06.xkfx" },
     //{ "testDependency07", "testDependency07.xkfx" },
@@ -337,6 +337,12 @@ static bool ConvertBytecodeToGlsl(const string& spvFile, const  string& outputFi
     /// return 0;
 }*/
 
+static BOOL DirectoryExists(LPCTSTR szPath)
+{
+    DWORD dwAttrib = GetFileAttributes(szPath);
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
 static bool SetupTestDirectories()
 {
     //Get app directories
@@ -355,6 +361,22 @@ static bool SetupTestDirectories()
     outputDir = inputDir + string("outputs\\");
     finalResultOutputDir = outputDir + string("finals\\");
     expectedOutputDir = inputDir + string("expectedOutputs\\");
+
+    {
+        std::wstring wsDir(outputDir.length(), L' ');
+        std::copy(outputDir.begin(), outputDir.end(), wsDir.begin());
+        if (!DirectoryExists(wsDir.c_str())) CreateDirectory(wsDir.c_str(), NULL);
+    }
+    {
+        std::wstring wsDir(finalResultOutputDir.length(), L' ');
+        std::copy(finalResultOutputDir.begin(), finalResultOutputDir.end(), wsDir.begin());
+        if (!DirectoryExists(wsDir.c_str())) CreateDirectory(wsDir.c_str(), NULL);
+    }
+    {
+        std::wstring wsDir(expectedOutputDir.length(), L' ');
+        std::copy(expectedOutputDir.begin(), expectedOutputDir.end(), wsDir.begin());
+        if (!DirectoryExists(wsDir.c_str())) CreateDirectory(wsDir.c_str(), NULL);
+    }
 
     return true;
 }
