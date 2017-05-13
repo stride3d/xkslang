@@ -66,36 +66,20 @@ TEST_P(HlslCompileTest, FromFile)
 {
     loadFileCompileAndCheck(GlobalTestSettings.testRoot, GetParam().fileName,
                             Source::HLSL, Semantics::Vulkan,
-                            //Target::AST,
-                            Target::BothASTAndSpv,
-                            GetParam().entryPoint);
+                            Target::BothASTAndSpv, GetParam().entryPoint);
 }
 
 TEST_P(HlslCompileAndFlattenTest, FromFile)
 {
     loadFileCompileFlattenUniformsAndCheck(GlobalTestSettings.testRoot, GetParam().fileName,
                                            Source::HLSL, Semantics::Vulkan,
-                                           //Target::AST,
-                                           Target::BothASTAndSpv,
-                                           GetParam().entryPoint);
+                                           Target::BothASTAndSpv, GetParam().entryPoint);
 }
-
-#ifdef TOTO
-#endif
 
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
     ToSpirv, HlslCompileTest,
     ::testing::ValuesIn(std::vector<FileNameEntryPointPair>{
-        
-        //{"hlsl.test.geom", "" },
-        {"hlsl.test.frag", "main" },
-        //{"hlsl.struct.test01.frag", ""},
-        //{"functionsWithIOStruct01.frag", "" },
-
-        /*
-        {"hlsl.struct.test.frag", "PixelShaderFunction"},
-        {"hlsl.struct.frag", "PixelShaderFunction"},
         {"hlsl.amend.frag", "f1"},
         {"hlsl.array.frag", "PixelShaderFunction"},
         {"hlsl.array.implicit-size.frag", "PixelShaderFunction"},
@@ -292,6 +276,7 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.semantic.vert", "main"},
         {"hlsl.scope.frag", "PixelShaderFunction"},
         {"hlsl.sin.frag", "PixelShaderFunction"},
+        {"hlsl.struct.frag", "PixelShaderFunction"},
         {"hlsl.switch.frag", "PixelShaderFunction"},
         {"hlsl.swizzle.frag", "PixelShaderFunction"},
         {"hlsl.templatetypes.frag", "PixelShaderFunction"},
@@ -302,7 +287,6 @@ INSTANTIATE_TEST_CASE_P(
         {"hlsl.typedef.frag", "PixelShaderFunction"},
         {"hlsl.whileLoop.frag", "PixelShaderFunction"},
         {"hlsl.void.frag", "PixelShaderFunction"}
-        */
     }),
     FileNameAsCustomTestSuffix
 );

@@ -77,7 +77,6 @@ TEST_P(HexDoubleTest, DecodeCorrectly) {
   EXPECT_THAT(Decode<double>(GetParam().second), Eq(GetParam().first));
 }
 
-#ifdef TOTO
 INSTANTIATE_TEST_CASE_P(
     Float32Tests, HexFloatTest,
     ::testing::ValuesIn(std::vector<std::pair<FloatProxy<float>, std::string>>({
@@ -397,7 +396,6 @@ TEST(FloatProxy, Negation) {
                   .getAsFloat(),
               Eq(std::numeric_limits<float>::infinity()));
 }
-#endif
 
 // Test conversion of FloatProxy values to strings.
 //
@@ -445,7 +443,6 @@ std::string NormalizeExponentInFloatString(std::string in) {
   return result;
 }
 
-#ifdef TOTO
 TEST(NormalizeFloat, Sample) {
   EXPECT_THAT(NormalizeExponentInFloatString(""), Eq(""));
   EXPECT_THAT(NormalizeExponentInFloatString("1e-12"), Eq("1e-12"));
@@ -798,7 +795,6 @@ INSTANTIATE_TEST_CASE_P(F32ToF16, HexFloatRoundTest,
     {static_cast<float>(ldexp(float_fractions({0, 1, 11, 13}), -130)), std::make_pair(half_bits_set({0, 9}), false), spvutils::kRoundToNearestEven},
   })),);
 // clang-format on
-#endif
 
 struct UpCastSignificandCase {
   uint16_t source_half;
@@ -832,7 +828,6 @@ TEST_P(HexFloatRoundUpSignificandTest, Widening) {
   }
 }
 
-#ifdef TOTO
 INSTANTIATE_TEST_CASE_P(F16toF32, HexFloatRoundUpSignificandTest,
   // 0xFC00 of the source 16-bit hex value cover the sign and the exponent.
   // They are ignored for this test.
@@ -843,7 +838,6 @@ INSTANTIATE_TEST_CASE_P(F16toF32, HexFloatRoundUpSignificandTest,
     {0x0F01, 0x602000},
     {0x0FFF, 0x7FE000},
   })),);
-#endif
 
 struct DownCastTest {
   float source_float;
@@ -885,7 +879,6 @@ TEST_P(HexFloatFP32To16Tests, NarrowingCasts) {
 const uint16_t positive_infinity = 0x7C00;
 const uint16_t negative_infinity = 0xFC00;
 
-#ifdef TOTO
 INSTANTIATE_TEST_CASE_P(F32ToF16, HexFloatFP32To16Tests,
   ::testing::ValuesIn(std::vector<DownCastTest>(
   {
@@ -922,7 +915,6 @@ INSTANTIATE_TEST_CASE_P(F32ToF16, HexFloatFP32To16Tests,
 
     // Nans are below because we cannot test for equality.
   })),);
-#endif
 
 struct UpCastCase{
   uint16_t source_half;
@@ -952,7 +944,6 @@ TEST_P(HexFloatFP16To32Tests, WideningCasts) {
   }
 }
 
-#ifdef TOTO
 INSTANTIATE_TEST_CASE_P(F16ToF32, HexFloatFP16To32Tests,
   ::testing::ValuesIn(std::vector<UpCastCase>(
   {
@@ -1124,7 +1115,6 @@ INSTANTIATE_TEST_CASE_P(
         BadFloatParseCase<Float16>("+0.0", true, uint16_t{0}),
         BadFloatParseCase<Float16>("+2.0", true, uint16_t{0}),
     }),);
-#endif
 
 // A test case for detecting infinities.
 template <typename T>
@@ -1134,7 +1124,6 @@ struct OverflowParseCase {
   T expected_value;
 };
 
-#ifdef TOTO
 using FloatProxyParseOverflowFloatTest =
     ::testing::TestWithParam<OverflowParseCase<float>>;
 
@@ -1161,7 +1150,6 @@ INSTANTIATE_TEST_CASE_P(
         {"1e400", false, FLT_MAX},
         {"-1e400", false, -FLT_MAX},
     })),);
-#endif
 
 using FloatProxyParseOverflowDoubleTest =
     ::testing::TestWithParam<OverflowParseCase<double>>;
@@ -1176,7 +1164,6 @@ TEST_P(FloatProxyParseOverflowDoubleTest, Sample) {
   }
 }
 
-#ifdef TOTO
 INSTANTIATE_TEST_CASE_P(
     DoubleOverflow, FloatProxyParseOverflowDoubleTest,
     ::testing::ValuesIn(std::vector<OverflowParseCase<double>>({
@@ -1190,7 +1177,6 @@ INSTANTIATE_TEST_CASE_P(
         {"1e400", false, DBL_MAX},
         {"-1e400", false, -DBL_MAX},
     })),);
-#endif
 
 using FloatProxyParseOverflowFloat16Test =
     ::testing::TestWithParam<OverflowParseCase<uint16_t>>;
@@ -1207,7 +1193,6 @@ TEST_P(FloatProxyParseOverflowFloat16Test, Sample) {
   }
 }
 
-#ifdef TOTO
 INSTANTIATE_TEST_CASE_P(
     Float16Overflow, FloatProxyParseOverflowFloat16Test,
     ::testing::ValuesIn(std::vector<OverflowParseCase<uint16_t>>({
@@ -1223,7 +1208,6 @@ INSTANTIATE_TEST_CASE_P(
         {"-1e40", false, uint16_t{0xfbff}},
         {"-1e400", false, uint16_t{0xfbff}},
     })),);
-#endif
 
 TEST(FloatProxy, Max) {
   EXPECT_THAT(FloatProxy<Float16>::max().getAsFloat().get_value(),

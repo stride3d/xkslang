@@ -170,7 +170,6 @@ public:
         std::string linkingError;
         std::string spirvWarningsErrors;
         std::string spirv;  // Optional SPIR-V disassembly text.
-        std::vector<uint32_t> bytecode;
     };
 
     // Compiles and the given source |code| of the given shader |stage| into
@@ -223,18 +222,10 @@ public:
             spv::Disassemble(disassembly_stream, spirv_binary);
             return {{{shaderName, shader.getInfoLog(), shader.getInfoDebugLog()},},
                     program.getInfoLog(), program.getInfoDebugLog(),
-                    logger.getAllMessages(), disassembly_stream.str(), spirv_binary };
-        }
-        else
-        {
-            std::vector<uint32_t> spirv_binary;
-            glslang::GlslangToSpv(*program.getIntermediate(kind), spirv_binary, &logger);
-            std::ostringstream disassembly_stream;
-            spv::Parameterize();
-            spv::Disassemble(disassembly_stream, spirv_binary);
-
+                    logger.getAllMessages(), disassembly_stream.str()};
+        } else {
             return {{{shaderName, shader.getInfoLog(), shader.getInfoDebugLog()},},
-                    program.getInfoLog(), program.getInfoDebugLog(), "", disassembly_stream.str(), spirv_binary };
+                    program.getInfoLog(), program.getInfoDebugLog(), "", ""};
         }
     }
 
@@ -356,7 +347,7 @@ public:
 
     void outputResultToStream(std::ostringstream* stream,
                               const GlslangResult& result,
-                              EShMessages controls, bool outputAST = true)
+                              EShMessages controls)
     {
         const auto outputIfNotEmpty = [&stream](const std::string& str) {
             if (!str.empty()) *stream << str << "\n";
@@ -364,15 +355,11 @@ public:
 
         for (const auto& shaderResult : result.shaderResults) {
             *stream << shaderResult.shaderName << "\n";
-            if (outputAST) {
-                outputIfNotEmpty(shaderResult.output);
-                outputIfNotEmpty(shaderResult.error);
-            }
+            outputIfNotEmpty(shaderResult.output);
+            outputIfNotEmpty(shaderResult.error);
         }
         outputIfNotEmpty(result.linkingOutput);
-        if (outputAST) {
-            outputIfNotEmpty(result.linkingError);
-        }
+        outputIfNotEmpty(result.linkingError);
         *stream << result.spirvWarningsErrors;
 
         if (controls & EShMsgSpvRules) {
@@ -400,24 +387,10 @@ public:
 
         const EShMessages controls = DeriveOptions(source, semantics, target);
         GlslangResult result = compileAndLink(testName, input, entryPointName, controls);
-        bool outputAST = false;
 
         // Generate the hybrid output in the way of glslangValidator.
         std::ostringstream stream;
-        outputResultToStream(&stream, result, controls, outputAST);
-
-        // Write the stream output on the disk
-        if (source == Source::HLSL)
-        {
-            if (result.bytecode.size() > 0)
-            {
-                const std::string spvOutputFilename = testDir + "/" + testName + ".latest.spv";
-                glslang::OutputSpvBin(result.bytecode, spvOutputFilename.c_str());
-            }
-
-            const std::string newOutputFname = testDir + "/" + testName + ".latest.hr.spv";
-            WriteFile(newOutputFname, stream.str());
-        }
+        outputResultToStream(&stream, result, controls);
 
         checkEqAndUpdateIfRequested(expectedOutput, stream.str(),
                                     expectedOutputFname);
