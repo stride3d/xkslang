@@ -104,7 +104,7 @@ namespace glslang {
         bool acceptFullySpecifiedType(TType&, TIntermNode*& nodeList);
         bool acceptQualifier(TQualifier&);
         bool acceptLayoutQualifierList(TQualifier&);
-        bool acceptType(TIntermNode** node, TType&);
+        bool acceptType(TType&);
         bool acceptType(TType&, TIntermNode*& nodeList);
         bool acceptTemplateVecMatBasicType(TBasicType&);
         bool acceptVectorTemplateType(TType&);

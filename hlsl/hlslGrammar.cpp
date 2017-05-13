@@ -1367,7 +1367,7 @@ bool HlslGrammar::acceptTessellationPatchTemplateType(TType& type)
     if (! acceptTokenClass(EHTokLeftAngle))
         return false;
 
-    if (! acceptType(nullptr, type)) {
+    if (! acceptType(type)) {
         expected("tessellation patch type");
         return false;
     }
@@ -1411,7 +1411,7 @@ bool HlslGrammar::acceptStreamOutTemplateType(TType& type, TLayoutGeometry& geom
     if (! acceptTokenClass(EHTokLeftAngle))
         return false;
 
-    if (! acceptType(nullptr, type)) {
+    if (! acceptType(type)) {
         expected("stream output type");
         return false;
     }
@@ -1558,7 +1558,7 @@ bool HlslGrammar::acceptTextureType(TType& type)
 
     // texture type: required for multisample types and RWBuffer/RWTextures!
     if (acceptTokenClass(EHTokLeftAngle)) {
-        if (! acceptType(nullptr, txType)) {
+        if (! acceptType(txType)) {
             expected("scalar or vector type");
             return false;
         }
@@ -1648,7 +1648,7 @@ bool HlslGrammar::acceptTextureType(TType& type)
 // If token is for a type, update 'type' with the type information,
 // and return true and advance.
 // Otherwise, return false, and don't advance
-bool HlslGrammar::acceptType(TIntermNode** node, TType& type)
+bool HlslGrammar::acceptType(TType& type)
 {
     TIntermNode* nodeList = nullptr;
     return acceptType(type, nodeList);
@@ -2459,7 +2459,7 @@ bool HlslGrammar::checkShaderGenericsList(TVector<TType*>& listGenericTypes)
             const TString* identifierName = nullptr;
 
             HlslToken typeToken = token;
-            if (!acceptType(nullptr, *genericType)) {
+            if (!acceptType(*genericType)) {
                 expected("generic type definition");
                 return false;
             }
@@ -3448,7 +3448,7 @@ bool HlslGrammar::acceptStructBufferType(TType& type)
             return false;
         }
     
-        if (! acceptType(nullptr, *templateType)) {
+        if (! acceptType(*templateType)) {
             expected("type");
             return false;
         }
@@ -4113,7 +4113,7 @@ bool HlslGrammar::acceptUnaryExpression(TIntermTyped*& node)
     // postfix_expression instead, since that also starts with at "(".
     if (acceptTokenClass(EHTokLeftParen)) {
         TType castType;
-        if (acceptType(nullptr, castType)) {
+        if (acceptType(castType)) {
             if (acceptTokenClass(EHTokRightParen)) {
                 // We've matched "(type)" now, get the expression to cast
                 TSourceLoc loc = token.loc;
@@ -4971,7 +4971,7 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
 {
     // type
     TType type;
-    if (acceptType(nullptr, type)) {
+    if (acceptType(type)) {
         TFunction* constructorFunction = parseContext.makeConstructorCall(token.loc, type);
         if (constructorFunction == nullptr)
             return false;
