@@ -49,7 +49,7 @@ static string expectedOutputDir;
 static bool buildEffectReflection = true;
 
 vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
-    //{ "shaderOnly.xksl" },
+    { "shaderOnly.xksl" },
     //{ "shaderWithVariable.xksl" },
     //{ "shaderWithManyVariables.xksl" },
     //{ "manySimpleShaders.xksl" },

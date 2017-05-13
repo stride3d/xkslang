@@ -112,7 +112,7 @@ public:
     BytecodePortionToRemove* AddPortionToRemove(unsigned int position, unsigned int count);
     BytecodeChunk* InsertNewBytecodeChunckAt(unsigned int position, InsertionConflictBehaviourEnum conflictBehaviour, unsigned int countBytesToOverlap = 0);
     BytecodeChunk* GetBytecodeChunkAt(unsigned int position);
-    unsigned int GetCountBytecodeChuncksToInsert() { return listSortedChunksToInsert.size(); }
+    unsigned int GetCountBytecodeChuncksToInsert() { return (unsigned int)listSortedChunksToInsert.size(); }
 };
 
 //==============================================================================================================//
@@ -497,7 +497,7 @@ public:
 
         TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId), tmpTargetedBytecodePosition(0){}
 
-        unsigned int countMembers() { return members.size(); }
+        unsigned int countMembers() { return (unsigned int)members.size(); }
     };
 
     //This is a type declared by a shader: we store the type definition, plus the variable and pointer to access it
@@ -614,7 +614,7 @@ public:
             }
             return nullptr;
         }
-        unsigned int GetCountFunctions() { return functionsList.size(); }
+        unsigned int GetCountFunctions() { return (unsigned int)functionsList.size(); }
 
         void AddShaderType(ShaderTypeData* type) { shaderTypesList.push_back(type); }
         bool HasType(TypeInstruction* type) {
@@ -630,7 +630,7 @@ public:
             return nullptr;
         }
 
-        unsigned int GetCountShaderComposition() { return compositionsList.size(); }
+        unsigned int GetCountShaderComposition() { return (unsigned int)compositionsList.size(); }
         void AddComposition(const ShaderComposition& composition) { compositionsList.push_back(composition); }
         ShaderComposition* GetShaderCompositionById(int compositionId) {
             if (compositionId<0 || compositionId>= (int)compositionsList.size()) return nullptr;

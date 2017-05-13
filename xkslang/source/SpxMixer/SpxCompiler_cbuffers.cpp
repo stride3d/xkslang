@@ -88,11 +88,11 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     //=========================================================================================================================
     //Retrieve information from the bytecode for all USED cbuffers, and their members
     unsigned int posLatestMemberNameOrDecorate = header_size;
-    unsigned int posFirstOpNameOrDecorate = spv.size();
+    unsigned int posFirstOpNameOrDecorate = (unsigned int)spv.size();
     if (success && anyCBufferUsed)
     {
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -536,7 +536,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                     //Detect which members from the cbuffers to merge are used
                     unsigned int start = positionFirstOpFunctionInstruction;
-                    const unsigned int end = spv.size();
+                    const unsigned int end = (unsigned int)spv.size();
                     while (start < end)
                     {
                         unsigned int wordCount = asWordCount(start);
@@ -601,7 +601,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     //check the best position where to insert the new cbuffer in the bytecode
                     if (cbufferShaderType->type->bytecodeEndPosition > combinedCbuffer->tmpTargetedBytecodePosition) combinedCbuffer->tmpTargetedBytecodePosition = cbufferShaderType->type->bytecodeEndPosition;
 
-                    const unsigned int countMembersInBufferToMerge = cbufferToMerge->cbufferMembersData->members.size();
+                    const unsigned int countMembersInBufferToMerge = (unsigned int)cbufferToMerge->cbufferMembersData->members.size();
                     for (unsigned int m = 0; m < countMembersInBufferToMerge; m++)
                     {
                         TypeStructMember& memberToMerge = cbufferToMerge->cbufferMembersData->members[m];
@@ -647,7 +647,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             }
                             else
                             {
-                                memberNewIndex = combinedCbuffer->members.size();
+                                memberNewIndex = (unsigned int)combinedCbuffer->members.size();
 
                                 combinedCbuffer->members.push_back(TypeStructMember(memberToMerge));
                                 TypeStructMember& newMember = combinedCbuffer->members.back();
@@ -689,7 +689,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 {
                     listNewCbuffers.push_back(combinedCbuffer);
 
-                    if (combinedCbuffer->members.size() > maxConstValueNeeded) maxConstValueNeeded = combinedCbuffer->members.size();
+                    if ((unsigned int)combinedCbuffer->members.size() > maxConstValueNeeded) maxConstValueNeeded = (unsigned int)combinedCbuffer->members.size();
 
                     //name of the combined cbuffer is the name of the first cbuffer (all merged cbuffers have the same name)
                     combinedCbuffer->declarationName = validateName(someCBuffersToMerge[0]->cbufferName);
@@ -1079,7 +1079,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
         if (listNewCbuffers.size() > 0 || listResourcesNewAccessVariables.size() > 0)
         {
             unsigned int start = positionFirstOpFunctionInstruction;
-            const unsigned int end = spv.size();
+            const unsigned int end = (unsigned int)spv.size();
             while (start < end)
             {
                 unsigned int wordCount = asWordCount(start);
@@ -1159,7 +1159,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             //Remap all OpLoad instruction refering to a resource we moved out from the cbuffer
             //Note: could we have any other kind of instruction?
             unsigned int start = positionFirstOpFunctionInstruction;
-            const unsigned int end = spv.size();
+            const unsigned int end = (unsigned int)spv.size();
             while (start < end)
             {
                 unsigned int wordCount = asWordCount(start);

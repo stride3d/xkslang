@@ -21,7 +21,7 @@ bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
     vector<OutputStageEntryPoint> listEntryPoints;
     {
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -124,7 +124,7 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
     if (success)
     {
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -268,7 +268,7 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
     //Get the reflection data for all cbuffer members
     if (success)
     {
-        const unsigned int countCbuffers = listAllCBuffers.size();
+        const unsigned int countCbuffers = (unsigned int)listAllCBuffers.size();
         effectReflection.ConstantBuffers.resize(countCbuffers);
 
         for (unsigned int icb = 0; icb < countCbuffers; icb++)

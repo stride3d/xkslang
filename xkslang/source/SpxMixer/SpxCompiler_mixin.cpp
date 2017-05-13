@@ -74,7 +74,7 @@ string SpxCompiler::validateName(const string& name)
 {
     //return a validated name (for example rename Shader<8>_var will return Shader_8__var)
     string validateName = name;
-    unsigned int len = validateName.length();
+    unsigned int len = (unsigned int)validateName.length();
     for (unsigned int k = 0; k < len; k++) {
         char c = validateName[k];
         if (c == '<' || c == '>' || c == ',') validateName[k] = '_';
@@ -276,7 +276,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
     //remove all decorates related to the objects we removed
     {
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -412,7 +412,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
     //remove all decorates related to the objects we removed
     {
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -459,7 +459,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
 
 void SpxCompiler::ReleaseAllMaps()
 {
-    unsigned int size = listAllObjects.size();
+    unsigned int size = (unsigned int)listAllObjects.size();
     for (unsigned int i = 0; i < size; ++i)
     {
         if (listAllObjects[i] != nullptr) delete listAllObjects[i];
@@ -766,7 +766,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
     {
         //update listAllNewIdMerged table (this table defines the name and decorate to fetch and merge)
-        unsigned int len = finalRemapTable.size();
+        unsigned int len = (unsigned int)finalRemapTable.size();
         for (unsigned int i = 0; i < len; ++i)
         {
             if (finalRemapTable[i] != spvUndefinedId) listAllNewIdMerged[i] = true;
@@ -777,7 +777,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     vector<uint32_t> vecXkslDecorationsPossesingIds;
     {
         unsigned int start = bytecodeToMerge.header_size;
-        const unsigned int end = bytecodeToMerge.spv.size();
+        const unsigned int end = (unsigned int)bytecodeToMerge.spv.size();
         while (start < end)
         {
             unsigned int wordCount = bytecodeToMerge.asWordCount(start);
@@ -827,7 +827,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         spv::Id typeId, resultId;
         unsigned int listIdsLen;
         unsigned int start = 0;
-        const unsigned int end = bytecodeToCheckForUnmappedIds.size();
+        const unsigned int end = (unsigned int)bytecodeToCheckForUnmappedIds.size();
         string errorMsg;
         while (start < end)
         {
@@ -838,7 +838,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
             }
 
             if (typeId != spvUndefinedId) listIds.push_back(typeId);
-            listIdsLen = listIds.size();
+            listIdsLen = (unsigned int)listIds.size();
             for (unsigned int i = 0; i < listIdsLen; ++i)
             {
                 const spv::Id id = listIds[i];
@@ -979,7 +979,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                     }
 
                     if (typeId != spvUndefinedId) listIds.push_back(typeId);
-                    listIdsLen = listIds.size();
+                    listIdsLen = (unsigned int)listIds.size();
                     bool canAddTheInstruction = true;
                     for (unsigned int i = 0; i < listIdsLen; ++i)
                     {
@@ -1020,7 +1020,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     // get all name, decoration and XKSL data for the new IDs we need to merge
     {
         unsigned int start = bytecodeToMerge.header_size;
-        const unsigned int end = bytecodeToMerge.spv.size();
+        const unsigned int end = (unsigned int)bytecodeToMerge.spv.size();
         while (start < end)
         {
             unsigned int wordCount = bytecodeToMerge.asWordCount(start);
@@ -1123,16 +1123,16 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     //remap IDs for all mergable types / variables / consts / functions / extImport
     if (vecHeaderPropertiesToMerge.size() > 0)
     {
-        if (!remapAllIds(vecHeaderPropertiesToMerge, 0, vecHeaderPropertiesToMerge.size(), finalRemapTable))
+        if (!remapAllIds(vecHeaderPropertiesToMerge, 0, (unsigned int)vecHeaderPropertiesToMerge.size(), finalRemapTable))
             return error("remapAllIds failed on vecHeaderPropertiesToMerge");
     }
-    if (!remapAllIds(vecTypesConstsAndVariablesToMerge, 0, vecTypesConstsAndVariablesToMerge.size(), finalRemapTable))
+    if (!remapAllIds(vecTypesConstsAndVariablesToMerge, 0, (unsigned int)vecTypesConstsAndVariablesToMerge.size(), finalRemapTable))
         return error("remapAllIds failed on vecTypesConstsAndVariablesToMerge");
-    if (!remapAllIds(vecXkslDecoratesToMerge, 0, vecXkslDecoratesToMerge.size(), finalRemapTable))
+    if (!remapAllIds(vecXkslDecoratesToMerge, 0, (unsigned int)vecXkslDecoratesToMerge.size(), finalRemapTable))
         return error("remapAllIds failed on vecXkslDecoratesToMerge");
-    if (!remapAllIds(vecNamesAndDecorateToMerge, 0, vecNamesAndDecorateToMerge.size(), finalRemapTable))
+    if (!remapAllIds(vecNamesAndDecorateToMerge, 0, (unsigned int)vecNamesAndDecorateToMerge.size(), finalRemapTable))
         return error("remapAllIds failed on vecNamesAndDecorateToMerge");
-    if (!remapAllIds(vecFunctionsToMerge, 0, vecFunctionsToMerge.size(), finalRemapTable))
+    if (!remapAllIds(vecFunctionsToMerge, 0, (unsigned int)vecFunctionsToMerge.size(), finalRemapTable))
         return error("remapAllIds failed on vecFunctionsToMerge");
     //vecFunctionsToMerge.processOnFullBytecode(
     //    spx_inst_fn_nop,
@@ -1153,7 +1153,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     unsigned int posToInsertNewHeaderProrerties = header_size;
     unsigned int posToInsertNewNamesAndXkslDecorates = header_size;
     unsigned int posToInsertNewTypesAndConsts = header_size;
-    unsigned int posToInsertNewFunctions = spv.size();
+    unsigned int posToInsertNewFunctions = (unsigned int)spv.size();
     bool firstFunc = true;
     bool firstType = true;
     for (auto ito = listAllObjects.begin(); ito != listAllObjects.end(); ito++)
@@ -1312,7 +1312,7 @@ bool SpxCompiler::ProcessBytecodeAndDataSanityCheck()
 
     vector<spv::Id> listIds;
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -1549,7 +1549,7 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
     {
         //Analyse the function's bytecode, to add all new functions called
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         bool compositionUpdated = false;
         while (start < end)
         {
@@ -1923,7 +1923,7 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
                     //get the list of all resultIds to remapp from the foreach loop bytecode
                     {
                         unsigned int start = 0;
-                        const unsigned int end = foreachLoopBytecode.size();
+                        const unsigned int end = (unsigned int)foreachLoopBytecode.size();
                         while (start < end)
                         {
                             spv::Op opCode = spirvbin_t::opOpCode(foreachLoopBytecode[start]);
@@ -1956,7 +1956,7 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
                     }
 
                     //duplicate the foreach loop bytecode for all instances (compositions are already sorted by their num)
-                    unsigned int countInstances = vecCompositionShaderInstances.size();
+                    unsigned int countInstances = (unsigned int)vecCompositionShaderInstances.size();
                     for (unsigned int instanceNum = 0; instanceNum < countInstances; ++instanceNum)
                     {
                         ShaderClassData* compositionShaderInstance = vecCompositionShaderInstances[instanceNum];
@@ -1970,9 +1970,9 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
                                 else remapTable[id] = id;
                             }
 
-                            unsigned int start = duplicatedBytecode.size();
+                            unsigned int start = (unsigned int)duplicatedBytecode.size();
                             duplicatedBytecode.insert(duplicatedBytecode.end(), foreachLoopBytecode.begin(), foreachLoopBytecode.end());
-                            const unsigned int end = duplicatedBytecode.size();
+                            const unsigned int end = (unsigned int)duplicatedBytecode.size();
 
                             //remap all Ids
                             if (!remapAllIds(duplicatedBytecode, start, end, remapTable))
@@ -2018,7 +2018,7 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
             } //for (auto itfe = vecAllForeachLoops.begin(); itfe != vecAllForeachLoops.end(); itfe++)
 
             //we finished unrolling all foreach loops for the nested level, we can apply them to the bytecode
-            unsigned int insertionPos = spv.size();
+            unsigned int insertionPos = (unsigned int)spv.size();
             for (auto itfe = listForeachLoopsToMergeIntoBytecode.begin(); itfe != listForeachLoopsToMergeIntoBytecode.end(); itfe++)
             {
                 CompositionForEachLoopData* forEachLoopToMerge = *itfe;
@@ -2063,7 +2063,7 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
     {
         vector<range_t> vecStripRanges;
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -2149,7 +2149,7 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
 bool SpxCompiler::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
 {
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -2203,7 +2203,7 @@ bool SpxCompiler::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
     if (!anyOverridingFunction) return true; //nothing to override
 
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -2577,7 +2577,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
     // -OpMemberAttribute: to let us correctly process the types reflection
     vector<range_t> vecStripRanges;
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -2754,7 +2754,7 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
         if (outputModel == spv::ExecutionModelMax) return error("Unknown stage");
 
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -2929,7 +2929,7 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
     // Add some header data from original spv files
     {
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -3065,7 +3065,7 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
     //copy all names and decorate matching our IDS
     {
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -3108,7 +3108,7 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
     //Copy all types matching our IDS
     {
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -3163,7 +3163,7 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
             if (listIdsUsed[id] == true) remapTable[id] = newId++;
         }
 
-        if (!remapAllIds(stageBytecode, header_size, stageBytecode.size(), remapTable))
+        if (!remapAllIds(stageBytecode, header_size, (unsigned int)stageBytecode.size(), remapTable))
             return error("Failed to remap all IDs");
 
         setBound(stageBytecode, newId);
@@ -3208,7 +3208,7 @@ bool SpxCompiler::BuildConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHash
     //We build the hashmap table for all types and consts
     //except for OpTypeXlslShaderClass types: (this type is only informational, never used as a type or result)
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -3249,7 +3249,7 @@ bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>&
     //We build the hashmap table for all types and consts
     //except for OpTypeXlslShaderClass types: (this type is only informational, never used as a type or result)
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -3306,7 +3306,7 @@ bool SpxCompiler::UpdateAllObjectsPositionInTheBytecode()
     }
 
     uint32_t maxResultId = bound();
-    unsigned int countParsedObjects = listParsedObjectsData.size();
+    unsigned int countParsedObjects = (unsigned int)listParsedObjectsData.size();
     for (unsigned int i = 0; i < countParsedObjects; ++i)
     {
         ParsedObjectData& parsedData = listParsedObjectsData[i];
@@ -3344,7 +3344,7 @@ bool SpxCompiler::UpdateAllMaps()
     vector<bool> vectorIdsToDecorate;
     vectorIdsToDecorate.resize(maxResultId, false);
 
-    unsigned int countParsedObjects = listParsedObjectsData.size();
+    unsigned int countParsedObjects = (unsigned int)listParsedObjectsData.size();
     for (unsigned int i = 0; i < countParsedObjects; ++i)
     {
         ParsedObjectData& parsedData = listParsedObjectsData[i];
@@ -3398,7 +3398,7 @@ bool SpxCompiler::BuildAllMaps()
     vector<bool> vectorIdsToDecorate;
     vectorIdsToDecorate.resize(maxResultId, false);
 
-    unsigned int countParsedObjects = listParsedObjectsData.size();
+    unsigned int countParsedObjects = (unsigned int)listParsedObjectsData.size();
     for (unsigned int i = 0; i < countParsedObjects; ++i)
     {
         ParsedObjectData& parsedData = listParsedObjectsData[i];
@@ -3432,7 +3432,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
     vector<int> vectorInstructionsToProcessAtTheEnd;
 
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -3887,7 +3887,7 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
     spv::Op fnOpCode;
 
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -4059,7 +4059,7 @@ bool SpxCompiler::GetAllCompositionForEachLoops(vector<CompositionForEachLoopDat
     int currentForEachLoopNestedLevel = -1;
     vector<CompositionForEachLoopData> pileForeachLoopsCurrentlyParsed;
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -4161,7 +4161,7 @@ bool SpxCompiler::GetAllShaderInstancesForComposition(const ShaderComposition* c
 
     //look for the instances in the bytecode
     unsigned int start = header_size;
-    const unsigned int end = spv.size();
+    const unsigned int end = (unsigned int)spv.size();
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -4977,7 +4977,7 @@ BytecodeChunk* BytecodeUpdateController::GetBytecodeChunkAt(unsigned int positio
 
 bool SpxCompiler::ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController)
 {
-    unsigned int bytecodeOriginalSize = spv.size();
+    unsigned int bytecodeOriginalSize = (unsigned int)spv.size();
 
     //first : update all values and portions
     for (auto itau = bytecodeUpdateController.listAtomicUpdates.begin(); itau != bytecodeUpdateController.listAtomicUpdates.end(); itau++)
@@ -5021,7 +5021,7 @@ bool SpxCompiler::ApplyBytecodeUpdateController(BytecodeUpdateController& byteco
         if (bytecodeChunck.countInstructionsToOverlap == 0)
         {
             spv.insert(spv.begin() + bytecodeChunck.insertionPos, bytecodeChunck.bytecode.begin(), bytecodeChunck.bytecode.end());
-            countBytesInserted = bytecodeChunck.bytecode.size();
+            countBytesInserted = (unsigned int)bytecodeChunck.bytecode.size();
         }
         else
         {

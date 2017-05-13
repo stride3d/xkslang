@@ -29,7 +29,7 @@ public:
     const std::string& GetName() const {return name;}
 
     bool IsEmpty() const { return bytecode.size() == 0; }
-    uint32_t GetBytecodeSize() const { return bytecode.size(); }
+    unsigned int GetBytecodeSize() const { return (unsigned int)bytecode.size(); }
 
 protected:
     std::vector<uint32_t> bytecode;

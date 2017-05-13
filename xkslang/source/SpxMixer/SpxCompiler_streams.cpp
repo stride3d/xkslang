@@ -36,7 +36,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
         {
             //first pass: get all stream variables by checking OpMemberProperties, an get all semantics properties
             unsigned int start = header_size;
-            const unsigned int end = spv.size();
+            const unsigned int end = (unsigned int)spv.size();
             while (start < end)
             {
                 unsigned int wordCount = asWordCount(start);
@@ -130,7 +130,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
         if (success)
         {
             unsigned int start = header_size;
-            const unsigned int end = spv.size();
+            const unsigned int end = (unsigned int)spv.size();
             while (start < end)
             {
                 unsigned int wordCount = asWordCount(start);
@@ -198,7 +198,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                     error(string("Failed to get the list of members type for the struct type: ") + type->GetName()); continue;
                 }
 
-                const unsigned int countMembers = structMembersTypeList.size();
+                const unsigned int countMembers = (unsigned int)structMembersTypeList.size();
                 if (countMembers != type->streamStructData->members.size()) { error(string("Inconsistent number of members for the type: ") + type->GetName()); continue; }
                 for (unsigned int m = 0; m < countMembers; ++m)
                     type->streamStructData->members[m].memberTypeId = structMembersTypeList[m];
@@ -296,7 +296,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                 {
                     //add the new stream
                     aStreamMember.newStructTypeId = streamStructTypeId;
-                    aStreamMember.newStructMemberIndex = listOfMergedStreamVariables.size();
+                    aStreamMember.newStructMemberIndex = (unsigned int)listOfMergedStreamVariables.size();
                     listOfMergedStreamVariables.push_back(aStreamMember);
                 }
                 else
@@ -389,7 +389,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
         }
 
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -850,7 +850,7 @@ bool SpxCompiler::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& 
 
     if (outputStages.size() == 0) return error("no output stages defined");
 
-    unsigned int countStreamMembers = globalListOfMergedStreamVariables.members.size();
+    unsigned int countStreamMembers = (unsigned int)globalListOfMergedStreamVariables.members.size();
     if (countStreamMembers == 0) return true; //no stream variables to validate
 
 #ifdef XKSLANG_DEBUG_MODE
@@ -1029,7 +1029,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
     int posNamesInsertion = header_size;
     {
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -1076,7 +1076,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
 
         //Check if the pointer type already exists
         unsigned int start = header_size;
-        const unsigned int end = spv.size();
+        const unsigned int end = (unsigned int)spv.size();
         while (start < end)
         {
             unsigned int wordCount = asWordCount(start);
@@ -1304,7 +1304,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 memberAdded = true;
             }
 
-            if (memberAdded) globalListOfMergedStreamVariables.members[index].tmpRemapToIOIndex = vecStageIOMembersIndex.size() - 1;  //keep this info to remap the stream member to the corresponding IO
+            if (memberAdded) globalListOfMergedStreamVariables.members[index].tmpRemapToIOIndex = ((unsigned int)vecStageIOMembersIndex.size()) - 1;  //keep this info to remap the stream member to the corresponding IO
             else globalListOfMergedStreamVariables.members[index].tmpRemapToIOIndex = -1;
         }
         if (vecStageIOMembersIndex.size() == 0) continue;  //if the stage is not using any stream for input/output: no update needed for the stage
@@ -2363,7 +2363,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
         XkslMixerOutputStage& stage = outputStages[iStage];
         XkslMixerOutputStage& previousStage = outputStages[iStage - 1];
 
-        unsigned int stageCountInputVariables = stage.listStageInputVariableInfo.size();
+        unsigned int stageCountInputVariables = (unsigned int)stage.listStageInputVariableInfo.size();
         if (stageCountInputVariables != previousStage.listStageOutputVariableInfo.size())
             return error("a stage has more input variables than the previous stage output variables");
 

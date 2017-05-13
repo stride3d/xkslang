@@ -63,8 +63,8 @@ bool SpxMixer::GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, vector<st
         return false;
     }
 
-    int countParsedObjects = listParsedObjectsData.size();
-    for (int i = 0; i < countParsedObjects; ++i)
+    unsigned int countParsedObjects = (unsigned int)listParsedObjectsData.size();
+    for (unsigned int i = 0; i < countParsedObjects; ++i)
     {
         SpxCompiler::ParsedObjectData& parsedData = listParsedObjectsData[i];
         if (parsedData.kind == SpxCompiler::ObjectInstructionTypeEnum::Shader)

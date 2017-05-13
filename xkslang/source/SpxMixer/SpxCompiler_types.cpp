@@ -485,7 +485,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
             memberSize = 0;
             int maxAlignment = useStd140Rules ? baseAlignmentVec4Std140 : 0;
             unsigned int posElemStart = type->GetBytecodeStartPosition() + 2;
-            for (unsigned int m = 0; m < countMembers; ++m)
+            for (int m = 0; m < countMembers; ++m)
             {
                 spv::Id structElemTypeId = asId(posElemStart + m);
                 TypeInstruction* structElemType = GetTypeById(structElemTypeId);
