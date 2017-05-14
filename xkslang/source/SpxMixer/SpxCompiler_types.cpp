@@ -501,7 +501,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
                 if (structElemType == nullptr) { error("failed to find the struct element type for id: " + to_string(structElemTypeId)); break; }
 
                 if (IsMatrixType(structElemType) || IsMatrixArrayType(structElemType)) {
-                    error("PROUT: Got to find the matric RowMajor decorate!!");
+                    error("PROUT PROUT: Got to find the matric RowMajor decorate!!");
                     break;
                 }
 
@@ -513,7 +513,13 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
                 }
 
                 maxAlignment = std::max(maxAlignment, subElementReflection.Alignment);
+
+                //Add some padding to the size, depending on the member alignment
                 memberSize = RoundToPow2(memberSize, subElementReflection.Alignment);
+
+                //set the sub-member offset
+                structMember.Offset = memberSize;
+
                 memberSize += subElementReflection.Size;
             }
 
@@ -536,7 +542,11 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
         default: return error(string("Unknowns type OpCode: ") + spv::OpcodeString(type->GetOpCode()));
     }
 
-    typeReflection.Set(memberClass, memberType, countRows, countCols, memberSize, memberAlignment, arrayStride, matrixStride, countElementsInArray);
+    typeReflection.Set(type->GetResultId(), memberClass, memberType, countRows, countCols, memberSize, memberAlignment, arrayStride, matrixStride, countElementsInArray);
+    if (structMembers != nullptr)
+    {
+        typeReflection.SetStructMembers(structMembers, countStructMembers);
+    }
 
     return true;
 }

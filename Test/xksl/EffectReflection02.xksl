@@ -1,9 +1,15 @@
 /*
 ConstantBuffers. Count=1
- Name="PerDraw" Size=96 MembersCount=3
-  Name="ShaderMain_aMat23" Offset=0. Class=MatrixRows Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=2
-  Name="ShaderMain_aMat23_rm" Offset=48. Class=MatrixColumns Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=3
-  Name="ShaderMain_Color" Offset=80. Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+ ConstantBuffer: Name="PerDraw" Size=96 MembersCount=3
+  Name="ShaderMain_aMat23" Offset=0
+  Class=MatrixRows Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=2
+
+  Name="ShaderMain_aMat23_rm" Offset=48
+  Class=MatrixColumns Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=3
+
+  Name="ShaderMain_Color" Offset=80
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
 ResourceBindings. Count=1
  Stage=Pixel Name="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
 */

@@ -409,6 +409,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         cbufferData->cbufferMembersData->members[m].memberAlignment = typeReflectionData->Alignment;
                         cbufferData->cbufferMembersData->members[m].matrixStride = typeReflectionData->MatrixStride;
                         cbufferData->cbufferMembersData->members[m].arrayStride = typeReflectionData->ArrayStride;
+                        delete typeReflectionData;
                     }
                 }
             }

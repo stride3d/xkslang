@@ -374,9 +374,92 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
         if (errorMessages.size() > 0) success = false;
     }
 
+    //for all the struct type: find their member names in the bytecode
+    if (success)
+    {
+        //get the list of all struct members (or sub-members)
+        vector<TypeReflectionDescription*> listStructMembers;
+        unsigned int countCBuffers = (unsigned int)effectReflection.ConstantBuffers.size();
+        for (unsigned int cb = 0; cb < countCBuffers; cb++)
+        {
+            ConstantBufferReflectionDescription& cbuffer = effectReflection.ConstantBuffers[cb];
+            unsigned int countMembers = (unsigned int)cbuffer.Members.size();
+            for (unsigned int m = 0; m < countMembers; m++)
+            {
+                cbuffer.Members[m].ReflectionType.AddAllMemberAndSubMembersOfTheGivenClass(EffectParameterReflectionClass::Struct, listStructMembers);
+            }
+        }
+
+        if (listStructMembers.size() > 0)
+        {
+            //sort the struct members by their typeId
+            vector<TypeReflectionDescription*> listStructMembersByResultId;
+            listStructMembersByResultId.resize(bound(), nullptr);
+            for (auto itm = listStructMembers.begin(); itm != listStructMembers.end(); itm++)
+            {
+                TypeReflectionDescription* structMember = *itm;
+#ifdef XKSLANG_DEBUG_MODE
+                if (structMember->SpvTypeId >= (unsigned int)listStructMembersByResultId.size()) { error("Id out of bound: " + to_string(structMember->SpvTypeId)); break; }
+#endif
+                structMember->nextTypeInList = listStructMembersByResultId[structMember->SpvTypeId];
+                listStructMembersByResultId[structMember->SpvTypeId] = structMember;
+            }
+
+            //Fill the struct members name
+            {
+                unsigned int start = header_size;
+                const unsigned int end = (unsigned int)spv.size();
+                while (start < end)
+                {
+                    unsigned int wordCount = asWordCount(start);
+                    spv::Op opCode = asOpCode(start);
+
+                    switch (opCode)
+                    {
+                        case spv::OpMemberName:
+                        {
+                            spv::Id id = asId(start + 1);
+                            int memberIndex = asLiteralValue(start + 2);
+#ifdef XKSLANG_DEBUG_MODE
+                            if (id >= (unsigned int)listStructMembersByResultId.size()) { error("Id out of bound: " + to_string(id)); break; }
+                            if (memberIndex < 0) { error("invalid memberIndex: " + to_string(memberIndex)); break; }
+#endif
+                            if (listStructMembersByResultId[id] != nullptr)
+                            {
+                                string memberName = literalString(start + 3);
+                                TypeReflectionDescription* aType = listStructMembersByResultId[id];
+                                while (aType != nullptr)
+                                {
+#ifdef XKSLANG_DEBUG_MODE
+                                    if (memberIndex >= aType->CountMembers) { error("memberIndex out of bound: " + to_string(memberIndex)); break; }
+#endif
+                                    aType->Members[memberIndex].Name = memberName;
+                                    aType = aType->nextTypeInList;
+                                }
+                            }
+                            break;
+                        }
+
+                        case spv::OpFunction:
+                        case spv::OpTypeFunction:
+                        {
+                            start = end;
+                            break;
+                        }
+                    }
+                    start += wordCount;
+                }
+            }
+
+        }
+
+        if (errorMessages.size() > 0) success = false;
+    }
+
     //=========================================================================================================================
     //=========================================================================================================================
-    //Find which cbuffer resources is used by which output stage
+    //Add ResourceBindings info in EffectReflection
+    // Find which cbuffer resources is used by which output stage
     if (success)
     {
         //we access the cbuffer through their variable

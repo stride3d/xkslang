@@ -1,14 +1,25 @@
 /*
-EffectReflection:
 ConstantBuffers. Count=2
- Name="PerDraw" Size=208 MembersCount=5
-  Name="ShaderMain_MatrixTransform" Offset=0. Class=MatrixColumns Type=Float Size=64 Alignment=16 Elements=0 Rows=4 Columns=4
-  Name="ShaderMain_Matrix4_3" Offset=64. Class=MatrixColumns Type=Float Size=48 Alignment=16 Elements=0 Rows=4 Columns=3
-  Name="ShaderMain_Matrix2_3" Offset=112. Class=MatrixColumns Type=Float Size=48 Alignment=16 Elements=0 Rows=2 Columns=3
-  Name="ShaderMain_ColorMatrix" Offset=160. Class=Color Type=Float Size=12 Alignment=16 Elements=0 Rows=1 Columns=3
-  Name="ShaderMain_ColorArray" Offset=176. Class=Color Type=Float Size=32 Alignment=16 Elements=2 Rows=1 Columns=4
- Name="globalCbuffer" Size=4 MembersCount=1
-  Name="ShaderMain_depthOffset" Offset=0. Class=Scalar Type=Float Size=4 Alignment=4 Elements=0 Rows=1 Columns=1
+ ConstantBuffer: Name="PerDraw" Size=208 MembersCount=5
+  Name="ShaderMain_MatrixTransform" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  Name="ShaderMain_Matrix4_3" Offset=64
+  Class=MatrixRows Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=4
+
+  Name="ShaderMain_Matrix2_3" Offset=112
+  Class=MatrixRows Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=2
+
+  Name="ShaderMain_ColorMatrix" Offset=160
+  Class=Color Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  Name="ShaderMain_ColorArray" Offset=176
+  Class=Color Type=Float Size=32 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=2 Rows=1 Columns=4
+
+ ConstantBuffer: Name="globalCbuffer" Size=4 MembersCount=1
+  Name="ShaderMain_depthOffset" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
 ResourceBindings. Count=3
  Stage=Vertex Name="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Vertex Name="globalCbuffer" Class=ConstantBuffer Type=ConstantBuffer

@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "SPIRV/spvIR.h"
+
 #include "../Common/define.h"
 
 namespace xkslang
@@ -300,8 +302,9 @@ public:
 
     bool isScalarType() {return Class == EffectParameterReflectionClass::Scalar;}
 
-    void Set(EffectParameterReflectionClass c, EffectParameterReflectionType t, int countRow, int countColumn, int size, int alignment, int arrayStride, int matrixStride, int arrayElements)
+    void Set(spv::Id spvTypeId, EffectParameterReflectionClass c, EffectParameterReflectionType t, int countRow, int countColumn, int size, int alignment, int arrayStride, int matrixStride, int arrayElements)
     {
+        this->SpvTypeId = spvTypeId;
         this->Class = c;
         this->Type = t;
         this->RowCount = countRow;
@@ -313,9 +316,17 @@ public:
         this->ArrayElements = arrayElements;
     }
 
-    std::string Print();
+    void SetStructMembers(TypeMemberReflectionDescription* members, int countMembers);
+    void AddAllMemberAndSubMembersOfTheGivenClass(EffectParameterReflectionClass memberClass, std::vector<TypeReflectionDescription*>& listMembers);
+
+    std::string Print(int padding);
 
 public:
+    /// <summary>
+    /// The SPV resultId of the type
+    /// </summary>
+    spv::Id SpvTypeId;
+
     /// <summary>
     /// The <see cref="EffectParameterReflectionClass"/> of this parameter.
     /// </summary>
@@ -371,12 +382,19 @@ public:
     /// </summary>
     TypeMemberReflectionDescription* Members;
     int CountMembers;
+
+private:
+    TypeReflectionDescription* nextTypeInList;  //a linked list of TypeReflectionDescription (used by some algo)
+
+    friend class SpxCompiler;
 };
 
 class TypeMemberReflectionDescription
 {
 public:
     TypeMemberReflectionDescription() : Offset(0) {}
+
+    std::string Print(int padding);
 
 public:
     /// <summary>
@@ -406,7 +424,7 @@ public:
     ConstantBufferMemberReflectionDescription(){}
 
 public:
-    std::string Print();
+    std::string Print(int padding);
 };
 
 class ConstantBufferReflectionDescription

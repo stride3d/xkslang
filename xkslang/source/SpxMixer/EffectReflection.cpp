@@ -17,24 +17,72 @@ TypeReflectionDescription::~TypeReflectionDescription()
     }
 }
 
+void TypeReflectionDescription::SetStructMembers(TypeMemberReflectionDescription* members, int countMembers)
+{
+    if (Members != nullptr) {
+        delete[] Members;
+        Members = nullptr;
+    }
+
+    this->Members = members;
+    this->CountMembers = countMembers;
+}
+
 void EffectReflection::Clear()
 {
     ConstantBuffers.clear();
 }
 
-string TypeReflectionDescription::Print()
+void TypeReflectionDescription::AddAllMemberAndSubMembersOfTheGivenClass(EffectParameterReflectionClass memberClass, vector<TypeReflectionDescription*>& listMembers)
 {
+    if (Class == memberClass) listMembers.push_back(this);
+
+    if (CountMembers > 0)
+    {
+        for (unsigned int m = 0; m < CountMembers; m++)
+        {
+            Members[m].Type.AddAllMemberAndSubMembersOfTheGivenClass(memberClass, listMembers);
+        }
+    }
+}
+
+string TypeReflectionDescription::Print(int padding)
+{
+    string paddingStr = "";
+    for (int i = 0; i < padding; i++) paddingStr += ' ';
+
     std::ostringstream stream;
-    stream << "Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(Class) << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(Type)
+    stream << paddingStr << "Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(Class) << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(Type)
         << " Size=" << Size << " Alignment=" << Alignment << " ArrayStride=" << ArrayStride << " MatrixStride=" << MatrixStride
-        << " ArrayElements=" << ArrayElements << " Rows=" << RowCount << " Columns=" << ColumnCount;
+        << " ArrayElements=" << ArrayElements << " Rows=" << RowCount << " Columns=" << ColumnCount << endl;
+    if (CountMembers > 0)
+    {
+        paddingStr += ' ';
+        stream << paddingStr << "CountMembers=" << CountMembers << endl;
+        for (int m = 0; m < CountMembers; m++) stream << Members[m].Print(padding + 1);
+    }
     return stream.str();
 }
 
-string ConstantBufferMemberReflectionDescription::Print()
+string TypeMemberReflectionDescription::Print(int padding)
 {
+    string paddingStr = "";
+    for (int i = 0; i < padding; i++) paddingStr += ' ';
+
     std::ostringstream stream;
-    stream << "Name=\"" << KeyName << "\" Offset=" << Offset << ". " << ReflectionType.Print();
+    stream << paddingStr << "Name=\"" << Name << "\" Offset=" << Offset << endl;
+    stream << Type.Print(padding);
+    return stream.str();
+}
+
+string ConstantBufferMemberReflectionDescription::Print(int padding)
+{
+    string paddingStr = "";
+    for (int i = 0; i < padding; i++) paddingStr += ' ';
+
+    std::ostringstream stream;
+    stream << paddingStr << "Name=\"" << KeyName << "\" Offset=" << Offset << endl;
+    stream << ReflectionType.Print(padding) << endl;
     return stream.str();
 }
 
@@ -45,12 +93,12 @@ string EffectReflection::Print()
     for (unsigned int cb = 0; cb < ConstantBuffers.size(); ++cb)
     {
         ConstantBufferReflectionDescription& cbuffer = ConstantBuffers[cb];
-        stream << " Name=\"" << cbuffer.CbufferName << "\" Size=" << cbuffer.Size << " MembersCount=" << cbuffer.Members.size() << endl;
+        stream << " ConstantBuffer: Name=\"" << cbuffer.CbufferName << "\" Size=" << cbuffer.Size << " MembersCount=" << cbuffer.Members.size() << endl;
 
         for (unsigned int im = 0; im < cbuffer.Members.size(); im++)
         {
             ConstantBufferMemberReflectionDescription& member = cbuffer.Members[im];
-            stream << "  " << member.Print() << endl;
+            stream << member.Print(2);
         }
     }
     stream << "ResourceBindings. Count=" << ResourceBindings.size() << endl;
