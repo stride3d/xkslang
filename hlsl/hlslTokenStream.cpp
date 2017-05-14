@@ -225,7 +225,7 @@ namespace glslang {
 
     HlslToken HlslTokenStream::getTokenAtIndex(int index)
     {
-        if (index < 0 || index >= tokenBuffer.size()){
+        if (index < 0 || index >= (int)tokenBuffer.size()){
             HlslToken invalidToken;
             invalidToken.tokenClass = EHTokNone;
             return invalidToken;
@@ -296,7 +296,7 @@ namespace glslang {
 
     bool HlslTokenStream::CopyTokenBufferInto(TVector<HlslToken>& tokenList, int indexStart, int indexEnd)
     {
-        if (indexStart < 0 || indexEnd >= tokenBuffer.size() || indexStart > indexEnd) return false;
+        if (indexStart < 0 || indexEnd >= (int)tokenBuffer.size() || indexStart > indexEnd) return false;
 
         for (int k = indexStart; k <= indexEnd; k++) tokenList.push_back(tokenBuffer[k]);
         return true;
