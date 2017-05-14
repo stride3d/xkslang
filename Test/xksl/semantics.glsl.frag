@@ -1,7 +1,7 @@
 #version 450
 
 layout(location = 0) in vec4 in_aVec4;
-layout(location = 1) in float in_aFloat;
+layout(location = 1) in float in_aFloat; 
 
 layout(location = 0) out vec4 out_Color;
 layout(location = 1) out float out_Depth;
@@ -49,6 +49,7 @@ void main()
 	gl_FragDepth = 1.0;
 }
 */
+
 //=========================================================================
 //Glslang: GLSL --> SPV conversion
 //D:\Prgms\glslang\source\Test\xksl\semantics.glsl.frag -e main --keep-uncalled -V -H -o D:\Prgms\glslang\source\Test\xksl\outputs\semantics.glsl.frag.spv

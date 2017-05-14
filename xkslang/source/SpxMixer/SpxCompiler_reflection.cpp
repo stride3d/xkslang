@@ -88,8 +88,24 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
             if (type->IsCBuffer())
             {
                 CBufferTypeData* cbufferData = type->GetCBufferData();
+                if (cbufferData == nullptr)
+                {
+                    spv::Op opCode = asOpCode(type->GetBytecodeStartPosition());
+                    int wordCount = asWordCount(type->GetBytecodeStartPosition());
+                    int countMembers = wordCount - 2;
 
 #ifdef XKSLANG_DEBUG_MODE
+                    if (opCode != spv::OpTypeStruct) { error(string("Invalid OpCode type for the cbuffer instruction (expected OpTypeStruct): ") + OpcodeString(opCode)); break; }
+                    if (countMembers <= 0 || countMembers > compilerSettings_maxStructMembers) { error("invalid cbuffer member count"); break; }
+#endif
+
+                    //we can have a cbuffer with no cbufferData: the compiled bytecode not necessarily has OpCBufferProperties instruction
+                    cbufferData = new CBufferTypeData(type->GetId(), "", type->GetName(), false, true, countMembers);
+                    type->SetCBufferData(cbufferData);
+                }
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (cbufferData == nullptr) { error("cbuffer data missing!"); break; }
                 if (cbufferData->cbufferMembersData != nullptr) { error("a cbuffer members data has already been initialized"); break; }
                 if (cbufferData->cbufferCountMembers <= 0) { error("invalid cbuffer member count"); break; }
 #endif
@@ -113,9 +129,8 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
                 //vectorCBuffersIds[cbufferData->cbufferVariableTypeObject->GetId()] = cbufferData;
             }
         }
-
-        if (errorMessages.size() > 0) success = false;
     }
+    if (errorMessages.size() > 0) success = false;
     if (listAllCBuffers.size() == 0) return success;
 
     //=========================================================================================================================

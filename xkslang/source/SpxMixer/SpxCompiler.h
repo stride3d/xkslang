@@ -20,15 +20,18 @@
 namespace xkslang
 {
 
-static const bool useStd140Rules = true;  //set as true for now (to be consistent with glslang)
-static const int baseAlignmentVec4Std140 = 16;
-static const int maxMatrixSize = 4;
-static const int maxArraySize = 2048;
 static const spv::Id spvUndefinedId = 0;
 static const unsigned int MagicNumber = 0x07230203;
 static const unsigned int Version = 0x00010000;
 static const unsigned int Revision = 8;
 static const unsigned int builderNumber = 0x00080001;
+
+//Todo: To be clean and parameterized:
+static const bool compilerSettings_useStd140Rules = true;  //set as true for now (to be consistent with glslang)
+static const int compilerSettings_baseAlignmentVec4Std140 = 16;
+static const int compilerSettings_maxMatrixSize = 4;
+static const int compilerSettings_maxArraySize = 2048;  //safety marge
+static const int compilerSettings_maxStructMembers = 512;  //safety marge
 
 enum class SpxRemapperStatusEnum
 {
@@ -277,13 +280,14 @@ public:
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source),
-            arrayStride(0), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), cbufferData(nullptr) {}
+            arrayStride(0), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), isCBuffer(false), cbufferData(nullptr) {}
         virtual ~TypeInstruction() {
             if (cbufferData != nullptr) delete cbufferData;
         }
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->arrayStride = arrayStride;
+            obj->isCBuffer = isCBuffer;
             if (cbufferData != nullptr) obj->cbufferData = cbufferData->Clone();
             return obj;
         }
@@ -291,6 +295,7 @@ public:
         void SetTypePointed(TypeInstruction* type) { pointerTo = type; }
         TypeInstruction* GetTypePointed() const { return pointerTo; }
 
+        void SetAsCBuffer() {isCBuffer = true;}
         void SetCBufferData(CBufferTypeData* data) {
             if (cbufferData != nullptr) delete cbufferData;
             cbufferData = data;
@@ -305,9 +310,10 @@ public:
         TypeStructMemberArray* streamStructData;
         ShaderTypeData* connectedShaderTypeData;
 
-        bool IsCBuffer(){ return cbufferData != nullptr; }
+        bool IsCBuffer(){ return isCBuffer; }
 
         //used if the type is a cbuffer struct
+        bool isCBuffer;
         CBufferTypeData* cbufferData;
 
         friend class SpxCompiler;

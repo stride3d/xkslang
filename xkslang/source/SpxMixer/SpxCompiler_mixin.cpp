@@ -1533,10 +1533,12 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
                 ShaderTypeData* aShaderType = *itt;
                 if (aShaderType->isCBufferType())
                 {
-                    CBufferTypeData* cbuffer = aShaderType->GetCBufferData();
-                    if (cbuffer->isStage)
+                    CBufferTypeData* cbufferData = aShaderType->GetCBufferData();
+                    if (cbufferData == nullptr) return error("a cbuffer type is missing cbuffer data (block decorate but no CBufferProperties?): " + aShaderType->type->GetName());
+
+                    if (cbufferData->isStage)
                     {
-                        cbuffer->shaderOwnerName = originalShaderName;
+                        cbufferData->shaderOwnerName = originalShaderName;
                     }
                 }
             }
@@ -2573,8 +2575,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
     //Convert SPIRX to SPIRV (remove all SPIRX extended instructions). So we don't need to repeat it for every stages
     //Some exceptions, we keep the instructions:
     // -OpSemanticName: to let SPIRV-Cross set the semantic name as it was defined by the user in the original xksl shaders
-    // -OpCBufferProperties: to let us retrieve the list of cbuffers from the SPV files
-    // -OpMemberAttribute: to let us correctly process the types reflection
+    // -OpMemberAttribute: to let us correctly process the types reflection, for example with attribute like "[Color]"
     vector<range_t> vecStripRanges;
     unsigned int start = header_size;
     const unsigned int end = (unsigned int)spv.size();
@@ -2628,6 +2629,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             case spv::OpGSMethodProperties:
             case spv::OpMemberProperties:
             case spv::OpMemberSemanticName:
+            case spv::OpCBufferProperties:
             {
                 stripInst(vecStripRanges, start);
                 break;
@@ -2635,7 +2637,6 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
 
             //Keep the following SPX extensions:
             //case spv::OpSemanticName:
-            //case spv::OpCBufferProperties:
             //case spv::OpMemberAttribute:
             //{
             //}
@@ -3454,11 +3455,18 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                         TypeInstruction* type = GetTypeById(typeId);
                         if (type != nullptr)
                         {
-                            if (!IsArrayType(type)) { error(string("An arrayStride decoration is applied to a non-array type: ") + to_string(typeId)); break; }
+                            if (!IsArrayType(type)) { error("An arrayStride decoration is applied to a non-array type: " + to_string(typeId)); break; }
                             int arrayStride = asLiteralValue(start + 3);
                             type->arrayStride = arrayStride;
                         }
                         break;
+                    }
+
+                    case spv::Decoration::DecorationBlock:
+                    {
+                        TypeInstruction* type = GetTypeById(typeId);
+                        if (type == nullptr) { error("Cannot retrieve the type for which we parsed a block decorate instruction: " + to_string(typeId)); break; }
+                        type->SetAsCBuffer();
                     }
                 }
 
@@ -3494,16 +3502,16 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 if (!vectorIdsToDecorate[shaderId]) break;
 
                 ShaderClassData* shaderOwner = GetShaderById(shaderId);
-                if (shaderOwner == nullptr) { error(string("undeclared shader owner for Id: ") + to_string(shaderId)); break; }
+                if (shaderOwner == nullptr) { error("undeclared shader owner for Id: " + to_string(shaderId)); break; }
 
                 FunctionInstruction* function = GetFunctionById(objectId);
                 if (function != nullptr) {
                     //a function is defined as being owned by a shader
 #ifdef XKSLANG_DEBUG_MODE
-                    if (function->GetShaderOwner() != nullptr) { error(string("The function already has a shader owner: ") + function->GetMangledName()); break; }
+                    if (function->GetShaderOwner() != nullptr) { error("The function already has a shader owner: " + function->GetMangledName()); break; }
                     if (shaderOwner->HasFunction(function))
                     {
-                        error(string("The shader: ") + shaderOwner->GetName() + string(" already possesses the function: ") + function->GetMangledName()); break;
+                        error(string("The shader: ") + shaderOwner->GetName() + " already possesses the function: " + function->GetMangledName()); break;
                     }
                     function->SetFullName(shaderOwner->GetName() + string(".") + function->GetMangledName());
 #endif
@@ -3521,13 +3529,13 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                         TypeInstruction* typePointer = GetTypePointingTo(type);
                         VariableInstruction* variable = GetVariablePointingTo(typePointer);
 
-                        if (typePointer == nullptr) { error(string("cannot find the pointer type to the shader type: ") + type->GetName()); break; }
-                        if (variable == nullptr) { error(string("cannot find the variable for shader type: ") + type->GetName()); break; }
+                        if (typePointer == nullptr) { error("cannot find the pointer type to the shader type: " + type->GetName()); break; }
+                        if (variable == nullptr) { error("cannot find the variable for shader type: " + type->GetName()); break; }
 #ifdef XKSLANG_DEBUG_MODE
-                        if (type->GetShaderOwner() != nullptr) { error(string("The type already has a shader owner: ") + type->GetName()); break; }
-                        if (typePointer->GetShaderOwner() != nullptr) { error(string("The typePointer already has a shader owner: ") + typePointer->GetName()); break; }
-                        if (variable->GetShaderOwner() != nullptr) { error(string("The variable already has a shader owner: ") + variable->GetName()); break; }
-                        if (shaderOwner->HasType(type)) { error(string("The shader: ") + shaderOwner->GetName() + string(" already possesses the type: ") + type->GetName()); break; }
+                        if (type->GetShaderOwner() != nullptr) { error("The type already has a shader owner: " + type->GetName()); break; }
+                        if (typePointer->GetShaderOwner() != nullptr) { error("The typePointer already has a shader owner: " + typePointer->GetName()); break; }
+                        if (variable->GetShaderOwner() != nullptr) { error("The variable already has a shader owner: " + variable->GetName()); break; }
+                        if (shaderOwner->HasType(type)) { error("The shader: " + shaderOwner->GetName() + " already possesses the type: " + type->GetName()); break; }
 #endif
                         ShaderTypeData* shaderType = new ShaderTypeData(shaderOwner, type, typePointer, variable);
                         type->SetShaderOwner(shaderOwner);
@@ -3537,7 +3545,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     }
                     else
                     {
-                        error(string("unprocessed OpBelongsToShader instruction, invalid objectId: ") + to_string(objectId));
+                        error("unprocessed OpBelongsToShader instruction, invalid objectId: " + to_string(objectId));
                     }
                 }
                 break;
@@ -3552,14 +3560,14 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 if (!vectorIdsToDecorate[shaderId]) break;
 
                 ShaderClassData* shader = GetShaderById(shaderId);
-                if (shader == nullptr) { error(string("undeclared shader for Id: ") + to_string(shaderId)); break; }
+                if (shader == nullptr) { error("undeclared shader for Id: " + to_string(shaderId)); break; }
 
                 int countParents = wordCount - 2;
                 for (int p = 0; p < countParents; ++p)
                 {
                     const spv::Id parentShaderId = asId(start + 2 + p);
                     ShaderClassData* shaderParent = GetShaderById(parentShaderId);
-                    if (shaderParent == nullptr) { error(string("undeclared parent shader for Id: ") + to_string(parentShaderId)); break; }
+                    if (shaderParent == nullptr) { error("undeclared parent shader for Id: " + to_string(parentShaderId)); break; }
 
 //#ifdef XKSLANG_DEBUG_MODE
                     //A shader can inherit several time of the same shader, we just add it once
@@ -3581,13 +3589,13 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 if (!vectorIdsToDecorate[shaderId]) break;
 
                 ShaderClassData* shaderCompositionOwner = GetShaderById(shaderId);
-                if (shaderCompositionOwner == nullptr) { error(string("undeclared shader id: ") + to_string(shaderId)); break; }
+                if (shaderCompositionOwner == nullptr) { error("undeclared shader id: " + to_string(shaderId)); break; }
 
                 int compositionId = asLiteralValue(start + 2);
 
                 const spv::Id shaderCompositionTypeId = asId(start + 3);
                 ShaderClassData* shaderCompositionType = GetShaderById(shaderCompositionTypeId);
-                if (shaderCompositionType == nullptr) { error(string("undeclared shader type id: ") + to_string(shaderCompositionTypeId)); break; }
+                if (shaderCompositionType == nullptr) { error("undeclared shader type id: " + to_string(shaderCompositionTypeId)); break; }
 
                 bool isArray = asLiteralValue(start + 4) == 0? false: true;
 
@@ -3602,7 +3610,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
             case spv::OpGSMethodProperties:
             {
-                return error(string("OpGSMethodProperties: unprocessed yet"));
+                return error("OpGSMethodProperties: unprocessed yet");
             }
 
             case spv::Op::OpMethodProperties:
@@ -3614,7 +3622,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 if (!vectorIdsToDecorate[functionId]) break;
 
                 FunctionInstruction* function = GetFunctionById(functionId);
-                if (function == nullptr) { error(string("undeclared function id: ") + to_string(functionId)); break; }
+                if (function == nullptr) { error("undeclared function id: " + to_string(functionId)); break; }
 
                 int countProperties = wordCount - 2;
                 for (int a = 0; a < countProperties; ++a)
@@ -3636,7 +3644,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
             case spv::OpTypeFunction:
             case spv::OpFunction:
             {
-                //no more decorations after this OpInstructions
+                //no more decorations after this point
                 start = end;
                 break;
             }
@@ -3666,8 +3674,9 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 int countMembers = asLiteralValue(start + 4);
                 TypeInstruction* type = GetTypeById(typeId);
                 if (type == nullptr) return error("Cannot find the type for Id: " + to_string(typeId));
+                if (!type->IsCBuffer()) { error("The cbuffer type is not a cbuffer (missing block decorate?): " + type->GetName()); break; }
                 if (countMembers <= 0) { error("Invalid number of members for the cbuffer: " + type->GetName()); break; }
-                
+
                 string shaderOwnerName = "";
                 if (type->shaderOwner != nullptr) shaderOwnerName = type->shaderOwner->GetName();
 

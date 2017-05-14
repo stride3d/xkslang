@@ -33,8 +33,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             if (shaderType->isCBufferType())
             {
                 CBufferTypeData* cbufferData = shaderType->type->cbufferData;
+                if (cbufferData == nullptr) return error("a cbuffer type is missing cbuffer data (block decorate but no CBufferProperties?): " + shaderType->type->GetName());
+
 #ifdef XKSLANG_DEBUG_MODE
-                if (cbufferData == nullptr) { error("a cbuffer type has no cbuffer data: " + shaderType->type->GetName()); break; }
                 if (cbufferData->cbufferMembersData != nullptr) return error("a cbuffer members data has already been initialized");
 #endif
                 cbufferData->correspondingShaderType = shaderType;

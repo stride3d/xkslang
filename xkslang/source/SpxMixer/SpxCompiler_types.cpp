@@ -133,7 +133,7 @@ spv::Id SpxCompiler::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstru
             }
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (countElems <= 0 || countElems > maxArraySize) { error("Invalid countElems size"); return 0; }
+            if (countElems <= 0 || countElems > compilerSettings_maxArraySize) { error("Invalid countElems size"); return 0; }
 #endif
             TypeInstruction* vectorElemType = GetTypeById(vectorElementTypeId);
             if (vectorElemType == nullptr) { error("failed to find the vector type for id: " + to_string(vectorElementTypeId)); return 0; }
@@ -252,6 +252,10 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
     int countElementsInArray = 0;
     EffectParameterReflectionClass memberClass = EffectParameterReflectionClass::Undefined;
     EffectParameterReflectionType memberType = EffectParameterReflectionType::Undefined;
+
+    //For struct members
+    TypeMemberReflectionDescription* structMembers = nullptr;
+    int countStructMembers = 0;
 
     switch (type->GetOpCode())
     {
@@ -390,7 +394,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
                 return error("Failed to get the integer const object literal value for: " + to_string(sizeConstTypeId));
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (arrayCountElems <= 0 || arrayCountElems >= maxArraySize) return error("Invalid vector countElems");
+            if (arrayCountElems <= 0 || arrayCountElems >= compilerSettings_maxArraySize) return error("Invalid vector countElems");
 #endif
 
             TypeReflectionDescription subElementReflection;
@@ -399,7 +403,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
             if (subElementReflection.ArrayElements != 0) return error("OpTypeArray: sub-element reflection type cannot be another array");
 
             int subElementAlign = subElementReflection.Alignment;
-            if (useStd140Rules) subElementAlign = std::max(baseAlignmentVec4Std140, subElementAlign);
+            if (compilerSettings_useStd140Rules) subElementAlign = std::max(compilerSettings_baseAlignmentVec4Std140, subElementAlign);
 
             matrixStride = subElementReflection.MatrixStride;
             arrayStride = RoundToPow2(subElementReflection.Size, subElementAlign);
@@ -429,8 +433,8 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
             if (elemType == nullptr) return error("failed to find the vector element type for id: " + to_string(vectorElementTypeId));
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (countVectors <= 0 || countVectors > maxMatrixSize) return error("Invalid matrix countElems");
-            if (vectorCountElems <= 0 || vectorCountElems > maxMatrixSize) return error("Invalid matrix vector countElems");
+            if (countVectors <= 0 || countVectors > compilerSettings_maxMatrixSize) return error("Invalid matrix countElems");
+            if (vectorCountElems <= 0 || vectorCountElems > compilerSettings_maxMatrixSize) return error("Invalid matrix vector countElems");
             if (!IsScalarType(elemType->GetOpCode())) return error("the matrix's element type must be scalar");
 #endif
 
@@ -463,7 +467,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
                 rowVectorAlignment = subElementAlign * 4;
             }
 
-            if (useStd140Rules) rowVectorAlignment = std::max(baseAlignmentVec4Std140, rowVectorAlignment);
+            if (compilerSettings_useStd140Rules) rowVectorAlignment = std::max(compilerSettings_baseAlignmentVec4Std140, rowVectorAlignment);
             rowVectorSize = RoundToPow2(rowVectorSize, rowVectorAlignment);
             if (rowVectorSize < 0) return error("Failed to compute the matrix row vector size");
             
@@ -480,34 +484,52 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
             int countMembers = wordCount - 2;
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (countMembers <= 0 || countMembers > maxArraySize) { error("Invalid OpTypeStruct size"); return 0; }
+            if (countMembers <= 0 || countMembers > compilerSettings_maxStructMembers) { error("Invalid OpTypeStruct size"); return 0; }
 #endif
+            countStructMembers = countMembers;
+            structMembers = new TypeMemberReflectionDescription[countStructMembers];
+
             memberSize = 0;
-            int maxAlignment = useStd140Rules ? baseAlignmentVec4Std140 : 0;
+            int maxAlignment = compilerSettings_useStd140Rules ? compilerSettings_baseAlignmentVec4Std140 : 0;
             unsigned int posElemStart = type->GetBytecodeStartPosition() + 2;
             for (int m = 0; m < countMembers; ++m)
             {
+                TypeMemberReflectionDescription& structMember = structMembers[m];
+
                 spv::Id structElemTypeId = asId(posElemStart + m);
                 TypeInstruction* structElemType = GetTypeById(structElemTypeId);
-                if (structElemType == nullptr) return error("failed to find the struct element type for id: " + to_string(structElemTypeId));
+                if (structElemType == nullptr) { error("failed to find the struct element type for id: " + to_string(structElemTypeId)); break; }
 
-                if (IsMatrixType(structElemType->GetOpCode())) return error("Got to find the matric RowMajor decorate!!");
+                if (IsMatrixType(structElemType) || IsMatrixArrayType(structElemType)) {
+                    error("PROUT: Got to find the matric RowMajor decorate!!");
+                    break;
+                }
 
-                TypeReflectionDescription subElementReflection;
+                TypeReflectionDescription& subElementReflection = structMember.Type;
                 if (!GetTypeObjectBaseSizeAndAlignment(structElemType, isRowMajor, memberAttribute, subElementReflection, iterationCounter + 1))
-                    return error("Failed to get the reflection data for the struct's member type");
+                {
+                    error("Failed to get the reflection data for the struct's member type");
+                    break;
+                }
 
                 maxAlignment = std::max(maxAlignment, subElementReflection.Alignment);
                 memberSize = RoundToPow2(memberSize, subElementReflection.Alignment);
                 memberSize += subElementReflection.Size;
+            }
 
-                error("PLOP PLOP ADD THE MEMBERS!");
+            if (errorMessages.size() > 0)
+            {
+                delete structMembers;
+                return error("Failed to get the struct members reflection data");
             }
 
             // The structure may have padding at the end;
             // the base offset of the member following the sub-structure is rounded up to the next multiple of the base alignment of the structure.
             memberSize = RoundToPow2(memberSize, maxAlignment);
             memberAlignment = maxAlignment;
+
+            memberClass = EffectParameterReflectionClass::Struct;
+            memberType = EffectParameterReflectionType::Void;
             break;
         }
 

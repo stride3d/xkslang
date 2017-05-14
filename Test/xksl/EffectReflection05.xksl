@@ -2,31 +2,26 @@ shader ShaderMain
 {
 	struct StructType
 	{
-		float4x4 MatrixTransform;
-		[Color]
-        float3 ColorMatrix;
+		float4 aF4;
 		float4 ColorArray[2];
 		bool aBool;
+		[Color]
+		stage float4 ColorArrayB[2];
+		stage float2x3 aMat23[2];
 	};
-
-	stage StructType struct1;
 	
-	cbuffer PerDraw
-    {
-        stage StructType struct2;
-    }
+	stage StructType var1;
+	stage float4 aCol;
 	
-    stage stream float4 Position : POSITION;
-	stage stream float4 ShadingPosition : SV_Position;
 	stage stream float4 ColorTarget : SV_Target0;
 	
-	stage void VSMain() 
+	stage void VSMain()
 	{
-		streams.ShadingPosition = mul(streams.Position, struct1.MatrixTransform) + struct2.ColorArray[1];
+	
 	}
 	
-    stage void PSMain() 
-    {
-        streams.ColorTarget = streams.ShadingPosition;
-    }
+	stage void PSMain()
+	{
+		streams.ColorTarget = aCol + var1.aF4;
+	}
 };
