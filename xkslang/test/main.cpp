@@ -195,10 +195,11 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection01", "EffectReflection01.xkfx" },
     //{ "EffectReflection02", "EffectReflection02.xkfx" },
     //{ "EffectReflection03", "EffectReflection03.xkfx" },
-    { "EffectReflection04", "EffectReflection04.xkfx" },
+    //{ "EffectReflection04", "EffectReflection04.xkfx" },
+    //{ "EffectReflection05", "EffectReflection05.xkfx" },
 
     //{ "Effect01", "Effect01.xkfx" },
-    //{ "testTypeSize", "testTypeSize.xkfx" },
+    { "testTypeSize", "testTypeSize.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {

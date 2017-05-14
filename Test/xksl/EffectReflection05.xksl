@@ -1,3 +1,30 @@
+/*
+ConstantBuffers. Count=1
+ ConstantBuffer: Name="globalCbuffer" Size=272 MembersCount=2
+  Name="ShaderMain_var1" Offset=0
+  Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   CountMembers=6
+   Name="aF4" Offset=0
+   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+   Name="ColorArray" Offset=16
+   Class=Vector Type=Float Size=32 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=2 Rows=1 Columns=4
+   Name="aBool" Offset=48
+   Class=Scalar Type=UInt Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   Name="ColorArrayB" Offset=64
+   Class=Vector Type=Float Size=32 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=2 Rows=1 Columns=4
+   Name="aMat23" Offset=96
+   Class=MatrixRows Type=Float Size=96 Alignment=16 ArrayStride=48 MatrixStride=16 ArrayElements=2 Rows=3 Columns=2
+   Name="aMat23_rm" Offset=192
+   Class=MatrixColumns Type=Float Size=64 Alignment=16 ArrayStride=32 MatrixStride=16 ArrayElements=2 Rows=2 Columns=3
+
+  Name="ShaderMain_aCol" Offset=256
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ResourceBindings. Count=1
+ Stage=Pixel Name="globalCbuffer" Class=ConstantBuffer Type=ConstantBuffer
+*/
+
+//Test reflection on a more complex struct type
 shader ShaderMain
 {
 	struct StructType
@@ -8,6 +35,7 @@ shader ShaderMain
 		[Color]
 		stage float4 ColorArrayB[2];
 		stage float2x3 aMat23[2];
+		stage row_major float2x3 aMat23_rm[2];
 	};
 	
 	stage StructType var1;

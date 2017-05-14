@@ -268,6 +268,7 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
                 }
 
                 case spv::OpFunction:
+                case spv::OpTypeFunction:
                 {
                     //all information retrieved at this point: can safely stop here
                     start = end;
@@ -283,91 +284,101 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
     //Get the reflection data for all cbuffer members
     if (success)
     {
-        const unsigned int countCbuffers = (unsigned int)listAllCBuffers.size();
-        effectReflection.ConstantBuffers.resize(countCbuffers);
-
-        for (unsigned int icb = 0; icb < countCbuffers; icb++)
+        vector<unsigned int> startPositionOfAllMemberDecorateInstructions;
+        if (!GetStartPositionOfAllMemberDecorateInstructions(startPositionOfAllMemberDecorateInstructions))
         {
-            CBufferTypeData* cbufferData = listAllCBuffers[icb];
+            error("failed to call GetStartPositionOfAllMemberDecorateInstructions");
+            success = false;
+        }
 
-            TypeInstruction* cbufferType = cbufferData->cbufferTypeObject;
-            spv::Op opCode = asOpCode(cbufferType->GetBytecodeStartPosition());
-            int wordCount = asWordCount(cbufferType->GetBytecodeStartPosition());
-            int countMembers = wordCount - 2;
+        if (success)
+        {
+            const unsigned int countCbuffers = (unsigned int)listAllCBuffers.size();
+            effectReflection.ConstantBuffers.resize(countCbuffers);
 
-#ifdef XKSLANG_DEBUG_MODE
-            if (opCode != spv::OpTypeStruct) { error(string("Invalid OpCode type for the cbuffer instruction (expected OpTypeStruct): ") + OpcodeString(opCode)); break; }
-            if (countMembers != cbufferData->cbufferCountMembers) { error("Invalid cbuffer count members property"); break; }
-#endif
-            if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
-
-            //Set the cbuffer name
-            ConstantBufferReflectionDescription& cbufferReflection = effectReflection.ConstantBuffers[icb];
-            cbufferReflection.CbufferName = cbufferData->cbufferName;
-            cbufferReflection.Members.resize(countMembers);
-
-            //Get the reflection data for all cbuffer members
-            unsigned int posElemStart = cbufferType->GetBytecodeStartPosition() + 2;
-            for (int mIndex = 0; mIndex < countMembers; ++mIndex)
+            for (unsigned int icb = 0; icb < countCbuffers; icb++)
             {
-                TypeStructMember& member = cbufferData->cbufferMembersData->members[mIndex];
-                ConstantBufferMemberReflectionDescription& memberReflection = cbufferReflection.Members[mIndex];
-                memberReflection.KeyName = member.GetDeclarationNameOrSemantic();
+                CBufferTypeData* cbufferData = listAllCBuffers[icb];
 
-                //get the member type object
-                spv::Id cbufferMemberTypeId = asId(posElemStart + mIndex);
-                TypeInstruction* cbufferMemberType = GetTypeById(cbufferMemberTypeId);
-                if (cbufferMemberType == nullptr) return error("failed to find the cbuffer element type for id: " + member.GetDeclarationNameOrSemantic());
-
-                member.memberTypeId = cbufferMemberTypeId;
-                member.memberType = cbufferMemberType;
-
-                //check if the member type is a resource
-                member.isResourceType = IsResourceType(cbufferMemberType->opCode);
-
-                bool isMatrixRowMajor = true;
-                if (IsMatrixType(cbufferMemberType) || IsMatrixArrayType(cbufferMemberType))
-                {
-                    if (member.matrixLayoutDecoration == (int)(spv::DecorationRowMajor)) isMatrixRowMajor = true;
-                    else if (member.matrixLayoutDecoration == (int)(spv::DecorationColMajor)) isMatrixRowMajor = false;
-                    else { error("undefined matrix member layout"); break; }
-                }
-
-                if (!GetTypeObjectBaseSizeAndAlignment(cbufferMemberType, isMatrixRowMajor, member.attribute, memberReflection.ReflectionType))
-                {
-                    error("Failed to get the reflexon data for the cbuffer member: " + member.GetDeclarationNameOrSemantic());
-                    break;
-                }
-
-                //we can retrieve the offset from the bytecode, no need to recompute it
-                if (member.memberOffset == -1) {
-                    error("a cbuffer member is missing its offset decoration" + member.GetDeclarationNameOrSemantic());
-                    break;
-                }
+                TypeInstruction* cbufferType = cbufferData->cbufferTypeObject;
+                spv::Op opCode = asOpCode(cbufferType->GetBytecodeStartPosition());
+                int wordCount = asWordCount(cbufferType->GetBytecodeStartPosition());
+                int countMembers = wordCount - 2;
 
 #ifdef XKSLANG_DEBUG_MODE
-                //double check: we can also compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment)
-                int memberOffset = 0;
-                if (mIndex > 0)
-                {
-                    ConstantBufferMemberReflectionDescription& previousMemberReflection = cbufferReflection.Members[mIndex - 1];
-                    int previousMemberOffset = previousMemberReflection.Offset;
-                    int previousMemberSize = previousMemberReflection.ReflectionType.Size;
-
-                    memberOffset = previousMemberOffset + previousMemberSize;
-                    int memberAlignment = memberReflection.ReflectionType.Alignment;
-                    //round to pow2
-                    memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1));
-                }
-                cbufferReflection.Size = memberOffset + memberReflection.ReflectionType.Size;
-
-                if (memberOffset != member.memberOffset) {
-                    error("Offsets between reflection data and bytecode are not similar for the member:" + member.GetDeclarationNameOrSemantic());
-                    break;
-                }
+                if (opCode != spv::OpTypeStruct) { error(string("Invalid OpCode type for the cbuffer instruction (expected OpTypeStruct): ") + OpcodeString(opCode)); break; }
+                if (countMembers != cbufferData->cbufferCountMembers) { error("Invalid cbuffer count members property"); break; }
 #endif
-                memberReflection.Offset = member.memberOffset;
+                if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
+
+                //Set the cbuffer name
+                ConstantBufferReflectionDescription& cbufferReflection = effectReflection.ConstantBuffers[icb];
+                cbufferReflection.CbufferName = cbufferData->cbufferName;
+                cbufferReflection.Members.resize(countMembers);
+
+                //Get the reflection data for all cbuffer members
+                unsigned int posElemStart = cbufferType->GetBytecodeStartPosition() + 2;
+                for (int mIndex = 0; mIndex < countMembers; ++mIndex)
+                {
+                    TypeStructMember& member = cbufferData->cbufferMembersData->members[mIndex];
+                    ConstantBufferMemberReflectionDescription& memberReflection = cbufferReflection.Members[mIndex];
+                    memberReflection.KeyName = member.GetDeclarationNameOrSemantic();
+
+                    //get the member type object
+                    spv::Id cbufferMemberTypeId = asId(posElemStart + mIndex);
+                    TypeInstruction* cbufferMemberType = GetTypeById(cbufferMemberTypeId);
+                    if (cbufferMemberType == nullptr) return error("failed to find the cbuffer element type for id: " + member.GetDeclarationNameOrSemantic());
+
+                    member.memberTypeId = cbufferMemberTypeId;
+                    member.memberType = cbufferMemberType;
+
+                    //check if the member type is a resource
+                    member.isResourceType = IsResourceType(cbufferMemberType->opCode);
+
+                    bool isMatrixRowMajor = true;
+                    if (IsMatrixType(cbufferMemberType) || IsMatrixArrayType(cbufferMemberType))
+                    {
+                        if (member.matrixLayoutDecoration == (int)(spv::DecorationRowMajor)) isMatrixRowMajor = true;
+                        else if (member.matrixLayoutDecoration == (int)(spv::DecorationColMajor)) isMatrixRowMajor = false;
+                        else { error("undefined matrix member layout"); break; }
+                    }
+
+                    if (!GetTypeReflectionDescription(cbufferMemberType, isMatrixRowMajor, member.attribute, memberReflection.ReflectionType, startPositionOfAllMemberDecorateInstructions))
+                    {
+                        error("Failed to get the reflexon data for the cbuffer member: " + member.GetDeclarationNameOrSemantic());
+                        break;
+                    }
+
+                    //we can retrieve the offset from the bytecode, no need to recompute it
+                    if (member.memberOffset == -1) {
+                        error("a cbuffer member is missing its offset decoration" + member.GetDeclarationNameOrSemantic());
+                        break;
+                    }
+
+#ifdef XKSLANG_DEBUG_MODE
+                    //double check: we can also compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment)
+                    int memberOffset = 0;
+                    if (mIndex > 0)
+                    {
+                        ConstantBufferMemberReflectionDescription& previousMemberReflection = cbufferReflection.Members[mIndex - 1];
+                        int previousMemberOffset = previousMemberReflection.Offset;
+                        int previousMemberSize = previousMemberReflection.ReflectionType.Size;
+
+                        memberOffset = previousMemberOffset + previousMemberSize;
+                        int memberAlignment = memberReflection.ReflectionType.Alignment;
+                        //round to pow2
+                        memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1));
+                    }
+                    cbufferReflection.Size = memberOffset + memberReflection.ReflectionType.Size;
+
+                    if (memberOffset != member.memberOffset) {
+                        error("Offsets between reflection data and bytecode are not similar for the member:" + member.GetDeclarationNameOrSemantic());
+                        break;
+                    }
+#endif
+                    memberReflection.Offset = member.memberOffset;
                 
+                }
             }
         }
 

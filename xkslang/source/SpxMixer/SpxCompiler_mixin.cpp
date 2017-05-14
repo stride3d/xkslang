@@ -4119,6 +4119,38 @@ bool SpxCompiler::GetAllCompositionForEachLoops(vector<CompositionForEachLoopDat
     return true;
 }
 
+bool SpxCompiler::GetStartPositionOfAllMemberDecorateInstructions(vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions)
+{
+    listStartPositionOfAllMemberDecorateInstructions.clear();
+
+    unsigned int start = header_size;
+    const unsigned int end = (unsigned int)spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        switch (opCode)
+        {
+            case spv::OpMemberDecorate:
+            {
+                listStartPositionOfAllMemberDecorateInstructions.push_back(start);
+                break;
+            }
+
+            case spv::OpFunction:
+            case spv::OpTypeFunction:
+            {
+                //all information retrieved at this point: can safely stop here
+                start = end;
+                break;
+            }
+        }
+        start += wordCount;
+    }
+    return true;
+}
+
 bool SpxCompiler::GetListAllFunctionCallInstructions(vector<FunctionCallInstructionData>& listFunctionCallInstructions)
 {
     listFunctionCallInstructions.clear();

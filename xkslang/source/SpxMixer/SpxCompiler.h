@@ -754,7 +754,8 @@ private:
     bool IsMatrixArrayType(TypeInstruction* type);
     int GetVectorTypeCountElements(TypeInstruction* vectorType);
 
-    bool GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool isRowMajor, const std::string& memberAttribute, TypeReflectionDescription& typeReflection, int iterationCounter = 0);
+    bool GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, const std::string& memberAttribute, TypeReflectionDescription& typeReflection,
+        const std::vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions, int iterationCounter = 0);
     bool GetIntegerConstTypeExpressionValue(ConstInstruction* constObject, int& constValue);
     spv::Id GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const std::vector<ConstInstruction*>& listAllConsts,
         std::vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter = 0);
@@ -829,6 +830,7 @@ private:
     ShaderComposition* GetCompositionById(spv::Id shaderId, int compositionId);
     FunctionInstruction* GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name);
     bool GetListAllFunctionCallInstructions(std::vector<FunctionCallInstructionData>& listFunctionCallInstructions);
+    bool GetStartPositionOfAllMemberDecorateInstructions(std::vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions);
     bool GetAllShaderInstancesForComposition(const ShaderComposition* composition, std::vector<ShaderClassData*>& instances);
     bool GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel);
     

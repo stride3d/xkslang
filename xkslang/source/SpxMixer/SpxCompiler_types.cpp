@@ -238,8 +238,8 @@ spv::Id SpxCompiler::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstru
 }
 
 //Rules are inspired from glslang TIntermediate::getBaseAlignment function
-bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool isRowMajor, const string& memberAttribute,
-    TypeReflectionDescription& typeReflection, int iterationCounter)
+bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, const string& memberAttribute, TypeReflectionDescription& typeReflection,
+    const vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions, int iterationCounter)
 {
     if (iterationCounter > 10) return error("Too many recursive iterations (infinite type redirection in the bytecode?)");
 
@@ -349,7 +349,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
 #endif
 
             TypeReflectionDescription subElementReflection;
-            if (!GetTypeObjectBaseSizeAndAlignment(elemType, isRowMajor, memberAttribute, subElementReflection, iterationCounter+1))
+            if (!GetTypeReflectionDescription(elemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, iterationCounter+1))
                 return error("Failed to get the reflection data for the vector sub-element type");
 
             if (!subElementReflection.isScalarType())
@@ -398,7 +398,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
 #endif
 
             TypeReflectionDescription subElementReflection;
-            if (!GetTypeObjectBaseSizeAndAlignment(elemType, isRowMajor, memberAttribute, subElementReflection, iterationCounter + 1))
+            if (!GetTypeReflectionDescription(elemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, iterationCounter + 1))
                 return error("Failed to get the reflection data for the array element type");
             if (subElementReflection.ArrayElements != 0) return error("OpTypeArray: sub-element reflection type cannot be another array");
 
@@ -439,7 +439,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
 #endif
 
             TypeReflectionDescription subElementReflection;
-            if (!GetTypeObjectBaseSizeAndAlignment(elemType, isRowMajor, memberAttribute, subElementReflection, iterationCounter + 1))
+            if (!GetTypeReflectionDescription(elemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, iterationCounter + 1))
                 return error("Failed to get the reflection data for the matrix's element type");
             int subElementSize = subElementReflection.Size;
             int subElementAlign = subElementReflection.Alignment;
@@ -482,6 +482,7 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
         {
             int wordCount = asWordCount(type->GetBytecodeStartPosition());
             int countMembers = wordCount - 2;
+            spv::Id structTypeId = type->GetId();
 
 #ifdef XKSLANG_DEBUG_MODE
             if (countMembers <= 0 || countMembers > compilerSettings_maxStructMembers) { error("Invalid OpTypeStruct size"); return 0; }
@@ -500,13 +501,43 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
                 TypeInstruction* structElemType = GetTypeById(structElemTypeId);
                 if (structElemType == nullptr) { error("failed to find the struct element type for id: " + to_string(structElemTypeId)); break; }
 
-                if (IsMatrixType(structElemType) || IsMatrixArrayType(structElemType)) {
-                    error("PROUT PROUT: Got to find the matric RowMajor decorate!!");
-                    break;
+                if (IsMatrixType(structElemType) || IsMatrixArrayType(structElemType))
+                {
+                    //Find the member's matrix layout type (RowMajor or ColMajor): we look for it in the list of all memberDecorates
+                    bool found = false;
+                    for (auto itmb = listStartPositionOfAllMemberDecorateInstructions.begin(); itmb != listStartPositionOfAllMemberDecorateInstructions.end(); itmb++)
+                    {
+                        unsigned int start = *itmb;
+                        const spv::Op opCode = asOpCode(start);
+                        if (opCode == spv::OpMemberDecorate)
+                        {
+                            const spv::Id id = asId(start + 1);
+                            const unsigned int index = asLiteralValue(start + 2);
+                            if (id == structTypeId && m == index)
+                            {
+                                const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
+                                if (dec == spv::Decoration::DecorationRowMajor) {
+                                    isRowMajor = true;
+                                    found = true;
+                                    break;
+                                }
+                                else if (dec == spv::Decoration::DecorationColMajor) {
+                                    isRowMajor = false;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!found) {
+                        error("A struct member has no layout decoration for its matrix (or matrix array) type");
+                        break;
+                    }
                 }
 
                 TypeReflectionDescription& subElementReflection = structMember.Type;
-                if (!GetTypeObjectBaseSizeAndAlignment(structElemType, isRowMajor, memberAttribute, subElementReflection, iterationCounter + 1))
+                if (!GetTypeReflectionDescription(structElemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, iterationCounter + 1))
                 {
                     error("Failed to get the reflection data for the struct's member type");
                     break;
@@ -525,12 +556,11 @@ bool SpxCompiler::GetTypeObjectBaseSizeAndAlignment(TypeInstruction* type, bool 
 
             if (errorMessages.size() > 0)
             {
-                delete structMembers;
+                if (structMembers != nullptr) delete[] structMembers;
                 return error("Failed to get the struct members reflection data");
             }
 
-            // The structure may have padding at the end;
-            // the base offset of the member following the sub-structure is rounded up to the next multiple of the base alignment of the structure.
+            //do we add or not the last padding within the struct size?
             memberSize = RoundToPow2(memberSize, maxAlignment);
             memberAlignment = maxAlignment;
 
