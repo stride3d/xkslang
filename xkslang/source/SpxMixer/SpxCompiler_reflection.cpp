@@ -78,9 +78,9 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
     vector<CBufferTypeData*> listAllCBuffers;
     vector<CBufferTypeData*> vectorCBuffersIds;
     vector<VariableInstruction*> listAllResourceVariables;
-    vector<VariableInstruction*> vectorResourcesVariableById;
+    vector<VariableInstruction*> vectorResourceVariablesId;
     vectorCBuffersIds.resize(bound(), nullptr);
-    vectorResourcesVariableById.resize(bound(), nullptr);
+    vectorResourceVariablesId.resize(bound(), nullptr);
 
     for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
     {
@@ -142,11 +142,34 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
             {
                 spv::Id variableId = variable->GetResultId();
 #ifdef XKSLANG_DEBUG_MODE
-                if (variableId >= vectorResourcesVariableById.size()) { error("the ressource variable id is out of bound. Id: " + to_string(variableId)); break; }
-                if (vectorResourcesVariableById[variableId] != nullptr) { error("a ressource variable is defined more than once. Id: " + to_string(variableId)); break; }
+                if (variableId >= vectorResourceVariablesId.size()) { error("the ressource variable id is out of bound. Id: " + to_string(variableId)); break; }
+                if (vectorResourceVariablesId[variableId] != nullptr) { error("a ressource variable is defined more than once. Id: " + to_string(variableId)); break; }
 #endif
-                vectorResourcesVariableById[variableId] = variable;
+                if (variable->variableData != nullptr) { error("a ressource variable already has some data set. Id: " + to_string(variableId)); break; }
+
+                variable->variableData = new VariableData();
+                vectorResourceVariablesId[variableId] = variable;
                 listAllResourceVariables.push_back(variable);
+
+                //=======================================================
+                //Find the variable type and class
+                TypeInstruction* variablePointerType = variable->GetTypePointed();
+                if (variablePointerType == nullptr) {
+                    error("a variable is missing its pointer type. variable id: " + to_string(variable->GetId()));
+                    break;
+                }
+                TypeInstruction* variableType = variablePointerType->GetTypePointed();
+                if (variableType == nullptr) {
+                    error("a variable pointer type is missing its pointed type. variable pointer id: " + to_string(variablePointerType->GetId()));
+                    break;
+                }
+
+                TypeReflectionDescription resourceTypeReflection;
+                if (!GetTypeReflectionDescription(variableType, false, nullptr, variable->variableData->variableTypeReflection, nullptr))
+                {
+                    error("Failed to get the reflexon data for the resource type: " + to_string(variable->GetId()));
+                    break;
+                }
             }
         }
     }
@@ -175,6 +198,12 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         CBufferTypeData* cbufferData = vectorCBuffersIds[id];
                         const string name = literalString(start + 2);
                         cbufferData->cbufferName = name;
+                    }
+                    else if (vectorResourceVariablesId[id] != nullptr)
+                    {
+                        VariableData* variableData = vectorResourceVariablesId[id]->variableData;
+                        const string name = literalString(start + 2);
+                        variableData->variableName = name;
                     }
                     break;
                 }
@@ -302,6 +331,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
     }
 
     //Get the reflection data for all cbuffer members
+    // We analyse the OpStruct instruction and get the reflection data on its members
     if (success)
     {
         vector<unsigned int> startPositionOfAllMemberDecorateInstructions;
@@ -363,7 +393,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         else { error("undefined matrix member layout"); break; }
                     }
 
-                    if (!GetTypeReflectionDescription(cbufferMemberType, isMatrixRowMajor, member.attribute, memberReflection.ReflectionType, startPositionOfAllMemberDecorateInstructions))
+                    if (!GetTypeReflectionDescription(cbufferMemberType, isMatrixRowMajor, &(member.attribute), memberReflection.ReflectionType, &startPositionOfAllMemberDecorateInstructions))
                     {
                         error("Failed to get the reflexon data for the cbuffer member: " + member.GetDeclarationNameOrSemantic());
                         break;
@@ -406,6 +436,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
     }
 
     //for all the struct type: find their member names in the bytecode
+    // (those names where never taken into consideration when parsing the bytecode (building all maps): we never needed them before)
     if (success)
     {
         //get the list of all struct members (or sub-members)
@@ -489,11 +520,13 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 
     //=========================================================================================================================
     //=========================================================================================================================
+    //=========================================================================================================================
     //Add ResourceBindings info in EffectReflection
-    // Find which cbuffer resources is used by which output stage
+    // Find which cbuffer is used by which output stage
+    // Find which variable resource is used by which output stage
     if (success)
     {
-        //we access the cbuffer through their variable
+        //we access the cbuffer through their variable: update the targeted IDs
         for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
         {
             CBufferTypeData* cbufferData = *itcb;
@@ -501,16 +534,21 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
             vectorCBuffersIds[cbufferData->cbufferVariableTypeObject->GetId()] = cbufferData;
         }
 
+        //=========================================================================================================================
+        // loop over all stages
         for (unsigned int iStage = 0; iStage < listEntryPoints.size(); ++iStage)
         {
             FunctionInstruction* stageEntryFunction = listEntryPoints[iStage].entryFunction;
             ShadingStageEnum stage = listEntryPoints[iStage].stage;
 
-            //reset the cbuffer flag (we insert a cbuffer once per stage)
-            for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
-            {
+            //reset the cbuffer and resource variable flag (we insert a cbuffer once per stage)
+            for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++) {
                 CBufferTypeData* cbufferData = *itcb;
                 cbufferData->tmpFlag = 0;
+            }
+            for (auto itv = listAllResourceVariables.begin(); itv != listAllResourceVariables.end(); itv++) {
+                VariableInstruction* variable = *itv;
+                variable->tmpFlag = 0;
             }
 
             //Set all functions flag to 0 (to check a function only once)
@@ -519,12 +557,15 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                 aFunction->flag1 = 0;
             }
 
+            //=========================================================================================================================
             //Find all functions being called by the stage
+            // mark the used cbuffers and the used resources
             vector<FunctionInstruction*> listAllFunctionsCalledByTheStage;
 
             vector<FunctionInstruction*> vectorFunctionsToCheck;
             vectorFunctionsToCheck.push_back(stageEntryFunction);
             stageEntryFunction->flag1 = 1;
+            int countBindingsToAdd = 0;
             while (vectorFunctionsToCheck.size() > 0)
             {
                 FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
@@ -540,24 +581,35 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     spv::Op opCode = asOpCode(start);
                     switch (opCode)
                     {
+                        case spv::OpLoad:
+                        {
+                            spv::Id idLoaded = asId(start + 3);
+
+                            //are we accessing a resource variable
+                            if (vectorResourceVariablesId[idLoaded] != nullptr)
+                            {
+                                VariableInstruction* variable = vectorResourceVariablesId[idLoaded];
+                                if (variable->tmpFlag == 0)
+                                {
+                                    variable->tmpFlag = 1;
+                                    countBindingsToAdd++;
+                                }
+                            }
+                            break;
+                        }
+
                         case spv::OpAccessChain:
                         {
                             spv::Id structIdAccessed = asId(start + 3);
 
-                            //are we accessing a cbuffer that we just merged?
+                            //are we accessing a cbuffer
                             if (vectorCBuffersIds[structIdAccessed] != nullptr)
                             {
                                 CBufferTypeData* cbufferData = vectorCBuffersIds[structIdAccessed];
                                 if (cbufferData->tmpFlag == 0)
                                 {
                                     cbufferData->tmpFlag = 1;
-                                    effectReflection.ResourceBindings.push_back(
-                                        EffectResourceBindingDescription(
-                                            stage,
-                                            cbufferData->cbufferName,
-                                            EffectParameterReflectionClass::ConstantBuffer,
-                                            EffectParameterReflectionType::ConstantBuffer
-                                        ));
+                                    countBindingsToAdd++;
                                 }
                             }
                             break;
@@ -585,6 +637,45 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     start += wordCount;
                 }
             }
+            if (errorMessages.size() > 0) { success = false; break; }
+
+            //=========================================================================================================================
+            //Add the bindings found into ResourceBindings list
+            {
+                if (countBindingsToAdd > 0)
+                {
+                    for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
+                    {
+                        CBufferTypeData* cbufferData = *itcb;
+                        if (cbufferData->tmpFlag == 1)
+                        {
+                            effectReflection.ResourceBindings.push_back(
+                                EffectResourceBindingDescription(
+                                    stage,
+                                    cbufferData->cbufferName,
+                                    EffectParameterReflectionClass::ConstantBuffer,
+                                    EffectParameterReflectionType::ConstantBuffer
+                                ));
+                        }
+                    }
+                    for (auto itv = listAllResourceVariables.begin(); itv != listAllResourceVariables.end(); itv++)
+                    {
+                        VariableInstruction* variable = *itv;
+                        VariableData* variableData = variable->variableData;
+
+                        if (variable->tmpFlag == 1)
+                        {
+                            effectReflection.ResourceBindings.push_back(
+                                EffectResourceBindingDescription(
+                                    stage,
+                                    variableData->variableName,
+                                    variableData->variableTypeReflection.Class,
+                                    variableData->variableTypeReflection.Type
+                                ));
+                        }
+                    }
+                }
+            }
 
             if (errorMessages.size() > 0) { success = false; break; }
         }
@@ -600,6 +691,15 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
         {
             delete cbufferData->cbufferMembersData;
             cbufferData->cbufferMembersData = nullptr;
+        }
+    }
+    for (auto itrv = listAllResourceVariables.begin(); itrv != listAllResourceVariables.end(); itrv++)
+    {
+        VariableInstruction* variable = *itrv;
+        if (variable->variableData != nullptr)
+        {
+            delete variable->variableData;
+            variable->variableData = nullptr;
         }
     }
 

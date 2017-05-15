@@ -237,6 +237,16 @@ public:
     class ShaderTypeData;
     class TypeInstruction;
     class VariableInstruction;
+
+    class VariableData
+    {
+    public:
+        std::string variableName;
+        TypeReflectionDescription variableTypeReflection;
+
+        VariableData(){}
+    };
+
     class CBufferTypeData
     {
     public:
@@ -323,8 +333,9 @@ public:
     {
     public:
         VariableInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
-            : ObjectInstructionBase(parsedData, name, source), variableTo(nullptr) {}
-        virtual ~VariableInstruction() {}
+            : ObjectInstructionBase(parsedData, name, source), variableTo(nullptr), variableData(nullptr){}
+
+        virtual ~VariableInstruction();
         virtual ObjectInstructionBase* CloneBasicData() {
             VariableInstruction* obj = new VariableInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             return obj;
@@ -336,6 +347,8 @@ public:
     private:
         TypeInstruction* variableTo;
         int tmpFlag;
+
+        VariableData* variableData; //temporarily used by some algo
 
         friend class SpxCompiler;
     };
@@ -754,8 +767,8 @@ private:
     bool IsMatrixArrayType(TypeInstruction* type);
     int GetVectorTypeCountElements(TypeInstruction* vectorType);
 
-    bool GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, const std::string& memberAttribute, TypeReflectionDescription& typeReflection,
-        const std::vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions, int iterationCounter = 0);
+    bool GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, std::string* memberAttribute, TypeReflectionDescription& typeReflection,
+        const std::vector<unsigned int>* listStartPositionOfAllMemberDecorateInstructions, int iterationCounter = 0);
     bool GetIntegerConstTypeExpressionValue(ConstInstruction* constObject, int& constValue);
     spv::Id GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const std::vector<ConstInstruction*>& listAllConsts,
         std::vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter = 0);

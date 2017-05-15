@@ -238,8 +238,8 @@ spv::Id SpxCompiler::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstru
 }
 
 //Rules are inspired from glslang TIntermediate::getBaseAlignment function
-bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, const string& memberAttribute, TypeReflectionDescription& typeReflection,
-    const vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions, int iterationCounter)
+bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, string* memberAttribute, TypeReflectionDescription& typeReflection,
+    const vector<unsigned int>* listStartPositionOfAllMemberDecorateInstructions, int iterationCounter)
 {
     if (iterationCounter > 10) return error("Too many recursive iterations (infinite type redirection in the bytecode?)");
 
@@ -257,22 +257,44 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
     TypeMemberReflectionDescription* structMembers = nullptr;
     int countStructMembers = 0;
 
-    switch (type->GetOpCode())
+    const spv::Op typeOpCode = type->GetOpCode();
+    switch (typeOpCode)
     {
         //===================================================================================
-        //Scalars and pointer
+        //Resources
         case spv::OpTypeSampler:
-        case spv::OpTypeImage:
         {
-            //Todo: check over there
-            memberClass = EffectParameterReflectionClass::Scalar;
-            memberType = EffectParameterReflectionType::Undefined;
+            memberClass = EffectParameterReflectionClass::Sampler;
+            memberType = EffectParameterReflectionType::Sampler;
             memberSize = 4;
             memberAlignment = 4;
 
             break;
         }
 
+        case spv::OpTypeImage:
+        {
+            int imageDim = asLiteralValue(type->GetBytecodeStartPosition() + 3);
+            
+            switch (imageDim)
+            {
+                case 0: memberType = EffectParameterReflectionType::Texture1D;  break;
+                case 1: memberType = EffectParameterReflectionType::Texture2D;  break;
+                case 2: memberType = EffectParameterReflectionType::Texture3D;  break;
+                case 3: memberType = EffectParameterReflectionType::TextureCube;  break;
+                //TODO: check more cases
+                default: return error("Invalid OpTypeImage dimension: " + to_string(imageDim));
+            }
+
+            memberClass = EffectParameterReflectionClass::ShaderResourceView;
+            memberSize = 4;
+            memberAlignment = 4;
+
+            break;
+        }
+
+        //===================================================================================
+        //Scalars
         case spv::OpTypeVoid:
         {
             memberClass = EffectParameterReflectionClass::Scalar;
@@ -335,6 +357,8 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
             break;
         }
 
+        //===================================================================================
+        // vector & array
         case spv::OpTypeVector:
         {
             spv::Id vectorElementTypeId = asId(type->GetBytecodeStartPosition() + 2);
@@ -366,8 +390,8 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
 
             memberType = subElementReflection.Type;
             memberClass = EffectParameterReflectionClass::Vector;
-            if (subElementReflection.Type == EffectParameterReflectionType::Float && (countElements >= 2 && countElements <= 4)) {
-                if (memberAttribute == "Color") {
+            if (subElementReflection.Type == EffectParameterReflectionType::Float && (countElements >= 2 && countElements <= 4) && memberAttribute != nullptr) {
+                if (*memberAttribute == "Color") {
                     memberClass = EffectParameterReflectionClass::Color;
                 }
             }
@@ -419,6 +443,8 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
             break;
         }
 
+        //===================================================================================
+        // matrix
         case spv::OpTypeMatrix:
         {
             spv::Id matrixElementTypeId = asId(type->GetBytecodeStartPosition() + 2);
@@ -478,6 +504,8 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
             break;
         }
 
+        //===================================================================================
+        // struct
         case spv::OpTypeStruct:
         {
             int wordCount = asWordCount(type->GetBytecodeStartPosition());
@@ -503,9 +531,13 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
 
                 if (IsMatrixType(structElemType) || IsMatrixArrayType(structElemType))
                 {
+                    if (listStartPositionOfAllMemberDecorateInstructions == nullptr) {
+                        error("listStartPositionOfAllMemberDecorateInstructions is null"); break;
+                    }
+
                     //Find the member's matrix layout type (RowMajor or ColMajor): we look for it in the list of all memberDecorates
                     bool found = false;
-                    for (auto itmb = listStartPositionOfAllMemberDecorateInstructions.begin(); itmb != listStartPositionOfAllMemberDecorateInstructions.end(); itmb++)
+                    for (auto itmb = listStartPositionOfAllMemberDecorateInstructions->begin(); itmb != listStartPositionOfAllMemberDecorateInstructions->end(); itmb++)
                     {
                         unsigned int start = *itmb;
                         const spv::Op opCode = asOpCode(start);

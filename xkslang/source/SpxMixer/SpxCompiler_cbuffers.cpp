@@ -408,7 +408,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     
                         {
                             TypeReflectionDescription* typeReflectionData = new TypeReflectionDescription();
-                            if (!GetTypeReflectionDescription(cbufferMemberType, isMatrixRowMajor, member.attribute, *typeReflectionData, startPositionOfAllMemberDecorateInstructions))
+                            if (!GetTypeReflectionDescription(cbufferMemberType, isMatrixRowMajor, &(member.attribute), *typeReflectionData, &startPositionOfAllMemberDecorateInstructions))
                             {
                                 error("Failed to get the size and alignment for the cbuffer member: " + to_string(cbufferMemberTypeId));
                                 break;

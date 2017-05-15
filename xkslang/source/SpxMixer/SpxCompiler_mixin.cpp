@@ -69,7 +69,6 @@ ShadingStageEnum SpxCompiler::GetShadingStageForExecutionMode(spv::ExecutionMode
     }
 }
 
-
 string SpxCompiler::validateName(const string& name)
 {
     //return a validated name (for example rename Shader<8>_var will return Shader_8__var)
@@ -80,6 +79,14 @@ string SpxCompiler::validateName(const string& name)
         if (c == '<' || c == '>' || c == ',') validateName[k] = '_';
     }
     return validateName;
+}
+
+SpxCompiler::VariableInstruction::~VariableInstruction()
+{
+    if (variableData != nullptr) 
+    {
+        bytecodeSource->error("unallocated variable Data");
+    }
 }
 //=====================================================================================================================================
 //=====================================================================================================================================
