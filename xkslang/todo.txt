@@ -1,0 +1,199 @@
+XKSLANG TODO:
+(a bit messy and not well organized: just here to keep track of possible ideas / optimizations / updates...)
+
+New Shader System integration: include c/c++ files into Xenko
+we have our own C++ compilation system named `Xenko.Native` (made by @sinkingsugar)
+it is quite nice to use because you just add the .cpp files in the project and it works out of the box on all paltforms we have
+the only downside is that some standard library are not implemented
+I am not sure how much is needed by xkslang, and if it is easy to have this list of files out of their build system (i.e. if they use crazy defines etc...)
+
+sampling a texture inside VS crash on Xenko (EffectReflection06)
+error X4532: cannot map expression to vs_5_0 instruction set
+Maybe we should detect these cases in the mixer too
+
+* possible optimization for later: when parsing a shader which requires another shader only by accessing its static methods, we can optimize the SPX result by only converting the accessed static methods (instead of the full shader as done currently)
+
+* add cbuffer declaration in shader
+Check cbuffer subpart (cbuffer C1.Subpart1)
+
+* rethink hashval concept to check types/const similarities?
+(BuildTypesAndConstsHashmap)
+
+* SPIRV-Cross conversion:
+little bit weird and verbose to use static variable to transfer between `main` and `vert_main` (but not a big deal, consider it low priority stuff that can be improved once everything is working)
+Maybe can update this to remove static variables and call to intermediary function?
+
+- We keep a cbuffer if at least one variable from this cbuffer is used by the stage (otherwise we remove it)
+- If one variable from a cbuffer is used, we keep the whole cbuffer
+- After having determined all the cbuffer to keep, we merge the cbuffer having the same name
+- Since we now respect cbuffer "blocks" (in terms of layout and grouping), we might want to add `stage` on cbuffer/rgroup blocks rather than individual variables
+- it has to be done including all stages. i.e. if only PS or only VS use something, cbuffer should contain it for both
+- cbuffer C1.Subpart1: nothing special (work same as cbuffer C1). the only thing is that it will be written in the metadata where Subpart1 starts
+- in case you didn't notice, we also have `rgroup` and they work same as cbuffer
+- we have some special rules like we don't optimize PerMateiral or something like that except if everything can be removed 
+so maybe as a parameter we give some specific cbuffer name, and we expect no removal for this specific cbuffer/rgroup 
+(except if ALL of it can be removed)
+so that all shaders end up with same cbuffer layout. in practice we don't do it for PerDraw/PerView but we do it for PerMaterial
+and currently PerLighting but maybe we will lift that later
+- also later we will need to store some specific info in the reflection data we need in Xenko when loading shader
+- cbuffer without name are treated like global cbuffer
+
+* cbuffer: check metadata (stuff like this: [Link("ShadowMap.TextureSize")])
+(Art L123-1-1: Dispensée d'immatriculation au Registre du commerce et des sociétés, et au Répertoire des métiers)		
+
+* header capabilities? 
+switch (float.width) {
+    case 16:
+        addCapability(CapabilityFloat16);
+		
+* header executionMode ?
+(ExecutionModeOriginUpperLeft)
+
+* Compositions: you asked me if we could have two different mixin compose poiting to same actual object
+shader S{
+ compose TypeC compA;
+ compose TypeC compB;
+};
+Then both compA and compB points to the same shader (only instantiated once)?
+Or:
+shader S1{
+  compose TypeC compA;
+}
+shader S2 {
+  compose TypeC compB;
+}
+with S1 and S2 in different mixins, and compA compB point to same
+
+* Stage methods?
+stage float reconstructCSZ(float depth)
+{
+	return ZProjection.y / (depth - ZProjection.x);
+}
+
+* partial keyword?
+
+* Clone methods?
+
+* Semantic typename?
+
+* SPIRV-Cross, convert back to HLSL?
+
+* Do we need to define stage and compile when converting a shader?
+
+* deal with stage methods
+
+* [unroll] commands?
+[unroll]
+for (int i = 0; i < TapCount; i++) 
+{
+	res += ColorAberrations[i];
+}
+
+* streams with GS 
+not sure if you looked into GS yet, but I recommend you to look at StreamTest.xksl and/or CameraCube.xksl
+you will see that this stage is little bit specific and we have input and we can assign it to stream; then we can "Append" streams in the output
+we won't want it first version (which should cover current Xenko needs and we don't need GS right now) but ideally soon after we might want GS and tessllation
+
+* Generics, deal with this case:
+shader ShaderBase<float offset>{}
+shader ShaderMain<int TapCount, float aFloat> : ShaderBase<aFloat>{}
+
+* If we replace `base.Compute()` by `BaseShader.Compute()` it will create an infinite recursive call
+
+* parser: check for memory leak? (confirm that objects are deleted properly)
+
+* Deal with custom sampler states
+Neither vulkan nor d3d *shader* has static sampler in bytecode
+It only exists for HLSL when parsing *effects*, in which case it stores it in reflection info
+That's because it is not set with shader but rather with API calls such has `SetSamplerState` (or part of pipeline state in new API), so it needs supporting engine/framework (such as D3D11Effect library)
+For our needs, i suppose it shouldn't be so hard to keep info and save it as part of our own SPIR-X bytecode format
+We store them in our reflection, too. They can be handled differently in vulkan/d3d12 ("immutable samplers"). They can be baked into descriptor sets and don't need to be bound manually.
+You might want to take a look at the `EffectReflection` class
+this is the kind of data you will have to generate when compiling the shader so that Xenko can use it
+
+[7:19] 
+(this is the object I wanted to refactor little bit, but you can even start with current one for now)
+
+* Check SamplerComparisonState (shaderTexturing)
+SamplerComparisonState LinearClampCompareLessEqualSampler
+{
+	Filter = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+	AddressU = Clamp;
+	AddressV = Clamp;
+	ComparisonFunc = LessEqual;
+};
+
+* BTW, was thinking to forbid globals variables, to force user to declare them in a proper cbuffer (not decided on it yet)
+
+* Accept call to method without body? (if we need it)
+
+* Microsoft finally released their compiler open source with the "DXIL" bytecode format
+https://github.com/Microsoft/DirectXShaderCompiler
+this was something I already mentionned in the past (check Dec 2nd on that channel) as a possible starting point
+this could have been another technology we could have built on, however:
+- not released at the time and we needed to move forward
+- LLVM/clang is quite huge to embed in our runtime (not sure how "big" the resulting compiler binary is -- might be OK but doubt it)
+- we would still have to do the full conversion to other languages since there is not SPIRV-Cross like tools (yet)
+still, it is quite an interetsting dev that we could follow, and also there might be some specs/code that you might want to reuse (but maybe not that much since glslang dev are already taking care of HLSL parsing) (edited)
+
+//**************************************************************//
+//**************************************************************//
+DONE
+* Fix crash when deriving X from X (original parser)
+(shader X : X {}, or cyclic inheritance)
+--> Done in mixer
+
+* mixin, Composition
+(http://doc.xenko.com/latest/manual/graphics/effects-and-shaders/shading-language/composition.html)
+you can even have it multiple time when mixin/composing:
+if I have an array of A (`A a[]`), there will be as many `Var1` in the cbuffer as there is elements in `a`)
+
+* mix SPRIV files
+concerning the next step (the "mixer"), it should hopefully be greatly simplified in complexity due to the fact type inference is already done
+it does mainly 4 big tasks:
+* resolve mixin trees (external class instances such as `A a;` or `A a[];` and `stage` and `foreach`)
+* resolve virtual calls (using mixin and class inheritance)
+* stage separation and `stream` analysis (for automatic shader input/output management)
+* templating (aka generics, i.e. `A<int Quality, membername M>`)
+
+* parse var keyword
+
+* since we now respect cbuffer "blocks" (in terms of layout and grouping), we might want to add `stage` on cbuffer/rgroup blocks rather than individual variables
+otherwise having cbuffer with both stage and non-stage is weird and kind of undefined
+
+* deal with stream member semantics
+(stage stream float4 ShadingPosition : SV_Position;)
+DETAILS:
+duplicate if inside composition and not decalred with stage  
+in practice, the one inside composition are never transmitted from outside (vertex buffer)
+they just flow between shaders
+so semantic name can be anything as long as this generated name is kept same between shader stage
+it is mostly useful to transfer data transparently from stage to stage inside a composition
+easy to start simple rules such as non-semantic => same as cbuffer
+semantic one allowed only with `stage`, and merge if same semantic+same type (not sure of case same semantic different type, maybe we could deny it at first until tested)
+small note: in current system, all streams not defined in a stage try to go up until VS, then if still not set, it is assumed they are defined from VB
+I would like to change this rule:
+go up until VS, but if not set in VS, it find from vertex buffer only if it
+1. has `stage`
+2. has a semantic declared by user (not an automatically generated one)
+also, to better support those rules, we can't declare a user-semantic if it doesn't have `stage`
+(as a result, for the composition ones you can generate whatever internal semantic you want because it won't be exposed to user as Vertex Buffer input)
+DETAILS2:
+two cases:
+VS => assumes they are defined from VB, but *only if it has stage and declare a semantic* (new part in bold, I don't think we were enforcing this before)
+Other stages => previous stage must output it 
+(this is for "read first")
+note: you might want to keep info of what is reading it first for better debuggability (and ignore the stages that are just passthrough by your generated code), i.e. PS is trying to read something, you add it to VS, then you notice VS doesn't output it and not stage => error message should say PS is the one trying to read it
+typically if you need something in PS such as normals or tangents, all of this streams system will make them passthrough in the VS
+
+* template / generics
+(http://doc.xenko.com/latest/manual/graphics/effects-and-shaders/shading-language/template.html)
+generics/template are always know when we compile a shader
+i.e. we will not parse A.xksl without instantiation info, but A<3, Test>
+and if A<int Count, membername> references B<Count>, we know which value of generics to transfer to B
+in practice, we parse types with all their generic/template parameters resolved
+there is a very few case where we don't know them, but it happens only:
+- in editor
+- we parse only the class name and generic list in the type to be able to offer choices for them (edited)
+also, generics/templates are more or less directly replaced in the inner code (so that we can use them not only for dynamic code change, but static code changes too to generate optimized code or take different code path depending on quality without having any runtime cost -- important for optimizing shader code)
+(you can deal with generics/template later, but just to let you know cause there is really different approach: runtime instantiated generics like in C# *or* compile-time template like in C++ -- ours is more like C++ compile-time one)

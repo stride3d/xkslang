@@ -13,8 +13,10 @@ shader ShaderMain
 	
 	stage void VSMain()
 	{
-		//streams.aStream = Texture0.SampleLevel(Sampler0, float2(0.4, 0.4), 0);
-		streams.aStream = Texture0.Sample(Sampler0, float2(0.5, 0.5));
+		streams.aStream = Texture0.SampleLevel(Sampler0, float2(0.4, 0.4), 0);
+		
+		/// Crash on Xenko: error X4532: cannot map expression to vs_5_0 instruction set
+		//streams.aStream = Texture0.Sample(Sampler0, float2(0.5, 0.5));
 	}
 	
 	stage void PSMain()
