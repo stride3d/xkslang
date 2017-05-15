@@ -1,0 +1,24 @@
+shader ShaderMain
+{
+	struct StructBasicType
+	{
+		half aHalf;
+		bool aBool;
+		int aInt;
+		float aFloat;
+		double aDouble;
+		
+		struct
+		{
+			int aInt;
+		} aStruct;
+	};
+	
+	stage StructBasicType s1;
+
+	stage void PSMain()
+	{
+		float f = 0;
+		f += s1.aFloat;
+	}
+};

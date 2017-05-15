@@ -2725,6 +2725,32 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, T
     return true;
 }
 
+bool HlslGrammar::validateShaderDeclaredType(const TType& type)
+{
+    if (type.getBasicType() == EbtStruct)
+    {
+        //Check that a struct type is valid
+        TTypeList* memberList = type.getWritableStruct();
+        unsigned int countMembers = (unsigned int)memberList->size();
+        if (countMembers == 0) {
+            error("A struct type is empty");
+            return false;
+        }
+
+        for (unsigned int indexInStruct = 0; indexInStruct < countMembers; ++indexInStruct)
+        {
+            TType& blockMemberType = *(memberList->at(indexInStruct).type);
+            if (blockMemberType.getBasicType() == EbtVoid) {
+                error("A struct type cannot contains a void type");
+                return false;
+            }
+            if (!validateShaderDeclaredType(blockMemberType)) return false;
+        }
+    }
+
+    return true;
+}
+
 //Parse a shader class: check for all variables and functions declaration (don't parse into function definition)
 bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration)
 {
@@ -2816,6 +2842,13 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                 error("invalid keyword, member or function type: " + convertTokenToString(token));
                 return false;
             }
+        }
+
+        //validate type
+        if (!validateShaderDeclaredType(declaredType))
+        {
+            error("Parsed an invalid shader type: " + (declaredType.getTypeNamePtr() != nullptr? declaredType.getTypeName(): "unknown type"));
+            return false;
         }
 
         if (this->shaderMethodOrMemberTypeCurrentlyParsed != nullptr) { error("Another shader's method or member type is currently being parsed"); return false; }

@@ -126,6 +126,7 @@ namespace glslang {
         bool checkShaderGenericsList(TVector<TType*>& listGenericTypes);
         bool checkShaderGenericValuesExpression(TVector<TString*>& listGenericValues);
         bool parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration);
+        bool validateShaderDeclaredType(const TType& type);
         bool addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);

@@ -2,14 +2,14 @@ shader ShaderMain
 {
 	struct StructBasicType
 	{
-		void aVoid;       //size:4, align:4
+		//void aVoid;       //size:4, align:4   not valid anymore
 		half aHalf;       //size:4, align:4
 		bool aBool;       //size:4, align:4
 		int aInt;         //size:4, align:4
 		float aFloat;     //size:4, align:4
 		double aDouble;   //size:8, align:8
 	};
-	
+
 	struct StructVector
 	{
 		float2 aFloat2;	 //size:8, align:8
@@ -90,6 +90,5 @@ shader ShaderMain
 		f += s4.ColorArray[0].x;
 		f += s6.s1.f4.x;
 		
-		//f += s2Array[0].aFloat2.x;
 	}
 };

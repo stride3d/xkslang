@@ -73,6 +73,7 @@ vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
     //{ "shaderWithForLoop.xksl" },
     //{ "shaderWithLoops.xksl" },
     //{ "TestComposeSimple.xksl" },
+    //{ "shaderDefiningAStruct.xksl" },
     //{ "TestForEach01.xksl" },
     //{ "TestStreamSemantics.xksl" },
     //{ "testParsingResources.xksl" },
@@ -191,6 +192,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testDependency07", "testDependency07.xkfx" },
 
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
+    { "testTypeSize", "testTypeSize.xkfx" },
 
     //{ "EffectReflection01", "EffectReflection01.xkfx" },
     //{ "EffectReflection02", "EffectReflection02.xkfx" },
@@ -199,7 +201,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection05", "EffectReflection05.xkfx" },
 
     //{ "Effect01", "Effect01.xkfx" },
-    { "testTypeSize", "testTypeSize.xkfx" },
+    
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
