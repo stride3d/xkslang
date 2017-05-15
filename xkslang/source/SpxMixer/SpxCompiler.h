@@ -728,7 +728,7 @@ private:
     bool ProcessBytecodeAndDataSanityCheck();
 
     bool GetBytecodeReflectionData(EffectReflection& effectReflection);
-    bool GetAllCBufferReflectionDataFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
+    bool GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
 
     bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);

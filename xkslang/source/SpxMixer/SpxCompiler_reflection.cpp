@@ -59,23 +59,28 @@ bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
     }
 
     bool success;
-    success = GetAllCBufferReflectionDataFromBytecode(effectReflection, listEntryPoints);
+    success = GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(effectReflection, listEntryPoints);
 
     if (!success) return error("Failed to get the CBuffer reflection data from the bytecode");
 
     return true;
 }
 
-bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effectReflection, vector<OutputStageEntryPoint>& listEntryPoints)
+bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, vector<OutputStageEntryPoint>& listEntryPoints)
 {
     bool success = true;
 
     //=========================================================================================================================
     //=========================================================================================================================
-    //get ALL cbuffers
+    //get ALL cbuffers and resources
+    // -a CBuffer is defined when a struct type has a Block decorate (those have already been parsed and set when building all maps)
+    // - a resources is defined by a UniformConstant variable
     vector<CBufferTypeData*> listAllCBuffers;
     vector<CBufferTypeData*> vectorCBuffersIds;
+    vector<VariableInstruction*> listAllResourceVariables;
+    vector<VariableInstruction*> vectorResourcesVariableById;
     vectorCBuffersIds.resize(bound(), nullptr);
+    vectorResourcesVariableById.resize(bound(), nullptr);
 
     for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
     {
@@ -129,9 +134,24 @@ bool SpxCompiler::GetAllCBufferReflectionDataFromBytecode(EffectReflection& effe
                 //vectorCBuffersIds[cbufferData->cbufferVariableTypeObject->GetId()] = cbufferData;
             }
         }
+        else if (obj->GetKind() == ObjectInstructionTypeEnum::Variable)
+        {
+            VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+            spv::StorageClass storageClass = (spv::StorageClass)asLiteralValue(variable->GetBytecodeStartPosition()  + 3);
+            if (storageClass == spv::StorageClass::StorageClassUniformConstant)
+            {
+                spv::Id variableId = variable->GetResultId();
+#ifdef XKSLANG_DEBUG_MODE
+                if (variableId >= vectorResourcesVariableById.size()) { error("the ressource variable id is out of bound. Id: " + to_string(variableId)); break; }
+                if (vectorResourcesVariableById[variableId] != nullptr) { error("a ressource variable is defined more than once. Id: " + to_string(variableId)); break; }
+#endif
+                vectorResourcesVariableById[variableId] = variable;
+                listAllResourceVariables.push_back(variable);
+            }
+        }
     }
     if (errorMessages.size() > 0) success = false;
-    if (listAllCBuffers.size() == 0) return success;
+    if (listAllCBuffers.size() == 0 && listAllResourceVariables.size() == 0) return success;
 
     //=========================================================================================================================
     //=========================================================================================================================
