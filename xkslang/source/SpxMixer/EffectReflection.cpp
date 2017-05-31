@@ -39,7 +39,7 @@ void TypeReflectionDescription::AddAllMemberAndSubMembersOfTheGivenClass(EffectP
 
     if (CountMembers > 0)
     {
-        for (unsigned int m = 0; m < CountMembers; m++)
+        for (int m = 0; m < CountMembers; m++)
         {
             Members[m].Type.AddAllMemberAndSubMembersOfTheGivenClass(memberClass, listMembers);
         }

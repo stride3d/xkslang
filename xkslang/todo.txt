@@ -39,7 +39,6 @@ and currently PerLighting but maybe we will lift that later
 - cbuffer without name are treated like global cbuffer
 
 * cbuffer: check metadata (stuff like this: [Link("ShadowMap.TextureSize")])
-(Art L123-1-1: Dispensée d'immatriculation au Registre du commerce et des sociétés, et au Répertoire des métiers)		
 
 * header capabilities? 
 switch (float.width) {
@@ -110,9 +109,6 @@ For our needs, i suppose it shouldn't be so hard to keep info and save it as par
 We store them in our reflection, too. They can be handled differently in vulkan/d3d12 ("immutable samplers"). They can be baked into descriptor sets and don't need to be bound manually.
 You might want to take a look at the `EffectReflection` class
 this is the kind of data you will have to generate when compiling the shader so that Xenko can use it
-
-[7:19] 
-(this is the object I wanted to refactor little bit, but you can even start with current one for now)
 
 * Check SamplerComparisonState (shaderTexturing)
 SamplerComparisonState LinearClampCompareLessEqualSampler

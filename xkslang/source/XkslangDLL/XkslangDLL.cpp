@@ -232,8 +232,10 @@ namespace xkslang
     public:
         SpxMixer* mixer;
         vector<OutputStageBytecode> stagesCompiledData;
+		SpvBytecode finalCompiledSpv;
+		bool compilationDone;
 
-        MixerData(SpxMixer* mixer) : mixer(mixer) {}
+        MixerData(SpxMixer* mixer) : mixer(mixer), compilationDone(false) {}
         ~MixerData() { if (mixer != nullptr) delete mixer; }
     };
     static std::vector<MixerData*> listMixerData;
@@ -341,8 +343,8 @@ namespace xkslang
             mixerData->stagesCompiledData.push_back(OutputStageBytecode(stageEntryPointArray[s].stage, string(stageEntryPointArray[s].entryPointName)));
         }
 
-        SpvBytecode finalSpv;
         vector<string> errorMsgs;
+		SpvBytecode& finalSpv = mixerData->finalCompiledSpv;
 
         //set the mixer's stages to compile
         mixerData->stagesCompiledData.clear();
@@ -360,8 +362,36 @@ namespace xkslang
             return false;
         }
 
+		mixerData->compilationDone = true;
         return true;
     }
+
+	uint32_t* GetMixerCompiledBytecode(uint32_t mixerHandleId, int* bytecodeSize)
+	{
+		errorMessages.clear();
+		*bytecodeSize = 0;
+
+		MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+		if (mixerData == nullptr) { error("Invalid mixer handle"); return nullptr; }
+		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return nullptr; }
+
+		SpvBytecode& compiledBytecode = mixerData->finalCompiledSpv;
+		
+		/// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
+		const std::vector<uint32_t>& bytecode = compiledBytecode.getBytecodeStream();
+		int bytecodeLen = (int)bytecode.size();
+		if (bytecodeLen <= 0) { error("the mixer compiled bytecode is empty"); return nullptr; }
+
+		uint32_t* byteBuffer = (uint32_t*)LocalAlloc(0, bytecodeLen * sizeof(uint32_t));
+
+		uint32_t* pDest = byteBuffer;
+		const uint32_t* pSrc = &bytecode[0];
+		int countIteration = bytecodeLen;
+		while (countIteration-- > 0) *pDest++ = *pSrc++;
+
+		*bytecodeSize = bytecodeLen;
+		return byteBuffer;
+	}
 
     uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int* bytecodeSize)
     {
@@ -370,7 +400,8 @@ namespace xkslang
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
         if (mixerData == nullptr) {error("Invalid mixer handle"); return nullptr;}
-        
+		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return nullptr; }
+
         OutputStageBytecode* outputStageBytecode = nullptr;
         for (unsigned int k = 0; k < mixerData->stagesCompiledData.size(); k++) {
             if (mixerData->stagesCompiledData[k].stage == stage) {
