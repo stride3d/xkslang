@@ -269,13 +269,14 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
 
     //===================================================================================================================
     //===================================================================================================================
-    // remove unused shaders (shader whose methods or members are never called by the output stages)
-    if (!clonedSpxStream->RemoveAllUnusedShaders(vecMixerOutputStages))
+    // (remove unused shaders (shader whose methods or members are never called by the output stages))
+	// remove all unused functions and members
+    if (!clonedSpxStream->RemoveAllUnusedFunctionsAndMembers(vecMixerOutputStages))
     {
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->GetMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
         delete clonedSpxStream;
-        return error(messages, "Fail to remove all unused shaders");
+        return error(messages, "Fail to remove all unused stuff");
     }
 
     //===================================================================================================================

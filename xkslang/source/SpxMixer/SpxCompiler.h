@@ -46,7 +46,7 @@ enum class SpxRemapperStatusEnum
     MixinBeingCompiled_StreamReschuffled,
     MixinBeingCompiled_CBuffersValidated,
     MixinBeingCompiled_ResourcesProcessed,
-    MixinBeingCompiled_UnusedShaderRemoved,
+    MixinBeingCompiled_UnusedStuffRemoved,
     MixinBeingCompiled_Finalized,
     MixinFinalized
 };
@@ -753,6 +753,7 @@ private:
     bool ValidateStagesStreamMembersFlow(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool ReshuffleStreamVariables(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);
+	bool RemoveAllUnusedFunctionsAndMembers(std::vector<XkslMixerOutputStage>& outputStages);
     bool FinalizeCompilation(std::vector<XkslMixerOutputStage>& outputStages);
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
@@ -781,6 +782,7 @@ private:
     FunctionInstruction* GetShaderFunctionForEntryPoint(std::string entryPointName);
     bool RemoveShaderFromBytecodeAndData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);
     bool RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType, std::vector<range_t>& vecStripRanges);
+	//bool RemoveFunctionInstructionFromBytecodeAndData(FunctionInstruction* functionToRemove, std::vector<range_t>& vecStripRanges);
 
     void ReleaseAllMaps();
     bool BuildAllMaps();

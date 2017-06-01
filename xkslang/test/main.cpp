@@ -200,6 +200,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection04", "EffectReflection04.xkfx" },
     //{ "EffectReflection05", "EffectReflection05.xkfx" },
     //{ "EffectReflection06", "EffectReflection06.xkfx" },
+	//{ "EffectReflection07", "EffectReflection07.xkfx" },
 
     { "Effect01", "Effect01.xkfx" },
     

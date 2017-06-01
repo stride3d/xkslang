@@ -1730,10 +1730,351 @@ bool SpxCompiler::GetStructTypeMembersTypeIdList(TypeInstruction* structType, ve
     return true;
 }
 
+bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage>& outputStages)
+{
+	if (status != SpxRemapperStatusEnum::MixinBeingCompiled_CBuffersValidated) return error("Invalid remapper status");
+	status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedStuffRemoved;
+
+	vector<range_t> vecStripRanges;
+	vector<bool> listIdsUsed;
+	listIdsUsed.resize(bound(), false);
+
+	//======================================================================================================
+	// Add some IDs we like to keep
+	{
+		unsigned int start = header_size;
+		const unsigned int end = (unsigned int)spv.size();
+		while (start < end)
+		{
+			unsigned int wordCount = asWordCount(start);
+			spv::Op opCode = asOpCode(start);
+
+			switch (opCode)
+			{
+				case spv::OpExtInstImport:
+				{
+					spv::Id resultId = asId(start + 1);
+					listIdsUsed[resultId] = true;
+					break;
+				}
+
+				//can stop there
+				case spv::OpName:
+				case spv::OpConstant:
+				case spv::OpTypeVoid:
+				case spv::OpTypeFunction:
+				{
+					start = end;
+					break;
+				}
+			}
+
+			start += wordCount;
+		}
+	}
+
+	//======================================================================================================
+	//Find all functions being called by the stages
+	{
+		//Set all functions flag to 0 (to check a function only once)
+		for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
+			FunctionInstruction* aFunction = *itsf;
+			aFunction->flag1 = 0;
+		}
+
+		//add all entry funtions
+		vector<FunctionInstruction*> vectorFunctionsToCheck;
+		for (unsigned int i = 0; i < outputStages.size(); ++i)
+		{
+			XkslMixerOutputStage& stage = outputStages[i];
+			FunctionInstruction* entryFunction = stage.entryFunction;
+			if (entryFunction == nullptr) return error("The stage has no entry function");
+
+			vectorFunctionsToCheck.push_back(stage.entryFunction);
+			stage.entryFunction->flag1 = 1;
+		}
+
+		//flag all functions called
+		while (vectorFunctionsToCheck.size() > 0)
+		{
+			FunctionInstruction* aFunctionCalled = vectorFunctionsToCheck.back();
+			vectorFunctionsToCheck.pop_back();
+
+			//check if the function is calling any other function
+			unsigned int start = aFunctionCalled->bytecodeStartPosition;
+			const unsigned int end = aFunctionCalled->bytecodeEndPosition;
+			while (start < end)
+			{
+				unsigned int wordCount = asWordCount(start);
+				spv::Op opCode = asOpCode(start);
+
+				switch (opCode)
+				{
+					case spv::OpFunctionCall:
+					case spv::OpFunctionCallBaseResolved:
+					case spv::OpFunctionCallThroughStaticShaderClassCall:
+					{
+						//pile the function to go check it later
+						spv::Id functionCalledId = asId(start + 3);
+						FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+						if (anotherFunctionCalled == nullptr) return error("Failed to find the function for id: " + to_string(functionCalledId));
+						if (anotherFunctionCalled->flag1 == 0) {
+							anotherFunctionCalled->flag1 = 1;
+							vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+						}
+						break;
+					}
+
+#ifdef XKSLANG_DEBUG_MODE
+					case spv::OpFunctionCallThroughCompositionVariable:
+					case spv::OpFunctionCallBaseUnresolved:
+					{
+						return error(string("An unresolved function call has been found in function: ") + aFunctionCalled->GetFullName());
+						break;
+					}
+#endif
+
+				}
+				start += wordCount;
+			}
+		}
+	}
+
+	//======================================================================================================
+	//Remove the unused functions
+	{
+		vector<FunctionInstruction*> listAllUsedFunctions;
+		vector<FunctionInstruction*> listAllUnusedFunctions;
+
+		for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
+			FunctionInstruction* aFunction = *itsf;
+			if (aFunction->flag1 == 0) {
+				listAllUnusedFunctions.push_back(aFunction);
+			}
+			else {
+				listAllUsedFunctions.push_back(aFunction);
+				listIdsUsed[aFunction->GetId()] = true;
+			}
+		}
+
+		vecAllFunctions.clear();
+		vecAllFunctions.insert(vecAllFunctions.end(), listAllUsedFunctions.begin(), listAllUsedFunctions.end());
+
+		for (auto itsf = listAllUnusedFunctions.begin(); itsf != listAllUnusedFunctions.end(); itsf++)
+		{
+			FunctionInstruction* unusedFunction = *itsf;
+			spv::Id id = unusedFunction->GetId();
+
+#ifdef XKSLANG_DEBUG_MODE
+			if (id >= listAllObjects.size() || listAllObjects[id] != unusedFunction) return error("Invalid function Id to remove: " + to_string(id));
+#endif
+
+			stripInst(vecStripRanges, unusedFunction->GetBytecodeStartPosition(), unusedFunction->GetBytecodeEndPosition());
+			delete listAllObjects[id];
+			listAllObjects[id] = nullptr;
+		}
+	}
+
+	//======================================================================================================
+	//parse all used functions to get all IDs needed
+	{
+		for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++)
+		{
+			FunctionInstruction* aFunctionCalled = *itf;
+
+			spv::Op opCode;
+			unsigned int wordCount;
+			unsigned int start = aFunctionCalled->GetBytecodeStartPosition();
+			const unsigned int end = aFunctionCalled->GetBytecodeEndPosition();
+			while (start < end)
+			{
+				//add all IDs in the list of IDs to keep
+				if (!flagAllIdsFromInstruction(start, opCode, wordCount, listIdsUsed))
+					return error("Error flagging all IDs from the instruction");
+
+				start += wordCount;
+			}
+		}
+
+		//======================================================================================================
+		//For all IDs used: if it's defining a type, variable or const: check if it's depending on another type no included in the list yet
+		{
+			vector<spv::Id> idToCheckForExtraIds;
+			for (unsigned int id = 0; id < listIdsUsed.size(); ++id)
+			{
+				if (listIdsUsed[id] == true)  //the id is used
+				{
+					if (listAllObjects[id] != nullptr)  //the id has been recognized as a data object
+					{
+						ObjectInstructionBase* obj = listAllObjects[id];
+						switch (obj->GetKind())
+						{
+							case ObjectInstructionTypeEnum::Type:
+							case ObjectInstructionTypeEnum::Variable:
+							case ObjectInstructionTypeEnum::Const:
+								idToCheckForExtraIds.push_back(id);
+								break;
+						}
+					}
+				}
+			}
+
+			spv::Op opCode;
+			unsigned int wordCount;
+			vector<spv::Id> listIds;
+			spv::Id typeId, resultId;
+			while (idToCheckForExtraIds.size() > 0)
+			{
+				spv::Id idToCheckForUnreferencedIds = idToCheckForExtraIds.back();
+				idToCheckForExtraIds.pop_back();
+
+				ObjectInstructionBase* obj = listAllObjects[idToCheckForUnreferencedIds];
+				listIds.clear();
+				if (!parseInstruction(obj->bytecodeStartPosition, opCode, wordCount, typeId, resultId, listIds))
+					return error("Error parsing the instruction");
+
+#ifdef XKSLANG_DEBUG_MODE
+				if (resultId != idToCheckForUnreferencedIds) return error("The type, variable or const does not match its parsed instruction");  //sanity check
+#endif
+
+				if (typeId != spvUndefinedId && listIdsUsed[typeId] == false) listIds.push_back(typeId);
+				for (unsigned int k = 0; k < listIds.size(); ++k)
+				{
+					const spv::Id& anotherId = listIds[k];
+					if (listIdsUsed[anotherId] == false)
+					{
+						//we'll need this other id
+						listIdsUsed[anotherId] = true;
+
+						//If this other id is a type, const, or variable: we will need to check it as well
+						if (listAllObjects[anotherId] != nullptr)
+						{
+							ObjectInstructionBase* anotherObj = listAllObjects[anotherId];
+							switch (anotherObj->GetKind())
+							{
+								case ObjectInstructionTypeEnum::Type:
+								case ObjectInstructionTypeEnum::Variable:
+								case ObjectInstructionTypeEnum::Const:
+									idToCheckForExtraIds.push_back(anotherId);
+									break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	//remove all names and decorates related to the objects we want to remove
+	{
+		unsigned int start = header_size;
+		const unsigned int end = (unsigned int)spv.size();
+		while (start < end)
+		{
+			unsigned int wordCount = asWordCount(start);
+			spv::Op opCode = asOpCode(start);
+
+			switch (opCode)
+			{
+				case spv::OpTypeXlslShaderClass:
+				case spv::OpName:
+				case spv::OpMemberName:
+				case spv::OpDecorate:
+				case spv::OpMemberDecorate:
+				case spv::OpDeclarationName:
+				case spv::OpShaderInheritance:
+				case spv::OpShaderCompositionDeclaration:
+				case spv::OpShaderCompositionInstance:
+				case spv::OpBelongsToShader:
+				case spv::OpMethodProperties:
+				case spv::OpGSMethodProperties:
+				case spv::OpMemberProperties:
+				case spv::OpMemberAttribute:
+				case spv::OpCBufferProperties:
+				case spv::OpMemberSemanticName:
+				case spv::OpSemanticName:
+				{
+					const spv::Id id = asId(start + 1);
+					if (listIdsUsed[id] == false) {
+						stripInst(vecStripRanges, start, start + wordCount);
+					}
+					break;
+				}
+
+				case spv::OpTypeVoid:
+				case spv::OpFunction:
+				case spv::OpTypeFunction:
+				{
+					start = end;
+					break;
+				}
+			}
+			start += wordCount;
+		}
+	}
+
+	//======================================================================================================
+	//Remove all unused types, consts and variables
+	//we parse the bytecode and delete unused declarations
+	{
+		unsigned int start = header_size;
+		const unsigned int end = (unsigned int)spv.size();
+		while (start < end)
+		{
+			unsigned int wordCount = asWordCount(start);
+			spv::Op opCode = asOpCode(start);
+
+			spv::Id id = spvUndefinedId;
+			if (isConstOp(opCode))
+			{
+				id = asId(start + 2);
+			}
+			else if (isTypeOp(opCode))
+			{
+				id = asId(start + 1);
+			}
+			else if (isVariableOp(opCode))
+			{
+				id = asId(start + 2);
+			}
+
+			if (id != spvUndefinedId)
+			{
+#ifdef XKSLANG_DEBUG_MODE
+				if (id >= listIdsUsed.size() || id >= listAllObjects.size()) return error("Invalid Id to remove: " + to_string(id));
+#endif
+				if (listIdsUsed[id] == false)
+				{
+					ObjectInstructionBase* obj = listAllObjects[id];
+#ifdef XKSLANG_DEBUG_MODE
+					if (obj == nullptr || obj->GetId() != id) return error("Invalid object Id to remove: " + to_string(id));
+#endif
+
+					stripInst(vecStripRanges, obj->GetBytecodeStartPosition(), obj->GetBytecodeEndPosition());
+					delete listAllObjects[id];
+					listAllObjects[id] = nullptr;
+				}
+			}
+
+			//stop at first OpFunction instruction
+			if (opCode == spv::OpFunction) start = end;
+
+			start += wordCount;
+		}
+	}
+
+	//TOTO;
+
+	stripBytecode(vecStripRanges);
+	if (!UpdateAllMaps()) return error("failed to update all maps");
+
+	return true;
+}
+
 bool SpxCompiler::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputStages)
 {
-    //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
-    status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved;
+    return error("Function not used anymore");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedStuffRemoved;
 
     if (outputStages.size() == 0) return error("no output stages defined");
     if (!ValidateHeader()) return error("Failed to validate the header");
@@ -2575,7 +2916,7 @@ SpxCompiler::FunctionInstruction* SpxCompiler::GetShaderFunctionForEntryPoint(st
 
 bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages)
 {
-    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedShaderRemoved) return error("Invalid remapper status");
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_UnusedStuffRemoved) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_Finalized;
 
     //===================================================================================================================
@@ -2652,7 +2993,6 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
     }
 
     if (errorMessages.size() > 0) return false;
-
     stripBytecode(vecStripRanges);
 
     //============================================================================================================
@@ -3085,7 +3425,7 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
                 case spv::OpMemberName:
                 case spv::OpDecorate:
                 case spv::OpMemberDecorate:
-                case spv::OpSemanticName: //keep the semantics name
+                case spv::OpSemanticName: //keep the semantics name (so that we can convert it back with the initial semantic)
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsUsed[id] == true)

@@ -1,4 +1,4 @@
-//Reuse shaders from TestGenerics07, just change the generics value to have identical one
+//Parse and compile shader from Xenko CustomEffect
 
 addResourcesLibrary "library"
 convertAndLoadRecursif "Effect01" CustomEffect

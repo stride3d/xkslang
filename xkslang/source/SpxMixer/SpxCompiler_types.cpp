@@ -282,7 +282,10 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
                 case 1: memberType = EffectParameterReflectionType::Texture2D;  break;
                 case 2: memberType = EffectParameterReflectionType::Texture3D;  break;
                 case 3: memberType = EffectParameterReflectionType::TextureCube;  break;
+
+				case 5: memberType = EffectParameterReflectionType::TextureBuffer;  break;   //TODO: check if it's the correct type
                 //TODO: check more cases
+
                 default: return error("Invalid OpTypeImage dimension: " + to_string(imageDim));
             }
 
