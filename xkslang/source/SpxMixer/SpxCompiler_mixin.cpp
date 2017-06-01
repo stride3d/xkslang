@@ -1311,11 +1311,14 @@ bool SpxCompiler::ValidateHeader()
 }
 
 bool SpxCompiler::ProcessBytecodeAndDataSanityCheck()
-{  
+{
+	int maxId = bound();
+	if (maxId <= 0) return error("invalid bound value: " + to_string(maxId));
+
     vector<unsigned int> listAllTypesConstsAndVariablesPosition;
     vector<unsigned int> listAllResultIdsPosition;
     listAllTypesConstsAndVariablesPosition.resize(bound(), 0);
-    listAllResultIdsPosition.resize(bound(), 0);
+    listAllResultIdsPosition.resize(maxId, 0);
 
     vector<spv::Id> listIds;
     unsigned int start = header_size;
@@ -1376,6 +1379,27 @@ bool SpxCompiler::ProcessBytecodeAndDataSanityCheck()
             typeConstVariableResultId = asId(start + 2);
         }
 
+		//parse the instruction data
+		{
+			unsigned int wordCountBis;
+			spv::Op opCodeBis;
+			spv::Id typeId;
+			spv::Id resultId;
+			listIds.clear();
+			if (!parseInstruction(start, opCodeBis, wordCountBis, typeId, resultId, listIds)) return error("Error parsing the instruction");
+			if (opCodeBis != opCode) return error("Inconsistency in the opCode parsed");
+			if (wordCountBis != wordCount) return error("Inconsistency in the wordCount parsed");
+
+			if (typeId != spvUndefinedId) listIds.push_back(typeId);
+
+			//Check that all IDs are valid
+			for (unsigned k = 0; k < listIds.size(); ++k)
+			{
+				spv::Id anId = listIds[k];
+				if (anId >= maxId) return error("anId is out of bound: " + to_string(anId));
+			}
+		}
+
         //for every types/consts/variables: if the instruction is refering to other IDs, check that those IDs are already defined.
         if (isOpTypeConstOrVariableInstruction)
         {
@@ -1389,26 +1413,14 @@ bool SpxCompiler::ProcessBytecodeAndDataSanityCheck()
 
             if (listAllObjects[typeConstVariableResultId] == nullptr) return error("The type, const or variable has no object data defined. Id: " + to_string(typeConstVariableResultId));
 
-            //Check that all IDs refers to by the type/const/variable are already defined
-            {
-                unsigned int wordCountBis;
-                spv::Op opCodeBis;
-                spv::Id typeId;
-                spv::Id resultId;
-                listIds.clear();
-                if (!parseInstruction(start, opCodeBis, wordCountBis, typeId, resultId, listIds)) return error("Error parsing the instruction");
-                if (opCodeBis != opCode) return error("Inconsistency in the opCode parsed");
-                if (wordCountBis != wordCount) return error("Inconsistency in the wordCount parsed");
+			//Check that all IDs refers to by the type/const/variable are already defined
+			for (unsigned k = 0; k < listIds.size(); ++k)
+			{
+				spv::Id anId = listIds[k];
 
-                if (typeId != spvUndefinedId) listIds.push_back(typeId);
-                for (unsigned k = 0; k < listIds.size(); ++k)
-                {
-                    spv::Id anId = listIds[k];
-
-                    if (anId >= listAllTypesConstsAndVariablesPosition.size()) return error("anId is out of bound: " + to_string(anId));
-                    if (listAllTypesConstsAndVariablesPosition[anId] == 0) return error("a type refers to an Id not defined yet: " + to_string(anId));
-                }
-            }
+				if (anId >= listAllTypesConstsAndVariablesPosition.size()) return error("anId is out of bound: " + to_string(anId));
+				if (listAllTypesConstsAndVariablesPosition[anId] == 0) return error("a type refers to an Id not defined yet: " + to_string(anId));
+			}
         }
 
         start += wordCount;
@@ -1739,7 +1751,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 	vector<bool> listIdsUsed;
 	listIdsUsed.resize(bound(), false);
 
-	//======================================================================================================
+	//===================================================================================================================
 	// Add some IDs we like to keep
 	{
 		unsigned int start = header_size;
@@ -1773,7 +1785,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		}
 	}
 
-	//======================================================================================================
+	//===================================================================================================================
 	//Find all functions being called by the stages
 	{
 		//Set all functions flag to 0 (to check a function only once)
@@ -1840,7 +1852,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		}
 	}
 
-	//======================================================================================================
+	//===================================================================================================================
 	//Remove the unused functions
 	{
 		vector<FunctionInstruction*> listAllUsedFunctions;
@@ -1863,19 +1875,50 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		for (auto itsf = listAllUnusedFunctions.begin(); itsf != listAllUnusedFunctions.end(); itsf++)
 		{
 			FunctionInstruction* unusedFunction = *itsf;
-			spv::Id id = unusedFunction->GetId();
+			spv::Id functionId = unusedFunction->GetId();
 
 #ifdef XKSLANG_DEBUG_MODE
-			if (id >= listAllObjects.size() || listAllObjects[id] != unusedFunction) return error("Invalid function Id to remove: " + to_string(id));
+			if (functionId >= listAllObjects.size() || listAllObjects[functionId] != unusedFunction) return error("Invalid function Id to remove: " + to_string(functionId));
 #endif
 
+			//The function could have declared some variable objects, check and delete them
+			{
+				unsigned int start = unusedFunction->bytecodeStartPosition;
+				const unsigned int end = unusedFunction->bytecodeEndPosition;
+				while (start < end)
+				{
+					unsigned int wordCount = asWordCount(start);
+					spv::Op opCode = asOpCode(start);
+					switch (opCode)
+					{
+						case spv::OpVariable:
+						{
+							const spv::Id variableId = asId(start + 2);
+							ObjectInstructionBase* variableObj = listAllObjects[variableId];
+
+							if (variableObj == nullptr) return error("Invalid function variable object for variableId: " + to_string(variableId));
+							else
+							{
+								delete listAllObjects[variableId];
+								listAllObjects[variableId] = nullptr;
+							}
+
+							stripInst(vecStripRanges, start, start + wordCount);
+							break;
+						}
+					}
+					start += wordCount;
+				}
+			}
+
+			//delete the function object and its bytecode
 			stripInst(vecStripRanges, unusedFunction->GetBytecodeStartPosition(), unusedFunction->GetBytecodeEndPosition());
-			delete listAllObjects[id];
-			listAllObjects[id] = nullptr;
+			delete listAllObjects[functionId];
+			listAllObjects[functionId] = nullptr;
 		}
 	}
 
-	//======================================================================================================
+	//===================================================================================================================
 	//parse all used functions to get all IDs needed
 	{
 		for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++)
@@ -1896,7 +1939,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 			}
 		}
 
-		//======================================================================================================
+		//===================================================================================================================
 		//For all IDs used: if it's defining a type, variable or const: check if it's depending on another type no included in the list yet
 		{
 			vector<spv::Id> idToCheckForExtraIds;
@@ -2013,9 +2056,9 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		}
 	}
 
-	//======================================================================================================
+	//===================================================================================================================
 	//Remove all unused types, consts and variables
-	//we parse the bytecode and delete unused declarations
+	//method1: we parse the bytecode and delete unused declarations
 	{
 		unsigned int start = header_size;
 		const unsigned int end = (unsigned int)spv.size();
@@ -2063,10 +2106,74 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		}
 	}
 
-	//TOTO;
-
 	stripBytecode(vecStripRanges);
 	if (!UpdateAllMaps()) return error("failed to update all maps");
+
+	//===================================================================================================================
+	//defragment (remap) all IDs
+	{
+		//get the new IDs
+		unsigned int newMaxId = 1;
+		vector<spv::Id> remapTable;
+		remapTable.resize(bound(), spvUndefinedId);
+		for (spv::Id id = 0; id < listIdsUsed.size(); ++id)
+		{
+			if (listIdsUsed[id] == true) remapTable[id] = newMaxId++;
+		}
+
+		//Remap all Ids within the bytecode
+		if (!remapAllIds(spv, header_size, (unsigned int)spv.size(), remapTable))
+			return error("Failed to remap all IDs");
+
+		//register the new Id into the bytecode
+		setBound(spv, newMaxId);
+
+		//remap and update the Ids for all internal objects
+		std::vector<ObjectInstructionBase*> listAllObjectsRemapped;
+		listAllObjectsRemapped.resize(bound(), nullptr);
+
+		for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+		{
+			ObjectInstructionBase* obj = *it;
+			if (obj == nullptr) continue;
+
+			if (obj->resultId != spvUndefinedId)
+			{
+#ifdef XKSLANG_DEBUG_MODE
+				if (obj->resultId >= remapTable.size() || remapTable[obj->resultId] == spvUndefinedId || remapTable[obj->resultId] >= newMaxId)
+					return error("Invalid value for remapping the object ids");
+#endif
+				obj->resultId = remapTable[obj->resultId];
+			}
+
+			if (obj->typeId != spvUndefinedId)
+			{
+#ifdef XKSLANG_DEBUG_MODE
+				if (obj->typeId >= remapTable.size() || remapTable[obj->typeId] == spvUndefinedId || remapTable[obj->typeId] >= newMaxId)
+					return error("Invalid value for remapping the object ids");
+#endif
+				obj->typeId = remapTable[obj->typeId];
+			}
+
+#ifdef XKSLANG_DEBUG_MODE
+			if (listAllObjectsRemapped[obj->resultId] != nullptr) return error("2 objects are being remapped on the same Id");
+#endif
+
+			listAllObjectsRemapped[obj->resultId] = obj;
+		}
+
+		listAllObjects = listAllObjectsRemapped;
+
+		//remap outputStages IDs
+		for (unsigned int i = 0; i<outputStages.size(); ++i)
+		{
+			XkslMixerOutputStage& stage = outputStages[i];
+			for (unsigned int k = 0; k < stage.listStageInputVariableInfo.size(); k++)
+				stage.listStageInputVariableInfo[k].spvVariableId = remapTable[stage.listStageInputVariableInfo[k].spvVariableId];
+			for (unsigned int k = 0; k < stage.listStageOutputVariableInfo.size(); k++)
+				stage.listStageOutputVariableInfo[k].spvVariableId = remapTable[stage.listStageOutputVariableInfo[k].spvVariableId];
+		}
+	}
 
 	return true;
 }

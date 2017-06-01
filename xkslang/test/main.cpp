@@ -450,16 +450,16 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
     SpvBytecode streamsReshuffledSpv;
     SpvBytecode mergedCBuffersSpv;
     SpvBytecode compiledBytecode;
-    SpvBytecode errorSpv;
+    //SpvBytecode errorSpv;
     cout << "Compile Mixin: ";
     time_before = GetTickCount();
-    success = mixer->Compile(outputStages, errorMsgs, &composedSpv, &streamsMergedSpv, &streamsReshuffledSpv, &mergedCBuffersSpv, &compiledBytecode, &errorSpv);
+    success = mixer->Compile(outputStages, errorMsgs, &composedSpv, &streamsMergedSpv, &streamsReshuffledSpv, &mergedCBuffersSpv, &compiledBytecode, nullptr);
     time_after = GetTickCount();
 
     if (!success)
     {
         cout << "Compilation Failed" << endl;
-        WriteBytecode(errorSpv, outputDir, effectName + "_compile_error.hr.spv", BytecodeFileFormat::Text);
+        //WriteBytecode(errorSpv, outputDir, effectName + "_compile_error.hr.spv", BytecodeFileFormat::Text);
     }
     else
     {
