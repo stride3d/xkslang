@@ -1312,8 +1312,8 @@ bool SpxCompiler::ValidateHeader()
 
 bool SpxCompiler::ProcessBytecodeAndDataSanityCheck()
 {
-	int maxId = bound();
-	if (maxId <= 0) return error("invalid bound value: " + to_string(maxId));
+	unsigned int maxId = bound();
+	if (maxId == 0) return error("invalid bound value: " + to_string(maxId));
 
     vector<unsigned int> listAllTypesConstsAndVariablesPosition;
     vector<unsigned int> listAllResultIdsPosition;
@@ -2140,8 +2140,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 			if (obj->resultId != spvUndefinedId)
 			{
 #ifdef XKSLANG_DEBUG_MODE
-				if (obj->resultId >= remapTable.size() || remapTable[obj->resultId] == spvUndefinedId || remapTable[obj->resultId] >= newMaxId)
-					return error("Invalid value for remapping the object ids");
+				if (obj->resultId >= remapTable.size() || remapTable[obj->resultId] == spvUndefinedId || remapTable[obj->resultId] >= newMaxId) return error("Invalid value for remapping the object ids");
 #endif
 				obj->resultId = remapTable[obj->resultId];
 			}
@@ -2149,8 +2148,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 			if (obj->typeId != spvUndefinedId)
 			{
 #ifdef XKSLANG_DEBUG_MODE
-				if (obj->typeId >= remapTable.size() || remapTable[obj->typeId] == spvUndefinedId || remapTable[obj->typeId] >= newMaxId)
-					return error("Invalid value for remapping the object ids");
+				if (obj->typeId >= remapTable.size() || remapTable[obj->typeId] == spvUndefinedId || remapTable[obj->typeId] >= newMaxId) return error("Invalid value for remapping the object ids");
 #endif
 				obj->typeId = remapTable[obj->typeId];
 			}
@@ -2162,9 +2160,10 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 			listAllObjectsRemapped[obj->resultId] = obj;
 		}
 
+		//switch the lists of objects
 		listAllObjects = listAllObjectsRemapped;
 
-		//remap outputStages IDs
+		//remap outputStages pre-calculated IDs
 		for (unsigned int i = 0; i<outputStages.size(); ++i)
 		{
 			XkslMixerOutputStage& stage = outputStages[i];
@@ -2180,7 +2179,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 
 bool SpxCompiler::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputStages)
 {
-    return error("Function not used anymore");
+    return error("Obsolete function");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_UnusedStuffRemoved;
 
     if (outputStages.size() == 0) return error("no output stages defined");

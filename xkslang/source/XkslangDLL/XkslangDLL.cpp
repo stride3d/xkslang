@@ -393,6 +393,43 @@ namespace xkslang
 		return byteBuffer;
 	}
 
+	int GetMixerCompiledBytecodeSize(uint32_t mixerHandleId)
+	{
+		errorMessages.clear();
+
+		MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+		if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
+
+		SpvBytecode& compiledBytecode = mixerData->finalCompiledSpv;
+		int bytecodeLen = compiledBytecode.GetBytecodeSize();
+		if (bytecodeLen <= 0) { error("The mixer compiled bytecode is empty"); return 0; }
+
+		return bytecodeLen;
+	}
+
+	int CopyMixerCompiledBytecode(uint32_t mixerHandleId, uint32_t* bytecodeBuffer, int bufferSize)
+	{
+		errorMessages.clear();
+
+		MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+		if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
+
+		SpvBytecode& compiledBytecode = mixerData->finalCompiledSpv;
+		const std::vector<uint32_t>& bytecode = compiledBytecode.getBytecodeStream();
+		int bytecodeLen = bytecode.size();
+		if (bytecodeLen <= 0) { error("The mixer compiled bytecode is empty"); return 0; }
+		if (bytecodeLen < bufferSize) { error("The given bytecode buffer has an invalid size. Expected (at least): " + to_string(bytecodeLen)); return 0; }
+
+		uint32_t* pDest = bytecodeBuffer;
+		const uint32_t* pSrc = &bytecode[0];
+		int countIteration = bytecodeLen;
+		while (countIteration-- > 0) *pDest++ = *pSrc++;
+
+		return bytecodeLen;
+	}
+
     uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int* bytecodeSize)
     {
         errorMessages.clear();
@@ -436,6 +473,7 @@ namespace xkslang
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
         if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
 
         OutputStageBytecode* outputStageBytecode = nullptr;
         for (unsigned int k = 0; k < mixerData->stagesCompiledData.size(); k++) {
@@ -460,6 +498,7 @@ namespace xkslang
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
         if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
 
         OutputStageBytecode* outputStageBytecode = nullptr;
         for (unsigned int k = 0; k < mixerData->stagesCompiledData.size(); k++) {

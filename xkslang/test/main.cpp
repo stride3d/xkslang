@@ -203,7 +203,6 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 	//{ "EffectReflection07", "EffectReflection07.xkfx" },
 
     { "Effect01", "Effect01.xkfx" },
-    
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {

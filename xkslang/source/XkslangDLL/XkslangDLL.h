@@ -67,16 +67,20 @@ namespace xkslang
 
     extern "C" __declspec(dllexport) bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int countStages);
 
-    //Return the compiled bytecode for the given stage
-    //The bytecode buffer is allocated on the dll side, and has to be released on the caller side
-    extern "C" __declspec(dllexport) uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int* bytecodeSize);
-
 	//Return the mixin compiled bytecode, generated when we compile the mixer
 	//this bytecode can let the client retrieve Reflection data
 	//The bytecode buffer is allocated on the dll side, and has to be released on the caller side
 	extern "C" __declspec(dllexport) uint32_t* GetMixerCompiledBytecode(uint32_t mixerHandleId, int* bytecodeSize);
 
-    //We can use the following function to get the size of stage compiled bytecode buffer, then to copy its data into a buffer allocated by the caller
+	//Or we can use the following function to get the size of the compiled bytecode buffer, then to copy its data into a buffer allocated by the caller
+	extern "C" __declspec(dllexport) int GetMixerCompiledBytecodeSize(uint32_t mixerHandleId);
+	extern "C" __declspec(dllexport) int CopyMixerCompiledBytecode(uint32_t mixerHandleId, uint32_t* bytecodeBuffer, int bufferSize);
+
+    //Return the compiled bytecode for the given stage
+    //The bytecode buffer is allocated on the dll side, and has to be released on the caller side
+    extern "C" __declspec(dllexport) uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int* bytecodeSize);
+
+    //We can use the following functions to get the size of a stage compiled bytecode buffer, then to copy its data into a buffer allocated by the caller
     extern "C" __declspec(dllexport) int GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, ShadingStageEnum stage);
     extern "C" __declspec(dllexport) int CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, uint32_t* bytecodeBuffer, int bufferSize);
 }
