@@ -70,6 +70,9 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 {
     bool success = true;
 
+	if (effectReflection.ConstantBuffers != nullptr || effectReflection.CountConstantBuffers != 0) { return error("effectReflection.ConstantBuffers has not been properly released"); }
+	if (effectReflection.ResourceBindings != nullptr || effectReflection.CountResourceBindings != 0) { return error("effectReflection.ResourceBindings has not been properly released"); }
+
     //=========================================================================================================================
     //=========================================================================================================================
     //get ALL cbuffers and resources
@@ -344,7 +347,8 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
         if (success)
         {
             const unsigned int countCbuffers = (unsigned int)listAllCBuffers.size();
-            effectReflection.ConstantBuffers.resize(countCbuffers);
+			effectReflection.CountConstantBuffers = countCbuffers;
+			if (countCbuffers > 0) effectReflection.ConstantBuffers = new ConstantBufferReflectionDescription[countCbuffers];
 
             for (unsigned int icb = 0; icb < countCbuffers; icb++)
             {
@@ -436,12 +440,12 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
     }
 
     //for all the struct type: find their member names in the bytecode
-    // (those names where never taken into consideration when parsing the bytecode (building all maps): we never needed them before)
+    // (those names were never taken into consideration when parsing the bytecode (building all maps): we never needed them before)
     if (success)
     {
         //get the list of all struct members (or sub-members)
         vector<TypeReflectionDescription*> listStructMembers;
-        unsigned int countCBuffers = (unsigned int)effectReflection.ConstantBuffers.size();
+		unsigned int countCBuffers = (unsigned int)effectReflection.CountConstantBuffers;
         for (unsigned int cb = 0; cb < countCBuffers; cb++)
         {
             ConstantBufferReflectionDescription& cbuffer = effectReflection.ConstantBuffers[cb];
@@ -526,7 +530,9 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
     // Find which variable resource is used by which output stage
     if (success)
     {
-        //we access the cbuffer through their variable: update the targeted IDs
+		std::vector<EffectResourceBindingDescription> vecAllResourceBindings;
+
+        //we access the cbuffer through their variable (not their type): update the targeted IDs
         for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
         {
             CBufferTypeData* cbufferData = *itcb;
@@ -649,7 +655,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         CBufferTypeData* cbufferData = *itcb;
                         if (cbufferData->tmpFlag == 1)
                         {
-                            effectReflection.ResourceBindings.push_back(
+							vecAllResourceBindings.push_back(
                                 EffectResourceBindingDescription(
                                     stage,
                                     cbufferData->cbufferName,
@@ -665,7 +671,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 
                         if (variable->tmpFlag == 1)
                         {
-                            effectReflection.ResourceBindings.push_back(
+							vecAllResourceBindings.push_back(
                                 EffectResourceBindingDescription(
                                     stage,
                                     variableData->variableName,
@@ -674,11 +680,24 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                 ));
                         }
                     }
+
+					
                 }
             }
 
             if (errorMessages.size() > 0) { success = false; break; }
-        }
+        } //end loop over all stages
+
+		//copy the ResourceBindings vector into the EffectReflection
+		if (success)
+		{
+			effectReflection.CountResourceBindings = vecAllResourceBindings.size();
+			if (effectReflection.CountResourceBindings > 0) effectReflection.ResourceBindings = new EffectResourceBindingDescription[effectReflection.CountResourceBindings];
+			for (int k = 0; k < effectReflection.CountResourceBindings; k++)
+			{
+				effectReflection.ResourceBindings[k] = vecAllResourceBindings[k];
+			}
+		}
     }
 
     //=========================================================================================================================

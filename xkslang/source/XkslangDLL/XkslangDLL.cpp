@@ -231,11 +231,17 @@ namespace xkslang
     {
     public:
         SpxMixer* mixer;
-        vector<OutputStageBytecode> stagesCompiledData;
-		SpvBytecode finalCompiledSpv;
-		bool compilationDone;
 
-        MixerData(SpxMixer* mixer) : mixer(mixer), compilationDone(false) {}
+		//Store compilation results
+		bool compilationDone;
+		SpvBytecode finalCompiledSpv;
+		vector<OutputStageBytecode> stagesCompiledData;
+
+		//Store EffectReflection
+		bool effectReflectionDone;
+		EffectReflection effectReflection;
+
+        MixerData(SpxMixer* mixer) : mixer(mixer), compilationDone(false), effectReflectionDone(false) {}
         ~MixerData() { if (mixer != nullptr) delete mixer; }
     };
     static std::vector<MixerData*> listMixerData;
@@ -354,6 +360,9 @@ namespace xkslang
             mixerData->stagesCompiledData.push_back(OutputStageBytecode(stageEntryPointArray[s].stage, string(stageEntryPointArray[s].entryPointName)));
         }
 
+		mixerData->compilationDone = false;
+		mixerData->effectReflectionDone = false;
+
         bool success = mixer->Compile(mixerData->stagesCompiledData, errorMsgs, nullptr, nullptr, nullptr, nullptr, &finalSpv, nullptr);
         if (!success)
         {
@@ -365,6 +374,30 @@ namespace xkslang
 		mixerData->compilationDone = true;
         return true;
     }
+
+	bool GetMixerEffectReflectionData(uint32_t mixerHandleId, EffectReflection* effectReflection)
+	{
+		errorMessages.clear();
+
+		MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+		if (mixerData == nullptr) { return error("Invalid mixer handle"); }
+		if (!mixerData->compilationDone) { return error("The mixer has not been compiled"); }
+
+		if (!mixerData->effectReflectionDone)
+		{
+			SpvBytecode& compiledBytecode = mixerData->finalCompiledSpv;
+			bool success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, mixerData->effectReflection, errorMessages);
+			if (!success)
+			{
+				return error("Failed to get the reflection data from the compiled bytecode");
+			}
+
+			mixerData->effectReflectionDone = true;
+		}
+
+		*effectReflection = mixerData->effectReflection;
+		return true;
+	}
 
 	uint32_t* GetMixerCompiledBytecode(uint32_t mixerHandleId, int* bytecodeSize)
 	{

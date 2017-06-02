@@ -8,6 +8,31 @@
 using namespace std;
 using namespace xkslang;
 
+//=====================================================================================================================
+//=====================================================================================================================
+// EffectReflection
+EffectReflection::~EffectReflection()
+{
+	Clear();
+}
+
+void EffectReflection::Clear()
+{
+	if (ConstantBuffers != nullptr) {
+		delete[] ConstantBuffers;
+		ConstantBuffers = nullptr;
+	}
+	CountConstantBuffers = 0;
+
+	if (ResourceBindings != nullptr) {
+		delete[] ResourceBindings;
+		ResourceBindings = nullptr;
+	}
+	CountResourceBindings = 0;
+}
+
+//=====================================================================================================================
+//=====================================================================================================================
 TypeReflectionDescription::~TypeReflectionDescription()
 {
     if (Members != nullptr)
@@ -26,11 +51,6 @@ void TypeReflectionDescription::SetStructMembers(TypeMemberReflectionDescription
 
     this->Members = members;
     this->CountMembers = countMembers;
-}
-
-void EffectReflection::Clear()
-{
-    ConstantBuffers.clear();
 }
 
 void TypeReflectionDescription::AddAllMemberAndSubMembersOfTheGivenClass(EffectParameterReflectionClass memberClass, vector<TypeReflectionDescription*>& listMembers)
@@ -89,8 +109,8 @@ string ConstantBufferMemberReflectionDescription::Print(int padding)
 string EffectReflection::Print()
 {
     std::ostringstream stream;
-    stream << "ConstantBuffers. Count=" << ConstantBuffers.size() << endl;
-    for (unsigned int cb = 0; cb < ConstantBuffers.size(); ++cb)
+    stream << "ConstantBuffers. Count=" << CountConstantBuffers << endl;
+    for (int cb = 0; cb < CountConstantBuffers; ++cb)
     {
         ConstantBufferReflectionDescription& cbuffer = ConstantBuffers[cb];
         stream << " ConstantBuffer: Name=\"" << cbuffer.CbufferName << "\" Size=" << cbuffer.Size << " MembersCount=" << cbuffer.Members.size() << endl;
@@ -101,8 +121,8 @@ string EffectReflection::Print()
             stream << member.Print(2);
         }
     }
-    stream << "ResourceBindings. Count=" << ResourceBindings.size() << endl;
-    for (unsigned int rb = 0; rb < ResourceBindings.size(); ++rb)
+    stream << "ResourceBindings. Count=" << CountResourceBindings << endl;
+    for (int rb = 0; rb < CountResourceBindings; ++rb)
     {
         EffectResourceBindingDescription& bindings = ResourceBindings[rb];
         stream << " Stage=" << GetShadingStageLabel(bindings.Stage) << " Name=\"" << bindings.KeyName << "\""

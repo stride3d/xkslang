@@ -453,18 +453,24 @@ public:
 
 class EffectReflection
 {
-public:
-    std::vector<ConstantBufferReflectionDescription> ConstantBuffers;
-    std::vector<EffectResourceBindingDescription> ResourceBindings;
+private:
+	ConstantBufferReflectionDescription* ConstantBuffers;
+	int CountConstantBuffers;
+
+	EffectResourceBindingDescription* ResourceBindings;
+	int CountResourceBindings;
 
 public:
-    EffectReflection() {}
+    EffectReflection() : ConstantBuffers(nullptr), CountConstantBuffers(0), ResourceBindings(nullptr), CountResourceBindings(0){}
+	virtual ~EffectReflection();
 
     void Clear();
 
     static std::string GetEffectParameterReflectionClassLabel(EffectParameterReflectionClass parameterClass);
     static std::string GetEffectParameterReflectionTypeLabel(EffectParameterReflectionType parameterType);
     std::string Print();
+
+friend class SpxCompiler;
 };
 
 }  // namespace xkslang
