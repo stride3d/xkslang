@@ -28,7 +28,7 @@ namespace xkslang
         return false;
     }
 
-    void GetErrorMessages(char *buffer, int maxBufferLength)
+    void GetErrorMessages(char *buffer, int32_t maxBufferLength)
     {
         maxBufferLength--;
         if (maxBufferLength <= 0) return;
@@ -61,7 +61,7 @@ namespace xkslang
     //=====================================================================================================================
     //Utility function to help converting a bytecode to a human-readable ascii file
 
-    char* ConvertBytecodeToAsciiText(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize)
+    char* ConvertBytecodeToAsciiText(uint32_t* bytecode, int32_t bytecodeSize, int32_t* asciiBufferSize)
     {
         errorMessages.clear();
         *asciiBufferSize = -1;
@@ -80,14 +80,14 @@ namespace xkslang
         int asciiBufferLen = bytecodeText.size();
         if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
-        //allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
+        //allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
         char* asciiBuffer = (char*)LocalAlloc(0, asciiBufferLen * sizeof(char));
         strncpy(asciiBuffer, bytecodeText.c_str(), asciiBufferLen);
         *asciiBufferSize = asciiBufferLen;
         return asciiBuffer;
     }
 
-    char* ConvertBytecodeToGlsl(uint32_t* bytecode, int bytecodeSize, int* asciiBufferSize)
+    char* ConvertBytecodeToGlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t* asciiBufferSize)
     {
         errorMessages.clear();
         *asciiBufferSize = -1;
@@ -106,14 +106,14 @@ namespace xkslang
         int asciiBufferLen = bytecodeText.size();
         if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
-        //allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
+		//allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
         char* asciiBuffer = (char*)LocalAlloc(0, asciiBufferLen * sizeof(char));
         strncpy(asciiBuffer, bytecodeText.c_str(), asciiBufferLen);
         *asciiBufferSize = asciiBufferLen;
         return asciiBuffer;
     }
 
-    char* ConvertBytecodeToHlsl(uint32_t* bytecode, int bytecodeSize, int shaderModel, int* asciiBufferSize)
+    char* ConvertBytecodeToHlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t shaderModel, int32_t* asciiBufferSize)
     {
         errorMessages.clear();
         *asciiBufferSize = -1;
@@ -132,7 +132,7 @@ namespace xkslang
         int asciiBufferLen = bytecodeText.size();
         if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
-        //allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
+		//allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
         char* asciiBuffer = (char*)LocalAlloc(0, asciiBufferLen * sizeof(char));
         strncpy(asciiBuffer, bytecodeText.c_str(), asciiBufferLen);
         *asciiBufferSize = asciiBufferLen;
@@ -185,7 +185,7 @@ namespace xkslang
         return true;
     }
 
-    uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int* bytecodeSize)
+    uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* bytecodeSize)
     {
         errorMessages.clear();
         *bytecodeSize = 0;
@@ -209,7 +209,7 @@ namespace xkslang
         int bytecodeLen = (int)bytecode.size();
         if (bytecodeLen <= 0) { error("Resulting bytecode is empty"); return nullptr; }
 
-        //allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
+		//allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
         uint32_t* byteBuffer = (uint32_t*)LocalAlloc(0, bytecodeLen * sizeof(uint32_t));
         //for (int i = 0; i < bytecodeLen; ++i) byteBuffer[i] = bytecode[i];
         
@@ -306,7 +306,7 @@ namespace xkslang
         return true;
     }
 
-    bool MixinShader(uint32_t mixerHandleId, const char* shaderName, uint32_t* shaderSpxBytecode, int bytecodeSize)
+    bool MixinShader(uint32_t mixerHandleId, const char* shaderName, uint32_t* shaderSpxBytecode, int32_t bytecodeSize)
     {
         errorMessages.clear();
         if (shaderSpxBytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return false; }
@@ -333,7 +333,7 @@ namespace xkslang
         return success;
     }
 
-    bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int countStages)
+    bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int32_t countStages)
     {
         errorMessages.clear();
 
@@ -375,7 +375,7 @@ namespace xkslang
         return true;
     }
 
-	bool GetMixerEffectReflectionData(uint32_t mixerHandleId, EffectReflection* effectReflection)
+	bool GetMixerEffectReflectionData(uint32_t mixerHandleId, EffectResourceBindingDescription** resourceBindings, int32_t* countResourceBindings)
 	{
 		errorMessages.clear();
 
@@ -395,11 +395,31 @@ namespace xkslang
 			mixerData->effectReflectionDone = true;
 		}
 
-		*effectReflection = mixerData->effectReflection;
+		const EffectReflection& effectReflectionSrc = mixerData->effectReflection;
+
+		//Copy the effect reflection data into the parameters: allocate all buffers & elements using LocalAlloc, so that the calling framework can delete them properly
+		/*if (resourceBindings != nullptr && countResourceBindings != nullptr)
+		{
+			*countResourceBindings = effectReflectionSrc.CountResourceBindings;
+			if (effectReflectionSrc.CountResourceBindings > 0)
+			{
+				EffectResourceBindingDescription* arrayResourceBindings = (EffectResourceBindingDescription*)LocalAlloc(0, effectReflectionSrc.CountResourceBindings * sizeof(EffectResourceBindingDescription));
+				for (int k = 0; k < effectReflectionSrc.CountResourceBindings; ++k)
+				{
+					arrayResourceBindings[k] = effectReflectionSrc.ResourceBindings[k];
+				}
+				*resourceBindings = arrayResourceBindings;
+			}
+			else
+			{
+				*resourceBindings = nullptr;
+			}
+		}*/
+
 		return true;
 	}
 
-	uint32_t* GetMixerCompiledBytecode(uint32_t mixerHandleId, int* bytecodeSize)
+	uint32_t* GetMixerCompiledBytecode(uint32_t mixerHandleId, int32_t* bytecodeSize)
 	{
 		errorMessages.clear();
 		*bytecodeSize = 0;
@@ -409,8 +429,8 @@ namespace xkslang
 		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return nullptr; }
 
 		SpvBytecode& compiledBytecode = mixerData->finalCompiledSpv;
-		
-		/// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
+
+		/// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return it to the calling framework and let it delete it
 		const std::vector<uint32_t>& bytecode = compiledBytecode.getBytecodeStream();
 		int bytecodeLen = (int)bytecode.size();
 		if (bytecodeLen <= 0) { error("the mixer compiled bytecode is empty"); return nullptr; }
@@ -426,7 +446,7 @@ namespace xkslang
 		return byteBuffer;
 	}
 
-	int GetMixerCompiledBytecodeSize(uint32_t mixerHandleId)
+	int32_t GetMixerCompiledBytecodeSize(uint32_t mixerHandleId)
 	{
 		errorMessages.clear();
 
@@ -441,7 +461,7 @@ namespace xkslang
 		return bytecodeLen;
 	}
 
-	int CopyMixerCompiledBytecode(uint32_t mixerHandleId, uint32_t* bytecodeBuffer, int bufferSize)
+	int32_t CopyMixerCompiledBytecode(uint32_t mixerHandleId, uint32_t* bytecodeBuffer, int32_t bufferSize)
 	{
 		errorMessages.clear();
 
@@ -463,7 +483,7 @@ namespace xkslang
 		return bytecodeLen;
 	}
 
-    uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int* bytecodeSize)
+    uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int32_t* bytecodeSize)
     {
         errorMessages.clear();
         *bytecodeSize = 0;
@@ -484,7 +504,7 @@ namespace xkslang
             return nullptr;
         }
 
-        /// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return to the calling framework and let it delete it
+        /// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return it to the calling framework and let it delete it
         const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
         int bytecodeLen = (int)bytecode.size();
         if (bytecodeLen <= 0) { error("the stage compiled bytecode is empty"); return nullptr; }
@@ -500,7 +520,7 @@ namespace xkslang
         return byteBuffer;
     }
 
-    int GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, ShadingStageEnum stage)
+	int32_t GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, ShadingStageEnum stage)
     {
         errorMessages.clear();
 
@@ -525,7 +545,7 @@ namespace xkslang
         return bytecodeLen;
     }
 
-    int CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, uint32_t* bytecodeBuffer, int bufferSize)
+	int32_t CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, uint32_t* bytecodeBuffer, int32_t bufferSize)
     {
         errorMessages.clear();
 

@@ -33,6 +33,22 @@ void EffectReflection::Clear()
 
 //=====================================================================================================================
 //=====================================================================================================================
+
+/*EffectResourceBindingDescription::EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, EffectParameterReflectionClass c, EffectParameterReflectionType t)
+	: Stage(stage), Class(c), Type(t)
+{
+	const int nameLen = keyName.size();
+	KeyName = new char[nameLen + 1];
+	for (int k = 0; k < nameLen; k++) KeyName[k] = keyName[k];
+	KeyName[nameLen] = '\0';
+}
+
+EffectResourceBindingDescription::~EffectResourceBindingDescription()
+{
+	if (KeyName != nullptr) delete[] KeyName;
+	KeyName = nullptr;
+}*/
+
 TypeReflectionDescription::~TypeReflectionDescription()
 {
     if (Members != nullptr)
