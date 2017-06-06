@@ -14,7 +14,10 @@
 namespace xkslang
 {
 
-enum class EffectParameterReflectionType
+//=====================================================================================================================
+// Enums
+//=====================================================================================================================
+enum class EffectParameterReflectionType : int32_t
 {
     Undefined = -1,
 
@@ -209,7 +212,7 @@ enum class EffectParameterReflectionType
     ConsumeStructuredBuffer = 51,
 };
 
-enum class EffectParameterReflectionClass
+enum class EffectParameterReflectionClass : int32_t
 {
     Undefined = -1,
 
@@ -284,6 +287,9 @@ enum class EffectParameterReflectionClass
     Color = 13,
 };
 
+//=====================================================================================================================
+// Type reflection
+//=====================================================================================================================
 class TypeMemberReflectionDescription;
 class TypeReflectionDescription
 {
@@ -413,6 +419,9 @@ public:
     TypeReflectionDescription Type;
 };
 
+//=====================================================================================================================
+// Constant Buffer
+//=====================================================================================================================
 class ConstantBufferMemberReflectionDescription
 {
 public:
@@ -430,30 +439,70 @@ public:
 class ConstantBufferReflectionDescription
 {
 public:
-    int Size;
+	uint32_t Size;
     std::string CbufferName;
     std::vector<ConstantBufferMemberReflectionDescription> Members;
 
-    ConstantBufferReflectionDescription() : Size(0){}
+    ConstantBufferReflectionDescription() : Size(0) {}
 };
 
+//minimal struct containing a constant buffer data (to be easily exchanged between native and managed apps)
+struct ConstantBufferMemberReflectionDescriptionData
+{
+public:
+	uint32_t Offset;
+	const char* Name;
+
+	ConstantBufferMemberReflectionDescriptionData(const uint32_t offset, const char* name) : Offset(offset), Name(name) {}
+};
+
+struct ConstantBufferReflectionDescriptionData
+{
+public:
+	uint32_t Size;
+	uint32_t CountMembers;
+	const char* CbufferName;
+	ConstantBufferMemberReflectionDescriptionData* Members;
+
+	ConstantBufferReflectionDescriptionData(const uint32_t size, const uint32_t countMembers, const char* name, ConstantBufferMemberReflectionDescriptionData* members)
+		: Size(size), CountMembers(countMembers), CbufferName(name), Members(members) {}
+};
+
+//=====================================================================================================================
+// Resource Binding
+//=====================================================================================================================
 class EffectResourceBindingDescription
 {
 public:
     ShadingStageEnum Stage;
     EffectParameterReflectionClass Class;
     EffectParameterReflectionType Type;
-	std::string KeyName;
+	char* KeyName;
 
 public:
-    EffectResourceBindingDescription(){}
-    EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, EffectParameterReflectionClass c, EffectParameterReflectionType t)
-        : Stage(stage), KeyName(keyName), Class(c), Type(t) {}
+	EffectResourceBindingDescription();
+	EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, EffectParameterReflectionClass c, EffectParameterReflectionType t);
+	EffectResourceBindingDescription(const EffectResourceBindingDescription& e);
+	virtual ~EffectResourceBindingDescription();
 
-	//EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, EffectParameterReflectionClass c, EffectParameterReflectionType t);
-	//virtual ~EffectResourceBindingDescription();
+	EffectResourceBindingDescription& operator=(const EffectResourceBindingDescription& e);
 };
 
+//minimal struct containing a resource binding data (to be easily exchanged between native and managed apps)
+struct EffectResourceBindingDescriptionData
+{
+public:
+	ShadingStageEnum Stage;
+	EffectParameterReflectionClass Class;
+	EffectParameterReflectionType Type;
+	char* KeyName;
+
+	EffectResourceBindingDescriptionData(const EffectResourceBindingDescription& e) : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(e.KeyName) {}
+};
+
+//=====================================================================================================================
+// Effect Reflection
+//=====================================================================================================================
 class EffectReflection
 {
 public:

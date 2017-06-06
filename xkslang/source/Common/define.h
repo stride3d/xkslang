@@ -12,7 +12,7 @@
 
 namespace xkslang
 {
-    enum class ShadingStageEnum
+    enum class ShadingStageEnum : int32_t
     {
         Undefined = -1,
         Vertex = 0,

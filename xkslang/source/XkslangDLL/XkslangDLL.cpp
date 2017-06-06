@@ -375,7 +375,9 @@ namespace xkslang
         return true;
     }
 
-	bool GetMixerEffectReflectionData(uint32_t mixerHandleId, EffectResourceBindingDescription** resourceBindings, int32_t* countResourceBindings)
+	bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
+		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers,
+		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings)
 	{
 		errorMessages.clear();
 
@@ -397,16 +399,53 @@ namespace xkslang
 
 		const EffectReflection& effectReflectionSrc = mixerData->effectReflection;
 
-		//Copy the effect reflection data into the parameters: allocate all buffers & elements using LocalAlloc, so that the calling framework can delete them properly
-		/*if (resourceBindings != nullptr && countResourceBindings != nullptr)
+		//Copy the effect reflection data into the parameters: allocate all buffers & elements using LocalAlloc, so that the calling framework can delete it properly
+		if (constantBuffers != nullptr && countConstantBuffers != nullptr)
+		{
+			*countConstantBuffers = effectReflectionSrc.CountConstantBuffers;
+			if (effectReflectionSrc.CountConstantBuffers > 0)
+			{
+				ConstantBufferReflectionDescriptionData* arrayConstantBuffer = (ConstantBufferReflectionDescriptionData*)LocalAlloc(0, effectReflectionSrc.CountConstantBuffers * sizeof(ConstantBufferReflectionDescriptionData));
+				for (int k = 0; k < effectReflectionSrc.CountConstantBuffers; ++k)
+				{
+					const ConstantBufferReflectionDescription& constantBufferSrc = effectReflectionSrc.ConstantBuffers[k];
+					
+					int countMembers = constantBufferSrc.Members.size();
+					ConstantBufferMemberReflectionDescriptionData* membersInfo = nullptr;
+					membersInfo = (ConstantBufferMemberReflectionDescriptionData*)LocalAlloc(0, countMembers * sizeof(ConstantBufferMemberReflectionDescriptionData));
+					for (int m = 0; m < countMembers; ++m)
+					{
+						const ConstantBufferMemberReflectionDescription& memberSrc = constantBufferSrc.Members[m];
+						membersInfo[m] = ConstantBufferMemberReflectionDescriptionData(
+							memberSrc.Offset,
+							memberSrc.KeyName.c_str()
+						);
+					}
+
+					arrayConstantBuffer[k] = ConstantBufferReflectionDescriptionData(
+						constantBufferSrc.Size,
+						countMembers,
+						constantBufferSrc.CbufferName.c_str(),
+						membersInfo
+					);
+				}
+				*constantBuffers = arrayConstantBuffer;
+			}
+			else
+			{
+				*constantBuffers = nullptr;
+			}
+		}
+
+		if (resourceBindings != nullptr && countResourceBindings != nullptr)
 		{
 			*countResourceBindings = effectReflectionSrc.CountResourceBindings;
 			if (effectReflectionSrc.CountResourceBindings > 0)
 			{
-				EffectResourceBindingDescription* arrayResourceBindings = (EffectResourceBindingDescription*)LocalAlloc(0, effectReflectionSrc.CountResourceBindings * sizeof(EffectResourceBindingDescription));
+				EffectResourceBindingDescriptionData* arrayResourceBindings = (EffectResourceBindingDescriptionData*)LocalAlloc(0, effectReflectionSrc.CountResourceBindings * sizeof(EffectResourceBindingDescriptionData));
 				for (int k = 0; k < effectReflectionSrc.CountResourceBindings; ++k)
 				{
-					arrayResourceBindings[k] = effectReflectionSrc.ResourceBindings[k];
+					arrayResourceBindings[k] = EffectResourceBindingDescriptionData(effectReflectionSrc.ResourceBindings[k]);
 				}
 				*resourceBindings = arrayResourceBindings;
 			}
@@ -414,7 +453,7 @@ namespace xkslang
 			{
 				*resourceBindings = nullptr;
 			}
-		}*/
+		}
 
 		return true;
 	}

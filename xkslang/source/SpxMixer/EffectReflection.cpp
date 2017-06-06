@@ -33,22 +33,68 @@ void EffectReflection::Clear()
 
 //=====================================================================================================================
 //=====================================================================================================================
+// ConstantBuffer
 
-/*EffectResourceBindingDescription::EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, EffectParameterReflectionClass c, EffectParameterReflectionType t)
+//=====================================================================================================================
+//=====================================================================================================================
+// EffectResourceBindingDescription
+
+EffectResourceBindingDescription::EffectResourceBindingDescription()
+	: Stage(ShadingStageEnum::Undefined), Class(EffectParameterReflectionClass::Undefined), Type(EffectParameterReflectionType::Undefined), KeyName(nullptr)
+{
+}
+
+EffectResourceBindingDescription::EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, EffectParameterReflectionClass c, EffectParameterReflectionType t)
 	: Stage(stage), Class(c), Type(t)
 {
 	const int nameLen = keyName.size();
-	KeyName = new char[nameLen + 1];
-	for (int k = 0; k < nameLen; k++) KeyName[k] = keyName[k];
-	KeyName[nameLen] = '\0';
+	if (nameLen == 0) KeyName = nullptr;
+	else
+	{
+		KeyName = new char[nameLen + 1];
+		for (int k = 0; k < nameLen; k++) KeyName[k] = keyName[k];
+		KeyName[nameLen] = '\0';
+	}
+}
+
+EffectResourceBindingDescription::EffectResourceBindingDescription(const EffectResourceBindingDescription& e)
+	: Stage(e.Stage), Class(e.Class), Type(e.Type)
+{
+	if (e.KeyName == nullptr) KeyName = nullptr;
+	else
+	{
+		const int nameLen = strlen(e.KeyName);
+		KeyName = new char[nameLen + 1];
+		strcpy(KeyName, e.KeyName);
+	}
 }
 
 EffectResourceBindingDescription::~EffectResourceBindingDescription()
 {
 	if (KeyName != nullptr) delete[] KeyName;
 	KeyName = nullptr;
-}*/
+}
 
+EffectResourceBindingDescription& EffectResourceBindingDescription::operator=(const EffectResourceBindingDescription& e)
+{
+	Stage = e.Stage;
+	Class = e.Class;
+	Type = e.Type;
+
+	if (KeyName != nullptr) delete[] KeyName;
+	if (e.KeyName == nullptr) KeyName = nullptr;
+	else
+	{
+		const int nameLen = strlen(e.KeyName);
+		KeyName = new char[nameLen + 1];
+		strcpy(KeyName, e.KeyName);
+	}
+
+	return *this;
+}
+
+//=====================================================================================================================
+//=====================================================================================================================
 TypeReflectionDescription::~TypeReflectionDescription()
 {
     if (Members != nullptr)

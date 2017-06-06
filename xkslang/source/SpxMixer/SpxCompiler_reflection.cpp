@@ -680,8 +680,6 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                 ));
                         }
                     }
-
-					
                 }
             }
 
