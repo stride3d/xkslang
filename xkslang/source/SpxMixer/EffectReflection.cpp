@@ -29,6 +29,12 @@ void EffectReflection::Clear()
 		ResourceBindings = nullptr;
 	}
 	CountResourceBindings = 0;
+
+	if (InputAttributes != nullptr) {
+		delete[] InputAttributes;
+		InputAttributes = nullptr;
+	}
+	CountInputAttributes = 0;
 }
 
 //=====================================================================================================================
@@ -183,6 +189,7 @@ string EffectReflection::Print()
             stream << member.Print(2);
         }
     }
+
     stream << "ResourceBindings. Count=" << CountResourceBindings << endl;
     for (int rb = 0; rb < CountResourceBindings; ++rb)
     {
@@ -191,6 +198,14 @@ string EffectReflection::Print()
             << " Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(bindings.Class)
             << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(bindings.Type) << endl;
     }
+
+	stream << endl;
+	stream << "InputAttributes. Count=" << CountInputAttributes << endl;
+	for (int i = 0; i < CountInputAttributes; ++i)
+	{
+		ShaderInputAttributeDescription& ia = InputAttributes[i];
+		stream << " SemanticName=" << ia.SemanticName << " SemanticIndex=\"" << ia.SemanticIndex << endl;
+	}
 
     return stream.str();
 }

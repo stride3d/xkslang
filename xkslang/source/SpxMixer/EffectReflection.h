@@ -466,6 +466,20 @@ public:
 };
 
 //=====================================================================================================================
+// Input Attributes
+//=====================================================================================================================
+class ShaderInputAttributeDescription
+{
+public:
+	int SemanticIndex;
+	std::string SemanticName;
+
+public:
+	ShaderInputAttributeDescription() {}
+	ShaderInputAttributeDescription(int semanticIndex, std::string semanticName) : SemanticIndex(semanticIndex), SemanticName(semanticName) {}
+};
+
+//=====================================================================================================================
 // Effect Reflection
 //=====================================================================================================================
 class EffectReflection
@@ -477,8 +491,11 @@ public:
 	EffectResourceBindingDescription* ResourceBindings;
 	int CountResourceBindings;
 
+	ShaderInputAttributeDescription* InputAttributes;
+	int CountInputAttributes;
+
 public:
-    EffectReflection() : ConstantBuffers(nullptr), CountConstantBuffers(0), ResourceBindings(nullptr), CountResourceBindings(0){}
+    EffectReflection() : ConstantBuffers(nullptr), CountConstantBuffers(0), ResourceBindings(nullptr), CountResourceBindings(0), InputAttributes(nullptr), CountInputAttributes(0) {}
 	virtual ~EffectReflection();
 
     void Clear();

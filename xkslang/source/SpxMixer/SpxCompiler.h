@@ -242,9 +242,11 @@ public:
     {
     public:
         std::string variableName;
+		std::string semanticName;
+		int semanticIndex;
         TypeReflectionDescription variableTypeReflection;
 
-        VariableData(){}
+        VariableData() : semanticIndex(0) {}
     };
 
     class CBufferTypeData
@@ -741,7 +743,8 @@ private:
     bool ProcessBytecodeAndDataSanityCheck();
 
     bool GetBytecodeReflectionData(EffectReflection& effectReflection);
-    bool GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
+	bool GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
+	bool GetInputAttributesFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
 
     bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);

@@ -154,7 +154,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
         ShadingStageEnum stage = stagePipeline[iStage];
         for (unsigned int io = 0; io < outputStages.size(); ++io)
         {
-            bool stageFound = false;
+            bool stageFound = false; //to check that we don t have 2 outputs for a same stage
             if (outputStages[io].stage == stage)
             {
                 if (stageFound) return error(messages, string("2 output stages found for stage: ") + GetShadingStageLabel(stage));

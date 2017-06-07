@@ -60,10 +60,151 @@ bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
 
     bool success;
     success = GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(effectReflection, listEntryPoints);
+    if (!success) return error("Failed to get the CBuffer and ResourcesBinding reflection data from the bytecode");
 
-    if (!success) return error("Failed to get the CBuffer reflection data from the bytecode");
+	success = GetInputAttributesFromBytecode(effectReflection, listEntryPoints);
+	if (!success) return error("Failed to get the Input Attributes reflection data from the bytecode");
 
     return true;
+}
+
+bool SpxCompiler::GetInputAttributesFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints)
+{
+	bool success = true;
+
+	if (effectReflection.InputAttributes != nullptr || effectReflection.CountInputAttributes != 0) { return error("effectReflection.InputAttributes has not been properly released"); }
+
+	// the first stage that exists is the entry point in the pipeline for the streams
+	OutputStageEntryPoint& firstOutputStage = listEntryPoints[0];
+	for (unsigned int iStage = 1; iStage < listEntryPoints.size(); ++iStage)
+	{
+		if ((int)(listEntryPoints[iStage].stage) < (int)(firstOutputStage.stage)) firstOutputStage = listEntryPoints[iStage];
+	}
+	FunctionInstruction* firstStageEntryFunction = firstOutputStage.entryFunction;
+
+	vector<VariableInstruction*> vecInputVariables;
+	vector<VariableInstruction*> mapStreamInputVariableById;
+	mapStreamInputVariableById.resize(bound(), nullptr);
+
+	//Find the first stage input attributes: all input streams are accessed (loaded) within the stage main entry function
+	{
+		unsigned int start = firstStageEntryFunction->bytecodeStartPosition;
+		const unsigned int end = firstStageEntryFunction->bytecodeEndPosition;
+		while (start < end)
+		{
+			unsigned int wordCount = asWordCount(start);
+			spv::Op opCode = asOpCode(start);
+			switch (opCode)
+			{
+				case spv::OpLoad:
+				{
+					spv::Id idLoaded = asId(start + 3);
+
+					//are we accessing an input variable?
+					VariableInstruction* variable = GetVariableById(idLoaded);
+					if (variable != nullptr)
+					{
+						//is it an input variable?
+						spv::StorageClass storageClass = (spv::StorageClass)asLiteralValue(variable->bytecodeStartPosition + 3);
+						if (storageClass == spv::StorageClassInput)
+						{
+#ifdef XKSLANG_DEBUG_MODE
+							if (variable->variableData != nullptr) { error("The input variable already has some variable data allocated"); break; }
+							if (variable->GetId() >= mapStreamInputVariableById.size()) { error("Invalid variable id"); break; }
+							if (mapStreamInputVariableById[variable->GetId()] != nullptr) { error("a stream input variable is loaded more than once"); break; }
+#endif
+							variable->variableData = new VariableData();
+							vecInputVariables.push_back(variable);
+							mapStreamInputVariableById[variable->GetId()] = variable;
+						}
+					}
+					break;
+				}
+			}
+
+			start += wordCount;
+		} 
+	}
+
+	//Find the input variable semantic name
+    {
+        unsigned int start = header_size;
+        const unsigned int end = (unsigned int)spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+            switch (opCode)
+            {
+                case spv::OpSemanticName:
+                {
+                    spv::Id id = asId(start + 1);
+#ifdef XKSLANG_DEBUG_MODE
+                    if (id >= (unsigned int)mapStreamInputVariableById.size()) { error("Id out of bound: " + to_string(id)); break; }
+#endif
+                    if (mapStreamInputVariableById[id] != nullptr)
+                    {
+						VariableInstruction* variable = mapStreamInputVariableById[id];
+						variable->variableData->semanticName = literalString(start + 2);
+                    }
+                    break;
+                }
+
+				case spv::OpDecorate:
+				{
+					spv::Id id = asId(start + 1);
+					spv::Decoration decoration = (spv::Decoration)asLiteralValue(start + 2);
+					if (decoration == spv::Decoration::DecorationLocation)
+					{
+#ifdef XKSLANG_DEBUG_MODE
+						if (id >= (unsigned int)mapStreamInputVariableById.size()) { error("Id out of bound: " + to_string(id)); break; }
+#endif
+						if (mapStreamInputVariableById[id] != nullptr)
+						{
+							VariableInstruction* variable = mapStreamInputVariableById[id];
+							variable->variableData->semanticIndex = asLiteralValue(start + 3);
+						}
+					}
+					break;
+				}
+
+                case spv::OpFunction:
+                case spv::OpTypeFunction:
+                {
+                    start = end;
+                    break;
+                }
+            }
+            start += wordCount;
+        }
+    }
+	if (errorMessages.size() > 0) success = false;
+
+	//Create the inputAttributes
+	if (success)
+	{
+		effectReflection.CountInputAttributes = vecInputVariables.size();
+		if (effectReflection.CountInputAttributes > 0) effectReflection.InputAttributes = new ShaderInputAttributeDescription[effectReflection.CountInputAttributes];
+		for (int k = 0; k < effectReflection.CountInputAttributes; k++)
+		{
+			VariableData* variableData = vecInputVariables[k]->variableData;
+			effectReflection.InputAttributes[k] = ShaderInputAttributeDescription(variableData->semanticIndex, variableData->semanticName);
+		}
+	}
+
+	//delete allocated data
+	for (auto itrv = vecInputVariables.begin(); itrv != vecInputVariables.end(); itrv++)
+	{
+		VariableInstruction* variable = *itrv;
+		if (variable->variableData != nullptr)
+		{
+			delete variable->variableData;
+			variable->variableData = nullptr;
+		}
+	}
+
+	return success;
 }
 
 bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, vector<OutputStageEntryPoint>& listEntryPoints)
@@ -72,6 +213,10 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 
 	if (effectReflection.ConstantBuffers != nullptr || effectReflection.CountConstantBuffers != 0) { return error("effectReflection.ConstantBuffers has not been properly released"); }
 	if (effectReflection.ResourceBindings != nullptr || effectReflection.CountResourceBindings != 0) { return error("effectReflection.ResourceBindings has not been properly released"); }
+
+#ifdef XKSLANG_DEBUG_MODE
+	if (listEntryPoints.size() == 0) return error("No output stage entry points");
+#endif
 
     //=========================================================================================================================
     //=========================================================================================================================
@@ -524,13 +669,12 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 
     //=========================================================================================================================
     //=========================================================================================================================
-    //=========================================================================================================================
     //Add ResourceBindings info in EffectReflection
     // Find which cbuffer is used by which output stage
     // Find which variable resource is used by which output stage
     if (success)
     {
-		std::vector<EffectResourceBindingDescription> vecAllResourceBindings;
+		vector<EffectResourceBindingDescription> vecAllResourceBindings;
 
         //we access the cbuffer through their variable (not their type): update the targeted IDs
         for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
@@ -698,27 +842,27 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 		}
     }
 
-    //=========================================================================================================================
-    //=========================================================================================================================
-    //delete allocated data
-    for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
-    {
-        CBufferTypeData* cbufferData = *itcb;
-        if (cbufferData->cbufferMembersData != nullptr)
-        {
-            delete cbufferData->cbufferMembersData;
-            cbufferData->cbufferMembersData = nullptr;
-        }
-    }
-    for (auto itrv = listAllResourceVariables.begin(); itrv != listAllResourceVariables.end(); itrv++)
-    {
-        VariableInstruction* variable = *itrv;
-        if (variable->variableData != nullptr)
-        {
-            delete variable->variableData;
-            variable->variableData = nullptr;
-        }
-    }
+	//=========================================================================================================================
+	//=========================================================================================================================
+	//delete allocated data
+	for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
+	{
+		CBufferTypeData* cbufferData = *itcb;
+		if (cbufferData->cbufferMembersData != nullptr)
+		{
+			delete cbufferData->cbufferMembersData;
+			cbufferData->cbufferMembersData = nullptr;
+		}
+	}
+	for (auto itrv = listAllResourceVariables.begin(); itrv != listAllResourceVariables.end(); itrv++)
+	{
+		VariableInstruction* variable = *itrv;
+		if (variable->variableData != nullptr)
+		{
+			delete variable->variableData;
+			variable->variableData = nullptr;
+		}
+	}
 
     return success;
 }
