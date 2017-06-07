@@ -9,14 +9,67 @@
 
 namespace xkslang
 {
+	//=====================================================================================================================
+	//Structs declaration
+	//=====================================================================================================================
     struct OutputStageEntryPoint
     {
         ShadingStageEnum stage;
         const char* entryPointName;
     };
 
-    //Return the error messages after an operation failed
-    extern "C" __declspec(dllexport) void GetErrorMessages(char *buffer, int32_t bufferLength);
+	//struct containing a constant buffer member data (to be easily exchanged between native and managed apps)
+	struct ConstantBufferMemberReflectionDescriptionData
+	{
+	public:
+		int32_t Offset;
+		const char* MemberName;
+		EffectParameterReflectionClass Class;
+		EffectParameterReflectionType Type;
+		int32_t RowCount;
+		int32_t ColumnCount;
+		int32_t ArrayElements;
+		int32_t Size;
+		int32_t Alignment;
+		int32_t ArrayStride;
+		int32_t MatrixStride;
+		int32_t CountMembers;
+		//TypeMemberReflectionDescription* Members;
+
+		ConstantBufferMemberReflectionDescriptionData(const int32_t offset, const char* name, const TypeReflectionDescription& t)
+			: Offset(offset), MemberName(name), Class(t.Class), Type(t.Type), RowCount(t.RowCount), ColumnCount(t.ColumnCount), ArrayElements(t.ArrayElements), Size(t.Size),
+			Alignment(t.Alignment), ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), CountMembers(t.CountMembers) {}
+	};
+
+	//struct containing a constant buffer data (to be easily exchanged between native and managed apps)
+	struct ConstantBufferReflectionDescriptionData
+	{
+	public:
+		int32_t Size;
+		int32_t CountMembers;
+		const char* CbufferName;
+		ConstantBufferMemberReflectionDescriptionData* Members;
+
+		ConstantBufferReflectionDescriptionData(const int32_t size, const int32_t countMembers, const char* name, ConstantBufferMemberReflectionDescriptionData* members)
+			: Size(size), CountMembers(countMembers), CbufferName(name), Members(members) {}
+	};
+
+	//struct containing a resource binding data (to be easily exchanged between native and managed apps)
+	struct EffectResourceBindingDescriptionData
+	{
+	public:
+		ShadingStageEnum Stage;
+		EffectParameterReflectionClass Class;
+		EffectParameterReflectionType Type;
+		const char* KeyName;
+
+		EffectResourceBindingDescriptionData(const EffectResourceBindingDescription& e, const char* keyName) : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName) {}
+	};
+
+	//=====================================================================================================================
+	//=====================================================================================================================
+	//Return the error messages after an operation failed
+	extern "C" __declspec(dllexport) const char* GetErrorMessages();
 
     //=====================================================================================================================
     //=====================================================================================================================
@@ -95,7 +148,9 @@ namespace xkslang
 /*
 Reference code from C# app
 
-	public class XkslangDLLBindingClass
+namespace SiliconStudio.Xenko.Shaders.Compiler
+{
+    public class XkslangDLLBindingClass
     {
         public static ShaderSourceManager ShaderSourceManager { get; set; }
 
@@ -119,7 +174,7 @@ Reference code from C# app
 
         //Return the error messages after an operation failed
         [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void GetErrorMessages(StringBuilder str, Int32 bufferMaxLen);
+        public static extern IntPtr GetErrorMessages();
 
         //=====================================================================================================================
         // Parsing functions: parse and convert xksl shaders to SPX bytecode
@@ -236,18 +291,27 @@ Reference code from C# app
         //=====================================================================================================================
         public struct ConstantBufferMemberReflectionDescriptionData
         {
-            public UInt32 Offset;
-            [MarshalAs(UnmanagedType.LPStr)]
-            public string Name;
+            public Int32 Offset;
+            public IntPtr MemberName;
+
+            EffectParameterReflectionClassEnum Class;
+            EffectParameterReflectionTypeEnum Type;
+            Int32 RowCount;
+            Int32 ColumnCount;
+            Int32 ArrayElements;
+            Int32 Size;
+            Int32 Alignment;
+            Int32 ArrayStride;
+            Int32 MatrixStride;
+            Int32 CountMembers;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct ConstantBufferReflectionDescriptionData
         {
-            public UInt32 Size;
-            public UInt32 CountMembers;
-            [MarshalAs(UnmanagedType.LPStr)]
-            public string CbufferName;
+            public Int32 Size;
+            public Int32 CountMembers;
+            public IntPtr CbufferName;
             public IntPtr Members;
         }
 
@@ -255,11 +319,12 @@ Reference code from C# app
         public struct EffectResourceBindingDescriptionData
         {
             public ShadingStageEnum Stage;
-            public EffectParameterReflectionClassEnum Class; // EffectParameterClass Class;
-            public EffectParameterReflectionTypeEnum Type;  // EffectParameterType Type;
+            public EffectParameterReflectionClassEnum Class;
+            public EffectParameterReflectionTypeEnum Type;
+            public IntPtr KeyName;
 
-            [MarshalAs(UnmanagedType.LPStr)]
-            public string KeyName;
+            //[MarshalAs(UnmanagedType.LPStr)]
+            //public string KeyName;
         }
 
         [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -349,7 +414,7 @@ Reference code from C# app
         //=====================================================================================================================
         //Conversion functions
         //=====================================================================================================================
-        public static ShaderStage ConvertShadingStageEnumToShaderStage(ShadingStageEnum stage)
+        public static ShaderStage ConvertShadingStageEnum(ShadingStageEnum stage)
         {
             switch (stage)
             {
@@ -362,6 +427,76 @@ Reference code from C# app
             }
 
             return ShaderStage.None;
+        }
+
+        public static EffectParameterClass ConvertEffectParameterReflectionClassEnum(EffectParameterReflectionClassEnum c)
+        {
+            switch (c)
+            {
+                case EffectParameterReflectionClassEnum.Scalar: return EffectParameterClass.Scalar;
+                case EffectParameterReflectionClassEnum.Vector: return EffectParameterClass.Vector;
+                case EffectParameterReflectionClassEnum.MatrixRows: return EffectParameterClass.MatrixRows;
+                case EffectParameterReflectionClassEnum.MatrixColumns: return EffectParameterClass.MatrixColumns;
+                case EffectParameterReflectionClassEnum.Object: return EffectParameterClass.Object;
+                case EffectParameterReflectionClassEnum.Struct: return EffectParameterClass.Struct;
+                case EffectParameterReflectionClassEnum.InterfaceClass: return EffectParameterClass.InterfaceClass;
+                case EffectParameterReflectionClassEnum.InterfacePointer: return EffectParameterClass.InterfacePointer;
+                case EffectParameterReflectionClassEnum.Sampler: return EffectParameterClass.Sampler;
+                case EffectParameterReflectionClassEnum.ShaderResourceView: return EffectParameterClass.ShaderResourceView;
+                case EffectParameterReflectionClassEnum.ConstantBuffer: return EffectParameterClass.ConstantBuffer;
+                case EffectParameterReflectionClassEnum.TextureBuffer: return EffectParameterClass.TextureBuffer;
+                case EffectParameterReflectionClassEnum.UnorderedAccessView: return EffectParameterClass.UnorderedAccessView;
+                case EffectParameterReflectionClassEnum.Color: return EffectParameterClass.Color;
+            }
+
+            throw new Exception("Unknown EffectParameterReflectionClassEnum: " + c);
+        }
+
+        public static EffectParameterType ConvertEffectParameterReflectionTypeEnum(EffectParameterReflectionTypeEnum t)
+        {
+            switch (t)
+            {
+                case EffectParameterReflectionTypeEnum.Void: return EffectParameterType.Void;
+                case EffectParameterReflectionTypeEnum.Bool: return EffectParameterType.Bool;
+                case EffectParameterReflectionTypeEnum.Int: return EffectParameterType.Int;
+                case EffectParameterReflectionTypeEnum.Float: return EffectParameterType.Float;
+                case EffectParameterReflectionTypeEnum.String: return EffectParameterType.String;
+                case EffectParameterReflectionTypeEnum.Texture: return EffectParameterType.Texture;
+                case EffectParameterReflectionTypeEnum.Texture1D: return EffectParameterType.Texture1D;
+                case EffectParameterReflectionTypeEnum.Texture2D: return EffectParameterType.Texture2D;
+                case EffectParameterReflectionTypeEnum.Texture3D: return EffectParameterType.Texture3D;
+                case EffectParameterReflectionTypeEnum.TextureCube: return EffectParameterType.TextureCube;
+                case EffectParameterReflectionTypeEnum.Sampler: return EffectParameterType.Sampler;
+                case EffectParameterReflectionTypeEnum.Sampler1D: return EffectParameterType.Sampler1D;
+                case EffectParameterReflectionTypeEnum.Sampler2D: return EffectParameterType.Sampler2D;
+                case EffectParameterReflectionTypeEnum.Sampler3D: return EffectParameterType.Sampler3D;
+                case EffectParameterReflectionTypeEnum.SamplerCube: return EffectParameterType.SamplerCube;
+                case EffectParameterReflectionTypeEnum.UInt: return EffectParameterType.UInt;
+                case EffectParameterReflectionTypeEnum.UInt8: return EffectParameterType.UInt8;
+                case EffectParameterReflectionTypeEnum.Buffer: return EffectParameterType.Buffer;
+                case EffectParameterReflectionTypeEnum.ConstantBuffer: return EffectParameterType.ConstantBuffer;
+                case EffectParameterReflectionTypeEnum.TextureBuffer: return EffectParameterType.TextureBuffer;
+                case EffectParameterReflectionTypeEnum.Texture1DArray: return EffectParameterType.Texture1DArray;
+                case EffectParameterReflectionTypeEnum.Texture2DArray: return EffectParameterType.Texture2DArray;
+                case EffectParameterReflectionTypeEnum.Texture2DMultisampled: return EffectParameterType.Texture2DMultisampled;
+                case EffectParameterReflectionTypeEnum.Texture2DMultisampledArray: return EffectParameterType.Texture2DMultisampledArray;
+                case EffectParameterReflectionTypeEnum.TextureCubeArray: return EffectParameterType.TextureCubeArray;
+                case EffectParameterReflectionTypeEnum.Double: return EffectParameterType.Double;
+                case EffectParameterReflectionTypeEnum.RWTexture1D: return EffectParameterType.RWTexture1D;
+                case EffectParameterReflectionTypeEnum.RWTexture1DArray: return EffectParameterType.RWTexture1DArray;
+                case EffectParameterReflectionTypeEnum.RWTexture2D: return EffectParameterType.RWTexture2D;
+                case EffectParameterReflectionTypeEnum.RWTexture2DArray: return EffectParameterType.RWTexture2DArray;
+                case EffectParameterReflectionTypeEnum.RWTexture3D: return EffectParameterType.RWTexture3D;
+                case EffectParameterReflectionTypeEnum.RWBuffer: return EffectParameterType.RWBuffer;
+                case EffectParameterReflectionTypeEnum.ByteAddressBuffer: return EffectParameterType.ByteAddressBuffer;
+                case EffectParameterReflectionTypeEnum.RWByteAddressBuffer: return EffectParameterType.RWByteAddressBuffer;
+                case EffectParameterReflectionTypeEnum.StructuredBuffer: return EffectParameterType.StructuredBuffer;
+                case EffectParameterReflectionTypeEnum.RWStructuredBuffer: return EffectParameterType.RWStructuredBuffer;
+                case EffectParameterReflectionTypeEnum.AppendStructuredBuffer: return EffectParameterType.AppendStructuredBuffer;
+                case EffectParameterReflectionTypeEnum.ConsumeStructuredBuffer: return EffectParameterType.ConsumeStructuredBuffer;
+            }
+
+            throw new Exception("Unknown EffectParameterReflectionTypeEnum: " + t);
         }
     }
 
@@ -456,7 +591,7 @@ Reference code from C# app
                     //convert the XKSL shader to SPX bytecode
                     int bytecodeLength = 0;
                     IntPtr pBytecodeBuffer = XkslangDLLBindingClass.ConvertXkslShaderToSPX(shaderName, XkslangDLLBindingClass.ShaderSourceLoaderCallback, out bytecodeLength);
-                    if (pBytecodeBuffer == null || bytecodeLength < 0) throw new Exception("Failed to convert the Xksl shader: " + shaderName);
+                    if (pBytecodeBuffer == IntPtr.Zero || bytecodeLength < 0) throw new Exception("Failed to convert the Xksl shader: " + shaderName);
 
                     //copy the bytecode and free the object (allocated by the dll)
                     effectSpxBytecode = new Int32[bytecodeLength];
@@ -468,7 +603,7 @@ Reference code from C# app
                     {
                         int asciiBufferLength = 0;
                         IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(effectSpxBytecode, effectSpxBytecode.Length, out asciiBufferLength);
-                        if (pAsciiBytecodeBuffer == null || asciiBufferLength < 0) throw new Exception("Failed to convert the Spx bytecode into Ascii");
+                        if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength < 0) throw new Exception("Failed to convert the Spx bytecode into Ascii");
 
                         Byte[] asciiByteArray = new Byte[asciiBufferLength];
                         Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
@@ -478,10 +613,16 @@ Reference code from C# app
                 }
                 catch (Exception e)
                 {
-                    //Get the error messages from xkslang DLL
-                    StringBuilder errorMsg = new StringBuilder(1024);
-                    XkslangDLLBindingClass.GetErrorMessages(errorMsg, errorMsg.Capacity);
-                    string errorMessages = e.Message + '\n' + errorMsg;
+                    string errorMessages = e.Message;
+
+                    //Check if we can get some error messages from xkslang DLL
+                    IntPtr pErrorMsgs = XkslangDLLBindingClass.GetErrorMessages();
+                    if (pErrorMsgs != IntPtr.Zero)
+                    {
+                        string xkslangErrorMsg = Marshal.PtrToStringAnsi(pErrorMsgs);
+                        if (xkslangErrorMsg != null && xkslangErrorMsg.Length > 0) errorMessages = errorMessages + '\n' + xkslangErrorMsg;
+                        Marshal.FreeHGlobal(pErrorMsgs);
+                    }
 
                     string[] messages = errorMessages.Split('\n');
                     foreach (string str in messages) if (str.Length > 0) Console.WriteLine(str);
@@ -563,7 +704,7 @@ Reference code from C# app
                             {
                                 int asciiBufferLength = 0;
                                 IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(mixinCompiledBytecode, mixinCompiledBytecode.Length, out asciiBufferLength);
-                                if (pAsciiBytecodeBuffer == null || asciiBufferLength < 0) throw new Exception("Failed to convert the bytecode to Ascii");
+                                if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength < 0) throw new Exception("Failed to convert the bytecode to Ascii");
 
                                 Byte[] asciiByteArray = new Byte[asciiBufferLength];
                                 Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
@@ -595,7 +736,7 @@ Reference code from C# app
                             {
                                 int asciiBufferLength = 0;
                                 IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(spvBytecodeVS, spvBytecodeVS.Length, out asciiBufferLength);
-                                if (pAsciiBytecodeBuffer == null || asciiBufferLength < 0) throw new Exception("Failed to convert the bytecode to Ascii");
+                                if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength < 0) throw new Exception("Failed to convert the bytecode to Ascii");
 
                                 Byte[] asciiByteArray = new Byte[asciiBufferLength];
                                 Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
@@ -619,7 +760,7 @@ Reference code from C# app
                             {
                                 int bufferLen = 0;
                                 IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToHlsl(spvBytecodeVS, spvBytecodeVS.Length, hlslShaderModel, out bufferLen);
-                                if (pBuffer == null || bufferLen < 0) throw new Exception("Failed to convert the VS bytecode to HLSL");
+                                if (pBuffer == IntPtr.Zero || bufferLen < 0) throw new Exception("Failed to convert the VS bytecode to HLSL");
 
                                 Byte[] byteArray = new Byte[bufferLen];
                                 Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
@@ -651,7 +792,7 @@ Reference code from C# app
                             {
                                 int asciiBufferLength = 0;
                                 IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(spvBytecodePS, spvBytecodePS.Length, out asciiBufferLength);
-                                if (pAsciiBytecodeBuffer == null || asciiBufferLength < 0) throw new Exception("Failed to convert the PS bytecode to Ascii");
+                                if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength < 0) throw new Exception("Failed to convert the PS bytecode to Ascii");
 
                                 Byte[] asciiByteArray = new Byte[asciiBufferLength];
                                 Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
@@ -675,7 +816,7 @@ Reference code from C# app
                             {
                                 int bufferLen = 0;
                                 IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToHlsl(spvBytecodePS, spvBytecodePS.Length, hlslShaderModel, out bufferLen);
-                                if (pBuffer == null || bufferLen < 0) throw new Exception("Failed to convert the PS bytecode to HLSL");
+                                if (pBuffer == IntPtr.Zero || bufferLen < 0) throw new Exception("Failed to convert the PS bytecode to HLSL");
 
                                 Byte[] byteArray = new Byte[bufferLen];
                                 Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
@@ -684,7 +825,7 @@ Reference code from C# app
                             }
                         }
 
-                        //Get and build the reflection data
+                        //Query and build the EffectReflection data
                         {
                             EffectReflection effectReflection = new EffectReflection();
 
@@ -696,6 +837,7 @@ Reference code from C# app
                             success = XkslangDLLBindingClass.GetMixerEffectReflectionData(mixerHandleId, out pAllocsConstantBuffers, out countConstantBuffers, out pAllocsResourceBindings, out countResourceBindings);
                             if (!success) throw new Exception("Failed to get the Effect Reflection data");
 
+                            //Process the ResourceBindings
                             if (countResourceBindings > 0 && pAllocsResourceBindings != IntPtr.Zero)
                             {
                                 int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
@@ -707,52 +849,94 @@ Reference code from C# app
 
                                     var binding = new EffectResourceBindingDescription()
                                     {
-                                        Stage = XkslangDLLBindingClass.ConvertShadingStageEnumToShaderStage(effectResourceBinding.Stage),
-                                        Class = effectResourceBinding.Class,
-                                        Type = effectResourceBinding.Type,
+                                        Stage = XkslangDLLBindingClass.ConvertShadingStageEnum(effectResourceBinding.Stage),
+                                        Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(effectResourceBinding.Class),
+                                        Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(effectResourceBinding.Type),
                                         KeyInfo =
                                         {
-                                            KeyName = effectResourceBinding.KeyName,
+                                            KeyName = Marshal.PtrToStringAnsi(effectResourceBinding.KeyName),
                                         },
                                     };
                                     effectReflection.ResourceBindings.Add(binding);
+
+                                    Marshal.FreeHGlobal(effectResourceBinding.KeyName);
                                 }
 
                                 //delete the data allocated on the native code
                                 Marshal.FreeHGlobal(pAllocsResourceBindings);
                             }
 
-                            XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData[] effectConstantBuffers = null;
+                            //Process the ConstantBuffers
                             if (countConstantBuffers > 0 && pAllocsConstantBuffers != IntPtr.Zero)
                             {
                                 int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
-                                effectConstantBuffers = new XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData[countConstantBuffers];
                                 for (int i = 0; i < countConstantBuffers; i++)
                                 {
-                                    effectConstantBuffers[i] = (XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData)Marshal.PtrToStructure(
+                                    //read the cbuffer data
+                                    XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData constantBufferData;
+                                    constantBufferData = (XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData)Marshal.PtrToStructure(
                                         new IntPtr(pAllocsConstantBuffers.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
 
-                                    for (int m = 0; m < effectConstantBuffers[i].CountMembers; ++m)
+                                    //process the cbuffer members
+                                    EffectValueDescription[] cbufferMembers = null;
+                                    if (constantBufferData.CountMembers > 0)
                                     {
+                                        cbufferMembers = new EffectValueDescription[constantBufferData.CountMembers];
+
+                                        //read the member data
                                         int memberStructSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
-                                        XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData member = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
-                                            new IntPtr(effectConstantBuffers[i].Members.ToInt32() + (memberStructSize * m)), typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
-                                        int dsgdsf = 55555;
+                                        for (int m = 0; m < constantBufferData.CountMembers; ++m)
+                                        {
+                                            XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData memberData;
+                                            memberData = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
+                                                new IntPtr(constantBufferData.Members.ToInt32() + (memberStructSize * m)), typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
+
+                                            string memberName = Marshal.PtrToStringAnsi(memberData.MemberName);
+                                            cbufferMembers[m] = new EffectValueDescription()
+                                            {
+                                                KeyInfo =
+                                                {
+                                                    KeyName = memberName,
+                                                },
+                                                RawName = memberName,
+                                                Offset = memberData.Offset,
+                                            };
+
+                                            Marshal.FreeHGlobal(memberData.MemberName);
+                                        }
+
+                                        Marshal.FreeHGlobal(constantBufferData.Members);
                                     }
+
+                                    //create the cbuffer
+                                    string cbufferName = Marshal.PtrToStringAnsi(constantBufferData.CbufferName);
+                                    EffectConstantBufferDescription constantBuffer = new EffectConstantBufferDescription()
+                                    {
+                                        Name = cbufferName,
+                                        Size = constantBufferData.Size,
+                                        Members = cbufferMembers,
+                                    };
+                                    effectReflection.ConstantBuffers.Add(constantBuffer);
+
+                                    Marshal.FreeHGlobal(constantBufferData.CbufferName);
                                 }
 
                                 Marshal.FreeHGlobal(pAllocsConstantBuffers);
                             }
 
-                            int toto = 243244;
-                        }
+                        }  //end of: //Query and build the EffectReflection data
                     }
                     catch (Exception e)
                     {
-                        //Get the error messages from xkslang DLL
-                        StringBuilder errorMsg = new StringBuilder(1024);
-                        XkslangDLLBindingClass.GetErrorMessages(errorMsg, errorMsg.Capacity);
-                        string errorMessages = e.Message + '\n' + errorMsg;
+                        string errorMessages = e.Message;
+
+                        IntPtr pErrorMsgs = XkslangDLLBindingClass.GetErrorMessages();
+                        if (pErrorMsgs != IntPtr.Zero)
+                        {
+                            string xkslangErrorMsg = Marshal.PtrToStringAnsi(pErrorMsgs);
+                            if (xkslangErrorMsg != null && xkslangErrorMsg.Length > 0) errorMessages = errorMessages + '\n' + xkslangErrorMsg;
+                            Marshal.FreeHGlobal(pErrorMsgs);
+                        }
 
                         string[] messages = errorMessages.Split('\n');
                         foreach (string str in messages) if (str.Length > 0) Console.WriteLine(str);

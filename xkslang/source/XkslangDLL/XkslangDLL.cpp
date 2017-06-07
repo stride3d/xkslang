@@ -28,33 +28,30 @@ namespace xkslang
         return false;
     }
 
-    void GetErrorMessages(char *buffer, int32_t maxBufferLength)
+	static const char* allocateAndCopyString(const char* txt)
+	{
+		if (txt == nullptr) return nullptr;
+		int len = strlen(txt);
+		char* res = (char*)LocalAlloc(0, (len + 1) * sizeof(char));
+		strncpy(res, txt, len);
+		res[len] = '\n';
+		return res;
+	}
+
+    const char* GetErrorMessages()
     {
-        maxBufferLength--;
-        if (maxBufferLength <= 0) return;
+		if (errorMessages.size() == 0) return nullptr;
 
-        int offset = 0;
-        int remainingLen = maxBufferLength;
+		stringstream stream;
         for (unsigned int n = 0; n < errorMessages.size(); ++n)
-        {
-            string& errorMsg = errorMessages[n];
-            int len = (int)errorMsg.size();
+			stream << errorMessages[n] << endl;
 
-            if (len > remainingLen) len = remainingLen;
-            strncpy(buffer + offset, errorMsg.c_str(), len);
+		string str = stream.str();
+		unsigned int len = str.size();
 
-            remainingLen -= len;
-            offset += len;
-            if (remainingLen <= 0) break;
-
-            buffer[offset] = '\n';
-            remainingLen--;
-            offset++;
-            if (remainingLen <= 1) break;
-        }
-
-        if (offset > maxBufferLength) offset = maxBufferLength;
-        buffer[offset] = 0;
+		//allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
+		const char* pBuffer = allocateAndCopyString(str.c_str());
+		return pBuffer;
     }
 
     //=====================================================================================================================
@@ -399,7 +396,11 @@ namespace xkslang
 
 		const EffectReflection& effectReflectionSrc = mixerData->effectReflection;
 
-		//Copy the effect reflection data into the parameters: allocate all buffers & elements using LocalAlloc, so that the calling framework can delete it properly
+		//===========================================================================================================================================================================
+		//===========================================================================================================================================================================
+		//Copy the effect reflection data into the output parameters: allocate all buffers & elements using LocalAlloc, so that the calling framework can delete it properly
+
+		//ConstantBuffers
 		if (constantBuffers != nullptr && countConstantBuffers != nullptr)
 		{
 			*countConstantBuffers = effectReflectionSrc.CountConstantBuffers;
@@ -416,16 +417,19 @@ namespace xkslang
 					for (int m = 0; m < countMembers; ++m)
 					{
 						const ConstantBufferMemberReflectionDescription& memberSrc = constantBufferSrc.Members[m];
+						const char* memberName = allocateAndCopyString(memberSrc.KeyName.c_str());
 						membersInfo[m] = ConstantBufferMemberReflectionDescriptionData(
 							memberSrc.Offset,
-							memberSrc.KeyName.c_str()
+							memberName,
+							memberSrc.ReflectionType
 						);
 					}
 
+					const char* cbufferName = allocateAndCopyString(constantBufferSrc.CbufferName.c_str());
 					arrayConstantBuffer[k] = ConstantBufferReflectionDescriptionData(
 						constantBufferSrc.Size,
 						countMembers,
-						constantBufferSrc.CbufferName.c_str(),
+						cbufferName,
 						membersInfo
 					);
 				}
@@ -437,6 +441,7 @@ namespace xkslang
 			}
 		}
 
+		//ResourceBinding
 		if (resourceBindings != nullptr && countResourceBindings != nullptr)
 		{
 			*countResourceBindings = effectReflectionSrc.CountResourceBindings;
@@ -445,7 +450,8 @@ namespace xkslang
 				EffectResourceBindingDescriptionData* arrayResourceBindings = (EffectResourceBindingDescriptionData*)LocalAlloc(0, effectReflectionSrc.CountResourceBindings * sizeof(EffectResourceBindingDescriptionData));
 				for (int k = 0; k < effectReflectionSrc.CountResourceBindings; ++k)
 				{
-					arrayResourceBindings[k] = EffectResourceBindingDescriptionData(effectReflectionSrc.ResourceBindings[k]);
+					const char* keyName = allocateAndCopyString(effectReflectionSrc.ResourceBindings[k].KeyName);
+					arrayResourceBindings[k] = EffectResourceBindingDescriptionData(effectReflectionSrc.ResourceBindings[k], keyName);
 				}
 				*resourceBindings = arrayResourceBindings;
 			}

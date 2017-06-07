@@ -426,7 +426,6 @@ class ConstantBufferMemberReflectionDescription
 {
 public:
     std::string KeyName;
-
     int Offset;
     TypeReflectionDescription ReflectionType;
 
@@ -439,33 +438,11 @@ public:
 class ConstantBufferReflectionDescription
 {
 public:
-	uint32_t Size;
+	int Size;
     std::string CbufferName;
     std::vector<ConstantBufferMemberReflectionDescription> Members;
 
     ConstantBufferReflectionDescription() : Size(0) {}
-};
-
-//minimal struct containing a constant buffer data (to be easily exchanged between native and managed apps)
-struct ConstantBufferMemberReflectionDescriptionData
-{
-public:
-	uint32_t Offset;
-	const char* Name;
-
-	ConstantBufferMemberReflectionDescriptionData(const uint32_t offset, const char* name) : Offset(offset), Name(name) {}
-};
-
-struct ConstantBufferReflectionDescriptionData
-{
-public:
-	uint32_t Size;
-	uint32_t CountMembers;
-	const char* CbufferName;
-	ConstantBufferMemberReflectionDescriptionData* Members;
-
-	ConstantBufferReflectionDescriptionData(const uint32_t size, const uint32_t countMembers, const char* name, ConstantBufferMemberReflectionDescriptionData* members)
-		: Size(size), CountMembers(countMembers), CbufferName(name), Members(members) {}
 };
 
 //=====================================================================================================================
@@ -486,18 +463,6 @@ public:
 	virtual ~EffectResourceBindingDescription();
 
 	EffectResourceBindingDescription& operator=(const EffectResourceBindingDescription& e);
-};
-
-//minimal struct containing a resource binding data (to be easily exchanged between native and managed apps)
-struct EffectResourceBindingDescriptionData
-{
-public:
-	ShadingStageEnum Stage;
-	EffectParameterReflectionClass Class;
-	EffectParameterReflectionType Type;
-	char* KeyName;
-
-	EffectResourceBindingDescriptionData(const EffectResourceBindingDescription& e) : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(e.KeyName) {}
 };
 
 //=====================================================================================================================
