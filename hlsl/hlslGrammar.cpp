@@ -82,6 +82,7 @@ TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary
     this->xkslShaderCurrentlyParsed = currentShader;
     this->functionCurrentlyParsed = nullptr;
 
+	advanceToken();
     while (!peekTokenClass(EHTokAssign))
     {
         if (peekTokenClass(EHTokNone))
