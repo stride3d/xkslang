@@ -66,6 +66,16 @@ namespace xkslang
 		EffectResourceBindingDescriptionData(const EffectResourceBindingDescription& e, const char* keyName) : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName) {}
 	};
 
+	//struct containing an input attribute data (to be easily exchanged between native and managed apps)
+	struct ShaderInputAttributeDescriptionData
+	{
+	public:
+		int SemanticIndex;
+		const char* SemanticName;
+
+		ShaderInputAttributeDescriptionData(int semanticIndex, const char* semanticName) : SemanticIndex(semanticIndex), SemanticName(semanticName) {}
+	};
+
 	//=====================================================================================================================
 	//=====================================================================================================================
 	//Return the error messages after an operation failed
@@ -141,7 +151,8 @@ namespace xkslang
 	//After a mixer has been successfully compiled: call this function to get its Effect Reflection Data
 	extern "C" __declspec(dllexport) bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
 		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers,
-		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings);
+		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings,
+		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes);
 }
 
 

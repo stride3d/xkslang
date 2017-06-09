@@ -28,13 +28,13 @@ namespace xkslang
         return false;
     }
 
-	static const char* allocateAndCopyString(const char* txt)
+	static const char* allocateAndCopyStringOnGlobalHeap(const char* txt)
 	{
 		if (txt == nullptr) return nullptr;
 		int len = strlen(txt);
-		char* res = (char*)LocalAlloc(0, (len + 1) * sizeof(char));
+		char* res = (char*)GlobalAlloc(0, (len + 1) * sizeof(char));
 		strncpy(res, txt, len);
-		res[len] = '\n';
+		res[len] = '\0';
 		return res;
 	}
 
@@ -49,8 +49,8 @@ namespace xkslang
 		string str = stream.str();
 		unsigned int len = str.size();
 
-		//allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
-		const char* pBuffer = allocateAndCopyString(str.c_str());
+		//allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
+		const char* pBuffer = allocateAndCopyStringOnGlobalHeap(str.c_str());
 		return pBuffer;
     }
 
@@ -77,8 +77,8 @@ namespace xkslang
         int asciiBufferLen = bytecodeText.size();
         if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
-        //allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
-        char* asciiBuffer = (char*)LocalAlloc(0, asciiBufferLen * sizeof(char));
+        //allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
+        char* asciiBuffer = (char*)GlobalAlloc(0, asciiBufferLen * sizeof(char));
         strncpy(asciiBuffer, bytecodeText.c_str(), asciiBufferLen);
         *asciiBufferSize = asciiBufferLen;
         return asciiBuffer;
@@ -103,8 +103,8 @@ namespace xkslang
         int asciiBufferLen = bytecodeText.size();
         if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
-		//allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
-        char* asciiBuffer = (char*)LocalAlloc(0, asciiBufferLen * sizeof(char));
+		//allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
+        char* asciiBuffer = (char*)GlobalAlloc(0, asciiBufferLen * sizeof(char));
         strncpy(asciiBuffer, bytecodeText.c_str(), asciiBufferLen);
         *asciiBufferSize = asciiBufferLen;
         return asciiBuffer;
@@ -129,8 +129,8 @@ namespace xkslang
         int asciiBufferLen = bytecodeText.size();
         if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
-		//allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
-        char* asciiBuffer = (char*)LocalAlloc(0, asciiBufferLen * sizeof(char));
+		//allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
+        char* asciiBuffer = (char*)GlobalAlloc(0, asciiBufferLen * sizeof(char));
         strncpy(asciiBuffer, bytecodeText.c_str(), asciiBufferLen);
         *asciiBufferSize = asciiBufferLen;
         return asciiBuffer;
@@ -206,8 +206,8 @@ namespace xkslang
         int bytecodeLen = (int)bytecode.size();
         if (bytecodeLen <= 0) { error("Resulting bytecode is empty"); return nullptr; }
 
-		//allocate a byte buffer using LocalAlloc, so we can return it to the calling app and let it delete it
-        uint32_t* byteBuffer = (uint32_t*)LocalAlloc(0, bytecodeLen * sizeof(uint32_t));
+		//allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
+        uint32_t* byteBuffer = (uint32_t*)GlobalAlloc(0, bytecodeLen * sizeof(uint32_t));
         //for (int i = 0; i < bytecodeLen; ++i) byteBuffer[i] = bytecode[i];
         
         uint32_t* pDest = byteBuffer;
@@ -374,7 +374,8 @@ namespace xkslang
 
 	bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
 		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers,
-		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings)
+		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings,
+		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes)
 	{
 		errorMessages.clear();
 
@@ -398,7 +399,7 @@ namespace xkslang
 
 		//===========================================================================================================================================================================
 		//===========================================================================================================================================================================
-		//Copy the effect reflection data into the output parameters: allocate all buffers & elements using LocalAlloc, so that the calling framework can delete it properly
+		//Copy the effect reflection data into the output parameters: allocate all buffers & elements using GlobalAlloc, so that the calling framework can delete it properly
 
 		//ConstantBuffers
 		if (constantBuffers != nullptr && countConstantBuffers != nullptr)
@@ -406,18 +407,18 @@ namespace xkslang
 			*countConstantBuffers = effectReflectionSrc.CountConstantBuffers;
 			if (effectReflectionSrc.CountConstantBuffers > 0)
 			{
-				ConstantBufferReflectionDescriptionData* arrayConstantBuffer = (ConstantBufferReflectionDescriptionData*)LocalAlloc(0, effectReflectionSrc.CountConstantBuffers * sizeof(ConstantBufferReflectionDescriptionData));
+				ConstantBufferReflectionDescriptionData* arrayConstantBuffer = (ConstantBufferReflectionDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountConstantBuffers * sizeof(ConstantBufferReflectionDescriptionData));
 				for (int k = 0; k < effectReflectionSrc.CountConstantBuffers; ++k)
 				{
 					const ConstantBufferReflectionDescription& constantBufferSrc = effectReflectionSrc.ConstantBuffers[k];
 					
 					int countMembers = constantBufferSrc.Members.size();
 					ConstantBufferMemberReflectionDescriptionData* membersInfo = nullptr;
-					membersInfo = (ConstantBufferMemberReflectionDescriptionData*)LocalAlloc(0, countMembers * sizeof(ConstantBufferMemberReflectionDescriptionData));
+					membersInfo = (ConstantBufferMemberReflectionDescriptionData*)GlobalAlloc(0, countMembers * sizeof(ConstantBufferMemberReflectionDescriptionData));
 					for (int m = 0; m < countMembers; ++m)
 					{
 						const ConstantBufferMemberReflectionDescription& memberSrc = constantBufferSrc.Members[m];
-						const char* memberName = allocateAndCopyString(memberSrc.KeyName.c_str());
+						const char* memberName = allocateAndCopyStringOnGlobalHeap(memberSrc.KeyName.c_str());
 						membersInfo[m] = ConstantBufferMemberReflectionDescriptionData(
 							memberSrc.Offset,
 							memberName,
@@ -425,7 +426,7 @@ namespace xkslang
 						);
 					}
 
-					const char* cbufferName = allocateAndCopyString(constantBufferSrc.CbufferName.c_str());
+					const char* cbufferName = allocateAndCopyStringOnGlobalHeap(constantBufferSrc.CbufferName.c_str());
 					arrayConstantBuffer[k] = ConstantBufferReflectionDescriptionData(
 						constantBufferSrc.Size,
 						countMembers,
@@ -447,10 +448,10 @@ namespace xkslang
 			*countResourceBindings = effectReflectionSrc.CountResourceBindings;
 			if (effectReflectionSrc.CountResourceBindings > 0)
 			{
-				EffectResourceBindingDescriptionData* arrayResourceBindings = (EffectResourceBindingDescriptionData*)LocalAlloc(0, effectReflectionSrc.CountResourceBindings * sizeof(EffectResourceBindingDescriptionData));
+				EffectResourceBindingDescriptionData* arrayResourceBindings = (EffectResourceBindingDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountResourceBindings * sizeof(EffectResourceBindingDescriptionData));
 				for (int k = 0; k < effectReflectionSrc.CountResourceBindings; ++k)
 				{
-					const char* keyName = allocateAndCopyString(effectReflectionSrc.ResourceBindings[k].KeyName);
+					const char* keyName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.ResourceBindings[k].KeyName);
 					arrayResourceBindings[k] = EffectResourceBindingDescriptionData(effectReflectionSrc.ResourceBindings[k], keyName);
 				}
 				*resourceBindings = arrayResourceBindings;
@@ -458,6 +459,26 @@ namespace xkslang
 			else
 			{
 				*resourceBindings = nullptr;
+			}
+		}
+
+		//Input attributes
+		if (inputAttributes != nullptr && countInputAttributes != nullptr)
+		{
+			*countInputAttributes = effectReflectionSrc.CountInputAttributes;
+			if (effectReflectionSrc.CountInputAttributes > 0)
+			{
+				ShaderInputAttributeDescriptionData* arrayInputAttributes = (ShaderInputAttributeDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountInputAttributes * sizeof(ShaderInputAttributeDescriptionData));
+				for (int k = 0; k < effectReflectionSrc.CountInputAttributes; ++k)
+				{
+					const char* semanticName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.InputAttributes[k].SemanticName.c_str());
+					arrayInputAttributes[k] = ShaderInputAttributeDescriptionData(effectReflectionSrc.InputAttributes[k].SemanticIndex, semanticName);
+				}
+				*inputAttributes = arrayInputAttributes;
+			}
+			else
+			{
+				*inputAttributes = nullptr;
 			}
 		}
 
@@ -475,12 +496,12 @@ namespace xkslang
 
 		SpvBytecode& compiledBytecode = mixerData->finalCompiledSpv;
 
-		/// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return it to the calling framework and let it delete it
+		/// copy the bytecode into the output buffer: allocate a byte buffer using GlobalAlloc, so we can return it to the calling framework and let it delete it
 		const std::vector<uint32_t>& bytecode = compiledBytecode.getBytecodeStream();
 		int bytecodeLen = (int)bytecode.size();
 		if (bytecodeLen <= 0) { error("the mixer compiled bytecode is empty"); return nullptr; }
 
-		uint32_t* byteBuffer = (uint32_t*)LocalAlloc(0, bytecodeLen * sizeof(uint32_t));
+		uint32_t* byteBuffer = (uint32_t*)GlobalAlloc(0, bytecodeLen * sizeof(uint32_t));
 
 		uint32_t* pDest = byteBuffer;
 		const uint32_t* pSrc = &bytecode[0];
@@ -549,12 +570,12 @@ namespace xkslang
             return nullptr;
         }
 
-        /// copy the bytecode into the output buffer: allocate a byte buffer using LocalAlloc, so we can return it to the calling framework and let it delete it
+        /// copy the bytecode into the output buffer: allocate a byte buffer using GlobalAlloc, so we can return it to the calling framework and let it delete it
         const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
         int bytecodeLen = (int)bytecode.size();
         if (bytecodeLen <= 0) { error("the stage compiled bytecode is empty"); return nullptr; }
         
-        uint32_t* byteBuffer = (uint32_t*)LocalAlloc(0, bytecodeLen * sizeof(uint32_t));
+        uint32_t* byteBuffer = (uint32_t*)GlobalAlloc(0, bytecodeLen * sizeof(uint32_t));
 
         uint32_t* pDest = byteBuffer;
         const uint32_t* pSrc = &bytecode[0];

@@ -72,8 +72,8 @@ bool XkslParser::ConvertXkslFileToSpx(const string& shaderFileName, const string
     {
         ostringstream& stream = *errorAndDebugMessages;
         //stream << shaderFileName << "\n";
-        for (unsigned int i = 0; i < infoMsgs.size(); ++i) stream << infoMsgs[i] << endl;
-        for (unsigned int i = 0; i < debugMsgs.size(); ++i) stream << debugMsgs[i] << endl;
+		for (unsigned int i = 0; i < infoMsgs.size(); ++i) { stream << infoMsgs[i] << endl; }
+		for (unsigned int i = 0; i < debugMsgs.size(); ++i) { stream << debugMsgs[i] << endl; }
     }
 
     return success;

@@ -100,7 +100,7 @@ bool SpxCompiler::GetInputAttributesFromBytecode(EffectReflection& effectReflect
 				{
 					spv::Id idLoaded = asId(start + 3);
 
-					//are we accessing an input variable?
+					//are we accessing a variable?
 					VariableInstruction* variable = GetVariableById(idLoaded);
 					if (variable != nullptr)
 					{
