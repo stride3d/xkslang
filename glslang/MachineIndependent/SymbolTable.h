@@ -242,7 +242,7 @@ public:
         declaredMangledName(*name + '('),
         op(tOp),
         defined(false), prototyped(false),
-		defaultParamCount(0)
+		implicitThis(false), illegalImplicitThis(false), defaultParamCount(0)
     {
         returnType.shallowCopy(retType);
         declaredBuiltIn = retType.getQualifier().builtIn;
