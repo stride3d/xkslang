@@ -300,6 +300,9 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         //=====================================================================================================================
         //Get the reflection data
         //=====================================================================================================================
+
+        //ConstantBuffer member struct
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct ConstantBufferMemberReflectionDescriptionData
         {
             public Int32 Offset;
@@ -317,6 +320,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             Int32 CountMembers;
         }
 
+        //ConstantBuffer struct
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct ConstantBufferReflectionDescriptionData
         {
@@ -326,6 +330,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             public IntPtr Members;
         }
 
+        //ResourceBinding struct
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct EffectResourceBindingDescriptionData
         {
@@ -338,11 +343,20 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             //public string KeyName;
         }
 
+        //Input Attribute struct
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        public struct ShaderInputAttributeDescriptionData
+        {
+            public Int32 SemanticIndex;
+            public IntPtr SemanticName;
+        }
+
         [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool GetMixerEffectReflectionData(UInt32 mixerHandleId,
             out IntPtr constantBuffersData, out Int32 countConstantBuffers,
-            out IntPtr resourceBindingsData, out Int32 countResourceBindings);
+            out IntPtr resourceBindingsData, out Int32 countResourceBindings,
+            out IntPtr inputAttributesData, out Int32 countInputAttributes);
 
         //=====================================================================================================================
         // Enums: these enums are similar to xkslang enums, and set to 32bits
@@ -569,6 +583,8 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
         public override TaskOrResult<EffectBytecodeCompilerResult> Compile(ShaderMixinSource mixinTree, EffectCompilerParameters effectParameters, CompilerParameters compilerParameters)
         {
+            EffectReflection xkslangEffectReflection = new EffectReflection();
+
             if (mixinTree.Name == "Effect")
             {
                 //=====================================================================================================================================
@@ -838,14 +854,17 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
                         //Query and build the EffectReflection data
                         {
-                            EffectReflection effectReflection = new EffectReflection();
-
                             int countConstantBuffers = 0;
                             IntPtr pAllocsConstantBuffers = IntPtr.Zero;
                             int countResourceBindings = 0;
                             IntPtr pAllocsResourceBindings = IntPtr.Zero;
-
-                            success = XkslangDLLBindingClass.GetMixerEffectReflectionData(mixerHandleId, out pAllocsConstantBuffers, out countConstantBuffers, out pAllocsResourceBindings, out countResourceBindings);
+                            int countInputAttributes = 0;
+                            IntPtr pAllocsInputAttributes = IntPtr.Zero;
+                            
+                            success = XkslangDLLBindingClass.GetMixerEffectReflectionData(mixerHandleId,
+                                out pAllocsConstantBuffers, out countConstantBuffers,
+                                out pAllocsResourceBindings, out countResourceBindings,
+                                out pAllocsInputAttributes, out countInputAttributes);
                             if (!success) throw new Exception("Failed to get the Effect Reflection data");
 
                             //Process the ResourceBindings
@@ -868,13 +887,37 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                             KeyName = Marshal.PtrToStringAnsi(effectResourceBinding.KeyName),
                                         },
                                     };
-                                    effectReflection.ResourceBindings.Add(binding);
+                                    xkslangEffectReflection.ResourceBindings.Add(binding);
 
                                     Marshal.FreeHGlobal(effectResourceBinding.KeyName);
                                 }
 
                                 //delete the data allocated on the native code
                                 Marshal.FreeHGlobal(pAllocsResourceBindings);
+                            }
+
+                            //Process the InputAttributes
+                            if (countInputAttributes > 0 && pAllocsInputAttributes != IntPtr.Zero)
+                            {
+                                int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
+                                XkslangDLLBindingClass.ShaderInputAttributeDescriptionData shaderInputAttribute;
+                                for (int i = 0; i < countInputAttributes; i++)
+                                {
+                                    shaderInputAttribute = (XkslangDLLBindingClass.ShaderInputAttributeDescriptionData)Marshal.PtrToStructure(
+                                        new IntPtr(pAllocsInputAttributes.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
+
+                                    var inputAttribute = new ShaderInputAttributeDescription()
+                                    {
+                                        SemanticName = Marshal.PtrToStringAnsi(shaderInputAttribute.SemanticName),
+                                        SemanticIndex = shaderInputAttribute.SemanticIndex,
+                                    };
+                                    xkslangEffectReflection.InputAttributes.Add(inputAttribute);
+
+                                    Marshal.FreeHGlobal(shaderInputAttribute.SemanticName);
+                                }
+
+                                //delete the data allocated on the native code
+                                Marshal.FreeHGlobal(pAllocsInputAttributes);
                             }
 
                             //Process the ConstantBuffers
@@ -927,7 +970,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                         Size = constantBufferData.Size,
                                         Members = cbufferMembers,
                                     };
-                                    effectReflection.ConstantBuffers.Add(constantBuffer);
+                                    xkslangEffectReflection.ConstantBuffers.Add(constantBuffer);
 
                                     Marshal.FreeHGlobal(constantBufferData.CbufferName);
                                 }
