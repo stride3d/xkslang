@@ -64,7 +64,8 @@ namespace glslang {
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
             xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined),
             xkslShaderToParse(nullptr), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr),
-            dependencyUniqueCounter(0), unknownIdentifierToProcessAtTheTop(nullptr), throwErrorWhenParsingUnidentifiedSymbol(true), shaderWhereMembersCanBeFound(nullptr){}
+            dependencyUniqueCounter(0), unknownIdentifierToProcessAtTheTop(nullptr), throwErrorWhenParsingUnidentifiedSymbol(true), shaderWhereMembersCanBeFound(nullptr),
+            typeIdentifiers(false) { }
         virtual ~HlslGrammar() { }
 
         bool parse();
@@ -147,10 +148,11 @@ namespace glslang {
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
         bool acceptLiteral(TIntermTyped*&);
+        bool acceptSimpleStatement(TIntermNode*&);
         bool acceptCompoundStatement(TIntermNode*&);
-        bool acceptStatement(TIntermNode*&);
         bool acceptScopedStatement(TIntermNode*&);
         bool acceptScopedCompoundStatement(TIntermNode*&);
+        bool acceptStatement(TIntermNode*&);
         bool acceptNestedStatement(TIntermNode*&);
         void acceptAttributes(TAttributeMap&);
         bool checkForXkslStructMemberAttribute(TString& attributeName);
@@ -165,6 +167,7 @@ namespace glslang {
         bool acceptDefaultParameterDeclaration(const TType&, TIntermTyped*&);
 
         bool captureBlockTokens(TVector<HlslToken>& tokens);
+        const char* getTypeString(EHlslTokenClass tokenClass) const;
 
         //XKSL extensions
         bool acceptShaderClassParentsInheritance(TVector<ShaderInheritedParentDefinition>& listParents);
@@ -184,7 +187,8 @@ namespace glslang {
 
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
-
+        bool typeIdentifiers;            // shader uses some types as identifiers
+        
         //XKSL extensions
         TString getLabelForTokenType(EHlslTokenClass tokenType);
         XkslShaderParsingOperationEnum xkslShaderParsingOperation;

@@ -860,7 +860,7 @@ int TIntermediate::checkLocationRange(int set, const TIoRange& range, const TTyp
     return -1; // no collision
 }
 
-// Accumulate locations used for inputs, outputs, and uniforms, and check for collisions
+// Accumulate bindings and offsets, and check for collisions
 // as the accumulation is done.
 //
 // Returns < 0 if no collision, >= 0 if collision and the value returned is a colliding value.
@@ -1057,6 +1057,8 @@ int TIntermediate::getBaseAlignmentScalar(const TType& type, int& size)
     case EbtUint64:
     case EbtDouble:  size = 8; return 8;
 #ifdef AMD_EXTENSIONS
+    case EbtInt16:
+    case EbtUint16:
     case EbtFloat16: size = 2; return 2;
 #endif
     default:         size = 4; return 4;

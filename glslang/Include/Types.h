@@ -190,8 +190,6 @@ struct TSampler {   // misnomer now; includes images, textures without sampler, 
         case EbtFloat:               break;
         case EbtInt:  s.append("i"); break;
         case EbtUint: s.append("u"); break;
-        case EbtInt64:  s.append("i64"); break;
-        case EbtUint64: s.append("u64"); break;
         default:  break;  // some compilers want this
         }
         if (image) {
@@ -446,6 +444,7 @@ public:
         invariant = false;
         noContraction = false;
         makeTemporary();
+        declaredBuiltIn = EbvNone;
     }
 
     // drop qualifiers that don't belong in a temporary variable
@@ -512,6 +511,7 @@ public:
     const char*         semanticName;
     TStorageQualifier   storage   : 6;
     TBuiltInVariable    builtIn   : 8;
+    TBuiltInVariable    declaredBuiltIn : 8;
     TPrecisionQualifier precision : 3;
     bool invariant    : 1; // require canonical treatment for cross-shader invariance
     bool noContraction: 1; // prevent contraction and reassociation, e.g., for 'precise' keyword, and expressions it affects
@@ -1496,6 +1496,7 @@ public:
     
     virtual TBasicType getBasicType() const { return basicType; }
     virtual const TSampler& getSampler() const { return sampler; }
+    virtual TSampler& getSampler() { return sampler; }
 
     virtual       TQualifier& getQualifier()       { return qualifier; }
     virtual const TQualifier& getQualifier() const { return qualifier; }
@@ -1633,6 +1634,10 @@ public:
             case EbtUint:
             case EbtInt64:
             case EbtUint64:
+#ifdef AMD_EXTENSIONS
+            case EbtInt16:
+            case EbtUint16:
+#endif
             case EbtBool:
             return true;
             default:
@@ -1645,7 +1650,7 @@ public:
 
     virtual bool containsSpecializationSize() const
     {
-        return contains([](const TType* t) { return t->isArray() && t->arraySizes->containsNode(); } );
+        return contains([](const TType* t) { return t->isArray() && t->arraySizes->isOuterSpecialization(); } );
     }
 
     // Array editing methods.  Array descriptors can be shared across
@@ -1716,6 +1721,10 @@ public:
         case EbtUint:               return "uint";
         case EbtInt64:              return "int64_t";
         case EbtUint64:             return "uint64_t";
+#ifdef AMD_EXTENSIONS
+        case EbtInt16:             return "int16_t";
+        case EbtUint16:            return "uint16_t";
+#endif
         case EbtBool:               return "bool";
         case EbtAtomicUint:         return "atomic_uint";
         case EbtSampler:            return "sampler/image";

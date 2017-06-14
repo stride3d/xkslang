@@ -87,7 +87,6 @@ public:
         typeId         = instr.typeId;
         opCode         = instr.opCode;
         operands       = instr.operands;
-        originalString = instr.originalString;
         block          = instr.block;
     }
 
@@ -96,7 +95,6 @@ public:
     void addImmediateOperand(unsigned int immediate) { operands.push_back(immediate); }
     void addStringOperand(const char* str)
     {
-        originalString = str;
         unsigned int word;
         char* wordString = (char*)&word;
         char* wordPtr = wordString;
@@ -129,7 +127,6 @@ public:
     Id getTypeId() const { return typeId; }
     Id getIdOperand(int op) const { return operands[op]; }
     unsigned int getImmediateOperand(int op) const { return operands[op]; }
-    const char* getStringOperand() const { return originalString.c_str(); }
     const std::vector<Id>& GetOperands() const {return operands;}
 
     void SetOpCode(Op op){ opCode = op; }
@@ -165,7 +162,6 @@ protected:
     Id typeId;
     Op opCode;
     std::vector<Id> operands;
-    std::string originalString;        // could be optimized away; convenience for getting string operand
     Block* block;
 };
 
