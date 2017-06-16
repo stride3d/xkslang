@@ -1,10 +1,10 @@
 #version 450
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     float Base_basef;
     vec4 Base_basef4;
-} globalCbuffer_var;
+} Globals_var;
 
 vec4 Base_ComputeBase(float f)
 {
@@ -13,8 +13,8 @@ vec4 Base_ComputeBase(float f)
 
 float main()
 {
-    float dist = length(globalCbuffer_var.Base_basef4);
-    float param = globalCbuffer_var.Base_basef;
+    float dist = length(Globals_var.Base_basef4);
+    float param = Globals_var.Base_basef;
     vec2 direction = vec2(normalize(Base_ComputeBase(param)).xy);
     return direction.x + dist;
 }

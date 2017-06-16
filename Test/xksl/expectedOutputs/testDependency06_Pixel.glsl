@@ -1,12 +1,12 @@
 #version 450
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     int ShaderA_varA;
-} globalCbuffer_var;
+} Globals_var;
 
 int main()
 {
-    return globalCbuffer_var.ShaderA_varA;
+    return Globals_var.ShaderA_varA;
 }
 

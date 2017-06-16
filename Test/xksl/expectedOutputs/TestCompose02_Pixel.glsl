@@ -1,10 +1,10 @@
 #version 450
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     float o0S5C0_ShaderComp_varC;
     float o1S5C1_ShaderComp_varC;
-} globalCbuffer_var;
+} Globals_var;
 
 float ShaderA_Compute()
 {
@@ -13,12 +13,12 @@ float ShaderA_Compute()
 
 float o0S5C0_ShaderComp_Compute()
 {
-    return globalCbuffer_var.o0S5C0_ShaderComp_varC;
+    return Globals_var.o0S5C0_ShaderComp_varC;
 }
 
 float o1S5C1_ShaderComp_Compute()
 {
-    return globalCbuffer_var.o1S5C1_ShaderComp_varC;
+    return Globals_var.o1S5C1_ShaderComp_varC;
 }
 
 float main()

@@ -5,10 +5,10 @@ struct ShaderB_TypeDeclaredInB
     int aInt;
 };
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     ShaderB_TypeDeclaredInB ShaderMain_var1;
-} globalCbuffer_var;
+} Globals_var;
 
 int ShaderA_function()
 {
@@ -23,7 +23,7 @@ int ShaderE_staticFunction()
 int ShaderMain_function()
 {
     int res = ShaderA_function();
-    res += globalCbuffer_var.ShaderMain_var1.aInt;
+    res += Globals_var.ShaderMain_var1.aInt;
     res += 5;
     res += 4;
     res += ShaderE_staticFunction();

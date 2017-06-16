@@ -23,7 +23,9 @@ namespace xkslang
 	{
 	public:
 		int32_t Offset;
-		const char* MemberName;
+		const char* KeyName;
+        const char* RawName;
+
 		EffectParameterReflectionClass Class;
 		EffectParameterReflectionType Type;
 		int32_t RowCount;
@@ -36,8 +38,9 @@ namespace xkslang
 		int32_t CountMembers;
 		//TypeMemberReflectionDescription* Members;
 
-		ConstantBufferMemberReflectionDescriptionData(const int32_t offset, const char* name, const TypeReflectionDescription& t)
-			: Offset(offset), MemberName(name), Class(t.Class), Type(t.Type), RowCount(t.RowCount), ColumnCount(t.ColumnCount), ArrayElements(t.ArrayElements), Size(t.Size),
+		ConstantBufferMemberReflectionDescriptionData(const int32_t offset, const char* keyName, const char* rawName, const TypeReflectionDescription& t)
+			: Offset(offset), KeyName(keyName), RawName(rawName),
+            Class(t.Class), Type(t.Type), RowCount(t.RowCount), ColumnCount(t.ColumnCount), ArrayElements(t.ArrayElements), Size(t.Size),
 			Alignment(t.Alignment), ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), CountMembers(t.CountMembers) {}
 	};
 

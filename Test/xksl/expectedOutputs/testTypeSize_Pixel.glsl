@@ -66,7 +66,7 @@ struct ShaderMain_StructBasicType
     double aDouble;
 };
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     layout(row_major) ShaderMain_StructBasicType ShaderMain_s1;
     layout(row_major) ShaderMain_StructVector ShaderMain_s2;
@@ -74,16 +74,16 @@ layout(std140) uniform globalCbuffer
     layout(row_major) ShaderMain_StructMatrixRowMajor ShaderMain_s3_rm;
     layout(row_major) ShaderMain_StructSimpleArray ShaderMain_s4;
     layout(row_major) ShaderMain_StructOfStruct ShaderMain_s6;
-} globalCbuffer_var;
+} Globals_var;
 
 void main()
 {
     float f = 0.0;
-    f += globalCbuffer_var.ShaderMain_s1.aFloat;
-    f += globalCbuffer_var.ShaderMain_s2.aFloat2.x;
-    f += globalCbuffer_var.ShaderMain_s3.aMat23[0].x;
-    f += globalCbuffer_var.ShaderMain_s3_rm.aMat23_rm[0].x;
-    f += globalCbuffer_var.ShaderMain_s4.ColorArray[0].x;
-    f += globalCbuffer_var.ShaderMain_s6.s1.f4.x;
+    f += Globals_var.ShaderMain_s1.aFloat;
+    f += Globals_var.ShaderMain_s2.aFloat2.x;
+    f += Globals_var.ShaderMain_s3.aMat23[0].x;
+    f += Globals_var.ShaderMain_s3_rm.aMat23_rm[0].x;
+    f += Globals_var.ShaderMain_s4.ColorArray[0].x;
+    f += Globals_var.ShaderMain_s6.s1.f4.x;
 }
 

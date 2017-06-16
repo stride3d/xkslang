@@ -15,18 +15,18 @@ struct PS_STREAMS
     vec4 ColorTarget_id0;
 };
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     ShaderMain_StructType ShaderMain_var1;
     vec4 ShaderMain_aCol;
-} globalCbuffer_var;
+} Globals_var;
 
 layout(location = 0) out vec4 PS_OUT_ColorTarget;
 
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0));
-    _streams.ColorTarget_id0 = globalCbuffer_var.ShaderMain_aCol + globalCbuffer_var.ShaderMain_var1.aF4;
+    _streams.ColorTarget_id0 = Globals_var.ShaderMain_aCol + Globals_var.ShaderMain_var1.aF4;
     PS_OUT_ColorTarget = _streams.ColorTarget_id0;
 }
 

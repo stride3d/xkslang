@@ -2170,7 +2170,9 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
             TType globalBlockType(cbufferStageGlobalStructTypeList, typeName, blockQualifier);
             globalBlockType.SetAsUndefinedCBufferType();
 
-            globalBlockType.setUserIdentifierName("globalCbuffer");  //set a default user identifier name (doesn't matter if there is any name conflict)
+            //set name for default / global cbuffer (doesn't matter if there is any name conflict)
+            //(this name is similar to Xenko's global cbuffer name)
+            globalBlockType.setUserIdentifierName("Globals");
             globalBlockType.setOwnerClassName(shader->shaderFullName.c_str());
 
             parseContext->declareBlock(shader->location, globalBlockType, cbufferStageGlobalBlockVarName);
@@ -2202,7 +2204,9 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
             TType globalBlockType(cbufferUnstageGlobalStructTypeList, typeName, blockQualifier);
             globalBlockType.SetAsUndefinedCBufferType();
 
-            globalBlockType.setUserIdentifierName("globalCbuffer");  //set a default user identifier name (doesn't matter if there is any name conflict)
+            //set name for default / global cbuffer (doesn't matter if there is any name conflict)
+            //(this name is similar to Xenko's global cbuffer name)
+            globalBlockType.setUserIdentifierName("Globals");
             globalBlockType.setOwnerClassName(shader->shaderFullName.c_str());
 
             parseContext->declareBlock(shader->location, globalBlockType, cbufferUnstageGlobalBlockVarName);

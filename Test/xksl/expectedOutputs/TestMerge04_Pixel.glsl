@@ -7,10 +7,10 @@ struct globalStreams
     int sa1_2;
 };
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     int Base_Var1;
-} globalCbuffer_var;
+} Globals_var;
 
 layout(std140) uniform C1
 {
@@ -21,6 +21,6 @@ globalStreams globalStreams_var;
 
 int main()
 {
-    return int(((((2.0 + globalStreams_var.sbase1_0) + float(C1_var.shaderA_Var1)) + float(globalCbuffer_var.Base_Var1)) + 5.0) + float(globalStreams_var.sa1_2));
+    return int(((((2.0 + globalStreams_var.sbase1_0) + float(C1_var.shaderA_Var1)) + float(Globals_var.Base_Var1)) + 5.0) + float(globalStreams_var.sa1_2));
 }
 

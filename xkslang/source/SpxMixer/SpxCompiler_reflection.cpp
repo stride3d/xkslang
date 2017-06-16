@@ -522,6 +522,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     TypeStructMember& member = cbufferData->cbufferMembersData->members[mIndex];
                     ConstantBufferMemberReflectionDescription& memberReflection = cbufferReflection.Members[mIndex];
                     memberReflection.KeyName = member.GetDeclarationNameOrSemantic();
+                    memberReflection.RawName = validateName(memberReflection.KeyName);
 
                     //get the member type object
                     spv::Id cbufferMemberTypeId = asId(posElemStart + mIndex);

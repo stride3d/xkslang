@@ -418,10 +418,12 @@ namespace xkslang
 					for (int m = 0; m < countMembers; ++m)
 					{
 						const ConstantBufferMemberReflectionDescription& memberSrc = constantBufferSrc.Members[m];
-						const char* memberName = allocateAndCopyStringOnGlobalHeap(memberSrc.KeyName.c_str());
+						const char* memberKeyName = allocateAndCopyStringOnGlobalHeap(memberSrc.KeyName.c_str());
+                        const char* memberRawName = allocateAndCopyStringOnGlobalHeap(memberSrc.RawName.c_str());
 						membersInfo[m] = ConstantBufferMemberReflectionDescriptionData(
 							memberSrc.Offset,
-							memberName,
+                            memberKeyName,
+                            memberRawName,
 							memberSrc.ReflectionType
 						);
 					}

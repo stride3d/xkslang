@@ -7,14 +7,14 @@ layout(std140) uniform PerToto
     float o1S14C1_ShaderComp_varCompToto;
 } PerToto_var;
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     float ShaderA_varG1;
     float ShaderA_varG2;
     float o0S14C0_ShaderComp_varG1;
     float ShaderComp_varG2;
     float o1S14C1_ShaderComp_varG1;
-} globalCbuffer_var;
+} Globals_var;
 
 layout(std140) uniform PerDraw
 {
@@ -28,11 +28,11 @@ layout(std140) uniform PerDraw
 
 float o0S14C0_ShaderComp_Compute()
 {
-    return (((PerDraw_var.ShaderComp_varDraw1 + PerDraw_var.o0S14C0_ShaderComp_varDraw3) + globalCbuffer_var.o0S14C0_ShaderComp_varG1) + globalCbuffer_var.ShaderComp_varG2) + PerToto_var.o0S14C0_ShaderComp_varCompToto;
+    return (((PerDraw_var.ShaderComp_varDraw1 + PerDraw_var.o0S14C0_ShaderComp_varDraw3) + Globals_var.o0S14C0_ShaderComp_varG1) + Globals_var.ShaderComp_varG2) + PerToto_var.o0S14C0_ShaderComp_varCompToto;
 }
 
 float main()
 {
-    return (PerToto_var.ShaderA_varToto + o0S14C0_ShaderComp_Compute()) + globalCbuffer_var.ShaderA_varG1;
+    return (PerToto_var.ShaderA_varToto + o0S14C0_ShaderComp_Compute()) + Globals_var.ShaderA_varG1;
 }
 

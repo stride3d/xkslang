@@ -7,15 +7,15 @@ struct globalStreams
     int sa1_2;
 };
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     int shaderA_Var0;
-} globalCbuffer_var;
+} Globals_var;
 
 globalStreams globalStreams_var;
 
 int main()
 {
-    return ((globalCbuffer_var.shaderA_Var0 + globalStreams_var.sa1_2) + 2) + 3;
+    return ((Globals_var.shaderA_Var0 + globalStreams_var.sa1_2) + 2) + 3;
 }
 

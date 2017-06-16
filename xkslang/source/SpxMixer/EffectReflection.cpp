@@ -169,7 +169,7 @@ string ConstantBufferMemberReflectionDescription::Print(int padding)
     for (int i = 0; i < padding; i++) paddingStr += ' ';
 
     std::ostringstream stream;
-    stream << paddingStr << "Name=\"" << KeyName << "\" Offset=" << Offset << endl;
+    stream << paddingStr << "KeyName=\"" << KeyName << " RawName=\"" << RawName << "\" Offset=" << Offset << endl;
     stream << ReflectionType.Print(padding) << endl;
     return stream.str();
 }

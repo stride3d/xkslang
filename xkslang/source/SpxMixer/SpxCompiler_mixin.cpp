@@ -72,13 +72,13 @@ ShadingStageEnum SpxCompiler::GetShadingStageForExecutionMode(spv::ExecutionMode
 string SpxCompiler::validateName(const string& name)
 {
     //return a validated name (for example rename Shader<8>_var will return Shader_8__var)
-    string validateName = name;
-    unsigned int len = (unsigned int)validateName.length();
+    string validName = name;
+    unsigned int len = (unsigned int)validName.length();
     for (unsigned int k = 0; k < len; k++) {
-        char c = validateName[k];
-        if (c == '<' || c == '>' || c == ',') validateName[k] = '_';
+        char c = validName[k];
+        if (c == '<' || c == '>' || c == ',' || c == '.') validName[k] = '_';
     }
-    return validateName;
+    return validName;
 }
 
 SpxCompiler::VariableInstruction::~VariableInstruction()

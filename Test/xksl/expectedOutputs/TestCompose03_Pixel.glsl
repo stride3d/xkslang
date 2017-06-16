@@ -1,19 +1,19 @@
 #version 450
 
-layout(std140) uniform globalCbuffer
+layout(std140) uniform Globals
 {
     float o0S5C0_CompA_varCA;
     float o1S5C1_CompB_varCB;
-} globalCbuffer_var;
+} Globals_var;
 
 float o0S5C0_CompA_Compute()
 {
-    return globalCbuffer_var.o0S5C0_CompA_varCA;
+    return Globals_var.o0S5C0_CompA_varCA;
 }
 
 float o1S5C1_CompB_Compute()
 {
-    return globalCbuffer_var.o1S5C1_CompB_varCB;
+    return Globals_var.o1S5C1_CompB_varCB;
 }
 
 float main()

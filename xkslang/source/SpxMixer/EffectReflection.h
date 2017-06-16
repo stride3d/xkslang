@@ -425,7 +425,8 @@ public:
 class ConstantBufferMemberReflectionDescription
 {
 public:
-    std::string KeyName;
+    std::string KeyName;   //Key Name: effect.originalName (used to link the member with the editor)
+    std::string RawName;   //Raw name: member name as set in the shader file
     int Offset;
     TypeReflectionDescription ReflectionType;
 
