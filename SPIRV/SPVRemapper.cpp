@@ -305,6 +305,16 @@ namespace spv {
         return literal;
     }
 
+    void spirvbin_t::replaceAllCharactersInliteralString(std::vector<spirword_t>& bytecode, unsigned word, const char oldChar, const char newChar)
+    {
+        char* bytes = reinterpret_cast<char*>(bytecode.data() + word);
+        while (bytes && *bytes)
+        {
+            if (*bytes == oldChar) *bytes = newChar;
+            bytes++;
+        }
+    }
+
     std::string spirvbin_t::literalString(const std::vector<spirword_t>& bytecode, unsigned word)
     {
         std::string literal;

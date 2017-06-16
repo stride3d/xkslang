@@ -3623,6 +3623,38 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
         setBound(stageBytecode, newId);
     }
 
+    //======================================================================================================
+    //Finalize the stage bytecode:
+    // - normalize members' name (shader.name ==> shader_name)
+    {
+        unsigned int start = header_size;
+        const unsigned int end = (unsigned int)stageBytecode.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(stageBytecode, start);
+            spv::Op opCode = asOpCode(stageBytecode, start);
+
+            switch (opCode)
+            {
+                case spv::OpMemberName:
+                {
+                    //replace all '.' by '_'
+                    replaceAllCharactersInliteralString(stageBytecode, start + 3, '.', '_');
+                    break;
+                }
+
+                case spv::OpFunction:
+                case spv::OpTypeFunction:
+                {
+                    //all done at this point: can stop here
+                    start = end;
+                    break;
+                }
+            }
+            start += wordCount;
+        }
+    }
+
     return true;
 }
 

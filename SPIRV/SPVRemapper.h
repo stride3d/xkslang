@@ -197,6 +197,10 @@ private:
    static spv::Op  opOpCode(spirword_t data)    { return spv::Op(data & spv::OpCodeMask); }
    static std::string literalString(const std::vector<spirword_t>& bytecode, unsigned word);
 
+   static void replaceAllCharactersInliteralString(std::vector<spirword_t>& bytecode, unsigned word, const char oldChar, const char newChar);
+   static unsigned  asWordCount(const std::vector<spirword_t>& bytecode, unsigned word) { return opWordCount(bytecode[word]); }
+   static spv::Op   asOpCode(const std::vector<spirword_t>& bytecode, unsigned word) { return opOpCode(bytecode[word]); }
+
    void setLiteralValue(unsigned word, int value) { spv[word] = value; }
    void setId(unsigned word, const spv::Id id) { spv[word] = id; }
    void setOpCode(unsigned word, spv::Op op) {

@@ -710,7 +710,10 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     for (unsigned int pm = 0; pm < combinedCbuffer->members.size(); pm++)
                     {
                         TypeStructMember& anotherMember = combinedCbuffer->members[pm];
-                        anotherMember.declarationName = validateName(anotherMember.shaderOwnerName + "_" + anotherMember.declarationName);
+
+                        ///Revision: We keep the cbuffer's member name equals to its keyname: shader.originalName
+                        //anotherMember.declarationName = validateName(anotherMember.shaderOwnerName + "_" + anotherMember.declarationName);
+                        anotherMember.declarationName = anotherMember.shaderOwnerName + "." + anotherMember.declarationName;
                     }
                 }
                 
