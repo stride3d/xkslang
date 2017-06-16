@@ -453,17 +453,16 @@ class EffectResourceBindingDescription
 {
 public:
     ShadingStageEnum Stage;
+    std::string KeyName;
+    std::string RawName;
+
     EffectParameterReflectionClass Class;
     EffectParameterReflectionType Type;
-	char* KeyName;
 
 public:
-	EffectResourceBindingDescription();
-	EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, EffectParameterReflectionClass c, EffectParameterReflectionType t);
-	EffectResourceBindingDescription(const EffectResourceBindingDescription& e);
-	virtual ~EffectResourceBindingDescription();
-
-	EffectResourceBindingDescription& operator=(const EffectResourceBindingDescription& e);
+	EffectResourceBindingDescription() {}
+	EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, std::string rawName, EffectParameterReflectionClass c, EffectParameterReflectionType t)
+        : Stage(stage), KeyName(keyName), RawName(rawName), Class(c), Type(t){}
 };
 
 //=====================================================================================================================

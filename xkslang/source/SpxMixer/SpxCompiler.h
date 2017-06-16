@@ -731,7 +731,7 @@ private:
     bool MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
 
     //validate a member name (for example Shader<8>_var will return Shader_8__var)
-    std::string validateName(const std::string& name);
+    std::string getRawNameFromKeyName(const std::string& keyName);
     unsigned int GetUniqueMergeOperationId();
     static void ResetMergeOperationId();
 

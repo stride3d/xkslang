@@ -522,7 +522,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     TypeStructMember& member = cbufferData->cbufferMembersData->members[mIndex];
                     ConstantBufferMemberReflectionDescription& memberReflection = cbufferReflection.Members[mIndex];
                     memberReflection.KeyName = member.GetDeclarationNameOrSemantic();
-                    memberReflection.RawName = validateName(memberReflection.KeyName);
+                    memberReflection.RawName = getRawNameFromKeyName(memberReflection.KeyName);
 
                     //get the member type object
                     spv::Id cbufferMemberTypeId = asId(posElemStart + mIndex);
@@ -804,6 +804,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                 EffectResourceBindingDescription(
                                     stage,
                                     cbufferData->cbufferName,
+                                    getRawNameFromKeyName(cbufferData->cbufferName),
                                     EffectParameterReflectionClass::ConstantBuffer,
                                     EffectParameterReflectionType::ConstantBuffer
                                 ));
@@ -820,6 +821,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                 EffectResourceBindingDescription(
                                     stage,
                                     variableData->variableName,
+                                    getRawNameFromKeyName(variableData->variableName),
                                     variableData->variableTypeReflection.Class,
                                     variableData->variableTypeReflection.Type
                                 ));

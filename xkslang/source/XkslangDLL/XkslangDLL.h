@@ -65,8 +65,10 @@ namespace xkslang
 		EffectParameterReflectionClass Class;
 		EffectParameterReflectionType Type;
 		const char* KeyName;
+        const char* RawName;
 
-		EffectResourceBindingDescriptionData(const EffectResourceBindingDescription& e, const char* keyName) : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName) {}
+		EffectResourceBindingDescriptionData(const EffectResourceBindingDescription& e, const char* keyName, const char* rawName)
+            : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName), RawName(rawName) {}
 	};
 
 	//struct containing an input attribute data (to be easily exchanged between native and managed apps)

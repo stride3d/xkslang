@@ -69,16 +69,16 @@ ShadingStageEnum SpxCompiler::GetShadingStageForExecutionMode(spv::ExecutionMode
     }
 }
 
-string SpxCompiler::validateName(const string& name)
+string SpxCompiler::getRawNameFromKeyName(const string& keyName)
 {
-    //return a validated name (for example rename Shader<8>_var will return Shader_8__var)
-    string validName = name;
-    unsigned int len = (unsigned int)validName.length();
+    //return the raw name for the input keyName (for example rename Shader<8>_var will return Shader_8__var)
+    string rawName = keyName;
+    unsigned int len = (unsigned int)rawName.length();
     for (unsigned int k = 0; k < len; k++) {
-        char c = validName[k];
-        if (c == '<' || c == '>' || c == ',' || c == '.') validName[k] = '_';
+        char c = rawName[k];
+        if (c == '<' || c == '>' || c == ',' || c == '.') rawName[k] = '_';
     }
-    return validName;
+    return rawName;
 }
 
 SpxCompiler::VariableInstruction::~VariableInstruction()
@@ -3640,6 +3640,13 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
                 {
                     //replace all '.' by '_'
                     replaceAllCharactersInliteralString(stageBytecode, start + 3, '.', '_');
+                    break;
+                }
+
+                case spv::OpName:
+                {
+                    //replace all '.' by '_'
+                    replaceAllCharactersInliteralString(stageBytecode, start + 2, '.', '_');
                     break;
                 }
 

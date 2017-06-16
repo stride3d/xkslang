@@ -45,11 +45,7 @@ void EffectReflection::Clear()
 //=====================================================================================================================
 // EffectResourceBindingDescription
 
-EffectResourceBindingDescription::EffectResourceBindingDescription()
-	: Stage(ShadingStageEnum::Undefined), Class(EffectParameterReflectionClass::Undefined), Type(EffectParameterReflectionType::Undefined), KeyName(nullptr)
-{
-}
-
+/*
 EffectResourceBindingDescription::EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, EffectParameterReflectionClass c, EffectParameterReflectionType t)
 	: Stage(stage), Class(c), Type(t)
 {
@@ -98,6 +94,7 @@ EffectResourceBindingDescription& EffectResourceBindingDescription::operator=(co
 
 	return *this;
 }
+*/
 
 //=====================================================================================================================
 //=====================================================================================================================
@@ -194,7 +191,7 @@ string EffectReflection::Print()
     for (int rb = 0; rb < CountResourceBindings; ++rb)
     {
         EffectResourceBindingDescription& bindings = ResourceBindings[rb];
-        stream << " Stage=" << GetShadingStageLabel(bindings.Stage) << " Name=\"" << bindings.KeyName << "\""
+        stream << " Stage=" << GetShadingStageLabel(bindings.Stage) << " KeyName=\"" << bindings.KeyName << "\"" << " RawName=\"" << bindings.RawName << "\""
             << " Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(bindings.Class)
             << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(bindings.Type) << endl;
     }

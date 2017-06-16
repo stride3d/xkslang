@@ -627,7 +627,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             memberToMerge.newStructMemberIndex = -1;
                             memberToMerge.newStructTypeId = 0;
                             memberToMerge.newStructVariableAccessTypeId = 0;
-                            memberToMerge.declarationName = cbufferToMerge->shaderOwnerName + "_" + memberToMerge.declarationName;
+                            // We set the resource as: shader.originalName (this will be its id keyName)
+                            memberToMerge.declarationName = cbufferToMerge->shaderOwnerName + "." + memberToMerge.declarationName;
                             memberToMerge.variableAccessTypeId = newBoundId++; //id of the new variable we'll create
 
                             listResourcesNewAccessVariables.push_back(memberToMerge);
@@ -704,7 +705,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     if ((unsigned int)combinedCbuffer->members.size() > maxConstValueNeeded) maxConstValueNeeded = (unsigned int)combinedCbuffer->members.size();
 
                     //name of the combined cbuffer is the name of the first cbuffer (all merged cbuffers have the same name)
-                    combinedCbuffer->declarationName = validateName(someCBuffersToMerge[0]->cbufferName);
+                    combinedCbuffer->declarationName = getRawNameFromKeyName(someCBuffersToMerge[0]->cbufferName);
 
                     //update the new member's name with a more explicit one (ex. var1 --> ShaderA.var1, if the member is stage we use the original shader name)
                     for (unsigned int pm = 0; pm < combinedCbuffer->members.size(); pm++)

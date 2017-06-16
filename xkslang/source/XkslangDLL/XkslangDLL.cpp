@@ -453,8 +453,9 @@ namespace xkslang
 				EffectResourceBindingDescriptionData* arrayResourceBindings = (EffectResourceBindingDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountResourceBindings * sizeof(EffectResourceBindingDescriptionData));
 				for (int k = 0; k < effectReflectionSrc.CountResourceBindings; ++k)
 				{
-					const char* keyName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.ResourceBindings[k].KeyName);
-					arrayResourceBindings[k] = EffectResourceBindingDescriptionData(effectReflectionSrc.ResourceBindings[k], keyName);
+					const char* keyName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.ResourceBindings[k].KeyName.c_str());
+                    const char* rawName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.ResourceBindings[k].RawName.c_str());
+					arrayResourceBindings[k] = EffectResourceBindingDescriptionData(effectReflectionSrc.ResourceBindings[k], keyName, rawName);
 				}
 				*resourceBindings = arrayResourceBindings;
 			}
