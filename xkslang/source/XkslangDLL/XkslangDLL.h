@@ -164,6 +164,29 @@ namespace xkslang
 /*
 Reference code from C# app
 
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using SiliconStudio.Core;
+using SiliconStudio.Core.Diagnostics;
+using SiliconStudio.Core.IO;
+using SiliconStudio.Core.Serialization.Contents;
+using SiliconStudio.Core.Storage;
+using SiliconStudio.Xenko.Rendering;
+using SiliconStudio.Xenko.Graphics;
+using SiliconStudio.Xenko.Shaders.Parser;
+using SiliconStudio.Shaders.Ast;
+using SiliconStudio.Shaders.Ast.Hlsl;
+using SiliconStudio.Shaders.Utility;
+using Encoding = System.Text.Encoding;
+using LoggerResult = SiliconStudio.Core.Diagnostics.LoggerResult;
+using System.Runtime.InteropServices;
+using SiliconStudio.Xenko.Shaders.Parser.Mixins;
+
 namespace SiliconStudio.Xenko.Shaders.Compiler
 {
     public class XkslangDLLBindingClass
@@ -267,7 +290,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                 this.entryPointName = entryPointName;
             }
         }
-        
+
         //=====================================================================================================================
         //Compiled the mixer (to be called after all mixin and compositions have been set)
         [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -311,7 +334,8 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         public struct ConstantBufferMemberReflectionDescriptionData
         {
             public Int32 Offset;
-            public IntPtr MemberName;
+            public IntPtr KeyName;
+            public IntPtr RawName;
 
             EffectParameterReflectionClassEnum Class;
             EffectParameterReflectionTypeEnum Type;
@@ -343,6 +367,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             public EffectParameterReflectionClassEnum Class;
             public EffectParameterReflectionTypeEnum Type;
             public IntPtr KeyName;
+            public IntPtr RawName;
 
             //[MarshalAs(UnmanagedType.LPStr)]
             //public string KeyName;
@@ -865,7 +890,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                             IntPtr pAllocsResourceBindings = IntPtr.Zero;
                             int countInputAttributes = 0;
                             IntPtr pAllocsInputAttributes = IntPtr.Zero;
-                            
+
                             success = XkslangDLLBindingClass.GetMixerEffectReflectionData(mixerHandleId,
                                 out pAllocsConstantBuffers, out countConstantBuffers,
                                 out pAllocsResourceBindings, out countResourceBindings,
@@ -882,19 +907,23 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                     effectResourceBinding = (XkslangDLLBindingClass.EffectResourceBindingDescriptionData)Marshal.PtrToStructure(
                                         new IntPtr(pAllocsResourceBindings.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
 
+                                    string keyName = Marshal.PtrToStringAnsi(effectResourceBinding.KeyName);
+                                    string rawName = Marshal.PtrToStringAnsi(effectResourceBinding.RawName);
                                     var binding = new EffectResourceBindingDescription()
                                     {
                                         Stage = XkslangDLLBindingClass.ConvertShadingStageEnum(effectResourceBinding.Stage),
                                         Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(effectResourceBinding.Class),
                                         Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(effectResourceBinding.Type),
+                                        RawName = rawName,
                                         KeyInfo =
                                         {
-                                            KeyName = Marshal.PtrToStringAnsi(effectResourceBinding.KeyName),
+                                            KeyName = keyName,
                                         },
                                     };
                                     xkslangEffectReflection.ResourceBindings.Add(binding);
 
                                     Marshal.FreeHGlobal(effectResourceBinding.KeyName);
+                                    Marshal.FreeHGlobal(effectResourceBinding.RawName);
                                 }
 
                                 //delete the data allocated on the native code
@@ -950,18 +979,20 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                             memberData = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
                                                 new IntPtr(constantBufferData.Members.ToInt32() + (memberStructSize * m)), typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
 
-                                            string memberName = Marshal.PtrToStringAnsi(memberData.MemberName);
+                                            string keyName = Marshal.PtrToStringAnsi(memberData.KeyName);
+                                            string rawName = Marshal.PtrToStringAnsi(memberData.RawName);
                                             cbufferMembers[m] = new EffectValueDescription()
                                             {
                                                 KeyInfo =
                                                 {
-                                                    KeyName = memberName,
+                                                    KeyName = keyName,
                                                 },
-                                                RawName = memberName,
+                                                RawName = rawName,
                                                 Offset = memberData.Offset,
                                             };
 
-                                            Marshal.FreeHGlobal(memberData.MemberName);
+                                            Marshal.FreeHGlobal(memberData.KeyName);
+                                            Marshal.FreeHGlobal(memberData.RawName);
                                         }
 
                                         Marshal.FreeHGlobal(constantBufferData.Members);
