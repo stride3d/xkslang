@@ -872,10 +872,30 @@ bool SpxCompiler::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& 
     {
         XkslMixerOutputStage& outputStage = outputStages[iStage];
 
+        //Check special case's stream variables: some semantics are forced to be in the stage, even if not used
+        if (outputStage.outputStage->stage == ShadingStageEnum::Pixel || outputStage.outputStage->stage == ShadingStageEnum::Geometry)
+        {
+            for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
+            {
+                if (globalListOfMergedStreamVariables.members[ivs].HasSemantic())
+                {
+                    if (globalListOfMergedStreamVariables.members[ivs].semantic == "SV_Position")
+                    {
+                        outputStage.listStreamVariablesAccessed[ivs].SetAsInput();
+                    }
+                    else if (globalListOfMergedStreamVariables.members[ivs].semantic == "SV_RenderTargetArrayIndex")
+                    {
+                        outputStage.listStreamVariablesAccessed[ivs].SetAsInput();
+                    }
+                }
+            }
+        }
+
         if (iStage == outputStages.size() - 1)
         {
-            //pixel stage: defines the final outputs and the required inputs
-            if (outputStage.outputStage->stage != ShadingStageEnum::Pixel) return error("Last output stage must be Pixel Stage");
+            ///if (outputStage.outputStage->stage != ShadingStageEnum::Pixel) return error("Last output stage must be Pixel Stage");
+
+            //final stage: it will defines the final outputs and its required inputs
             for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
             {
                 if (outputStage.listStreamVariablesAccessed[ivs].IsReadFirstStream())

@@ -474,12 +474,15 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
             int subElementAlign = subElementReflection.Alignment;
 
             memberType = subElementReflection.Type;
-            if (isRowMajor) {
+
+            if (isRowMajor)
+            {
                 memberClass = EffectParameterReflectionClass::MatrixRows;
                 countCols = countVectors;
                 countRows = vectorCountElems;
             }
-            else {
+            else
+            {
                 memberClass = EffectParameterReflectionClass::MatrixColumns;
                 countCols = vectorCountElems;
                 countRows = countVectors;

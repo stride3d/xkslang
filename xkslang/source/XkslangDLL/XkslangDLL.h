@@ -337,16 +337,16 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             public IntPtr KeyName;
             public IntPtr RawName;
 
-            EffectParameterReflectionClassEnum Class;
-            EffectParameterReflectionTypeEnum Type;
-            Int32 RowCount;
-            Int32 ColumnCount;
-            Int32 ArrayElements;
-            Int32 Size;
-            Int32 Alignment;
-            Int32 ArrayStride;
-            Int32 MatrixStride;
-            Int32 CountMembers;
+            public EffectParameterReflectionClassEnum Class;
+            public EffectParameterReflectionTypeEnum Type;
+            public Int32 RowCount;
+            public Int32 ColumnCount;
+            public Int32 ArrayElements;
+            public Int32 Size;
+            public Int32 Alignment;
+            public Int32 ArrayStride;
+            public Int32 MatrixStride;
+            public Int32 CountMembers;
         }
 
         //ConstantBuffer struct
@@ -989,6 +989,18 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                                 },
                                                 RawName = rawName,
                                                 Offset = memberData.Offset,
+                                                Size = memberData.Size,
+                                                Type = new EffectTypeDescription()
+                                                {
+                                                    Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(memberData.Class),
+                                                    Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(memberData.Type),
+                                                    RowCount = memberData.RowCount,
+                                                    ColumnCount = memberData.ColumnCount,
+                                                    Elements = memberData.ArrayElements,
+                                                    ElementSize = memberData.Size,
+                                                    Name = rawName,
+                                                    Members = null,  //we have memberData.CountMembers, but not the members data yet
+                                                },
                                             };
 
                                             Marshal.FreeHGlobal(memberData.KeyName);
@@ -1004,6 +1016,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                     {
                                         Name = cbufferName,
                                         Size = constantBufferData.Size,
+                                        Type = ConstantBufferType.ConstantBuffer,
                                         Members = cbufferMembers,
                                     };
                                     xkslangEffectReflection.ConstantBuffers.Add(constantBuffer);
@@ -1015,6 +1028,20 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                             }
 
                         }  //end of: //Query and build the EffectReflection data
+
+                        //Compile the generated HLSL shaders
+                        {
+                            Dictionary<ShaderStage, string> entryPoints = new Dictionary<ShaderStage, string>();
+                            entryPoints.Add(ShaderStage.Vertex, "main");
+                            entryPoints.Add(ShaderStage.Pixel, "main");
+                            IShaderCompiler d3dcompiler = new Direct3D.ShaderCompiler();
+                            foreach (var stageBinding in entryPoints)
+                            {
+                                string shaderSource = (stageBinding.Key == ShaderStage.Vertex)? shaderHlslVS: shaderHlslPS;
+                                var result = d3dcompiler.Compile(shaderSource, stageBinding.Value, stageBinding.Key, effectParameters, xkslangEffectReflection, null);
+                                //result.CopyTo(log);
+                            }
+                        }
                     }
                     catch (Exception e)
                     {

@@ -3,7 +3,8 @@
 struct PS_STREAMS
 {
     vec2 TexCoord_id0;
-    vec4 ColorTarget_id1;
+    vec4 ShadingPosition_id1;
+    vec4 ColorTarget_id2;
 };
 
 layout(std140) uniform Globals
@@ -19,6 +20,7 @@ layout(std140) uniform Globals
 uniform sampler2D SPIRV_Cross_CombinedTexturing_Texture0Texturing_Sampler;
 
 layout(location = 0) in vec2 PS_IN_TexCoord;
+layout(location = 1) in vec4 PS_IN_ShadingPosition;
 layout(location = 0) out vec4 PS_OUT_ColorTarget;
 
 vec4 Effect_Shading(PS_STREAMS _streams)
@@ -41,9 +43,10 @@ vec4 Effect_Shading(PS_STREAMS _streams)
 
 void main()
 {
-    PS_STREAMS _streams = PS_STREAMS(vec2(0.0), vec4(0.0));
+    PS_STREAMS _streams = PS_STREAMS(vec2(0.0), vec4(0.0), vec4(0.0));
     _streams.TexCoord_id0 = PS_IN_TexCoord;
-    _streams.ColorTarget_id1 = Effect_Shading(_streams);
-    PS_OUT_ColorTarget = _streams.ColorTarget_id1;
+    _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
+    _streams.ColorTarget_id2 = Effect_Shading(_streams);
+    PS_OUT_ColorTarget = _streams.ColorTarget_id2;
 }
 
