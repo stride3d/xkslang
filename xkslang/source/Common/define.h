@@ -8,7 +8,12 @@
 //#include "glslang/Public/ShaderLang.h"
 
 #define XKSLANG_DEBUG_MODE
+
 #define XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
+
+//By default SPIRV-Cross insert all cbuffer members into an intermediary struct
+//This define allows a workaround which removes this intermediaty struct and insert the members directly within the cbuffer declaration
+#define SPIRV_CROSS_INSERT_CBUFFER_MEMBERS_DIRECTLY_WITHIN_CBUFFER_DECLARATION
 
 namespace xkslang
 {
