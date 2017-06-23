@@ -618,14 +618,14 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             }
         }
 
+        public static readonly bool CompileEffectUsingXkslang = true;
+
         public override TaskOrResult<EffectBytecodeCompilerResult> Compile(ShaderMixinSource mixinTree, EffectCompilerParameters effectParameters, CompilerParameters compilerParameters)
         {
             var log = new LoggerResult();
             var fullEffectName = mixinTree.Name;
 
-            EffectReflection xkslangEffectReflection = new EffectReflection();
-
-            if (fullEffectName == "Effect")
+            if (CompileEffectUsingXkslang && fullEffectName == "Effect")
             {
 #if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
                 var logDir = Path.Combine(PlatformFolders.ApplicationBinaryDirectory, "log");
@@ -733,6 +733,8 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     }
                 }
 #endif
+
+                EffectReflection xkslangEffectReflection = new EffectReflection();
 
                 //=====================================================================================================================================
                 //Mix the effect to generate the output stage SPV bytecode. Hardcoded for now: mix the effect shader class only, for PS and VS stages
@@ -934,6 +936,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                     Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(effectResourceBinding.Class),
                                     Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(effectResourceBinding.Type),
                                     RawName = rawName,
+                                    ResourceGroup = rawName,
                                     KeyInfo =
                                     {
                                         KeyName = keyName,
@@ -1266,8 +1269,8 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
                     return new EffectBytecodeCompilerResult(bytecode, log);
                 } //end of compilation
-                
-            }  //end of: //TEST loading and parsing the xksl shader
+
+            }  //end of: CompileEffectUsingXkslang
 
             {
                 // Load D3D compiler dll
