@@ -4804,21 +4804,24 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                             }
                             else
                             {
-                                //a non-static function can only access a variables if the classes are related, or if the variables is a const
-                                if (identifierLocation.memberLocationType != XkslShaderDefinition::MemberLocationTypeEnum::Const)
-                                {
-                                    XkslShaderDefinition* shaderOwningTheVariable = identifierLocation.shader;
-                                    if (shaderOwningTheVariable == nullptr) {
-                                        error(TString("no shader found for the variable: ") + (*identifierLocation.memberName));
-                                        return false;
-                                    }
+                                //Rules obsolete: ComputeColorWave shader accesses a cbuffer variable from Global shader (Global.Time)
 
-                                    if (!IsShaderEqualOrSubClassOf(shaderBeingParsed, shaderOwningTheVariable)) {
-                                        error(TString("Shader: ") + shaderBeingParsed->shaderFullName + TString(" cannot access the variable ")
-                                            + shaderOwningTheVariable->shaderFullName + TString(".") + (*identifierLocation.memberName) );
-                                        return false;
-                                    }
-                                }
+                                /////a non-static function can only access a variables if the classes are related, or if the variables is a const
+                                ///if (identifierLocation.memberLocationType != XkslShaderDefinition::MemberLocationTypeEnum::Const)
+                                ///{
+                                ///    XkslShaderDefinition* shaderOwningTheVariable = identifierLocation.shader;
+                                ///    if (shaderOwningTheVariable == nullptr) {
+                                ///        error(TString("no shader found for the variable: ") + (*identifierLocation.memberName));
+                                ///        return false;
+                                ///    }
+                                ///
+                                ///    if (!IsShaderEqualOrSubClassOf(shaderBeingParsed, shaderOwningTheVariable)) {
+                                ///        error(TString("Shader: ") + shaderBeingParsed->shaderFullName + TString(" cannot access the variable ")
+                                ///            + shaderOwningTheVariable->shaderFullName + TString(".") + (*identifierLocation.memberName) );
+                                ///        return false;
+                                ///    }
+                                ///}
+
                             }
                         }
                         //============================================================================

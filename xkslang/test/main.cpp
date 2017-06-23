@@ -202,8 +202,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection06", "EffectReflection06.xkfx" },
 	//{ "EffectReflection07", "EffectReflection07.xkfx" },
 
-    { "Effect01", "Effect01.xkfx" },
-    //{ "Effect01", "Effect01.xkfx" },
+    //{ "Effect01", "Effect01.xkfx" },   //CustomSample
+    //{ "Effect02", "Effect02.xkfx" },   //BackgroundShader
+    { "Effect03", "Effect03.xkfx" },   //ComputeColorWave
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {

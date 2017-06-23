@@ -1,0 +1,10 @@
+shader BackgroundShader : SpriteBase
+{
+    stage float Intensity;
+
+    // Shading of the sprite
+    stage override float4 Shading()
+    { 
+        return Intensity * base.Shading();
+    }
+};
