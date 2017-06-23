@@ -203,6 +203,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 	//{ "EffectReflection07", "EffectReflection07.xkfx" },
 
     { "Effect01", "Effect01.xkfx" },
+    //{ "Effect01", "Effect01.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -586,13 +587,32 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
                 else cout << " Failed to convert the SPIRV file to HLSL" << endl;
 
                 //======================================================================================================
-                //compare the glsl output with the expected output
+                //compare the hlsl output with the expected output
                 if (success)
                 {
+                    string hlslExpectedOutput;
                     string hlslConvertedOutput;
                     if (Utils::ReadFile(fullNameHlsl, hlslConvertedOutput))
                     {
                         hlslAllOutputs += hlslConvertedOutput;
+
+                        string expectedOutputFullNameHlsl = expectedOutputDir + string(fileNameHlsl);
+                        if (Utils::ReadFile(expectedOutputFullNameHlsl, hlslExpectedOutput))
+                        {
+                            if (hlslExpectedOutput.compare(hlslConvertedOutput) != 0) {
+                                cout << "expected output:" << endl << hlslExpectedOutput;
+                                cout << "output:" << endl << hlslConvertedOutput;
+                                cout << " Hlsl output and expected output are different !!!" << endl;
+                                someExpectedOutputsDifferent = true;
+                            }
+                            else {
+                                cout << " HLSL output VS expected output: OK" << endl;
+                            }
+                        }
+                        else {
+                            cout << " !!! Warning: No expected output file for: " << fileNameHlsl << endl;
+                            someExpectedOutputsAreMissing = true;
+                        }
                     }
                     else {
                         cout << " Failed to read the file: " << fileNameHlsl << endl;

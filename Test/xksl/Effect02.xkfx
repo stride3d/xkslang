@@ -1,0 +1,12 @@
+//Parse and compile shader from Xenko MaterialShader sample
+
+addResourcesLibrary "library"
+convertAndLoadRecursif "Effect02" ComputeColorWave
+
+mixer m
+m.mixin Effect
+
+m.setStageEntryPoint Vertex "VSMain"
+m.setStageEntryPoint Pixel "PSMain"
+
+m.compile
