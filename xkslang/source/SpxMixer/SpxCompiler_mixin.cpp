@@ -1502,7 +1502,7 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
     for (auto its = shadersFullDependencies.begin(); its != shadersFullDependencies.end(); its++)
     {
         ShaderClassData* aShaderToMerge = *its;
-        if (aShaderToMerge->dependencyType == ShaderClassData::ShaderDependencyTypeEnum::StaticFunctionCall)
+        if (aShaderToMerge->dependencyType == ShaderClassData::ShaderDependencyTypeEnum::StaticAccess)
         {
             //if calling a shader static function only: we don't make a new instance
             if (this->GetShaderByName(aShaderToMerge->GetName()) == nullptr)
@@ -2793,7 +2793,7 @@ bool SpxCompiler::GetShadersFullDependencies(SpxCompiler* bytecodeSource, const 
             }
         }
 
-        //check the functions's bytecode, looking for function calls to static class
+        //check the functions's bytecode, looking for function calls to static class, or for access to variables through static call (for example Global.Time)
         for (auto itf = aShader->functionsList.begin(); itf != aShader->functionsList.end(); itf++)
         {
             FunctionInstruction* aFunctionFromShader = *itf;
@@ -2824,12 +2824,35 @@ bool SpxCompiler::GetShadersFullDependencies(SpxCompiler* bytecodeSource, const 
                         {
                             //if we're calling a static function, set the dependency type to static (unless it was already set to another dependency type)
                             if (functionCalled->IsStatic() && functionShaderOwner->dependencyType == ShaderClassData::ShaderDependencyTypeEnum::Undefined)
-                                functionShaderOwner->dependencyType = ShaderClassData::ShaderDependencyTypeEnum::StaticFunctionCall;
+                                functionShaderOwner->dependencyType = ShaderClassData::ShaderDependencyTypeEnum::StaticAccess;
                             else
                                 functionShaderOwner->dependencyType = ShaderClassData::ShaderDependencyTypeEnum::Other;
                             listShaderToValidate.push_back(functionShaderOwner);
                         }
 
+                        break;
+                    }
+
+                    case spv::OpAccessChain:
+                    {
+                        spv::Id structIdAccessed = bytecodeSource->asId(start + 3);
+                        VariableInstruction* variable = bytecodeSource->GetVariableById(structIdAccessed);
+                        //if (variable == nullptr) { error("Failed to find the variable object for id: " + to_string(structIdAccessed)); break; }
+
+                        //are we accessing the a cbuffer variable
+                        if (variable != nullptr)
+                        {
+                            ShaderClassData* shaderOwner = variable->shaderOwner;
+                            if (shaderOwner != nullptr && shaderOwner->flag == 0)
+                            {
+                                //if we're accessing a variable through static call, set the dependency type to StaticVariableAccess (unless it was already set to another dependency type)
+                                if (shaderOwner->dependencyType == ShaderClassData::ShaderDependencyTypeEnum::Undefined)
+                                    shaderOwner->dependencyType = ShaderClassData::ShaderDependencyTypeEnum::StaticAccess;
+                                else
+                                    shaderOwner->dependencyType = ShaderClassData::ShaderDependencyTypeEnum::Other;
+                                listShaderToValidate.push_back(shaderOwner);
+                            }
+                        }
                         break;
                     }
                 }

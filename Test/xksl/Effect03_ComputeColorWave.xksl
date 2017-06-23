@@ -5,4 +5,14 @@ shader ComputeColorWave<float Frequency, float Amplitude, float Speed> : Compute
         float phase = length(streams.TexCoord - 0.5);
         return sin((phase + Global.Time * Speed) * 2 * 3.14 * Frequency) * Amplitude;
     }
+	
+	stage override void VSMain()
+    {
+    }
+
+    // Shading of the sprite
+    stage override void PSMain()
+    {
+		Compute();
+    }
 };

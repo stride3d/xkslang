@@ -599,7 +599,7 @@ public:
         enum class ShaderDependencyTypeEnum
         {
             Undefined = 0,
-            StaticFunctionCall = 1 << 0,
+            StaticAccess = 1 << 0,
             Other = 1 << 1,
         };
 
