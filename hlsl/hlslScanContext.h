@@ -182,6 +182,7 @@ public:
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
 
     TString shaderBaseName;
+    //TString shaderNameSpace;
     TString shaderFullName;        //shader name plus generics value (ie ShaderMain<5>)
     TVector<ShaderGenericAttribute> listGenerics;
     TVector<ParentInformation> listParents;

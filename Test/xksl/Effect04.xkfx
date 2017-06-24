@@ -1,0 +1,11 @@
+//Parse and compile shader from Xenko MaterialShader sample
+
+addResourcesLibrary "library"
+convertAndLoadRecursif "Effect04" MaterialSurfaceArray
+
+mixer m
+m.mixin MaterialSurfaceArray
+
+//m.setStageEntryPoint Vertex "VSMain"
+//m.setStageEntryPoint Pixel "PSMain"
+//m.compile

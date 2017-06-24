@@ -8555,6 +8555,12 @@ void HlslParseContext::getFullNamespaceName(const TString*& name) const
     name = fullName;
 }
 
+TString HlslParseContext::getFullNamespace() const
+{
+    if (currentTypePrefix.size() == 0) return "";
+    return currentTypePrefix.back();
+}
+
 // Helper function to add the namespace scope mangling syntax to a string.
 void HlslParseContext::addScopeMangler(TString& name)
 {

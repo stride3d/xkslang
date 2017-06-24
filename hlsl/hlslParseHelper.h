@@ -196,6 +196,7 @@ public:
     void pushNamespace(const TString& name);
     void popNamespace();
     void getFullNamespaceName(const TString*&) const;
+    TString getFullNamespace() const;
     void addScopeMangler(TString&);
 
     void pushSwitchSequence(TIntermSequence* sequence) { switchSequenceStack.push_back(sequence); }

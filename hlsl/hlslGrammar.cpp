@@ -125,7 +125,11 @@ bool HlslGrammar::parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary)
     this->xkslShaderLibrary = shaderLibrary;
     ResetShaderLibraryFlag();
 
-    advanceUntilToken(EHTokShaderClass, true);  //skip all previous declaration
+    TVector<EHlslTokenClass> listTokens;
+    listTokens.push_back(EHTokShaderClass);
+    listTokens.push_back(EHTokNamespace);
+    advanceUntilFirstTokenFromList(listTokens, true);  //skip all previous declaration
+
     bool res = acceptCompilationUnit();
     if (!res) return false;
 
@@ -147,8 +151,11 @@ bool HlslGrammar::parseXKslShaderNewTypesDefinition(XkslShaderLibrary* shaderLib
     this->xkslShaderToParse = shaderToParse;
     ResetShaderLibraryFlag();
 
-    //advanceToken();
-    advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
+    TVector<EHlslTokenClass> listTokens;
+    listTokens.push_back(EHTokShaderClass);
+    listTokens.push_back(EHTokNamespace);
+    advanceUntilFirstTokenFromList(listTokens, true);  //skip all previous declaration
+
     bool res = acceptCompilationUnit();
     if (!res) return false;
 
@@ -170,8 +177,11 @@ bool HlslGrammar::parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary*
     this->xkslShaderToParse = shaderToParse;
     ResetShaderLibraryFlag();
 
-    //advanceToken();
-    advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
+    TVector<EHlslTokenClass> listTokens;
+    listTokens.push_back(EHTokShaderClass);
+    listTokens.push_back(EHTokNamespace);
+    advanceUntilFirstTokenFromList(listTokens, true);  //skip all previous declaration
+
     bool res = acceptCompilationUnit();
     if (!res) return false;
 
@@ -193,8 +203,11 @@ bool HlslGrammar::parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibr
     this->xkslShaderToParse = shaderToParse;
     ResetShaderLibraryFlag();
 
-    //advanceToken();
-    advanceUntilToken(EHTokShaderClass, true); //skip all previous declaration
+    TVector<EHlslTokenClass> listTokens;
+    listTokens.push_back(EHTokShaderClass);
+    listTokens.push_back(EHTokNamespace);
+    advanceUntilFirstTokenFromList(listTokens, true);  //skip all previous declaration
+
     bool res = acceptCompilationUnit();
     return res;
 }
@@ -639,11 +652,23 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
     // NAMESPACE IDENTIFIER LEFT_BRACE declaration_list RIGHT_BRACE
     if (acceptTokenClass(EHTokNamespace)) {
         HlslToken namespaceToken;
-        if (!acceptIdentifier(namespaceToken)) {
-            expected("namespace name");
-            return false;
+
+        //xksl extensions: we can declare several namespace (separated by a dot) into one declaration
+        int countNameSpaceToPop = 0;
+        while (true)
+        {
+            if (!acceptIdentifier(namespaceToken)) {
+                expected("namespace name");
+                return false;
+            }
+
+            countNameSpaceToPop++;
+            parseContext.pushNamespace(*namespaceToken.string);
+
+            if (acceptTokenClass(EHTokDot)) continue;
+            break;
         }
-        parseContext.pushNamespace(*namespaceToken.string);
+
         if (!acceptTokenClass(EHTokLeftBrace)) {
             expected("{");
             return false;
@@ -656,7 +681,10 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
             expected("}");
             return false;
         }
-        parseContext.popNamespace();
+
+        while (countNameSpaceToPop-- > 0){
+            parseContext.popNamespace();
+        }
         return true;
     }
 
@@ -2654,6 +2682,36 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             for (unsigned int i = 0; i < countParents; ++i) {
                 shaderDefinition->AddParent(listParents[i]);
             }
+
+            //Don't use the namespace for now
+            ////Add the namespace data to the shader
+            //{
+            //    TString nameSpace = parseContext.getFullNamespace();
+            //    int nameSpaceLen = (int)nameSpace.size();
+            //    if (nameSpaceLen > 0)
+            //    {
+            //        //convert the nameSpace to C# format (replace "::" by ".")
+            //        TString reformatedNamespace;
+            //        reformatedNamespace.resize(nameSpaceLen, 0);
+            //        const char* srcPtr = nameSpace.c_str();
+            //        int dstIndex = 0;
+            //        bool addDot = false;
+            //        char srcChar;
+            //        while ((srcChar = *srcPtr++) != 0)
+            //        {
+            //            if (srcChar != ':') {
+            //                if (addDot) {
+            //                    reformatedNamespace[dstIndex++] = '.';
+            //                    addDot = false;
+            //                }
+            //                reformatedNamespace[dstIndex++] = srcChar;
+            //            }
+            //            else addDot = true;
+            //        }
+            //
+            //        shaderDefinition->shaderNameSpace = reformatedNamespace;
+            //    }
+            //}
 
             if (!advanceUntilEndOfBlock(EHTokRightBrace))
             {

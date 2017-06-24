@@ -1,0 +1,17 @@
+namespace xksl.aNameSpace1
+{
+    shader ShaderA
+    {
+        const int aConst = 3;
+		
+		override int compute()
+		{
+			return aConst;
+		}
+		
+		int VSMain()
+		{
+			return compute();
+		}
+    };
+}
