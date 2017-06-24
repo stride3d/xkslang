@@ -103,6 +103,7 @@ public:
         ProcessedInheritance,
         CustomTypeDeclared,
         MembersAndMethodsDeclarationParsed,
+        ProcessedCompositions,
         MembersAndMethodsDeclarationRegistered,
         UnresolvedConstsResolved,
         MethodsDefinitionParsed,

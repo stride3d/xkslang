@@ -2919,6 +2919,90 @@ static bool ParseXkslShaderRecursif(
     
     //==================================================================================================================
     //==================================================================================================================
+    //if some shader uses compositions: we check if the targeter composition shader exists, if not we recursively parse it
+    if (success)
+    {
+        previousProcessingOperation = currentProcessingOperation;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::ProcessedCompositions;
+
+        TVector<TString> listAdditionnalShadersToAdd;
+        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        {
+            XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
+
+            if (shader->parsingStatus == previousProcessingOperation)
+            {
+                shader->parsingStatus = currentProcessingOperation;
+
+                unsigned int countCompositions = (unsigned int)shader->listCompositions.size();
+                for (unsigned int c = 0; c < countCompositions; ++c)
+                {
+                    TString& compositionTypeName = shader->listCompositions[c].shaderTypeName;
+
+                    if (GetShaderFromLibrary(shaderLibrary, compositionTypeName, nullptr) == nullptr)
+                    {
+                        //a composition has an unknown shader type: we add it to the list (if not already inserted)
+                        bool shaderAlreadyInserted = false;
+                        unsigned int countShadersToAdd = (unsigned int)listAdditionnalShadersToAdd.size();
+                        for (unsigned int k = 0; k < countShadersToAdd; ++k)
+                        {
+                            if (listAdditionnalShadersToAdd[k] == compositionTypeName) {
+                                shaderAlreadyInserted = true;
+                                break;
+                            }
+                        }
+                        if (!shaderAlreadyInserted) listAdditionnalShadersToAdd.push_back(compositionTypeName);
+                    }
+                }
+            }
+
+            unsigned int countShadersToAdd = (unsigned int)listAdditionnalShadersToAdd.size();
+            for (unsigned int k = 0; k < countShadersToAdd; ++k)
+            {
+                const TString& shaderToParse = listAdditionnalShadersToAdd[k];
+                if (GetShaderFromLibrary(shaderLibrary, shaderToParse, nullptr) != nullptr) continue;
+
+                std::string shaderData;
+                if (!callbackRequestDataForShader(std::string(shaderToParse.c_str()), shaderData))
+                {
+                    error(parseContext, "unknwon identifier: " + shaderToParse);
+                    success = false;
+                }
+                else
+                {
+                    success = ParseXkslShaderRecursif(
+                        shaderLibrary,
+                        shaderData,
+                        nullptr,
+                        XkslShaderDefinition::ShaderParsingStatusEnum::ProcessedCompositions,   //have new shaders catch up until this process,
+                        parseContext,
+                        ppContext,
+                        infoSink,
+                        intermediate,
+                        resources,
+                        options,
+                        listGenericValues,
+                        callbackRequestDataForShader);
+
+                    if (success)
+                    {
+                        if (GetShaderFromLibrary(shaderLibrary, shaderToParse, nullptr) == nullptr) {
+                            error(parseContext, "Failed to get the missing shader after parsing the callback data: " + shaderToParse);
+                            success = false;
+                        }
+                    }
+                    else error(parseContext, "Failed to recursively parse the shader: " + shaderToParse);
+                }
+            }
+        }
+
+        if (processUntilOperation == currentProcessingOperation) return success;
+    }
+
+    //==================================================================================================================
+    //==================================================================================================================
     //We finished parsing the shaders declaration: we can now add all function prototypes in the list of symbols, and create all members structs
     if (success)
     {
