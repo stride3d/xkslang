@@ -1786,10 +1786,12 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             //Get the function starting and ending positions
             unsigned int functionLabelInstrPos;
             unsigned int functionReturnInstrPos;
-            if (!GetFunctionLabelAndReturnInstructionsPosition(entryFunction, functionLabelInstrPos, functionReturnInstrPos))
+            unsigned int functionCountReturnInstructions;
+            if (!GetFunctionLabelAndReturnInstructionsPosition(entryFunction, functionLabelInstrPos, functionReturnInstrPos, functionCountReturnInstructions))
                 return error("Failed to parse the function: " + entryFunction->GetFullName());
             unsigned int functionLabelInstrEndPos = functionLabelInstrPos + asWordCount(functionLabelInstrPos); //go at the end of the label instruction
-            if (asOpCode(functionReturnInstrPos) != spv::OpReturn) return error("Invalid function end. Expecting OpReturn instructions.");  //entry function must have OpReturn (not another return type)
+            if (functionCountReturnInstructions != 1) return error("Invalid entry function number of return instruction: 1 OpReturn instruction expected.");  //For now the entry function must have one return instruction only
+            if (asOpCode(functionReturnInstrPos) != spv::OpReturn) return error("Invalid entry function return instruction: OpReturn instruction expected.");  //entry function must have OpReturn (not another return type)
 
             //bytecode chunks to insert new types at the beginning of the function
             BytecodeChunk* functionStartNewTypeInstructionsChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionLabelInstrEndPos, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);

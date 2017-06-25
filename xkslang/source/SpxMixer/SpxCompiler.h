@@ -780,7 +780,7 @@ private:
     //std::uint32_t getBasicConstTypeHashmapValue(spv::Op opCode, TypeInstruction* constType, unsigned int wordCount, unsigned int* values);
 
     bool GetStructTypeMembersTypeIdList(TypeInstruction* structType, std::vector<spv::Id>& membersTypeList);
-    bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos);
+    bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& latestReturnPos, unsigned int& countReturnInstructions);
     bool GetFunctionLabelInstructionPosition(FunctionInstruction* function, unsigned int& labelPos);
     FunctionInstruction* GetShaderFunctionForEntryPoint(std::string entryPointName);
     bool RemoveShaderFromBytecodeAndData(ShaderClassData* shader, std::vector<range_t>& vecStripRanges);

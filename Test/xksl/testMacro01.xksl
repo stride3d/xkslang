@@ -1,0 +1,34 @@
+//Test using define macro
+shader ShaderMain
+{
+	#ifdef MACRO_01
+		stream int tabStream01[MACRO_02];
+		stream int tabStream02[MACRO_02];
+	#endif
+	
+    cbuffer PerLighting
+    {
+        float BleedingFactor;
+        float MinVariance;
+    }
+
+	stage void VSMain() 
+    {
+		#ifdef MACRO_01
+        for (int i = 0; i < MACRO_02; i++)
+		{
+			streams.tabStream01[i] = i;
+		}
+		#endif
+    }
+	
+    stage void PSMain() 
+    {
+        #ifdef MACRO_01
+        for (int i = 0; i < MACRO_02; i++)
+		{
+			streams.tabStream02[i] = streams.tabStream01[i];
+		}
+		#endif
+    }
+};

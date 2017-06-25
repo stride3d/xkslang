@@ -203,6 +203,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 	//{ "EffectReflection07", "EffectReflection07.xkfx" },
 
     //{ "namespaces01", "namespaces01.xkfx" },
+    //{ "testMacro01", "testMacro01.xkfx" },
 
     { "ShadingBase", "ShadingBase.xkfx" },
 
@@ -1028,8 +1029,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
             }
             string macroValue;
             if (!getNextWord(lineSs, macroValue)) {
-                cout << "Expecting macro value" << endl;
-                success = false; break;
+                macroValue = "";
             }
 
             listUserDefinedMacros.push_back(XkslUserDefinedMacro(macroName, macroValue));
@@ -1111,8 +1111,6 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
                     success = false; break;
                 }
             }
-
-            vector<XkslUserDefinedMacro> listUserDefinedMacros;
 
             SpxBytecode* spxBytecode = new SpxBytecode;
             listAllocatedBytecodes.push_back(spxBytecode);

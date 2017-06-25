@@ -2985,30 +2985,33 @@ bool SpxCompiler::GetFunctionLabelInstructionPosition(FunctionInstruction* funct
     return false;
 }
 
-bool SpxCompiler::GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& returnPos)
+bool SpxCompiler::GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& latestReturnPos, unsigned int& countReturnInstructions)
 {
-    int state = 0;
+    labelPos = 0;
+    latestReturnPos = 0;
+    countReturnInstructions = 0;
+
+    int countInstructions = 0;
     unsigned int start = function->bytecodeStartPosition;
     const unsigned int end = function->bytecodeEndPosition;
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
+        countInstructions++;
         switch (opCode)
         {
             case spv::OpLabel:
             {
-                if (state != 0) return error("Failed to parse the function: expecting OpLabel instruction");
-                labelPos = start;
-                state = 1;
+                //The first instruction of a function (after OpFunction) is OpLabel
+                if (countInstructions == 2) labelPos = start;
                 break;
             }
             case spv::OpReturn:
             case spv::OpReturnValue:
             {
-                if (state != 1) return error("Failed to parse the function: expecting OpReturn or OpReturnValue instruction");
-                returnPos = start;
-                state = 2;
+                countReturnInstructions++;
+                latestReturnPos = start;
                 break;
             }
         }
@@ -3016,7 +3019,7 @@ bool SpxCompiler::GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruct
         start += wordCount;
     }
 
-    if (state != 2) return error("Failed to parse the function: missing some opInstructions");
+    if (labelPos == 0) return error("Failed to find the function OpLabel instruction");
     return true;
 }
 
