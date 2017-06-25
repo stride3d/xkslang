@@ -653,7 +653,9 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
     return success;
 }
 
-static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, const vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
+static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile,
+    const vector<ShaderGenericValues>& listGenericsValue, const vector<XkslUserDefinedMacro> listUserDefinedMacros,
+     SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
 {
     cout << "Parsing XKSL file \"" << xkslInputFile << "\"" << endl;
 
@@ -672,7 +674,7 @@ static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile, c
 
     DWORD time_before, time_after;
     time_before = GetTickCount();
-    bool success = parser->ConvertXkslFileToSpx(xkslInputFile, xkslInput, listGenericsValue, spirXBytecode, &errorAndDebugMessages);
+    bool success = parser->ConvertXkslFileToSpx(xkslInputFile, xkslInput, listGenericsValue, listUserDefinedMacros, spirXBytecode, &errorAndDebugMessages);
     time_after = GetTickCount();
 
     string infoMsg = errorAndDebugMessages.str();
@@ -740,8 +742,9 @@ static bool callbackRequestDataForShader(const string& shaderName, string& shade
     return false;
 }
 
-static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix, const vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode,
-    bool writeOutputsOnDisk, string& spxOutputFileName)
+static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix,
+    const vector<ShaderGenericValues>& listGenericsValue, const vector<XkslUserDefinedMacro> listUserDefinedMacros,
+    SpxBytecode& spirXBytecode, bool writeOutputsOnDisk, string& spxOutputFileName)
 {
     cout << "Parsing XKSL shader \"" << filesPrefix + "\" (" + shaderName + ")" << endl;
     string outputFileName = "";
@@ -752,7 +755,7 @@ static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& sha
 
     DWORD time_before, time_after;
     time_before = GetTickCount();
-    bool success = parser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, spirXBytecode, &errorAndDebugMessages);
+    bool success = parser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, listUserDefinedMacros, spirXBytecode, &errorAndDebugMessages);
     time_after = GetTickCount();
 
     string infoMsg = errorAndDebugMessages.str();
@@ -967,6 +970,8 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
     libraryResourcesFolders.clear();
     libraryResourcesFolders.push_back(inputDir);
 
+    vector<XkslUserDefinedMacro> listUserDefinedMacros;
+
     cout << "Effect: " << effectName << endl;
 
     //preload some spx files?
@@ -1046,7 +1051,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
             SpxBytecode* spxBytecode = new SpxBytecode;
             listAllocatedBytecodes.push_back(spxBytecode);
             string spxOutputFileName;
-            success = RecursivelyParseAndConvertXkslShader(parser, shaderName, xkslInputFilePrefix, listShaderAndGenerics, *spxBytecode, true, spxOutputFileName);
+            success = RecursivelyParseAndConvertXkslShader(parser, shaderName, xkslInputFilePrefix, listShaderAndGenerics, listUserDefinedMacros, *spxBytecode, true, spxOutputFileName);
             if (!success) {
                 cout << "convertAndLoadRecursif: failed to convert the xksl file name: " << xkslInputFilePrefix << endl;
                 success = false; break;
@@ -1092,9 +1097,11 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
                 }
             }
 
+            vector<XkslUserDefinedMacro> listUserDefinedMacros;
+
             SpxBytecode* spxBytecode = new SpxBytecode;
             listAllocatedBytecodes.push_back(spxBytecode);
-            success = ParseAndConvertXkslFile(parser, xkslInputFile, listGenericsValue, *spxBytecode, true);
+            success = ParseAndConvertXkslFile(parser, xkslInputFile, listGenericsValue, listUserDefinedMacros, *spxBytecode, true);
             if (!success) {
                 cout << "convertAndLoad: failed to convert the xksl file name: " << xkslInputFile << endl;
                 success = false; break;
@@ -1359,10 +1366,11 @@ void main(int argc, char** argv)
             XkslFilesToParseAndConvert& xkslFilesToParseAndConvert = vecXkslFilesToConvert[n];
             string xkslShaderInputFile = xkslFilesToParseAndConvert.fileName;
             vector<ShaderGenericValues> listGenericsValue;
+            vector<XkslUserDefinedMacro> listUserDefinedMacros;
 
             // parse and convert all xksl files
             SpxBytecode spirXBytecode;
-            success = ParseAndConvertXkslFile(&parser, xkslShaderInputFile, listGenericsValue, spirXBytecode, true);
+            success = ParseAndConvertXkslFile(&parser, xkslShaderInputFile, listGenericsValue, listUserDefinedMacros, spirXBytecode, true);
 
             if (success) countParsingSuccessful++;
             else listXkslParsingFailed.push_back(xkslShaderInputFile);

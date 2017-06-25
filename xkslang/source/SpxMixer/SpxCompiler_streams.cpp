@@ -1007,7 +1007,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
         for (unsigned int index = 0; index < stage.listStreamVariablesAccessed.size(); ++index)
         {
             const MemberAccessDetails& memberAccess = stage.listStreamVariablesAccessed[index];
-            if (memberAccess.IsBeingAccessed())
+            if (memberAccess.IsNeededAsInputOrOutput())
             {
                 if (!globalListOfMergedStreamVariables.members[index].isUsed)
                 {

@@ -34,6 +34,13 @@ public:
     std::vector<GenericValue> genericsValue;
 };
 
+class XkslUserDefinedMacro
+{
+public:
+    std::string macroName;
+    std::string macroValue;
+};
+
 class XkslParser
 {
 private:
@@ -47,13 +54,15 @@ public:
 
     //Recursively convert a shader into SPX bytecode
     //If the shader misses some dependencies, xkslang will query their data through the callback function
-    bool ConvertShaderToSpx(const std::string shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ShaderGenericValues>& listGenericsValue,
+    bool ConvertShaderToSpx(const std::string shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
+        const std::vector<ShaderGenericValues>& listGenericsValue, const std::vector<XkslUserDefinedMacro>& listUserDefinedMacros,
         SpxBytecode& spirXBytecode, std::ostringstream* errorAndDebugMessages);
 
     //Convert a xksl file into a SPX bytecode
     //The shader string has to contain the shader and all its dependencies
-    bool ConvertXkslFileToSpx(const std::string& shaderFileName, const std::string& data, const std::vector<ShaderGenericValues>& listGenericsValue, SpxBytecode& spirXBytecode,
-        std::ostringstream* errorAndDebugMessages);
+    bool ConvertXkslFileToSpx(const std::string& shaderFileName, const std::string& data,
+        const std::vector<ShaderGenericValues>& listGenericsValue, const std::vector<XkslUserDefinedMacro>& listUserDefinedMacros,
+        SpxBytecode& spirXBytecode, std::ostringstream* errorAndDebugMessages);
 };
 
 }  // namespace xkslang

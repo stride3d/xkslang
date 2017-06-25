@@ -3263,6 +3263,7 @@ static bool ParseXkslShaderFile(
     const TBuiltInResource* resources,
     EShMessages options,
     const std::vector<ClassGenericValues>& listGenericValues,
+    const std::vector<UserDefinedMacro>& listUserDefinedMacros,
     CallbackRequestDataForShader callbackRequestDataForShader)
 {
     EShLanguage stage = EShLangFragment;
@@ -3305,6 +3306,7 @@ static bool ParseXkslShaderFile(
 
     TShader::ForbidIncluder includer;
     TPpContext ppContext(*parseContext, "", includer);
+    //ppContext.addMacroDef();  //TOTO
 
     //glslang::TScanContext scanContext(*parseContext);
     parseContext->setPpContext(&ppContext);
@@ -3367,7 +3369,8 @@ static bool ParseXkslShaderFile(
     return success;
 }
 
-bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataForShader callbackRequestDataForShader, const std::vector<ClassGenericValues>& listGenericValues,
+bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataForShader callbackRequestDataForShader,
+    const std::vector<ClassGenericValues>& listGenericValues, std::vector<UserDefinedMacro>& listUserDefinedMacros,
     const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>* infoMsgs, std::vector<std::string>* astMsgs)
 {
     if (infoMsgs != nullptr) infoMsgs->clear();
@@ -3394,7 +3397,7 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
 
     TInfoSink* infoSink = new TInfoSink;
     TIntermediate* ast = new TIntermediate(EShLangFragment);  //glslang needs to know the stage but it won't be used (set fragment by default)
-    bool success = ParseXkslShaderFile(shaderData, *infoSink, ast, builtInResources, options, listGenericValues, callbackRequestDataForShader);
+    bool success = ParseXkslShaderFile(shaderData, *infoSink, ast, builtInResources, options, listGenericValues, listUserDefinedMacros, callbackRequestDataForShader);
 
     if (infoMsgs != nullptr)
     {
@@ -3426,7 +3429,8 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
     return success;
 }
 
-bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& xkslFile, const std::vector<ClassGenericValues>& listGenericValues,
+bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& xkslFile,
+    const std::vector<ClassGenericValues>& listGenericValues, std::vector<UserDefinedMacro>& listUserDefinedMacros,
     const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>* infoMsgs, std::vector<std::string>* astMsgs)
 {
     if (infoMsgs != nullptr) infoMsgs->clear();
@@ -3442,7 +3446,7 @@ bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& xkslFi
 
     TInfoSink* infoSink = new TInfoSink;
     TIntermediate* ast = new TIntermediate(EShLangFragment);  //glslang needs to know the stage but it won't be used (set fragment by default)
-    bool success = ParseXkslShaderFile(xkslFile, *infoSink, ast, builtInResources, options, listGenericValues, nullptr);
+    bool success = ParseXkslShaderFile(xkslFile, *infoSink, ast, builtInResources, options, listGenericValues, listUserDefinedMacros, nullptr);
 
     if (infoMsgs != nullptr)
     {

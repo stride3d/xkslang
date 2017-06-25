@@ -194,8 +194,9 @@ namespace xkslang
 
         SpxBytecode spirXBytecode;
         vector<ShaderGenericValues> listGenericsValue;
+        vector<XkslUserDefinedMacro> listUserDefinedMacros;
         ostringstream errorMessages;
-        bool success = xkslParser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, spirXBytecode, &errorMessages);
+        bool success = xkslParser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, listUserDefinedMacros, spirXBytecode, &errorMessages);
 
         if (!success) {
             error(errorMessages.str().c_str());
