@@ -304,6 +304,30 @@ namespace xkslang
         return true;
     }
 
+    bool AddComposition(uint32_t mixerHandleId, const char* shaderName, const char* variableName, uint32_t compositionMixerHandleId)
+    {
+        errorMessages.clear();
+        if (shaderName == nullptr || variableName == nullptr) { error("Invalid parameters"); return false; }
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) return error("Invalid mixer handle");
+        SpxMixer* mixer = mixerData->mixer;
+
+        MixerData* compositionMixerData = GetMixerForHandleId(compositionMixerHandleId);
+        if (compositionMixerData == nullptr) return error("Invalid composition mixer handle");
+        SpxMixer* compositionMixer = compositionMixerData->mixer;
+
+        vector<string> errorMsgs;
+        bool success = mixer->AddComposition(shaderName, variableName, compositionMixer, errorMsgs);
+
+        if (!success)
+        {
+            for (unsigned int k = 0; k < errorMsgs.size(); ++k) error(errorMsgs[k]);
+        }
+
+        return success;
+    }
+
     bool MixinShader(uint32_t mixerHandleId, const char* shaderName, uint32_t* shaderSpxBytecode, int32_t bytecodeSize)
     {
         errorMessages.clear();

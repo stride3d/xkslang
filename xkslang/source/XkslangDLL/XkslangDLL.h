@@ -134,6 +134,8 @@ namespace xkslang
 
     extern "C" __declspec(dllexport) bool MixinShader(uint32_t mixerHandleId, const char* shaderName, uint32_t* shaderSpxBytecode, int32_t bytecodeSize);
 
+    extern "C" __declspec(dllexport) bool AddComposition(uint32_t mixerHandleId, const char* shaderName, const char* variableName, uint32_t compositionMixerHandleId);
+
     extern "C" __declspec(dllexport) bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int32_t countStages);
 
 	//Return the mixin compiled bytecode, generated when we compile the mixer
