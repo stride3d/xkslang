@@ -1,7 +1,7 @@
 //Parse and compile shader from Xenko CustomEffect
 
 addResourcesLibrary "library"
-convertAndLoadRecursif "Effect01" CustomEffect
+convertAndLoadRecursif "CustomEffect" CustomEffect
 
 mixer m
 m.mixin Effect

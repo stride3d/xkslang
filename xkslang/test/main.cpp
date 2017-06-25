@@ -205,11 +205,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "namespaces01", "namespaces01.xkfx" },
     //{ "testMacro01", "testMacro01.xkfx" },
 
-    { "ShadingBase", "ShadingBase.xkfx" },
-
-    //{ "Effect01", "Effect01.xkfx" },   //CustomSample
-    //{ "Effect02", "Effect02.xkfx" },   //BackgroundShader
-    //{ "Effect03", "Effect03.xkfx" },   //ComputeColorWave
+    //{ "ShadingBase", "ShadingBase.xkfx" },
+    //{ "CustomEffect", "CustomEffect.xkfx" },
+    //{ "BackgroundShader", "BackgroundShader.xkfx" },
+    { "ComputeColorWave", "ComputeColorWave.xkfx" },
 
 };
 

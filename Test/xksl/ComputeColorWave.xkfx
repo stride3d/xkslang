@@ -1,10 +1,10 @@
 //Parse and compile shader from Xenko MaterialShader sample
 
 addResourcesLibrary "library"
-convertAndLoadRecursif "Effect02" BackgroundShader
+convertAndLoadRecursif "ComputeColorWave" ComputeColorWave<1,2,3.645541313>
 
 mixer m
-m.mixin BackgroundShader
+m.mixin ComputeColorWave
 
 m.setStageEntryPoint Vertex "VSMain"
 m.setStageEntryPoint Pixel "PSMain"
