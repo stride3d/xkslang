@@ -2628,7 +2628,7 @@ static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibra
 
 static bool ParseXkslShaderRecursif(
     XkslShaderLibrary& shaderLibrary,
-    const std::string& xkslFileToParse,
+    const std::string& xksShadersToParse,
     XkslShaderDefinition* shaderRequiringADependency,
     XkslShaderDefinition::ShaderParsingStatusEnum processUntilOperation,
     HlslParseContext* parseContext,
@@ -2638,11 +2638,30 @@ static bool ParseXkslShaderRecursif(
     const TBuiltInResource* resources,
     EShMessages options,
     const std::vector<ClassGenericValues>& listGenericValues,
+    const std::vector<UserDefinedMacro>& listUserDefinedMacros,
     CallbackRequestDataForShader callbackRequestDataForShader)
 {
     bool success = false;
     XkslShaderDefinition::ShaderParsingStatusEnum currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::Undefined;
     XkslShaderDefinition::ShaderParsingStatusEnum previousProcessingOperation;
+
+    std::string shadersStringToParse = xksShadersToParse;
+    //Add the user-defined macros
+    {
+        unsigned int countMacros = (unsigned int)listUserDefinedMacros.size();
+        if (countMacros > 0)
+        {
+            //temporary solution: we simply concatenate the macros at the beginning of the shader
+            //Maybe later we could use function such like: "ppContext.addMacroDef()"
+            std::string macrosStr = "";
+            for (unsigned int m = 0; m < countMacros; m++)
+            {
+                const UserDefinedMacro& macro = listUserDefinedMacros[m];
+                macrosStr += "#define " + macro.macroName + " " + macro.macroValue + "\n";
+            }
+            shadersStringToParse = macrosStr + shadersStringToParse;
+        }
+    }
 
     //==================================================================================================================
     //==================================================================================================================
@@ -2651,7 +2670,7 @@ static bool ParseXkslShaderRecursif(
         previousProcessingOperation = currentProcessingOperation;
         currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::HeaderDeclarationProcessed;
 
-        success = parseContext->parseXkslShaderDeclaration(xkslFileToParse.c_str(), &shaderLibrary, ppContext);
+        success = parseContext->parseXkslShaderDeclaration(shadersStringToParse.c_str(), &shaderLibrary, ppContext);
         if (!success) error(parseContext, "Failed to parse the shader declaration");
 
         //set correct status to all new shaders
@@ -2786,6 +2805,7 @@ static bool ParseXkslShaderRecursif(
                                     resources,
                                     options,
                                     listGenerics,
+                                    listUserDefinedMacros,
                                     callbackRequestDataForShader);
                                 if (!success) error(parseContext, "Failed to recursively parse the shader: " + (*parentName));
                                 else
@@ -2984,6 +3004,7 @@ static bool ParseXkslShaderRecursif(
                         resources,
                         options,
                         listGenericValues,
+                        listUserDefinedMacros,
                         callbackRequestDataForShader);
 
                     if (success)
@@ -3072,6 +3093,7 @@ static bool ParseXkslShaderRecursif(
                                 resources,
                                 options,
                                 listGenericValues,
+                                listUserDefinedMacros,
                                 callbackRequestDataForShader);
 
                             if (success)
@@ -3184,6 +3206,7 @@ static bool ParseXkslShaderRecursif(
                             resources,
                             options,
                             listGenericValues,
+                            listUserDefinedMacros,
                             callbackRequestDataForShader);
 
                         if (success)
@@ -3257,7 +3280,7 @@ static bool ParseXkslShaderRecursif(
 
 //Parse an xksl shader file. The shader file has to be complete (ie contains all shader dependencies)
 static bool ParseXkslShaderFile(
-    const std::string& xkslFileToParse,
+    const std::string& xksShadersToParse,
     TInfoSink& infoSink,
     TIntermediate* intermediate,
     const TBuiltInResource* resources,
@@ -3306,7 +3329,6 @@ static bool ParseXkslShaderFile(
 
     TShader::ForbidIncluder includer;
     TPpContext ppContext(*parseContext, "", includer);
-    //ppContext.addMacroDef();  //TOTO
 
     //glslang::TScanContext scanContext(*parseContext);
     parseContext->setPpContext(&ppContext);
@@ -3324,7 +3346,7 @@ static bool ParseXkslShaderFile(
     //can finally parse !!!!
     bool success = ParseXkslShaderRecursif(
         shaderLibrary,
-        xkslFileToParse,
+        xksShadersToParse,
         nullptr,
         XkslShaderDefinition::ShaderParsingStatusEnum::ParsingCompleted,
         parseContext,
@@ -3334,6 +3356,7 @@ static bool ParseXkslShaderFile(
         resources,
         options,
         listGenericValues,
+        listUserDefinedMacros,
         callbackRequestDataForShader);
 
     //==================================================================================================================

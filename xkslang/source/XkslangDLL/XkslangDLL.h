@@ -287,6 +287,12 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool MixinShader(UInt32 mixerHandleId, [MarshalAs(UnmanagedType.LPStr)] string shaderName, [In] Int32[] bytecode, Int32 bytecodeSize);
 
+        //Add a composition to a mixin
+        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool AddComposition(UInt32 mixerHandleId, [MarshalAs(UnmanagedType.LPStr)] string shaderName, [MarshalAs(UnmanagedType.LPStr)] string variableName,
+            UInt32 compositionMixerHandleId);
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct OutputStageEntryPoint
         {

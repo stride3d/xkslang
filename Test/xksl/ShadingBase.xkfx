@@ -1,4 +1,6 @@
 addResourcesLibrary "library"
+
+setDefine SILICON_STUDIO_RENDER_TARGET_COUNT 2
 convertAndLoadRecursif "ShadingBase" ShadingBase
 
 mixer mixerC
@@ -8,7 +10,7 @@ mixer m
 m.mixin ShadingBase
 
 m.addComposition ShadingBase.ShadingColor0 mixerC
-//m.addComposition ShadingBase.ShadingColor1 mixerC
+m.addComposition ShadingBase.ShadingColor1 mixerC
 
 m.setStageEntryPoint Vertex "VSMain"
 m.setStageEntryPoint Pixel "PSMain"

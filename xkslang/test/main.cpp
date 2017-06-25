@@ -1019,6 +1019,21 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
             string path = inputDir + folder + "\\";
             libraryResourcesFolders.push_back(path);
         }
+        else if (lineItem.compare("setDefine") == 0)
+        {
+            string macroName;
+            if (!getNextWord(lineSs, macroName)) {
+                cout << "Expecting macro name" << endl;
+                success = false; break;
+            }
+            string macroValue;
+            if (!getNextWord(lineSs, macroValue)) {
+                cout << "Expecting macro value" << endl;
+                success = false; break;
+            }
+
+            listUserDefinedMacros.push_back(XkslUserDefinedMacro(macroName, macroValue));
+        }
         else if (lineItem.compare("convertAndLoadRecursif") == 0)
         {
             //recursively convert and load xksl shaders
@@ -1147,6 +1162,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
         }
         else
         {
+            //mixer operation (mixer.instructions)
             string mixerName, instruction;
             if (!SeparateAdotB(lineItem, mixerName, instruction)) {
                 cout << "Unknown instruction: " << lineItem << endl;

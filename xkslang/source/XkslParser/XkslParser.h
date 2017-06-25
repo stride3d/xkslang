@@ -39,6 +39,9 @@ class XkslUserDefinedMacro
 public:
     std::string macroName;
     std::string macroValue;
+
+    XkslUserDefinedMacro() {}
+    XkslUserDefinedMacro(const std::string& name, const std::string& value): macroName(name), macroValue(value) {}
 };
 
 class XkslParser
