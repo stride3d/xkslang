@@ -51,16 +51,24 @@ enum class SpxRemapperStatusEnum
     MixinFinalized
 };
 
+enum class BytecodeChunkInsertionTypeEnum
+{
+    InsertBeforeInstruction = 0,
+    InsertWithinInstruction = 1,
+    InsertAfterInstruction = 2,
+};
+
 class BytecodeChunk
 {
 public:
-    BytecodeChunk() {}
-    BytecodeChunk(int insertionPos) : insertionPos(insertionPos), countInstructionsToOverlap(0){}
-    BytecodeChunk(int insertionPos, unsigned int countInstructionsToOverlap) : insertionPos(insertionPos), countInstructionsToOverlap(countInstructionsToOverlap) {}
-
+    unsigned int instructionPos;
+    BytecodeChunkInsertionTypeEnum insertionType;
     unsigned int insertionPos;
+    
     std::vector<std::uint32_t> bytecode;
-    unsigned int countInstructionsToOverlap;
+
+    BytecodeChunk() {}
+    BytecodeChunk(int instructionPos, BytecodeChunkInsertionTypeEnum insertionType, int insertionPos) : instructionPos(instructionPos), insertionType(insertionType), insertionPos(insertionPos) {}
 };
 
 class BytecodeValueToReplace
@@ -96,31 +104,13 @@ public:
 class SpxCompiler;
 class BytecodeUpdateController
 {
-public:
-
-    enum class InsertionConflictBehaviourEnum
-    {
-        InsertFirst,
-        InsertLast,
-        ReturnNull,
-    };
-
-    /*enum class InsertionDetailsEnum
-    {
-        InsertAfterInstruction,
-        InsertBeforeInstruction,
-        InsertWithinInstruction
-    };*/
-
+private:
     std::vector<BytecodeValueToReplace> listAtomicUpdates;
     std::vector<BytecodePortionToReplace> listPortionsToUpdates;
     std::vector<BytecodePortionToRemove> listSortedPortionsToRemove;
     std::list<BytecodeChunk> listSortedChunksToInsert;
 
-    void SetNewAtomicValueUpdate(unsigned int pos, uint32_t value) { listAtomicUpdates.push_back(BytecodeValueToReplace(pos, value)); }
-    BytecodePortionToReplace& SetNewPortionToReplace(unsigned int pos) { listPortionsToUpdates.push_back(BytecodePortionToReplace(pos)); return listPortionsToUpdates.back(); }
-    BytecodePortionToRemove* AddPortionToRemove(unsigned int position, unsigned int count);
-    BytecodeChunk* InsertNewBytecodeChunckAt(unsigned int position, InsertionConflictBehaviourEnum conflictBehaviour, unsigned int countBytesToOverlap = 0);
+    friend class SpxCompiler;
 };
 
 //==============================================================================================================//
@@ -803,7 +793,11 @@ private:
     bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
     bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
 
-    //bytecode chuncks controller
+    //bytecode Update controller
+    BytecodeChunk* CreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType, unsigned int offset = 0);
+    bool SetNewAtomicValueUpdate(BytecodeUpdateController& bytecodeUpdateController, unsigned int pos, uint32_t value);
+    BytecodePortionToReplace* SetNewPortionToReplace(BytecodeUpdateController& bytecodeUpdateController, unsigned int pos);
+    BytecodePortionToRemove* AddPortionToRemove(BytecodeUpdateController& bytecodeUpdateController, unsigned int position, unsigned int count);
     bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
 
     bool InitDefaultHeader();

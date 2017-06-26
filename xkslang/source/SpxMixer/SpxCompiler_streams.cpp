@@ -1069,12 +1069,12 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
     
     //new bytecode chunks to insert stuff into our bytecode (all updates will be applied at once at the end)
     BytecodeUpdateController bytecodeUpdateController;
-    BytecodeChunk* bytecodeNewTypes = bytecodeUpdateController.InsertNewBytecodeChunckAt(posNewTypesInsertion, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
-    BytecodeChunk* bytecodeNames = bytecodeUpdateController.InsertNewBytecodeChunckAt(posNamesInsertion, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
+    BytecodeChunk* bytecodeNewTypes = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posNewTypesInsertion, BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction);
+    BytecodeChunk* bytecodeNames = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posNamesInsertion, BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction);
     spv::Id newId = bound();
 
-    if (bytecodeNewTypes == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(posNewTypesInsertion));
-    if (bytecodeNames == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(posNamesInsertion));
+    if (bytecodeNewTypes == nullptr) return error("Failed to insert a new bytecode chunk for new types");
+    if (bytecodeNames == nullptr) return error("Failed to insert a new bytecode chunk for new names");
 
     //=============================================================================================================
     //=============================================================================================================
@@ -1552,13 +1552,13 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             unsigned int functionCountReturnInstructions;
             if (!GetFunctionLabelAndReturnInstructionsPosition(entryFunction, functionLabelInstrPos, functionReturnInstrPos, functionCountReturnInstructions))
                 return error("Failed to parse the function: " + entryFunction->GetFullName());
-            unsigned int functionLabelInstrEndPos = functionLabelInstrPos + asWordCount(functionLabelInstrPos); //go at the end of the label instruction
+            //unsigned int functionLabelInstrEndPos = functionLabelInstrPos + asWordCount(functionLabelInstrPos); //go at the end of the label instruction
             if (functionCountReturnInstructions != 1) return error("Invalid entry function number of return instruction: 1 OpReturn instruction expected.");  //For now the entry function must have one return instruction only
             if (asOpCode(functionReturnInstrPos) != spv::OpReturn) return error("Invalid entry function return instruction: OpReturn instruction expected.");  //entry function must have OpReturn (not another return type)
 
             //bytecode chunks to insert new types at the beginning of the function
-            BytecodeChunk* functionStartNewTypeInstructionsChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionLabelInstrEndPos, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
-            if (functionStartNewTypeInstructionsChunk == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionLabelInstrEndPos));
+            BytecodeChunk* functionStartNewTypeInstructionsChunk = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, functionLabelInstrPos, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+            if (functionStartNewTypeInstructionsChunk == nullptr) return error("Failed to insert a new bytecode chunk at function start");
 
             //Add the stream variable into the function variables list
             spv::Instruction functionIOStreamVariable(newId++, streamIOStructPointerTypeId, spv::OpVariable);
@@ -1581,8 +1581,8 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 //the entry funcion output the stream members individually
 
                 //chunck to insert new stuff at the end of the function
-                BytecodeChunk* functionFinalInstructionsChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionReturnInstrPos, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertLast);
-                if (functionFinalInstructionsChunk == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionReturnInstrPos));
+                BytecodeChunk* functionFinalInstructionsChunk = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, functionReturnInstrPos, BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction);
+                if (functionFinalInstructionsChunk == nullptr) return error("Failed to insert a new bytecode chunk at function return pos");
 
                 //===============================================================================
                 //copy the IO streams into the output variables
@@ -1750,14 +1750,14 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
 
                     //===========================================================================================
                     //update the function's declaration type with the new one
-                    bytecodeUpdateController.SetNewAtomicValueUpdate(functionAccessingStreams->bytecodeStartPosition + 4, functionNewDeclarationTypeId);
+                    SetNewAtomicValueUpdate(bytecodeUpdateController, functionAccessingStreams->bytecodeStartPosition + 4, functionNewDeclarationTypeId);
 
                     //===========================================================================================
                     //Add the new io stream parameter in the function bytecode
                     unsigned int wordCount = asWordCount(functionAccessingStreams->bytecodeStartPosition);
-                    int functionFirstInstruction = functionAccessingStreams->bytecodeStartPosition + wordCount;
-                    BytecodeChunk* bytecodeFunctionParameterChunk = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionFirstInstruction, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
-                    if (bytecodeFunctionParameterChunk == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionFirstInstruction));
+                    BytecodeChunk* bytecodeFunctionParameterChunk = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, functionAccessingStreams->bytecodeStartPosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+                    if (bytecodeFunctionParameterChunk == nullptr) return error("Failed to insert a new bytecode chunk at the function first instruction");
+
                     spv::Instruction functionStreamParameterInstr(newId++, streamIOStructPointerTypeId, spv::OpFunctionParameter);
                     functionStreamParameterInstr.dump(bytecodeFunctionParameterChunk->bytecode);
                     functionAccessingStreams->streamIOStructVariableResultId = functionStreamParameterInstr.getResultId();
@@ -1835,8 +1835,8 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
 #ifdef XKSLANG_DEBUG_MODE
                             if (memberPointerFunctionTypeId <= 0) return error(string("memberPointerFunctionTypeId has not be found or created"));
 #endif
-                            BytecodePortionToReplace& portionToReplace = bytecodeUpdateController.SetNewPortionToReplace(start + 1);
-                            portionToReplace.SetNewValues( {memberPointerFunctionTypeId, resultId, aFunctionAccessingStream->streamIOStructVariableResultId, ioMemberConstId} );
+                            BytecodePortionToReplace* portionToReplace = SetNewPortionToReplace(bytecodeUpdateController, start + 1);
+                            portionToReplace->SetNewValues( {memberPointerFunctionTypeId, resultId, aFunctionAccessingStream->streamIOStructVariableResultId, ioMemberConstId} );
                         }
                         break;
                     }
@@ -1872,14 +1872,13 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
 #endif
 
                 //==================================================================
-                //Add the stream parameter into the function call  (Actually not working in some specific cases)
-                unsigned int functionCallFirstParameterPosition = aFunctionCall.bytecodePos + 4;
-                BytecodeChunk* bytecodeStreamFunctionCall = bytecodeUpdateController.InsertNewBytecodeChunckAt(functionCallFirstParameterPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
-                if (bytecodeStreamFunctionCall == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(functionCallFirstParameterPosition));
+                //Add the stream parameter into the function call
+                BytecodeChunk* bytecodeStreamFunctionCall = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, aFunctionCall.bytecodePos, BytecodeChunkInsertionTypeEnum::InsertWithinInstruction, 4);
+                if (bytecodeStreamFunctionCall == nullptr) return error("Failed to insert a new bytecode chunk within the function call instruction");
                 bytecodeStreamFunctionCall->bytecode.push_back(functionCallStreamParameterIdToAdd);
                 //Update the instruction wordCount
                 unsigned int newInstructionOpWord = combineOpAndWordCount(aFunctionCall.opCode, functionCallInstructionWordCount + 1);
-                bytecodeUpdateController.SetNewAtomicValueUpdate(aFunctionCall.bytecodePos, newInstructionOpWord); //update instruction opWord
+                SetNewAtomicValueUpdate(bytecodeUpdateController, aFunctionCall.bytecodePos, newInstructionOpWord); //update instruction opWord
 
                 /*
                 ///Instead of directly calling the function with the inout stream variable, we create an intermediary variable (to follow to SPIRV semantics)

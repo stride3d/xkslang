@@ -5459,12 +5459,24 @@ bool SpxCompiler::parseInstruction(unsigned int word, spv::Op& opCode, unsigned 
 
 //=====================================================================================================================================
 //=====================================================================================================================================
-BytecodePortionToRemove* BytecodeUpdateController::AddPortionToRemove(unsigned int position, unsigned int count)
+bool SpxCompiler::SetNewAtomicValueUpdate(BytecodeUpdateController& bytecodeUpdateController, unsigned int pos, uint32_t value)
+{
+    bytecodeUpdateController.listAtomicUpdates.push_back(BytecodeValueToReplace(pos, value));
+    return true;
+}
+
+BytecodePortionToReplace* SpxCompiler::SetNewPortionToReplace(BytecodeUpdateController& bytecodeUpdateController, unsigned int pos)
+{
+    bytecodeUpdateController.listPortionsToUpdates.push_back(BytecodePortionToReplace(pos));
+    return &(bytecodeUpdateController.listPortionsToUpdates.back());
+}
+
+BytecodePortionToRemove* SpxCompiler::AddPortionToRemove(BytecodeUpdateController& bytecodeUpdateController, unsigned int position, unsigned int count)
 {
     if (count == 0) return nullptr;
 
-    auto itListPos = listSortedPortionsToRemove.begin();
-    while (itListPos != listSortedPortionsToRemove.end())
+    auto itListPos = bytecodeUpdateController.listSortedPortionsToRemove.begin();
+    while (itListPos != bytecodeUpdateController.listSortedPortionsToRemove.end())
     {
         if (position == itListPos->position) return nullptr;
         if (position > itListPos->position) break; //we sort the list from higher to smaller position
@@ -5473,36 +5485,68 @@ BytecodePortionToRemove* BytecodeUpdateController::AddPortionToRemove(unsigned i
         itListPos++;
     }
 
-    itListPos = listSortedPortionsToRemove.insert(itListPos, BytecodePortionToRemove(position, count));
+    itListPos = bytecodeUpdateController.listSortedPortionsToRemove.insert(itListPos, BytecodePortionToRemove(position, count));
     return &(*itListPos);
 }
 
-BytecodeChunk* BytecodeUpdateController::InsertNewBytecodeChunckAt(unsigned int position, InsertionConflictBehaviourEnum conflictBehaviour, unsigned int countBytesToOverlap)
+BytecodeChunk* SpxCompiler::CreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType, unsigned int offset)
 {
-    auto itListPos = listSortedChunksToInsert.begin();
-    while (itListPos != listSortedChunksToInsert.end())
+    //get the position where to insert the new bytecode chunck
+    unsigned int instructionWordCount = asWordCount(instructionPos);
+    unsigned int insertionPos;
+    switch (insertionType)
     {
-        if (position == itListPos->insertionPos)
-        {
-            bool canBreak = true;
-            switch (conflictBehaviour)
-            {
-                case InsertionConflictBehaviourEnum::InsertFirst:
-                    canBreak = false;
-                    break;
-                case InsertionConflictBehaviourEnum::InsertLast:
-                    canBreak = true;
-                    break;
-                case InsertionConflictBehaviourEnum::ReturnNull:
-                    return nullptr;
+        case BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction:
+            insertionPos = instructionPos;
+            break;
+        case BytecodeChunkInsertionTypeEnum::InsertWithinInstruction:
+            if (offset > instructionWordCount) {
+                error("Invalid offset to insert a bytecode chunck within the instruction");
+                return nullptr;
             }
-            if (canBreak) break;
-        }
+            insertionPos = instructionPos + offset;
+            break;
+        case BytecodeChunkInsertionTypeEnum::InsertAfterInstruction:
+            insertionPos = instructionPos + instructionWordCount;
+            break;
+        default:
+            error("Invalid insertionType enum");
+            return nullptr;
+    }
 
-        if (position > itListPos->insertionPos) break; //we sort the list from higher to smaller position
+    //insert and sort the bytecode chunck
+    std::list<BytecodeChunk>& listSortedChunks = bytecodeUpdateController.listSortedChunksToInsert;
+    auto itListPos = listSortedChunks.begin();
+    while (itListPos != listSortedChunks.end())
+    {
+        if (insertionPos > itListPos->insertionPos) break; //we sort the list from higher to smaller position
+        else if (insertionPos == itListPos->insertionPos)
+        {
+            //In case of conflict, we look which instruction get inserted first
+            if (instructionPos == itListPos->instructionPos)
+            {
+                //same instruction updated: we then look at which position within the instruction
+                if (insertionType == itListPos->insertionType)
+                {
+                    error("conflict: We're adding 2 chuncks to the same instruction and same position");
+                    return nullptr;
+                }
+                else
+                {
+                    if ((int)insertionType > (int)(itListPos->insertionType)) break;
+                }
+            }
+            else
+            {
+                if (instructionPos > itListPos->instructionPos) break;
+                //else //do nothing
+            }
+        }
+        
         itListPos++;
     }
-    itListPos = listSortedChunksToInsert.insert(itListPos, BytecodeChunk(position, countBytesToOverlap));
+
+    itListPos = listSortedChunks.insert(itListPos, BytecodeChunk(instructionPos, insertionType, insertionPos));
     return &(*itListPos);
 }
 
@@ -5546,31 +5590,10 @@ bool SpxCompiler::ApplyBytecodeUpdateController(BytecodeUpdateController& byteco
 
 #ifdef XKSLANG_DEBUG_MODE
         if (bytecodeChunck.insertionPos > bytecodeOriginalSize) { error("bytecode chunck is out of bound"); break; }
-        if (bytecodeChunck.countInstructionsToOverlap > bytecodeChunck.bytecode.size()) { error("bytecode chunck overlaps too many bytes"); break; }
 #endif
 
-        if (bytecodeChunck.countInstructionsToOverlap == 0)
-        {
-            spv.insert(spv.begin() + bytecodeChunck.insertionPos, bytecodeChunck.bytecode.begin(), bytecodeChunck.bytecode.end());
-            countBytesInserted = (unsigned int)bytecodeChunck.bytecode.size();
-        }
-        else
-        {
-            //We overlap some bytes, and maybe add some more
-            unsigned int countOverlaps = bytecodeChunck.countInstructionsToOverlap;
-            int countRemaining = (int)bytecodeChunck.bytecode.size() - (int)countOverlaps;
-
-#ifdef XKSLANG_DEBUG_MODE
-            if (countRemaining < 0) { error("invalid number of overlapping bytes"); break; }
-            if (bytecodeChunck.insertionPos + countOverlaps >= spv.size()) { error("bytecode chunck overlaps too many bytes"); break; }
-#endif
-
-            for (unsigned int i = 0; i < countOverlaps; ++i) spv[bytecodeChunck.insertionPos + i] = bytecodeChunck.bytecode[i];
-            if (countRemaining > 0){
-                spv.insert(spv.begin() + (bytecodeChunck.insertionPos + countOverlaps), bytecodeChunck.bytecode.begin() + countOverlaps, bytecodeChunck.bytecode.end());
-            }
-            countBytesInserted = countRemaining;
-        }
+        spv.insert(spv.begin() + bytecodeChunck.insertionPos, bytecodeChunck.bytecode.begin(), bytecodeChunck.bytecode.end());
+        countBytesInserted = (unsigned int)bytecodeChunck.bytecode.size();
 
         if (countBytesInserted > 0)
         {

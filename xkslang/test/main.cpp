@@ -210,7 +210,6 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
     //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
     //{ "TransformationBase", "TransformationBase.xkfx" },
-
     { "TransformationWAndVP", "TransformationWAndVP.xkfx" },
 };
 

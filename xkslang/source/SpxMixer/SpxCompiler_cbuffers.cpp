@@ -89,7 +89,6 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     //=========================================================================================================================
     //Retrieve information from the bytecode for all USED cbuffers, and their members
     unsigned int posLatestMemberNameOrDecorate = header_size;
-    unsigned int posFirstOpNameOrDecorate = (unsigned int)spv.size();
     if (success && anyCBufferUsed)
     {
         unsigned int start = header_size;
@@ -103,15 +102,13 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             {
                 case spv::OpName:
                 {
-                    if (posFirstOpNameOrDecorate > start) posFirstOpNameOrDecorate = start;
-
                     spv::Id id = asId(start + 1);
                     if (vectorUsedCbuffers[id] != nullptr)
                     {
                         //ShaderTypeData* cbuffer = fdsfsdf;
                         CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
 
-                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
+                        if (start > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start;
                         
                         if (cbufferData->correspondingShaderType->type->GetId() == id) cbufferData->posOpNameType = start;
                         else if (cbufferData->correspondingShaderType->variable->GetId() == id) cbufferData->posOpNameVariable = start;
@@ -174,7 +171,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     {
                         CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
 
-                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
+                        if (start > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start;
 
                         unsigned int index = asLiteralValue(start + 2);
                         string memberName = literalString(start + 3);
@@ -196,7 +193,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     {
                         CBufferTypeData* cbufferData = vectorUsedCbuffers[typeId];
 
-                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
+                        if (start > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start;
 
                         spv::XkslPropertyEnum cbufferType = (spv::XkslPropertyEnum)asLiteralValue(start + 2);
                         spv::XkslPropertyEnum cbufferStage = (spv::XkslPropertyEnum)asLiteralValue(start + 3);
@@ -227,13 +224,11 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                 case spv::OpMemberDecorate:
                 {
-                    if (posFirstOpNameOrDecorate > start) posFirstOpNameOrDecorate = start;
-
                     spv::Id id = asId(start + 1);
                     if (vectorUsedCbuffers[id] != nullptr)
                     {
                         CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
-                        if (start + wordCount > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start + wordCount;
+                        if (start > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start;
 
                         const unsigned int index = asLiteralValue(start + 2);
                         const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
@@ -347,7 +342,6 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
         }
 
         if (positionFirstOpFunctionInstruction == 0) positionFirstOpFunctionInstruction = header_size;
-        if (posFirstOpNameOrDecorate > posLatestMemberNameOrDecorate) posFirstOpNameOrDecorate = posLatestMemberNameOrDecorate;
         if (errorMessages.size() > 0) success = false;
     }
 
@@ -466,11 +460,13 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     }
 #endif
 
+    spv::Id newBoundId = bound();
+
     //=========================================================================================================================
     //Stuff necessary to insert new bytecode
     BytecodeUpdateController bytecodeUpdateController;
-    BytecodeChunk* bytecodeNewNamesAndDecocates = bytecodeUpdateController.InsertNewBytecodeChunckAt(posLatestMemberNameOrDecorate, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertFirst);
-    spv::Id newBoundId = bound();
+    BytecodeChunk* bytecodeNewNamesAndDecocates = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posLatestMemberNameOrDecorate, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+    if (bytecodeNewNamesAndDecocates == nullptr) { error("Failed to insert a new bytecode chunk to insert new names and decorates"); success = false; }
 
     unsigned int maxConstValueNeeded = 0;
     vector<spv::Id> mapIndexesWithConstValueId; //map const value with their typeId
@@ -611,7 +607,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     bool isMemberStaged = cbufferToMerge->isStage;
 
                     //check the best position where to insert the new cbuffer in the bytecode
-                    if (cbufferShaderType->type->bytecodeEndPosition > combinedCbuffer->tmpTargetedBytecodePosition) combinedCbuffer->tmpTargetedBytecodePosition = cbufferShaderType->type->bytecodeEndPosition;
+                    if (cbufferShaderType->type->bytecodeStartPosition > combinedCbuffer->tmpTargetedBytecodePosition) combinedCbuffer->tmpTargetedBytecodePosition = cbufferShaderType->type->bytecodeStartPosition;
 
                     const unsigned int countMembersInBufferToMerge = (unsigned int)cbufferToMerge->cbufferMembersData->members.size();
                     for (unsigned int m = 0; m < countMembersInBufferToMerge; m++)
@@ -765,8 +761,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 }
             }
 
-            BytecodeChunk* bytecodeNewConsts = bytecodeUpdateController.InsertNewBytecodeChunckAt(posLastConstEnd, BytecodeUpdateController::InsertionConflictBehaviourEnum::ReturnNull);
-            if (bytecodeNewConsts == nullptr) return error("Failed to insert a new bytecode chunk. position is already used: " + to_string(posLastConstEnd));
+            BytecodeChunk* bytecodeNewConsts = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posLastConstEnd, BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction);
+            if (bytecodeNewConsts == nullptr) return error("Failed to insert a new bytecode chunk to insert new consts");
 
             //make the missing consts and OpTypeInt
             if (idOpTypeIntS32 == spvUndefinedId)
@@ -818,14 +814,15 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
             TypeInstruction* resourcePointerType = GetTypePointingTo(resourceType);
             VariableInstruction* resourceVariable = GetVariablePointingTo(resourcePointerType);
+            if (resourceVariable != nullptr) { error("a variable already exists for the resource type"); break; }
 
             BytecodeChunk* bytecodeResourceVariable = nullptr;
 
             spv::Id pointerTypeId = 0;
             if (resourcePointerType == nullptr)
             {
-                bytecodeResourceVariable = bytecodeUpdateController.InsertNewBytecodeChunckAt(resourceType->bytecodeEndPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertLast);
-                if (bytecodeResourceVariable == nullptr) { error("Failed to insert a new bytecode chunk"); break; }
+                bytecodeResourceVariable = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, resourceType->bytecodeStartPosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+                if (bytecodeResourceVariable == nullptr) { error("Failed to insert a new bytecode chunk to create a resource pointer type"); break; }
 
                 //make the pointer type
                 pointerTypeId = newBoundId++;
@@ -841,10 +838,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 spv::StorageClass pointerStorageClass = (spv::StorageClass)asLiteralValue(resourcePointerType->GetBytecodeStartPosition() + 2);
                 if (pointerStorageClass != spv::StorageClass::StorageClassUniformConstant) { error("Invalid storage class, expected StorageClassUniform"); break; }
 
-                bytecodeResourceVariable = bytecodeUpdateController.InsertNewBytecodeChunckAt(resourcePointerType->bytecodeEndPosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertLast);
-                if (bytecodeResourceVariable == nullptr) { error("Failed to insert a new bytecode chunk"); break; }
+                bytecodeResourceVariable = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, resourcePointerType->bytecodeStartPosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+                if (bytecodeResourceVariable == nullptr) { error("Failed to insert a new bytecode chunk to create a resource variable"); break; }
             }
-            if (resourceVariable != nullptr) { error("a variable already exists for the resource type"); break; }
 
             //make the variable
             {
@@ -878,8 +874,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             string& cbufferName = cbuffer->declarationName;
             string cbufferVarName = cbufferName + "_var";
 
-            BytecodeChunk* bytecodeMergedCBufferType = bytecodeUpdateController.InsertNewBytecodeChunckAt(cbuffer->tmpTargetedBytecodePosition, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertLast);
-            if (bytecodeMergedCBufferType == nullptr) { error("Failed to insert a new bytecode chunk"); break; }
+            BytecodeChunk* bytecodeMergedCBufferType = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, cbuffer->tmpTargetedBytecodePosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+            if (bytecodeMergedCBufferType == nullptr) { error("Failed to insert a new bytecode chunk to create a new cbuffer (if conflict, should be fine to allow it)"); break; }
 
             //make the cbuffer struct type
             {
@@ -1132,7 +1128,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             {
                                 //the resource has been moved outside the cbuffer: we remove the access chain instruction
                                 spv::Id accessChainResultId = asId(start + 2);
-                                if (bytecodeUpdateController.AddPortionToRemove(start, wordCount) == nullptr) { error("Failed to insert a portion to remove"); break; }
+                                if (AddPortionToRemove(bytecodeUpdateController, start, wordCount) == nullptr) { error("Failed to insert a portion to remove"); break; }
 
                                 //Then we will need to remap the access chain id into the resource variable id
                                 mapAccessChainResultIdsToRemap[accessChainResultId] = structMember.variableAccessTypeId;
@@ -1158,8 +1154,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 #endif
                                 spv::Id memberIndexInNewCbufferConstTypeId = mapIndexesWithConstValueId[memberIndexInNewCbuffer]; //get the const type id for new index
 
-                                BytecodePortionToReplace& portionToReplace = bytecodeUpdateController.SetNewPortionToReplace(start + 1);
-                                portionToReplace.SetNewValues({ typeId, resultId, newStructAccessId, memberIndexInNewCbufferConstTypeId });
+                                BytecodePortionToReplace* portionToReplace = SetNewPortionToReplace(bytecodeUpdateController, start + 1);
+                                portionToReplace->SetNewValues({ typeId, resultId, newStructAccessId, memberIndexInNewCbufferConstTypeId });
                             }
                         }
                         break;
@@ -1192,7 +1188,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         if (mapAccessChainResultIdsToRemap[idLoaded] != 0)
                         {
                             spv::Id newId = mapAccessChainResultIdsToRemap[idLoaded];
-                            bytecodeUpdateController.SetNewAtomicValueUpdate(start + 3, newId);
+                            SetNewAtomicValueUpdate(bytecodeUpdateController, start + 3, newId);
                         }
                         break;
                     }
