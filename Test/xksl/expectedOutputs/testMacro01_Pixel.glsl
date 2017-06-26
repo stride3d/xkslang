@@ -7,6 +7,7 @@ struct PS_STREAMS
 };
 
 layout(location = 0) in int PS_IN_tabStream01[2];
+layout(location = 0) out int PS_OUT_tabStream02[2];
 
 void main()
 {
@@ -16,5 +17,6 @@ void main()
     {
         _streams.tabStream02_id1[i] = _streams.tabStream01_id0[i];
     }
+    PS_OUT_tabStream02 = _streams.tabStream02_id1;
 }
 

@@ -1,8 +1,6 @@
-struct globalStreams
+struct PS_STREAMS
 {
-    float sbase1_0;
-    int sbase2_1;
-    int sa1_2;
+    int sa1_id0;
 };
 
 cbuffer Globals
@@ -10,14 +8,22 @@ cbuffer Globals
     int shaderA_Var0;
 };
 
-static globalStreams globalStreams_var;
+static int PS_IN_sa1;
 
-int frag_main()
+struct SPIRV_Cross_Input
 {
-    return ((shaderA_Var0 + globalStreams_var.sa1_2) + 2) + 3;
+    int PS_IN_sa1 : TEXCOORD0;
+};
+
+void frag_main()
+{
+    PS_STREAMS _streams = { 0 };
+    _streams.sa1_id0 = PS_IN_sa1;
+    int a = ((shaderA_Var0 + _streams.sa1_id0) + 2) + 3;
 }
 
-void main()
+void main(SPIRV_Cross_Input stage_input)
 {
+    PS_IN_sa1 = stage_input.PS_IN_sa1;
     frag_main();
 }

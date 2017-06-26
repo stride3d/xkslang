@@ -12,7 +12,7 @@ shader ShaderA
 	
 	stream int svar;
 	
-	int main()
+	void main()
 	{
 		int res = 0;
 		foreach(var subCompute in SubComputes)
@@ -21,7 +21,7 @@ shader ShaderA
 			streams.svar = res;
 		}
 
-		return res;
+		int i = res;
 	}
 }
 

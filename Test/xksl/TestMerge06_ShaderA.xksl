@@ -18,8 +18,8 @@ shader shaderA : Base
 		return base.ComputeBase();
 	}
 	
-	int main()
+	void main()
 	{
-		return ComputeBase() + Var1 + base.ComputeBase() + f1();
+		int i = ComputeBase() + Var1 + base.ComputeBase() + f1();
 	}
 };

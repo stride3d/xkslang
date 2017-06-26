@@ -1,9 +1,8 @@
 #version 450
 
-struct globalStreams
+struct PS_STREAMS
 {
-    float sbase1_0;
-    int sbase2_1;
+    float sbase1_id0;
 };
 
 layout(std140) uniform Globals
@@ -12,10 +11,12 @@ layout(std140) uniform Globals
     float Base_Var2;
 } Globals_var;
 
-globalStreams globalStreams_var;
+layout(location = 0) in float PS_IN_sbase1;
 
-int main()
+void main()
 {
-    return int(((globalStreams_var.sbase1_0 + float(Globals_var.Base_Var1)) + Globals_var.Base_Var2) + 2.0);
+    PS_STREAMS _streams = PS_STREAMS(0.0);
+    _streams.sbase1_id0 = PS_IN_sbase1;
+    int i = int(((_streams.sbase1_id0 + float(Globals_var.Base_Var1)) + Globals_var.Base_Var2) + 2.0);
 }
 

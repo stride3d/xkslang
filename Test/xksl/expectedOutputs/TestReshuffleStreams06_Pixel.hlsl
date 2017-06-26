@@ -24,6 +24,7 @@ static float2 PS_IN_aF2;
 static ShaderMain_Toto PS_IN_aToto1;
 static ShaderMain_Toto PS_IN_aTotoTab[2];
 static float4x4 PS_IN_aMat44;
+static float4 PS_OUT_aF4;
 
 struct SPIRV_Cross_Input
 {
@@ -34,6 +35,11 @@ struct SPIRV_Cross_Input
     ShaderMain_Toto PS_IN_aToto1 : ATOTO;
     ShaderMain_Toto PS_IN_aTotoTab[2] : ATOTOTAB;
     float4x4 PS_IN_aMat44 : AMAT44;
+};
+
+struct SPIRV_Cross_Output
+{
+    float4 PS_OUT_aF4 : AF4;
 };
 
 void frag_main()
@@ -54,9 +60,10 @@ void frag_main()
     float4x4 aMat = _streams.aMat44_id7;
     bool b = _streams.aBool_id1 != int(0u);
     _streams.aF4_id4 = float4(_streams.aF2_id3, 0.0f, 1.0f);
+    PS_OUT_aF4 = _streams.aF4_id4;
 }
 
-void main(SPIRV_Cross_Input stage_input)
+SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
     PS_IN_aDouble = stage_input.PS_IN_aDouble;
     PS_IN_aBool = stage_input.PS_IN_aBool;
@@ -69,4 +76,7 @@ void main(SPIRV_Cross_Input stage_input)
     PS_IN_aMat44[2] = stage_input.PS_IN_aMat44_2;
     PS_IN_aMat44[3] = stage_input.PS_IN_aMat44_3;
     frag_main();
+    SPIRV_Cross_Output stage_output;
+    stage_output.PS_OUT_aF4 = PS_OUT_aF4;
+    return stage_output;
 }

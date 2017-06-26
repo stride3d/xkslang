@@ -5,9 +5,9 @@ shader ShaderMain<int G1, int G2> : ShaderBase<G1>, ShaderBase<G2>
 		return base.compute();
 	}
 	
-	stage int VSMain() 
+	stage void VSMain() 
     {
-		return compute();
+		int i = compute();
     }
 	
 }

@@ -1,11 +1,11 @@
 #version 450
 
-struct globalStreams
+struct PS_STREAMS
 {
-    int ColorTarget_0;
+    int ColorTarget_id0;
 };
 
-globalStreams globalStreams_var;
+layout(location = 0) out int PS_OUT_ColorTarget;
 
 int Base_Compute()
 {
@@ -24,6 +24,8 @@ int ShaderB_Compute()
 
 void main()
 {
-    globalStreams_var.ColorTarget_0 = ShaderB_Compute();
+    PS_STREAMS _streams = PS_STREAMS(0);
+    _streams.ColorTarget_id0 = ShaderB_Compute();
+    PS_OUT_ColorTarget = _streams.ColorTarget_id0;
 }
 

@@ -5,6 +5,6 @@ mixer m
 m.mixin TransformationWAndVP
 
 m.setStageEntryPoint Vertex "VSMain"
-m.setStageEntryPoint Pixel "PSMain"
+//m.setStageEntryPoint Pixel "PSMain"
 
 m.compile

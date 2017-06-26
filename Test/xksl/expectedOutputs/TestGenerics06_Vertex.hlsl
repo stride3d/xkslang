@@ -1,6 +1,6 @@
-struct globalStreams
+struct VS_STREAMS
 {
-    int aStream_0;
+    int aStream_id0;
 };
 
 cbuffer PreDraw
@@ -8,7 +8,12 @@ cbuffer PreDraw
     int ShaderBase_4_1__aVar;
 };
 
-static globalStreams globalStreams_var;
+static int VS_OUT_aStream;
+
+struct SPIRV_Cross_Output
+{
+    int VS_OUT_aStream : TEXCOORD0;
+};
 
 int ShaderBase_4_1__compute()
 {
@@ -22,10 +27,15 @@ int ShaderMain_7_4__compute()
 
 void vert_main()
 {
-    globalStreams_var.aStream_0 = ShaderMain_7_4__compute() + 11;
+    VS_STREAMS _streams = { 0 };
+    _streams.aStream_id0 = ShaderMain_7_4__compute() + 11;
+    VS_OUT_aStream = _streams.aStream_id0;
 }
 
-void main()
+SPIRV_Cross_Output main()
 {
     vert_main();
+    SPIRV_Cross_Output stage_output;
+    stage_output.VS_OUT_aStream = VS_OUT_aStream;
+    return stage_output;
 }

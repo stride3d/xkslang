@@ -1,8 +1,8 @@
 #version 450
 
-struct globalStreams
+struct VS_STREAMS
 {
-    int aStream_0;
+    int aStream_id0;
 };
 
 layout(std140) uniform PreDraw
@@ -10,7 +10,7 @@ layout(std140) uniform PreDraw
     int ShaderBase_4_1__aVar;
 } PreDraw_var;
 
-globalStreams globalStreams_var;
+layout(location = 0) out int VS_OUT_aStream;
 
 int ShaderBase_4_1__compute()
 {
@@ -24,6 +24,8 @@ int ShaderMain_7_4__compute()
 
 void main()
 {
-    globalStreams_var.aStream_0 = ShaderMain_7_4__compute() + 11;
+    VS_STREAMS _streams = VS_STREAMS(0);
+    _streams.aStream_id0 = ShaderMain_7_4__compute() + 11;
+    VS_OUT_aStream = _streams.aStream_id0;
 }
 

@@ -1,7 +1,6 @@
-struct globalStreams
+struct PS_STREAMS
 {
-    float sbase1_0;
-    int sbase2_1;
+    float sbase1_id0;
 };
 
 cbuffer Globals
@@ -10,14 +9,22 @@ cbuffer Globals
     float Base_Var2;
 };
 
-static globalStreams globalStreams_var;
+static float PS_IN_sbase1;
 
-int frag_main()
+struct SPIRV_Cross_Input
 {
-    return int(((globalStreams_var.sbase1_0 + float(Base_Var1)) + Base_Var2) + 2.0f);
+    float PS_IN_sbase1 : TEXCOORD0;
+};
+
+void frag_main()
+{
+    PS_STREAMS _streams = { 0.0f };
+    _streams.sbase1_id0 = PS_IN_sbase1;
+    int i = int(((_streams.sbase1_id0 + float(Base_Var1)) + Base_Var2) + 2.0f);
 }
 
-void main()
+void main(SPIRV_Cross_Input stage_input)
 {
+    PS_IN_sbase1 = stage_input.PS_IN_sbase1;
     frag_main();
 }

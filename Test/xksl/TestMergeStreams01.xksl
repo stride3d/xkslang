@@ -23,13 +23,13 @@ shader ShaderA
 	//stage stream float2 sameSemanticWithType2: SV_TOTO;
 	compose Color colors[];
 	
-	int main()
+	void main()
 	{
 		int res = 0;
 		foreach (var color in colors){
 			res += color.Compute(1);
 		}
 		streams.outStream += res;
-		return streams.outStream;
+		int i = streams.outStream;
 	}
 }

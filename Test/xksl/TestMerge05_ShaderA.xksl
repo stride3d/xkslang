@@ -15,9 +15,9 @@ shader shaderA : Base
 		return Var1 + streams.sbase1;
 	}
 	
-	int main()
+	void main()
 	{
-		return Compute1() + Compute2();
+		int i = Compute1() + Compute2();
 	}
 	
 	int Compute2()

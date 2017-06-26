@@ -1,16 +1,16 @@
 #version 450
 
-struct globalStreams
+struct PS_STREAMS
 {
-    int streamI_s0;
-    float streamF_s1;
-    bool streamB_2;
+    int streamI_id0;
 };
 
-globalStreams globalStreams_var;
+layout(location = 0) out int PS_OUT_streamI;
 
 void main()
 {
-    globalStreams_var.streamI_s0 = 0;
+    PS_STREAMS _streams = PS_STREAMS(0);
+    _streams.streamI_id0 = 0;
+    PS_OUT_streamI = _streams.streamI_id0;
 }
 

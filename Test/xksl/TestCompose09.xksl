@@ -29,8 +29,8 @@ shader ShaderA
 	compose Comp color;
 	compose SubComp sb;
 	
-	int main()
+	void main()
 	{
-		return color.Compute() + sb.Compute();
+		int i = color.Compute() + sb.Compute();
 	}
 }

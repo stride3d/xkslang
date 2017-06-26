@@ -20,8 +20,8 @@ shader shaderA : Base
 	
 	const int saConst = 3;
 	
-	int main()
+	void main()
 	{
-		return Var0 + streams.sa1 + BaseConst + saConst;
+		int a = Var0 + streams.sa1 + BaseConst + saConst;
 	}
 };
