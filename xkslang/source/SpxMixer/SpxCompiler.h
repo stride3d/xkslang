@@ -105,6 +105,13 @@ public:
         ReturnNull,
     };
 
+    /*enum class InsertionDetailsEnum
+    {
+        InsertAfterInstruction,
+        InsertBeforeInstruction,
+        InsertWithinInstruction
+    };*/
+
     std::vector<BytecodeValueToReplace> listAtomicUpdates;
     std::vector<BytecodePortionToReplace> listPortionsToUpdates;
     std::vector<BytecodePortionToRemove> listSortedPortionsToRemove;
@@ -114,8 +121,6 @@ public:
     BytecodePortionToReplace& SetNewPortionToReplace(unsigned int pos) { listPortionsToUpdates.push_back(BytecodePortionToReplace(pos)); return listPortionsToUpdates.back(); }
     BytecodePortionToRemove* AddPortionToRemove(unsigned int position, unsigned int count);
     BytecodeChunk* InsertNewBytecodeChunckAt(unsigned int position, InsertionConflictBehaviourEnum conflictBehaviour, unsigned int countBytesToOverlap = 0);
-    BytecodeChunk* GetBytecodeChunkAt(unsigned int position);
-    unsigned int GetCountBytecodeChuncksToInsert() { return (unsigned int)listSortedChunksToInsert.size(); }
 };
 
 //==============================================================================================================//
@@ -368,8 +373,7 @@ public:
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
             flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined),
-            streamIOStructVariableResultId(0), streamIOStructConstantCompositeId(0), streamOutputStructVariableResultId(0), streamOutputStructConstantCompositeId(0),
-            functionVariablesStartingPosition(0){}
+            streamIOStructVariableResultId(0), streamIOStructConstantCompositeId(0), streamOutputStructVariableResultId(0), streamOutputStructConstantCompositeId(0) {}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -401,7 +405,6 @@ public:
         //some variables used to help some algos
         int flag1;
         int currentPosInBytecode;
-        unsigned int functionVariablesStartingPosition; //position directly after the function OpLabel instruction (set by some algo needing it)
 
         //those variables are used when reshuffling stream members
         ShadingStageEnum functionProcessingStreamForStage;  //when a stage calls a function using stream, the stage will reserves the function (another stage calling the function will return an error)
@@ -746,7 +749,6 @@ private:
 	bool GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
 	bool GetInputAttributesFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
 
-    bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
 
     bool ApplyCompositionInstancesToBytecode();
@@ -800,6 +802,9 @@ private:
     bool UpdateOverridenFunctionMap(std::vector<ShaderClassData*>& listShadersMerged);
     bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
     bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
+
+    //bytecode chuncks controller
+    bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
 
     bool InitDefaultHeader();
     bool ComputeShadersLevel();

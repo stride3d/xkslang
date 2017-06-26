@@ -5506,34 +5506,6 @@ BytecodeChunk* BytecodeUpdateController::InsertNewBytecodeChunckAt(unsigned int 
     return &(*itListPos);
 }
 
-/*BytecodeChunk* BytecodeUpdateController::GetOrCreateBytecodeChunckAt(unsigned int position, unsigned int countBytesToOverlap)
-{
-    auto itListPos = listSortedChunksToInsert.begin();
-    while (itListPos != listSortedChunksToInsert.end())
-    {
-        if (position == itListPos->insertionPos) {
-            if (countBytesToOverlap != itListPos->countInstructionsToOverlap) return nullptr;  //the overlap parameters are different, return null
-            return &(*itListPos);
-        }
-
-        if (position > itListPos->insertionPos) break; //we sort the list from higher to smaller position
-        itListPos++;
-    }
-    itListPos = listSortedChunksToInsert.insert(itListPos, BytecodeChunk(position, countBytesToOverlap));
-    return &(*itListPos);
-}*/
-
-BytecodeChunk* BytecodeUpdateController::GetBytecodeChunkAt(unsigned int position)
-{
-    for (auto it = listSortedChunksToInsert.begin(); it != listSortedChunksToInsert.end(); it++)
-    {
-        if (position == it->insertionPos) return &(*it);
-        if (position < it->insertionPos) break; //the list is sorted from higher to smaller position
-    }
-
-    return nullptr;
-}
-
 bool SpxCompiler::ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController)
 {
     unsigned int bytecodeOriginalSize = (unsigned int)spv.size();
