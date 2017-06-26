@@ -15,9 +15,6 @@
     <ClInclude Include="..\..\..\source\XkslParser\XkslParser.h">
       <Filter>XkslParser</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\source\Common\define.h">
-      <Filter>Common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\source\Common\SpxBytecode.h">
       <Filter>Common</Filter>
     </ClInclude>
@@ -36,13 +33,13 @@
     <ClInclude Include="..\..\..\source\SpxMixer\SpxCompiler.h">
       <Filter>SpxMixer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\source\Common\xkslangDefine.h">
+      <Filter>Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\XkslParser\XkslParser.cpp">
       <Filter>XkslParser</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\Common\define.cpp">
-      <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\source\Common\SpxBytecode.cpp">
       <Filter>Common</Filter>
@@ -70,6 +67,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_types.cpp">
       <Filter>SpxMixer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\Common\xkslangDefine.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

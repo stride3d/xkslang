@@ -12,7 +12,7 @@
 #include "SPIRV/spvIR.h"
 #include "SPIRV/SPVRemapper.h"
 
-#include "../Common/define.h"
+#include "../Common/xkslangDefine.h"
 #include "../Common/SpxBytecode.h"
 #include "OutputStageBytecode.h"
 #include "EffectReflection.h"

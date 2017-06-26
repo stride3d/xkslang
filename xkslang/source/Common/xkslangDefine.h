@@ -8,7 +8,7 @@
 //#include "glslang/Public/ShaderLang.h"
 
 #define XKSLANG_DEBUG_MODE
-
+//#define XKSLANG_ENFORCE_NEW_XKSL_RULES
 #define XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
 
 //By default SPIRV-Cross insert all cbuffer members into an intermediary struct

@@ -55,6 +55,8 @@
 #include "hlslGrammar.h"
 #include "hlslAttributes.h"
 
+#include "../xkslang/source/Common/xkslangDefine.h"
+
 namespace glslang {
 
 // Root entry point to this recursive decent parser.
@@ -3204,9 +3206,14 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                             TString userDefinedSemantic;
                             acceptPostDecls(declaredType.getQualifier(), &userDefinedSemantic);
                             if (userDefinedSemantic.length() > 0) {
-                                if (!declaredType.getQualifier().isStage) {
-                                    error(TString("A variable cannot declare a user-defined semantic if it's not a stage variable. Invalid variable: ") + declaredType.getFieldName());
+                                if (!declaredType.getQualifier().isStage)
+                                {
+#ifdef XKSLANG_ENFORCE_NEW_XKSL_RULES
+                                    error("A variable cannot declare a user-defined semantic if it's not a stage variable. Invalid variable: " + declaredType.getFieldName());
                                     return false;
+#else
+                                    warning("A variable declare a semantic but is not set as a stage variable: " + declaredType.getFieldName());
+#endif
                                 }
 
                                 //add the semantic with the variable

@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-#include "define.h"
+#include "xkslangDefine.h"
 #include "glslang/Public/ShaderLang.h"
 
 using namespace std;

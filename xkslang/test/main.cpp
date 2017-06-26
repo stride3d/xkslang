@@ -208,8 +208,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
-    { "ComputeColorWave", "ComputeColorWave.xkfx" },
+    //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
+    //{ "TransformationBase", "TransformationBase.xkfx" },
 
+    { "TransformationWAndVP", "TransformationWAndVP.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {

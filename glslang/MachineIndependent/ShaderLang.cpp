@@ -69,6 +69,8 @@
 
 #include "../../SPIRV/GlslangToSpv.h"
 
+#include "../../xkslang/source/Common/xkslangDefine.h"
+
 namespace { // anonymous namespace for file-local functions and symbols
 
 using namespace glslang;
@@ -1984,8 +1986,11 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                             //XKSL Rules: we set stage in front of the cbuffer declaration, not in front of its members
                             if (blockMemberType.getQualifier().isStage)
                             {
-                                //this should normally be an error, we accept it for now to be compatible with Xenko current xksl shaders
-                                warning(parseContext, "A cbuffer or resource variable should not directly be declared with \"stage\" attribute, you must set the \"stage\" attribute before the cbuffer or rgroup. Variable: " + blockMemberType.getFieldName());
+#ifdef XKSLANG_ENFORCE_NEW_XKSL_RULES
+                                return error(parseContext, "A cbuffer or resource variable cannot directly be declared with \"stage\" attribute, you must set the \"stage\" attribute before the cbuffer or rgroup. Variable: " + blockMemberType.getFieldName());
+#else
+                                warning(parseContext, "A cbuffer or resource variable should not directly be declared with \"stage\" attribute, you should set the \"stage\" attribute before the cbuffer or rgroup. Variable: " + blockMemberType.getFieldName());
+#endif
                                 isStageMember = true;
                             }
 
@@ -2056,8 +2061,11 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                             //XKSL Rules: we set stage in front of the cbuffer declaration, not in front of its members
                             if (blockMemberType.getQualifier().isStage)
                             {
-                                //this should normally be an error, we accept it for now to be compatible with Xenko current xksl shaders
+#ifdef XKSLANG_ENFORCE_NEW_XKSL_RULES
+                                return error(parseContext, "A cbuffer or rgoup variable cannot directly be declared with \"stage\" attribute, you must set the \"stage\" attribute before the cbuffer or rgroup. Variable: " + blockMemberType.getFieldName());
+#else
                                 warning(parseContext, "A cbuffer or rgoup variable should not directly be declared with \"stage\" attribute, you should set the \"stage\" attribute before the cbuffer or rgroup. Variable: " + blockMemberType.getFieldName());
+#endif                                
                                 forceMemberToHaveStageOrUnstageDeclaration = true;
 
                                 if (indexInBlock == 0)

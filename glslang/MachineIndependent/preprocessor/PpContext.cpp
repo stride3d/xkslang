@@ -95,7 +95,8 @@ TPpContext::TPpContext(TParseContextBase& pc, const std::string& rootFileName, T
 
 TPpContext::~TPpContext()
 {
-    delete [] preamble;
+    if (preamble != 0)
+        delete [] preamble;
 
     // free up the inputStack
     while (! inputStack.empty())

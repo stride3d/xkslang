@@ -4,7 +4,7 @@
 #include <iostream>
 #include <objbase.h>
 
-#include "../Common/define.h"
+#include "../Common/xkslangDefine.h"
 #include "../SpxMixer/EffectReflection.h"
 
 namespace xkslang
@@ -1641,6 +1641,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         }
     }
 }
+
 
 
 #endif

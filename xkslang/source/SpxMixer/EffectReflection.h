@@ -9,7 +9,7 @@
 
 #include "SPIRV/spvIR.h"
 
-#include "../Common/define.h"
+#include "../Common/xkslangDefine.h"
 
 namespace xkslang
 {
