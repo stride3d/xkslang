@@ -694,61 +694,66 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
 
                 switch (opCode)
                 {
-                case spv::OpAccessChain:
-                {
-                    spv::Id structIdAccessed = asId(start + 3);
-
-                    //are we accessing the global stream buffer?
-                    if (structIdAccessed == globalStreamStructVariableId)
+                    case spv::OpAccessChain:
                     {
-                        spv::Id resultId = asId(start + 2);
-                        spv::Id indexConstId = asId(start + 4);
+                        spv::Id structIdAccessed = asId(start + 3);
 
-                        ConstInstruction* constObject = GetConstById(indexConstId);
-                        if (constObject == nullptr) return error(string("cannot get const object for Id: ") + to_string(indexConstId));
-                        int streamMemberIndex = constObject->valueS32;
-#ifdef XKSLANG_DEBUG_MODE
-                        if (resultId >= vectorResultIdsAccessingAStreamVariable.size()) return error("resultId out of bound");
-                        if (vectorResultIdsAccessingAStreamVariable[resultId] != -1) return error("resultId is already accessing a stream variable");
-                        if (streamMemberIndex < 0 || streamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
-                            return error(string("streamMemberIndex is out of bound: ") + to_string(streamMemberIndex));
-#endif
-                        anyStreamBeingAccessedByTheStage = true;
-                        vectorResultIdsAccessingAStreamVariable[resultId] = streamMemberIndex;
-                        isFunctionAccessingAStreamVariable = true;
-                    }
-                    else if (listAllCBufferIds[structIdAccessed] != nullptr) //are we accessing a cbuffer
-                    {
-                        ShaderTypeData* cbufferAccessed = listAllCBufferIds[structIdAccessed];
-                        if (cbufferAccessed->tmpFlag == 0) {
-                            cbufferAccessed->tmpFlag = 1;
-                            outputStage->listCBuffersAccessed.push_back(cbufferAccessed);
+                        //are we accessing the global stream buffer?
+                        if (structIdAccessed == globalStreamStructVariableId)
+                        {
+                            spv::Id resultId = asId(start + 2);
+                            spv::Id indexConstId = asId(start + 4);
+
+                            ConstInstruction* constObject = GetConstById(indexConstId);
+                            if (constObject == nullptr) return error(string("cannot get const object for Id: ") + to_string(indexConstId));
+                            int streamMemberIndex = constObject->valueS32;
+    #ifdef XKSLANG_DEBUG_MODE
+                            if (resultId >= vectorResultIdsAccessingAStreamVariable.size()) return error("resultId out of bound");
+                            if (vectorResultIdsAccessingAStreamVariable[resultId] != -1) return error("resultId is already accessing a stream variable");
+                            if (streamMemberIndex < 0 || streamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
+                                return error(string("streamMemberIndex is out of bound: ") + to_string(streamMemberIndex));
+    #endif
+                            anyStreamBeingAccessedByTheStage = true;
+                            vectorResultIdsAccessingAStreamVariable[resultId] = streamMemberIndex;
+                            isFunctionAccessingAStreamVariable = true;
                         }
+                        else if (listAllCBufferIds[structIdAccessed] != nullptr) //are we accessing a cbuffer
+                        {
+                            ShaderTypeData* cbufferAccessed = listAllCBufferIds[structIdAccessed];
+                            if (cbufferAccessed->tmpFlag == 0) {
+                                cbufferAccessed->tmpFlag = 1;
+                                outputStage->listCBuffersAccessed.push_back(cbufferAccessed);
+                            }
+                        }
+
+                        break;
                     }
 
-                    break;
-                }
-
-                case spv::OpFunctionCall:
-                case spv::OpFunctionCallBaseResolved:
-                case spv::OpFunctionCallThroughStaticShaderClassCall:
-                {
-                    //pile the function to go check it later
-                    spv::Id functionCalledId = asId(start + 3);
-                    FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
-                    if (anotherFunctionCalled->flag1 == 0) {
-                        anotherFunctionCalled->flag1 = 1;
-                        vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+                    case spv::OpFunctionCall:
+                    case spv::OpFunctionCallBaseResolved:
+                    case spv::OpFunctionCallThroughStaticShaderClassCall:
+                    {
+                        //pile the function to go check it later
+                        spv::Id functionCalledId = asId(start + 3);
+                        FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+                        if (anotherFunctionCalled->flag1 == 0) {
+                            anotherFunctionCalled->flag1 = 1;
+                            vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+                        }
+                        break;
                     }
-                    break;
-                }
 
-                case spv::OpFunctionCallThroughCompositionVariable:
-                case spv::OpFunctionCallBaseUnresolved:
-                {
-                    return error(string("An unresolved function call has been found in function: ") + aFunctionCalled->GetFullName());
-                    break;
-                }
+                    case spv::OpFunctionCallThroughCompositionVariable:
+                    {
+                        return error(string("An unresolved function call to a composition has been found in function: ") + aFunctionCalled->GetFullName());
+                        break;
+                    }
+
+                    case spv::OpFunctionCallBaseUnresolved:
+                    {
+                        return error(string("An unresolved function call to a base class has been found in function: ") + aFunctionCalled->GetFullName());
+                        break;
+                    }
                 }
                 start += wordCount;
             }

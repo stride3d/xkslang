@@ -2887,6 +2887,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
         //declare either a shader's member or method
 
         // check if we're declaring a composition
+        bool isStageBeforeCompose = acceptTokenClass(EHTokStage);  //stage is normally processed later, but we can have the case of having "stage compose"
         bool isComposition = acceptTokenClass(EHTokCompose);
         if (isComposition)
         {
@@ -2921,6 +2922,10 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
             }
 
             continue;
+        }
+        else
+        {
+            if (isStageBeforeCompose) recedeToken();
         }
 
         // check the type (plus any post-declaration qualifiers)

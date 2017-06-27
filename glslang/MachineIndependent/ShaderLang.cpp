@@ -2636,7 +2636,8 @@ static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibra
 
 static bool ParseXkslShaderRecursif(
     XkslShaderLibrary& shaderLibrary,
-    const std::string& xksShadersToParse,
+    const std::string& xkslShaderFileName,
+    const std::string& xkslShaderFileData,
     XkslShaderDefinition* shaderRequiringADependency,
     XkslShaderDefinition::ShaderParsingStatusEnum processUntilOperation,
     HlslParseContext* parseContext,
@@ -2653,7 +2654,7 @@ static bool ParseXkslShaderRecursif(
     XkslShaderDefinition::ShaderParsingStatusEnum currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::Undefined;
     XkslShaderDefinition::ShaderParsingStatusEnum previousProcessingOperation;
 
-    std::string shadersStringToParse = xksShadersToParse;
+    std::string shadersStringToParse = xkslShaderFileData;
     //Add the user-defined macros
     {
         unsigned int countMacros = (unsigned int)listUserDefinedMacros.size();
@@ -2777,8 +2778,9 @@ static bool ParseXkslShaderRecursif(
                         //missing parent shader: If we have a callback function: query its data and then recursively parse it
                         if (callbackRequestDataForShader != nullptr)
                         {
+                            const std::string shaderNameToParse(parentName->c_str());
                             std::string shaderData;
-                            if (!callbackRequestDataForShader(std::string(parentName->c_str()), shaderData))
+                            if (!callbackRequestDataForShader(shaderNameToParse, shaderData))
                             {
                                 error(parseContext, "unknwon identifier: " + (*parentName));
                                 success = false;
@@ -2803,6 +2805,7 @@ static bool ParseXkslShaderRecursif(
                                 int countShadersInLibraryBeforeParsing = shaderLibrary.GetCountShaderInLibrary();
                                 success = ParseXkslShaderRecursif(
                                     shaderLibrary,
+                                    shaderNameToParse,
                                     shaderData,
                                     parsedShader,
                                     XkslShaderDefinition::ShaderParsingStatusEnum::GenericsResolved, //have new shaders catch up until this process
@@ -2992,8 +2995,9 @@ static bool ParseXkslShaderRecursif(
                 const TString& shaderToParse = listAdditionnalShadersToAdd[k];
                 if (GetShaderFromLibrary(shaderLibrary, shaderToParse, nullptr) != nullptr) continue;
 
+                const std::string shaderNameToParse(shaderToParse.c_str());
                 std::string shaderData;
-                if (!callbackRequestDataForShader(std::string(shaderToParse.c_str()), shaderData))
+                if (!callbackRequestDataForShader(shaderNameToParse, shaderData))
                 {
                     error(parseContext, "unknwon identifier: " + shaderToParse);
                     success = false;
@@ -3002,6 +3006,7 @@ static bool ParseXkslShaderRecursif(
                 {
                     success = ParseXkslShaderRecursif(
                         shaderLibrary,
+                        shaderNameToParse,
                         shaderData,
                         nullptr,
                         XkslShaderDefinition::ShaderParsingStatusEnum::ProcessedCompositions,   //have new shaders catch up until this process,
@@ -3081,8 +3086,9 @@ static bool ParseXkslShaderRecursif(
                     //unknown shader. If we have a callback function: query its data and then recursively parse it
                     if (callbackRequestDataForShader != nullptr)
                     {
+                        const std::string shaderNameToParse(unknownIdentifier.c_str());
                         std::string shaderData;
-                        if (!callbackRequestDataForShader(std::string(unknownIdentifier.c_str()), shaderData))
+                        if (!callbackRequestDataForShader(shaderNameToParse, shaderData))
                         {
                             error(parseContext, "unknwon identifier: " + unknownIdentifier);
                             success = false;
@@ -3091,6 +3097,7 @@ static bool ParseXkslShaderRecursif(
                         {
                             success = ParseXkslShaderRecursif(
                                 shaderLibrary,
+                                shaderNameToParse,
                                 shaderData,
                                 nullptr,
                                 XkslShaderDefinition::ShaderParsingStatusEnum::MembersAndMethodsDeclarationRegistered, //have new shaders catch up until this process,
@@ -3194,8 +3201,9 @@ static bool ParseXkslShaderRecursif(
                 if (unknownIdentifier.size() > 0 && callbackRequestDataForShader != nullptr)
                 {
                     //unknown identiefer. Check if it is a shader which can be recursively be parsed
+                    const std::string shaderNameToParse(unknownIdentifier.c_str());
                     std::string shaderData;
-                    if (!callbackRequestDataForShader(std::string(unknownIdentifier.c_str()), shaderData))
+                    if (!callbackRequestDataForShader(shaderNameToParse, shaderData))
                     {
                         error(parseContext, "unknwon identifier: " + unknownIdentifier);
                         success = false;
@@ -3204,6 +3212,7 @@ static bool ParseXkslShaderRecursif(
                     {
                         success = ParseXkslShaderRecursif(
                             shaderLibrary,
+                            shaderNameToParse,
                             shaderData,
                             shaderMissingADependency,
                             XkslShaderDefinition::ShaderParsingStatusEnum::UnresolvedConstsResolved, //have new shaders catch up until this process,
@@ -3288,7 +3297,8 @@ static bool ParseXkslShaderRecursif(
 
 //Parse an xksl shader file. The shader file has to be complete (ie contains all shader dependencies)
 static bool ParseXkslShaderFile(
-    const std::string& xksShadersToParse,
+    const std::string& xkslShaderFileName,
+    const std::string& xkslShaderFileData,
     TInfoSink& infoSink,
     TIntermediate* intermediate,
     const TBuiltInResource* resources,
@@ -3354,7 +3364,8 @@ static bool ParseXkslShaderFile(
     //can finally parse !!!!
     bool success = ParseXkslShaderRecursif(
         shaderLibrary,
-        xksShadersToParse,
+        xkslShaderFileName,
+        xkslShaderFileData,
         nullptr,
         XkslShaderDefinition::ShaderParsingStatusEnum::ParsingCompleted,
         parseContext,
@@ -3428,7 +3439,7 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
 
     TInfoSink* infoSink = new TInfoSink;
     TIntermediate* ast = new TIntermediate(EShLangFragment);  //glslang needs to know the stage but it won't be used (set fragment by default)
-    bool success = ParseXkslShaderFile(shaderData, *infoSink, ast, builtInResources, options, listGenericValues, listUserDefinedMacros, callbackRequestDataForShader);
+    bool success = ParseXkslShaderFile(shaderName, shaderData, *infoSink, ast, builtInResources, options, listGenericValues, listUserDefinedMacros, callbackRequestDataForShader);
 
     if (infoMsgs != nullptr)
     {
@@ -3477,7 +3488,7 @@ bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& xkslFi
 
     TInfoSink* infoSink = new TInfoSink;
     TIntermediate* ast = new TIntermediate(EShLangFragment);  //glslang needs to know the stage but it won't be used (set fragment by default)
-    bool success = ParseXkslShaderFile(xkslFile, *infoSink, ast, builtInResources, options, listGenericValues, listUserDefinedMacros, nullptr);
+    bool success = ParseXkslShaderFile(fileName, xkslFile, *infoSink, ast, builtInResources, options, listGenericValues, listUserDefinedMacros, nullptr);
 
     if (infoMsgs != nullptr)
     {
