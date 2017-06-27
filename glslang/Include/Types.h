@@ -1462,6 +1462,13 @@ public:
         return *typeName;
     }
 
+    virtual const TString getTypeNameSafe() const
+    {
+        if (userIdentifierName != nullptr) return *userIdentifierName;
+        if (typeName != nullptr) return *typeName;
+        return "Unknown type name";
+    }
+
     virtual const TString* getTypeNamePtr() const
     {
         return typeName;
@@ -1500,6 +1507,7 @@ public:
 
     virtual       TQualifier& getQualifier()       { return qualifier; }
     virtual const TQualifier& getQualifier() const { return qualifier; }
+    virtual       void setQualifier(const TQualifier& q) { qualifier = q; }
 
     virtual int getVectorSize() const { return vectorSize; }  // returns 1 for either scalar or vector of size 1, valid for both
     virtual int getMatrixCols() const { return matrixCols; }

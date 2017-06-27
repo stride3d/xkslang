@@ -64,6 +64,7 @@ enum TBasicType {
     EbtBlock,
 
     EbtShaderClass,  //shader class type (XKSL language extension)
+    EbtUndefinedVar, //xksl extensions: use of var keyword create an undefined type (resolved later)
 
     // HLSL types that live only temporarily.
     EbtString,

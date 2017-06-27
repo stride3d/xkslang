@@ -1823,6 +1823,10 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         new(&type) TType(EbtString);
         break;
 
+    case EHTokVar:
+        new(&type) TType(EbtUndefinedVar);
+        break;
+
     case EHTokFloat:
         new(&type) TType(EbtFloat);
         break;
@@ -2857,6 +2861,10 @@ bool HlslGrammar::validateShaderDeclaredType(const TType& type)
             if (!validateShaderDeclaredType(blockMemberType)) return false;
         }
     }
+    if (type.getBasicType() == EbtUndefinedVar)
+    {
+        error("a shader member or method cannot be defined as a \"var\" type: " + type.getTypeNameSafe());
+    }
 
     return true;
 }
@@ -2958,14 +2966,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                 return false;
             }
         }
-
-        //validate type
-        if (!validateShaderDeclaredType(declaredType))
-        {
-            error("Parsed an invalid shader type: " + (declaredType.getTypeNamePtr() != nullptr? declaredType.getTypeName(): "unknown type"));
-            return false;
-        }
-
+        
         if (this->shaderMethodOrMemberTypeCurrentlyParsed != nullptr) { error("Another shader's method or member type is currently being parsed"); return false; }
         this->shaderMethodOrMemberTypeCurrentlyParsed = &declaredType;
 
@@ -2995,6 +2996,13 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
             if (declaredType.getTypeNamePtr() == nullptr || declaredType.getTypeNamePtr()->size() == 0){ error("The type needs a name"); return false; }
         }
         else declaredType.setUserIdentifierName(identifierName->c_str());
+
+        //validate type
+        if (!validateShaderDeclaredType(declaredType))
+        {
+            error("Parsed an invalid shader type: " + declaredType.getTypeNameSafe());
+            return false;
+        }
 
         bool isAFunctionDeclaration = peekTokenClass(EHTokLeftParen);
 
@@ -3884,6 +3892,12 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
     if (! acceptFullySpecifiedType(*type))
         return false;
 
+    if (type->getBasicType() == EbtUndefinedVar)
+    {
+        parseContext.error(token.loc, (TString("A function cannot define a parameter as a \"var\" type. Function: ") + function.getDeclaredMangledName()).c_str(), "", "");
+        return false;
+    }
+
     // identifier
     HlslToken idToken;
     acceptIdentifier(idToken);
@@ -4139,6 +4153,32 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
     if (! acceptAssignmentExpression(rightNode)) {
         expected("assignment expression");
         return false;
+    }
+
+    if (node != nullptr && node->getType().getBasicType() == EbtUndefinedVar)
+    {
+        //XKSL extensions: if a var is defined with the "var" keyword, we assign its type now, by copying the type of the right-value
+        TIntermSymbol* variableSymbolNode = node->getAsSymbolNode();
+        if (variableSymbolNode == nullptr)
+        {
+            parseContext.error(loc, "An unknown var type has been parsed without generating a symbol node", "", "");
+            return false;
+        }
+
+        inkfjdlgjldjfg;
+
+        /*if (false)
+        {
+            //HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessorName
+            TSymbol* symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
+            node = parseContext.handleVariable(TSourceLoc(), token.string);
+        }*/
+        
+        TString variableName = variableSymbol->getName();
+
+        TQualifier variableQualifier = node->getType().getQualifier();
+        node->setType(rightNode->getType());
+        node->getWritableType().setQualifier(variableQualifier);
     }
 
     node = parseContext.handleAssign(loc, assignOp, node, rightNode);
@@ -5570,8 +5610,6 @@ bool HlslGrammar::acceptStatement(TIntermNode*& statement)
 
     default:
         return acceptSimpleStatement(statement);
-            if (this->hasAnyErrorToBeProcessedAtTheTop()) return false; //if we've met an unknown identifier: return false, the error will be processed later.
-
     }
 
     return true;

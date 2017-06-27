@@ -172,6 +172,8 @@ public:
     virtual void setAnonId(int i) { anonId = i; }
     virtual int getAnonId() const { return anonId; }
 
+    virtual void setType(const TType& t) { type.deepCopy(t); }
+
     virtual void dump(TInfoSink &infoSink) const;
 
     void SetUserDefinedName(const char* name){ userDefinedName = NewPoolTString(name); }

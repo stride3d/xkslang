@@ -354,8 +354,6 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["namespace"] =               EHTokNamespace;
     (*KeywordMap)["rgroup"]  =                 EHTokRGroup;
 
-    (*KeywordMap)["shader"]  =                 EHTokShaderClass;
-
     (*KeywordMap)["true"] =                    EHTokBoolConstant;
     (*KeywordMap)["false"] =                   EHTokBoolConstant;
 
@@ -373,6 +371,8 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["default"] =                 EHTokDefault;
 
     //XKSL extensions: map keywords
+    (*KeywordMap)["shader"]    =               EHTokShaderClass;
+    (*KeywordMap)["var"]       =               EHTokVar;
     (*KeywordMap)["public"]    =               EHTokPublic;
     (*KeywordMap)["private"]   =               EHTokPrivate;
     (*KeywordMap)["protected"] =               EHTokProtected;
@@ -574,8 +574,6 @@ TString HlslScanContext::convertTokenToString(const HlslToken& token)
         case EHTokNamespace:          return "namespace";
         case EHTokRGroup:             return "rgroup";
                                      
-        case EHTokShaderClass:        return "shader";
-                                     
         case EHTokFor:                return "for";
         case EHTokDo:                 return "do";
         case EHTokWhile:              return "while";
@@ -627,6 +625,9 @@ TString HlslScanContext::convertTokenToString(const HlslToken& token)
         case EHTokBuffer:             return "Buffer";
         case EHTokVector:             return "vector";
         case EHTokMatrix:             return "matrix";
+
+        case EHTokShaderClass:        return "shader";
+        case EHTokVar:                return "var";
 
         default: return "";
     }
@@ -1023,6 +1024,8 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
         return keyword;
 
     case EHTokShaderClass:
+        return keyword;
+    case EHTokVar:
         return keyword;
 
     case EHTokBoolConstant:

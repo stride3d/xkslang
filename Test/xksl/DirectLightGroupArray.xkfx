@@ -1,0 +1,20 @@
+//Parse and compile shader from Xenko MaterialShader sample
+
+addResourcesLibrary "library"
+
+convertAndLoadRecursif "DirectLightGroupArray" DirectLightGroupArray
+
+//mixer m_IMaterialSurface
+//m_IMaterialSurface.mixin IMaterialSurface
+//
+//mixer m_IStreamInitializer
+//m_IStreamInitializer.mixin IStreamInitializer
+//
+//mixer m
+//m.mixin MaterialSurfaceVertexStageCompositor
+//m.mixin MaterialSurfacePixelStageCompositor
+//
+//m.setStageEntryPoint Vertex "VSMain"
+//m.setStageEntryPoint Pixel "PSMain"
+//
+//m.compile

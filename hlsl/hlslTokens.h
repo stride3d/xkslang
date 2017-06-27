@@ -311,6 +311,7 @@ enum EHlslTokenClass {
 
     // XKSL new type Token
     EHTokShaderClass,
+    EHTokVar,
 
     // constant
     EHTokFloatConstant,

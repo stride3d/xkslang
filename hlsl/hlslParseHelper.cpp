@@ -7408,6 +7408,15 @@ TIntermNode* HlslParseContext::executeInitializer(const TSourceLoc& loc, TInterm
 
         variable->setConstArray(initializer->getAsConstantUnion()->getConstArray());
     } else {
+
+        if (variable->getType().getBasicType() == EbtUndefinedVar)
+        {
+            //XKSL extensions: if a var is defined with the "var" keyword, we assign its type now, by copying the type of the right-value
+            TQualifier variableQualifier = variable->getType().getQualifier();
+            variable->setType(initializer->getType());
+            variable->getWritableType().setQualifier(variableQualifier);
+        }
+
         // normal assigning of a value to a variable...
         specializationCheck(loc, initializer->getType(), "initializer");
         TIntermSymbol* intermSymbol = intermediate.addSymbol(*variable, loc);
