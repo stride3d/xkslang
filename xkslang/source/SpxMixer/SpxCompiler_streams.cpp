@@ -1055,13 +1055,20 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             //we'll insert the new names and decorates before the first name/decorate we find (we are certain to find at least one OpMemberProperties)
             switch (opCode)
             {
-            case spv::OpName:
-            case spv::OpMemberName:
-            case spv::OpDeclarationName:
-            case spv::OpMemberProperties:
-                posNamesInsertion = start;
-                start = end;
-                break;
+                case spv::OpName:
+                case spv::OpMemberName:
+                case spv::OpDeclarationName:
+                case spv::OpMemberProperties:
+                    if (posNamesInsertion == header_size) posNamesInsertion = start;
+                    break;
+
+                case spv::OpConstant:
+                    if (start > posNewTypesInsertion) posNewTypesInsertion = start;
+                    break;
+
+                case spv::OpFunction:
+                    start = end;
+                    break;
             }
             start += wordCount;
         }
@@ -1069,7 +1076,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
     
     //new bytecode chunks to insert stuff into our bytecode (all updates will be applied at once at the end)
     BytecodeUpdateController bytecodeUpdateController;
-    BytecodeChunk* bytecodeNewTypes = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posNewTypesInsertion, BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction);
+    BytecodeChunk* bytecodeNewTypes = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posNewTypesInsertion, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
     BytecodeChunk* bytecodeNames = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posNamesInsertion, BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction);
     spv::Id newId = bound();
 

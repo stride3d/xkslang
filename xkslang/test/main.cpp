@@ -111,7 +111,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge02", "TestMerge02.xkfx" },
     //{ "TestMerge03", "TestMerge03.xkfx" },
     //{ "TestMerge04", "TestMerge04.xkfx" },
-    { "TestMerge05", "TestMerge05.xkfx" },
+    //{ "TestMerge05", "TestMerge05.xkfx" },
     //{ "TestMerge06", "TestMerge06.xkfx" },
     //{ "TestMerge07", "TestMerge07.xkfx" },
     //{ "TestMerge08", "TestMerge08.xkfx" },
@@ -210,7 +210,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
     //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
     //{ "TransformationBase", "TransformationBase.xkfx" },
-    //{ "TransformationWAndVP", "TransformationWAndVP.xkfx" },
+    { "TransformationWAndVP", "TransformationWAndVP.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
