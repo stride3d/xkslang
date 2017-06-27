@@ -4452,7 +4452,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
             
             TString& parentName = shader->listParents[p].parentShader->shaderFullName;
             identifierLocation = findShaderClassMethod(parentName, methodName);
-            if (identifierLocation.isMember()) return identifierLocation;
+            if (identifierLocation.isMethod()) return identifierLocation;
         }
     }
 
