@@ -17,6 +17,10 @@ shader ShaderA
 		{
 			res += 1;
 		}
+		foreach(ComputeColor subCompute in SubComputes)
+		{
+			res += 1;
+		}
 		
 		return res;
 	}

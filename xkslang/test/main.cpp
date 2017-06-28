@@ -204,14 +204,14 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 
     //{ "namespaces01", "namespaces01.xkfx" },
     //{ "testMacro01", "testMacro01.xkfx" },
-    { "testVarKeyword01", "testVarKeyword01.xkfx" },
+    //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
     //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
     //{ "TransformationBase", "TransformationBase.xkfx" },
-    //{ "TransformationWAndVP", "TransformationWAndVP.xkfx" },
+    { "TransformationWAndVP", "TransformationWAndVP.xkfx" },
 
     //{ "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
     /////{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },

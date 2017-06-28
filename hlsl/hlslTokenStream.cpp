@@ -393,4 +393,13 @@ namespace glslang {
 		return false;
 	}
 
+    bool HlslTokenStream::acceptIdentifierTokenClass(TString& identiferName)
+    {
+        if (peek() != EHTokIdentifier) return false;
+        if (token.string == nullptr) return false;
+
+        identiferName = *token.string;
+        return acceptTokenClass(EHTokIdentifier);
+    }
+
 } // end namespace glslang

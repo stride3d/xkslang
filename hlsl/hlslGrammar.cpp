@@ -2625,13 +2625,13 @@ bool HlslGrammar::acceptShaderClass(TType& type)
     }
 
     // IDENTIFIER
-    if (!acceptTokenClass(EHTokIdentifier)) {
+    TString shaderName;
+    if (!acceptIdentifierTokenClass(shaderName)) {
         expected("shader class name");
         return false;
     }
-    TString* shaderName = NewPoolTString(token.string->c_str());
 
-    if (shaderName->size() == 0) {
+    if (shaderName.size() == 0) {
         error("Invalid shader name");
         return false;
     }
@@ -2668,9 +2668,9 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             //make sure the shader has not already been declared
             for (unsigned int i = 0; i < this->xkslShaderLibrary->listShaders.size(); ++i)
             {
-                if (this->xkslShaderLibrary->listShaders.at(i)->shaderFullName == *shaderName)
+                if (this->xkslShaderLibrary->listShaders.at(i)->shaderFullName == shaderName)
                 {
-                    error(TString("The shader is already declared: " + *shaderName).c_str());
+                    error(TString("The shader is already declared: " + shaderName).c_str());
                     return false;
                 }
             }
@@ -2678,8 +2678,8 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             //Create the new shader declaration
             XkslShaderDefinition* shaderDefinition = new XkslShaderDefinition();
             shaderDefinition->location = token.loc;
-            shaderDefinition->shaderBaseName = *shaderName;
-            shaderDefinition->shaderFullName = *shaderName;
+            shaderDefinition->shaderBaseName = shaderName;
+            shaderDefinition->shaderFullName = shaderName;
             unsigned int countGenerics = listGenericTypes.size();
             for (unsigned int i = 0; i < countGenerics; ++i) {
                 shaderDefinition->listGenerics.push_back(ShaderGenericAttribute(listGenericTypes[i]));
@@ -2756,7 +2756,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             XkslShaderDefinition* shaderToParse = this->xkslShaderToParse;
             if (shaderToParse == nullptr)
             {
-                error(TString("No shader to parse set for: " + *shaderName).c_str());
+                error(TString("No shader to parse set for: " + shaderName).c_str());
                 return false;
             }
 
@@ -5845,23 +5845,50 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement, const TAttri
             return false;
         }
 
-        if (!acceptTokenClass(EHTokLeftParen)) expected("foreach: (");
+        if (!acceptTokenClass(EHTokLeftParen)){
+            expected("foreach: (");
+            return false;
+        }
 
-        //type
-        TString compositionVariableType = *token.string;
-        if (!acceptTokenClass(EHTokIdentifier)) expected("foreach: variable type");
-        
-        //variable name
-        TString variableNameTargetingTheComposition = *token.string;
-        if (!acceptTokenClass(EHTokIdentifier)) expected("foreach: variable name");
-        
+        ///variable type: the foreach variable type can either be a known type ("var"), or an identifier (a class name)
+        TString foreachVariableTypeString;
+        {
+            TType foreachVariableType;
+            if (acceptIdentifierTokenClass(foreachVariableTypeString)) {
+                //fine for now: we will check later the type validity
+            }
+            else if (acceptType(foreachVariableType)) {
+                if (foreachVariableType.getBasicType() != EbtUndefinedVar) {
+                    error("foreach: invalid loop variable type. \"var\" or shader className expected");
+                    return false;
+                }
+            }
+            else {
+                error("foreach: invalid loop variable type. \"var\" or shader className expected");
+                return false;
+            }
+        }
+
+        TString variableNameTargetingTheComposition;
+        if (!acceptIdentifierTokenClass(variableNameTargetingTheComposition)) {
+            expected("foreach: variable name");
+            return false;
+        }
+
         //in
-        if (!acceptTokenClass(EHTokIn)) expected("foreach in");
+        if (!acceptTokenClass(EHTokIn))
+        {
+            expected("foreach: in");
+            return false;
+        }
 
         //name of the composition targeted
-        TString compositionArrayVariableName = *token.string;
-        if (!acceptTokenClass(EHTokIdentifier)) expected("foreach: composition variable name");
-        
+        TString compositionArrayVariableName;
+        if (!acceptIdentifierTokenClass(compositionArrayVariableName)) {
+            expected("foreach: composition variable name");
+            return false;
+        }
+
         //Check if we can find the composition targeted
         TShaderCompositionVariable compositionTargeted;
         bool findCompositionVariable = isIdentifierRecordedAsACompositionVariableName(currentShadercName, compositionArrayVariableName, true, compositionTargeted);
@@ -5871,10 +5898,10 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement, const TAttri
             return false;
         }
 
-        //douyble check the type (var is ignored)
-        if (compositionVariableType.compare("var") != 0) {
-            if (compositionVariableType.compare(compositionTargeted.shaderTypeName) != 0) {
-                error(TString("foreach: the variable type: ") + compositionVariableType + TString(" is not matching the composition type: ") + compositionTargeted.shaderTypeName);
+        //double check the foreach variable type (in the case of the type was explicit)
+        if (foreachVariableTypeString.size() > 0) {
+            if (foreachVariableTypeString.compare(compositionTargeted.shaderTypeName) != 0) {
+                error(TString("foreach: the variable type: ") + foreachVariableTypeString + TString(" is not matching the composition type: ") + compositionTargeted.shaderTypeName);
                 return false;
             }
         }
@@ -5883,7 +5910,10 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement, const TAttri
         TShaderVariableTargetingACompositionVariable variableTargetingACompositionVariable(compositionTargeted, variableNameTargetingTheComposition);
         this->listForeachArrayCompositionVariable.push_back(variableTargetingACompositionVariable);
 
-        if (!acceptTokenClass(EHTokRightParen)) expected("foreach )");
+        if (!acceptTokenClass(EHTokRightParen)){
+            expected("foreach: )");
+            return false;
+        }
 
         //parseContext.pushScope();
         parseContext.nestLooping();
