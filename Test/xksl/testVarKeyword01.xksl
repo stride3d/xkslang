@@ -3,18 +3,19 @@ shader ShaderTest
 {
     stage stream float4 meshTangent : TANGENT;
 
-    /*float3x3 GetTangentMatrix()
+    float3x3 GetTangentMatrix()
     {
 		var tangent = float3x3(1,0,0, 0,1,0, 0,0,1);
         return tangent;
-    }*/
+    }
 	
 	void VSMain()
 	{
-		//var f3x3 = GetTangentMatrix();
-		//var f3 = streams.meshTangent.xyz;
+		var f3x3 = GetTangentMatrix();
+		var f3 = streams.meshTangent.xyz;
 		var k;
 		k = 10;
-		//k = streams.meshTangent;
+		k = streams.meshTangent;
 	}
 };
+

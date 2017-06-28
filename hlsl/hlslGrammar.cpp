@@ -4155,31 +4155,41 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
         return false;
     }
 
-    if (node != nullptr && node->getType().getBasicType() == EbtUndefinedVar)
+    //=======================================================================
+    //XKSL extensions: if the left-value variable was defined with the "var" keyword, we assign its type now, by copying the type from the right-value expression
+    if (rightNode != nullptr && node != nullptr && node->getType().getBasicType() == EbtUndefinedVar)
     {
-        //XKSL extensions: if a var is defined with the "var" keyword, we assign its type now, by copying the type of the right-value
+        const TType& variableNewType = rightNode->getType();
+
         TIntermSymbol* variableSymbolNode = node->getAsSymbolNode();
-        if (variableSymbolNode == nullptr)
-        {
+        if (variableSymbolNode == nullptr) {
             parseContext.error(loc, "An unknown var type has been parsed without generating a symbol node", "", "");
             return false;
         }
+        TString variableName = variableSymbolNode->getName();
 
-        inkfjdlgjldjfg;
+        //Update the type of the variable recorded in the symbol table
+        TSymbol* variableSymbol = parseContext.lookIfSymbolExistInSymbolTable(&variableName);
+        if (variableSymbol == nullptr){
+            parseContext.error(loc, "An unknown var type has been parsed but we cannot retrieve its symbol from the symbol table", "", "");
+            return false;
+        }
 
-        /*if (false)
-        {
-            //HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessorName
-            TSymbol* symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
-            node = parseContext.handleVariable(TSourceLoc(), token.string);
-        }*/
-        
-        TString variableName = variableSymbol->getName();
+        TVariable* variable = variableSymbol->getAsVariable();
+        if (variableSymbol == nullptr) {
+            parseContext.error(loc, "An unknown var type has been parsed but we cannot retrieve its symbol from the symbol table", "", "");
+            return false;
+        }
 
-        TQualifier variableQualifier = node->getType().getQualifier();
+        TQualifier variableQualifier = variable->getType().getQualifier();
+        variable->setType(variableNewType);
+        variable->getWritableType().setQualifier(variableQualifier);
+
+        //update the current node type
         node->setType(rightNode->getType());
         node->getWritableType().setQualifier(variableQualifier);
     }
+    //=======================================================================
 
     node = parseContext.handleAssign(loc, assignOp, node, rightNode);
     node = parseContext.handleLvalue(loc, "assign", node);
