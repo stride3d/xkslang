@@ -196,6 +196,9 @@ void SpirvStream::processInstructions()
         // Base for computing number of operands; will be updated as more is learned
         unsigned numOperands = wordCount - 1;
 
+        //TMP: Add the instruction index
+        //out << instructionStart << " ";
+
         // Type <id>
         Id typeId = 0;
         if (InstructionDesc[opCode].hasType()) {

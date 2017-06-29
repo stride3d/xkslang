@@ -211,10 +211,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
     //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
     //{ "TransformationBase", "TransformationBase.xkfx" },
-    { "TransformationWAndVP", "TransformationWAndVP.xkfx" },
-
+    //{ "TransformationWAndVP", "TransformationWAndVP.xkfx" },
     //{ "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
-    /////{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
+    { "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -530,9 +529,9 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
         {
             {
                 glslAllOutputs += "\n";
-                glslAllOutputs += "\\\\=============================\n";
-                glslAllOutputs += "\\\\" + labelStage + " Stage\n";
-                glslAllOutputs += "\\\\=============================\n";
+                glslAllOutputs += "//=============================\n";
+                glslAllOutputs += "//" + labelStage + " Stage\n";
+                glslAllOutputs += "//=============================\n";
 
                 string fileNameGlsl = effectName + "_" + labelStage + ".glsl";
                 string fullNameGlsl = outputDir + fileNameGlsl;
@@ -582,9 +581,9 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
 
             {
                 hlslAllOutputs += "\n";
-                hlslAllOutputs += "\\\\=============================\n";
-                hlslAllOutputs += "\\\\" + labelStage + " Stage\n";
-                hlslAllOutputs += "\\\\=============================\n";
+                hlslAllOutputs += "//=============================\n";
+                hlslAllOutputs += "//" + labelStage + " Stage\n";
+                hlslAllOutputs += "//=============================\n";
 
                 string fileNameHlsl = effectName + "_" + labelStage + ".hlsl";
                 string fullNameHlsl = outputDir + fileNameHlsl;

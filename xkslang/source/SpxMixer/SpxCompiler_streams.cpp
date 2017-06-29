@@ -944,11 +944,10 @@ bool SpxCompiler::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& 
                 }
             }
 
+#ifdef XKSLANG_ENFORCE_NEW_XKSL_RULES
             if (iStage == 0)
             {
-                //vertex stage: check that the input stream are set as stage and have a semantic, otherwise throw an error
-                if (outputStage.outputStage->stage != ShadingStageEnum::Vertex) return error("first output stage must be a Vertex Stage");
-
+                //first output stage: check that the input stream are set as stage and have a semantic, otherwise throw an error
                 for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
                 {
                     if (outputStage.listStreamVariablesAccessed[ivs].IsNeededAsInput())
@@ -967,12 +966,13 @@ bool SpxCompiler::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& 
                             if (indexStageAskingForTheInput == -1) return error("Internal error: indexStageAskingForTheInput == -1");  //should never happen
                             XkslMixerOutputStage& outputStageAskingTheStream = outputStages[indexStageAskingForTheInput];
 
-                            error("The Vertex stage needs a VB input stream which is not valid (must be set as stage and have a semantic). The variable named \""
+                            error("The first output stage requires a VB input stream which is not valid (must be set as stage and have a semantic). The variable named \""
                                 + globalListOfMergedStreamVariables.members[ivs].GetNameWithSemantic() + "\" is required by the " + GetShadingStageLabel(outputStageAskingTheStream.outputStage->stage) + " stage");
                         }
                     }
                 }
             }
+#endif
         }
     }
 

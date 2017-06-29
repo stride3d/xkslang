@@ -1785,6 +1785,8 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		}
 	}
 
+    int countFunctionsUsed = 0;
+    int countFunctionsUnused = 0;
 	//===================================================================================================================
 	//Find all functions being called by the stages
 	{
@@ -1804,6 +1806,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 
 			vectorFunctionsToCheck.push_back(stage.entryFunction);
 			stage.entryFunction->flag1 = 1;
+            countFunctionsUsed++;
 		}
 
 		//flag all functions called
@@ -1833,6 +1836,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 						if (anotherFunctionCalled->flag1 == 0) {
 							anotherFunctionCalled->flag1 = 1;
 							vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+                            countFunctionsUsed++;
 						}
 						break;
 					}
@@ -1852,11 +1856,18 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		}
 	}
 
+    countFunctionsUnused = vecAllFunctions.size() - countFunctionsUsed;
+#ifdef XKSLANG_DEBUG_MODE
+    if (countFunctionsUnused < 0 || countFunctionsUsed > vecAllFunctions.size()) return error("count functions: Internal error");
+#endif
+
 	//===================================================================================================================
 	//Remove the unused functions
 	{
 		vector<FunctionInstruction*> listAllUsedFunctions;
+        listAllUsedFunctions.reserve(countFunctionsUsed);
 		vector<FunctionInstruction*> listAllUnusedFunctions;
+        listAllUnusedFunctions.reserve(countFunctionsUnused);
 
 		for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
 			FunctionInstruction* aFunction = *itsf;
@@ -1902,8 +1913,6 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 								delete listAllObjects[variableId];
 								listAllObjects[variableId] = nullptr;
 							}
-
-							stripInst(vecStripRanges, start, start + wordCount);
 							break;
 						}
 					}
@@ -4475,7 +4484,7 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
         }
         else if (opCode == spv::Op::OpFunction)
         {
-            if (fnStart != 0) error("nested function found");
+            if (fnStart != 0) { error("nested function found"); break; }
             fnStart = start;
             fnTypeId = typeId;
             fnResId = resultId;
@@ -4483,8 +4492,8 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
         }
         else if (opCode == spv::Op::OpFunctionEnd)
         {
-            if (fnStart == 0) error("function end without function start");
-            if (fnResId == spv::NoResult) error("function has no result iD");
+            if (fnStart == 0) { error("function end without function start"); break; }
+            if (fnResId == spv::NoResult) { error("function has no result iD"); break; }
             listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Function, fnOpCode, fnResId, fnTypeId, fnStart, end));
             fnStart = 0;
         }
