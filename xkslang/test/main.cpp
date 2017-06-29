@@ -213,7 +213,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TransformationBase", "TransformationBase.xkfx" },
     //{ "TransformationWAndVP", "TransformationWAndVP.xkfx" },
     //{ "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
-    { "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
+    //{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -1041,27 +1042,41 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
         {
             //recursively convert and load xksl shaders
 
-            //file prefix
-            string xkslInputFilePrefix;
-            if (!getNextWord(lineSs, xkslInputFilePrefix)) {
-                cout << "convertAndLoad: failed to get the xksl file prefix" << endl;
+            string shadersStr;
+            if (!getline(lineSs, shadersStr)) {
+                cout << "convertAndLoadRecursif: failed to get the xksl file parameters" << endl;
                 success = false; break;
             }
-            xkslInputFilePrefix = Utils::trim(xkslInputFilePrefix, '\"');
-
-            //any generic value defined?
-            vector<ShaderGenericValues> listShaderAndGenerics;
-            string genericsValueText;
-            if (getline(lineSs, genericsValueText))
-            {
-                if (!parseShaderWithGenericValuesFromString(listShaderAndGenerics, genericsValueText)) {
-                    cout << "convertAndLoadRecursif: failed to read the shader generics value from: " << genericsValueText << endl;
-                    success = false; break;
-                }
+            shadersStr = Utils::trim(shadersStr, ' ');
+            if (shadersStr.size() == 0) {
+                cout << "convertAndLoadRecursif: failed to get the xksl shader parameters" << endl;
+                success = false; break;
             }
 
-            if (listShaderAndGenerics.size() == 0) {
-                cout << "convertAndLoadRecursif: no shadername has been defined" << endl;
+            //any search prefix?
+            string xkslInputFilePrefix = "";
+            if (shadersStr[0] == '"')
+            {
+                int indexEnd = 1;
+                while (indexEnd < shadersStr.size() && shadersStr[indexEnd] != '"') indexEnd++;
+                if (indexEnd == shadersStr.size()) {
+                    cout << "convertAndLoadRecursif: failed to get the prefix parameter" << endl;
+                    success = false; break;
+                }
+
+                xkslInputFilePrefix = shadersStr.substr(0, indexEnd + 1);
+                xkslInputFilePrefix = Utils::trim(xkslInputFilePrefix, '\"');
+                shadersStr = shadersStr.substr(indexEnd + 1);
+            }
+
+            vector<ShaderGenericValues> listShaderAndGenerics;
+            if (!parseShaderWithGenericValuesFromString(listShaderAndGenerics, shadersStr)) {
+                cout << "convertAndLoadRecursif: failed to read the shader generics value from: " << shadersStr << endl;
+                success = false; break;
+            }
+
+            if (listShaderAndGenerics.size() != 1) {
+                cout << "convertAndLoadRecursif: 1 shader name expected" << endl;
                 success = false; break;
             }
             string shaderName = listShaderAndGenerics[0].shaderName;
@@ -1087,7 +1102,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
                 string shaderName = vecShaderName[is];
                 if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameWithBytecode))
                 {
-                    cout << "Can't add the shader into the bytecode: " << shaderName;
+                    cout << "convertAndLoadRecursif: Can't add the shader into the bytecode: " << shaderName;
                     return false;
                 }
             }

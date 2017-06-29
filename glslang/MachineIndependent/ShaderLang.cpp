@@ -2363,7 +2363,18 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
 {
     unsigned int shaderCountGenerics = shader->listGenerics.size();
     std::string shaderFullName = std::string(shader->shaderFullName.c_str());
-    if (shaderCountGenerics > 0)
+    if (shaderCountGenerics == 0)
+    {
+        //The shader takes no generic, make sure the user didn't specify any
+        for (unsigned int sg = 0; sg < listGenericValues.size(); sg++)
+        {
+            if (shaderFullName == listGenericValues[sg].targetName)
+            {
+                return error(parseContext, "Shader \"" + shader->shaderFullName + "\" does not take any generics, yet it is receiving some");
+            }
+        }
+    }
+    else
     {
         //========================================================================================================
         //Get the corresponding generics object
