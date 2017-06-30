@@ -346,7 +346,7 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
                 return false;
             }
             isBase = true;
-            className = NewPoolTString(getCurrentShaderParentName(0)->c_str());
+            className = getCurrentShaderName();
             advanceToken();
             break;
         }
@@ -4463,7 +4463,7 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     return nullptr;
 }
 
-XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMethod(const TString& shaderClassName, const TString& methodName)
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMethod(const TString& shaderClassName, const TString& methodName, bool onlyLookInParentClasses)
 {
     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
 
@@ -4477,14 +4477,17 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
         return identifierLocation;
     }
 
-    //look if the shader did declare the method
-    int countMethods = shader->listMethods.size();
-    for (int i = 0; i < countMethods; ++i)
+    if (!onlyLookInParentClasses)
     {
-        if (shader->listMethods[i].function->getDeclaredMangledName().compare(methodName) == 0)
+        //look if the shader did declare the method
+        int countMethods = shader->listMethods.size();
+        for (int i = 0; i < countMethods; ++i)
         {
-            identifierLocation.SetMethodLocation(shader, shader->listMethods[i].function);
-            break;
+            if (shader->listMethods[i].function->getDeclaredMangledName().compare(methodName) == 0)
+            {
+                identifierLocation.SetMethodLocation(shader, shader->listMethods[i].function);
+                break;
+            }
         }
     }
 
@@ -4501,7 +4504,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
             if (shader->listParents[p].parentShader->isValid == false) continue;
             
             TString& parentName = shader->listParents[p].parentShader->shaderFullName;
-            identifierLocation = findShaderClassMethod(parentName, methodName);
+            identifierLocation = findShaderClassMethod(parentName, methodName, false);
             if (identifierLocation.isMethod()) return identifierLocation;
         }
     }
@@ -4623,7 +4626,7 @@ void HlslGrammar::ResetShaderLibraryFlag()
         xkslShaderLibrary->listShaders[s]->tmpFlag = 0;
 }
 
-XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName, int uniqueId)
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName, bool onlyLookInParentClasses, int uniqueId)
 {
     if (uniqueId <= 0)
     {
@@ -4647,24 +4650,27 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
     if (shader->tmpFlag == uniqueId) return identifierLocation; //the shader was already investigated
     shader->tmpFlag = uniqueId;
 
-    //look if the shader did declare the identifier
-    int countMembers = shader->listAllDeclaredMembers.size();
-    for (int i = 0; i < countMembers; ++i)
+    if (!onlyLookInParentClasses)
     {
-        if (shader->listAllDeclaredMembers[i].type->getUserIdentifierName()->compare(memberName) == 0)
+        //look if the shader did declare the identifier
+        int countMembers = shader->listAllDeclaredMembers.size();
+        for (int i = 0; i < countMembers; ++i)
         {
-            //to avoid name conflict, in the case of a shader declare a stream and a non-stream variables using the same name
-            if (hasStreamAccessor)
+            if (shader->listAllDeclaredMembers[i].type->getUserIdentifierName()->compare(memberName) == 0)
             {
-                if (shader->listAllDeclaredMembers[i].memberLocation.memberLocationType != XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer) continue;
-            }
-            else
-            {
-                if (shader->listAllDeclaredMembers[i].memberLocation.memberLocationType == XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer) continue;
-            }
+                //to avoid name conflict, in the case of a shader declare a stream and a non-stream variables using the same name
+                if (hasStreamAccessor)
+                {
+                    if (shader->listAllDeclaredMembers[i].memberLocation.memberLocationType != XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer) continue;
+                }
+                else
+                {
+                    if (shader->listAllDeclaredMembers[i].memberLocation.memberLocationType == XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer) continue;
+                }
 
-            identifierLocation = shader->listAllDeclaredMembers[i].memberLocation;
-            break;
+                identifierLocation = shader->listAllDeclaredMembers[i].memberLocation;
+                break;
+            }
         }
     }
 
@@ -4674,7 +4680,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
         {
             if (this->shaderWhereMembersCanBeFound->tmpFlag != uniqueId)
             {
-                identifierLocation = findShaderClassMember(this->shaderWhereMembersCanBeFound->shaderFullName, hasStreamAccessor, memberName, uniqueId);
+                identifierLocation = findShaderClassMember(this->shaderWhereMembersCanBeFound->shaderFullName, hasStreamAccessor, memberName, false, uniqueId);
                 if (identifierLocation.isMember()) return identifierLocation;
             }
         }
@@ -4693,7 +4699,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
             if (shader->listParents[p].parentShader->isValid == false) continue;
 
             TString& parentName = shader->listParents[p].parentShader->shaderFullName;
-            identifierLocation = findShaderClassMember(parentName, hasStreamAccessor, memberName, uniqueId);
+            identifierLocation = findShaderClassMember(parentName, hasStreamAccessor, memberName, false, uniqueId);
             if (identifierLocation.isMember()) return identifierLocation;
         }
     }
@@ -4869,7 +4875,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                         TString* memberName = idToken.string;
 
                         //we look if the identifier is a shader's member
-                        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, hasStreamAccessor, *memberName);
+                        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, hasStreamAccessor, *memberName, hasBaseAccessor);
 
                         if (!identifierLocation.isMember())
                         {
@@ -5250,7 +5256,7 @@ bool HlslGrammar::acceptXkslShaderComposition(TShaderCompositionVariable& compos
     return true;
 }
 
-bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, bool isACallThroughStaticShaderClassName,
+bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName,
     TShaderCompositionVariable* compositionTargeted, HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
 {
     // arguments
@@ -5273,7 +5279,8 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
 
     // We now have the method mangled name, find the corresponding method in the shader library
     const TString& methodMangledName = function->getDeclaredMangledName();
-    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(nameOfShaderOwningTheFunction, methodMangledName);
+    bool onlyLookInParentClasses = (callToFunctionThroughBaseAccessor == true);
+    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(nameOfShaderOwningTheFunction, methodMangledName, onlyLookInParentClasses);
 
     if (identifierLocation.isMethod())
     {
@@ -5347,7 +5354,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         }
         //============================================================================
 
-        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments, callToFunctionFromBaseShaderClass, isACallThroughStaticShaderClassName, compositionTargeted);
+        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments, callToFunctionThroughBaseAccessor, isACallThroughStaticShaderClassName, compositionTargeted);
     }
     else
     {

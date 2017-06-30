@@ -144,7 +144,7 @@ namespace glslang {
         bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessor, TShaderCompositionVariable& compositionTargeted);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(const TSourceLoc&, TString& name, TIntermTyped*&, TIntermTyped* objectBase);
-        bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionFromBaseShaderClass, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
+        bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
         bool acceptLiteral(TIntermTyped*&);
@@ -177,8 +177,8 @@ namespace glslang {
         int getCurrentShaderCountParents();
         TString* getCurrentShaderParentName(int index);
         XkslShaderDefinition* getShaderClassDefinition(const TString& shaderClassName);
-        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName, int uniqueId = 0);
-        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName);
+        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName, bool onlyLookInParentClasses, int uniqueId = 0);
+        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName, bool onlyLookInParentClasses);
         TType* getTypeDefinedByTheShaderOrItsParents(const TString& shaderName, const TString& typeName, int uniqueId = 0);
         bool IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslShaderDefinition* maybeParent);
         bool isRecordedAsAShaderName(const TString& name);

@@ -214,6 +214,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TransformationWAndVP", "TransformationWAndVP.xkfx" },
     //{ "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
     //{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
+    //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
+
     { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
@@ -747,15 +749,16 @@ static bool callbackRequestDataForShader(const string& shaderName, string& shade
     return false;
 }
 
-static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, string& shaderName, string& filesPrefix,
-    const vector<ShaderGenericValues>& listGenericsValue, const vector<XkslUserDefinedMacro> listUserDefinedMacros,
+static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, const string& effectName, const string& shaderName, string filesPrefix,
+    const vector<ShaderGenericValues>& listGenericsValue, const vector<XkslUserDefinedMacro>& listUserDefinedMacros,
     SpxBytecode& spirXBytecode, bool writeOutputsOnDisk, string& spxOutputFileName)
 {
-    cout << "Parsing XKSL shader \"" << filesPrefix + "\" (" + shaderName + ")" << endl;
+    cout << endl << "Recursively parsing XKSL shader \"" << shaderName + "\"" << endl;
     string outputFileName = "";
 
     ostringstream errorAndDebugMessages;
 
+    if (filesPrefix.size() == 0) filesPrefix = effectName;
     shaderFilesPrefix = filesPrefix; //set for the callback function
 
     DWORD time_before, time_after;
@@ -1084,7 +1087,7 @@ static bool ProcessEffect(XkslParser* parser, string effectName, string effectCm
             SpxBytecode* spxBytecode = new SpxBytecode;
             listAllocatedBytecodes.push_back(spxBytecode);
             string spxOutputFileName;
-            success = RecursivelyParseAndConvertXkslShader(parser, shaderName, xkslInputFilePrefix, listShaderAndGenerics, listUserDefinedMacros, *spxBytecode, true, spxOutputFileName);
+            success = RecursivelyParseAndConvertXkslShader(parser, effectName, shaderName, xkslInputFilePrefix, listShaderAndGenerics, listUserDefinedMacros, *spxBytecode, true, spxOutputFileName);
             if (!success) {
                 cout << "convertAndLoadRecursif: failed to convert the xksl file name: " << xkslInputFilePrefix << endl;
                 success = false; break;
