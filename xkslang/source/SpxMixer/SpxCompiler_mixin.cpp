@@ -4413,6 +4413,8 @@ bool SpxCompiler::ComputeShadersLevel()
 
 bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObjectData>& listParsedObjectsData)
 {
+    spv::Parameterize(); //first time only: we need to make sure the table is built before we can use it
+
     mapDeclarationName.clear();
     idPosR.clear();
     listParsedObjectsData.clear();

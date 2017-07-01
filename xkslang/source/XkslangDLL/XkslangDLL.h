@@ -7,15 +7,23 @@
 #include "../Common/xkslangDefine.h"
 #include "../SpxMixer/EffectReflection.h"
 
-namespace xkslang
+namespace xkslangDll
 {
 	//=====================================================================================================================
 	//Structs declaration
 	//=====================================================================================================================
     struct OutputStageEntryPoint
     {
-        ShadingStageEnum stage;
+        xkslang::ShadingStageEnum stage;
         const char* entryPointName;
+    };
+
+    struct ShaderInformation
+    {
+    public:
+        char* ShaderName;
+
+        ShaderInformation(char* shaderName): ShaderName(shaderName) {}
     };
 
 	//struct containing a constant buffer member data (to be easily exchanged between native and managed apps)
@@ -26,8 +34,8 @@ namespace xkslang
 		const char* KeyName;
         const char* RawName;
 
-		EffectParameterReflectionClass Class;
-		EffectParameterReflectionType Type;
+        xkslang::EffectParameterReflectionClass Class;
+        xkslang::EffectParameterReflectionType Type;
 		int32_t RowCount;
 		int32_t ColumnCount;
 		int32_t ArrayElements;
@@ -38,7 +46,7 @@ namespace xkslang
 		int32_t CountMembers;
 		//TypeMemberReflectionDescription* Members;
 
-		ConstantBufferMemberReflectionDescriptionData(const int32_t offset, const char* keyName, const char* rawName, const TypeReflectionDescription& t)
+		ConstantBufferMemberReflectionDescriptionData(const int32_t offset, const char* keyName, const char* rawName, const xkslang::TypeReflectionDescription& t)
 			: Offset(offset), KeyName(keyName), RawName(rawName),
             Class(t.Class), Type(t.Type), RowCount(t.RowCount), ColumnCount(t.ColumnCount), ArrayElements(t.ArrayElements), Size(t.Size),
 			Alignment(t.Alignment), ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), CountMembers(t.CountMembers) {}
@@ -61,13 +69,13 @@ namespace xkslang
 	struct EffectResourceBindingDescriptionData
 	{
 	public:
-		ShadingStageEnum Stage;
-		EffectParameterReflectionClass Class;
-		EffectParameterReflectionType Type;
+		xkslang::ShadingStageEnum Stage;
+		xkslang::EffectParameterReflectionClass Class;
+		xkslang::EffectParameterReflectionType Type;
 		const char* KeyName;
         const char* RawName;
 
-		EffectResourceBindingDescriptionData(const EffectResourceBindingDescription& e, const char* keyName, const char* rawName)
+		EffectResourceBindingDescriptionData(const xkslang::EffectResourceBindingDescription& e, const char* keyName, const char* rawName)
             : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName), RawName(rawName) {}
 	};
 
@@ -84,7 +92,7 @@ namespace xkslang
 	//=====================================================================================================================
 	//=====================================================================================================================
 	//Return the error messages after an operation failed
-	extern "C" __declspec(dllexport) const char* GetErrorMessages();
+	extern "C" __declspec(dllexport) char* GetErrorMessages();
 
     //=====================================================================================================================
     //=====================================================================================================================
@@ -107,7 +115,7 @@ namespace xkslang
     //  pointer to the bytecode if the operation succeeded
     //    The pointer is allocated on the dll side (using LocalAlloc function), and has to be deleted by the caller
     //    bytecodeSize parameter contains the length of the bytecode buffer
-    extern "C" __declspec(dllexport) uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* bytecodeSize);
+    extern "C" __declspec(dllexport) uint32_t* ConvertXkslShaderToSPX(const char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* bytecodeSize);
 
     //=====================================================================================================================
     //=====================================================================================================================
@@ -117,6 +125,9 @@ namespace xkslang
     extern "C" __declspec(dllexport) char* ConvertBytecodeToGlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t* asciiBufferSize);
 
     extern "C" __declspec(dllexport) char* ConvertBytecodeToHlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t shaderModel, int32_t* asciiBufferSize);
+
+    //Utility function Parsing the bytecode to return the names of shaders it contains
+    extern "C" __declspec(dllexport) bool GetShaderInformationFromTheBytecode(uint32_t* bytecode, int32_t bytecodeSize, ShaderInformation** shadersInfo, int32_t* countShaders);
 
     //=====================================================================================================================
     //=====================================================================================================================
@@ -149,11 +160,11 @@ namespace xkslang
 
     //Return the compiled bytecode for the given stage
     //The bytecode buffer is allocated on the dll side, and has to be released on the caller side
-    extern "C" __declspec(dllexport) uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int32_t* bytecodeSize);
+    extern "C" __declspec(dllexport) uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage, int32_t* bytecodeSize);
 
     //We can use the following functions to get the size of a stage compiled bytecode buffer, then to copy its data into a buffer allocated by the caller
-    extern "C" __declspec(dllexport) int32_t GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, ShadingStageEnum stage);
-    extern "C" __declspec(dllexport) int32_t CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, uint32_t* bytecodeBuffer, int32_t bufferSize);
+    extern "C" __declspec(dllexport) int32_t GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage);
+    extern "C" __declspec(dllexport) int32_t CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage, uint32_t* bytecodeBuffer, int32_t bufferSize);
 
 	//After a mixer has been successfully compiled: call this function to get its Effect Reflection Data
 	extern "C" __declspec(dllexport) bool GetMixerEffectReflectionData(uint32_t mixerHandleId,

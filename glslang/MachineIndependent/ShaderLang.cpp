@@ -3440,7 +3440,7 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
     std::string shaderData;
     if (!callbackRequestDataForShader(shaderName, shaderData))
     {
-        if (infoMsgs != nullptr) infoMsgs->push_back("Failed to query data for shader: " + shaderName);
+        if (infoMsgs != nullptr) infoMsgs->push_back("Fails to query data for shader: " + shaderName);
         return false;
     }
 

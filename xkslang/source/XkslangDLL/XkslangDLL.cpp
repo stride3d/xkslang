@@ -5,10 +5,11 @@
 #include "../Common/Converter.h"
 
 using namespace std;
+using namespace xkslang;
 
 #pragma warning(disable:4996)  //disable annoying deprecation warnings
 
-namespace xkslang
+namespace xkslangDll
 {
     static vector<string> errorMessages;
     static XkslParser* xkslParser = nullptr;
@@ -28,7 +29,7 @@ namespace xkslang
         return false;
     }
 
-	static const char* allocateAndCopyStringOnGlobalHeap(const char* txt)
+	static char* allocateAndCopyStringOnGlobalHeap(const char* txt)
 	{
 		if (txt == nullptr) return nullptr;
 		int len = strlen(txt);
@@ -38,7 +39,7 @@ namespace xkslang
 		return res;
 	}
 
-    const char* GetErrorMessages()
+    char* GetErrorMessages()
     {
 		if (errorMessages.size() == 0) return nullptr;
 
@@ -50,7 +51,7 @@ namespace xkslang
 		unsigned int len = str.size();
 
 		//allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
-		const char* pBuffer = allocateAndCopyStringOnGlobalHeap(str.c_str());
+		char* pBuffer = allocateAndCopyStringOnGlobalHeap(str.c_str());
 		return pBuffer;
     }
 
@@ -61,13 +62,14 @@ namespace xkslang
     char* ConvertBytecodeToAsciiText(uint32_t* bytecode, int32_t bytecodeSize, int32_t* asciiBufferSize)
     {
         errorMessages.clear();
+        if (bytecode == nullptr || asciiBufferSize == nullptr) { error("some parameters are null"); return nullptr; }
         *asciiBufferSize = -1;
 
         if (bytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return nullptr; }
 
         string bytecodeText;
         std::vector<uint32_t> vecBytecode;
-        for (int k = 0; k < bytecodeSize; k++) vecBytecode.push_back(bytecode[k]);
+        vecBytecode.assign(bytecode, bytecode + bytecodeSize);
 
         if (!Converter::ConvertBytecodeToAsciiText(vecBytecode, bytecodeText)) {
             error("Failed to convert the bytecode to Ascii");
@@ -87,13 +89,14 @@ namespace xkslang
     char* ConvertBytecodeToGlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t* asciiBufferSize)
     {
         errorMessages.clear();
+        if (bytecode == nullptr || asciiBufferSize == nullptr) { error("some parameters are null"); return nullptr; }
         *asciiBufferSize = -1;
 
         if (bytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return nullptr; }
 
         string bytecodeText;
         std::vector<uint32_t> vecBytecode;
-        for (int k = 0; k < bytecodeSize; k++) vecBytecode.push_back(bytecode[k]);
+        vecBytecode.assign(bytecode, bytecode + bytecodeSize);
 
         if (!Converter::ConvertBytecodeToGlsl(vecBytecode, bytecodeText)) {
             error("Failed to convert the bytecode to GLSL");
@@ -113,13 +116,15 @@ namespace xkslang
     char* ConvertBytecodeToHlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t shaderModel, int32_t* asciiBufferSize)
     {
         errorMessages.clear();
+        if (bytecode == nullptr || asciiBufferSize == nullptr) { error("some parameters are null"); return nullptr; }
+
         *asciiBufferSize = -1;
 
         if (bytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return nullptr; }
 
         string bytecodeText;
         std::vector<uint32_t> vecBytecode;
-        for (int k = 0; k < bytecodeSize; k++) vecBytecode.push_back(bytecode[k]);
+        vecBytecode.assign(bytecode, bytecode + bytecodeSize);
 
         if (!Converter::ConvertBytecodeToHlsl(vecBytecode, shaderModel, bytecodeText)) {
             error("Failed to convert the bytecode to GLSL");
@@ -134,6 +139,40 @@ namespace xkslang
         strncpy(asciiBuffer, bytecodeText.c_str(), asciiBufferLen);
         *asciiBufferSize = asciiBufferLen;
         return asciiBuffer;
+    }
+
+    //Utility function Parsing the bytecode to return the names of shaders it contains
+    bool GetShaderInformationFromTheBytecode(uint32_t* bytecode, int32_t bytecodeSize, ShaderInformation** shadersInfo, int32_t* pcountShaders)
+    {
+        errorMessages.clear();
+        if (bytecode == nullptr || shadersInfo == nullptr || pcountShaders == nullptr) { return error("some parameters are null"); }
+
+        SpxBytecode spxBytecode;
+        std::vector<uint32_t>& vecBytecode = spxBytecode.getWritableBytecodeStream();
+        vecBytecode.assign(bytecode, bytecode + bytecodeSize);
+
+        vector<string> vecShaderName;
+        vector<string> errorMsgs;
+        if (!SpxMixer::GetListAllShadersFromBytecode(spxBytecode, vecShaderName, errorMsgs) || false)
+        {
+            error("Failed to get the list of shader names from the bytecode");
+            for (unsigned int k = 0; k < errorMsgs.size(); ++k) error(errorMsgs[k]);
+            return false;
+        }
+
+        int countShaders = vecShaderName.size();
+        if (countShaders == 0) return true;
+
+        ShaderInformation* tabShadersInfo = (ShaderInformation*)GlobalAlloc(0, countShaders * sizeof(ShaderInformation));
+        for (int k = 0; k < countShaders; ++k)
+        {
+            char* shaderName = allocateAndCopyStringOnGlobalHeap(vecShaderName[k].c_str());
+            tabShadersInfo[k].ShaderName = shaderName;
+        }
+        *shadersInfo = tabShadersInfo;
+        *pcountShaders = countShaders;
+
+        return true;
     }
 
     //=====================================================================================================================
@@ -169,6 +208,7 @@ namespace xkslang
     }
 
     static ShaderSourceLoaderCallback externalShaderDataCallback = nullptr;
+    //callback function given to xkslParser, doing the link between with the user, native callback function
     static bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
     {
         if (externalShaderDataCallback == nullptr) return error("No callback function has been set");
@@ -182,7 +222,7 @@ namespace xkslang
         return true;
     }
 
-    uint32_t* ConvertXkslShaderToSPX(char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* bytecodeSize)
+    uint32_t* ConvertXkslShaderToSPX(const char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* bytecodeSize)
     {
         errorMessages.clear();
         *bytecodeSize = 0;
@@ -577,7 +617,7 @@ namespace xkslang
 		return bytecodeLen;
 	}
 
-    uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, int32_t* bytecodeSize)
+    uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage, int32_t* bytecodeSize)
     {
         errorMessages.clear();
         *bytecodeSize = 0;
@@ -614,7 +654,7 @@ namespace xkslang
         return byteBuffer;
     }
 
-	int32_t GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, ShadingStageEnum stage)
+	int32_t GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage)
     {
         errorMessages.clear();
 
@@ -639,7 +679,7 @@ namespace xkslang
         return bytecodeLen;
     }
 
-	int32_t CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, ShadingStageEnum stage, uint32_t* bytecodeBuffer, int32_t bufferSize)
+	int32_t CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage, uint32_t* bytecodeBuffer, int32_t bufferSize)
     {
         errorMessages.clear();
 
