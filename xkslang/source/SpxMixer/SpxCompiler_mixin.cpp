@@ -1883,7 +1883,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 
     countFunctionsUnused = vecAllFunctions.size() - countFunctionsUsed;
 #ifdef XKSLANG_DEBUG_MODE
-    if (countFunctionsUnused < 0 || countFunctionsUsed > vecAllFunctions.size()) return error("count functions: Internal error");
+    if (countFunctionsUnused < 0 || (unsigned int)countFunctionsUsed > vecAllFunctions.size()) return error("count functions: Internal error");
 #endif
 
 	//===================================================================================================================

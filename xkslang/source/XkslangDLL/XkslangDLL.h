@@ -22,12 +22,12 @@ namespace xkslangDll
         OutputStageEntryPoint(xkslang::ShadingStageEnum stage, const char* entryPointName) : stage(stage), entryPointName(entryPointName) {}
     };
 
-    struct ShaderInformation
+    struct BytecodeShaderInformation
     {
     public:
         char* ShaderName;
 
-        ShaderInformation(char* shaderName): ShaderName(shaderName) {}
+        BytecodeShaderInformation(char* shaderName): ShaderName(shaderName) {}
     };
 
 	//struct containing a constant buffer member data (to be easily exchanged between native and managed apps)
@@ -131,7 +131,7 @@ namespace xkslangDll
     extern "C" __declspec(dllexport) char* ConvertBytecodeToHlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t shaderModel, int32_t* asciiBufferSize);
 
     //Utility function Parsing the bytecode to return the names of shaders it contains
-    extern "C" __declspec(dllexport) bool GetShaderInformationFromTheBytecode(uint32_t* bytecode, int32_t bytecodeSize, ShaderInformation** shadersInfo, int32_t* countShaders);
+    extern "C" __declspec(dllexport) bool GetBytecodeShadersInformation(uint32_t* bytecode, int32_t bytecodeSize, BytecodeShaderInformation** shadersInfo, int32_t* countShaders);
 
     //=====================================================================================================================
     //=====================================================================================================================
@@ -243,7 +243,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         public delegate StringBuilder ShaderSourceLoaderCallbackDelegate(string shaderName, out Int32 len);
 
         //Return the error messages after an operation failed
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetErrorMessages();
 
         //=====================================================================================================================
@@ -251,12 +251,12 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         //=====================================================================================================================
 
         //Xkslang initialization: To be called before calling parsing functions
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool InitializeParser();
 
         //To be called when we finish parsing a file
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReleaseParser();
 
         //Convert an xksl shader into SPX bytecode
@@ -267,50 +267,60 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         //  pointer to the bytecode if the operation succeeded
         //    The pointer is allocated on the dll side (using LocalAlloc function), and has to be deleted by the caller
         //    bytecodeSize parameter contains the length of the bytecode buffer
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr ConvertXkslShaderToSPX([MarshalAs(UnmanagedType.LPStr)] string shaderName, [MarshalAs(UnmanagedType.FunctionPtr)] ShaderSourceLoaderCallbackDelegate callbackPointer, out Int32 bytecodeLength);
 
         //=====================================================================================================================
         //Utility functions to help converting a bytecode to a human-readable ascii file, or to glsl/glsl files
         //=====================================================================================================================
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr ConvertBytecodeToAsciiText([In] Int32[] bytecode, Int32 bytecodeSize, out Int32 bytecodeLength);
 
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr ConvertBytecodeToGlsl([In] Int32[] bytecode, Int32 bytecodeSize, out Int32 bytecodeLength);
 
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr ConvertBytecodeToHlsl([In] Int32[] bytecode, Int32 bytecodeSize, Int32 shaderModel, out Int32 bytecodeLength);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        public struct BytecodeShaderInformation
+        {
+            public IntPtr ShaderName;
+        }
+
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool GetBytecodeShadersInformation([In] Int32[] bytecode, Int32 bytecodeSize, out IntPtr shadersInfo, out Int32 countShaders);
 
         //=====================================================================================================================
         // Mixin functions: Mix SPX shaders to generate SPV bytecode for specific output stages
         //=====================================================================================================================
 
         //SpxMixer initialization: To be called before starting mixin a new effect
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool InitializeMixer();
 
         //To be called when we finish mixin an effect
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void ReleaseMixer();
 
         //Create a new SPX shader mixer, return the mixer handle Id
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern UInt32 CreateSpxShaderMixer();
 
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool ReleaseSpxShaderMixer(UInt32 mixerHandleId);
 
         //=====================================================================================================================
         //Mixin a shader into the current mixer
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool MixinShader(UInt32 mixerHandleId, [MarshalAs(UnmanagedType.LPStr)] string shaderName, [In] Int32[] bytecode, Int32 bytecodeSize);
 
         //Add a composition to a mixin
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool AddComposition(UInt32 mixerHandleId, [MarshalAs(UnmanagedType.LPStr)] string shaderName, [MarshalAs(UnmanagedType.LPStr)] string variableName,
             UInt32 compositionMixerHandleId);
@@ -330,36 +340,36 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
         //=====================================================================================================================
         //Compiled the mixer (to be called after all mixin and compositions have been set)
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool CompileMixer(UInt32 mixerHandleId, [In, Out] OutputStageEntryPoint[] stageEntryPointArray, Int32 countStages);
 
         //=====================================================================================================================
         //Get the mixer compiled bytecode (common to all output stages)
         //This compiled bytecode can be used to retrieve the Effect Reflection data
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetMixerCompiledBytecode(UInt32 mixerHandleId, out Int32 bytecodeLength);
 
         //Get the mixer compiled bytecode's size
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern Int32 GetMixerCompiledBytecodeSize(UInt32 mixerHandleId);
 
         //Ask the mixer to copy the compiled bytecode into the buffer
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern Int32 CopyMixerCompiledBytecode(UInt32 mixerHandleId, [In] Int32[] bytecodeBuffer, Int32 bufferSize);
 
         //=====================================================================================================================
         //Get an output stage compiled bytecode
         //=====================================================================================================================
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetMixerCompiledBytecodeForStage(UInt32 mixerHandleId, ShadingStageEnum stage, out Int32 bytecodeLength);
 
         //Get an output stage compiled bytecode's size
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern Int32 GetMixerCompiledBytecodeSizeForStage(UInt32 mixerHandleId, ShadingStageEnum stage);
 
         //Ask the mixer to copy a stage compiled bytecode into the buffer
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern Int32 CopyMixerCompiledBytecodeForStage(UInt32 mixerHandleId, ShadingStageEnum stage, [In] Int32[] bytecodeBuffer, Int32 bufferSize);
 
         //=====================================================================================================================
@@ -418,7 +428,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             public IntPtr SemanticName;
         }
 
-        [DllImport("Xkslang.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool GetMixerEffectReflectionData(UInt32 mixerHandleId,
             out IntPtr constantBuffersData, out Int32 countConstantBuffers,
@@ -698,7 +708,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     //convert the XKSL shader to SPX bytecode
                     int bytecodeLength = 0;
                     IntPtr pBytecodeBuffer = XkslangDLLBindingClass.ConvertXkslShaderToSPX(shaderName, XkslangDLLBindingClass.ShaderSourceLoaderCallback, out bytecodeLength);
-                    if (pBytecodeBuffer == IntPtr.Zero || bytecodeLength < 0)
+                    if (pBytecodeBuffer == IntPtr.Zero || bytecodeLength <= 0)
                     {
                         log.Error($"No Spx bytecode generated for effect [{fullEffectName}]");
                         return new EffectBytecodeCompilerResult(null, log);
@@ -710,11 +720,34 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     Marshal.FreeHGlobal(pBytecodeBuffer);
 
                     //=====================================================================================================================================
+                    //Optionnal: Query the shader name from the bytecode
+                    {
+                        int countShaders = 0;
+                        IntPtr pAllocShadersInfo = IntPtr.Zero;
+                        success = XkslangDLLBindingClass.GetBytecodeShadersInformation(effectSpxBytecode, effectSpxBytecode.Length, out pAllocShadersInfo, out countShaders);
+                        if (!success) throw new Exception("Failed to query the shader information from the bytecode");
+
+                        if (countShaders > 0 && pAllocShadersInfo != IntPtr.Zero)
+                        {
+                            int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.BytecodeShaderInformation));
+                            for (int i = 0; i < countShaders; i++)
+                            {
+                                XkslangDLLBindingClass.BytecodeShaderInformation bytecodeShader = (XkslangDLLBindingClass.BytecodeShaderInformation)Marshal.PtrToStructure(
+                                    new IntPtr(pAllocShadersInfo.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.BytecodeShaderInformation));
+
+                                string bytecodeShaderName = Marshal.PtrToStringAnsi(bytecodeShader.ShaderName);
+                                Marshal.FreeHGlobal(bytecodeShader.ShaderName);
+                            }
+                            Marshal.FreeHGlobal(pAllocShadersInfo); //delete the data allocated on the native code
+                        }
+                    }
+
+                    //=====================================================================================================================================
                     //Optionnal: convert the bytecode to human readable ascii text
                     {
                         int asciiBufferLength = 0;
                         IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(effectSpxBytecode, effectSpxBytecode.Length, out asciiBufferLength);
-                        if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength < 0) throw new Exception("Failed to convert the Spx bytecode into Ascii");
+                        if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the Spx bytecode into Ascii");
 
                         Byte[] asciiByteArray = new Byte[asciiBufferLength];
                         Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
@@ -743,7 +776,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                 {
                     XkslangDLLBindingClass.ReleaseParser();
                 }
-                
+
 #if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
                 //=====================================================================================================================================
                 //write the SPX ascii bytecodes on the disk
@@ -795,7 +828,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         ////1st option: the dll allocate, copy and returns the buffer: caller needs to delete this buffer by calling "Marshal.FreeHGlobal"
                         //int bytecodeLength = 0;
                         //IntPtr pBytecodeBuffer = XkslangDLLBindingClass.GetMixerCompiledBytecode(mixerHandleId, out bytecodeLength);
-                        //if (pBytecodeBuffer == null || bytecodeLength < 0) throw new Exception("Failed to get the mixin compiled bytecode");
+                        //if (pBytecodeBuffer == null || bytecodeLength <= 0) throw new Exception("Failed to get the mixin compiled bytecode");
                         ////copy the bytecode and free the buffer allocated by the dll
                         //mixinCompiledBytecode = new Int32[bytecodeLength];
                         //Marshal.Copy(pBytecodeBuffer, mixinCompiledBytecode, 0, bytecodeLength);
@@ -812,7 +845,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         {
                             int asciiBufferLength = 0;
                             IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(mixinCompiledBytecode, mixinCompiledBytecode.Length, out asciiBufferLength);
-                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength < 0) throw new Exception("Failed to convert the bytecode to Ascii");
+                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the bytecode to Ascii");
 
                             Byte[] asciiByteArray = new Byte[asciiBufferLength];
                             Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
@@ -827,7 +860,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         ////1st option: the dll allocate, copy and returns the buffer: caller needs to delete this buffer by calling "Marshal.FreeHGlobal"
                         //int bytecodeLength = 0;
                         //IntPtr pBytecodeBuffer = XkslangDLLBindingClass.GetMixerCompiledBytecodeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Vertex, out bytecodeLength);
-                        //if (pBytecodeBuffer == null || bytecodeLength < 0) throw new Exception("Failed to get the bytecode for VS stage");
+                        //if (pBytecodeBuffer == null || bytecodeLength <= 0) throw new Exception("Failed to get the bytecode for VS stage");
                         ////copy the bytecode and free the buffer allocated by the dll
                         //spvBytecodeVS = new Int32[bytecodeLength];
                         //Marshal.Copy(pBytecodeBuffer, spvBytecodeVS, 0, bytecodeLength);
@@ -844,7 +877,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         {
                             int asciiBufferLength = 0;
                             IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(spvBytecodeVS, spvBytecodeVS.Length, out asciiBufferLength);
-                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength < 0) throw new Exception("Failed to convert the bytecode to Ascii");
+                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the bytecode to Ascii");
 
                             Byte[] asciiByteArray = new Byte[asciiBufferLength];
                             Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
@@ -856,7 +889,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         {
                             int bufferLen = 0;
                             IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToGlsl(spvBytecodeVS, spvBytecodeVS.Length, out bufferLen);
-                            if (pBuffer == null || bufferLen < 0) throw new Exception("Failed to convert the VS bytecode to GLSL");
+                            if (pBuffer == null || bufferLen <= 0) throw new Exception("Failed to convert the VS bytecode to GLSL");
 
                             Byte[] byteArray = new Byte[bufferLen];
                             Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
@@ -868,7 +901,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         {
                             int bufferLen = 0;
                             IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToHlsl(spvBytecodeVS, spvBytecodeVS.Length, hlslShaderModel, out bufferLen);
-                            if (pBuffer == IntPtr.Zero || bufferLen < 0) throw new Exception("Failed to convert the VS bytecode to HLSL");
+                            if (pBuffer == IntPtr.Zero || bufferLen <= 0) throw new Exception("Failed to convert the VS bytecode to HLSL");
 
                             Byte[] byteArray = new Byte[bufferLen];
                             Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
@@ -883,7 +916,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         ////1st option: the dll allocate, copy and returns the buffer: caller needs to delete this buffer by calling "Marshal.FreeHGlobal"
                         //int bytecodeLength = 0;
                         //IntPtr pBytecodeBuffer = XkslangDLLBindingClass.GetMixerCompiledBytecodeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Pixel, out bytecodeLength);
-                        //if (pBytecodeBuffer == null || bytecodeLength < 0) throw new Exception("Failed to get the bytecode for PS stage");
+                        //if (pBytecodeBuffer == null || bytecodeLength <= 0) throw new Exception("Failed to get the bytecode for PS stage");
                         ////copy the bytecode and free the object (allocated by the dll)
                         //spvBytecodePS = new Int32[bytecodeLength];
                         //Marshal.Copy(pBytecodeBuffer, spvBytecodePS, 0, bytecodeLength);
@@ -900,7 +933,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         {
                             int asciiBufferLength = 0;
                             IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(spvBytecodePS, spvBytecodePS.Length, out asciiBufferLength);
-                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength < 0) throw new Exception("Failed to convert the PS bytecode to Ascii");
+                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the PS bytecode to Ascii");
 
                             Byte[] asciiByteArray = new Byte[asciiBufferLength];
                             Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
@@ -912,7 +945,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         {
                             int bufferLen = 0;
                             IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToGlsl(spvBytecodePS, spvBytecodePS.Length, out bufferLen);
-                            if (pBuffer == null || bufferLen < 0) throw new Exception("Failed to convert the PS bytecode to GLSL");
+                            if (pBuffer == null || bufferLen <= 0) throw new Exception("Failed to convert the PS bytecode to GLSL");
 
                             Byte[] byteArray = new Byte[bufferLen];
                             Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
@@ -924,7 +957,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         {
                             int bufferLen = 0;
                             IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToHlsl(spvBytecodePS, spvBytecodePS.Length, hlslShaderModel, out bufferLen);
-                            if (pBuffer == IntPtr.Zero || bufferLen < 0) throw new Exception("Failed to convert the PS bytecode to HLSL");
+                            if (pBuffer == IntPtr.Zero || bufferLen <= 0) throw new Exception("Failed to convert the PS bytecode to HLSL");
 
                             Byte[] byteArray = new Byte[bufferLen];
                             Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
@@ -1394,7 +1427,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                 {
                     Directory.CreateDirectory(logDir);
                 }
-                var shaderSourceFilename = Path.Combine(logDir, "shader_" +  fullEffectName.Replace('.', '_') + "_" + shaderId + ".hlsl");
+                var shaderSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_" + shaderId + ".hlsl");
                 lock (WriterLock) // protect write in case the same shader is created twice
                 {
                     // Write shader before generating to make sure that we are having a trace before compiling it (compiler may crash...etc.)
@@ -1663,7 +1696,5 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         }
     }
 }
-
-
 
 #endif

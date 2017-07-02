@@ -142,7 +142,7 @@ namespace xkslangDll
     }
 
     //Utility function Parsing the bytecode to return the names of shaders it contains
-    bool GetShaderInformationFromTheBytecode(uint32_t* bytecode, int32_t bytecodeSize, ShaderInformation** shadersInfo, int32_t* pcountShaders)
+    bool GetBytecodeShadersInformation(uint32_t* bytecode, int32_t bytecodeSize, BytecodeShaderInformation** shadersInfo, int32_t* pcountShaders)
     {
         errorMessages.clear();
         if (bytecode == nullptr || shadersInfo == nullptr || pcountShaders == nullptr) { return error("some parameters are null"); }
@@ -163,7 +163,7 @@ namespace xkslangDll
         int countShaders = vecShaderName.size();
         if (countShaders == 0) return true;
 
-        ShaderInformation* tabShadersInfo = (ShaderInformation*)GlobalAlloc(0, countShaders * sizeof(ShaderInformation));
+        BytecodeShaderInformation* tabShadersInfo = (BytecodeShaderInformation*)GlobalAlloc(0, countShaders * sizeof(BytecodeShaderInformation));
         for (int k = 0; k < countShaders; ++k)
         {
             char* shaderName = allocateAndCopyStringOnGlobalHeap(vecShaderName[k].c_str());

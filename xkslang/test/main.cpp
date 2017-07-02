@@ -109,8 +109,8 @@ struct XkfxEffectsToProcess {
 };
 
 static bool buildEffectReflection = true;
-static bool processEffectWithDirectCallToXkslang = true;
-static bool processEffectWithDllApi = false;
+static bool processEffectWithDirectCallToXkslang = false;
+static bool processEffectWithDllApi = true;
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin01", "TestMixin01.xkfx" },
@@ -150,7 +150,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose14", "TestCompose14.xkfx" },
     //{ "TestCompose15", "TestCompose15.xkfx" },
     //{ "TestCompose16", "TestCompose16.xkfx" },
-    { "TestCompose17", "TestCompose17.xkfx" },
+    //{ "TestCompose17", "TestCompose17.xkfx" },
     
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -169,7 +169,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
     //{ "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
     
-    //{ "TestGenerics01", "TestGenerics01.xkfx" },
+    { "TestGenerics01", "TestGenerics01.xkfx" },
     //{ "TestGenerics02", "TestGenerics02.xkfx" },
     //{ "TestGenerics03", "TestGenerics03.xkfx" },
     //{ "TestGenerics04", "TestGenerics04.xkfx" },
@@ -1054,6 +1054,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 {
     bool success = true;
 
+    if (useXkslangDll)
+    {
+        xkslangDll::InitializeMixer();
+    }
+
     vector<string> errorMsgs;
     DWORD time_before, time_after;
     vector<SpxBytecode*> listAllocatedBytecodes;
@@ -1215,10 +1220,10 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             if (useXkslangDll)
             {
                 int countShaders = 0;
-                xkslangDll::ShaderInformation *shadersInfo;
+                xkslangDll::BytecodeShaderInformation *shadersInfo;
                 uint32_t* pBytecodeBuffer = &(spxBytecode->getWritableBytecodeStream().front());
                 int32_t bytecodeLength = spxBytecode->GetBytecodeSize();
-                success = xkslangDll::GetShaderInformationFromTheBytecode(pBytecodeBuffer, bytecodeLength, &shadersInfo, &countShaders);
+                success = xkslangDll::GetBytecodeShadersInformation(pBytecodeBuffer, bytecodeLength, &shadersInfo, &countShaders);
                 if (!success)
                 {
                     char* pError = xkslangDll::GetErrorMessages();
@@ -1349,10 +1354,10 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             if (useXkslangDll)
             {
                 int countShaders = 0;
-                xkslangDll::ShaderInformation *shadersInfo;
+                xkslangDll::BytecodeShaderInformation *shadersInfo;
                 uint32_t* pBytecodeBuffer = &(spxBytecode->getWritableBytecodeStream().front());
                 int32_t bytecodeLength = spxBytecode->GetBytecodeSize();
-                success = xkslangDll::GetShaderInformationFromTheBytecode(pBytecodeBuffer, bytecodeLength, &shadersInfo, &countShaders);
+                success = xkslangDll::GetBytecodeShadersInformation(pBytecodeBuffer, bytecodeLength, &shadersInfo, &countShaders);
                 if (!success)
                 {
                     char* pError = xkslangDll::GetErrorMessages();
@@ -1531,10 +1536,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 if (useXkslangDll)
                 {
                     time_before = GetTickCount();
-
-                    cout << "addComposition PROUT PROUT" << endl;
-                    
-                    success = false;
+                    success = xkslangDll::AddComposition(mixerTarget->mixerHandleId, shaderName.c_str(), variableName.c_str(), mixerSource->mixerHandleId);
                     time_after = GetTickCount();
                 }
                 else
@@ -1630,6 +1632,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
     {
         std::cout << "   Messages:" << endl;
         for (unsigned int m = 0; m<errorMsgs.size(); m++) std::cout << "   " << errorMsgs[m] << "" << endl;
+    }
+
+    if (useXkslangDll)
+    {
+        xkslangDll::ReleaseMixer();
     }
 
     return success;
