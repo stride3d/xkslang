@@ -650,7 +650,7 @@ public:
             if (compositionId<0 || compositionId>= (int)compositionsList.size()) return nullptr;
             return &(compositionsList[compositionId]);
         }
-        ShaderComposition* GetShaderCompositionByName(const std::string variableName) {
+        ShaderComposition* GetShaderCompositionByName(const std::string& variableName) {
             for (unsigned int i=0; i<compositionsList.size(); ++i)
                 if (compositionsList[i].variableName == variableName) return &(compositionsList[i]);
             return nullptr;
@@ -709,7 +709,8 @@ public:
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& nameOfShadersToMix);
 
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxCompiler* source, std::vector<std::string>& messages);
-    void GetMixinBytecode(std::vector<std::uint32_t>& bytecodeStream);
+    void CopyMixinBytecode(std::vector<std::uint32_t>& bytecodeStream);
+    const std::vector<std::uint32_t>& GetMixinBytecode();
 
     static void GetStagesPipeline(std::vector<ShadingStageEnum>& pipeline);
 

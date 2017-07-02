@@ -1469,16 +1469,41 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
 
     //===================================================================================================================
     //===================================================================================================================
-    //Find the shader to instantiate from source bytecode
-    ShaderClassData* shaderCompositionTarget = this->GetShaderByName(shaderName);
-    if (shaderCompositionTarget == nullptr) return error(string("No shader exists in destination bytecode with the name: ") + shaderName);
+    //Find the shader composition target
+    ShaderClassData* shaderCompositionTarget = nullptr;
+    ShaderComposition* compositionTarget = nullptr;
+    if (shaderName.size() > 0)
+    {
+        //the shader is specified by the user
+        shaderCompositionTarget = this->GetShaderByName(shaderName);
+        if (shaderCompositionTarget == nullptr) return error(string("No shader exists in destination bytecode with the name: ") + shaderName);
 
-    //find the shader's composition target
-    ShaderComposition* compositionTarget = shaderCompositionTarget->GetShaderCompositionByName(variableName);
-    if (compositionTarget == nullptr) return error(string("No composition exists in shader: ") + shaderName + string(", with the name: ") + variableName);
+        compositionTarget = shaderCompositionTarget->GetShaderCompositionByName(variableName);
+        if (compositionTarget == nullptr) return error(string("No composition exists in shader: ") + shaderName + string(", with the name: ") + variableName);
+    }
+    else
+    {
+        //unknown shader, we look for the shader declaring the variable name (if any conflict we return an error)
+        for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
+        {
+            ShaderClassData* aShader = *it;
+            ShaderComposition* aMatchingComposition = aShader->GetShaderCompositionByName(variableName);
+            if (aMatchingComposition != nullptr)
+            {
+                if (compositionTarget != nullptr) return error(string("Found at least 2 composition with the name: ") + variableName);
+                
+                shaderCompositionTarget = aShader;
+                compositionTarget = aMatchingComposition;
+            }
+        }
+        if (compositionTarget == nullptr) return error(string("No composition found with the name: ") + variableName);
+    }
+
+#ifdef XKSLANG_DEBUG_MODE
+    if (compositionTarget == nullptr || shaderCompositionTarget == nullptr) return error("Internal error");  //should never happen
+#endif
 
     if (!compositionTarget->isArray && compositionTarget->countInstances > 0) return error(string("The composition has already been instanciated"));
-
     int compositionTargetId = compositionTarget->compositionShaderId;
 
     ShaderClassData* shaderTypeToInstantiate = compositionTarget->shaderType;
@@ -2965,7 +2990,12 @@ bool SpxCompiler::UpdateOverridenFunctionMap(vector<ShaderClassData*>& listShade
     return true;
 }
 
-void SpxCompiler::GetMixinBytecode(vector<uint32_t>& bytecodeStream)
+const vector<std::uint32_t>& SpxCompiler::GetMixinBytecode()
+{
+    return spv;
+}
+
+void SpxCompiler::CopyMixinBytecode(vector<uint32_t>& bytecodeStream)
 {
     bytecodeStream.clear();
     bytecodeStream.insert(bytecodeStream.end(), spv.begin(), spv.end());

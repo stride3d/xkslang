@@ -14,8 +14,12 @@ namespace xkslangDll
 	//=====================================================================================================================
     struct OutputStageEntryPoint
     {
+    public:
         xkslang::ShadingStageEnum stage;
         const char* entryPointName;
+
+        OutputStageEntryPoint() : stage(xkslang::ShadingStageEnum::Undefined), entryPointName(nullptr) {}
+        OutputStageEntryPoint(xkslang::ShadingStageEnum stage, const char* entryPointName) : stage(stage), entryPointName(entryPointName) {}
     };
 
     struct ShaderInformation
@@ -147,6 +151,13 @@ namespace xkslangDll
 
     extern "C" __declspec(dllexport) bool AddComposition(uint32_t mixerHandleId, const char* shaderName, const char* variableName, uint32_t compositionMixerHandleId);
 
+    //Functions to get the mixer's current bytecode (useful if we want to get the intermediary bytecodes, after we mix some shaders or add compositions)
+    extern "C" __declspec(dllexport) uint32_t* GetMixerCurrentBytecode(uint32_t mixerHandleId, int32_t* bytecodeSize);
+    extern "C" __declspec(dllexport) int32_t GetMixerCurrentBytecodeSize(uint32_t mixerHandleId);
+    extern "C" __declspec(dllexport) int32_t CopyMixerCurrentBytecode(uint32_t mixerHandleId, uint32_t* bytecodeBuffer, int32_t bufferSize);
+
+    //=====================================
+    //Mixer compilation (to be call after all mixin and compositions are done)
     extern "C" __declspec(dllexport) bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int32_t countStages);
 
 	//Return the mixin compiled bytecode, generated when we compile the mixer

@@ -553,6 +553,67 @@ namespace xkslangDll
 		return true;
 	}
 
+    uint32_t* GetMixerCurrentBytecode(uint32_t mixerHandleId, int32_t* bytecodeSize)
+    {
+        errorMessages.clear();
+        *bytecodeSize = 0;
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) { error("Invalid mixer handle"); return nullptr; }
+
+        const vector<uint32_t>* mixerBytecode = mixerData->mixer->GetCurrentMixinBytecode();
+        if (mixerBytecode == nullptr) { error("Failed to get the mixer bytecode"); return nullptr; }
+
+        /// copy the bytecode into the output buffer: allocate a byte buffer using GlobalAlloc, so we can return it to the calling framework and let it delete it
+        int bytecodeLen = (int)mixerBytecode->size();
+        if (bytecodeLen <= 0) { error("the mixer compiled bytecode is empty"); return nullptr; }
+
+        uint32_t* byteBuffer = (uint32_t*)GlobalAlloc(0, bytecodeLen * sizeof(uint32_t));
+
+        uint32_t* pDest = byteBuffer;
+        const uint32_t* pSrc = &(mixerBytecode->front());
+        int countIteration = bytecodeLen;
+        while (countIteration-- > 0) *pDest++ = *pSrc++;
+
+        *bytecodeSize = bytecodeLen;
+        return byteBuffer;
+    }
+
+    int32_t GetMixerCurrentBytecodeSize(uint32_t mixerHandleId)
+    {
+        errorMessages.clear();
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+
+        const vector<uint32_t>* mixerBytecode = mixerData->mixer->GetCurrentMixinBytecode();
+        if (mixerBytecode == nullptr) { error("Failed to get the mixer bytecode"); return 0; }
+
+        return (uint32_t)mixerBytecode->size();
+    }
+    
+    int32_t CopyMixerCurrentBytecode(uint32_t mixerHandleId, uint32_t* bytecodeBuffer, int32_t bufferSize)
+    {
+        errorMessages.clear();
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+
+        const vector<uint32_t>* mixerBytecode = mixerData->mixer->GetCurrentMixinBytecode();
+        if (mixerBytecode == nullptr) { error("Failed to get the mixer bytecode"); return 0; }
+
+        int bytecodeLen = mixerBytecode->size();
+        if (bytecodeLen <= 0) { error("The mixer current bytecode is empty"); return 0; }
+        if (bytecodeLen < bufferSize) { error("The given bytecode buffer has an invalid size. Expected (at least): " + to_string(bytecodeLen)); return 0; }
+
+        uint32_t* pDest = bytecodeBuffer;
+        const uint32_t* pSrc = &(mixerBytecode->front());
+        int countIteration = bytecodeLen;
+        while (countIteration-- > 0) *pDest++ = *pSrc++;
+
+        return bytecodeLen;
+    }
+
 	uint32_t* GetMixerCompiledBytecode(uint32_t mixerHandleId, int32_t* bytecodeSize)
 	{
 		errorMessages.clear();

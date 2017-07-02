@@ -36,7 +36,8 @@ public:
 
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxMixer* mixerSource, std::vector<std::string>& messages);
 
-    bool GetCurrentMixinBytecode(SpxBytecode& output, std::vector<std::string>& messages);
+    const std::vector<uint32_t>* GetCurrentMixinBytecode();
+    bool CopyCurrentMixinBytecode(std::vector<uint32_t>& bytecode, std::vector<std::string>& messages);
 
     //bool GenerateStageBytecode(ShadingStage stage, std::string entryPoint, SpvBytecode& output, std::vector<std::string>& messages);
     //bool FinalizeMixin(std::vector<std::string>& messages);
