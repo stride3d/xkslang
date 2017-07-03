@@ -66,6 +66,10 @@ public:
     bool ConvertXkslFileToSpx(const std::string& shaderFileName, const std::string& data,
         const std::vector<ShaderGenericValues>& listGenericsValue, const std::vector<XkslUserDefinedMacro>& listUserDefinedMacros,
         SpxBytecode& spirXBytecode, std::ostringstream* errorAndDebugMessages);
+
+    //Utilities functions
+    static bool ParseStringShaderAndGenerics(const char* strShadersWithGenerics, std::vector<ShaderGenericValues>& listshaderWithGenerics);
+    static bool ParseStringMacroDefinition(const char* strMacrosDefinition, std::vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeMacroValuesMark);
 };
 
 }  // namespace xkslang

@@ -1,7 +1,7 @@
 addResourcesLibrary "library"
 
-setDefine MACRO_01
-setDefine MACRO_02 2
+setDefine MACRO_01          
+setDefine MACRO_02 "2"
 convertAndLoad "testMacro01.xksl"
 
 mixer m

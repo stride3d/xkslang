@@ -120,7 +120,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin05", "TestMixin05.xkfx" },
     //{ "TestMixin06", "TestMixin06.xkfx" },
     //{ "TestMixin07", "TestMixin07.xkfx" },
-
+    
     //{ "TestMerge01", "TestMerge01.xkfx" },
     //{ "TestMerge02", "TestMerge02.xkfx" },
     //{ "TestMerge03", "TestMerge03.xkfx" },
@@ -169,7 +169,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
     //{ "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
     
-    { "TestGenerics01", "TestGenerics01.xkfx" },
+    //{ "TestGenerics01", "TestGenerics01.xkfx" },
     //{ "TestGenerics02", "TestGenerics02.xkfx" },
     //{ "TestGenerics03", "TestGenerics03.xkfx" },
     //{ "TestGenerics04", "TestGenerics04.xkfx" },
@@ -876,7 +876,7 @@ char* __stdcall callbackRequestDataForShaderDll_Recursif(const char* shaderName,
         if (len <= 0) return nullptr;
 
         char* pShaderData = new char[len + 1];
-        shaderData.copy(pShaderData, len);
+        strncpy_s(pShaderData, len + 1, shaderData.c_str(), len);
         pShaderData[len] = 0;
 
         mapShaderData[shaderNameStr] = pShaderData;
@@ -925,73 +925,14 @@ static bool GetShadingStageForString(string& str, ShadingStageEnum& stage)
     return false;
 }
 
-static bool parseShaderWithGenericValuesFromString(vector<ShaderGenericValues>& listGenericsValue, string& txt)
-{
-    int len = txt.size();
-    int pos = 0, end = 0;
-    
-    while (true)
-    {
-        while (pos < len && txt[pos] == ' ') pos++;
-        if (pos == len) return true;
-
-        //shader name
-        end = pos + 1;
-        bool hasGenerics = false;
-        while (end < len)
-        {
-            if (txt[end] == '<') {
-                hasGenerics = true;
-                break;
-            }
-            else if (txt[end] == ' ') {
-                break;
-            }
-            end++;   
-        }
-
-        if (end == pos + 1) return true;
-
-        string shaderName = txt.substr(pos, end - pos);
-        shaderName = Utils::trim(shaderName);
-
-        ShaderGenericValues shaderGenerics;
-        shaderGenerics.shaderName = shaderName;
-
-        if (hasGenerics)
-        {
-            //generic values
-            while (true)
-            {
-                pos = end + 1;
-                while (pos < len && txt[pos] == ' ') pos++;
-                if (pos == len) return false;
-
-                end = pos + 1;
-                while (end < len && txt[end] != '>' && txt[end] != ',') end++;
-                if (end == len) return false;
-
-                string aGenericValue = txt.substr(pos, end - pos);
-                aGenericValue = Utils::trim(aGenericValue);
-
-                GenericValue gv("", aGenericValue);
-                shaderGenerics.genericsValue.push_back(gv);
-
-                if (txt[end] == '>') break;
-            }
-        }
-        pos = end + 1;
-
-        listGenericsValue.push_back(shaderGenerics);
-    }
-}
-
 static bool getNextWord(stringstream& stream, string& word)
 {
-    while (stream.peek() == ' ') stream.get(); // skip spaces
+    while (stream.peek() == ' ') stream.get(); // skip front spaces
+
     if (!getline(stream, word, ' ')) {
         return false;
     }
+
     return true;
 }
 
@@ -1090,7 +1031,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         {
             string folder;
             if (!getNextWord(lineSs, folder)) {
-                std::cout << "convertAndLoad: failed to get the library resource folder" << endl;
+                std::cout << "addResourcesLibrary: failed to get the library resource folder" << endl;
                 success = false; break;
             }
             folder = Utils::trim(folder, '\"');
@@ -1100,17 +1041,17 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         }
         else if (lineItem.compare("setDefine") == 0)
         {
-            string macroName;
-            if (!getNextWord(lineSs, macroName)) {
-                std::cout << "Expecting macro name" << endl;
+            string strMacrosDefinition;
+            if (!getline(lineSs, strMacrosDefinition)) {
+                std::cout << "Fails to get the macros definition" << endl;
                 success = false; break;
             }
-            string macroValue;
-            if (!getNextWord(lineSs, macroValue)) {
-                macroValue = "";
-            }
 
-            listUserDefinedMacros.push_back(XkslUserDefinedMacro(macroName, macroValue));
+            if (!XkslParser::ParseStringMacroDefinition(strMacrosDefinition.c_str(), listUserDefinedMacros, false))
+            {
+                std::cout << "Fails to parse the macros definition from: " << strMacrosDefinition << endl;
+                success = false; break;
+            }
         }
         else if (lineItem.compare("convertAndLoadRecursif") == 0)
         {
@@ -1118,36 +1059,36 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
             //================================================
             //Parse the command line parameters
-            string shadersStr;
-            if (!getline(lineSs, shadersStr)) {
+            string stringShaderAndgenericsValue;
+            if (!getline(lineSs, stringShaderAndgenericsValue)) {
                 std::cout << "convertAndLoadRecursif: failed to get the XKSL file parameters" << endl;
                 success = false; break;
             }
-            shadersStr = Utils::trim(shadersStr, ' ');
-            if (shadersStr.size() == 0) {
+            stringShaderAndgenericsValue = Utils::trim(stringShaderAndgenericsValue, ' ');
+            if (stringShaderAndgenericsValue.size() == 0) {
                 std::cout << "convertAndLoadRecursif: failed to get the XKSL shader parameters" << endl;
                 success = false; break;
             }
 
             //any search prefix?
             string xkslInputFilePrefix = "";
-            if (shadersStr[0] == '"')
+            if (stringShaderAndgenericsValue[0] == '"')
             {
                 unsigned int indexEnd = 1;
-                while (indexEnd < shadersStr.size() && shadersStr[indexEnd] != '"') indexEnd++;
-                if (indexEnd == shadersStr.size()) {
+                while (indexEnd < stringShaderAndgenericsValue.size() && stringShaderAndgenericsValue[indexEnd] != '"') indexEnd++;
+                if (indexEnd == stringShaderAndgenericsValue.size()) {
                     std::cout << "convertAndLoadRecursif: failed to get the prefix parameter" << endl;
                     success = false; break;
                 }
 
-                xkslInputFilePrefix = shadersStr.substr(0, indexEnd + 1);
+                xkslInputFilePrefix = stringShaderAndgenericsValue.substr(0, indexEnd + 1);
                 xkslInputFilePrefix = Utils::trim(xkslInputFilePrefix, '\"');
-                shadersStr = shadersStr.substr(indexEnd + 1);
+                stringShaderAndgenericsValue = stringShaderAndgenericsValue.substr(indexEnd + 1);
             }
 
             vector<ShaderGenericValues> listShaderAndGenerics;
-            if (!parseShaderWithGenericValuesFromString(listShaderAndGenerics, shadersStr)) {
-                std::cout << "convertAndLoadRecursif: failed to read the shader generics value from: " << shadersStr << endl;
+            if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics)) {
+                std::cout << "convertAndLoadRecursif: failed to read the shader and its generics value from: " << stringShaderAndgenericsValue << endl;
                 success = false; break;
             }
 
@@ -1165,9 +1106,16 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             vector<string> vecShadersParsed;
             if (useXkslangDll)
             {
+                shaderFilesPrefix = xkslInputFilePrefix; //set for the callback function
+
+                string stringMacroDef = "";
+                for (unsigned int k = 0; k < listUserDefinedMacros.size(); ++k)
+                    stringMacroDef += listUserDefinedMacros[k].macroName + " " + listUserDefinedMacros[k].macroValue + " ";
+
                 int bytecodeLength = 0;
                 time_before = GetTickCount();
-                uint32_t* pBytecodeBuffer = xkslangDll::ConvertXkslShaderToSPX(shaderName.c_str(), callbackRequestDataForShaderDll_Recursif, &bytecodeLength);
+                uint32_t* pBytecodeBuffer = xkslangDll::ConvertXkslShaderToSPX(shaderName.c_str(), stringShaderAndgenericsValue.c_str(), stringMacroDef.c_str(),
+                    callbackRequestDataForShaderDll_Recursif, &bytecodeLength);
                 time_after = GetTickCount();
 
                 if (pBytecodeBuffer == nullptr || bytecodeLength < 0)
@@ -1275,15 +1223,16 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             xkslInputFile = Utils::trim(xkslInputFile, '\"');
 
             //any generic value defined?
-            vector<ShaderGenericValues> listGenericsValue;
-            string genericsValueText;
-            if (getline(lineSs, genericsValueText))
+            vector<ShaderGenericValues> listShaderAndGenerics;
+            string stringShaderAndgenericsValue;
+            if (getline(lineSs, stringShaderAndgenericsValue))
             {
-                if (!parseShaderWithGenericValuesFromString(listGenericsValue, genericsValueText)) {
-                    std::cout << "convertAndLoad: failed to read the shader generics value from: " << genericsValueText << endl;
+                if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics)) {
+                    std::cout << "convertAndLoad: failed to read the shaders and their generics value from: " << stringShaderAndgenericsValue << endl;
                     success = false; break;
                 }
             }
+            else stringShaderAndgenericsValue = "";
 
             //================================================
             //Parse and convert the shader
@@ -1302,13 +1251,21 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                     success = false; break;
                 }
                 if (singleXkslShaderToReturn != nullptr) delete[] singleXkslShaderToReturn;
-                singleXkslShaderToReturn = new char[xkslInput.size() + 1];
-                xkslInput.copy(singleXkslShaderToReturn, xkslInput.size());
+                int len = xkslInput.size() + 1;
+                singleXkslShaderToReturn = new char[len + 1];
+                strncpy_s(singleXkslShaderToReturn, len + 1, xkslInput.c_str(), len);
                 singleXkslShaderToReturn[xkslInput.size()] = 0;
 
+                string stringMacroDef = "";
+                for (unsigned int k = 0; k < listUserDefinedMacros.size(); ++k)
+                    stringMacroDef += listUserDefinedMacros[k].macroName + " " + listUserDefinedMacros[k].macroValue + " ";
+
+                string shaderName = xkslInput; //ShaderName is not really important here (callback function will return singleXkslShaderToReturn anyway)
+
                 int bytecodeLength = 0;
-                time_before = GetTickCount();                
-                uint32_t* pBytecodeBuffer = xkslangDll::ConvertXkslShaderToSPX(xkslInputFile.c_str(), callbackRequestDataForShaderDll_Single, &bytecodeLength);
+                time_before = GetTickCount();
+                uint32_t* pBytecodeBuffer = xkslangDll::ConvertXkslShaderToSPX(shaderName.c_str(), stringShaderAndgenericsValue.c_str(), stringMacroDef.c_str(),
+                    callbackRequestDataForShaderDll_Single, &bytecodeLength);
                 time_after = GetTickCount();
 
                 if (pBytecodeBuffer == nullptr || bytecodeLength < 0)
@@ -1334,7 +1291,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 listAllocatedBytecodes.push_back(spxBytecode);
 
                 time_before = GetTickCount();
-                success = ParseAndConvertXkslFile(parser, xkslInputFile, listGenericsValue, listUserDefinedMacros, *spxBytecode, true);
+                success = ParseAndConvertXkslFile(parser, xkslInputFile, listShaderAndGenerics, listUserDefinedMacros, *spxBytecode, true);
                 time_after = GetTickCount();
 
                 if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
@@ -1650,7 +1607,8 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     std::cout << "=================================" << endl;
     std::cout << "Effect: " << effectName << endl;
 
-    bool success = true;
+    bool success1 = true;
+    bool success2 = true;
     const string inputFname = inputDir + "\\" + effect.inputFileName;
     string effectCmdLines;
     if (!Utils::ReadFile(inputFname, effectCmdLines))
@@ -1667,8 +1625,8 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         std::cout << "=================================" << endl;
         std::cout << "Process XKSL File (direct call to Xkslang classes)" << endl;
 
-        success = ProcessEffectCommandLine(parser, effectName, effectCmdLines, false);
-        if (success) std::cout << "Effect successfully processed." << endl;
+        success1 = ProcessEffectCommandLine(parser, effectName, effectCmdLines, false);
+        if (success1) std::cout << "Effect successfully processed." << endl;
         else std::cout << "Failed to process the effect" << endl;
     }
 
@@ -1678,12 +1636,12 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         std::cout << "=================================" << endl;
         std::cout << "Process XKSL File through Xkslang Dll API" << endl;
 
-        success = ProcessEffectCommandLine(parser, effectName, effectCmdLines, true);
-        if (success) std::cout << "Effect successfully processed." << endl;
+        success2 = ProcessEffectCommandLine(parser, effectName, effectCmdLines, true);
+        if (success2) std::cout << "Effect successfully processed." << endl;
         else { std::cout << "Failed to process the effect" << endl; return false; }
     }
 
-    return success;
+    return success1 && success2;
 }
 
 void main(int argc, char** argv)

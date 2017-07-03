@@ -75,7 +75,14 @@ bool XkslParser::ConvertXkslFileToSpx(const string& shaderFileName, const string
         {
             UserDefinedMacro& m = userDefinedMacros[k];
             m.macroName = listUserDefinedMacros[k].macroName;
-            m.macroValue = listUserDefinedMacros[k].macroValue;
+
+            //remove the \" delimiter (if any)
+            const string& macroValue = listUserDefinedMacros[k].macroValue;
+            int macroValueLen = macroValue.length();
+            if (macroValueLen > 1 && macroValue[0] == '"' && macroValue[macroValueLen - 1] == '"')
+                m.macroValue = macroValue.substr(1, macroValueLen - 2);
+            else
+                m.macroValue = macroValue;
         }
     }
 
@@ -141,7 +148,14 @@ bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::Callb
         {
             UserDefinedMacro& m = userDefinedMacros[k];
             m.macroName = listUserDefinedMacros[k].macroName;
-            m.macroValue = listUserDefinedMacros[k].macroValue;
+
+            //remove the \" delimiter (if any)
+            const string& macroValue = listUserDefinedMacros[k].macroValue;
+            int macroValueLen = macroValue.length();
+            if (macroValueLen > 1 && macroValue[0] == '"' && macroValue[macroValueLen - 1] == '"')
+                m.macroValue = macroValue.substr(1, macroValueLen - 2);
+            else
+                m.macroValue = macroValue;
         }
     }
 
@@ -166,4 +180,128 @@ bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::Callb
     }
 
     return success;
+}
+
+//===================================================================================================================================
+//===================================================================================================================================
+// Utilitiers function to parse/process some string
+static string TrimString(const string& str, char c)
+{
+    size_t first = str.find_first_not_of(c);
+    if (first == string::npos) return str;
+    size_t last = str.find_last_not_of(c);
+    return str.substr(first, (last - first + 1));
+}
+
+bool XkslParser::ParseStringMacroDefinition(const char* strMacrosDefinition, vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeMacroValuesMark)
+{
+    if (strMacrosDefinition == nullptr) return true;
+
+    const char* curPtr = strMacrosDefinition;
+    const char* startPtr, *endPtr;
+
+    while (true)
+    {
+        while (*curPtr == ' ') curPtr++;
+        if (*curPtr == '"') curPtr++;  //skip the " for the macro name
+        if (*curPtr == 0) return true;
+
+        startPtr = curPtr;
+
+        while (*curPtr != 0 && *curPtr != ' ') curPtr++;
+        endPtr = curPtr - 1;
+        if (*(endPtr) == '"') endPtr--;
+
+        if (endPtr <= startPtr) return true;
+
+        string macroName(startPtr, (endPtr - startPtr) + 1);
+        string macroValue;
+
+        while (*curPtr == ' ') curPtr++;
+        if (*curPtr == '"')
+        {
+            //macro value
+            startPtr = curPtr;
+            curPtr++;
+            while (*curPtr != 0 && *curPtr != '"') curPtr++;
+            if (*curPtr == 0) return false; //a macro value should end with '"'
+            endPtr = curPtr;
+
+            if (removeMacroValuesMark) macroValue.assign(startPtr + 1, (endPtr - startPtr) - 1);
+            else macroValue.assign(startPtr, (endPtr - startPtr) + 1);
+            curPtr++;
+        }
+
+        listMacrosDefinition.push_back(XkslUserDefinedMacro(macroName, macroValue));
+
+        if (*curPtr == 0) return true;
+    }
+
+    return true;
+}
+
+bool XkslParser::ParseStringShaderAndGenerics(const char* strShadersWithGenerics, vector<ShaderGenericValues>& listshaderWithGenerics)
+{
+    if (strShadersWithGenerics == nullptr) return true;
+
+    string txt(strShadersWithGenerics);
+    int len = txt.size();
+    int pos = 0, end = 0;
+
+    while (true)
+    {
+        while (pos < len && txt[pos] == ' ') pos++;
+        if (pos == len) return true;
+
+        //shader name
+        end = pos + 1;
+        bool hasGenerics = false;
+        while (end < len)
+        {
+            if (txt[end] == '<') {
+                hasGenerics = true;
+                break;
+            }
+            else if (txt[end] == ' ') {
+                break;
+            }
+            end++;
+        }
+
+        if (end == pos + 1) return true;
+
+        string shaderName = txt.substr(pos, end - pos);
+        shaderName = TrimString(shaderName, ' ');
+
+        ShaderGenericValues shaderGenerics;
+        shaderGenerics.shaderName = shaderName;
+
+        if (hasGenerics)
+        {
+            //generic values
+            while (true)
+            {
+                pos = end + 1;
+                while (pos < len && txt[pos] == ' ') pos++;
+                if (pos == len) return false;
+
+                end = pos + 1;
+                while (end < len && txt[end] != '>' && txt[end] != ',') end++;
+                if (end == len) return false;
+
+                string aGenericValue = txt.substr(pos, end - pos);
+                aGenericValue = TrimString(aGenericValue, ' ');
+
+                GenericValue gv("", aGenericValue);
+                shaderGenerics.genericsValue.push_back(gv);
+
+                if (txt[end] == '>') break;
+            }
+        }
+        pos = end + 1;
+
+        listshaderWithGenerics.push_back(shaderGenerics);
+    }
+
+    return true;
 }

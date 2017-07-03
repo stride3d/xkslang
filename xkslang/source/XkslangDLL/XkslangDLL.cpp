@@ -222,21 +222,38 @@ namespace xkslangDll
         return true;
     }
 
-    uint32_t* ConvertXkslShaderToSPX(const char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* bytecodeSize)
+    uint32_t* ConvertXkslShaderToSPX(const char* shaderName, const char* stringShadersWithGenerics, const char* stringMacrosDefinition,
+        ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* resultingBytecodeSize)
     {
         errorMessages.clear();
-        *bytecodeSize = 0;
+        *resultingBytecodeSize = 0;
 
         if (xkslParser == nullptr) {error("Xkslang parser has not been initialized"); return nullptr;}
         if (shaderName == nullptr) {error("shaderName is null"); return nullptr;}
         if (shaderDependencyCallback == nullptr) {error("The callback function is null"); return nullptr;}
         externalShaderDataCallback = shaderDependencyCallback;
 
-        SpxBytecode spirXBytecode;
-        vector<ShaderGenericValues> listGenericsValue;
+        //Parse and get the list of shader with their generic values
+        vector<ShaderGenericValues> listshaderWithGenerics;
+        if (stringShadersWithGenerics != nullptr)
+        {
+            XkslParser::ParseStringShaderAndGenerics(stringShadersWithGenerics, listshaderWithGenerics);
+        }
+
+        //Get the list of macro and their definitions
         vector<XkslUserDefinedMacro> listUserDefinedMacros;
+        if (stringMacrosDefinition != nullptr)
+        {
+            if (!XkslParser::ParseStringMacroDefinition(stringMacrosDefinition, listUserDefinedMacros, true))
+            {
+                error("Failed to parse the macro definition string");
+                return nullptr;
+            }
+        }
+
+        SpxBytecode spirXBytecode;
         ostringstream errorMessages;
-        bool success = xkslParser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, listUserDefinedMacros, spirXBytecode, &errorMessages);
+        bool success = xkslParser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listshaderWithGenerics, listUserDefinedMacros, spirXBytecode, &errorMessages);
 
         if (!success) {
             error(errorMessages.str().c_str());
@@ -256,7 +273,7 @@ namespace xkslangDll
         int countIteration = bytecodeLen;
         while (countIteration-- > 0) *pDest++ = *pSrc++;
 
-        *bytecodeSize = bytecodeLen;
+        *resultingBytecodeSize = bytecodeLen;
         return byteBuffer;
     }
 

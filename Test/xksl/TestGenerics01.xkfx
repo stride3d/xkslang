@@ -1,4 +1,4 @@
-convertAndLoad "TestGenerics01.xksl" ShaderMain<5>  
+convertAndLoad "TestGenerics01.xksl" ShaderMain<5>
 
 mixer mixerMain
 mixerMain.mixin ShaderMain

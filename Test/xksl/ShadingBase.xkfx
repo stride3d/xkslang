@@ -1,6 +1,6 @@
 addResourcesLibrary "library"
 
-setDefine SILICON_STUDIO_RENDER_TARGET_COUNT 2
+setDefine SILICON_STUDIO_RENDER_TARGET_COUNT "2"
 convertAndLoadRecursif "ShadingBase" ShadingBase
 
 mixer mixerC

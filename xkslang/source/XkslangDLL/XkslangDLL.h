@@ -22,6 +22,7 @@ namespace xkslangDll
         OutputStageEntryPoint(xkslang::ShadingStageEnum stage, const char* entryPointName) : stage(stage), entryPointName(entryPointName) {}
     };
 
+    //We can query shader information from a SPX bytecode (only the shader name for now)
     struct BytecodeShaderInformation
     {
     public:
@@ -114,12 +115,17 @@ namespace xkslangDll
     //Convert an xksl shader into SPX bytecode
     // shaderName: name of the shader to convert
     // shaderDependencyCallback: callback function, called by xkslang everytime the parser requests data for a shader (shaderName at first, then all its dependencies if any)
+    // listShadersWithGenerics: let us specify generic values for the shaders we're going to parse (can be null)
+    //   Syntax: "shaderA<g1, g2, ...> shaderB<g1, g2, ...> ..."
+    // listMacroDefinition: let us define macro definition (can be null)
+    //   Syntax: "MACRO_01 "value" MACRO_02 "value" ..."
     // Return:
     //  null: if the conversion failed (user can call GetErrorMessages function to get more details)
     //  pointer to the bytecode if the operation succeeded
     //    The pointer is allocated on the dll side (using LocalAlloc function), and has to be deleted by the caller
     //    bytecodeSize parameter contains the length of the bytecode buffer
-    extern "C" __declspec(dllexport) uint32_t* ConvertXkslShaderToSPX(const char* shaderName, ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* bytecodeSize);
+    extern "C" __declspec(dllexport) uint32_t* ConvertXkslShaderToSPX(const char* shaderName, const char* stringShadersWithGenerics, const char* stringMacrosDefinition,
+        ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* resultingBytecodeSize);
 
     //=====================================================================================================================
     //=====================================================================================================================
