@@ -193,9 +193,10 @@ static string TrimString(const string& str, char c)
     return str.substr(first, (last - first + 1));
 }
 
-bool XkslParser::ParseStringMacroDefinition(const char* strMacrosDefinition, vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeMacroValuesMark)
+int XkslParser::ParseStringMacroDefinition(const char* strMacrosDefinition, vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeValuesQuotationMark)
 {
-    if (strMacrosDefinition == nullptr) return true;
+    int countMacrosParsed = 0;
+    if (strMacrosDefinition == nullptr) return countMacrosParsed;
 
     const char* curPtr = strMacrosDefinition;
     const char* startPtr, *endPtr;
@@ -204,7 +205,7 @@ bool XkslParser::ParseStringMacroDefinition(const char* strMacrosDefinition, vec
     {
         while (*curPtr == ' ') curPtr++;
         if (*curPtr == '"') curPtr++;  //skip the " for the macro name
-        if (*curPtr == 0) return true;
+        if (*curPtr == 0) return countMacrosParsed;
 
         startPtr = curPtr;
 
@@ -212,32 +213,35 @@ bool XkslParser::ParseStringMacroDefinition(const char* strMacrosDefinition, vec
         endPtr = curPtr - 1;
         if (*(endPtr) == '"') endPtr--;
 
-        if (endPtr <= startPtr) return true;
+        if (endPtr < startPtr) return countMacrosParsed;
 
         string macroName(startPtr, (endPtr - startPtr) + 1);
         string macroValue;
 
         while (*curPtr == ' ') curPtr++;
+
+        //A macro value must start and end with "" quotation marks
         if (*curPtr == '"')
         {
             //macro value
             startPtr = curPtr;
             curPtr++;
             while (*curPtr != 0 && *curPtr != '"') curPtr++;
-            if (*curPtr == 0) return false; //a macro value should end with '"'
+            if (*curPtr == 0) return -1; //a macro value should end with '"'
             endPtr = curPtr;
 
-            if (removeMacroValuesMark) macroValue.assign(startPtr + 1, (endPtr - startPtr) - 1);
+            if (removeValuesQuotationMark) macroValue.assign(startPtr + 1, (endPtr - startPtr) - 1);
             else macroValue.assign(startPtr, (endPtr - startPtr) + 1);
             curPtr++;
         }
 
         listMacrosDefinition.push_back(XkslUserDefinedMacro(macroName, macroValue));
+        countMacrosParsed++;
 
-        if (*curPtr == 0) return true;
+        if (*curPtr == 0) return countMacrosParsed;
     }
 
-    return true;
+    return countMacrosParsed;
 }
 
 bool XkslParser::ParseStringShaderAndGenerics(const char* strShadersWithGenerics, vector<ShaderGenericValues>& listshaderWithGenerics)

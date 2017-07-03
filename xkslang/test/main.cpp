@@ -109,8 +109,8 @@ struct XkfxEffectsToProcess {
 };
 
 static bool buildEffectReflection = true;
-static bool processEffectWithDirectCallToXkslang = false;
-static bool processEffectWithDllApi = true;
+static bool processEffectWithDirectCallToXkslang = true;
+static bool processEffectWithDllApi = false;
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin01", "TestMixin01.xkfx" },
@@ -188,6 +188,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer08", "CBuffer08.xkfx" },
     //{ "CBuffer09", "CBuffer09.xkfx" },
     //{ "CBuffer10", "CBuffer10.xkfx" },
+    { "CBuffer11", "CBuffer11.xkfx" },
     
     //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
     //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
@@ -231,6 +232,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
     //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
 
+    //{ "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
@@ -1047,9 +1049,9 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 success = false; break;
             }
 
-            if (!XkslParser::ParseStringMacroDefinition(strMacrosDefinition.c_str(), listUserDefinedMacros, false))
+            if (XkslParser::ParseStringMacroDefinition(strMacrosDefinition.c_str(), listUserDefinedMacros, false) != 1)
             {
-                std::cout << "Fails to parse the macros definition from: " << strMacrosDefinition << endl;
+                std::cout << "Fails to parse the macros definition: " << strMacrosDefinition << endl;
                 success = false; break;
             }
         }
@@ -1539,6 +1541,8 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             }
             else if (instruction.compare("compile") == 0)
             {
+                std::cout << "Compiling the mixer \"" << mixerName << "\"" << endl;
+
                 vector<OutputStageBytecode> outputStages;
                 for (auto its = mixerTarget->stagesEntryPoints.begin(); its != mixerTarget->stagesEntryPoints.end(); its++){
                     if (its->second.size() > 0)
@@ -1552,6 +1556,25 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 }
                 else
                 {
+                    //Optionnal: get and display all compositions
+                    {
+                        vector<ShaderCompositionInfo> vecCompositions;
+                        success = mixerTarget->mixer->GetListAllCompositions(vecCompositions, errorMsgs);
+                        if (!success) { std::cout << "Failed to get the list of all compositions from the mixer" << endl; break; }
+                        if (vecCompositions.size() > 0)
+                        {
+                            cout << endl;
+                            cout << "Count Compositions: " << vecCompositions.size() << endl;
+                            for (unsigned int c = 0; c < vecCompositions.size(); c++)
+                            {
+                                ShaderCompositionInfo& composition = vecCompositions[c];
+                                cout << " " << composition.CompositionShaderType << " " << composition.ShaderOwner << "."
+                                    << composition.CompositionVariableName << (composition.IsArray ? "[]" : "")  << " (instances=" << composition.CompositionCountInstances << ")" << endl;
+                            }
+                            cout << endl;
+                        }
+                    }
+
                     success = CompileMixer(effectName, mixerTarget->mixer, outputStages, errorMsgs);
                     if (!success) std::cout << "Failed to compile the effect: " << effectName << endl;
                 }

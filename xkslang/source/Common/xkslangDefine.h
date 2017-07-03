@@ -28,6 +28,20 @@ namespace xkslang
         Compute = 5,
     };
 
+    class ShaderCompositionInfo
+    {
+    public:
+        std::string ShaderOwner;
+        std::string CompositionShaderType;
+        std::string CompositionVariableName;
+        bool IsArray;
+        int CompositionCountInstances;
+
+        ShaderCompositionInfo() {}
+        ShaderCompositionInfo(std::string shaderOwner, std::string shaderType, std::string variableName, bool isArray, int compositionCountInstances)
+            : ShaderOwner(shaderOwner), CompositionShaderType(shaderType), CompositionVariableName(variableName), IsArray(isArray), CompositionCountInstances(compositionCountInstances) {}
+    };
+
     bool IsAValidOutputStage(ShadingStageEnum stage);
     std::string GetShadingStageLabel(ShadingStageEnum stage);
     std::string GetShadingStageLabelShort(ShadingStageEnum stage);

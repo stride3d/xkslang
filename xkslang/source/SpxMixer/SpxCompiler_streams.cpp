@@ -1047,7 +1047,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
     //=============================================================================================================
     //=============================================================================================================
     //find the best positions where to insert new stuff
-    int posNewTypesInsertion = globalStreamType->bytecodeStartPosition;
+    unsigned int posNewTypesInsertion = globalStreamType->bytecodeStartPosition;
     int posNamesInsertion = header_size;
     {
         unsigned int start = header_size;

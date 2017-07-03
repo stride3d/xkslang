@@ -2,19 +2,19 @@
 
 addResourcesLibrary "library"
 
-setDefine SILICON_STUDIO_RENDER_TARGET_COUNT 1
-setDefine SILICON_STUDIO_MULTISAMPLE_COUNT 1
+setDefine SILICON_STUDIO_RENDER_TARGET_COUNT "1"
+setDefine SILICON_STUDIO_MULTISAMPLE_COUNT "1"
 
 convertAndLoadRecursif MaterialSurfaceVertexStageCompositor
 convertAndLoadRecursif MaterialSurfacePixelStageCompositor
 convertAndLoadRecursif TransformationWAndVP
 convertAndLoadRecursif NormalFromNormalMapping
 
-mixer m_IMaterialSurface
-m_IMaterialSurface.mixin IMaterialSurface
+//mixer m_IMaterialSurface
+//m_IMaterialSurface.mixin IMaterialSurface
 
-mixer m_IStreamInitializer
-m_IStreamInitializer.mixin IStreamInitializer
+//mixer m_IStreamInitializer
+//m_IStreamInitializer.mixin IStreamInitializer
 
 mixer m
 m.mixin ShaderBase
@@ -26,10 +26,10 @@ m.mixin TransformationWAndVP
 m.mixin NormalFromNormalMapping
 m.mixin MaterialSurfacePixelStageCompositor
 
-m.addComposition MaterialSurfaceVertexStageCompositor.materialVertexStage m_IMaterialSurface
-m.addComposition MaterialSurfaceVertexStageCompositor.streamInitializerVertexStage m_IStreamInitializer
-m.addComposition MaterialSurfacePixelStageCompositor.materialPixelStage m_IMaterialSurface
-m.addComposition MaterialSurfacePixelStageCompositor.streamInitializerPixelStage m_IStreamInitializer
+//m.addComposition MaterialSurfaceVertexStageCompositor.materialVertexStage m_IMaterialSurface
+//m.addComposition MaterialSurfaceVertexStageCompositor.streamInitializerVertexStage m_IStreamInitializer
+//m.addComposition MaterialSurfacePixelStageCompositor.materialPixelStage m_IMaterialSurface
+//m.addComposition MaterialSurfacePixelStageCompositor.streamInitializerPixelStage m_IStreamInitializer
 
 m.setStageEntryPoint Vertex "VSMain"
 m.setStageEntryPoint Pixel "PSMain"

@@ -1460,7 +1460,31 @@ bool SpxCompiler::ValidateSpxBytecodeAndData()
     return true;
 }
 
-bool SpxCompiler::AddComposition(const string& shaderName, const string& variableName, SpxCompiler* source, vector<string>& msgs)
+bool SpxCompiler::GetListAllCompositions(vector<ShaderCompositionInfo>& vecCompositions)
+{
+    vecCompositions.clear();
+
+    for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
+    {
+        ShaderClassData* aShader = *it;
+        unsigned int countCompositions = aShader->GetCountShaderComposition();
+        for (unsigned int k = 0; k < countCompositions; ++k)
+        {
+            const ShaderComposition& shaderComposition = aShader->compositionsList[k];
+            vecCompositions.push_back(ShaderCompositionInfo(
+                    shaderComposition.compositionShaderOwner->GetName(),
+                    shaderComposition.shaderType->GetName(),
+                    shaderComposition.variableName,
+                    shaderComposition.isArray,
+                    shaderComposition.countInstances
+                ));
+        }
+    }
+
+    return true;
+}
+
+bool SpxCompiler::AddComposition(const string& shaderName, const string& variableName, SpxCompiler* source)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");

@@ -69,7 +69,7 @@ public:
 
     //Utilities functions
     static bool ParseStringShaderAndGenerics(const char* strShadersWithGenerics, std::vector<ShaderGenericValues>& listshaderWithGenerics);
-    static bool ParseStringMacroDefinition(const char* strMacrosDefinition, std::vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeMacroValuesMark);
+    static int ParseStringMacroDefinition(const char* strMacrosDefinition, std::vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeValuesQuotationMark);
 };
 
 }  // namespace xkslang

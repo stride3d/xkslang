@@ -708,7 +708,8 @@ public:
     //bool MixWithBytecode(const SpxBytecode& bytecode);
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& nameOfShadersToMix);
 
-    bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxCompiler* source, std::vector<std::string>& messages);
+    bool GetListAllCompositions(std::vector<ShaderCompositionInfo>& vecCompositions);
+    bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
     void CopyMixinBytecode(std::vector<std::uint32_t>& bytecodeStream);
     const std::vector<std::uint32_t>& GetMixinBytecode();
 

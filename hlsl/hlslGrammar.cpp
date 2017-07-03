@@ -218,7 +218,13 @@ void HlslGrammar::expected(const char* syntax)
 {
     if (this->hasAnyErrorToBeProcessedAtTheTop()) return; //The error will be processed later.
 
-    parseContext.error(token.loc, "Expected", syntax, "");
+    TString msgError(syntax);
+    if (this->xkslShaderCurrentlyParsed != nullptr)
+    {
+        msgError = this->xkslShaderCurrentlyParsed->shaderFullName + ": " + msgError;
+    }
+
+    parseContext.error(token.loc, "Expected", msgError.c_str(), "");
 }
 
 void HlslGrammar::unimplemented(const char* error)
@@ -232,7 +238,13 @@ void HlslGrammar::error(const char* error)
 {
     if (this->hasAnyErrorToBeProcessedAtTheTop()) return; //The error will be processed later.
 
-    parseContext.error(token.loc, "Error", error, "");
+    TString msgError(error);
+    if (this->xkslShaderCurrentlyParsed != nullptr)
+    {
+        msgError = this->xkslShaderCurrentlyParsed->shaderFullName + ": " + msgError;
+    }
+
+    parseContext.error(token.loc, "Error", msgError.c_str(), "");
 }
 
 void HlslGrammar::error(const TString& str)
@@ -3400,6 +3412,7 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
     bool canDeclareBufferInSymbolTable = true;
     if (this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined) canDeclareBufferInSymbolTable = false;
 
+    bool isCBuffer = false;
     bool isRGroupBuffer = acceptTokenClass(EHTokRGroup);
     if (isRGroupBuffer)
     {
@@ -3410,6 +3423,7 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
         // CBUFFER
     if (acceptTokenClass(EHTokCBuffer)) {
             storageQualifier = EvqUniform;
+            isCBuffer = true;
         // TBUFFER
     } else if (acceptTokenClass(EHTokTBuffer)) {
             storageQualifier = EvqBuffer;
@@ -3423,9 +3437,22 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
 
     // IDENTIFIER
     TString structName = "";
+    TString structSubpartName = "";
     if (peekTokenClass(EHTokIdentifier)) {
         structName = *token.string;
         advanceToken();
+
+        //XKSL extensions: we can have struct name composed with a subpart (cbuffer PerLighting.subpart1)
+        if (isCBuffer)
+        {
+            if (acceptTokenClass(EHTokDot))
+            {
+                if (peekTokenClass(EHTokIdentifier)) {
+                    structSubpartName = *token.string;
+                    advanceToken();
+                }
+            }
+        }
     }
 
     // post_decls

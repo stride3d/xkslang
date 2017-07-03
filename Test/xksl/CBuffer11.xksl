@@ -1,0 +1,27 @@
+shader ShaderMain
+{
+	stream float aStream;
+
+    cbuffer PerLighting.subpart1
+    {
+        float var1;
+        float var2;
+    }
+
+    cbuffer PerLighting.subpart2
+    {
+        float var3;
+        float var4;
+    }
+	
+	cbuffer PerLighting.subpart3
+    {
+        float var5;
+        float var6;
+    }
+
+	stage void VSMain() 
+    {
+        streams.aStream = var1 + var3;
+    }
+};
