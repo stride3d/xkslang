@@ -244,7 +244,7 @@ namespace xkslangDll
         vector<XkslUserDefinedMacro> listUserDefinedMacros;
         if (stringMacrosDefinition != nullptr)
         {
-            if (!XkslParser::ParseStringMacroDefinition(stringMacrosDefinition, listUserDefinedMacros, true))
+            if (XkslParser::ParseStringMacroDefinition(stringMacrosDefinition, listUserDefinedMacros, true) == -1)
             {
                 error("Failed to parse the macro definition string");
                 return nullptr;

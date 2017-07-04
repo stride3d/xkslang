@@ -108,6 +108,9 @@ struct XkfxEffectsToProcess {
     string inputFileName;
 };
 
+//Can be parameterized from the xkfx file
+static bool tryToLoadAndConvertUnknownMixinShader = false;  //if true, when we mix an unknown shader, we will try to find, load and parse/convert this shader from our library
+
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
 static bool processEffectWithDllApi = false;
@@ -233,9 +236,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
     //{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
     //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
-    { "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
+    //{ "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
 
-    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -995,6 +998,141 @@ static bool RecordSPXShaderBytecode(string shaderFullName, SpxBytecode* spxBytec
     return true;
 }
 
+static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode, vector<SpxBytecode*>& listAllocatedBytecodes,
+    const string& stringShaderAndgenericsValue, const string& xkslInputFilePrefix, const vector<XkslUserDefinedMacro>& listUserDefinedMacros,
+    XkslParser* parser, bool useXkslangDll)
+{
+    vector<string> errorMsgs;
+    DWORD time_before, time_after;
+
+    //Get the shaders name and generics
+    vector<ShaderGenericValues> listShaderAndGenerics;
+    if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics))
+    {
+        std::cout << "convertAndLoadRecursif: failed to read the shader and its generics value from: " << stringShaderAndgenericsValue << endl;
+        return false;
+    }
+    if (listShaderAndGenerics.size() < 1)
+    {
+        std::cout << "convertAndLoadRecursif: no shader name found" << endl;
+        return false;
+    }
+    string shaderName = listShaderAndGenerics[0].shaderName;
+
+    //================================================
+    //Parse and convert the shader and its dependencies
+    std::cout << endl << "Recursively parsing XKSL shader \"" << shaderName + "\"" << endl;
+
+    SpxBytecode* spxBytecode = nullptr;
+    vector<string> vecShadersParsed;
+    if (useXkslangDll)
+    {
+        shaderFilesPrefix = xkslInputFilePrefix; //set for the callback function
+
+        string stringMacroDef = "";
+        for (unsigned int k = 0; k < listUserDefinedMacros.size(); ++k)
+            stringMacroDef += listUserDefinedMacros[k].macroName + " " + listUserDefinedMacros[k].macroValue + " ";
+
+        int bytecodeLength = 0;
+        time_before = GetTickCount();
+        uint32_t* pBytecodeBuffer = xkslangDll::ConvertXkslShaderToSPX(shaderName.c_str(), stringShaderAndgenericsValue.c_str(), stringMacroDef.c_str(),
+            callbackRequestDataForShaderDll_Recursif, &bytecodeLength);
+        time_after = GetTickCount();
+
+        if (pBytecodeBuffer == nullptr || bytecodeLength < 0)
+        {
+            char* pError = xkslangDll::GetErrorMessages();
+            if (pError != nullptr) std::cout << pError << endl;
+            GlobalFree(pError);
+
+            std::cout << "convertAndLoadRecursif: failed to convert the XKSL file name: " << xkslInputFilePrefix << endl;
+            return false;
+        }
+        else std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
+
+        spxBytecode = new SpxBytecode;
+        listAllocatedBytecodes.push_back(spxBytecode);
+        vector<uint32_t>& vecBytecode = spxBytecode->getWritableBytecodeStream();
+        vecBytecode.assign(pBytecodeBuffer, pBytecodeBuffer + bytecodeLength);
+        if (pBytecodeBuffer != nullptr) GlobalFree(pBytecodeBuffer);
+    }
+    else
+    {
+        string infoMsg;
+        spxBytecode = new SpxBytecode;
+        listAllocatedBytecodes.push_back(spxBytecode);
+        string spxOutputFileName;
+
+        time_before = GetTickCount();
+        bool success = RecursivelyParseAndConvertXkslShader(parser, effectName, shaderName, xkslInputFilePrefix, listShaderAndGenerics, listUserDefinedMacros, *spxBytecode, infoMsg);
+        time_after = GetTickCount();
+
+        if (infoMsg.size() > 0) std::cout << infoMsg;
+
+        if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
+        else
+        {
+            std::cout << "convertAndLoadRecursif: failed to parse and convert the XKSL file name: " << xkslInputFilePrefix << endl;
+            return false;
+        }
+    }
+
+    //Save the bytecode on the disk
+    {
+        string prefix = xkslInputFilePrefix;
+        if (prefix.size() == 0) prefix = effectName;
+        WriteBytecode(spxBytecode->getBytecodeStream(), outputDir, prefix + "_" + shaderName + ".spv", BytecodeFileFormat::Binary);
+        WriteBytecode(spxBytecode->getBytecodeStream(), outputDir, prefix + "_" + shaderName + ".hr.spv", BytecodeFileFormat::Text);
+    }
+
+    //Query the list of shaders from the bytecode
+    if (useXkslangDll)
+    {
+        int countShaders = 0;
+        xkslangDll::BytecodeShaderInformation *shadersInfo;
+        uint32_t* pBytecodeBuffer = &(spxBytecode->getWritableBytecodeStream().front());
+        int32_t bytecodeLength = spxBytecode->GetBytecodeSize();
+        bool success = xkslangDll::GetBytecodeShadersInformation(pBytecodeBuffer, bytecodeLength, &shadersInfo, &countShaders);
+        if (!success)
+        {
+            char* pError = xkslangDll::GetErrorMessages();
+            if (pError != nullptr) std::cout << pError << endl;
+            GlobalFree(pError);
+
+            std::cout << "convertAndLoadRecursif: failed to get the shader info from the bytecode" << endl;
+            return false;
+        }
+
+        for (int k = 0; k < countShaders; ++k)
+        {
+            vecShadersParsed.push_back(shadersInfo[k].ShaderName);
+            GlobalFree(shadersInfo[k].ShaderName);
+        }
+        GlobalFree(shadersInfo);
+    }
+    else
+    {
+        if (!SpxMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShadersParsed, errorMsgs))
+        {
+            std::cout << "convertAndLoadRecursif: failed to get the list of shader names from: " << xkslInputFilePrefix << endl;
+            return false;
+        }
+    }
+
+    //Store the new shaders bytecode in our map
+    for (unsigned int is = 0; is < vecShadersParsed.size(); ++is)
+    {
+        string shaderName = vecShadersParsed[is];
+        if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameWithBytecode))
+        {
+            std::cout << "convertAndLoadRecursif: Can't add the shader into the bytecode: " << shaderName;
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, string effectCmdLines, bool useXkslangDll)
 {
     bool success = true;
@@ -1030,6 +1168,30 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         if (lineItem.size() >= 2 && lineItem[0] == '/' && lineItem[1] == '/')
         {
             //a comment: ignore the line
+        }
+        else if (lineItem.compare("set") == 0)
+        {
+            string parameterName;
+            if (!getNextWord(lineSs, parameterName)) {
+                std::cout << "set: failed to get the parameter name" << endl;
+                success = false; break;
+            }
+
+            if (parameterName.compare("tryToLoadAndConvertUnknownMixinShader") == 0)
+            {
+                string parameterValue;
+                if (!getNextWord(lineSs, parameterValue)) {
+                    std::cout << "set: failed to get the parameter value" << endl;
+                    success = false; break;
+                }
+                if (parameterValue.compare("true") == 0) tryToLoadAndConvertUnknownMixinShader = true;
+                else tryToLoadAndConvertUnknownMixinShader = false;
+            }
+            else
+            {
+                std::cout << "set: unknown parameter name: " << parameterName << endl;
+                success = false; break;
+            }
         }
         else if (lineItem.compare("addResourcesLibrary") == 0)
         {
@@ -1090,127 +1252,15 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 stringShaderAndgenericsValue = stringShaderAndgenericsValue.substr(indexEnd + 1);
             }
 
-            vector<ShaderGenericValues> listShaderAndGenerics;
-            if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics)) {
-                std::cout << "convertAndLoadRecursif: failed to read the shader and its generics value from: " << stringShaderAndgenericsValue << endl;
+            //Can convert and load the shader
+            success = ConvertAndLoadRecursif(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes,
+                stringShaderAndgenericsValue, xkslInputFilePrefix, listUserDefinedMacros,
+                parser, useXkslangDll);
+
+            if (!success)
+            {
+                cout << "Failed to recursively convert and load the shaders: " << stringShaderAndgenericsValue << endl;
                 success = false; break;
-            }
-
-            if (listShaderAndGenerics.size() != 1) {
-                std::cout << "convertAndLoadRecursif: 1 shader name expected" << endl;
-                success = false; break;
-            }
-            string shaderName = listShaderAndGenerics[0].shaderName;
-
-            //================================================
-            //Parse and convert the shader and its dependencies
-            std::cout << endl << "Recursively parsing XKSL shader \"" << shaderName + "\"" << endl;
-
-            SpxBytecode* spxBytecode = nullptr;
-            vector<string> vecShadersParsed;
-            if (useXkslangDll)
-            {
-                shaderFilesPrefix = xkslInputFilePrefix; //set for the callback function
-
-                string stringMacroDef = "";
-                for (unsigned int k = 0; k < listUserDefinedMacros.size(); ++k)
-                    stringMacroDef += listUserDefinedMacros[k].macroName + " " + listUserDefinedMacros[k].macroValue + " ";
-
-                int bytecodeLength = 0;
-                time_before = GetTickCount();
-                uint32_t* pBytecodeBuffer = xkslangDll::ConvertXkslShaderToSPX(shaderName.c_str(), stringShaderAndgenericsValue.c_str(), stringMacroDef.c_str(),
-                    callbackRequestDataForShaderDll_Recursif, &bytecodeLength);
-                time_after = GetTickCount();
-
-                if (pBytecodeBuffer == nullptr || bytecodeLength < 0)
-                {
-                    char* pError = xkslangDll::GetErrorMessages();
-                    if (pError != nullptr) std::cout << pError << endl;
-                    GlobalFree(pError);
-
-                    std::cout << "convertAndLoadRecursif: failed to convert the XKSL file name: " << xkslInputFilePrefix << endl;
-                    success = false; break;
-                }
-                else std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
-
-                spxBytecode = new SpxBytecode;
-                listAllocatedBytecodes.push_back(spxBytecode);
-                vector<uint32_t>& vecBytecode  = spxBytecode->getWritableBytecodeStream();
-                vecBytecode.assign(pBytecodeBuffer, pBytecodeBuffer + bytecodeLength);
-                if (pBytecodeBuffer != nullptr) GlobalFree(pBytecodeBuffer);
-            }
-            else
-            {
-                string infoMsg;
-                spxBytecode = new SpxBytecode;
-                listAllocatedBytecodes.push_back(spxBytecode);
-                string spxOutputFileName;
-
-                time_before = GetTickCount();
-                success = RecursivelyParseAndConvertXkslShader(parser, effectName, shaderName, xkslInputFilePrefix, listShaderAndGenerics, listUserDefinedMacros, *spxBytecode, infoMsg);
-                time_after = GetTickCount();
-
-                if (infoMsg.size() > 0) std::cout << infoMsg;
-
-                if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
-                else
-                {
-                    std::cout << "convertAndLoadRecursif: failed to parse and convert the XKSL file name: " << xkslInputFilePrefix << endl;
-                    success = false; break;
-                }
-            }
-
-            //Save the bytecode on the disk
-            {
-                string prefix = xkslInputFilePrefix;
-                if (prefix.size() == 0) prefix = effectName;
-                WriteBytecode(spxBytecode->getBytecodeStream(), outputDir, prefix + "_" + shaderName + ".spv", BytecodeFileFormat::Binary);
-                WriteBytecode(spxBytecode->getBytecodeStream(), outputDir, prefix + "_" + shaderName + ".hr.spv", BytecodeFileFormat::Text);
-            }
-
-            //Query the list of shaders from the bytecode
-            if (useXkslangDll)
-            {
-                int countShaders = 0;
-                xkslangDll::BytecodeShaderInformation *shadersInfo;
-                uint32_t* pBytecodeBuffer = &(spxBytecode->getWritableBytecodeStream().front());
-                int32_t bytecodeLength = spxBytecode->GetBytecodeSize();
-                success = xkslangDll::GetBytecodeShadersInformation(pBytecodeBuffer, bytecodeLength, &shadersInfo, &countShaders);
-                if (!success)
-                {
-                    char* pError = xkslangDll::GetErrorMessages();
-                    if (pError != nullptr) std::cout << pError << endl;
-                    GlobalFree(pError);
-                
-                    std::cout << "convertAndLoadRecursif: failed to get the shader info from the bytecode" << endl;
-                    success = false; break;
-                }
-
-                for (int k = 0; k < countShaders; ++k)
-                {
-                    vecShadersParsed.push_back(shadersInfo[k].ShaderName);
-                    GlobalFree(shadersInfo[k].ShaderName);
-                }
-                GlobalFree(shadersInfo);
-            }
-            else
-            {
-                if (!SpxMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShadersParsed, errorMsgs))
-                {
-                    std::cout << "convertAndLoadRecursif: failed to get the list of shader names from: " << xkslInputFilePrefix << endl;
-                    success = false; break;
-                }
-            }
-
-            //Store the new shaders bytecode in our map
-            for (unsigned int is = 0; is < vecShadersParsed.size(); ++is)
-            {
-                string shaderName = vecShadersParsed[is];
-                if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameWithBytecode))
-                {
-                    std::cout << "convertAndLoadRecursif: Can't add the shader into the bytecode: " << shaderName;
-                    success = false; break;
-                }
             }
         }
         else if (lineItem.compare("convertAndLoad") == 0)
@@ -1411,6 +1461,21 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                     SpxBytecode* aShaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
                     if (aShaderBytecode == nullptr)
                     {
+                        if (tryToLoadAndConvertUnknownMixinShader)
+                        {
+                            //TOTO
+                            //the shader bytecode does not exist, but we can try to create it
+                            /*success = ConvertAndLoadRecursif(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes,
+                                stringShaderAndgenericsValue, xkslInputFilePrefix, listUserDefinedMacros,
+                                parser, useXkslangDll);
+
+                            if (!success)
+                            {
+                                cout << "Failed to recursively convert and load the shaders: " << stringShaderAndgenericsValue << endl;
+                                success = false; break;
+                            }*/
+                        }
+
                         std::cout << "cannot find a bytecode in the shader librady for the shader: " << shaderName << endl;
                         success = false; break;
                     }
