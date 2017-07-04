@@ -1,0 +1,16 @@
+shader ShaderMain
+{
+	struct DirectionalLightData
+	{
+		float3 DirectionWS;
+		[Color]
+		float3 Color;
+	};
+	
+	stage stream DirectionalLightData aStreamVar;
+	
+	stage void VSMain()
+	{
+		streams.aStreamVar.Color.x = 5;
+	}
+};

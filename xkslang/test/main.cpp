@@ -188,7 +188,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer08", "CBuffer08.xkfx" },
     //{ "CBuffer09", "CBuffer09.xkfx" },
     //{ "CBuffer10", "CBuffer10.xkfx" },
-    { "CBuffer11", "CBuffer11.xkfx" },
+    //{ "CBuffer11", "CBuffer11.xkfx" },
     
     //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
     //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
@@ -221,6 +221,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "namespaces01", "namespaces01.xkfx" },
     //{ "testMacro01", "testMacro01.xkfx" },
     //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
+    //{ "userCustomType01", "userCustomType01.xkfx" },
+    //{ "userCustomType02", "userCustomType02.xkfx" },
     
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
@@ -231,8 +233,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
     //{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
     //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
+    { "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
 
-    //{ "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 

@@ -2950,11 +2950,14 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
 
         // check the type (plus any post-declaration qualifiers)
         TType declaredType;
+        int tokenCurrentIndex = getTokenCurrentIndex();
         if (!acceptFullySpecifiedType(declaredType))
         {
             //Unknown type
             if (xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition)
             {
+                recedeToTokenIndex(tokenCurrentIndex);
+
                 //but we're currently parsing the shader for new types definition, so we just skip the instruction or function for now
                 TVector<EHlslTokenClass> listTokens; listTokens.push_back(EHTokSemicolon); listTokens.push_back(EHTokLeftBrace);
                 if (!advanceUntilFirstTokenFromList(listTokens, true)){
@@ -3333,7 +3336,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
 
                         if (declaredType.getBasicType() != EbtStruct)
                         {
-                            error("A shader can only define a struct type");
+                            error("A shader defined a new type can only define a struct type");
                             return false;
                         }
 
@@ -3483,6 +3486,9 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
     parseContext.popNamespace();
 
     if (! acceptedList) {
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition)
+            return false; //return false but it's not necessary an error (maybe the struct is using a custom type)
+
         expected("struct member declarations");
         return false;
     }
@@ -3717,6 +3723,8 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
         // fully_specified_type
         TType memberType;
         if (!acceptFullySpecifiedType(memberType, nodeList)) {
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition)
+                return false; //return false but it's not necessary an error (maybe the struct is using a custom type)
             expected("member type");
             return false;
         }
