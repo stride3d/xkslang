@@ -8,6 +8,27 @@
 using namespace std;
 using namespace xkslang;
 
+//===================================================================================================================================
+//===================================================================================================================================
+string ShaderGenericValues::GetName() const
+{
+    string name = shaderName;
+    unsigned int size = genericsValue.size();
+    if (size > 0)
+    {
+        name += '<';
+        for (unsigned int k = 0; k < size; k++)
+        {
+            name += genericsValue[k].value;
+            if (k < size - 1) name += ',';
+        }
+        name += '>';
+    }
+    return name;
+}
+
+//===================================================================================================================================
+//===================================================================================================================================
 XkslParser::XkslParser()
 {}
 
@@ -272,7 +293,7 @@ bool XkslParser::ParseStringShaderAndGenerics(const char* strShadersWithGenerics
             end++;
         }
 
-        if (end == pos + 1) return true;
+        if (end == pos) return true;
 
         string shaderName = txt.substr(pos, end - pos);
         shaderName = TrimString(shaderName, ' ');
@@ -302,9 +323,11 @@ bool XkslParser::ParseStringShaderAndGenerics(const char* strShadersWithGenerics
                 if (txt[end] == '>') break;
             }
         }
-        pos = end + 1;
 
         listshaderWithGenerics.push_back(shaderGenerics);
+
+        pos = end + 1;
+        if (pos >= len) return true;
     }
 
     return true;

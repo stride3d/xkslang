@@ -32,6 +32,8 @@ class ShaderGenericValues
 public:
     std::string shaderName;
     std::vector<GenericValue> genericsValue;
+
+    std::string GetName() const;
 };
 
 class XkslUserDefinedMacro

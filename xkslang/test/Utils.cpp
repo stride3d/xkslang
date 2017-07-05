@@ -16,6 +16,11 @@ using namespace std;
 //========================================================================================
 //========================================================================================
 //string utils
+bool Utils::startWith(const string& str, const string& prefix)
+{
+    return (str.compare(0, prefix.size(), prefix) == 0);
+}
+
 string Utils::trim(const string& str)
 {
     return trim(str, ' ');

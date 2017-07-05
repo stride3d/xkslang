@@ -109,7 +109,7 @@ struct XkfxEffectsToProcess {
 };
 
 //Can be parameterized from the xkfx file
-static bool tryToLoadAndConvertUnknownMixinShader = false;  //if true, when we mix an unknown shader, we will try to find, load and parse/convert this shader from our library
+static bool automaticallyTryToLoadAndConvertUnknownMixinShader = false;  //if true, when we mix an unknown shader, we will try to find, load and parse/convert this shader from our library
 
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
@@ -238,7 +238,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
     //{ "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
 
-    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
+
+    ///{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -254,11 +256,16 @@ enum class ShaderLanguageEnum
     HlslLanguage
 };
 
+static void error(const string& msg)
+{
+    cout << msg << endl;
+}
+
 static bool ConvertBytecodeToHlsl(const string& spvFile, const  string& outputFile)
 {
     pair<bool, vector<uint32_t>> result = Utils::ReadSpvBinaryFile(spvFile);
     if (!result.first){
-        std::cout << " Failed to open the SPV file: \"" << spvFile << "\"" << endl;
+        error(" Failed to open the SPV file: \"" + spvFile + "\"");
         return false;
     }
     const vector<uint32_t>& bytecode = result.second;
@@ -279,7 +286,7 @@ static bool ConvertBytecodeToGlsl(const string& spvFile, const  string& outputFi
 {
     pair<bool, vector<uint32_t>> result = Utils::ReadSpvBinaryFile(spvFile);
     if (!result.first) {
-        std::cout << " Failed to open the SPV file: \"" << spvFile << "\"" << endl;
+        error(" Failed to open the SPV file: \"" + spvFile + "\"");
         return false;
     }
     const vector<uint32_t>& bytecode = result.second;
@@ -464,10 +471,10 @@ static bool GetAndWriteMixerCurrentBytecode(EffectMixerObject* mixerTarget, cons
         if (pBytecodeBuffer == nullptr || bytecodeLength < 0)
         {
             char* pError = xkslangDll::GetErrorMessages();
-            if (pError != nullptr) std::cout << pError << endl;
+            if (pError != nullptr) error(pError);
             GlobalFree(pError);
 
-            std::cout << "failed to get the mixer current bytecode" << endl;
+            error("failed to get the mixer current bytecode");
             return false;
         }
 
@@ -480,7 +487,7 @@ static bool GetAndWriteMixerCurrentBytecode(EffectMixerObject* mixerTarget, cons
         bool canGetBytecode = mixerTarget->mixer->CopyCurrentMixinBytecode(mixinBytecode, errorMsgs);
         if (!canGetBytecode)
         {
-            std::cout << "failed to get the mixer current bytecode" << endl;
+            error("failed to get the mixer current bytecode");
             return false;
         }
     }
@@ -527,7 +534,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                 time_after = GetTickCount();
 
                 if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
-                else std::cout << " Failed to convert the SPIRV file to GLSL" << endl;
+                else error(" Failed to convert the SPIRV file to GLSL");
 
                 //======================================================================================================
                 //compare the glsl output with the expected output
@@ -558,7 +565,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                         }
                     }
                     else {
-                        std::cout << " Failed to read the file: " << fileNameGlsl << endl;
+                        error(" Failed to read the file: " + fileNameGlsl);
                         success = false;
                     }
                 }
@@ -579,7 +586,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                 time_after = GetTickCount();
 
                 if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
-                else std::cout << " Failed to convert the SPIRV file to HLSL" << endl;
+                else error(" Failed to convert the SPIRV file to HLSL");
 
                 //======================================================================================================
                 //compare the hlsl output with the expected output
@@ -610,7 +617,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                         }
                     }
                     else {
-                        std::cout << " Failed to read the file: " << fileNameHlsl << endl;
+                        error(" Failed to read the file: " + fileNameHlsl);
                         success = false;
                     }
                 }
@@ -664,10 +671,10 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
     else
     {
         char* pError = xkslangDll::GetErrorMessages();
-        if (pError != nullptr) std::cout << pError << endl;
+        if (pError != nullptr) error(pError);
         GlobalFree(pError);
 
-        std::cout << "Compilation Failed" << endl;
+        error("Compilation Failed");
         return false;
     }
 
@@ -710,10 +717,10 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
         if (!success)
         {
             char* pError = xkslangDll::GetErrorMessages();
-            if (pError != nullptr) std::cout << pError << endl;
+            if (pError != nullptr) error(pError);
             GlobalFree(pError);
 
-            cout << "Failed to get the Effect Reflection data" << endl;
+            error("Failed to get the Effect Reflection data");
             return false;
         }*/
 
@@ -721,7 +728,7 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
         success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
         if (!success)
         {
-            std::cout << "Failed to get the reflection data from the compiled bytecode" << endl;
+            error("Failed to get the reflection data from the compiled bytecode");
             return false;
         }
     }
@@ -764,7 +771,7 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
 
     if (success) std::cout << "OK. time: " << (time_after - time_before) << "ms" << endl;
     else {
-        std::cout << "Compilation Failed" << endl;
+        error("Compilation Failed");
         //WriteBytecode(errorSpv, outputDir, effectName + "_compile_error.hr.spv", BytecodeFileFormat::Text);
     }
 
@@ -791,7 +798,7 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
         success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
         if (!success)
         {
-            std::cout << "Failed to get the reflection data from the compiled bytecode" << endl;
+            error("Failed to get the reflection data from the compiled bytecode");
             return false;
         }
 
@@ -812,7 +819,7 @@ static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile,
     string xkslInput;
     if (!Utils::ReadFile(inputFname, xkslInput))
     {
-        std::cout << " Failed to read the file: " << inputFname << endl;
+        error(" Failed to read the file: " + inputFname);
         return false;
     }
 
@@ -826,7 +833,7 @@ static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile,
     if (infoMsg.size() > 0) std::cout << infoMsg;
 
     if (!success) {
-        std::cout << " Failed to parse the XKSL file" << endl;
+        error(" Failed to parse the XKSL file");
     }
     
     return success;
@@ -856,7 +863,7 @@ static bool callbackRequestDataForShader(const string& shaderName, string& shade
         }
     }
     
-    std::cout << "Cannot find data for shader: " << shaderName << endl;
+    error("Cannot find data for shader: " + shaderName);
     return false;
 }
 
@@ -932,6 +939,17 @@ static bool GetShadingStageForString(string& str, ShadingStageEnum& stage)
     return false;
 }
 
+static bool getFunctionParameter(const string& instruction, string& parameter)
+{
+    size_t first = instruction.find_first_of('(');
+    if (first == string::npos) return false;
+    size_t last = instruction.find_last_of(')');
+    if (last == string::npos) return false;
+    if (last <= first) return false;
+    parameter = Utils::trim(instruction.substr(first + 1, (last - first) - 1));
+    return true;
+}
+
 static bool getNextWord(stringstream& stream, string& word)
 {
     while (stream.peek() == ' ') stream.get(); // skip front spaces
@@ -975,7 +993,7 @@ static SpxBytecode* GetSpxBytecodeForShader(string shaderName, string& shaderFul
                 }
                 else
                 {
-                    std::cout << "2 or more shaders match the unmangled shader name: " << anUnmangledShaderName << endl;
+                    error("2 or more shaders match the unmangled shader name: " + anUnmangledShaderName);
                     return nullptr;
                 }
             }
@@ -990,7 +1008,7 @@ static bool RecordSPXShaderBytecode(string shaderFullName, SpxBytecode* spxBytec
 {
     //auto it = mapShaderNameWithBytecode.find(fullShaderName);
     //if (it != mapShaderNameWithBytecode.end()) {
-    //    std::cout << "Shader is already recorded in the map: " << fullShaderName;
+    //    error("Shader is already recorded in the map: " + fullShaderName);
     //    return false;
     //}
 
@@ -1009,12 +1027,12 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
     vector<ShaderGenericValues> listShaderAndGenerics;
     if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics))
     {
-        std::cout << "convertAndLoadRecursif: failed to read the shader and its generics value from: " << stringShaderAndgenericsValue << endl;
+        error("convertAndLoadRecursif: failed to read the shader and its generics value from: " + stringShaderAndgenericsValue);
         return false;
     }
     if (listShaderAndGenerics.size() < 1)
     {
-        std::cout << "convertAndLoadRecursif: no shader name found" << endl;
+        error("convertAndLoadRecursif: no shader name found");
         return false;
     }
     string shaderName = listShaderAndGenerics[0].shaderName;
@@ -1042,10 +1060,10 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
         if (pBytecodeBuffer == nullptr || bytecodeLength < 0)
         {
             char* pError = xkslangDll::GetErrorMessages();
-            if (pError != nullptr) std::cout << pError << endl;
+            if (pError != nullptr) error(pError);
             GlobalFree(pError);
 
-            std::cout << "convertAndLoadRecursif: failed to convert the XKSL file name: " << xkslInputFilePrefix << endl;
+            error("convertAndLoadRecursif: failed to convert the XKSL file name: " + xkslInputFilePrefix);
             return false;
         }
         else std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
@@ -1072,7 +1090,7 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
         if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
         else
         {
-            std::cout << "convertAndLoadRecursif: failed to parse and convert the XKSL file name: " << xkslInputFilePrefix << endl;
+            error("convertAndLoadRecursif: failed to parse and convert the XKSL file name: " + xkslInputFilePrefix);
             return false;
         }
     }
@@ -1096,10 +1114,10 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
         if (!success)
         {
             char* pError = xkslangDll::GetErrorMessages();
-            if (pError != nullptr) std::cout << pError << endl;
+            if (pError != nullptr) error(pError);
             GlobalFree(pError);
 
-            std::cout << "convertAndLoadRecursif: failed to get the shader info from the bytecode" << endl;
+            error("convertAndLoadRecursif: failed to get the shader info from the bytecode");
             return false;
         }
 
@@ -1114,7 +1132,7 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
     {
         if (!SpxMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShadersParsed, errorMsgs))
         {
-            std::cout << "convertAndLoadRecursif: failed to get the list of shader names from: " << xkslInputFilePrefix << endl;
+            error("convertAndLoadRecursif: failed to get the list of shader names from: " + xkslInputFilePrefix);
             return false;
         }
     }
@@ -1125,12 +1143,41 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
         string shaderName = vecShadersParsed[is];
         if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameWithBytecode))
         {
-            std::cout << "convertAndLoadRecursif: Can't add the shader into the bytecode: " << shaderName;
+            error("convertAndLoadRecursif: Can't add the shader into the bytecode: " + shaderName);
             return false;
         }
     }
 
     return true;
+}
+
+static EffectMixerObject* CreateAndAddNewMixer(unordered_map<string, EffectMixerObject*>& mixerMap, string newMixerName, bool useXkslangDll)
+{
+    if (mixerMap.find(newMixerName) != mixerMap.end()) {
+        error("CreateAndAddNewMixer: a mixer already exists with the name:" + newMixerName);
+        return nullptr;
+    }
+
+    EffectMixerObject* mixerObject = nullptr;
+    if (useXkslangDll)
+    {
+        uint32_t mixerHandleId = xkslangDll::CreateSpxShaderMixer();
+        if (mixerHandleId == 0) {
+            cout << "Failed to create a new spx mixer" << endl;
+            return nullptr;
+        }
+        mixerObject = new EffectMixerObject(mixerHandleId);
+    }
+    else
+    {
+        SpxMixer* mixer = new SpxMixer();
+        mixerObject = new EffectMixerObject(mixer);
+    }
+
+    if (mixerObject == nullptr) return nullptr;
+    mixerMap[newMixerName] = mixerObject;
+
+    return mixerObject;
 }
 
 static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, string effectCmdLines, bool useXkslangDll)
@@ -1173,23 +1220,23 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         {
             string parameterName;
             if (!getNextWord(lineSs, parameterName)) {
-                std::cout << "set: failed to get the parameter name" << endl;
+                error("set: failed to get the parameter name");
                 success = false; break;
             }
 
-            if (parameterName.compare("tryToLoadAndConvertUnknownMixinShader") == 0)
+            if (parameterName.compare("automaticallyTryToLoadAndConvertUnknownMixinShader") == 0)
             {
                 string parameterValue;
                 if (!getNextWord(lineSs, parameterValue)) {
-                    std::cout << "set: failed to get the parameter value" << endl;
+                    error("set: failed to get the parameter value");
                     success = false; break;
                 }
-                if (parameterValue.compare("true") == 0) tryToLoadAndConvertUnknownMixinShader = true;
-                else tryToLoadAndConvertUnknownMixinShader = false;
+                if (parameterValue.compare("true") == 0) automaticallyTryToLoadAndConvertUnknownMixinShader = true;
+                else automaticallyTryToLoadAndConvertUnknownMixinShader = false;
             }
             else
             {
-                std::cout << "set: unknown parameter name: " << parameterName << endl;
+                error("set: unknown parameter name: " + parameterName);
                 success = false; break;
             }
         }
@@ -1197,7 +1244,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         {
             string folder;
             if (!getNextWord(lineSs, folder)) {
-                std::cout << "addResourcesLibrary: failed to get the library resource folder" << endl;
+                error("addResourcesLibrary: failed to get the library resource folder");
                 success = false; break;
             }
             folder = Utils::trim(folder, '\"');
@@ -1209,13 +1256,13 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         {
             string strMacrosDefinition;
             if (!getline(lineSs, strMacrosDefinition)) {
-                std::cout << "Fails to get the macros definition" << endl;
+                error("Fails to get the macros definition");
                 success = false; break;
             }
 
             if (XkslParser::ParseStringMacroDefinition(strMacrosDefinition.c_str(), listUserDefinedMacros, false) != 1)
             {
-                std::cout << "Fails to parse the macros definition: " << strMacrosDefinition << endl;
+                error("Fails to parse the macros definition: " + strMacrosDefinition);
                 success = false; break;
             }
         }
@@ -1227,12 +1274,12 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             //Parse the command line parameters
             string stringShaderAndgenericsValue;
             if (!getline(lineSs, stringShaderAndgenericsValue)) {
-                std::cout << "convertAndLoadRecursif: failed to get the XKSL file parameters" << endl;
+                error("convertAndLoadRecursif: failed to get the XKSL file parameters");
                 success = false; break;
             }
             stringShaderAndgenericsValue = Utils::trim(stringShaderAndgenericsValue, ' ');
             if (stringShaderAndgenericsValue.size() == 0) {
-                std::cout << "convertAndLoadRecursif: failed to get the XKSL shader parameters" << endl;
+                error("convertAndLoadRecursif: failed to get the XKSL shader parameters");
                 success = false; break;
             }
 
@@ -1243,7 +1290,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 unsigned int indexEnd = 1;
                 while (indexEnd < stringShaderAndgenericsValue.size() && stringShaderAndgenericsValue[indexEnd] != '"') indexEnd++;
                 if (indexEnd == stringShaderAndgenericsValue.size()) {
-                    std::cout << "convertAndLoadRecursif: failed to get the prefix parameter" << endl;
+                    error("convertAndLoadRecursif: failed to get the prefix parameter");
                     success = false; break;
                 }
 
@@ -1271,7 +1318,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             //Parse the command line parameters
             string xkslInputFile;
             if (!getNextWord(lineSs, xkslInputFile)) {
-                std::cout << "convertAndLoad: failed to get the XKSL file name" << endl;
+                error("convertAndLoad: failed to get the XKSL file name");
                 success = false; break;
             }
             xkslInputFile = Utils::trim(xkslInputFile, '\"');
@@ -1282,7 +1329,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             if (getline(lineSs, stringShaderAndgenericsValue))
             {
                 if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics)) {
-                    std::cout << "convertAndLoad: failed to read the shaders and their generics value from: " << stringShaderAndgenericsValue << endl;
+                    error("convertAndLoad: failed to read the shaders and their generics value from: " + stringShaderAndgenericsValue);
                     success = false; break;
                 }
             }
@@ -1301,7 +1348,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 string xkslInput;
                 if (!Utils::ReadFile(inputFname, xkslInput))
                 {
-                    std::cout << " Failed to read the file: " << inputFname << endl;
+                    error(" Failed to read the file: " + inputFname);
                     success = false; break;
                 }
                 if (singleXkslShaderToReturn != nullptr) delete[] singleXkslShaderToReturn;
@@ -1325,10 +1372,10 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 if (pBytecodeBuffer == nullptr || bytecodeLength < 0)
                 {
                     char* pError = xkslangDll::GetErrorMessages();
-                    if (pError != nullptr) std::cout << pError << endl;
+                    if (pError != nullptr) error(pError);
                     GlobalFree(pError);
 
-                    std::cout << "convertAndLoadRecursif: failed to convert the xksl file name: " << xkslInputFile << endl;
+                    error("convertAndLoadRecursif: failed to convert the xksl file name: " + xkslInputFile);
                     success = false; break;
                 }
                 else std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
@@ -1350,7 +1397,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
                 if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
                 else {
-                    std::cout << "convertAndLoad: failed to convert the xksl file name: " << xkslInputFile << endl;
+                    error("convertAndLoad: failed to convert the xksl file name: " + xkslInputFile);
                     success = false; break;
                 }
             }
@@ -1372,10 +1419,10 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 if (!success)
                 {
                     char* pError = xkslangDll::GetErrorMessages();
-                    if (pError != nullptr) std::cout << pError << endl;
+                    if (pError != nullptr) error(pError);
                     GlobalFree(pError);
 
-                    std::cout << "convertAndLoadRecursif: failed to get the shader info from the bytecode" << endl;
+                    error("convertAndLoadRecursif: failed to get the shader info from the bytecode");
                     success = false; break;
                 }
 
@@ -1390,7 +1437,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             {
                 if (!SpxMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShadersParsed, errorMsgs))
                 {
-                    std::cout << "convertAndLoad: failed to get the list of shader names from: " << xkslInputFile << endl;
+                    error("convertAndLoad: failed to get the list of shader names from: " + xkslInputFile);
                     success = false; break;
                 }
             }
@@ -1400,7 +1447,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 string shaderName = vecShadersParsed[is];
                 if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameWithBytecode))
                 {
-                    std::cout << "Can't add the shader into the bytecode: " << shaderName;
+                    error("Can't add the shader into the bytecode: " + shaderName);
                     success = false; break;
                 }
             }
@@ -1409,29 +1456,15 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         {
             string mixerName;
             if (!getNextWord(lineSs, mixerName)) {
-                std::cout << "mixer: failed to get the xksl file name" << endl;
+                error("mixer: failed to get the xksl file name");
                 success = false; break;
             }
             mixerName = Utils::trim(mixerName, '\"');
 
-            if (mixerMap.find(mixerName) != mixerMap.end()) {
-                std::cout << "mixer: a mixer already exists with the name:" << mixerName << endl;
+            EffectMixerObject* mixer = CreateAndAddNewMixer(mixerMap, mixerName, useXkslangDll);
+            if (mixer == nullptr) {
+                cout << "Failed to create a new mixer object" << endl;
                 success = false; break;
-            }
-
-            if (useXkslangDll)
-            {
-                uint32_t mixerHandleId = xkslangDll::CreateSpxShaderMixer();
-                if (mixerHandleId == 0) {
-                    cout << "Failed to create a new spx mixer" << endl;
-                    success = false; break;
-                }
-                mixerMap[mixerName] = new EffectMixerObject(mixerHandleId);
-            }
-            else
-            {
-                SpxMixer* mixer = new SpxMixer();
-                mixerMap[mixerName] = new EffectMixerObject(mixer);
             }
         }
         else
@@ -1439,64 +1472,88 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             //mixer operation (mixer.instructions)
             string mixerName, instruction;
             if (!SeparateAdotB(lineItem, mixerName, instruction)) {
-                std::cout << "Unknown instruction: " << lineItem << endl;
+                error("Unknown instruction: " + lineItem);
                 success = false; break;
             }
 
             if (mixerMap.find(mixerName) == mixerMap.end()) {
-                std::cout << lineItem << ": no mixer found with the name:" << mixerName << endl;
+                error(lineItem + ": no mixer found with the name:" + mixerName);
                 success = false; break;
             }
             EffectMixerObject* mixerTarget = mixerMap[mixerName];
 
             if (instruction.compare("mixin") == 0)
             {
-                //Find the bytecode for the shader we want to mix
-                SpxBytecode* spxBytecode = nullptr;
-                vector<string> listShaderToMix;
-                string shaderName;
-                string shaderFullName;
-                while (getNextWord(lineSs, shaderName))
-                {
-                    SpxBytecode* aShaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
-                    if (aShaderBytecode == nullptr)
-                    {
-                        if (tryToLoadAndConvertUnknownMixinShader)
-                        {
-                            //TOTO
-                            //the shader bytecode does not exist, but we can try to create it
-                            /*success = ConvertAndLoadRecursif(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes,
-                                stringShaderAndgenericsValue, xkslInputFilePrefix, listUserDefinedMacros,
-                                parser, useXkslangDll);
+                //=====================================
+                //Find or generate the bytecode for the shaders we wish to mix
+                //We can mix several shaders at once, but for now they all need to have been converted in the same bytecode file
 
-                            if (!success)
-                            {
-                                cout << "Failed to recursively convert and load the shaders: " << stringShaderAndgenericsValue << endl;
-                                success = false; break;
-                            }*/
-                        }
-
-                        std::cout << "cannot find a bytecode in the shader librady for the shader: " << shaderName << endl;
-                        success = false; break;
-                    }
-                    if (spxBytecode == nullptr) spxBytecode = aShaderBytecode;
-                    else
-                    {
-                        if (spxBytecode != aShaderBytecode) {
-                            std::cout << "2 shaders to mix are defined in different bytecode (maybe we could merge them)" << endl;
-                            success = false; break;
-                        }
-                    }
-
-                    listShaderToMix.push_back(shaderFullName);
+                string stringShaderAndgenericsValue;
+                if (!getline(lineSs, stringShaderAndgenericsValue)) { error("mixin: no shader specified"); success = false; break; }
+                vector<ShaderGenericValues> listShaderAndGenerics;
+                if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics)) {
+                    error("mixin: failed to read the shaders and their generics value from: " + stringShaderAndgenericsValue); success = false; break;
                 }
+                if (listShaderAndGenerics.size() == 0) {error("mixin: list of shader is empty"); success = false; break; }
+
+                //MixinShaders();  //TOTO
+
+                vector<string> listShaderToMix; //list of shaders to mix
+                SpxBytecode* spxBytecode = nullptr; //bytecode where the shaders have been converted
+                {
+                    for (auto its = listShaderAndGenerics.begin(); its != listShaderAndGenerics.end(); its++)
+                    {
+                        const ShaderGenericValues& shaderAndGenerics = *its;
+                        string shaderName = shaderAndGenerics.GetName();
+                        string shaderFullName;   //we can omit to specify the generics when mixin a shader, we will search the best match
+
+                        SpxBytecode* aShaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
+                        if (aShaderBytecode == nullptr)
+                        {
+                            if (automaticallyTryToLoadAndConvertUnknownMixinShader)
+                            {
+                                //the shader bytecode does not exist, but we can try to find and generate it
+                                success = ConvertAndLoadRecursif(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes,
+                                    shaderName, "", listUserDefinedMacros,
+                                    parser, useXkslangDll);
+
+                                if (!success)
+                                {
+                                    cout << "Failed to recursively convert and load the shaders: " << shaderName << endl;
+                                    success = false; break;
+                                }
+
+                                aShaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
+                            }
+
+                            if (aShaderBytecode == nullptr)
+                            {
+                                error("cannot find or generate a bytecode for the shader: " + shaderName);
+                                success = false; break;
+                            }
+                        }
+
+                        if (spxBytecode == nullptr) spxBytecode = aShaderBytecode;
+                        else
+                        {
+                            if (spxBytecode != aShaderBytecode) {
+                                error("2 shaders to mix are defined in different bytecode (maybe we could merge them)");
+                                success = false; break;
+                            }
+                        }
+
+                        listShaderToMix.push_back(shaderFullName);
+                    }
+                }
+
                 if (spxBytecode == nullptr)
                 {
-                    std::cout << "No spxBytecode found for the mixin instruction" << endl;
+                    error("No spxBytecode found or generated for the shaders: " + stringShaderAndgenericsValue);
                     success = false; break;
                 }
 
                 //Mixin the bytecode into the mixer
+                std::cout << endl;
                 std::cout << "mixin: " << line << endl;
                 if (useXkslangDll)
                 {
@@ -1516,7 +1573,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 }
 
                 if (success) std::cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
-                else { std::cout << "Mixin failed" << endl; break; }
+                else { error("Mixin failed"); break; }
 
                 //write the mixer current bytecode
                 string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
@@ -1532,7 +1589,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 // read the command line parameters
                 string compositionTargetStr;
                 if (!getNextWord(lineSs, compositionTargetStr)) {
-                    std::cout << "Expecting composition target" << endl;
+                    error("addComposition: Expecting composition target");
                     success = false; break;
                 }
 
@@ -1543,17 +1600,51 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                     shaderName = "";
                 }
 
-                string mixerSourceName;
-                if (!getNextWord(lineSs, mixerSourceName)) {
-                    std::cout << "Expecting mixer composition source" << endl;
+                //=====================================
+                //Find or create the composition source mixer
+                //We can either have a mixer name, or and instruction
+                string mixerSourceNameStr;
+                if (!getline(lineSs, mixerSourceNameStr))
+                {
+                    error("addComposition: Expecting mixer composition source");
                     success = false; break;
+                }
+                mixerSourceNameStr = Utils::trim(mixerSourceNameStr);
+
+                EffectMixerObject* mixerSource = nullptr;
+                if (Utils::startWith(mixerSourceNameStr, "mixin("))
+                {
+                    //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
+                    string mixinInstruction;
+                    if (!getFunctionParameter(mixerSourceNameStr, mixinInstruction)) {
+                        error("addComposition: Failed to get the instuction parameter from: " + mixerSourceNameStr);
+                        success = false; break;
+                    }
+
+                    //Create an anonymous mixer
+                    string anonymousMixerName = "_anon_" + to_string(mixerMap.size());
+                    EffectMixerObject* mixer = CreateAndAddNewMixer(mixerMap, anonymousMixerName, useXkslangDll);
+                    if (mixer == nullptr) {
+                        cout << "addComposition: Failed to create a new mixer object" << endl;
+                        success = false; break;
+                    }
+
+                    int glkjf =32434;
+                }
+                else
+                {
+                    //find the mixer in our mixer map
+                    if (mixerMap.find(mixerSourceNameStr) == mixerMap.end()) {
+                        error("addComposition: no mixer found with the name:" + mixerSourceNameStr);
+                        success = false; break;
+                    }
+                    mixerSource = mixerMap[mixerSourceNameStr];
                 }
 
-                if (mixerMap.find(mixerSourceName) == mixerMap.end()) {
-                    std::cout << lineItem << ": no mixer found with the name:" << mixerSourceName << endl;
+                if (mixerSource == nullptr) {
+                    error("addComposition: no mixer source to make the composition");
                     success = false; break;
                 }
-                EffectMixerObject* mixerSource = mixerMap[mixerSourceName];
 
                 //=====================================
                 // Add the composition to the mixer
@@ -1573,7 +1664,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 }
 
                 if (success) std::cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
-                else { std::cout << "Failed to add the composition to the mixer" << endl; break; }
+                else { error("Failed to add the composition to the mixer"); break; }
 
                 //write the mixer current bytecode
                 string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
@@ -1587,12 +1678,12 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             {
                 string stageStr;
                 if (!getNextWord(lineSs, stageStr)) {
-                    std::cout << "Expecting stage" << endl;
+                    error("Expecting stage");
                     success = false; break;
                 }
                 ShadingStageEnum stage;
                 if (!GetShadingStageForString(stageStr, stage)) {
-                    std::cout << "Unknown stage:" << stageStr;
+                    error("Unknown stage: " + stageStr);
                     success = false; break;
                 }
 
@@ -1619,7 +1710,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 if (useXkslangDll)
                 {
                     success = CompileMixerUsingXkslangDll(effectName, mixerTarget, outputStages, errorMsgs);
-                    if (!success) std::cout << "Failed to compile the effect: " << effectName << endl;
+                    if (!success) error("Failed to compile the effect: " + effectName);
                 }
                 else
                 {
@@ -1627,27 +1718,27 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                     {
                         vector<ShaderCompositionInfo> vecCompositions;
                         success = mixerTarget->mixer->GetListAllCompositions(vecCompositions, errorMsgs);
-                        if (!success) { std::cout << "Failed to get the list of all compositions from the mixer" << endl; break; }
+                        if (!success) { error("Failed to get the list of all compositions from the mixer"); break; }
                         if (vecCompositions.size() > 0)
                         {
-                            cout << endl;
-                            cout << "Count Compositions: " << vecCompositions.size() << endl;
+                            std::cout << endl;
+                            std::cout << "Count Compositions: " << vecCompositions.size() << endl;
                             for (unsigned int c = 0; c < vecCompositions.size(); c++)
                             {
                                 ShaderCompositionInfo& composition = vecCompositions[c];
-                                cout << " " << composition.CompositionShaderType << " " << composition.ShaderOwner << "."
+                                std::cout << " " << composition.CompositionShaderType << " " << composition.ShaderOwner << "."
                                     << composition.CompositionVariableName << (composition.IsArray ? "[]" : "")  << " (instances=" << composition.CompositionCountInstances << ")" << endl;
                             }
-                            cout << endl;
+                            std::cout << endl;
                         }
                     }
 
                     success = CompileMixer(effectName, mixerTarget->mixer, outputStages, errorMsgs);
-                    if (!success) std::cout << "Failed to compile the effect: " << effectName << endl;
+                    if (!success) error("Failed to compile the effect: " + effectName);
                 }
             }
             else {
-                std::cout << "Unknown instruction: " << instruction << endl;
+                error("Unknown instruction: " + instruction);
                 success = false; break;
             }
         }
@@ -1703,7 +1794,7 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     string effectCmdLines;
     if (!Utils::ReadFile(inputFname, effectCmdLines))
     {
-        std::cout << " Failed to read the file: " << inputFname << " !!!" << endl;
+        error(" Failed to read the file: " + inputFname);
         return false;
     }
 
@@ -1717,7 +1808,7 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 
         success1 = ProcessEffectCommandLine(parser, effectName, effectCmdLines, false);
         if (success1) std::cout << "Effect successfully processed." << endl;
-        else std::cout << "Failed to process the effect" << endl;
+        else error("Failed to process the effect");
     }
 
     if (processEffectWithDllApi)
@@ -1728,7 +1819,7 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 
         success2 = ProcessEffectCommandLine(parser, effectName, effectCmdLines, true);
         if (success2) std::cout << "Effect successfully processed." << endl;
-        else { std::cout << "Failed to process the effect" << endl; return false; }
+        else error("Failed to process the effect");
     }
 
     return success1 && success2;
@@ -1744,7 +1835,7 @@ void main(int argc, char** argv)
 
     if (!SetupTestDirectories())
     {
-        std::cout << "Failed to setup the directories" << endl;
+        error("Failed to setup the directories");
         return;
     }
 
@@ -1752,7 +1843,7 @@ void main(int argc, char** argv)
     XkslParser parser;
     if (!parser.InitialiseXkslang())
     {
-        std::cout << "Failed to initialize the XkslParser" << endl;
+        error("Failed to initialize the XkslParser");
         return;
     }
 
@@ -1836,7 +1927,7 @@ void main(int argc, char** argv)
             string xkslInput;
             if (!Utils::ReadFile(inputFileSpv, xkslInput))
             {
-                std::cout << " Failed to read the file: " << inputFileSpv << endl;
+                error(" Failed to read the file: " + inputFileSpv);
                 success = false;
             }
 
@@ -1852,7 +1943,7 @@ void main(int argc, char** argv)
                 success = ConvertBytecodeToGlsl(inputFileSpv, outputFullNameGlsl);
 
                 if (success) std::cout << " OK." << endl;
-                else std::cout << " Failed to convert the SPIRV file to GLSL" << endl;
+                else error(" Failed to convert the SPIRV file to GLSL");
 
                 //======================================================================
                 //HLSL
@@ -1865,7 +1956,7 @@ void main(int argc, char** argv)
             }
 
             if (success) std::cout << " OK." << endl;
-            else std::cout << " Failed to convert the SPIRV file to HLSL" << endl;
+            else error(" Failed to convert the SPIRV file to HLSL");
         }
     }
     
