@@ -863,7 +863,7 @@ static bool callbackRequestDataForShader(const string& shaderName, string& shade
         }
     }
     
-    error("Cannot find data for shader: " + shaderName);
+    error("Callback function: Cannot find any data for the shader: " + shaderName);
     return false;
 }
 
@@ -1653,22 +1653,26 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 if (Utils::startWith(mixerSourceNameStr, "mixin("))
                 {
                     //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
-                    string mixinInstruction;
-                    if (!getFunctionParameter(mixerSourceNameStr, mixinInstruction)) {
+                    string anonymousMixerInstruction;
+                    if (!getFunctionParameter(mixerSourceNameStr, anonymousMixerInstruction)) {
                         error("addComposition: Failed to get the instuction parameter from: " + mixerSourceNameStr);
                         success = false; break;
                     }
 
-                    //Create an anonymous mixer
+                    //Create the anonymous mixer
                     string anonymousMixerName = "_anon_" + to_string(mixerMap.size());
-                    EffectMixerObject* mixer = CreateAndAddNewMixer(mixerMap, anonymousMixerName, useXkslangDll);
-                    if (mixer == nullptr) {
+                    EffectMixerObject* anonymousMixer = CreateAndAddNewMixer(mixerMap, anonymousMixerName, useXkslangDll);
+                    if (anonymousMixer == nullptr) {
                         error("addComposition: Failed to create a new mixer object");
                         success = false; break;
                     }
 
-                    success = false; break;
-                    int glkjf =32434;
+                    //Mix the new mixer with the shaders specified in the function parameter
+                    success = MixinShaders(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll,
+                        anonymousMixer, anonymousMixerInstruction, line, operationNum);
+                    if (!success) { error("Mixin failed: " + line); success = false; break; }
+
+                    mixerSource = anonymousMixer;
                 }
                 else
                 {

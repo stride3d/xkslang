@@ -1285,7 +1285,7 @@ namespace spv {
             }
 
         case spv::OpTypeOpaque:         return 6000 + spv[typeStart+2];
-        case spv::OpTypePointer:        return 100000 + spv[typeStart + 2] + hashType(idPos(spv[typeStart+3]));
+        case spv::OpTypePointer:        return 100000 + (spv[typeStart + 2] << 8) + hashType(idPos(spv[typeStart+3]));
         case spv::OpTypeFunction:
             {
                 std::uint32_t hash = 200000;

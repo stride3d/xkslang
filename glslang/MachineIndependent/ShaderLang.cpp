@@ -2673,7 +2673,7 @@ static bool ParseXkslShaderRecursif(
         {
             //temporary solution: we simply concatenate the macros at the beginning of the shader
             //Maybe later we could use function such like: "ppContext.addMacroDef()"
-            std::string macrosStr = "";
+            std::string macrosStr = "\n";
             for (unsigned int m = 0; m < countMacros; m++)
             {
                 const UserDefinedMacro& macro = listUserDefinedMacros[m];

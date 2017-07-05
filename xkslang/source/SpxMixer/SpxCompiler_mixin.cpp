@@ -884,6 +884,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case ObjectInstructionTypeEnum::Type:
                 {
                     mergeTypeOrConst = true;
+
                     uint32_t typeHash = bytecodeToMerge.hashType(objectFromUnmappedId->GetBytecodeStartPosition());
                     auto hashTypePosIt = destinationBytecodeTypeHashMap.find(typeHash);
                     if (hashTypePosIt != destinationBytecodeTypeHashMap.end())
@@ -3864,10 +3865,11 @@ bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>&
             {
                 // Warning: might cause some conflicts sometimes?
                 //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
-                id = spvUndefinedId;  //by precaution we invalidate the id: we should not choose between them
+                id = spvUndefinedId;  //by precaution we invalidate the id: we cannot choose between them
                 //hashval = hashType(start);
             }
 #endif
+
             mapHashPos[hashval] = pairIdPos(id, start);
         }
 
