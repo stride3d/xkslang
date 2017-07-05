@@ -684,7 +684,7 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
         int bytecodeLength = 0;
         uint32_t* pBytecodeBuffer = xkslangDll::GetMixerCompiledBytecode(mixer->mixerHandleId, &bytecodeLength);
         if (pBytecodeBuffer == nullptr || bytecodeLength <= 0) {
-            cout << "Failed to get the mixin compiled bytecode" << endl;
+            error("Failed to get the mixin compiled bytecode");
             success = false;
         }
 
@@ -739,7 +739,7 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
         int bytecodeLength = 0;
         uint32_t* pBytecodeBuffer = xkslangDll::GetMixerCompiledBytecodeForStage(mixer->mixerHandleId, outputStages[i].stage, &bytecodeLength);
         if (pBytecodeBuffer == nullptr || bytecodeLength <= 0) {
-            cout << "Failed to get the mixin compiled bytecode" << endl;
+            error("Failed to get the mixin compiled bytecode");
             success = false;
         }
 
@@ -1163,7 +1163,7 @@ static EffectMixerObject* CreateAndAddNewMixer(unordered_map<string, EffectMixer
     {
         uint32_t mixerHandleId = xkslangDll::CreateSpxShaderMixer();
         if (mixerHandleId == 0) {
-            cout << "Failed to create a new spx mixer" << endl;
+            error("Failed to create a new spx mixer");
             return nullptr;
         }
         mixerObject = new EffectMixerObject(mixerHandleId);
@@ -1178,6 +1178,132 @@ static EffectMixerObject* CreateAndAddNewMixer(unordered_map<string, EffectMixer
     mixerMap[newMixerName] = mixerObject;
 
     return mixerObject;
+}
+
+static bool MixinShaders(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode,
+    vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, bool useXkslangDll,
+    EffectMixerObject* mixerTarget, const string& stringShaderAndgenericsValue,
+    const string mixinOperationInstructionLine, int& operationNum)
+{
+    if (stringShaderAndgenericsValue.size() == 0) { error("No shader to mix"); return false; }
+    bool success = true;
+
+    vector<ShaderGenericValues> listShaderAndGenerics;
+    if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics))
+    {
+        error("mixin: failed to read the shaders and their generics value from: " + stringShaderAndgenericsValue);
+        return false;
+    }
+    if (listShaderAndGenerics.size() == 0)
+    {
+        error("mixin: list of shader is empty");
+        return false;
+    }
+
+    //==================================
+    //Get the bytecode file and the fullName of all shader to mix into the mixer
+    vector<string> listShaderToMix; //list of shaders to mix
+    SpxBytecode* spxBytecode = nullptr; //bytecode where the shaders have been converted
+    {
+        for (auto its = listShaderAndGenerics.begin(); its != listShaderAndGenerics.end(); its++)
+        {
+            const ShaderGenericValues& shaderAndGenerics = *its;
+            string shaderName = shaderAndGenerics.GetName();
+            string shaderFullName;   //we can omit to specify the generics when mixin a shader, we will search the best match
+
+            SpxBytecode* aShaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
+            if (aShaderBytecode == nullptr)
+            {
+                if (automaticallyTryToLoadAndConvertUnknownMixinShader)
+                {
+                    //the shader bytecode does not exist, but we can try to find and generate it
+                    success = ConvertAndLoadRecursif(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes,
+                        shaderName, "", listUserDefinedMacros,
+                        parser, useXkslangDll);
+
+                    if (!success)
+                    {
+                        error("Failed to recursively convert and load the shaders: " + shaderName);
+                        return false;
+                    }
+
+                    aShaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
+                }
+
+                if (aShaderBytecode == nullptr)
+                {
+                    error("cannot find or generate a bytecode for the shader: " + shaderName);
+                    return false;
+                }
+            }
+
+            if (spxBytecode == nullptr) spxBytecode = aShaderBytecode;
+            else
+            {
+                if (spxBytecode != aShaderBytecode) {
+                    error("2 shaders to mix are defined in different bytecode (maybe we could merge them)");
+                    return false;
+                }
+            }
+
+            listShaderToMix.push_back(shaderFullName);
+        }
+    }
+
+    if (spxBytecode == nullptr) { error("No spxBytecode found"); return false; }
+
+    //=====================================================
+    //Mixin the bytecode into the mixer
+    DWORD time_before, time_after;
+    vector<string> errorMsgs;
+    std::cout << endl;
+    std::cout << "mixin: " << mixinOperationInstructionLine << endl;
+    if (useXkslangDll)
+    {
+        if (listShaderToMix.size() == 0) { error("not shader to mix"); return false; }
+
+        //vector<const char*> shadersName;
+        //for (unsigned int k = 0; k < listShaderToMix.size(); k++) shadersName.push_back(listShaderToMix[k].c_str());
+        string stringListShadersFullName;
+        for (unsigned int k = 0; k < listShaderToMix.size(); k++) stringListShadersFullName += listShaderToMix[k] + " ";
+
+        uint32_t* pBytecodeBuffer = &(spxBytecode->getWritableBytecodeStream().front());
+        int32_t bytecodeLength = spxBytecode->GetBytecodeSize();
+        time_before = GetTickCount();
+        success = xkslangDll::MixinShaders(mixerTarget->mixerHandleId, stringListShadersFullName.c_str(), pBytecodeBuffer, bytecodeLength);
+        time_after = GetTickCount();
+
+        if (!success)
+        {
+            char* pError = xkslangDll::GetErrorMessages();
+            if (pError != nullptr) error(pError);
+            GlobalFree(pError);
+        }
+    }
+    else
+    {
+        time_before = GetTickCount();
+        success = mixerTarget->mixer->Mixin(*spxBytecode, listShaderToMix, errorMsgs);
+        time_after = GetTickCount();
+
+        if (!success)
+        {
+            for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
+        }
+    }
+
+    if (success) std::cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
+    else return false;
+
+    //write the mixer current bytecode
+    string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
+    success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
+    if (!success) {
+        error("Failed to get and write the mixer current bytecode");
+        return false;
+    }
+
+    return true;
 }
 
 static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, string effectCmdLines, bool useXkslangDll)
@@ -1306,7 +1432,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
             if (!success)
             {
-                cout << "Failed to recursively convert and load the shaders: " << stringShaderAndgenericsValue << endl;
+                error("Failed to recursively convert and load the shaders: " + stringShaderAndgenericsValue);
                 success = false; break;
             }
         }
@@ -1463,7 +1589,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
             EffectMixerObject* mixer = CreateAndAddNewMixer(mixerMap, mixerName, useXkslangDll);
             if (mixer == nullptr) {
-                cout << "Failed to create a new mixer object" << endl;
+                error("Failed to create a new mixer object");
                 success = false; break;
             }
         }
@@ -1490,98 +1616,10 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
                 string stringShaderAndgenericsValue;
                 if (!getline(lineSs, stringShaderAndgenericsValue)) { error("mixin: no shader specified"); success = false; break; }
-                vector<ShaderGenericValues> listShaderAndGenerics;
-                if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics)) {
-                    error("mixin: failed to read the shaders and their generics value from: " + stringShaderAndgenericsValue); success = false; break;
-                }
-                if (listShaderAndGenerics.size() == 0) {error("mixin: list of shader is empty"); success = false; break; }
+                success = MixinShaders(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll,
+                    mixerTarget, stringShaderAndgenericsValue, line, operationNum);
 
-                //MixinShaders();  //TOTO
-
-                vector<string> listShaderToMix; //list of shaders to mix
-                SpxBytecode* spxBytecode = nullptr; //bytecode where the shaders have been converted
-                {
-                    for (auto its = listShaderAndGenerics.begin(); its != listShaderAndGenerics.end(); its++)
-                    {
-                        const ShaderGenericValues& shaderAndGenerics = *its;
-                        string shaderName = shaderAndGenerics.GetName();
-                        string shaderFullName;   //we can omit to specify the generics when mixin a shader, we will search the best match
-
-                        SpxBytecode* aShaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
-                        if (aShaderBytecode == nullptr)
-                        {
-                            if (automaticallyTryToLoadAndConvertUnknownMixinShader)
-                            {
-                                //the shader bytecode does not exist, but we can try to find and generate it
-                                success = ConvertAndLoadRecursif(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes,
-                                    shaderName, "", listUserDefinedMacros,
-                                    parser, useXkslangDll);
-
-                                if (!success)
-                                {
-                                    cout << "Failed to recursively convert and load the shaders: " << shaderName << endl;
-                                    success = false; break;
-                                }
-
-                                aShaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
-                            }
-
-                            if (aShaderBytecode == nullptr)
-                            {
-                                error("cannot find or generate a bytecode for the shader: " + shaderName);
-                                success = false; break;
-                            }
-                        }
-
-                        if (spxBytecode == nullptr) spxBytecode = aShaderBytecode;
-                        else
-                        {
-                            if (spxBytecode != aShaderBytecode) {
-                                error("2 shaders to mix are defined in different bytecode (maybe we could merge them)");
-                                success = false; break;
-                            }
-                        }
-
-                        listShaderToMix.push_back(shaderFullName);
-                    }
-                }
-
-                if (spxBytecode == nullptr)
-                {
-                    error("No spxBytecode found or generated for the shaders: " + stringShaderAndgenericsValue);
-                    success = false; break;
-                }
-
-                //Mixin the bytecode into the mixer
-                std::cout << endl;
-                std::cout << "mixin: " << line << endl;
-                if (useXkslangDll)
-                {
-                    if (listShaderToMix.size() != 1) { cout << "not implemented yet" << endl; break; }
-                    uint32_t* pBytecodeBuffer = &(spxBytecode->getWritableBytecodeStream().front());
-                    int32_t bytecodeLength = spxBytecode->GetBytecodeSize();
-                    time_before = GetTickCount();
-                    success = xkslangDll::MixinShader(mixerTarget->mixerHandleId, listShaderToMix[0].c_str(), pBytecodeBuffer, bytecodeLength);
-                    time_after = GetTickCount();
-                }
-                else
-                {
-                    
-                    time_before = GetTickCount();
-                    success = mixerTarget->mixer->Mixin(*spxBytecode, listShaderToMix, errorMsgs);
-                    time_after = GetTickCount();
-                }
-
-                if (success) std::cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
-                else { error("Mixin failed"); break; }
-
-                //write the mixer current bytecode
-                string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
-                success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
-                if (!success) {
-                    cout << "Failed to get and write the mixer current bytecode" << endl;
-                    break;
-                }
+                if (!success) { error("Mixin failed: " + line); success = false; break; }
             }
             else if (instruction.compare("addComposition") == 0)
             {
@@ -1625,10 +1663,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                     string anonymousMixerName = "_anon_" + to_string(mixerMap.size());
                     EffectMixerObject* mixer = CreateAndAddNewMixer(mixerMap, anonymousMixerName, useXkslangDll);
                     if (mixer == nullptr) {
-                        cout << "addComposition: Failed to create a new mixer object" << endl;
+                        error("addComposition: Failed to create a new mixer object");
                         success = false; break;
                     }
 
+                    success = false; break;
                     int glkjf =32434;
                 }
                 else
@@ -1670,7 +1709,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
                 success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
                 if (!success) {
-                    cout << "Failed to get and write the mixer current bytecode" << endl;
+                    error("Failed to get and write the mixer current bytecode");
                     break;
                 }
             }

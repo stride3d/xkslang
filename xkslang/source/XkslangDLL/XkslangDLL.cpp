@@ -222,14 +222,14 @@ namespace xkslangDll
         return true;
     }
 
-    uint32_t* ConvertXkslShaderToSPX(const char* shaderName, const char* stringShadersWithGenerics, const char* stringMacrosDefinition,
+    uint32_t* ConvertXkslShaderToSPX(const char* mainShaderName, const char* stringShadersWithGenerics, const char* stringMacrosDefinition,
         ShaderSourceLoaderCallback shaderDependencyCallback, int32_t* resultingBytecodeSize)
     {
         errorMessages.clear();
         *resultingBytecodeSize = 0;
 
         if (xkslParser == nullptr) {error("Xkslang parser has not been initialized"); return nullptr;}
-        if (shaderName == nullptr) {error("shaderName is null"); return nullptr;}
+        if (mainShaderName == nullptr) {error("shaderName is null"); return nullptr;}
         if (shaderDependencyCallback == nullptr) {error("The callback function is null"); return nullptr;}
         externalShaderDataCallback = shaderDependencyCallback;
 
@@ -253,7 +253,7 @@ namespace xkslangDll
 
         SpxBytecode spirXBytecode;
         ostringstream errorMessages;
-        bool success = xkslParser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listshaderWithGenerics, listUserDefinedMacros, spirXBytecode, &errorMessages);
+        bool success = xkslParser->ConvertShaderToSpx(mainShaderName, callbackRequestDataForShader, listshaderWithGenerics, listUserDefinedMacros, spirXBytecode, &errorMessages);
 
         if (!success) {
             error(errorMessages.str().c_str());
@@ -385,27 +385,35 @@ namespace xkslangDll
         return success;
     }
 
-    bool MixinShader(uint32_t mixerHandleId, const char* shaderName, uint32_t* shaderSpxBytecode, int32_t bytecodeSize)
+    bool MixinShaders(uint32_t mixerHandleId, const char* stringShadersWithGenerics, uint32_t* shaderSpxBytecode, int32_t bytecodeSize)
     {
         errorMessages.clear();
+        if (stringShadersWithGenerics == nullptr) { error("List of shaders is empty"); return false; }
         if (shaderSpxBytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return false; }
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
         if (mixerData == nullptr) return error("Invalid mixer handle");
         SpxMixer* mixer = mixerData->mixer;
 
-        SpxBytecode spxBytecode(shaderName);
+        //Parse and get the list of shader with their generic values
+        vector<ShaderGenericValues> listshaderWithGenerics;
+        XkslParser::ParseStringShaderAndGenerics(stringShadersWithGenerics, listshaderWithGenerics);
+        if (listshaderWithGenerics.size() == 0) return error("No shader found for mixin");
+
+        vector<string> listShadersName;
+        for (unsigned int k = 0; k < listshaderWithGenerics.size(); k++) {
+            listShadersName.push_back(listshaderWithGenerics[k].GetName());
+        }
+
+        //copy the shaders bytecode to mix
+        SpxBytecode spxBytecode(listShadersName[0]);
         std::vector<uint32_t>& bytecode = spxBytecode.getWritableBytecodeStream();
         bytecode.insert(bytecode.end(), shaderSpxBytecode, shaderSpxBytecode + bytecodeSize);
 
-        vector<string> listShaderToMix;
-        listShaderToMix.push_back(shaderName);
-
+        //proceed with the mixin
         vector<string> errorMsgs;
-        bool success = mixer->Mixin(spxBytecode, listShaderToMix, errorMsgs);
-
-        if (!success)
-        {
+        bool success = mixer->Mixin(spxBytecode, listShadersName, errorMsgs);
+        if (!success) {
             for (unsigned int k = 0; k < errorMsgs.size(); ++k) error(errorMsgs[k]);
         }
 
