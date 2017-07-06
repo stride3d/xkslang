@@ -1,0 +1,7 @@
+convertAndLoad "TestMixin07.xksl"
+
+mixer m
+m.mixin A, B, C, D, E
+
+m.setStageEntryPoint Pixel "main"
+m.compile

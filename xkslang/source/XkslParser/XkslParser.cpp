@@ -214,6 +214,14 @@ static string TrimString(const string& str, char c)
     return str.substr(first, (last - first + 1));
 }
 
+static string TrimStringFromAny(const string& str, const char* chars)
+{
+    size_t first = str.find_first_not_of(chars);
+    if (first == string::npos) return str;
+    size_t last = str.find_last_not_of(chars);
+    return str.substr(first, (last - first + 1));
+}
+
 int XkslParser::ParseStringMacroDefinition(const char* strMacrosDefinition, vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeValuesQuotationMark)
 {
     int countMacrosParsed = 0;
@@ -269,6 +277,7 @@ bool XkslParser::ParseStringShaderAndGenerics(const char* strShadersWithGenerics
 {
     if (strShadersWithGenerics == nullptr) return true;
 
+    const char* trimStr = " ,";
     string txt(strShadersWithGenerics);
     int len = txt.size();
     int pos = 0, end = 0;
@@ -296,7 +305,7 @@ bool XkslParser::ParseStringShaderAndGenerics(const char* strShadersWithGenerics
         if (end == pos) return true;
 
         string shaderName = txt.substr(pos, end - pos);
-        shaderName = TrimString(shaderName, ' ');
+        shaderName = TrimStringFromAny(shaderName, trimStr);
 
         ShaderGenericValues shaderGenerics;
         shaderGenerics.shaderName = shaderName;
