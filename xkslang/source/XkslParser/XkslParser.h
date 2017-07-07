@@ -24,6 +24,7 @@ public:
     std::string label;
     std::string value;
 
+    GenericValue() {}
     GenericValue(std::string label, std::string value) : label(label), value(value) {}
 };
 
@@ -33,7 +34,19 @@ public:
     std::string shaderName;
     std::vector<GenericValue> genericsValue;
 
+    ShaderGenericValues() {}
+    ShaderGenericValues(const std::string& name, const std::vector<GenericValue>& generics)
+        : shaderName(name), genericsValue(generics) {}
+
     std::string GetName() const;
+};
+
+class ShaderParsingDefinition
+{
+public:
+    std::string shaderName;
+    std::vector<GenericValue> genericsValue;
+    std::string compositionString;
 };
 
 class XkslUserDefinedMacro
@@ -69,8 +82,9 @@ public:
         const std::vector<ShaderGenericValues>& listGenericsValue, const std::vector<XkslUserDefinedMacro>& listUserDefinedMacros,
         SpxBytecode& spirXBytecode, std::ostringstream* errorAndDebugMessages);
 
-    //Utilities functions
-    static bool ParseStringShaderAndGenerics(const char* strShadersWithGenerics, std::vector<ShaderGenericValues>& listshaderWithGenerics);
+    ///Utilities functions
+    //Format: ShaderName<generics>[compositions]
+    static bool ParseStringWithShaderDefinitions(const char* strShadersWithGenerics, std::vector<ShaderParsingDefinition>& listshaderDefinition);
     static int ParseStringMacroDefinition(const char* strMacrosDefinition, std::vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeValuesQuotationMark);
 };
 

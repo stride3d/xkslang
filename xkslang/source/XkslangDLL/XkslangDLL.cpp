@@ -234,10 +234,13 @@ namespace xkslangDll
         externalShaderDataCallback = shaderDependencyCallback;
 
         //Parse and get the list of shader with their generic values
+        vector<ShaderParsingDefinition> listshaderDefinition;
+        if (stringShadersWithGenerics != nullptr) {
+            XkslParser::ParseStringWithShaderDefinitions(stringShadersWithGenerics, listshaderDefinition);
+        }
         vector<ShaderGenericValues> listshaderWithGenerics;
-        if (stringShadersWithGenerics != nullptr)
-        {
-            XkslParser::ParseStringShaderAndGenerics(stringShadersWithGenerics, listshaderWithGenerics);
+        for (unsigned int is = 0; is < listshaderDefinition.size(); is++) {
+            listshaderWithGenerics.push_back(ShaderGenericValues(listshaderDefinition[is].shaderName, listshaderDefinition[is].genericsValue));
         }
 
         //Get the list of macro and their definitions
@@ -396,8 +399,14 @@ namespace xkslangDll
         SpxMixer* mixer = mixerData->mixer;
 
         //Parse and get the list of shader with their generic values
+        vector<ShaderParsingDefinition> listshaderDefinition;
+        if (stringShadersWithGenerics != nullptr) {
+            XkslParser::ParseStringWithShaderDefinitions(stringShadersWithGenerics, listshaderDefinition);
+        }
         vector<ShaderGenericValues> listshaderWithGenerics;
-        XkslParser::ParseStringShaderAndGenerics(stringShadersWithGenerics, listshaderWithGenerics);
+        for (unsigned int is = 0; is < listshaderDefinition.size(); is++) {
+            listshaderWithGenerics.push_back(ShaderGenericValues(listshaderDefinition[is].shaderName, listshaderDefinition[is].genericsValue));
+        }
         if (listshaderWithGenerics.size() == 0) return error("No shader found for mixin");
 
         vector<string> listShadersName;

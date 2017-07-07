@@ -155,6 +155,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose15", "TestCompose15.xkfx" },
     //{ "TestCompose16", "TestCompose16.xkfx" },
     //{ "TestCompose17", "TestCompose17.xkfx" },
+    { "TestCompose18", "TestCompose18.xkfx" },
     
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -238,8 +239,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
     //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
     //{ "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
-
-    { "MaterialSurfaceArray", "MaterialSurfaceArray.xkfx" },
+    //{ "MaterialSurfaceArray", "MaterialSurfaceArray.xkfx" },
 
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
     ///{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
@@ -1187,18 +1187,16 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
     vector<string> errorMsgs;
     DWORD time_before, time_after;
 
-    //Get the shaders name and generics
+    //================================================
+    //Parse and get the list of shader defintion
+    vector<ShaderParsingDefinition> listshaderDefinition;
+    if (!XkslParser::ParseStringWithShaderDefinitions(stringShaderAndgenericsValue.c_str(), listshaderDefinition))
+        return error("convertAndLoadRecursif: failed to parse the shaders definition from: " + stringShaderAndgenericsValue);
     vector<ShaderGenericValues> listShaderAndGenerics;
-    if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics))
-    {
-        error("convertAndLoadRecursif: failed to read the shader and its generics value from: " + stringShaderAndgenericsValue);
-        return false;
+    for (unsigned int is = 0; is < listshaderDefinition.size(); is++) {
+        listShaderAndGenerics.push_back(ShaderGenericValues(listshaderDefinition[is].shaderName, listshaderDefinition[is].genericsValue));
     }
-    if (listShaderAndGenerics.size() < 1)
-    {
-        error("convertAndLoadRecursif: no shader name found");
-        return false;
-    }
+    if (listShaderAndGenerics.size() == 0) return error("convertAndLoadRecursif: no shader name found");
     string shaderName = listShaderAndGenerics[0].shaderName;
 
     //================================================
@@ -1353,22 +1351,22 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
     std::cout << "===========================" << endl;
     std::cout << "Process mixin instructions: \"" << mixinOperationInstructionLineLog << "\"" << endl;
 
-    if (stringShaderAndgenericsValue.size() == 0) { error("No shader to mix"); return false; }
+    if (stringShaderAndgenericsValue.size() == 0) return error("No shader to mix");
     bool success = true;
 
+    //================================================
+    //Parse and get the list of shader defintion
+    vector<ShaderParsingDefinition> listshaderDefinition;
+    if (!XkslParser::ParseStringWithShaderDefinitions(stringShaderAndgenericsValue.c_str(), listshaderDefinition))
+        return error("mixin: failed to parse the shaders definition from: " + stringShaderAndgenericsValue);
     vector<ShaderGenericValues> listShaderAndGenerics;
-    if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics))
-    {
-        error("mixin: failed to read the shaders and their generics value from: " + stringShaderAndgenericsValue);
-        return false;
+    for (unsigned int is = 0; is < listshaderDefinition.size(); is++) {
+        listShaderAndGenerics.push_back(ShaderGenericValues(listshaderDefinition[is].shaderName, listshaderDefinition[is].genericsValue));
     }
-    if (listShaderAndGenerics.size() == 0)
-    {
-        error("mixin: list of shader is empty");
-        return false;
-    }
+    if (listShaderAndGenerics.size() == 0) return error("mixin: list of shader is empty");
+    string shaderName = listShaderAndGenerics[0].shaderName;
 
-    //==================================
+    //================================================
     //Get the bytecode file and the fullName of all shader to mix into the mixer
     vector<pair<string, SpxBytecode*>> listShaderBytecodeToMix; //list of shaders to mix, and their corresponding bytecode
     {
@@ -1417,7 +1415,7 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
         }
     }
 
-    int countShadersToMix = listShaderBytecodeToMix.size();
+    unsigned int countShadersToMix = listShaderBytecodeToMix.size();
     if (countShadersToMix == 0) { error("No bytecode to mix"); return false; }
 
     //Previous version could mix several shaders at once into the mixer (provided that all shaders are converted into the same bytecode)
@@ -1488,7 +1486,6 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
 {
     bool success = false;
     DWORD time_before, time_after;
-    vector<string> errorMsgs;
 
     //===================================================
     //composition variable target
@@ -1525,7 +1522,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
         string anonymousMixerInstruction;
         if (!getFunctionParameterString(mixinInstructionStr, anonymousMixerInstruction, true)) {
-            return error("addComposition: Failed to get the instuction parameter from: " + mixinInstructionStr);
+            return error("addComposition: Failed to get the instuction parameter from: \"" + mixinInstructionStr + "\"");
         }
 
         //Create the anonymous mixer
@@ -1569,9 +1566,15 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     }
     else
     {
+        vector<string> errorMsgs;
         time_before = GetTickCount();
         success = mixerTarget->mixer->AddComposition(shaderName, variableName, mixerSource->mixer, errorMsgs);
         time_after = GetTickCount();
+
+        if (!success)
+        {
+            for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
+        }
     }
 
     if (success) std::cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
@@ -1767,14 +1770,18 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             }
             xkslInputFile = Utils::trim(xkslInputFile, '\"');
 
-            //any generic value defined?
+            //================================================
+            //any shader with generic values defined?
             vector<ShaderGenericValues> listShaderAndGenerics;
             string stringShaderAndgenericsValue;
             if (getline(lineSs, stringShaderAndgenericsValue))
             {
-                if (!XkslParser::ParseStringShaderAndGenerics(stringShaderAndgenericsValue.c_str(), listShaderAndGenerics)) {
-                    error("convertAndLoad: failed to read the shaders and their generics value from: " + stringShaderAndgenericsValue);
-                    success = false; break;
+                vector<ShaderParsingDefinition> listshaderDefinition;
+                if (!XkslParser::ParseStringWithShaderDefinitions(stringShaderAndgenericsValue.c_str(), listshaderDefinition))
+                    return error("convertAndLoad: failed to read the shaders and their generics value from: " + stringShaderAndgenericsValue);
+                
+                for (unsigned int is = 0; is < listshaderDefinition.size(); is++) {
+                    listShaderAndGenerics.push_back(ShaderGenericValues(listshaderDefinition[is].shaderName, listshaderDefinition[is].genericsValue));
                 }
             }
             else stringShaderAndgenericsValue = "";
@@ -1937,7 +1944,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
                 string mixinInstructionsStr;
                 if (!getFunctionParameterString(lineRemainingStr, mixinInstructionsStr, false)) {
-                    error("mixin: Failed to get the mixin instuction parameters from: " + lineRemainingStr);
+                    error("mixin: Failed to get the mixin instuction parameters from: \"" + instructionFullLine + "\"");
                     success = false; break;
                 }
 
@@ -1956,7 +1963,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
                 string compositionsInstructionsStr;
                 if (!getFunctionParameterString(lineRemainingStr, compositionsInstructionsStr, false)) {
-                    error("addComposition: Failed to get the composition instuction parameters from: " + lineRemainingStr);
+                    error("addComposition: Failed to get the composition instuction parameters from: \"" + instructionFullLine + "\"");
                     success = false; break;
                 }
                 
@@ -1981,7 +1988,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
                 string parametersStr;
                 if (!getFunctionParameterString(lineRemainingStr, parametersStr, false)) {
-                    error("Failed to get the stage entry points parameters from: " + lineRemainingStr);
+                    error("Failed to get the stage entry points parameters from: \"" + instructionFullLine + "\"");
                     success = false; break;
                 }
 

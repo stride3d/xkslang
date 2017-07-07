@@ -1,0 +1,14 @@
+//Test setting compositions directly when mixin a shader
+
+convertAndLoad "TestCompose17.xksl"
+
+mixer B
+B.mixin( ShaderA[colorA = mixin(ShaderComp), colorB = mixin(ShaderComp)] )
+
+//mixer mComp
+//mComp.mixin( ShaderComp )
+//B.addComposition( colorA = mComp )
+//B.addComposition( colorB = mComp )
+
+B.setStageEntryPoint( Pixel="main" )
+B.compile
