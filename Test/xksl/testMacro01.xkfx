@@ -5,7 +5,7 @@ setDefine MACRO_02 "2"
 convertAndLoad "testMacro01.xksl"
 
 mixer m
-m.mixin ShaderMain
+m.mixin( ShaderMain )
 
 m.setStageEntryPoint Vertex "VSMain"
 m.setStageEntryPoint Pixel "PSMain"

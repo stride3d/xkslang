@@ -1,9 +1,9 @@
 convertAndLoad "TestForEach01.xksl"
 
 mixer A
-A.mixin ShaderA
+A.mixin( ShaderA )
 
-A.addComposition ShaderA.SubComputes A
+A.addComposition( ShaderA.SubComputes = A )
 
 A.setStageEntryPoint Pixel "main"
 A.compile

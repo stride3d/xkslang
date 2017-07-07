@@ -3,13 +3,13 @@
 convertAndLoad "TestMergeStreams01.xksl"
 
 mixer mixerComp
-mixerComp.mixin Color
+mixerComp.mixin( Color )
 
 mixer mixerMain
-mixerMain.mixin ShaderA
+mixerMain.mixin( ShaderA )
 
-mixerMain.addComposition ShaderA.colors mixerComp
-mixerMain.addComposition ShaderA.colors mixerComp
+mixerMain.addComposition( ShaderA.colors = mixerComp )
+mixerMain.addComposition( ShaderA.colors = mixerComp )
 
 mixerMain.setStageEntryPoint Pixel "main"
 mixerMain.compile

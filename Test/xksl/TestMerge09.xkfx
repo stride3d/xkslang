@@ -4,8 +4,8 @@ convertAndLoad "TestMerge09_ShaderA.xksl"
 convertAndLoad "TestMerge09_ShaderB.xksl"
 
 mixer A
-A.mixin ShaderA
-A.mixin ShaderB
+A.mixin( ShaderA )
+A.mixin( ShaderB )
 
 A.setStageEntryPoint Pixel "main"
 A.compile

@@ -1,7 +1,7 @@
 convertAndLoad "shaderWithForLoop.xksl"
 
 mixer A
-A.mixin Shader
+A.mixin( Shader )
 
 A.setStageEntryPoint Pixel "main"
 A.compile

@@ -2,7 +2,7 @@ addResourcesLibrary "library"
 convertAndLoadRecursif "TransformationBase" TransformationBase
 
 mixer m
-m.mixin TransformationBase
+m.mixin( TransformationBase )
 
 m.setStageEntryPoint Vertex "VSMain"
 m.setStageEntryPoint Pixel "PSMain"

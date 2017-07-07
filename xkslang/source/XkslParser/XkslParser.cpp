@@ -191,12 +191,10 @@ bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::Callb
         ostringstream& stream = *errorAndDebugMessages;
 
         for (unsigned int i = 0; i < infoMsgs.size(); ++i) {
-            stream << infoMsgs[i];
-            if (i < infoMsgs.size() - 1) stream << endl;
+            stream << infoMsgs[i] << endl;
         }
         for (unsigned int i = 0; i < debugMsgs.size(); ++i) {
-            stream << debugMsgs[i];
-            if (i < infoMsgs.size() - 1) stream << endl;
+            stream << debugMsgs[i] << endl;
         }
     }
 

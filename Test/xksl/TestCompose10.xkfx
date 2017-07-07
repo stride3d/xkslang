@@ -1,11 +1,11 @@
 convertAndLoad "TestCompose10.xksl"
 
 mixer A
-A.mixin Comp
+A.mixin( Comp )
 
 mixer B
-B.mixin ShaderB
-B.addComposition ShaderA.color A
+B.mixin( ShaderB )
+B.addComposition( ShaderA.color = A )
 
 B.setStageEntryPoint Pixel "main"
 B.compile

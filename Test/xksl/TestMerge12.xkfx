@@ -5,9 +5,9 @@ convertAndLoad "TestMerge12_B2.xksl"
 convertAndLoad "TestMerge12_C.xksl"
 
 mixer A
-A.mixin B1
-A.mixin B2
-A.mixin C
+A.mixin( B1 )
+A.mixin( B2 )
+A.mixin( C )
 
 A.setStageEntryPoint Pixel "main"
 A.compile

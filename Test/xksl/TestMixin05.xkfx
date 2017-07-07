@@ -2,9 +2,9 @@
 convertAndLoad "TestMixin05_Base.xksl"
 
 mixer A
-A.mixin ShaderA
-A.mixin ShaderB
-A.mixin ShaderC
+A.mixin( ShaderA )
+A.mixin( ShaderB )
+A.mixin( ShaderC )
 
 A.setStageEntryPoint Pixel "main"
 A.compile

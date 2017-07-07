@@ -1,18 +1,18 @@
 convertAndLoad "TestForEachCompose02.xksl"
 
 mixer CompA
-CompA.mixin ComputeColorA
+CompA.mixin( ComputeColorA )
 
 mixer CompB
-CompB.mixin ComputeColorB
+CompB.mixin( ComputeColorB )
 
 mixer main
-main.mixin ShaderA
+main.mixin( ShaderA )
 
-main.addComposition ShaderA.colorsA CompA
-main.addComposition ShaderA.colorsA CompB
-main.addComposition ShaderA.colorsB CompA
-main.addComposition ShaderA.colorsB CompB
+main.addComposition( ShaderA.colorsA = CompA )
+main.addComposition( ShaderA.colorsA = CompB )
+main.addComposition( ShaderA.colorsB = CompA )
+main.addComposition( ShaderA.colorsB = CompB )
 
 main.setStageEntryPoint Pixel "main"
 main.compile

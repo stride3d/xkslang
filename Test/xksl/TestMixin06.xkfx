@@ -1,7 +1,7 @@
 convertAndLoad "TestMixin06.xksl"
 
 mixer A
-A.mixin Base
+A.mixin( Base )
 
 A.setStageEntryPoint Pixel "main"
 A.compile

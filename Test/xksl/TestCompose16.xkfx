@@ -3,15 +3,15 @@
 convertAndLoad "TestCompose16.xksl"
 
 mixer A
-A.mixin ShaderA
+A.mixin( ShaderA )
 
 mixer B
-B.mixin CompA
+B.mixin( CompA )
 
-A.addComposition ShaderA.comp B
-A.mixin ShaderB
-B.mixin CompB
-A.addComposition ShaderB.comp B
+A.addComposition( ShaderA.comp = B )
+A.mixin( ShaderB )
+B.mixin( CompB )
+A.addComposition( ShaderB.comp = B )
 
 A.setStageEntryPoint Pixel "main"
 A.compile

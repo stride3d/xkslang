@@ -2,8 +2,8 @@
 convertAndLoad "TestMixin04_Base.xksl"
 
 mixer A
-A.mixin Base
-A.mixin ShaderA
+A.mixin( Base )
+A.mixin( ShaderA )
 
 A.setStageEntryPoint Pixel "main"
 A.compile

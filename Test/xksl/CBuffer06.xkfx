@@ -1,8 +1,8 @@
 convertAndLoad "CBuffer06.xksl"
 
 mixer m
-m.mixin ShaderPSMain
-m.mixin ShaderVSMain
+m.mixin( ShaderPSMain )
+m.mixin( ShaderVSMain )
 
 m.setStageEntryPoint Vertex "VSMain"
 m.setStageEntryPoint Pixel "PSMain"

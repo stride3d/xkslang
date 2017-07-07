@@ -2,7 +2,7 @@
 convertAndLoadRecursif "testDependency03" ShaderMain
 
 mixer m
-m.mixin ShaderMain
+m.mixin( ShaderMain )
 
 m.setStageEntryPoint Pixel "PSMain"
 m.compile

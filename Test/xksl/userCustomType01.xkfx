@@ -1,7 +1,7 @@
 convertAndLoad "userCustomType01.xksl"
 
 mixer m
-m.mixin ShaderMain
+m.mixin( ShaderMain )
 
 m.setStageEntryPoint Vertex "VSMain"
 

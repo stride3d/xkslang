@@ -2,7 +2,7 @@
 convertAndLoadRecursif "TestGenerics07" ShaderMain<1, 1> 
 
 mixer mixerMain
-mixerMain.mixin ShaderMain
+mixerMain.mixin( ShaderMain )
 
 mixerMain.setStageEntryPoint Vertex "VSMain"
 
