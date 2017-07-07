@@ -10,5 +10,5 @@ B.mixin( ShaderA )
 B.addComposition( colorA = mComp )
 B.addComposition( colorB = mComp )
 
-B.setStageEntryPoint Pixel "main"
+B.setStageEntryPoint( Pixel="main" )
 B.compile

@@ -3,7 +3,6 @@ convertAndLoad "CBuffer02.xksl"
 mixer m
 m.mixin( ShaderMain )
 
-m.setStageEntryPoint Vertex "VSMain"
-m.setStageEntryPoint Pixel "PSMain"
 
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 m.compile

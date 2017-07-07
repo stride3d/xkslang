@@ -18,7 +18,6 @@ m.addComposition( MaterialSurfaceVertexStageCompositor.streamInitializerVertexSt
 m.addComposition( MaterialSurfacePixelStageCompositor.materialPixelStage = m_IMaterialSurface )
 m.addComposition( MaterialSurfacePixelStageCompositor.streamInitializerPixelStage = m_IStreamInitializer )
 
-m.setStageEntryPoint Vertex "VSMain"
-m.setStageEntryPoint Pixel "PSMain"
 
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 m.compile

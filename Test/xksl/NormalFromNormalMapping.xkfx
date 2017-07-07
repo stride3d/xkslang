@@ -7,6 +7,5 @@ convertAndLoadRecursif NormalFromNormalMapping
 mixer m
 m.mixin( NormalFromNormalMapping )
 
-m.setStageEntryPoint Vertex "VSMain"
-m.setStageEntryPoint Pixel "PSMain"
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 m.compile

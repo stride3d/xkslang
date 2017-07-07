@@ -5,6 +5,6 @@ mixerMain.mixin( ShaderBase<1> )
 mixerMain.mixin( ShaderBase<2> )
 mixerMain.mixin( ShaderMain<1,2> )
 
-mixerMain.setStageEntryPoint Vertex "VSMain"
 
+mixerMain.setStageEntryPoint( Vertex="VSMain" )
 mixerMain.compile

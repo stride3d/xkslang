@@ -4,7 +4,7 @@ convertAndLoadRecursif "TransformationWAndVP" TransformationWAndVP
 mixer m
 m.mixin( TransformationWAndVP )
 
-m.setStageEntryPoint Vertex "VSMain"
 //m.setStageEntryPoint Pixel "PSMain"
 
+m.setStageEntryPoint( Vertex="VSMain" )
 m.compile

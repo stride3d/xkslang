@@ -4,7 +4,6 @@ mixer mixerMain
 mixerMain.mixin( ShaderPS )
 mixerMain.mixin( ShaderVS )
 
-mixerMain.setStageEntryPoint  Vertex "VSMain"
-mixerMain.setStageEntryPoint  Pixel  "PSMain"
 
+mixerMain.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 mixerMain.compile

@@ -12,6 +12,5 @@ m.mixin( ShadingBase )
 m.addComposition( ShadingBase.ShadingColor0 = mixerC )
 m.addComposition( ShadingBase.ShadingColor1 = mixerC )
 
-m.setStageEntryPoint Vertex "VSMain"
-m.setStageEntryPoint Pixel "PSMain"
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 m.compile

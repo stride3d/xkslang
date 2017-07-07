@@ -6,5 +6,5 @@ A.mixin( Base )
 //A.mixin OverrideA
 A.mixin( OverrideB )
 
-A.setStageEntryPoint Pixel "main"
+A.setStageEntryPoint( Pixel="main" )
 A.compile

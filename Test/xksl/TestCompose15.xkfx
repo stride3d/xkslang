@@ -11,5 +11,5 @@ B.mixin( CompB )
 A.addComposition( ShaderA.comp = B )
 A.mixin( ShaderB )
 
-A.setStageEntryPoint Pixel "main"
+A.setStageEntryPoint( Pixel="main" )
 A.compile

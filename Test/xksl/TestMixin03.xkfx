@@ -5,5 +5,5 @@ mixer A
 A.mixin( Base )
 A.mixin( ShaderA )
 
-A.setStageEntryPoint Pixel "main"
+A.setStageEntryPoint( Pixel="main" )
 A.compile

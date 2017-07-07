@@ -4,5 +4,5 @@ convertAndLoad "namespaces01.xksl"
 mixer m
 m.mixin( ShaderA )
 
-m.setStageEntryPoint Vertex "VSMain"
+m.setStageEntryPoint( Vertex="VSMain" )
 m.compile

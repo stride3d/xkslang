@@ -931,7 +931,7 @@ static bool SeparateAdotB(const string str, string& A, string& B)
     return true;
 }
 
-static bool GetShadingStageForString(string& str, ShadingStageEnum& stage)
+static bool GetShadingStageForString(const string& str, ShadingStageEnum& stage)
 {
     if (str.compare("Vertex") == 0) {stage = ShadingStageEnum::Vertex; return true;}
     if (str.compare("Pixel") == 0) {stage = ShadingStageEnum::Pixel; return true;}
@@ -940,6 +940,20 @@ static bool GetShadingStageForString(string& str, ShadingStageEnum& stage)
     if (str.compare("Geometry") == 0) {stage = ShadingStageEnum::Geometry; return true;}
     if (str.compare("Compute") == 0) {stage = ShadingStageEnum::Compute; return true;}
     return false;
+}
+
+static string GetStringForShadingStage(ShadingStageEnum stage)
+{
+    switch (stage)
+    {
+        case xkslang::ShadingStageEnum::Vertex: return "Vertex";
+        case xkslang::ShadingStageEnum::Pixel: return "Pixel";
+        case xkslang::ShadingStageEnum::TessControl: return "TessControl";
+        case xkslang::ShadingStageEnum::TessEvaluation: return "TessEvaluation";
+        case xkslang::ShadingStageEnum::Geometry: return "Geometry";
+        case xkslang::ShadingStageEnum::Compute: return "Compute";
+    }
+    return "";
 }
 
 static bool splitPametersString(const string& parameterStr, vector<string>& parameters)
@@ -1079,7 +1093,7 @@ static bool getNextWord(string& str, string& word)
     return true;
 }
 
-static bool getNextWord(string& str, const string& delimiters, string& word)
+static bool getNextWord(const string& str, const string& delimiters, string& word, string& remainingStr)
 {
     int len = str.size();
     if (len == 0) return false;
@@ -1099,14 +1113,15 @@ static bool getNextWord(string& str, const string& delimiters, string& word)
         {
             if (c == delimiters[d]){
                 word = str.substr(start, (end - start));
-                str = str.substr(end + 1);
+                remainingStr = str.substr(end + 1);
+                return true;
             }
         }
         end++;
     }
 
     word = str.substr(start);
-    word = "";
+    remainingStr = "";
     return true;
 }
 
@@ -1494,7 +1509,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     //===================================================
     //Expecting '='
     string tmpStr;
-    if (!getNextWord(compositionStr, "=", tmpStr)) return error("\"=\" expected");
+    if (!getNextWord(compositionStr, "=", tmpStr, compositionStr)) return error("\"=\" expected");
     if (Utils::trim(tmpStr).size() > 0) return error("Invalid assignation format");
 
     //===================================================
@@ -1913,11 +1928,6 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
             if (instruction.compare("mixin") == 0)
             {
-                //string& currentInstruction = listParsedInstructions[listParsedInstructions.size() - 1];
-                //Utils::replaceAll(currentInstruction, "mixin ", "mixin( ");
-                //currentInstruction += " )";
-                //Utils::replaceAll(currentInstruction, compositionTargetStr, compositionTargetStr + " =");
-
                 string lineRemainingStr;
                 if (!getline(lineSs, lineRemainingStr))
                 {
@@ -1939,8 +1949,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             else if (instruction.compare("addComposition") == 0)
             {
                 string lineRemainingStr;
-                if (!getline(lineSs, lineRemainingStr))
-                {
+                if (!getline(lineSs, lineRemainingStr)) {
                     error("addComposition: Failed to read the line");
                     success = false; break;
                 }
@@ -1959,26 +1968,49 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             }
             else if (instruction.compare("setStageEntryPoint") == 0)
             {
-                string stageStr;
-                if (!getNextWord(lineSs, stageStr)) {
-                    error("Expecting stage");
-                    success = false; break;
-                }
-                ShadingStageEnum stage;
-                if (!GetShadingStageForString(stageStr, stage)) {
-                    error("Unknown stage: " + stageStr);
+                //string& currentInstruction = listParsedInstructions[listParsedInstructions.size() - 1];
+                //Utils::replaceAll(currentInstruction, "mixin ", "mixin( ");
+                //currentInstruction += " )";
+                //Utils::replaceAll(currentInstruction, compositionTargetStr, compositionTargetStr + " =");
+
+                string lineRemainingStr;
+                if (!getline(lineSs, lineRemainingStr)) {
+                    error("setStageEntryPoint: Failed to read the line");
                     success = false; break;
                 }
 
-                string entryPoint;
-                if (!getNextWord(lineSs, entryPoint)) {
-                    mixerTarget->stagesEntryPoints[(int)stage] = "";
+                string parametersStr;
+                if (!getFunctionParameterString(lineRemainingStr, parametersStr, false)) {
+                    error("Failed to get the stage entry points parameters from: " + lineRemainingStr);
+                    success = false; break;
                 }
-                else
+
+                vector<string> entryPoints;
+                if (!splitPametersString(parametersStr, entryPoints))
+                    return error("failed to split the entryPoints parameters");
+
+                for (unsigned int e = 0; e < entryPoints.size(); e++)
                 {
-                    entryPoint = Utils::trim(entryPoint, '\"');
-                    mixerTarget->stagesEntryPoints[(int)stage] = entryPoint;
+                    const string& entryPointInstruction = entryPoints[e];
+
+                    string stageStr;
+                    string entryPointStr;
+                    if (!getNextWord(entryPointInstruction, "=", stageStr, entryPointStr))
+                        return error("\"=\" expected");
+                    stageStr = Utils::trim(stageStr);
+                    entryPointStr = Utils::trim(entryPointStr);
+                    entryPointStr = Utils::trim(entryPointStr, '"');
+
+                    ShadingStageEnum stage;
+                    if (!GetShadingStageForString(stageStr, stage)) {
+                        error("Unknown stage: " + stageStr);
+                        success = false; break;
+                    }
+
+                    mixerTarget->stagesEntryPoints[(int)stage] = entryPointStr;
                 }
+
+                if (!success) break;
             }
             else if (instruction.compare("compile") == 0)
             {

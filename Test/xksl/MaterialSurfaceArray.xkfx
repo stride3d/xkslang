@@ -9,7 +9,7 @@ m.mixin( MaterialSurfaceArray )
 m.mixin( ShadingBase )
 m.addComposition( ShadingColor0 = mixin(ComputeColor) )
 
-m.setStageEntryPoint Pixel "PSMain"
+m.setStageEntryPoint( Pixel="PSMain" )
 m.compile
 
 //{[directLightGroups, [mixin LightDirectionalGroup<8>]]}

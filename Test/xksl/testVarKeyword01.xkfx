@@ -3,5 +3,5 @@ convertAndLoad "testVarKeyword01.xksl"
 mixer m
 m.mixin( ShaderTest )
 
-m.setStageEntryPoint Vertex "VSMain"
+m.setStageEntryPoint( Vertex="VSMain" )
 m.compile

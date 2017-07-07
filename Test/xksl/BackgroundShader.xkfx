@@ -6,7 +6,6 @@ convertAndLoadRecursif "BackgroundShader" BackgroundShader
 mixer m
 m.mixin( BackgroundShader )
 
-m.setStageEntryPoint Vertex "VSMain"
-m.setStageEntryPoint Pixel "PSMain"
 
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 m.compile

@@ -14,5 +14,5 @@ main.addComposition( ShaderA.colorsA = CompB )
 main.addComposition( ShaderA.colorsB = CompA )
 main.addComposition( ShaderA.colorsB = CompB )
 
-main.setStageEntryPoint Pixel "main"
+main.setStageEntryPoint( Pixel="main" )
 main.compile

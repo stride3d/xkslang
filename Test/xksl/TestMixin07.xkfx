@@ -7,5 +7,5 @@ m.mixin( C )
 m.mixin( D )
 m.mixin( E )
 
-m.setStageEntryPoint Pixel "main"
+m.setStageEntryPoint( Pixel="main" )
 m.compile
