@@ -38,7 +38,7 @@ public:
     ShaderGenericValues(const std::string& name, const std::vector<GenericValue>& generics)
         : shaderName(name), genericsValue(generics) {}
 
-    std::string GetName() const;
+    std::string GetShaderNameWithGenerics() const;
 };
 
 class ShaderParsingDefinition
@@ -47,6 +47,8 @@ public:
     std::string shaderName;
     std::vector<GenericValue> genericsValue;
     std::string compositionString;
+
+    std::string GetShaderNameWithGenerics() const;
 };
 
 class XkslUserDefinedMacro

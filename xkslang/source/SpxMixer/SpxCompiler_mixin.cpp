@@ -1073,7 +1073,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 
                 case spv::OpDeclarationName:
                 {
-                    //We update the declaration name only for shader classes
+                    //We update the declaration name only for shader classes and for variables
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
                     {
@@ -1082,6 +1082,11 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                         {
                             ShaderClassData* shader = bytecodeToMerge.GetShaderById(id);
                             if (shader != nullptr) addPrefix = true;
+                            else
+                            {
+                                VariableInstruction* variable = bytecodeToMerge.GetVariableById(id);
+                                if (variable != nullptr) addPrefix = true;
+                            }
                         }
 
                         if (addPrefix)

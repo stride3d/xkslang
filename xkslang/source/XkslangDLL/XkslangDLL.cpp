@@ -411,7 +411,7 @@ namespace xkslangDll
 
         vector<string> listShadersName;
         for (unsigned int k = 0; k < listshaderWithGenerics.size(); k++) {
-            listShadersName.push_back(listshaderWithGenerics[k].GetName());
+            listShadersName.push_back(listshaderWithGenerics[k].GetShaderNameWithGenerics());
         }
 
         //copy the shaders bytecode to mix

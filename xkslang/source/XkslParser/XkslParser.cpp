@@ -10,7 +10,7 @@ using namespace xkslang;
 
 //===================================================================================================================================
 //===================================================================================================================================
-string ShaderGenericValues::GetName() const
+string ShaderGenericValues::GetShaderNameWithGenerics() const
 {
     string name = shaderName;
     unsigned int size = genericsValue.size();
@@ -27,6 +27,22 @@ string ShaderGenericValues::GetName() const
     return name;
 }
 
+string ShaderParsingDefinition::GetShaderNameWithGenerics() const
+{
+    string name = shaderName;
+    unsigned int size = genericsValue.size();
+    if (size > 0)
+    {
+        name += '<';
+        for (unsigned int k = 0; k < size; k++)
+        {
+            name += genericsValue[k].value;
+            if (k < size - 1) name += ',';
+        }
+        name += '>';
+    }
+    return name;
+}
 //===================================================================================================================================
 //===================================================================================================================================
 XkslParser::XkslParser()
@@ -382,7 +398,7 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
             }
             if (end >= len) return false;
 
-            string compositionStr = txt.substr(compositionsStart, (end - compositionsStart + 1));
+            string compositionStr = txt.substr(compositionsStart + 1, (end - compositionsStart - 1));
             shaderDefintion.compositionString = compositionStr;
         }
 
