@@ -1,4 +1,4 @@
-convertAndLoadRecursif "TestLink02" ShaderMain<1, 2, 3>
+convertAndLoadRecursif "TestLink02" ShaderMain<Material.DiffuseMap, Material.TextureScale, Material.TextureOffset>
 
 mixer mixerMain
 mixerMain.mixin( ShaderMain )

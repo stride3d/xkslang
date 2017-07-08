@@ -2338,146 +2338,148 @@ TString HlslGrammar::getLabelForTokenType(EHlslTokenClass tokenType)
 {
     switch (tokenType)
     {
-    case EHTokString:      return "string";
-    case EHTokBool:        return "bool";
-    case EHTokInt:         return "int";
-    case EHTokUint:        return "uint";
-    case EHTokDword:       return "dword";
-    case EHTokHalf:        return "half";
-    case EHTokFloat:       return "float";
-    case EHTokDouble:      return "double";
-    case EHTokMin16float:  return "min16float";
-    case EHTokMin10float:  return "min10float";
-    case EHTokMin16int:    return "min16int";
-    case EHTokMin12int:    return "min12int";
-    case EHTokMin16uint:   return "min16uint";
+        case EHTokString:      return "string";
+        case EHTokBool:        return "bool";
+        case EHTokInt:         return "int";
+        case EHTokUint:        return "uint";
+        case EHTokDword:       return "dword";
+        case EHTokHalf:        return "half";
+        case EHTokFloat:       return "float";
+        case EHTokDouble:      return "double";
+        case EHTokMin16float:  return "min16float";
+        case EHTokMin10float:  return "min10float";
+        case EHTokMin16int:    return "min16int";
+        case EHTokMin12int:    return "min12int";
+        case EHTokMin16uint:   return "min16uint";
 
-    case EHTokBool1:       return "bool1";
-    case EHTokBool2:       return "bool2";
-    case EHTokBool3:       return "bool3";
-    case EHTokBool4:       return "bool4";
-    case EHTokFloat1:      return "float1";
-    case EHTokFloat2:      return "float2";
-    case EHTokFloat3:      return "float3";
-    case EHTokFloat4:      return "float4";
-    case EHTokInt1:        return "int1";
-    case EHTokInt2:        return "int2";
-    case EHTokInt3:        return "int3";
-    case EHTokInt4:        return "int4";
-    case EHTokDouble1:     return "double1";
-    case EHTokDouble2:     return "double2";
-    case EHTokDouble3:     return "double3";
-    case EHTokDouble4:     return "double4";
-    case EHTokUint1:       return "uint1";
-    case EHTokUint2:       return "uint2";
-    case EHTokUint3:       return "uint3";
-    case EHTokUint4:       return "uint4";
+        case EHTokBool1:       return "bool1";
+        case EHTokBool2:       return "bool2";
+        case EHTokBool3:       return "bool3";
+        case EHTokBool4:       return "bool4";
+        case EHTokFloat1:      return "float1";
+        case EHTokFloat2:      return "float2";
+        case EHTokFloat3:      return "float3";
+        case EHTokFloat4:      return "float4";
+        case EHTokInt1:        return "int1";
+        case EHTokInt2:        return "int2";
+        case EHTokInt3:        return "int3";
+        case EHTokInt4:        return "int4";
+        case EHTokDouble1:     return "double1";
+        case EHTokDouble2:     return "double2";
+        case EHTokDouble3:     return "double3";
+        case EHTokDouble4:     return "double4";
+        case EHTokUint1:       return "uint1";
+        case EHTokUint2:       return "uint2";
+        case EHTokUint3:       return "uint3";
+        case EHTokUint4:       return "uint4";
 
-    case EHTokHalf1:       return "half1";
-    case EHTokHalf2:       return "half2";
-    case EHTokHalf3:       return "half3";
-    case EHTokHalf4:       return "half4";
-    case EHTokMin16float1: return "min16float1";
-    case EHTokMin16float2: return "min16float2";
-    case EHTokMin16float3: return "min16float3";
-    case EHTokMin16float4: return "min16float4";
-    case EHTokMin10float1: return "min10float1";
-    case EHTokMin10float2: return "min10float2";
-    case EHTokMin10float3: return "min10float3";
-    case EHTokMin10float4: return "min10float4";
-    case EHTokMin16int1:   return "min16int1";
-    case EHTokMin16int2:   return "min16int2";
-    case EHTokMin16int3:   return "min16int3";
-    case EHTokMin16int4:   return "min16int4";
-    case EHTokMin12int1:   return "min12int1";
-    case EHTokMin12int2:   return "min12int2";
-    case EHTokMin12int3:   return "min12int3";
-    case EHTokMin12int4:   return "min12int4";
-    case EHTokMin16uint1:  return "min16uint1";
-    case EHTokMin16uint2:  return "min16uint2";
-    case EHTokMin16uint3:  return "min16uint3";
-    case EHTokMin16uint4:  return "min16uint4";
+        case EHTokHalf1:       return "half1";
+        case EHTokHalf2:       return "half2";
+        case EHTokHalf3:       return "half3";
+        case EHTokHalf4:       return "half4";
+        case EHTokMin16float1: return "min16float1";
+        case EHTokMin16float2: return "min16float2";
+        case EHTokMin16float3: return "min16float3";
+        case EHTokMin16float4: return "min16float4";
+        case EHTokMin10float1: return "min10float1";
+        case EHTokMin10float2: return "min10float2";
+        case EHTokMin10float3: return "min10float3";
+        case EHTokMin10float4: return "min10float4";
+        case EHTokMin16int1:   return "min16int1";
+        case EHTokMin16int2:   return "min16int2";
+        case EHTokMin16int3:   return "min16int3";
+        case EHTokMin16int4:   return "min16int4";
+        case EHTokMin12int1:   return "min12int1";
+        case EHTokMin12int2:   return "min12int2";
+        case EHTokMin12int3:   return "min12int3";
+        case EHTokMin12int4:   return "min12int4";
+        case EHTokMin16uint1:  return "min16uint1";
+        case EHTokMin16uint2:  return "min16uint2";
+        case EHTokMin16uint3:  return "min16uint3";
+        case EHTokMin16uint4:  return "min16uint4";
 
-    case EHTokBool1x1:     return "bool1x1";
-    case EHTokBool1x2:     return "bool1x2";
-    case EHTokBool1x3:     return "bool1x3";
-    case EHTokBool1x4:     return "bool1x4";
-    case EHTokBool2x1:     return "bool2x1";
-    case EHTokBool2x2:     return "bool2x2";
-    case EHTokBool2x3:     return "bool2x3";
-    case EHTokBool2x4:     return "bool2x4";
-    case EHTokBool3x1:     return "bool3x1";
-    case EHTokBool3x2:     return "bool3x2";
-    case EHTokBool3x3:     return "bool3x3";
-    case EHTokBool3x4:     return "bool3x4";
-    case EHTokBool4x1:     return "bool4x1";
-    case EHTokBool4x2:     return "bool4x2";
-    case EHTokBool4x3:     return "bool4x3";
-    case EHTokBool4x4:     return "bool4x4";
-    case EHTokInt1x1:      return "int1x1";
-    case EHTokInt1x2:      return "int1x2";
-    case EHTokInt1x3:      return "int1x3";
-    case EHTokInt1x4:      return "int1x4";
-    case EHTokInt2x1:      return "int2x1";
-    case EHTokInt2x2:      return "int2x2";
-    case EHTokInt2x3:      return "int2x3";
-    case EHTokInt2x4:      return "int2x4";
-    case EHTokInt3x1:      return "int3x1";
-    case EHTokInt3x2:      return "int3x2";
-    case EHTokInt3x3:      return "int3x3";
-    case EHTokInt3x4:      return "int3x4";
-    case EHTokInt4x1:      return "int4x1";
-    case EHTokInt4x2:      return "int4x2";
-    case EHTokInt4x3:      return "int4x3";
-    case EHTokInt4x4:      return "int4x4";
-    case EHTokUint1x1:     return "uint1x1";
-    case EHTokUint1x2:     return "uint1x2";
-    case EHTokUint1x3:     return "uint1x3";
-    case EHTokUint1x4:     return "uint1x4";
-    case EHTokUint2x1:     return "uint2x1";
-    case EHTokUint2x2:     return "uint2x2";
-    case EHTokUint2x3:     return "uint2x3";
-    case EHTokUint2x4:     return "uint2x4";
-    case EHTokUint3x1:     return "uint3x1";
-    case EHTokUint3x2:     return "uint3x2";
-    case EHTokUint3x3:     return "uint3x3";
-    case EHTokUint3x4:     return "uint3x4";
-    case EHTokUint4x1:     return "uint4x1";
-    case EHTokUint4x2:     return "uint4x2";
-    case EHTokUint4x3:     return "uint4x3";
-    case EHTokUint4x4:     return "uint4x4";
-    case EHTokFloat1x1:    return "float1x1";
-    case EHTokFloat1x2:    return "float1x2";
-    case EHTokFloat1x3:    return "float1x3";
-    case EHTokFloat1x4:    return "float1x4";
-    case EHTokFloat2x1:    return "float2x1";
-    case EHTokFloat2x2:    return "float2x2";
-    case EHTokFloat2x3:    return "float2x3";
-    case EHTokFloat2x4:    return "float2x4";
-    case EHTokFloat3x1:    return "float3x1";
-    case EHTokFloat3x2:    return "float3x2";
-    case EHTokFloat3x3:    return "float3x3";
-    case EHTokFloat3x4:    return "float3x4";
-    case EHTokFloat4x1:    return "float4x1";
-    case EHTokFloat4x2:    return "float4x2";
-    case EHTokFloat4x3:    return "float4x3";
-    case EHTokFloat4x4:    return "float4x4";
-    case EHTokDouble1x1:   return "double1x1";
-    case EHTokDouble1x2:   return "double1x2";
-    case EHTokDouble1x3:   return "double1x3";
-    case EHTokDouble1x4:   return "double1x4";
-    case EHTokDouble2x1:   return "double2x1";
-    case EHTokDouble2x2:   return "double2x2";
-    case EHTokDouble2x3:   return "double2x3";
-    case EHTokDouble2x4:   return "double2x4";
-    case EHTokDouble3x1:   return "double3x1";
-    case EHTokDouble3x2:   return "double3x2";
-    case EHTokDouble3x3:   return "double3x3";
-    case EHTokDouble3x4:   return "double3x4";
-    case EHTokDouble4x1:   return "double4x1";
-    case EHTokDouble4x2:   return "double4x2";
-    case EHTokDouble4x3:   return "double4x3";
-    case EHTokDouble4x4:   return "double4x4";
+        case EHTokBool1x1:     return "bool1x1";
+        case EHTokBool1x2:     return "bool1x2";
+        case EHTokBool1x3:     return "bool1x3";
+        case EHTokBool1x4:     return "bool1x4";
+        case EHTokBool2x1:     return "bool2x1";
+        case EHTokBool2x2:     return "bool2x2";
+        case EHTokBool2x3:     return "bool2x3";
+        case EHTokBool2x4:     return "bool2x4";
+        case EHTokBool3x1:     return "bool3x1";
+        case EHTokBool3x2:     return "bool3x2";
+        case EHTokBool3x3:     return "bool3x3";
+        case EHTokBool3x4:     return "bool3x4";
+        case EHTokBool4x1:     return "bool4x1";
+        case EHTokBool4x2:     return "bool4x2";
+        case EHTokBool4x3:     return "bool4x3";
+        case EHTokBool4x4:     return "bool4x4";
+        case EHTokInt1x1:      return "int1x1";
+        case EHTokInt1x2:      return "int1x2";
+        case EHTokInt1x3:      return "int1x3";
+        case EHTokInt1x4:      return "int1x4";
+        case EHTokInt2x1:      return "int2x1";
+        case EHTokInt2x2:      return "int2x2";
+        case EHTokInt2x3:      return "int2x3";
+        case EHTokInt2x4:      return "int2x4";
+        case EHTokInt3x1:      return "int3x1";
+        case EHTokInt3x2:      return "int3x2";
+        case EHTokInt3x3:      return "int3x3";
+        case EHTokInt3x4:      return "int3x4";
+        case EHTokInt4x1:      return "int4x1";
+        case EHTokInt4x2:      return "int4x2";
+        case EHTokInt4x3:      return "int4x3";
+        case EHTokInt4x4:      return "int4x4";
+        case EHTokUint1x1:     return "uint1x1";
+        case EHTokUint1x2:     return "uint1x2";
+        case EHTokUint1x3:     return "uint1x3";
+        case EHTokUint1x4:     return "uint1x4";
+        case EHTokUint2x1:     return "uint2x1";
+        case EHTokUint2x2:     return "uint2x2";
+        case EHTokUint2x3:     return "uint2x3";
+        case EHTokUint2x4:     return "uint2x4";
+        case EHTokUint3x1:     return "uint3x1";
+        case EHTokUint3x2:     return "uint3x2";
+        case EHTokUint3x3:     return "uint3x3";
+        case EHTokUint3x4:     return "uint3x4";
+        case EHTokUint4x1:     return "uint4x1";
+        case EHTokUint4x2:     return "uint4x2";
+        case EHTokUint4x3:     return "uint4x3";
+        case EHTokUint4x4:     return "uint4x4";
+        case EHTokFloat1x1:    return "float1x1";
+        case EHTokFloat1x2:    return "float1x2";
+        case EHTokFloat1x3:    return "float1x3";
+        case EHTokFloat1x4:    return "float1x4";
+        case EHTokFloat2x1:    return "float2x1";
+        case EHTokFloat2x2:    return "float2x2";
+        case EHTokFloat2x3:    return "float2x3";
+        case EHTokFloat2x4:    return "float2x4";
+        case EHTokFloat3x1:    return "float3x1";
+        case EHTokFloat3x2:    return "float3x2";
+        case EHTokFloat3x3:    return "float3x3";
+        case EHTokFloat3x4:    return "float3x4";
+        case EHTokFloat4x1:    return "float4x1";
+        case EHTokFloat4x2:    return "float4x2";
+        case EHTokFloat4x3:    return "float4x3";
+        case EHTokFloat4x4:    return "float4x4";
+        case EHTokDouble1x1:   return "double1x1";
+        case EHTokDouble1x2:   return "double1x2";
+        case EHTokDouble1x3:   return "double1x3";
+        case EHTokDouble1x4:   return "double1x4";
+        case EHTokDouble2x1:   return "double2x1";
+        case EHTokDouble2x2:   return "double2x2";
+        case EHTokDouble2x3:   return "double2x3";
+        case EHTokDouble2x4:   return "double2x4";
+        case EHTokDouble3x1:   return "double3x1";
+        case EHTokDouble3x2:   return "double3x2";
+        case EHTokDouble3x3:   return "double3x3";
+        case EHTokDouble3x4:   return "double3x4";
+        case EHTokDouble4x1:   return "double4x1";
+        case EHTokDouble4x2:   return "double4x2";
+        case EHTokDouble4x3:   return "double4x3";
+        case EHTokDouble4x4:   return "double4x4";
+        
+        case EHTTokLinkType:   return "LinkType";
     }
 
     return "";
@@ -3718,8 +3720,8 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
         bool declarator_list = false;
 
         // xksl extensions: struct members can have attributes
-        TString attributeName, attributeValue;
-        if (!checkForXkslStructMemberAttribute(attributeName, attributeValue)) {
+        TVector<TShaderMemberAttribute> memberAttributes;
+        if (!checkForXkslStructMemberAttribute(memberAttributes)) {
             error("failed to check the struct member attribute");
             return false;
         }
@@ -3733,9 +3735,9 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
             return false;
         }
 
-        if (attributeName.length() > 0)
+        if (memberAttributes.size())
         {
-            memberType.addMemberAttribute(attributeName, attributeValue);
+            memberType.SetMemberAttributes(&memberAttributes);
         }
 
         // struct_declarator COMMA struct_declarator ...
@@ -5671,45 +5673,76 @@ bool HlslGrammar::acceptStatement(TIntermNode*& statement)
     return true;
 }
 
-bool HlslGrammar::checkForXkslStructMemberAttribute(TString& attributeName, TString& attributeValue)
+bool HlslGrammar::checkForXkslStructMemberAttribute(TVector<TShaderMemberAttribute>& memberAttributes)
 {
     // accept the [ XXX ] syntax, or [ XXX("value") ] syntaxes
 
-    // LEFT_BRACKET?
-    if (!acceptTokenClass(EHTokLeftBracket))
-        return true;
-
-    // attribute
-    HlslToken idTokenName;
-    if (!acceptIdentifier(idTokenName)) {
-        expected("identifier");
-        return false;
-    }
-    attributeName = *idTokenName.string;
-
-    if (acceptTokenClass(EHTokLeftParen))
+    while (true)
     {
-        HlslToken tokenValue = token;
-        if (acceptTokenClass(EHTokStringConstant)) attributeValue = *tokenValue.string;
-        else {
-            if (!acceptTokenClass(EHTokIdentifier))
-            {
-                expected("identifier");
-                return false;
-            }
-            attributeValue = *tokenValue.string;
-        }
+        TString attributeName;
+        TString attributeValue;
 
-        if (!acceptTokenClass(EHTokRightParen)) {
-            expected(")");
+        // LEFT_BRACKET?
+        if (!acceptTokenClass(EHTokLeftBracket))
+            return true;
+
+        // attribute
+        HlslToken idTokenName;
+        if (!acceptIdentifier(idTokenName)) {
+            expected("identifier");
             return false;
         }
-    }
+        attributeName = *idTokenName.string;
 
-    // RIGHT_BRACKET
-    if (!acceptTokenClass(EHTokRightBracket)) {
-        expected("]");
-        return false;
+        if (acceptTokenClass(EHTokLeftParen))
+        {
+            HlslToken tokenValue = token;
+            if (acceptTokenClass(EHTokStringConstant)) attributeValue = *tokenValue.string;
+            else {
+                if (!acceptTokenClass(EHTokIdentifier))
+                {
+                    expected("identifier");
+                    return false;
+                }
+                attributeValue = *tokenValue.string;
+            }
+
+            if (!acceptTokenClass(EHTokRightParen)) {
+                expected(")");
+                return false;
+            }
+        }
+
+        // RIGHT_BRACKET
+        if (!acceptTokenClass(EHTokRightBracket)) {
+            expected("]");
+            return false;
+        }
+
+        if (attributeName == "Link")
+        {
+            //For "Link" attributes: we check if the shader has a "LinkType" generic overriding the value
+            if (this->xkslShaderCurrentlyParsed == nullptr) {
+                error("No shader currently parsed"); return false;
+            }
+
+            unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+            for (unsigned int c = 0; c < countGenerics; c++)
+            {
+                const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
+                if (aGeneric.type->getBasicType() == EbtLinkType)
+                {
+                    const TString& genericName = *(aGeneric.type->getUserIdentifierName());
+
+                    if (genericName == attributeValue)
+                    {
+                        attributeValue = aGeneric.expressionConstValue;
+                    }
+                }
+            }
+        }
+
+        memberAttributes.push_back(TShaderMemberAttribute(attributeName, attributeValue));
     }
 
     return true;

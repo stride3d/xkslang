@@ -1,5 +1,5 @@
 //Test Link attribute while passing their value through generics
-shader ShaderMain<LinkType TTexture, LinkTypeA TScale, LinkType TOffset>
+shader ShaderMain<LinkType TTexture, LinkType TScale, LinkType TOffset>
 {
 	stage cbuffer PerMaterial
     {
@@ -10,6 +10,7 @@ shader ShaderMain<LinkType TTexture, LinkTypeA TScale, LinkType TOffset>
         float4 offset;
 		
 		[Color]
+		[Link("TColor")]
 		float4 aCol;
 		
 		float2 uv2;

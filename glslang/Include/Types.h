@@ -1456,6 +1456,16 @@ public:
         memberAttributeList->push_back(TShaderMemberAttribute(name, value));
     }
 
+    void SetMemberAttributes(const TVector<TShaderMemberAttribute>* attributes)
+    {
+        if (attributes == nullptr || attributes->size() == 0) memberAttributeList = nullptr;
+        else
+        {
+            memberAttributeList = new TVector<TShaderMemberAttribute>;
+            *memberAttributeList = *attributes;
+        }
+    }
+
     virtual void setTypeDefinitionExpression(const char* expression)
     {
         if (expression != nullptr) typeDefinitionExpression = NewPoolTString(expression);

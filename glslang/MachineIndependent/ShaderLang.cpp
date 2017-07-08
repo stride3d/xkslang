@@ -2398,9 +2398,29 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
         //Resolved all shader's generics
         // -we construct the generic const statement: shader Shader<int aGeneric> --> "aGeneric = value;"
         // -then parse it to add the const and its value into the symbol table
+        //There is some exceptions for the following generic types:
+        // - LinkType: we will simply replace the matching Link value by its generic value
         for (unsigned int g = 0; g < shaderCountGenerics; g++)
         {
+            //for now: generics' value are defined in the same order as the shader define them
+            TString userGenericValueExpression = TString(shaderGenericValues->genericValues[g].value.c_str());
+
             ShaderGenericAttribute& genericAttribute = shader->listGenerics[g];
+
+            //Check for exceptions (type not being evaluated)
+            bool evaluateGenericExpression = true;
+            switch (genericAttribute.type->getBasicType())
+            {
+                case EbtLinkType:
+                    evaluateGenericExpression = false;
+                    break;
+            }
+            if (!evaluateGenericExpression)
+            {
+                //this expression is used later to update the shader name (and make it unique depending on the generics value)
+                genericAttribute.expressionConstValue = userGenericValueExpression;
+                continue;
+            }
 
             //========================================================================================================
             TString* genericVariableName = genericAttribute.type->getUserIdentifierName();
@@ -2409,10 +2429,7 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
                 return error(parseContext, "The generic type has no name or no expression defined: " + genericAttribute.type->getFieldName());
             }
 
-            //for now: generics' value are defined in the same order as the shader define them
-            TString genericValueExpression = TString(shaderGenericValues->genericValues[g].value.c_str());
-
-            TString genericFullAssignementExpression = (*typeDefExpre) + TString(" = ") + genericValueExpression + TString(";");
+            TString genericFullAssignementExpression = (*typeDefExpre) + TString(" = ") + userGenericValueExpression + TString(";");
 
             //========================================================================================================
             //parse the generic value expression
