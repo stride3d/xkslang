@@ -138,42 +138,42 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
 
                 switch (opCode)
                 {
-                case spv::OpMemberName:
-                case spv::OpMemberSemanticName:
-                {
-                    const spv::Id typeId = asId(start + 1);
-                    const unsigned int memberId = asLiteralValue(start + 2);
-                    TypeInstruction* type = GetTypeById(typeId);
-                    if (type == nullptr) { error(string("Cannot find the type for Id: ") + to_string(typeId)); break; }
-                    if (type->streamStructData == nullptr) break;  //type has not been detected as holding stream variables in the first pass
-
-#ifdef XKSLANG_DEBUG_MODE
-                    if (memberId >= type->streamStructData->members.size()) { error("Invalid member id"); break; }
-#endif
-
-                    if (opCode == spv::OpMemberSemanticName)
+                    case spv::OpMemberName:
+                    case spv::OpMemberSemanticName:
                     {
-                        if (start > poslastMemberXkslPropertiesEnd) poslastMemberXkslPropertiesEnd = start + wordCount;
+                        const spv::Id typeId = asId(start + 1);
+                        const unsigned int memberId = asLiteralValue(start + 2);
+                        TypeInstruction* type = GetTypeById(typeId);
+                        if (type == nullptr) { error(string("Cannot find the type for Id: ") + to_string(typeId)); break; }
+                        if (type->streamStructData == nullptr) break;  //type has not been detected as holding stream variables in the first pass
 
-                        string semanticName = literalString(start + 3);
-                        type->streamStructData->members[memberId].semantic = semanticName;
+    #ifdef XKSLANG_DEBUG_MODE
+                        if (memberId >= type->streamStructData->members.size()) { error("Invalid member id"); break; }
+    #endif
+
+                        if (opCode == spv::OpMemberSemanticName)
+                        {
+                            if (start > poslastMemberXkslPropertiesEnd) poslastMemberXkslPropertiesEnd = start + wordCount;
+
+                            string semanticName = literalString(start + 3);
+                            type->streamStructData->members[memberId].semantic = semanticName;
+                        }
+                        else if (opCode == spv::OpMemberName)
+                        {
+                            poslastMemberDecorationNameEnd = start + wordCount;
+
+                            string name = literalString(start + 3);
+                            type->streamStructData->members[memberId].declarationName = name;
+                        }
+                        break;
                     }
-                    else if (opCode == spv::OpMemberName)
+
+                    case spv::OpTypeXlslShaderClass:
                     {
-                        poslastMemberDecorationNameEnd = start + wordCount;
-
-                        string name = literalString(start + 3);
-                        type->streamStructData->members[memberId].declarationName = name;
+                        //all member property are set before: we can stop parsing the rest of the bytecode
+                        start = end;
+                        break;
                     }
-                    break;
-                }
-
-                case spv::OpTypeXlslShaderClass:
-                {
-                    //all member property are set before: we can stop parsing the rest of the bytecode
-                    start = end;
-                    break;
-                }
                 }
                 start += wordCount;
             }

@@ -1228,6 +1228,8 @@ const char* OpcodeString(int op)
 #endif
 
     case (OpDeclarationName):                           return "OpDeclarationName";
+    case (OpMemberLinkName):                            return "OpMemberLinkName";
+    case (OpLinkName):                                  return "OpLinkName";
     case (OpShaderInheritance):                         return "OpShaderInheritance";
     case (OpBelongsToShader):                           return "OpBelongsToShader";
     case (OpMethodProperties):                          return "OpMethodProperties";
@@ -1382,6 +1384,8 @@ void Parameterize()
     //=======================================================================================
     //XKSL extensions
     InstructionDesc[OpDeclarationName].setResultAndType(false, false);
+    InstructionDesc[OpMemberLinkName].setResultAndType(false, false);
+    InstructionDesc[OpLinkName].setResultAndType(false, false);
     InstructionDesc[OpShaderInheritance].setResultAndType(false, false);
     InstructionDesc[OpBelongsToShader].setResultAndType(false, false);
     InstructionDesc[OpShaderCompositionDeclaration].setResultAndType(false, false);
@@ -1957,6 +1961,13 @@ void Parameterize()
 
     InstructionDesc[OpSemanticName].operands.push(OperandId, "'Type'");
     InstructionDesc[OpSemanticName].operands.push(OperandLiteralString, "'SemanticName'");
+
+    InstructionDesc[OpMemberLinkName].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpMemberLinkName].operands.push(OperandLiteralNumber, "'Member'");
+    InstructionDesc[OpMemberLinkName].operands.push(OperandLiteralString, "'LinkName'");
+
+    InstructionDesc[OpLinkName].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpLinkName].operands.push(OperandLiteralString, "'LinkName'");
 
     InstructionDesc[OpCBufferProperties].operands.push(OperandId, "'Type'");
     InstructionDesc[OpCBufferProperties].operands.push(XkslShaderDataProperty, "'CbufferType'");

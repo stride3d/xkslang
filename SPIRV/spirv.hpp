@@ -968,19 +968,21 @@ enum Op {
     
     //================================================================================================
     //XKSL extensions
-    // WARNING: changing the IDs here requires to duplicate into SPIRV-Cross IDs
+    // WARNING: changing the IDs here requires to duplicate into SPIRV-Cross IDs (OpSemanticName for instance)
     OpDeclarationName = 4600,                //declaration name for shader, shaders' functions and shaders' block types
-    OpShaderInheritance = 4601,              //List of a shader inheritance
-    OpBelongsToShader = 4602,                //Link the functions and types with the shader that created them
-    OpShaderCompositionDeclaration = 4603,   //Declare a composition within a shader. [OpShaderCompositionDeclaration shaderOwnerId compositionNum compositionShaderTypeId isArray countInstance name]
-    OpShaderCompositionInstance = 4604,      //Declare a composition instance. [OpShaderCompositionInstance shaderOwnerId compositionNum instanceNum instanceShaderId]
-    OpMethodProperties = 4605,               //Add XKSL properties to a method: cf XkslPropertyEnum
-    OpMemberProperties = 4606,               //Add XKSL properties to a member: cf XkslPropertyEnum
-    OpMemberAttribute = 4607,                //Add an attribute to a member
-    OpMemberSemanticName = 4608,             //Record the semantic name of a struct member, as declared by the user
-    OpSemanticName = 4609,                   //Record the semantic name of a type, as declared by the user
-    OpCBufferProperties = 4610,              //Data defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts
-    OpGSMethodProperties = 4611,             //Additonnal data for GS methods. GSInputType GSOuputType
+    OpMemberLinkName = 4601,                 //Used when user specified a linkName (KeyName) attribute for a cbuffer/rgroup member
+    OpLinkName = 4602,                       //Used when user specified a linkName (KeyName) attribute for a variable
+    OpShaderInheritance = 4603,              //List of a shader inheritance
+    OpBelongsToShader = 4604,                //Link the functions and types with the shader that created them
+    OpShaderCompositionDeclaration = 4605,   //Declare a composition within a shader. [OpShaderCompositionDeclaration shaderOwnerId compositionNum compositionShaderTypeId isArray countInstance name]
+    OpShaderCompositionInstance = 4606,      //Declare a composition instance. [OpShaderCompositionInstance shaderOwnerId compositionNum instanceNum instanceShaderId]
+    OpMethodProperties = 4607,               //Add XKSL properties to a method: cf XkslPropertyEnum
+    OpMemberProperties = 4608,               //Add XKSL properties to a member: cf XkslPropertyEnum
+    OpMemberAttribute = 4609,                //Add an attribute to a member
+    OpMemberSemanticName = 4610,             //Record the semantic name of a struct member, as declared by the user
+    OpSemanticName = 4611,                   //Record the semantic name of a type, as declared by the user
+    OpCBufferProperties = 4612,              //Data defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts
+    OpGSMethodProperties = 4613,             //Additonnal data for GS methods. GSInputType GSOuputType
 
     OpForEachCompositionStartLoop = 4620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 46021,

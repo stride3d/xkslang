@@ -229,7 +229,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
     //{ "userCustomType01", "userCustomType01.xkfx" },
     //{ "userCustomType02", "userCustomType02.xkfx" },
-    
+    //{ "TestLink01", "TestLink01.xkfx" },
+    { "TestLink02", "TestLink02.xkfx" },
+
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
@@ -240,8 +242,11 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
     //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
     //{ "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
-    //{ "MaterialSurfaceArray", "MaterialSurfaceArray.xkfx" },
+    //{ "MaterialSurfaceArray01", "MaterialSurfaceArray01.xkfx" },
 
+    //{ "DynamicTexture", "DynamicTexture.xkfx" }, 
+    //{ "ComputeColorTextureScaledOffsetDynamicSampler", "ComputeColorTextureScaledOffsetDynamicSampler.xkfx" },
+    //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
     ///{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
@@ -1418,7 +1423,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
 
         //find the mixer in our mixer map
         if (mixerMap.find(mixerName) == mixerMap.end()) {
-            return error("addComposition: no mixer found with the name:" + mixerName);
+            return error("addComposition: no mixer found with the name: \"" + mixerName + "\"");
         }
         mixerSource = mixerMap[mixerName];
     }

@@ -128,8 +128,27 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 #ifdef XKSLANG_DEBUG_MODE
                         if (cbufferData->correspondingShaderType->type->GetId() != id) { error("Invalid instruction Id"); break; }
                         if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+                        if (cbufferData->cbufferMembersData->members[index].attribute.size() > 0) { error("A cbuffer member has more than 1 attribute (not implementet yet)"); break; }
 #endif
                         cbufferData->cbufferMembersData->members[index].attribute = attribute;
+                    }
+                    break;
+                }
+
+                case spv::OpMemberLinkName:
+                {
+                    spv::Id id = asId(start + 1);
+                    if (vectorUsedCbuffers[id] != nullptr)
+                    {
+                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
+
+                        unsigned int index = asLiteralValue(start + 2);
+                        string linkName = literalString(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                        if (cbufferData->correspondingShaderType->type->GetId() != id) { error("Invalid instruction Id"); break; }
+                        if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+#endif
+                        cbufferData->cbufferMembersData->members[index].linkName = linkName;
                     }
                     break;
                 }
@@ -862,6 +881,15 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 variableDecorateInstr.addImmediateOperand(spv::DecorationDescriptorSet);
                 variableDecorateInstr.addImmediateOperand(0);
                 variableDecorateInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+
+                //variable linkName (if any)
+                if (memberToMoveOut.HasLinkName())
+                {
+                    spv::Instruction memberNameInstr(spv::OpLinkName);
+                    memberNameInstr.addIdOperand(variable.getResultId());
+                    memberNameInstr.addStringOperand(memberToMoveOut.linkName.c_str());
+                    memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }
             }
         }
         
@@ -964,6 +992,11 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             {
                 const TypeStructMember& cbufferMember = cbuffer->members[memberIndex];
 
+                if (cbufferMember.memberOffset < 0) {
+                    error("An offset has not been set for the member: " + cbufferMember.GetDeclarationNameOrSemantic());
+                    break;
+                }
+
                 //member attribute (if any)
                 if (cbufferMember.HasAttribute())
                 {
@@ -974,9 +1007,14 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
 
-                if (cbufferMember.memberOffset < 0) {
-                    error("An offset has not been set for the member: " + cbufferMember.GetDeclarationNameOrSemantic());
-                    break;
+                //member linkName (if any)
+                if (cbufferMember.HasLinkName())
+                {
+                    spv::Instruction memberNameInstr(spv::OpMemberLinkName);
+                    memberNameInstr.addIdOperand(cbuffer->structTypeId);
+                    memberNameInstr.addImmediateOperand(memberIndex);
+                    memberNameInstr.addStringOperand(cbufferMember.linkName.c_str());
+                    memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
 
                 //member decorate: offset
@@ -1033,48 +1071,6 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 }*/
             }
         }
-
-//#ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
-//        if (listUntouchedCbuffers.size() > 0)
-//        {
-//            //rename the cbuffers
-//            for (auto itcb = listUntouchedCbuffers.begin(); itcb != listUntouchedCbuffers.end(); itcb++)
-//            {
-//                CBufferTypeData* cbuffer = *itcb;
-//
-//                //remove their initial name instruction (if any)
-//                unsigned int posToInsert = 0;
-//                if (cbuffer->posOpNameType > 0)
-//                {
-//                    if (posToInsert == 0) posToInsert = cbuffer->posOpNameType;
-//                    int wordCount = asWordCount(cbuffer->posOpNameType);
-//                    if (bytecodeUpdateController.AddPortionToRemove(cbuffer->posOpNameType, wordCount) == nullptr) { error("Failed to insert a portion to remove"); break; }
-//                }
-//                if (cbuffer->posOpNameVariable > 0)
-//                {
-//                    if (posToInsert == 0) posToInsert = cbuffer->posOpNameVariable;
-//                    int wordCount = asWordCount(cbuffer->posOpNameVariable);
-//                    if (bytecodeUpdateController.AddPortionToRemove(cbuffer->posOpNameVariable, wordCount) == nullptr) { error("Failed to insert a portion to remove"); break; }
-//                }
-//                if (posToInsert == 0) posToInsert = posFirstOpNameOrDecorate;
-//                BytecodeChunk* bytecodeNameInsertion = bytecodeUpdateController.InsertNewBytecodeChunckAt(posToInsert, BytecodeUpdateController::InsertionConflictBehaviourEnum::InsertFirst);
-//
-//                //set the new type and variable name
-//                string cbufferName = cbuffer->cbufferName;
-//                string cbufferVarName = cbufferName + "_var";
-//
-//                spv::Instruction cbufferStructName(spv::OpName);
-//                cbufferStructName.addIdOperand(cbuffer->correspondingShaderType->type->GetId());
-//                cbufferStructName.addStringOperand(cbufferName.c_str());
-//                cbufferStructName.dump(bytecodeNameInsertion->bytecode);
-//
-//                spv::Instruction variableName(spv::OpName);
-//                variableName.addIdOperand(cbuffer->correspondingShaderType->variable->GetId());
-//                variableName.addStringOperand(cbufferVarName.c_str());
-//                variableName.dump(bytecodeNameInsertion->bytecode);
-//            }
-//        }
-//#endif
 
         if (errorMessages.size() > 0) success = false;
     }

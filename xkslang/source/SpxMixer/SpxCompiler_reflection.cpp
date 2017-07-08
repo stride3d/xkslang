@@ -326,7 +326,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 
     //=========================================================================================================================
     //=========================================================================================================================
-    //Retrieve information from the bytecode for all cbuffers and their members
+    //Retrieve information from the bytecode for all variables and all cbuffers and their members
     if (success)
     {
         unsigned int start = header_size;
@@ -351,24 +351,29 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     {
                         VariableData* variableData = vectorResourceVariablesId[id]->variableData;
                         const string name = literalString(start + 2);
-                        variableData->variableName = name;
+
+                        //By default: the name is the keyName, and we deduct the rawName from it, unless this keyName has been specified by an attribute
+                        if (!variableData->hasKeyName()) variableData->SetVariableKeyName(name);
+                        variableData->SetVariableRawName( getRawNameFromKeyName(name) );
                     }
                     break;
                 }
 
-                case spv::OpMemberAttribute:
+                case spv::OpLinkName:
                 {
+                    //apply to a resource variable
                     const spv::Id id = asId(start + 1);
+
                     if (vectorCBuffersIds[id] != nullptr)
                     {
-                        CBufferTypeData* cbufferData = vectorCBuffersIds[id];
-
-                        unsigned int index = asLiteralValue(start + 2);
-                        string attribute = literalString(start + 3);
-#ifdef XKSLANG_DEBUG_MODE
-                        if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
-#endif
-                        cbufferData->cbufferMembersData->members[index].attribute = attribute;
+                        error("LinkName attribute cannot apply to a cbuffer");
+                        break;
+                    }
+                    else if (vectorResourceVariablesId[id] != nullptr)
+                    {
+                        VariableData* variableData = vectorResourceVariablesId[id]->variableData;
+                        const string linkName = literalString(start + 2);
+                        variableData->SetVariableKeyName(linkName);
                     }
                     break;
                 }
@@ -386,6 +391,41 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
                         cbufferData->cbufferMembersData->members[index].declarationName = memberName;
+                    }
+                    break;
+                }
+
+                case spv::OpMemberLinkName:
+                {
+                    //apply to a cbuffer member
+                    spv::Id id = asId(start + 1);
+                    if (vectorCBuffersIds[id] != nullptr)
+                    {
+                        CBufferTypeData* cbufferData = vectorCBuffersIds[id];
+
+                        unsigned int index = asLiteralValue(start + 2);
+                        string linkName = literalString(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                        if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+#endif
+                        cbufferData->cbufferMembersData->members[index].linkName = linkName;
+                    }
+                    break;
+                }
+
+                case spv::OpMemberAttribute:
+                {
+                    const spv::Id id = asId(start + 1);
+                    if (vectorCBuffersIds[id] != nullptr)
+                    {
+                        CBufferTypeData* cbufferData = vectorCBuffersIds[id];
+
+                        unsigned int index = asLiteralValue(start + 2);
+                        string attribute = literalString(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                        if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+#endif
+                        cbufferData->cbufferMembersData->members[index].attribute = attribute;
                     }
                     break;
                 }
@@ -521,8 +561,12 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                 {
                     TypeStructMember& member = cbufferData->cbufferMembersData->members[mIndex];
                     ConstantBufferMemberReflectionDescription& memberReflection = cbufferReflection.Members[mIndex];
-                    memberReflection.KeyName = member.GetDeclarationNameOrSemantic();
-                    memberReflection.RawName = getRawNameFromKeyName(memberReflection.KeyName);
+                    
+                    string memberDeclarationName = member.GetDeclarationNameOrSemantic();
+                    //by default: the member keyName is its declaration name, unless we defined a linkName for this member
+                    if (member.HasLinkName()) memberReflection.KeyName = member.linkName;
+                    else memberReflection.KeyName = memberDeclarationName;
+                    memberReflection.RawName = getRawNameFromKeyName(memberDeclarationName);
 
                     //get the member type object
                     spv::Id cbufferMemberTypeId = asId(posElemStart + mIndex);
@@ -815,13 +859,17 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         VariableInstruction* variable = *itv;
                         VariableData* variableData = variable->variableData;
 
+#ifdef XKSLANG_DEBUG_MODE
+                        if (!variableData->hasKeyName() || !variableData->hasRawName()) error("A variable is missing name information");
+#endif
+
                         if (variable->tmpFlag == 1)
                         {
 							vecAllResourceBindings.push_back(
                                 EffectResourceBindingDescription(
                                     stage,
-                                    variableData->variableName,
-                                    getRawNameFromKeyName(variableData->variableName),
+                                    variableData->variableKeyName,
+                                    variableData->variableRawName,
                                     variableData->variableTypeReflection.Class,
                                     variableData->variableTypeReflection.Type
                                 ));

@@ -1839,6 +1839,10 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         new(&type) TType(EbtUndefinedVar);
         break;
 
+    case EHTTokLinkType:
+        new(&type) TType(EbtLinkType);
+        break;
+
     case EHTokFloat:
         new(&type) TType(EbtFloat);
         break;
@@ -3714,8 +3718,8 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
         bool declarator_list = false;
 
         // xksl extensions: struct members can have attributes
-        TString attributeName;
-        if (!checkForXkslStructMemberAttribute(attributeName)) {
+        TString attributeName, attributeValue;
+        if (!checkForXkslStructMemberAttribute(attributeName, attributeValue)) {
             error("failed to check the struct member attribute");
             return false;
         }
@@ -3731,7 +3735,7 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
 
         if (attributeName.length() > 0)
         {
-            memberType.setMemberAttribute(attributeName.c_str());
+            memberType.addMemberAttribute(attributeName, attributeValue);
         }
 
         // struct_declarator COMMA struct_declarator ...
@@ -5667,19 +5671,39 @@ bool HlslGrammar::acceptStatement(TIntermNode*& statement)
     return true;
 }
 
-bool HlslGrammar::checkForXkslStructMemberAttribute(TString& attributeName)
+bool HlslGrammar::checkForXkslStructMemberAttribute(TString& attributeName, TString& attributeValue)
 {
-    // For now, accept the [ XXX ] syntax
-    HlslToken idToken;
+    // accept the [ XXX ] syntax, or [ XXX("value") ] syntaxes
 
     // LEFT_BRACKET?
     if (!acceptTokenClass(EHTokLeftBracket))
         return true;
 
     // attribute
-    if (!acceptIdentifier(idToken)) {
+    HlslToken idTokenName;
+    if (!acceptIdentifier(idTokenName)) {
         expected("identifier");
         return false;
+    }
+    attributeName = *idTokenName.string;
+
+    if (acceptTokenClass(EHTokLeftParen))
+    {
+        HlslToken tokenValue = token;
+        if (acceptTokenClass(EHTokStringConstant)) attributeValue = *tokenValue.string;
+        else {
+            if (!acceptTokenClass(EHTokIdentifier))
+            {
+                expected("identifier");
+                return false;
+            }
+            attributeValue = *tokenValue.string;
+        }
+
+        if (!acceptTokenClass(EHTokRightParen)) {
+            expected(")");
+            return false;
+        }
     }
 
     // RIGHT_BRACKET
@@ -5688,8 +5712,6 @@ bool HlslGrammar::checkForXkslStructMemberAttribute(TString& attributeName)
         return false;
     }
 
-    //attributes.setAttribute(idToken.string, nullptr);
-    attributeName = *idToken.string;
     return true;
 }
 

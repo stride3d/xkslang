@@ -247,6 +247,7 @@ public:
     void addGSMethodProperties(Id id, int, int);
     void addMemberPropertyList(Id id, int num, std::vector<int>&);
     void addMemberAttribute(Id id, int num, const char* att);
+    void addMemberLinkAttribute(Id id, int num, const char* linkValue);
     void addMemberSemanticName(Id id, int num, const char* semantic);
     void addCBufferProperties(Id id, int cbufferType, int cbufferStage, int countMembers);
 

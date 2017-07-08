@@ -373,6 +373,7 @@ void HlslScanContext::fillInKeywordMap()
     //XKSL extensions: map keywords
     (*KeywordMap)["shader"]    =               EHTokShaderClass;
     (*KeywordMap)["var"]       =               EHTokVar;
+    (*KeywordMap)["LinkType"]  =               EHTTokLinkType;
     (*KeywordMap)["public"]    =               EHTokPublic;
     (*KeywordMap)["private"]   =               EHTokPrivate;
     (*KeywordMap)["protected"] =               EHTokProtected;
@@ -628,6 +629,7 @@ TString HlslScanContext::convertTokenToString(const HlslToken& token)
 
         case EHTokShaderClass:        return "shader";
         case EHTokVar:                return "var";
+        case EHTTokLinkType:          return "LinkType";
 
         default: return "";
     }
@@ -1024,8 +1026,8 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
         return keyword;
 
     case EHTokShaderClass:
-        return keyword;
     case EHTokVar:
+    case EHTTokLinkType:
         return keyword;
 
     case EHTokBoolConstant:

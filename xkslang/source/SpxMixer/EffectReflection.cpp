@@ -174,11 +174,36 @@ string ConstantBufferMemberReflectionDescription::Print(int padding)
 string EffectReflection::Print()
 {
     std::ostringstream stream;
+
+    //print rawname => keyname information (for better visibility)
+    stream << "***************************" << endl;
+    stream << "****  ConstantBuffers  ****" << endl;
+    stream << "***************************" << endl;
+    for (int cb = 0; cb < CountConstantBuffers; ++cb)
+    {
+        ConstantBufferReflectionDescription& cbuffer = ConstantBuffers[cb];
+        stream << " cbuffer " << cbuffer.CbufferName << " [size: " << cbuffer.Size << "]" << endl;
+        for (unsigned int im = 0; im < cbuffer.Members.size(); im++)
+        {
+            ConstantBufferMemberReflectionDescription& member = cbuffer.Members[im];
+            stream << "@C    " << member.RawName << " => " << member.KeyName << endl;
+        }
+    }
+    stream << "***********************" << endl;
+    stream << "*****  Resources  *****" << endl;
+    stream << "***********************" << endl;
+    for (int rb = 0; rb < CountResourceBindings; ++rb)
+    {
+        EffectResourceBindingDescription& resource = ResourceBindings[rb];
+        stream << "@C    " << resource.RawName << " => " << resource.KeyName << " [Stage: " << GetShadingStageLabel(resource.Stage) << "]" << endl;
+    }
+
+    stream << endl;
     stream << "ConstantBuffers. Count=" << CountConstantBuffers << endl;
     for (int cb = 0; cb < CountConstantBuffers; ++cb)
     {
         ConstantBufferReflectionDescription& cbuffer = ConstantBuffers[cb];
-        stream << " ConstantBuffer: Name=\"" << cbuffer.CbufferName << "\" Size=" << cbuffer.Size << " MembersCount=" << cbuffer.Members.size() << endl;
+        stream << " cbuffer: Name=\"" << cbuffer.CbufferName << "\" Size=" << cbuffer.Size << " MembersCount=" << cbuffer.Members.size() << endl;
 
         for (unsigned int im = 0; im < cbuffer.Members.size(); im++)
         {

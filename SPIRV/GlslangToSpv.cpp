@@ -2629,9 +2629,22 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
                     builder.addMemberSemanticName(spvType, member, glslangMember.getUserDefinedSemantic()->c_str());
                 }
                 
-                if (glslangMember.getMemberAttribute() != nullptr)
+                if (glslangMember.getMemberAttributeList() != nullptr)
                 {
-                    builder.addMemberAttribute(spvType, member, glslangMember.getMemberAttribute()->c_str());
+                    const glslang::TVector<glslang::TShaderMemberAttribute>* attributeList = glslangMember.getMemberAttributeList();
+                    for (unsigned int k = 0; k < attributeList->size(); k++)
+                    {
+                        const glslang::TShaderMemberAttribute& attribute = attributeList->at(k);
+                        if (attribute.attributeName.compare("Link") == 0)
+                        {
+                            if (attribute.attributeValue.size() > 0)
+                                builder.addMemberLinkAttribute(spvType, member, attribute.attributeValue.c_str());
+                            else {
+                                if (logger) logger->error(std::string("The link attribute is missing a value: ") + attribute.attributeName.c_str());
+                            }
+                        }
+                        else builder.addMemberAttribute(spvType, member, attribute.attributeName.c_str() );
+                    }
                 }
             }
 

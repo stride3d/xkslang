@@ -155,7 +155,7 @@ namespace glslang {
         bool acceptStatement(TIntermNode*&);
         bool acceptNestedStatement(TIntermNode*&);
         void acceptAttributes(TAttributeMap&);
-        bool checkForXkslStructMemberAttribute(TString& attributeName);
+        bool checkForXkslStructMemberAttribute(TString& attributeName, TString& attributeValue);
         bool acceptSelectionStatement(TIntermNode*&);
         bool acceptSwitchStatement(TIntermNode*&);
         bool acceptIterationStatement(TIntermNode*&, const TAttributeMap&);

@@ -390,6 +390,15 @@ enum TBlendEquationShift {
 
 //======================================================================================
 //XKSL extensions
+class TShaderMemberAttribute {
+public:
+    TString attributeName;
+    TString attributeValue;
+
+    TShaderMemberAttribute() {}
+    TShaderMemberAttribute(const TString& name, const TString& value) : attributeName(name), attributeValue(value) {}
+};
+
 class TShaderCompositionVariable {
 public:
     TString shaderOwnerName;
@@ -1192,7 +1201,7 @@ public:
                    bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
                             compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 sampler.clear();
@@ -1204,7 +1213,7 @@ public:
           bool isVector = false) :
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
                             compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 sampler.clear();
@@ -1218,7 +1227,7 @@ public:
                             basicType(p.basicType),
                             vectorSize(p.vectorSize), matrixCols(p.matrixCols), matrixRows(p.matrixRows), vector1(false),
                             arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
                             compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 if (basicType == EbtSampler)
@@ -1235,7 +1244,7 @@ public:
     TType(const TSampler& sampler, TStorageQualifier q = EvqUniform, TArraySizes* as = nullptr) :
         basicType(EbtSampler), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
         arraySizes(as), structure(nullptr), fieldName(nullptr), typeName(nullptr), sampler(sampler),
-        ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+        ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
         compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
     {
         qualifier.clear();
@@ -1284,7 +1293,7 @@ public:
     TType(TTypeList* userDef, const TString& n) :
                             basicType(EbtStruct), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
                             compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 sampler.clear();
@@ -1295,7 +1304,7 @@ public:
     TType(TTypeList* userDef, const TString& n, const TQualifier& q) :
                             basicType(EbtBlock), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+                            ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
                             compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
                             {
                                 sampler.clear();
@@ -1306,7 +1315,7 @@ public:
 	TType(TTypeList* userDef, const TString& n, const TQualifier& q, TIdentifierList* parentsName) :
 		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
 		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
-        ownerClassName(nullptr), parentsName(parentsName), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttribute(nullptr),
+        ownerClassName(nullptr), parentsName(parentsName), userIdentifierName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
         compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false)
 	{
 		sampler.clear();
@@ -1332,7 +1341,7 @@ public:
         fieldName = copyOf.fieldName;
         userIdentifierName = copyOf.userIdentifierName;
         userDefinedSemantic = copyOf.userDefinedSemantic;
-        memberAttribute = copyOf.memberAttribute;
+        memberAttributeList = copyOf.memberAttributeList;
         typeDefinitionExpression = copyOf.typeDefinitionExpression;
         typeName = copyOf.typeName;
 		ownerClassName = copyOf.ownerClassName;
@@ -1370,8 +1379,10 @@ public:
         if (copyOf.userDefinedSemantic)
             userDefinedSemantic = NewPoolTString(copyOf.userDefinedSemantic->c_str());
 
-        if (copyOf.memberAttribute)
-            memberAttribute = NewPoolTString(copyOf.memberAttribute->c_str());
+        if (copyOf.memberAttributeList) {
+            memberAttributeList = new TVector<TShaderMemberAttribute>;
+            *memberAttributeList = *copyOf.memberAttributeList;
+        }
 
         if (copyOf.typeDefinitionExpression)
             typeDefinitionExpression = NewPoolTString(copyOf.typeDefinitionExpression->c_str());
@@ -1439,10 +1450,10 @@ public:
         else userDefinedSemantic = nullptr;
     }
 
-    virtual void setMemberAttribute(const char* attribute)
+    virtual void addMemberAttribute(const TString& name, const TString& value)
     {
-        if (attribute != nullptr) memberAttribute = NewPoolTString(attribute);
-        else memberAttribute = nullptr;
+        if (memberAttributeList == nullptr) memberAttributeList = new TVector<TShaderMemberAttribute>;
+        memberAttributeList->push_back(TShaderMemberAttribute(name, value));
     }
 
     virtual void setTypeDefinitionExpression(const char* expression)
@@ -1493,8 +1504,8 @@ public:
 
     TString* getUserIdentifierName() const { return userIdentifierName; }
     TString* getUserDefinedSemantic() const { return userDefinedSemantic; }
-    TString* getMemberAttribute() const { return memberAttribute; }
     TString* getTypeDefinitionExpression() const { return typeDefinitionExpression; }
+    const TVector<TShaderMemberAttribute>* getMemberAttributeList() const { return memberAttributeList; }
 
     bool IsTypeDefinedByShader() const { return isTypeDefinedByShader; }
     int GetCbufferType() const { return cbufferType; }
@@ -2188,9 +2199,9 @@ protected:
 	TString*         ownerClassName;      // class to which the type or function belongs to
     TString*         userIdentifierName;  // user identifier name of the variable or function using the type (fieldname can be different depending how we organize the variables)
     TString*         userDefinedSemantic;
-    TString*         memberAttribute;
     TString*         typeDefinitionExpression;
     TVector<TShaderCompositionVariable>* compositionsList;  // nullptr unless a shaderclass declaring compositions (can it be shared among type?)
+    TVector<TShaderMemberAttribute>* memberAttributeList;
 };
 
 } // end namespace glslang

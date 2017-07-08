@@ -1021,6 +1021,15 @@ void Builder::addMemberAttribute(Id id, int num, const char* att)
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
+void Builder::addMemberLinkAttribute(Id id, int num, const char* linkValue)
+{
+    Instruction* dec = new Instruction(OpMemberLinkName);
+    dec->addIdOperand(id);
+    dec->addImmediateOperand(num);
+    dec->addStringOperand(linkValue);
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
+}
+
 void Builder::addMethodPropertyList(Id id, std::vector<int>& attributes)
 {
     if (attributes.size() == 0) return;

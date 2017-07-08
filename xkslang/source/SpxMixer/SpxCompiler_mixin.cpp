@@ -308,6 +308,8 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
                 case spv::OpCBufferProperties:
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
+                case spv::OpMemberLinkName:
+                case spv::OpLinkName:
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
@@ -444,6 +446,8 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
                 case spv::OpCBufferProperties:
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
+                case spv::OpMemberLinkName:
+                case spv::OpLinkName:
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
@@ -1117,6 +1121,8 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpCBufferProperties:
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
+                case spv::OpMemberLinkName:
+                case spv::OpLinkName:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
@@ -1232,6 +1238,8 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpCBufferProperties:
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
+                case spv::OpMemberLinkName:
+                case spv::OpLinkName:
                 {
                     posToInsertNewNames = start;
                     start = end;
@@ -2100,6 +2108,8 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 				case spv::OpCBufferProperties:
 				case spv::OpMemberSemanticName:
 				case spv::OpSemanticName:
+                case spv::OpMemberLinkName:
+                case spv::OpLinkName:
 				{
 					const spv::Id id = asId(start + 1);
 					if (listIdsUsed[id] == false) {
@@ -3187,6 +3197,8 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             //Keep the following SPX extensions:
             //case spv::OpSemanticName:
             //case spv::OpMemberAttribute:
+            //case spv::OpMemberLinkName:
+            //case spv::OpLinkName:
             //{
             //}
         }

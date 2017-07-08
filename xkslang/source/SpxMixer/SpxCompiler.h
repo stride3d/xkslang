@@ -236,12 +236,18 @@ public:
     class VariableData
     {
     public:
-        std::string variableName;
+        std::string variableRawName;
+        std::string variableKeyName;
 		std::string semanticName;
 		int semanticIndex;
         TypeReflectionDescription variableTypeReflection;
 
         VariableData() : semanticIndex(0) {}
+
+        bool hasKeyName() { return variableKeyName.size() > 0; }
+        bool hasRawName() { return variableRawName.size() > 0; }
+        void SetVariableRawName(const std::string& rawName) { variableRawName = rawName;}
+        void SetVariableKeyName(const std::string& keyName) { variableKeyName = keyName; }
     };
 
     class CBufferTypeData
@@ -452,6 +458,7 @@ public:
         std::string declarationName;
         std::string semantic;
         std::string attribute;
+        std::string linkName;  //the user specifies a link value for the member
 
         //some stream member properties
         int memberPointerFunctionTypeId;  //id of the member's pointer type (TypePointer with Function storage class)
@@ -486,6 +493,7 @@ public:
         bool HasSemantic() const { return semantic.size() > 0; }
         bool HasDeclarationName() const { return declarationName.size() > 0; }
         bool HasAttribute() const { return attribute.size() > 0; }
+        bool HasLinkName() const { return linkName.size() > 0; }
 
         const std::string& GetSemanticOrDeclarationName() const { return HasSemantic()? semantic: declarationName; }
         const std::string& GetDeclarationNameOrSemantic() const { return HasDeclarationName() ? declarationName : semantic; }
