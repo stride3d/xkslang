@@ -1,0 +1,11 @@
+//Test Link attribute while passing their value through generics
+shader ShaderBase<LinkType TSampler, LinkType TTexture>
+{
+	stage rgroup LocalResourceGroup
+    {
+        [Link("TTexture")]
+        Texture2D Texture0;
+		[Link("TSampler")]
+		SamplerState Sampler0;
+    }
+}

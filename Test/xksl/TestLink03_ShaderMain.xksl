@@ -1,0 +1,33 @@
+//Test Link attribute while passing their value through generics
+shader ShaderMain<LinkType TTexture, LinkType TSampler, LinkType TScale, LinkType TOffset> : ShaderBase<TSampler, TTexture>
+{
+	stage cbuffer PerMaterial
+    {
+        [Link("TScale")]
+        float4 scale;
+
+        [Link("TOffset")]
+        float4 offset;
+		
+		[Color]
+		[Link("TColor")]
+		float4 aCol;
+		
+		float2 uv2;
+    }
+	
+	stage stream float4 s_in : S_INPUT;
+	stage stream float4 s_int : S_INT;
+	stage stream float4 s_out : S_OUTPUT;
+	
+	stage void VSMain() 
+    {
+		float4 color = Texture0.Sample(Sampler0, uv2);
+		streams.s_int = streams.s_in + scale;
+    }
+	
+	stage void PSMain() 
+    {
+		streams.s_out = streams.s_int;
+    }
+}

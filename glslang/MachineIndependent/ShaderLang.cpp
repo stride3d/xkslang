@@ -2819,6 +2819,7 @@ static bool ParseXkslShaderRecursif(
                                 std::vector<ClassGenericValues> listGenerics;                                
                                 if (parentDefinition.listGenericsValue != nullptr)
                                 {
+                                    //We copy the generics as we've parsed them in the parent shader, and pretend the user passed them
                                     listGenerics.push_back(ClassGenericValues());
                                     ClassGenericValues& parentGenericValues = listGenerics.back();
                                     parentGenericValues.targetName = std::string(parentName->c_str());
@@ -2827,6 +2828,29 @@ static bool ParseXkslShaderRecursif(
                                         GenericLabelAndValue aGenericValue;
                                         aGenericValue.value = std::string(parentDefinition.listGenericsValue->at(g)->c_str());
                                         parentGenericValues.genericValues.push_back(aGenericValue);
+                                    }
+
+                                    //check if we pass some generic having special cases (LinkType for example)
+                                    for (unsigned int pg = 0; pg < parentGenericValues.genericValues.size(); ++pg)
+                                    {
+                                        GenericLabelAndValue& parentPassedGeneric = parentGenericValues.genericValues[pg];
+                                        const std::string& parentPassedGenericValue = parentPassedGeneric.value;
+
+                                        //Is the generic defines as a LinkType in the current shader?
+                                        //Note: this won't work if we concatenate some string together (shader ShaderB<LinkType Label> : ShaderA<Label + "SomeText">)
+                                        for (unsigned int g = 0; g < parsedShader->listGenerics.size(); ++g)
+                                        {
+                                            const ShaderGenericAttribute& parsedShaderGeneric = parsedShader->listGenerics[g];
+                                            if (parsedShaderGeneric.type->getBasicType() == EbtLinkType)
+                                            {
+                                                std::string parsedShaderGenericName = std::string(parsedShaderGeneric.type->getUserIdentifierName()->c_str());
+                                                if (parsedShaderGenericName == parentPassedGenericValue)
+                                                {
+                                                    parentPassedGeneric.value = std::string(parsedShaderGeneric.expressionConstValue.c_str());
+                                                    break;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 

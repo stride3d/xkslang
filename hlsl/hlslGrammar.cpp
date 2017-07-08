@@ -5737,6 +5737,7 @@ bool HlslGrammar::checkForXkslStructMemberAttribute(TVector<TShaderMemberAttribu
                     if (genericName == attributeValue)
                     {
                         attributeValue = aGeneric.expressionConstValue;
+                        break;
                     }
                 }
             }

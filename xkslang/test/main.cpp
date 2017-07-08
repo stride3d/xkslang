@@ -2039,6 +2039,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             }
             else if (instruction.compare("compile") == 0)
             {
+                std::cout << endl;
                 std::cout << "Compiling the mixer \"" << mixerName << "\"" << endl;
 
                 vector<OutputStageBytecode> outputStages;
