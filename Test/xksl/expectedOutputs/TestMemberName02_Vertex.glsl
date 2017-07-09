@@ -1,0 +1,29 @@
+#version 450
+
+struct VS_STREAMS
+{
+    vec4 s_in_id0;
+    vec4 s_int_id1;
+};
+
+layout(std140) uniform UpdatedGroupName
+{
+    vec4 ShaderMain_UpdatedGroupName__ShadowMapTextureSize;
+    vec4 ShaderMain_UpdatedGroupName__ShadowMapTextureTexelSize;
+    vec4 ShaderBase_UpdatedGroupName__ShadowMapTextureSizeBase;
+} UpdatedGroupName_var;
+
+uniform sampler2D SPIRV_Cross_CombinedShaderMain_UpdatedGroupName__ShadowMapTextureShaderMain_UpdatedGroupName__Sampler0;
+
+layout(location = 0) in vec4 VS_IN_s_in;
+layout(location = 0) out vec4 VS_OUT_s_int;
+
+void main()
+{
+    VS_STREAMS _streams = VS_STREAMS(vec4(0.0), vec4(0.0));
+    _streams.s_in_id0 = VS_IN_s_in;
+    vec4 color = texture(SPIRV_Cross_CombinedShaderMain_UpdatedGroupName__ShadowMapTextureShaderMain_UpdatedGroupName__Sampler0, vec2(0.0));
+    _streams.s_int_id1 = (_streams.s_in_id0 + UpdatedGroupName_var.ShaderMain_UpdatedGroupName__ShadowMapTextureSize) + UpdatedGroupName_var.ShaderBase_UpdatedGroupName__ShadowMapTextureSizeBase;
+    VS_OUT_s_int = _streams.s_int_id1;
+}
+

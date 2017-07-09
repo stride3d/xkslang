@@ -1,0 +1,9 @@
+
+shader ShaderBase<MemberName TRgba>
+{
+	stage stream float4 LocalColorBase : TStreamB;
+
+    float4 Compute() {
+        return streams.LocalColorBase.TRgba;
+    }
+}

@@ -1,0 +1,9 @@
+
+shader ShaderBase<MemberName PerLighting>
+{
+	cbuffer PerLighting
+	{
+		[Link("ShadowMap.TextureSizeBase")]
+		float4 ShadowMapTextureSizeBase;
+	}
+}

@@ -233,7 +233,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestLink01", "TestLink01.xkfx" },
     //{ "TestLink02", "TestLink02.xkfx" },
     //{ "TestLink03", "TestLink03.xkfx" },
-    { "TestMemberName01", "TestMemberName01.xkfx" },
+    //{ "TestMemberName01", "TestMemberName01.xkfx" },
+    //{ "TestMemberName02", "TestMemberName02.xkfx" },
+    //{ "TestMemberName03", "TestMemberName03.xkfx" },
+    { "TestMemberName04", "TestMemberName04.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },

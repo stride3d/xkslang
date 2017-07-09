@@ -2567,14 +2567,14 @@ bool HlslGrammar::checkShaderGenericsList(TVector<TType*>& listGenericTypes)
 
             HlslToken typeToken = token;
             if (!acceptType(*genericType)) {
-                expected("generic type definition");
+                expected("generic: invalid type (unrecognized)");
                 return false;
             }
             genericType->getQualifier().storage = EvqConst;
 
             TString typeLabel = getLabelForTokenType(typeToken.tokenClass);
             if (typeLabel.size() == 0) {
-                error("invalid generic type");
+                error("generic: invalid type (no label)");
                 return false;
             }
 
@@ -3479,7 +3479,6 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
             if (aGeneric.type->getBasicType() == EbtMemberNameType)
             {
                 const TString& genericName = *(aGeneric.type->getUserIdentifierName());
-
                 if (genericName == structName)
                 {
                     structName = aGeneric.expressionConstValue;
@@ -5221,8 +5220,32 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     expected("function parameters");
                     return false;
                 }
-            } else
-                node = parseContext.handleDotDereference(field.loc, node, *field.string);
+            }
+            else
+            {
+                TString dotFieldName = *field.string;
+
+                //XKSL extensiosn: a shader we can have MemberName generics overriding the `field` name
+                if (this->xkslShaderCurrentlyParsed != nullptr)
+                {
+                    unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+                    for (unsigned int c = 0; c < countGenerics; c++)
+                    {
+                        const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
+                        if (aGeneric.type->getBasicType() == EbtMemberNameType)
+                        {
+                            const TString& genericName = *(aGeneric.type->getUserIdentifierName());
+                            if (genericName == dotFieldName)
+                            {
+                                dotFieldName = aGeneric.expressionConstValue;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                node = parseContext.handleDotDereference(field.loc, node, dotFieldName);
+            }
 
             break;
         }
@@ -5758,7 +5781,6 @@ bool HlslGrammar::checkForXkslStructMemberAttribute(TVector<TShaderMemberAttribu
                 if (aGeneric.type->getBasicType() == EbtLinkType)
                 {
                     const TString& genericName = *(aGeneric.type->getUserIdentifierName());
-
                     if (genericName == attributeValue)
                     {
                         attributeValue = aGeneric.expressionConstValue;

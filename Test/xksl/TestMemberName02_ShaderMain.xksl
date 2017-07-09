@@ -1,0 +1,30 @@
+
+shader ShaderMain<MemberName PerLighting> : ShaderBase<PerLighting>
+{
+	rgroup PerLighting
+	{
+		[Link("ShadowMap.Texture")]
+		Texture2D ShadowMapTexture;
+		[Link("ShadowMap.Sampler")]
+		SamplerState Sampler0;
+	}
+
+	cbuffer PerLighting
+	{
+		[Link("ShadowMap.TextureSize")]
+		float4 ShadowMapTextureSize;
+
+		[Link("ShadowMap.TextureTexelSize")]
+		float4 ShadowMapTextureTexelSize;
+	}
+	
+	stage stream float4 s_in : S_INPUT;
+	stage stream float4 s_int : S_INT;
+	stage stream float4 s_out : S_OUTPUT;
+	
+	stage void VSMain() 
+    {
+		float4 color = ShadowMapTexture.Sample(Sampler0, float2(0,0));
+		streams.s_int = streams.s_in + ShadowMapTextureSize + ShadowMapTextureSizeBase;
+    }
+}

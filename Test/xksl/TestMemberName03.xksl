@@ -1,0 +1,14 @@
+
+shader ShaderMain<MemberName TRgba>
+{
+	stage stream float4 LocalColor : TStream;
+
+    override float4 Compute() {
+        return streams.LocalColor.TRgba;
+    }
+	
+	stage void VSMain() 
+    {
+		float4 color = Compute();
+    }
+}

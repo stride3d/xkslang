@@ -1,0 +1,7 @@
+convertAndLoad "TestMemberName03.xksl" ShaderMain<wxyz>
+
+mixer mixerMain
+mixerMain.mixin( ShaderMain )
+
+mixerMain.setStageEntryPoint( Vertex="VSMain" )
+mixerMain.compile

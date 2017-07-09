@@ -1,0 +1,7 @@
+convertAndLoadRecursif "TestMemberName02" ShaderMain<UpdatedGroupName>
+
+mixer mixerMain
+mixerMain.mixin( ShaderMain )
+
+mixerMain.setStageEntryPoint( Vertex="VSMain" )
+mixerMain.compile
