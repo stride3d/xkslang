@@ -2414,6 +2414,7 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
             {
                 case EbtLinkType:
                 case EbtMemberNameType:
+                case EbtSemanticType:
                     evaluateGenericExpression = false;
                     break;
             }
@@ -2847,6 +2848,7 @@ static bool ParseXkslShaderRecursif(
                                             {
                                                 case EbtLinkType:
                                                 case EbtMemberNameType:
+                                                case EbtSemanticType:
                                                 {
                                                     std::string parsedShaderGenericName = std::string(parsedShaderGeneric.type->getUserIdentifierName()->c_str());
                                                     if (parsedShaderGenericName == parentPassedGenericValue)

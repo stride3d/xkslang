@@ -375,6 +375,7 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["var"]        =              EHTokVar;
     (*KeywordMap)["LinkType"]   =              EHTTokLinkType;
     (*KeywordMap)["MemberName"] =              EHTTokMemberNameType;
+    (*KeywordMap)["Semantic"]   =              EHTTokSemanticType;
     (*KeywordMap)["public"]     =              EHTokPublic;
     (*KeywordMap)["private"]    =              EHTokPrivate;
     (*KeywordMap)["protected"]  =              EHTokProtected;
@@ -632,6 +633,7 @@ TString HlslScanContext::convertTokenToString(const HlslToken& token)
         case EHTokVar:                return "var";
         case EHTTokLinkType:          return "LinkType";
         case EHTTokMemberNameType:    return "MemberName";
+        case EHTTokSemanticType:      return "Semantic";
 
         default: return "";
     }
@@ -1031,6 +1033,7 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokVar:
     case EHTTokLinkType:
     case EHTTokMemberNameType:
+    case EHTTokSemanticType:
         return keyword;
 
     case EHTokBoolConstant:

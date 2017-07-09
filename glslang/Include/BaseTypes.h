@@ -67,6 +67,7 @@ enum TBasicType {
     EbtUndefinedVar,    //xksl extensions: use of var keyword create an undefined type (resolved later)
     EbtLinkType,        //xksl extensions: a generic can be declared with a LinkType type
     EbtMemberNameType,  //xksl extensions: a generic can be declared with a MemberName type
+    EbtSemanticType,    //xksl extensions: a generic can be declared with a Semantic type
 
     // HLSL types that live only temporarily.
     EbtString,

@@ -314,6 +314,7 @@ enum EHlslTokenClass {
     EHTokVar,
     EHTTokLinkType,
     EHTTokMemberNameType,
+    EHTTokSemanticType,
 
     // constant
     EHTokFloatConstant,

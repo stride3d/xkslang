@@ -1847,6 +1847,10 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         new(&type) TType(EbtMemberNameType);
         break;
 
+    case EHTTokSemanticType:
+        new(&type) TType(EbtSemanticType);
+        break;
+
     case EHTokFloat:
         new(&type) TType(EbtFloat);
         break;
@@ -2485,6 +2489,7 @@ TString HlslGrammar::getLabelForTokenType(EHlslTokenClass tokenType)
         
         case EHTTokLinkType:        return "LinkType";
         case EHTTokMemberNameType:  return "MemberName";
+        case EHTTokSemanticType:    return "Semantic";
     }
 
     return "";
@@ -2884,9 +2889,19 @@ bool HlslGrammar::validateShaderDeclaredType(const TType& type)
             if (!validateShaderDeclaredType(blockMemberType)) return false;
         }
     }
-    if (type.getBasicType() == EbtUndefinedVar)
+
+    switch (type.getBasicType())
     {
-        error("a shader member or method cannot be defined as a \"var\" type: " + type.getTypeNameSafe());
+        case EbtUndefinedVar:
+            error("a shader member or method cannot be defined as a \"var\" type: " + type.getTypeNameSafe());
+            return false;
+
+        case EbtShaderClass:
+        case EbtLinkType:
+        case EbtMemberNameType:
+        case EbtSemanticType:
+            error("a shader member or method has an invalid type: " + type.getTypeNameSafe());
+            return false;
     }
 
     return true;
@@ -5244,7 +5259,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             {
                 TString dotFieldName = *field.string;
 
-                //XKSL extensiosn: a shader we can have MemberName generics overriding the `field` name
+                //XKSL extensiosn: a shader can have MemberName generics overriding the `field` name
                 if (this->xkslShaderCurrentlyParsed != nullptr)
                 {
                     unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
@@ -6525,7 +6540,28 @@ bool HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                 parseContext.handleRegister(registerDesc.loc, qualifier, profile.string, *registerDesc.string, subComponent, spaceDesc.string);
             } else {
                 // semantic, in idToken.string
-                TString semanticUpperCase = *idToken.string;
+                TString semantic = *idToken.string;
+
+                //XKSL extensiosn: a shader can have a Semantic generics overriding the semantic name
+                if (this->xkslShaderCurrentlyParsed != nullptr)
+                {
+                    unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+                    for (unsigned int c = 0; c < countGenerics; c++)
+                    {
+                        const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
+                        if (aGeneric.type->getBasicType() == EbtSemanticType)
+                        {
+                            const TString& genericName = *(aGeneric.type->getUserIdentifierName());
+                            if (genericName == semantic)
+                            {
+                                semantic = aGeneric.expressionConstValue;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                TString semanticUpperCase = semantic;
                 std::transform(semanticUpperCase.begin(), semanticUpperCase.end(), semanticUpperCase.begin(), ::toupper);
                 parseContext.handleSemantic(idToken.loc, qualifier, mapSemantic(semanticUpperCase.c_str()), semanticUpperCase);
 
@@ -6535,7 +6571,7 @@ bool HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                         error("can only accept one user-defined semantic");
                         return false;
                     }
-                    *userDefinedSemantic = *idToken.string;
+                    *userDefinedSemantic = semantic;
                 }
             }
         } else if (peekTokenClass(EHTokLeftAngle)) {

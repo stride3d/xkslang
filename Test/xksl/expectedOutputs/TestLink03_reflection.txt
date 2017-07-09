@@ -33,4 +33,4 @@ ResourceBindings. Count=3
  Stage=Vertex KeyName="Material.DiffuseSampler" RawName="ShaderBase_Material_DiffuseSampler_Material_DiffuseMap__Sampler0" Class=Sampler Type=Sampler
 
 InputAttributes. Count=1
- SemanticName=S_INPUT SemanticIndex="0
+ SemanticName="S_INPUT" SemanticIndex=0

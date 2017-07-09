@@ -29,4 +29,4 @@ ResourceBindings. Count=3
  Stage=Vertex KeyName="ShadowMap.Sampler" RawName="ShaderMain_UpdatedGroupName__Sampler0" Class=Sampler Type=Sampler
 
 InputAttributes. Count=1
- SemanticName=S_INPUT SemanticIndex="0
+ SemanticName="S_INPUT" SemanticIndex=0

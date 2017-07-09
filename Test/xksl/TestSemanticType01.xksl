@@ -1,0 +1,14 @@
+
+shader ShaderMain<Semantic NAME>
+{
+	stage stream float4 LocalColor : NAME;
+
+    override float4 Compute() {
+        return streams.LocalColor;
+    }
+	
+	stage void VSMain() 
+    {
+		float4 color = Compute();
+    }
+}

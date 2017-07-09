@@ -49,5 +49,5 @@ ResourceBindings. Count=4
  Stage=Pixel KeyName="Texturing.Sampler" RawName="Texturing_Sampler" Class=Sampler Type=Sampler
 
 InputAttributes. Count=2
- SemanticName=TEXCOORD0 SemanticIndex="0
- SemanticName=POSITION SemanticIndex="1
+ SemanticName="TEXCOORD0" SemanticIndex=0
+ SemanticName="POSITION" SemanticIndex=1

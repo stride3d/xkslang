@@ -226,7 +226,7 @@ string EffectReflection::Print()
 	for (int i = 0; i < CountInputAttributes; ++i)
 	{
 		ShaderInputAttributeDescription& ia = InputAttributes[i];
-		stream << " SemanticName=" << ia.SemanticName << " SemanticIndex=\"" << ia.SemanticIndex << endl;
+		stream << " SemanticName=\"" << ia.SemanticName << "\" SemanticIndex=" << ia.SemanticIndex << endl;
 	}
 
     return stream.str();

@@ -1,0 +1,14 @@
+
+shader ShaderMain<MemberName TRgba1, MemberName TRgba2, Semantic ANAME> : ShaderBase<TRgba2, ANAME>
+{
+	stage stream float4 LocalColor : ANAME;
+
+    override float4 Compute() {
+        return streams.LocalColor.TRgba1 + base.Compute();
+    }
+	
+	stage void VSMain() 
+    {
+		float4 color = Compute();
+    }
+}
