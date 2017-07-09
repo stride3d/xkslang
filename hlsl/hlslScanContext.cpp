@@ -371,22 +371,23 @@ void HlslScanContext::fillInKeywordMap()
     (*KeywordMap)["default"] =                 EHTokDefault;
 
     //XKSL extensions: map keywords
-    (*KeywordMap)["shader"]    =               EHTokShaderClass;
-    (*KeywordMap)["var"]       =               EHTokVar;
-    (*KeywordMap)["LinkType"]  =               EHTTokLinkType;
-    (*KeywordMap)["public"]    =               EHTokPublic;
-    (*KeywordMap)["private"]   =               EHTokPrivate;
-    (*KeywordMap)["protected"] =               EHTokProtected;
-    (*KeywordMap)["internal"]  =               EHTokInternal;
-    (*KeywordMap)["stage"]     =               EHTokStage;
-    (*KeywordMap)["stream"]    =               EHTokStream;
-    (*KeywordMap)["override"]  =               EHTokOverride;
-    (*KeywordMap)["abstract"]  =               EHTokAbstract;
-    (*KeywordMap)["clone"]     =               EHTokClone;
-    (*KeywordMap)["base"]      =               EHTokBase;
-    (*KeywordMap)["streams"]   =               EHTokStreams;
-    (*KeywordMap)["compose"]   =               EHTokCompose;
-    (*KeywordMap)["foreach"]   =               EHTokForEach;
+    (*KeywordMap)["shader"]     =              EHTokShaderClass;
+    (*KeywordMap)["var"]        =              EHTokVar;
+    (*KeywordMap)["LinkType"]   =              EHTTokLinkType;
+    (*KeywordMap)["MemberName"] =              EHTTokMemberNameType;
+    (*KeywordMap)["public"]     =              EHTokPublic;
+    (*KeywordMap)["private"]    =              EHTokPrivate;
+    (*KeywordMap)["protected"]  =              EHTokProtected;
+    (*KeywordMap)["internal"]   =              EHTokInternal;
+    (*KeywordMap)["stage"]      =              EHTokStage;
+    (*KeywordMap)["stream"]     =              EHTokStream;
+    (*KeywordMap)["override"]   =              EHTokOverride;
+    (*KeywordMap)["abstract"]   =              EHTokAbstract;
+    (*KeywordMap)["clone"]      =              EHTokClone;
+    (*KeywordMap)["base"]       =              EHTokBase;
+    (*KeywordMap)["streams"]    =              EHTokStreams;
+    (*KeywordMap)["compose"]    =              EHTokCompose;
+    (*KeywordMap)["foreach"]    =              EHTokForEach;
 
     // TODO: get correct set here
     ReservedSet = new std::unordered_set<const char*, str_hash, str_eq>;
@@ -630,6 +631,7 @@ TString HlslScanContext::convertTokenToString(const HlslToken& token)
         case EHTokShaderClass:        return "shader";
         case EHTokVar:                return "var";
         case EHTTokLinkType:          return "LinkType";
+        case EHTTokMemberNameType:    return "MemberName";
 
         default: return "";
     }
@@ -1028,6 +1030,7 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
     case EHTokShaderClass:
     case EHTokVar:
     case EHTTokLinkType:
+    case EHTTokMemberNameType:
         return keyword;
 
     case EHTokBoolConstant:

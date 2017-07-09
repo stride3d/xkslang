@@ -313,6 +313,7 @@ enum EHlslTokenClass {
     EHTokShaderClass,
     EHTokVar,
     EHTTokLinkType,
+    EHTTokMemberNameType,
 
     // constant
     EHTokFloatConstant,

@@ -1843,6 +1843,10 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         new(&type) TType(EbtLinkType);
         break;
 
+    case EHTTokMemberNameType:
+        new(&type) TType(EbtMemberNameType);
+        break;
+
     case EHTokFloat:
         new(&type) TType(EbtFloat);
         break;
@@ -2479,7 +2483,8 @@ TString HlslGrammar::getLabelForTokenType(EHlslTokenClass tokenType)
         case EHTokDouble4x3:   return "double4x3";
         case EHTokDouble4x4:   return "double4x4";
         
-        case EHTTokLinkType:   return "LinkType";
+        case EHTTokLinkType:        return "LinkType";
+        case EHTTokMemberNameType:  return "MemberName";
     }
 
     return "";
@@ -3459,6 +3464,26 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
                 if (peekTokenClass(EHTokIdentifier)) {
                     structSubpartName = *token.string;
                     advanceToken();
+                }
+            }
+        }
+    }
+
+    //XKSL extensions: a shader can override struct or rgroup name with "MemberName" generic
+    if (this->xkslShaderCurrentlyParsed != nullptr)
+    {
+        unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+        for (unsigned int c = 0; c < countGenerics; c++)
+        {
+            const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
+            if (aGeneric.type->getBasicType() == EbtMemberNameType)
+            {
+                const TString& genericName = *(aGeneric.type->getUserIdentifierName());
+
+                if (genericName == structName)
+                {
+                    structName = aGeneric.expressionConstValue;
+                    break;
                 }
             }
         }

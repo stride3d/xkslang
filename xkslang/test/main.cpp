@@ -229,9 +229,11 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
     //{ "userCustomType01", "userCustomType01.xkfx" },
     //{ "userCustomType02", "userCustomType02.xkfx" },
+
     //{ "TestLink01", "TestLink01.xkfx" },
     //{ "TestLink02", "TestLink02.xkfx" },
-    { "TestLink03", "TestLink03.xkfx" },
+    //{ "TestLink03", "TestLink03.xkfx" },
+    { "TestMemberName01", "TestMemberName01.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
@@ -636,12 +638,49 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
         }
     }
 
-    if (someExpectedOutputsDifferent) success = false;
-    if (someExpectedOutputsAreMissing) success = false;
+    string reflectionTxt = "";
+    if (effectReflection != nullptr)
+    {
+        reflectionTxt = effectReflection->Print();
 
+        //save the reflection data
+        string fileNameReflect = effectName + "_reflection" + ".txt";
+        string fullnameReflect = outputDir + fileNameReflect;
+        xkslangtest::Utils::WriteFile(fullnameReflect, reflectionTxt);
+        std::cout << " output: \"" << fileNameReflect << "\"" << endl;
+
+        //if the reflection file exists in the expected folder, compare them
+        string reflectionExpectedOutput;
+        string reflectionLatestOutput;
+        if (Utils::ReadFile(fullnameReflect, reflectionLatestOutput))
+        {
+            string expectedOutputFullNameReflect = expectedOutputDir + string(fileNameReflect);
+            if (Utils::ReadFile(expectedOutputFullNameReflect, reflectionExpectedOutput))
+            {
+                if (reflectionExpectedOutput.compare(reflectionLatestOutput) != 0) {
+                    std::cout << "expected output:" << endl << reflectionExpectedOutput;
+                    std::cout << "output:" << endl << reflectionLatestOutput;
+                    std::cout << " Reflection: output and expected output are different !!!" << endl;
+                    someExpectedOutputsDifferent = true;
+                }
+                else {
+                    std::cout << " Reflection: output VS expected output: OK" << endl;
+                }
+            }
+            else {
+                //No output, nothing to compare
+            }
+        }
+        else {
+            error(" Failed to read the file: " + fileNameReflect);
+            success = false;
+        }
+    }
+
+    //Save full data
     if (glslAllOutputs.size() > 0)
     {
-        if (effectReflection != nullptr) glslAllOutputs = "/*\n" + effectReflection->Print() + "*/\n\n" + glslAllOutputs;
+        if (reflectionTxt.size() > 0) glslAllOutputs = "/*\n" + effectReflection->Print() + "*/\n\n" + glslAllOutputs;
         string fileNameAllGlsl = effectName + ".glsl";
         string fullNameAllGlsl = finalResultOutputDir + fileNameAllGlsl;
         xkslangtest::Utils::WriteFile(fullNameAllGlsl, glslAllOutputs);
@@ -649,12 +688,15 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
     }
     if (hlslAllOutputs.size() > 0)
     {
-        if (effectReflection != nullptr) hlslAllOutputs = "/*\n" + effectReflection->Print() + "*/\n\n" + hlslAllOutputs;
+        if (reflectionTxt.size() > 0) hlslAllOutputs = "/*\n" + effectReflection->Print() + "*/\n\n" + hlslAllOutputs;
         string fileNameAllHlsl = effectName + ".hlsl";
         string fullNameAllHlsl = finalResultOutputDir + fileNameAllHlsl;
         xkslangtest::Utils::WriteFile(fullNameAllHlsl, hlslAllOutputs);
         std::cout << " output: \"" << fileNameAllHlsl << "\"" << endl;
     }
+
+    if (someExpectedOutputsDifferent) success = false;
+    if (someExpectedOutputsAreMissing) success = false;
 
     return success;
 }

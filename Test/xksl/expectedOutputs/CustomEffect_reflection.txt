@@ -1,0 +1,53 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer Globals [size: 28]
+@C    Effect_Center => Effect.Center
+@C    Effect_Frequency => Effect.Frequency
+@C    Effect_Phase => Effect.Phase
+@C    Effect_Spread => Effect.Spread
+@C    Effect_Amplitude => Effect.Amplitude
+@C    Effect_InvAspectRatio => Effect.InvAspectRatio
+ cbuffer PerDraw [size: 64]
+@C    SpriteBase_MatrixTransform => SpriteBase.MatrixTransform
+***********************
+*****  Resources  *****
+***********************
+@C    PerDraw => PerDraw [Stage: Vertex]
+@C    Globals => Globals [Stage: Pixel]
+@C    Texturing_Texture0 => Texturing.Texture0 [Stage: Pixel]
+@C    Texturing_Sampler => Texturing.Sampler [Stage: Pixel]
+
+ConstantBuffers. Count=2
+ cbuffer: Name="Globals" Size=28 MembersCount=6
+  KeyName="Effect.Center RawName="Effect_Center" Offset=0
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Effect.Frequency RawName="Effect_Frequency" Offset=8
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Effect.Phase RawName="Effect_Phase" Offset=12
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Effect.Spread RawName="Effect_Spread" Offset=16
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Effect.Amplitude RawName="Effect_Amplitude" Offset=20
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Effect.InvAspectRatio RawName="Effect_InvAspectRatio" Offset=24
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ cbuffer: Name="PerDraw" Size=64 MembersCount=1
+  KeyName="SpriteBase.MatrixTransform RawName="SpriteBase_MatrixTransform" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+ResourceBindings. Count=4
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Globals" RawName="Globals" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Texturing.Texture0" RawName="Texturing_Texture0" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="Texturing.Sampler" RawName="Texturing_Sampler" Class=Sampler Type=Sampler
+
+InputAttributes. Count=2
+ SemanticName=TEXCOORD0 SemanticIndex="0
+ SemanticName=POSITION SemanticIndex="1

@@ -1,0 +1,28 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer UpdatedGroupName [size: 32]
+@C    ShaderMain_UpdatedGroupName__ShadowMapTextureSize => ShadowMap.TextureSize
+@C    ShaderMain_UpdatedGroupName__ShadowMapTextureTexelSize => ShadowMap.TextureTexelSize
+***********************
+*****  Resources  *****
+***********************
+@C    UpdatedGroupName => UpdatedGroupName [Stage: Vertex]
+@C    ShaderMain_UpdatedGroupName__ShadowMapTexture => ShadowMap.Texture [Stage: Vertex]
+@C    ShaderMain_UpdatedGroupName__Sampler0 => ShadowMap.Sampler [Stage: Vertex]
+
+ConstantBuffers. Count=1
+ cbuffer: Name="UpdatedGroupName" Size=32 MembersCount=2
+  KeyName="ShadowMap.TextureSize RawName="ShaderMain_UpdatedGroupName__ShadowMapTextureSize" Offset=0
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="ShadowMap.TextureTexelSize RawName="ShaderMain_UpdatedGroupName__ShadowMapTextureTexelSize" Offset=16
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ResourceBindings. Count=3
+ Stage=Vertex KeyName="UpdatedGroupName" RawName="UpdatedGroupName" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="ShadowMap.Texture" RawName="ShaderMain_UpdatedGroupName__ShadowMapTexture" Class=ShaderResourceView Type=Texture2D
+ Stage=Vertex KeyName="ShadowMap.Sampler" RawName="ShaderMain_UpdatedGroupName__Sampler0" Class=Sampler Type=Sampler
+
+InputAttributes. Count=1
+ SemanticName=S_INPUT SemanticIndex="0

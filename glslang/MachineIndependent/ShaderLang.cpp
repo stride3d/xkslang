@@ -2399,7 +2399,8 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
         // -we construct the generic const statement: shader Shader<int aGeneric> --> "aGeneric = value;"
         // -then parse it to add the const and its value into the symbol table
         //There is some exceptions for the following generic types:
-        // - LinkType: we will simply replace the matching Link value by its generic value
+        // - LinkType: nothing to resolve: we will replace the matching Link values by the generic value
+        // - MemberName: nothing to resolve: we will replace the matching member name by the generic value
         for (unsigned int g = 0; g < shaderCountGenerics; g++)
         {
             //for now: generics' value are defined in the same order as the shader define them
@@ -2412,6 +2413,7 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
             switch (genericAttribute.type->getBasicType())
             {
                 case EbtLinkType:
+                case EbtMemberNameType:
                     evaluateGenericExpression = false;
                     break;
             }
@@ -2841,12 +2843,16 @@ static bool ParseXkslShaderRecursif(
                                         for (unsigned int g = 0; g < parsedShader->listGenerics.size(); ++g)
                                         {
                                             const ShaderGenericAttribute& parsedShaderGeneric = parsedShader->listGenerics[g];
-                                            if (parsedShaderGeneric.type->getBasicType() == EbtLinkType)
+                                            switch (parsedShaderGeneric.type->getBasicType())
                                             {
-                                                std::string parsedShaderGenericName = std::string(parsedShaderGeneric.type->getUserIdentifierName()->c_str());
-                                                if (parsedShaderGenericName == parentPassedGenericValue)
+                                                case EbtLinkType:
+                                                case EbtMemberNameType:
                                                 {
-                                                    parentPassedGeneric.value = std::string(parsedShaderGeneric.expressionConstValue.c_str());
+                                                    std::string parsedShaderGenericName = std::string(parsedShaderGeneric.type->getUserIdentifierName()->c_str());
+                                                    if (parsedShaderGenericName == parentPassedGenericValue)
+                                                    {
+                                                        parentPassedGeneric.value = std::string(parsedShaderGeneric.expressionConstValue.c_str());
+                                                    }
                                                     break;
                                                 }
                                             }
