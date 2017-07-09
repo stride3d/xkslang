@@ -1,0 +1,20 @@
+
+shader ShaderMain<MemberName TStream>
+{
+	stage stream float4 aStream1;
+	stage stream float4 aStream2;
+	stage stream float4 outputStream;
+	
+	float4 aCol;
+	
+    void Compute()
+	{
+		streams.TStream = aCol;
+	}
+	
+	stage void VSMain() 
+    {
+		Compute();
+		streams.outputStream = streams.TStream;
+    }
+}

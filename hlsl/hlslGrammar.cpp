@@ -4937,10 +4937,29 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     }
 
                     {
-                        TString* memberName = idToken.string;
+                        TString memberName = *(idToken.string);
+
+                        //XKSL extensions: a shader can override the memberName with a "MemberName" generic
+                        if (this->xkslShaderCurrentlyParsed != nullptr)
+                        {
+                            unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+                            for (unsigned int c = 0; c < countGenerics; c++)
+                            {
+                                const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
+                                if (aGeneric.type->getBasicType() == EbtMemberNameType)
+                                {
+                                    const TString& genericName = *(aGeneric.type->getUserIdentifierName());
+                                    if (genericName == memberName)
+                                    {
+                                        memberName = aGeneric.expressionConstValue;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
 
                         //we look if the identifier is a shader's member
-                        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, hasStreamAccessor, *memberName, hasBaseAccessor);
+                        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, hasStreamAccessor, memberName, hasBaseAccessor);
 
                         if (!identifierLocation.isMember())
                         {
@@ -4953,14 +4972,14 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
 
                             if (throwAnError)
                             {
-                                error( (TString("Member: \"") + *memberName + TString("\" not found in the class (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
+                                error( (TString("Member: \"") + memberName + TString("\" not found in the class (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
                             }
                             else
                             {
                                 //unknown identifier, but in some cases we can resolve it (for example if the identifier is an unknown class and we have the possibility to recursively query them)
                                 if (!hasAnyErrorToBeProcessedAtTheTop())
                                 {
-                                    setUnknownIdentifierToProcessAtTheTop(NewPoolTString(memberName->c_str()));
+                                    setUnknownIdentifierToProcessAtTheTop(NewPoolTString(memberName.c_str()));
                                 }
                             }
                             return false;
