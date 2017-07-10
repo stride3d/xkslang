@@ -6,8 +6,7 @@ setDefine SILICON_STUDIO_MULTISAMPLE_COUNT "1"
 
 mixer m
 m.mixin( MaterialSurfaceArray )
-m.mixin( ShadingBase )
-m.addComposition( ShadingColor0 = mixin(ComputeColor) )
+m.mixin( ShadingBase[ShadingColor0 = mixin(ComputeColor)] )
 
 m.setStageEntryPoint( Pixel="PSMain" )
 m.compile

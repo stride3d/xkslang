@@ -2,12 +2,4 @@ addResourcesLibrary "library"
 set automaticallyTryToLoadAndConvertUnknownMixinShader true
 
 mixer m
-m.mixin( DynamicTexture )
-
-//[mixin MaterialSurfaceDiffuse [{diffuseMap = ComputeColorTextureScaledOffsetDynamicSampler<Material.DiffuseMap,TEXCOORD0,Material.Sampler.i0,rgba,Material.TextureScale,Material.TextureOffset>}]
-
-m.mixin( ShadingBase[ShadingColor0 = mixin(ComputeColor)] )
-m.setStageEntryPoint( Pixel="PSMain" )
-m.compile
-
-break
+m.mixin( DynamicTexture<Material.DiffuseMap, PerMaterial> )

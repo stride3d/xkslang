@@ -18,7 +18,19 @@ using namespace std;
 //string utils
 bool Utils::startWith(const string& str, const string& prefix)
 {
-    return (str.compare(0, prefix.size(), prefix) == 0);
+    unsigned int prefixSize = (int)prefix.size();
+    if (prefixSize == 0) return false;
+
+    return (str.compare(0, prefixSize, prefix) == 0);
+}
+
+bool Utils::endWith(const string& str, const string& suffix)
+{
+    int suffixSize = (int)suffix.size();
+    int startPos = (int)str.size() - suffixSize;
+    if (startPos < 0 || suffixSize == 0) return false;
+
+    return (str.compare(startPos, suffixSize, suffix) == 0);
 }
 
 string Utils::trim(const string& str)

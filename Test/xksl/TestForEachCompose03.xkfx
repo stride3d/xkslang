@@ -1,0 +1,16 @@
+convertAndLoad "TestForEachCompose03.xksl"
+
+//mixer CompA
+//CompA.mixin( ComputeColorA )
+//
+//mixer CompB
+//CompB.mixin( ComputeColorB )
+
+mixer main
+main.mixin( ShaderA[colors = [mixin(ComputeColorA), mixin(ComputeColorB)]] )
+
+//main.addComposition( ShaderA.colors = CompA )
+//main.addComposition( ShaderA.colors = CompB )
+
+main.setStageEntryPoint( Pixel="main" )
+main.compile
