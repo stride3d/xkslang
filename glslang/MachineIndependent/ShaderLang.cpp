@@ -2482,7 +2482,8 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
                             break;
 #endif
                         case EbtBool:
-                            constValueLabel = std::to_string(consts[0].getBConst());
+                            //constValueLabel = std::to_string(consts[0].getBConst());
+                            constValueLabel = consts[0].getBConst()? "true": "false";
                             break;
                         default:
                             return error(parseContext, "unprocessed generic const value type");

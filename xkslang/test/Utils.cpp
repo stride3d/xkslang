@@ -46,6 +46,50 @@ string Utils::trim(const string& str, char c)
     return str.substr(first, (last - first + 1));
 }
 
+string Utils::trim(const string& str, const string& chars)
+{
+    unsigned int len = str.size();
+    unsigned int countChars = chars.size();
+    char c;
+    int startPos = 0;
+    bool loop = true;
+    while (loop)
+    {
+        if (startPos == len) return "";
+
+        loop = false;
+        c = str[startPos];
+        for (unsigned int d = 0; d < countChars; d++)
+        {
+            if (c == chars[d]){
+                startPos++;
+                loop = true;
+                break;
+            }
+        }
+    }
+
+    int endPos =  len - 1;
+    loop = true;
+    while (loop)
+    {
+        if (endPos < startPos) return "";
+
+        loop = false;
+        c = str[endPos];
+        for (unsigned int d = 0; d < countChars; d++)
+        {
+            if (c == chars[d]) {
+                endPos--;
+                loop = true;
+                break;
+            }
+        }
+    }
+
+    return str.substr(startPos, (endPos - startPos + 1));
+}
+
 void Utils::replaceAll(string& str, const string& from, const string& to)
 {
     if (from.empty()) return;

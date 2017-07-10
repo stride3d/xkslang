@@ -166,7 +166,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestForEach04", "TestForEach04.xkfx" },
     //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
     //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
-    { "TestForEachCompose03", "TestForEachCompose03.xkfx" },
+    //{ "TestForEachCompose03", "TestForEachCompose03.xkfx" },
     //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
     
     //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
@@ -256,6 +256,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "DynamicTexture", "DynamicTexture.xkfx" },
     //{ "ComputeColorTextureScaledOffsetDynamicSampler", "ComputeColorTextureScaledOffsetDynamicSampler.xkfx" },
     //{ "MaterialSurfaceArray01", "MaterialSurfaceArray01.xkfx" },
+    { "ComputeColorWaveNormal", "ComputeColorWaveNormal.xkfx" },
 
     //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
@@ -1067,6 +1068,30 @@ static bool splitPametersString(const string& parameterStr, vector<string>& para
     }
 }
 
+static bool isInstructionLineComplete(const string& instruction)
+{
+    int countParenthesis = 0;
+    int countBrackets = 0;
+    int countComparaisonSigns = 0;
+
+    const char* ptr = instruction.c_str();
+    while (*ptr != 0)
+    {
+        char c = *ptr++;
+        switch (c)
+        {
+            case '[': countBrackets++; break;
+            case ']': countBrackets--; break;
+            case '(': countParenthesis++; break;
+            case ')': countParenthesis--; break;
+            case '<': countComparaisonSigns++; break;
+            case '>': countComparaisonSigns--; break;
+        }
+    }
+
+    return (countParenthesis == 0 && countComparaisonSigns == 0 && countBrackets == 0);
+}
+
 //return the string between the "()" brackets
 static bool getFunctionParameterString(const string& instruction, string& parameterStr, bool leftBracketExpected)
 {
@@ -1468,9 +1493,15 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         const string compositionInstruction = listCompositionInstructions[iComp];
 
         EffectMixerObject* compositionSourceMixer = nullptr;
-        if (Utils::startWith(compositionInstruction, "mixin("))
+        if (Utils::startWith(compositionInstruction, "mixin(") || Utils::startWith(compositionInstruction, "mixin ")) //we accept both expressions (the 2nd is compatible with Xenko)
         {
-            const string mixinInstructionStr = compositionInstruction;
+            string mixinInstructionStr;
+            if (Utils::startWith(compositionInstruction, "mixin "))
+            {
+                mixinInstructionStr = compositionInstruction + ")";
+                mixinInstructionStr[ strlen("mixin") ] = '(';
+            }
+            else mixinInstructionStr = compositionInstruction;
 
             //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
             string anonymousMixerInstruction;
@@ -1511,7 +1542,8 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         // Add the composition to the mixer
         std::cout << endl;
         std::cout << "===================" << endl;
-        std::cout << "Adding composition: \"" << compositionString << "\"" << endl;
+        std::cout << "Adding composition: \"" << (shaderName.size() > 0? (shaderName + "."): "") << variableName << " = "
+            << compositionInstruction << "\"" << " to mixer: \"" << mixerTarget->name << "\"" << endl;
 
         if (useXkslangDll)
         {
@@ -1619,7 +1651,9 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
                     shaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
                 }
 
-                if (shaderBytecode == nullptr) return error("cannot find or generate a bytecode for the shader: " + shaderName);
+                if (shaderBytecode == nullptr) {
+                    return error("cannot find or generate a bytecode for the shader: " + shaderName);
+                }
             }
 
             /*if (spxBytecode == nullptr) spxBytecode = aShaderBytecode;
@@ -1735,23 +1769,36 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
     vector<string> listParsedInstructions;
     vector<XkslUserDefinedMacro> listUserDefinedMacros;
 
-    string instructionFullLine, lineItem;
+    string previousPartialLine = "";
+    string parsedLine = "";
     stringstream ss(effectCmdLines);
-    while (getline(ss, instructionFullLine, '\n'))
+    while (getline(ss, parsedLine, '\n'))
     {
-        listParsedInstructions.push_back(instructionFullLine);
+        listParsedInstructions.push_back(parsedLine);
 
-        instructionFullLine = Utils::trim(instructionFullLine);
-        if (instructionFullLine.size() == 0) continue;
+        parsedLine = Utils::trim(parsedLine, " \t");
+        if (parsedLine.size() == 0) continue;
+        if (Utils::startWith(parsedLine, "//"))
+        {
+            //a comment: ignore the line
+            continue;
+        }
 
+        //if some instructions are not complete (some unclosed parentheses or brackets, we concatenate them with the next instructions)
+        parsedLine = previousPartialLine + parsedLine;
+        if (!isInstructionLineComplete(parsedLine))
+        {
+            previousPartialLine = parsedLine;
+            continue;
+        }
+        else previousPartialLine = "";
+        
+        string instructionFullLine = Utils::trim(parsedLine);
+        string lineItem;
         stringstream lineSs(instructionFullLine);
         getNextWord(lineSs, " (", lineItem);
 
-        if (lineItem.size() >= 2 && lineItem[0] == '/' && lineItem[1] == '/')
-        {
-            //a comment: ignore the line
-        }
-        else if (lineItem.compare("break") == 0)
+        if (lineItem.compare("break") == 0)
         {
             //quit parsing the effect
             break;
