@@ -2446,7 +2446,7 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
 
             //========================================================================================================
             //build the const value label text
-            std::string constValueLabel;
+            /*std::string constValueLabel;
             {
                 const TType& constType = expressionNodeConstantUnion->getType();
                 const TConstUnionArray& consts = expressionNodeConstantUnion->getConstArray();
@@ -2492,8 +2492,9 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
                 }
             }
             if (constValueLabel.size() == 0) return error(parseContext, "Failed to build the generic const value label");
+            genericAttribute.expressionConstValue = TString(constValueLabel.c_str());*/
 
-            genericAttribute.expressionConstValue = TString(constValueLabel.c_str());
+            genericAttribute.expressionConstValue = userGenericValueExpression;
 
             //========================================================================================================
             //Create the generic const variable on global space

@@ -2256,7 +2256,7 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 
     bool success1 = true;
     bool success2 = true;
-    const string inputFname = inputDir + "\\" + effect.inputFileName;
+    const string inputFname = inputDir + effect.inputFileName;
     string effectCmdLines;
     if (!Utils::ReadFile(inputFname, effectCmdLines))
     {
