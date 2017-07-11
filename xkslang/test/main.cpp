@@ -256,7 +256,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "DynamicTexture", "DynamicTexture.xkfx" },
     //{ "ComputeColorTextureScaledOffsetDynamicSampler", "ComputeColorTextureScaledOffsetDynamicSampler.xkfx" },
     //{ "MaterialSurfaceArray01", "MaterialSurfaceArray01.xkfx" },
-    { "ComputeColorWaveNormal", "ComputeColorWaveNormal.xkfx" },
+    //{ "ComputeColorWaveNormal", "ComputeColorWaveNormal.xkfx" },
+    
+    { "MaterialSurfaceShadingSpecularMicrofacet", "MaterialSurfaceShadingSpecularMicrofacet.xkfx" },
 
     //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
