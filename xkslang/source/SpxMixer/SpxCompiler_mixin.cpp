@@ -2798,7 +2798,6 @@ bool SpxCompiler::GetShadersFullDependencies(SpxCompiler* bytecodeSource, const 
     }
 
     //setup list of initial shader
-    vector<ShaderClassData*> vecCompositionShaderInstances;
     vector<ShaderClassData*> listShaderToValidate;
     for (auto itsh = listShaders.begin(); itsh != listShaders.end(); itsh++) {
         ShaderClassData* aShaderToValidate = *itsh;
@@ -2842,6 +2841,7 @@ bool SpxCompiler::GetShadersFullDependencies(SpxCompiler* bytecodeSource, const 
             //add the composition instances
             if (aComposition.countInstances > 0)
             {
+                vector<ShaderClassData*> vecCompositionShaderInstances;
                 if (!bytecodeSource->GetAllShaderInstancesForComposition(&aComposition, vecCompositionShaderInstances)) {
                     return bytecodeSource->error(string("Failed to retrieve the instances for the composition: ") + aComposition.variableName +
                         string(" from shader: ") + aComposition.compositionShaderOwner->GetName());
@@ -4799,6 +4799,7 @@ bool SpxCompiler::GetAllShaderInstancesForComposition(const ShaderComposition* c
     int compositionShaderId = composition->compositionShaderId;
 
     int countInstancesExpected = composition->countInstances;
+    instances.clear();
     instances.resize(countInstancesExpected, nullptr);
     int countInstancesFound = 0;
 

@@ -5,7 +5,10 @@ setDefine SILICON_STUDIO_RENDER_TARGET_COUNT "1"
 setDefine SILICON_STUDIO_MULTISAMPLE_COUNT "1"
 
 mixer m
-m.mixin( MaterialSurfaceLightingAndShading [surfaces = [
-	    mixin(MaterialSurfaceShadingDiffuseLambert<false>),
-		mixin(MaterialSurfaceShadingSpecularMicrofacet [fresnelFunction = mixin(MaterialSpecularMicrofacetFresnelSchlick), geometricShadowingFunction = mixin(MaterialSpecularMicrofacetVisibilitySmithSchlickGGX), normalDistributionFunction = mixin(MaterialSpecularMicrofacetNormalDistributionGGX)])
-      ]] )
+m.mixin(MaterialSurfaceShadingSpecularMicrofacet
+	[
+		fresnelFunction = mixin(MaterialSpecularMicrofacetFresnelSchlick),
+		geometricShadowingFunction = mixin(MaterialSpecularMicrofacetVisibilitySmithSchlickGGX),
+		normalDistributionFunction = mixin(MaterialSpecularMicrofacetNormalDistributionGGX)
+	]
+)
