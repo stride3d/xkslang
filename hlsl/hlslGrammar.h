@@ -155,9 +155,8 @@ namespace glslang {
         bool acceptStatement(TIntermNode*&);
         bool acceptNestedStatement(TIntermNode*&);
         void acceptAttributes(TAttributeMap&);
-        bool checkForXkslStructMemberAttribute(TVector<TShaderMemberAttribute>& memberAttributes);
-        bool acceptSelectionStatement(TIntermNode*&);
-        bool acceptSwitchStatement(TIntermNode*&);
+        bool acceptSelectionStatement(TIntermNode*&, const TAttributeMap&);
+        bool acceptSwitchStatement(TIntermNode*&, const TAttributeMap&);
         bool acceptIterationStatement(TIntermNode*&, const TAttributeMap&);
         bool acceptJumpStatement(TIntermNode*&);
         bool acceptCaseLabel(TIntermNode*&);
@@ -170,6 +169,7 @@ namespace glslang {
         const char* getTypeString(EHlslTokenClass tokenClass) const;
 
         //XKSL extensions
+        bool checkForXkslStructMemberAttribute(TVector<TShaderMemberAttribute>& memberAttributes);
         bool acceptShaderClassParentsInheritance(TVector<ShaderInheritedParentDefinition>& listParents);
         TString* getCurrentShaderName();
         TFunction* getFunctionCurrentlyParsed();

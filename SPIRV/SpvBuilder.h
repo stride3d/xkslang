@@ -402,7 +402,7 @@ public:
     // Helper to use for building nested control flow with if-then-else.
     class If {
     public:
-        If(Id condition, Builder& builder);
+        If(Id condition, unsigned int ctrl, Builder& builder);
         ~If() {}
 
         void makeBeginElse();
@@ -414,6 +414,7 @@ public:
 
         Builder& builder;
         Id condition;
+        unsigned int control;
         Function* function;
         Block* headerBlock;
         Block* thenBlock;
@@ -433,7 +434,7 @@ public:
     // Returns the right set of basic blocks to start each code segment with, so that the caller's
     // recursion stack can hold the memory for it.
     //
-    void makeSwitch(Id condition, int numSegments, const std::vector<int>& caseValues,
+    void makeSwitch(Id condition, unsigned int control, int numSegments, const std::vector<int>& caseValues,
                     const std::vector<int>& valueToSegment, int defaultSegment, std::vector<Block*>& segmentBB); // return argument
 
     // Add a branch to the innermost switch's merge block.

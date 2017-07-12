@@ -199,6 +199,7 @@ enum TBuiltInVariable {
     EbvFragColor,
     EbvFragData,
     EbvFragDepth,
+    EbvFragStencilRef,
     EbvSampleId,
     EbvSamplePosition,
     EbvSampleMask,
@@ -228,7 +229,6 @@ enum TBuiltInVariable {
     // to one of the above.
     EbvFragDepthGreater,
     EbvFragDepthLesser,
-    EbvStencilRef,
     EbvGsOutputStream,
     EbvOutputPatch,
     EbvInputPatch,
@@ -335,6 +335,7 @@ __inline const char* GetBuiltInVariableString(TBuiltInVariable v)
     case EbvFragColor:            return "FragColor";
     case EbvFragData:             return "FragData";
     case EbvFragDepth:            return "FragDepth";
+    case EbvFragStencilRef:       return "FragStencilRef";
     case EbvSampleId:             return "SampleId";
     case EbvSamplePosition:       return "SamplePosition";
     case EbvSampleMask:           return "SampleMaskIn";

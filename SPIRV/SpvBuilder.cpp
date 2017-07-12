@@ -2160,9 +2160,10 @@ Id Builder::createMatrixConstructor(Decoration precision, const std::vector<Id>&
 }
 
 // Comments in header
-Builder::If::If(Id cond, Builder& gb) :
+Builder::If::If(Id cond, unsigned int ctrl, Builder& gb) :
     builder(gb),
     condition(cond),
+    control(ctrl),
     elseBlock(0)
 {
     function = &builder.getBuildPoint()->getParent();
@@ -2203,7 +2204,7 @@ void Builder::If::makeEndIf()
 
     // Go back to the headerBlock and make the flow control split
     builder.setBuildPoint(headerBlock);
-    builder.createSelectionMerge(mergeBlock, SelectionControlMaskNone);
+    builder.createSelectionMerge(mergeBlock, control);
     if (elseBlock)
         builder.createConditionalBranch(condition, thenBlock, elseBlock);
     else
@@ -2215,7 +2216,7 @@ void Builder::If::makeEndIf()
 }
 
 // Comments in header
-void Builder::makeSwitch(Id selector, int numSegments, const std::vector<int>& caseValues,
+void Builder::makeSwitch(Id selector, unsigned int control, int numSegments, const std::vector<int>& caseValues,
                          const std::vector<int>& valueIndexToSegment, int defaultSegment,
                          std::vector<Block*>& segmentBlocks)
 {
@@ -2228,7 +2229,7 @@ void Builder::makeSwitch(Id selector, int numSegments, const std::vector<int>& c
     Block* mergeBlock = new Block(getUniqueId(), function);
 
     // make and insert the switch's selection-merge instruction
-    createSelectionMerge(mergeBlock, SelectionControlMaskNone);
+    createSelectionMerge(mergeBlock, control);
 
     // make the switch instruction
     Instruction* switchInst = new Instruction(NoResult, NoType, OpSwitch);
