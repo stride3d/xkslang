@@ -718,6 +718,8 @@ public:
 
     bool GetListAllCompositions(std::vector<ShaderCompositionInfo>& vecCompositions);
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
+    ShaderComposition* GetShaderCompositionForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
+    bool GetAllCompositionsForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders, std::vector<ShaderComposition*>& listCompositions);
     void CopyMixinBytecode(std::vector<std::uint32_t>& bytecodeStream);
     const std::vector<std::uint32_t>& GetMixinBytecode();
 

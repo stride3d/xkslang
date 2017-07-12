@@ -1,5 +1,8 @@
 XKSLANG TODO:
-(a bit messy and not well organized: just here to keep track of possible ideas / optimizations / updates...)
+(Tod file is a bit messy and not well organized: just here to keep track of possible ideas / optimizations / updates...)
+
+Some static function are duplicated when instanciating compositions
+(cf sample MaterialSurfaceArray02, with Math.fastRandom function)
 
 New Shader System integration: include c/c++ files into Xenko
 we have our own C++ compilation system named `Xenko.Native` (made by @sinkingsugar)

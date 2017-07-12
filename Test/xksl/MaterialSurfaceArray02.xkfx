@@ -8,11 +8,11 @@ mixer m
 m.mixin(
   MaterialSurfaceArray[
     layers = [
-	  //mixin( MaterialSurfaceDiffuse[diffuseMap = mixin( ComputeColorTextureScaledOffsetDynamicSampler<Material.DiffuseMap,TEXCOORD0,Material.Sampler.i0,rgba,Material.TextureScale,Material.TextureOffset>)] ),
-	  //mixin( MaterialSurfaceNormalMap<false,true> [normalMap = mixin(ComputeColorWaveNormal<5,0.1,-0.03>)] ),
-	  //mixin( MaterialSurfaceGlossinessMap<false> [glossinessMap = mixin(ComputeColorConstantFloatLink<Material.GlossinessValue>)] ),
-	  //mixin( MaterialSurfaceSetStreamFromComputeColor<matSpecular,rgb> [computeColorSource = mixin(ComputeColorConstantColorLink<Material.SpecularValue>)] ),
-	  //mixin( MaterialSurfaceSetStreamFromComputeColor<matSpecularIntensity,r> [computeColorSource = mixin(ComputeColorConstantFloatLink<Material.SpecularIntensityValue>)] ),
+	  mixin( MaterialSurfaceDiffuse[diffuseMap = mixin( ComputeColorTextureScaledOffsetDynamicSampler<Material.DiffuseMap,TEXCOORD0,Material.Sampler.i0,rgba,Material.TextureScale,Material.TextureOffset>)] ),
+	  mixin( MaterialSurfaceNormalMap<false,true> [normalMap = mixin(ComputeColorWaveNormal<5,0.1,-0.03>)] ),
+	  mixin( MaterialSurfaceGlossinessMap<false> [glossinessMap = mixin(ComputeColorConstantFloatLink<Material.GlossinessValue>)] ),
+	  mixin( MaterialSurfaceSetStreamFromComputeColor<matSpecular,rgb> [computeColorSource = mixin(ComputeColorConstantColorLink<Material.SpecularValue>)] ),
+	  mixin( MaterialSurfaceSetStreamFromComputeColor<matSpecularIntensity,r> [computeColorSource = mixin(ComputeColorConstantFloatLink<Material.SpecularIntensityValue>)] ),
 	  mixin( MaterialSurfaceLightingAndShading [surfaces = [
 	    mixin(MaterialSurfaceShadingDiffuseLambert<false>),
 		mixin(MaterialSurfaceShadingSpecularMicrofacet [fresnelFunction = mixin(MaterialSpecularMicrofacetFresnelSchlick), geometricShadowingFunction = mixin(MaterialSpecularMicrofacetVisibilitySmithSchlickGGX), normalDistributionFunction = mixin(MaterialSpecularMicrofacetNormalDistributionGGX)])

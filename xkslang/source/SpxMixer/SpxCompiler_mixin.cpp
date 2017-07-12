@@ -1498,6 +1498,53 @@ bool SpxCompiler::GetListAllCompositions(vector<ShaderCompositionInfo>& vecCompo
     return true;
 }
 
+bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders, vector<ShaderComposition*>& listCompositions)
+{
+#ifdef XKSLANG_DEBUG_MODE
+    if (shader == nullptr) return error("Shader is null");
+#endif
+
+    for (auto itc = shader->compositionsList.begin(); itc != shader->compositionsList.end(); itc++)
+    {
+        ShaderComposition& aComposition = *itc;
+        if (aComposition.variableName == variableName)
+        {
+            listCompositions.push_back( &aComposition);
+        }
+    }
+
+    if (lookInParentShaders)
+    {
+        unsigned int countParents = shader->parentsList.size();
+        for (unsigned int p = 0; p < countParents; ++p)
+        {
+            if (!GetAllCompositionsForVariableName(shader->parentsList[p], variableName, lookInParentShaders, listCompositions)) return false;
+        }
+    }
+
+    return true;
+}
+
+SpxCompiler::ShaderComposition* SpxCompiler::GetShaderCompositionForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders)
+{
+    vector<ShaderComposition*> listCompositions;
+    if (!GetAllCompositionsForVariableName(shader, variableName, true, listCompositions))
+    {
+        error("Fail to get all compositions for the variable: " + variableName);
+        return nullptr;
+    }
+
+    unsigned int countCompositionFound = listCompositions.size();
+    /*if (countCompositionFound > 1){
+        error("Several compositions found for the variable: " + variableName);
+        return nullptr;
+    }*/
+    // ==> In the case of several compositions exists with the same variable name: we now return the 1st one found
+
+    if (countCompositionFound == 0) return nullptr;
+    return listCompositions[0];
+}
+
 bool SpxCompiler::AddComposition(const string& shaderName, const string& variableName, SpxCompiler* source)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
@@ -1516,7 +1563,7 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
         shaderCompositionTarget = this->GetShaderByName(shaderName);
         if (shaderCompositionTarget == nullptr) return error(string("No shader exists in destination bytecode with the name: ") + shaderName);
 
-        compositionTarget = shaderCompositionTarget->GetShaderCompositionByName(variableName);
+        compositionTarget = GetShaderCompositionForVariableName(shaderCompositionTarget, variableName, true);
         if (compositionTarget == nullptr) return error(string("No composition exists in shader: ") + shaderName + string(", with the name: ") + variableName);
     }
     else

@@ -154,7 +154,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose13", "TestCompose13.xkfx" },
     //{ "TestCompose14", "TestCompose14.xkfx" },
     //{ "TestCompose15", "TestCompose15.xkfx" },
-    //{ "TestCompose16", "TestCompose16.xkfx" },
+    { "TestCompose16", "TestCompose16.xkfx" },
     //{ "TestCompose17", "TestCompose17.xkfx" },
     //{ "TestCompose18", "TestCompose18.xkfx" },
     //{ "TestCompose19", "TestCompose19.xkfx" },
@@ -259,9 +259,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray01", "MaterialSurfaceArray01.xkfx" },
     //{ "ComputeColorWaveNormal", "ComputeColorWaveNormal.xkfx" },
     //{ "MaterialSurfaceShadingSpecularMicrofacet", "MaterialSurfaceShadingSpecularMicrofacet.xkfx" },
-    { "MaterialSurfaceLightingAndShading", "MaterialSurfaceLightingAndShading.xkfx" },
-
+    //{ "MaterialSurfaceLightingAndShading", "MaterialSurfaceLightingAndShading.xkfx" },
     //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
+
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
     ///{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
