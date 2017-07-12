@@ -1,26 +1,12 @@
 
-//PIXEL SHADER
-struct PS_OUT
+float3 compute(float3 f)
 {
-    float4 out_color : COLOR0;
-	float out_depth : SV_DEPTH; //DEPTH;
-	float out_depth2 : DEPTH;
-};
+	return f;
+}
 
-struct PS_IN
+void main()
 {
-    float4 in_fragCoord1 : SV_POSITION;  //FragCoord (EbvFragCoord)
-	float4 in_fragCoord2 : POSITION;
-	float4 in_fragCoord3 : POS;
-};
-
-PS_OUT main(PS_IN psin)
-{
-    PS_OUT output;
-	output.out_depth = 1;
-	output.out_depth2 = 1;
-    output.out_color = psin.in_fragCoord1;
-    return output;
+	float3 f3 = compute(1.0);
 }
 
 //=========================================================================

@@ -2521,7 +2521,8 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
 
             //========================================================================================================
             //build the const value label text
-            /*std::string constValueLabel;
+            //genericAttribute.expressionConstValue = userGenericValueExpression;
+            std::string constValueLabel;
             {
                 const TType& constType = expressionNodeConstantUnion->getType();
                 const TConstUnionArray& consts = expressionNodeConstantUnion->getConstArray();
@@ -2547,15 +2548,27 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
                         case EbtUint64:
                             constValueLabel = std::to_string(consts[0].getU64Const());
                             break;
+#ifdef AMD_EXTENSIONS
+                        case EbtFloat16:
+#endif
                         case EbtDouble:
                         case EbtFloat:
                             constValueLabel = std::to_string(consts[0].getDConst());
+                            {
+                                //format the string (remove unnessecary '0' at the end of the fraction part)
+                                size_t dotPos = constValueLabel.find_first_of('.');
+                                if (dotPos != std::string::npos)
+                                {
+                                    size_t len = constValueLabel.size();
+                                    size_t lastPos = constValueLabel.find_last_not_of('0');
+                                    if (lastPos != std::string::npos)
+                                    {
+                                        if (lastPos > dotPos) constValueLabel = constValueLabel.substr(0, lastPos + 1);
+                                    }
+                                }
+                            }
+
                             break;
-#ifdef AMD_EXTENSIONS
-                        case EbtFloat16:
-                            constValueLabel = std::to_string(consts[0].getDConst());
-                            break;
-#endif
                         case EbtBool:
                             //constValueLabel = std::to_string(consts[0].getBConst());
                             constValueLabel = consts[0].getBConst()? "true": "false";
@@ -2567,9 +2580,7 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
                 }
             }
             if (constValueLabel.size() == 0) return error(parseContext, "Failed to build the generic const value label");
-            genericAttribute.expressionConstValue = TString(constValueLabel.c_str());*/
-
-            genericAttribute.expressionConstValue = userGenericValueExpression;
+            genericAttribute.expressionConstValue = TString(constValueLabel.c_str());
 
             //========================================================================================================
             //Create the generic const variable on global space

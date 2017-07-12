@@ -242,6 +242,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMemberName05", "TestMemberName05.xkfx" },
     //{ "TestSemanticType01", "TestSemanticType01.xkfx" },
     //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
+    { "functionsFinding01", "functionsFinding01.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
@@ -258,7 +259,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray01", "MaterialSurfaceArray01.xkfx" },
     //{ "ComputeColorWaveNormal", "ComputeColorWaveNormal.xkfx" },
     
-    { "MaterialSurfaceShadingSpecularMicrofacet", "MaterialSurfaceShadingSpecularMicrofacet.xkfx" },
+    //{ "MaterialSurfaceShadingSpecularMicrofacet", "MaterialSurfaceShadingSpecularMicrofacet.xkfx" },
 
     //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },

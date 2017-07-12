@@ -71,10 +71,13 @@ struct HlslToken {
     }
 };
 
-struct TShaderClassFunction {
-    TFunction* function;    //function prototype
-    HlslToken token;        //token where the function is declared
-    TIntermNode* bodyNode;  //resulting node of the function definition
+class XkslShaderDefinition;
+struct TShaderClassFunction
+{
+    XkslShaderDefinition* shader;  //shader owning the method
+    TFunction* function;           //function prototype
+    HlslToken token;               //token where the function is declared
+    TIntermNode* bodyNode;         //resulting node of the function definition
 };
 
 class XkslShaderDefinition

@@ -954,7 +954,7 @@ public:
     // per process threadPoolAllocator, then it causes increased memory usage per compile
     // it is essential to use "symbol = sym" to assign to symbol
     TIntermSymbol(int i, const TString& n, const TType& t)
-        : TIntermTyped(t), id(i), userDefinedName(nullptr)
+        : TIntermTyped(t), id(i), userDefinedName(nullptr),
 #ifdef ENABLE_HLSL
         flattenSubset(-1),
 #endif

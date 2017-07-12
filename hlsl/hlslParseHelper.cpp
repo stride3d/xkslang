@@ -7027,6 +7027,11 @@ const TFunction* HlslParseContext::findFunction(const TSourceLoc& loc, TFunction
     TVector<const TFunction*> candidateList;
     symbolTable.findFunctionNameList(call.getMangledName(), candidateList, builtIn);
 
+    return findBestMatchingFunctionFromCandidateList(loc, call, candidateList, builtIn, args, true);
+}
+
+const TFunction* HlslParseContext::findBestMatchingFunctionFromCandidateList(const TSourceLoc& loc, TFunction& call, TVector<const TFunction*>& candidateList, bool builtIn, TIntermTyped*& args, bool throwErrorIfNoResult)
+{
     // These built-in ops can accept any type, so we bypass the argument selection
     if (candidateList.size() == 1 && builtIn &&
         (candidateList[0]->getBuiltInOp() == EOpMethodAppend ||
@@ -7201,7 +7206,8 @@ const TFunction* HlslParseContext::findFunction(const TSourceLoc& loc, TFunction
     }
 
     if (bestMatch == nullptr) {
-        error(loc, "no matching overloaded function found", call.getName().c_str(), "");
+        if (throwErrorIfNoResult)
+            error(loc, "no matching overloaded function found", call.getName().c_str(), "");
         return nullptr;
     }
 

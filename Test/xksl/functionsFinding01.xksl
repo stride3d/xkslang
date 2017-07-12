@@ -1,0 +1,20 @@
+shader ShaderBase
+{
+	float3 compute(float3 f)
+	{
+		return f;
+	}
+}
+
+shader ShaderMain : ShaderBase
+{
+	float3 compute(float3 f)
+	{
+		return f;
+	}
+	
+	void VSMain()
+	{
+		float3 f3 = compute(1.0);
+	}
+}

@@ -292,7 +292,6 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
 {
     if (strShadersWithGenerics == nullptr) return true;
 
-    const char* trimStr = " ,";
     string txt(strShadersWithGenerics);
     int len = txt.size();
     int pos = 0, end = 0;
@@ -330,13 +329,18 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
                     loop = false;
                     break;
                 }
+                case ',':
+                {
+                    loop = false;
+                    break;
+                }
             }
         }
 
         if (end == pos) return true;
 
         string shaderName = txt.substr(pos, end - pos);
-        shaderName = TrimStringFromAny(shaderName, trimStr);
+        shaderName = TrimString(shaderName, ' ');
 
         ShaderParsingDefinition shaderDefintion;
         shaderDefintion.shaderName = shaderName;
@@ -366,7 +370,7 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
             end++;
         }
 
-        while (end < len && txt[end] == ' ') end++;
+        while (end < len && (txt[end] == ' ' || txt[end] == ',')) end++;
         if (end < len && txt[end] == '[') hasCompositions = true;
 
         if (hasCompositions)
@@ -401,11 +405,12 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
 
             string compositionStr = txt.substr(compositionsStart + 1, (end - compositionsStart - 1));
             shaderDefintion.compositionString = compositionStr;
+            end++;
         }
 
         listshaderDefinition.push_back(shaderDefintion);
 
-        pos = end + 1;
+        pos = end;
         if (pos >= len) return true;
     }
 

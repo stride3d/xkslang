@@ -724,22 +724,15 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
     //     return true;
 
     bool forbidDeclarators = (peekTokenClass(EHTokCBuffer) || peekTokenClass(EHTokTBuffer));
-    HlslToken initialToken = this->token;
-
     // fully_specified_type
     if (!acceptFullySpecifiedType(declaredType, nodeList))
         return false;
 
-    toto;
     // cbuffer and tbuffer end with the closing '}'.
     // No semicolon is included.
     if (forbidDeclarators)
         return true;
 
-    // declarator_list
-    //    : declarator
-    //         : identifier
-        
     if (this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined)
     {
         if (this->xkslShaderCurrentlyParsed == nullptr)
@@ -752,6 +745,9 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
         }
     }
 
+    // declarator_list
+    //    : declarator
+    //         : identifier
     HlslToken idToken;
     TIntermAggregate* initializers = nullptr;
     while (acceptIdentifier(idToken)) {
@@ -877,17 +873,19 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
 
     // SEMICOLON
     if (! acceptTokenClass(EHTokSemicolon)) {
-      if (declaredType.getBasicType() != EbtShaderClass){toto}  //XKSL extension, exception wish shader declaration: we can ommit the ";"
-        // This may have been a false detection of what appeared to be a declaration, but
-        // was actually an assignment such as "float = 4", where "float" is an identifier.
-        // We put the token back to let further parsing happen for cases where that may
-        // happen.  This errors on the side of caution, and mostly triggers the error.
-        if (peek() == EHTokAssign || peek() == EHTokLeftBracket || peek() == EHTokDot || peek() == EHTokComma) {
-            recedeToken();
-            return false;
-        } else {
-            expected(";");
-            return false;
+        if (declaredType.getBasicType() != EbtShaderClass) //XKSL extension, exception wish shader: we can ommit the ";"
+        {
+            // This may have been a false detection of what appeared to be a declaration, but
+            // was actually an assignment such as "float = 4", where "float" is an identifier.
+            // We put the token back to let further parsing happen for cases where that may
+            // happen.  This errors on the side of caution, and mostly triggers the error.
+            if (peek() == EHTokAssign || peek() == EHTokLeftBracket || peek() == EHTokDot || peek() == EHTokComma) {
+                recedeToken();
+                return false;
+            } else {
+                expected(";");
+                return false;
+            }
         }
     }
 
@@ -2841,8 +2839,14 @@ bool HlslGrammar::acceptShaderClass(TType& type)
     return true;
 }
 
-bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, TFunction& function, TVector<TShaderClassFunction>& functionList)
+bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TFunction& function, TVector<TShaderClassFunction>& functionList)
 {
+    if (shader == nullptr)
+    {
+        error("shader parameter is null");
+        return false;
+    }
+
     const TString& newFunctionMangledName = function.getMangledName();
 
     //check if the function name already exists in the list
@@ -2862,6 +2866,7 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(const TString& shaderName, T
     if (!functionAlreadyDeclared)
     {
         TShaderClassFunction shaderFunction;
+        shaderFunction.shader = shader;
         shaderFunction.function = &function;
         shaderFunction.token = token;
         shaderFunction.bodyNode = nullptr;
@@ -3096,7 +3101,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
                     {
                         //function definition: but we add the function prototype only
-                        if (!addShaderClassFunctionDeclaration(shaderName, *function, *listMethodDeclaration)) return false;
+                        if (!addShaderClassFunctionDeclaration(shader, *function, *listMethodDeclaration)) return false;
 
                         advanceToken();
                         if (!advanceUntilEndOfBlock(EHTokRightBrace)) {
@@ -3107,7 +3112,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     else
                     {
                         //add the function prototype
-                        if (!addShaderClassFunctionDeclaration(shaderName, *function, *listMethodDeclaration)) return false;
+                        if (!addShaderClassFunctionDeclaration(shader, *function, *listMethodDeclaration)) return false;
                     }
                 }
                 break;
@@ -3454,17 +3459,18 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
     }
     else
     {
-    if (acceptTokenClass(EHTokCBuffer)) {
-        // CBUFFER
+        if (acceptTokenClass(EHTokCBuffer)) {
+            // CBUFFER
             storageQualifier = EvqUniform;
             isCBuffer = true;
-    } else if (acceptTokenClass(EHTokTBuffer)) {
-        // TBUFFER
+        } else if (acceptTokenClass(EHTokTBuffer)) {
+            // TBUFFER
             storageQualifier = EvqBuffer;
-        readonly = true;
-    } else if (! acceptTokenClass(EHTokClass) && ! acceptTokenClass(EHTokStruct)) {
-        // Neither CLASS nor STRUCT
+            readonly = true;
+        } else if (! acceptTokenClass(EHTokClass) && ! acceptTokenClass(EHTokStruct)) {
+            // Neither CLASS nor STRUCT
             return false;
+        }
     }
 
     // Now known to be one of CBUFFER, TBUFFER, CLASS, or STRUCT
@@ -4548,6 +4554,126 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     return nullptr;
 }
 
+bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* shader, const TString& methodName, TVector<const TShaderClassFunction*>& shaderMethodsList, bool onlyLookInParentClasses, bool recursivelyLookInParents)
+{
+    if (shader == nullptr || shader->isValid == false) {
+        error("invalid or null shader");
+        return false;
+    }
+
+    if (!onlyLookInParentClasses)
+    {
+        //look if the shader declared some method with 
+        unsigned int countMethods = shader->listMethods.size();
+        for (unsigned int i = 0; i < countMethods; ++i)
+        {
+            const TShaderClassFunction* aShaderMethod = &(shader->listMethods[i]);
+            if (aShaderMethod->function->getName().compare(methodName) == 0)
+            {
+                shaderMethodsList.push_back(aShaderMethod);
+            }
+        }
+    }
+
+    //look within the class parents
+    if (recursivelyLookInParents)
+    {
+        //method not found: we look in the parent classes
+        unsigned int countParents = shader->listParents.size();
+        for (unsigned int p = 0; p < countParents; p++)
+        {
+            XkslShaderDefinition* parentShader = shader->listParents[p].parentShader;
+            if (parentShader == nullptr) {
+                error("missing link to parent shader for:" + shader->shaderBaseName);
+                return false;
+            }
+            if (parentShader->isValid == false) continue;
+
+            if ( !getListShaderClassMethodsWithGivenName(parentShader, methodName, shaderMethodsList, false, recursivelyLookInParents))
+                return false;
+        }
+    }
+
+    return true;
+}
+
+//Look for a method best-matching the function call (mangled name is not identical but we check if we can convert / cast some parameters)
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestMatchingMethod(const TString& shaderClassName, TFunction* functionCall, bool onlyLookInParentClasses)
+{
+    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
+
+    XkslShaderDefinition* shader = getShaderClassDefinition(shaderClassName);
+    if (shader == nullptr) {
+        error(TString("undeclared class:") + shaderClassName);
+        return identifierLocation;
+    }
+    if (shader->isValid == false) {
+        error("invalid shader:" + shader->shaderFullName);
+        return identifierLocation;
+    }
+
+    //Get the list of all potential candidates
+    const TString& methodName = functionCall->getName();
+    TVector<const TShaderClassFunction*> shaderMethodsList;
+    bool recursivelyLookInParents = false; //if we take all methods from current shader + its parents: it can lead to ambigeous choices if some signature are similar
+    if (!getListShaderClassMethodsWithGivenName(shader, methodName, shaderMethodsList, onlyLookInParentClasses, recursivelyLookInParents))
+    {
+        error("Failed to build the list of all candidate method for the given name: " + methodName);
+        return identifierLocation;
+    }
+
+    unsigned int countCandidates = shaderMethodsList.size();
+    if (countCandidates == 0) return identifierLocation;
+    TVector<const TFunction*> candidateList;
+    for (unsigned int k = 0; k < countCandidates; k++) candidateList.push_back(shaderMethodsList[k]->function);
+
+    //Find the best match
+    TIntermTyped* args = nullptr;
+    const TFunction* bestMatch = parseContext.findBestMatchingFunctionFromCandidateList(token.loc, *functionCall, candidateList, false, args, false);
+
+    if (bestMatch != nullptr)
+    {
+        //Got a matching function, find back the shader owning the function
+        const TShaderClassFunction* shaderClassFunction = nullptr;
+        for (unsigned int k = 0; k < countCandidates; k++)
+        {
+            if (shaderMethodsList[k]->function == bestMatch)
+            {
+                shaderClassFunction = shaderMethodsList[k];
+                break;
+            }
+        }
+        if (shaderClassFunction == nullptr) {
+            error("Failed to find back the shader class method");
+            return identifierLocation;
+        }
+        
+        identifierLocation.SetMethodLocation(shaderClassFunction->shader, shaderClassFunction->function);
+        return identifierLocation;
+    }
+
+    //Look into the parents
+    {
+        //method not found: we look in the parent classes
+        unsigned int countParents = shader->listParents.size();
+        for (unsigned int p = 0; p < countParents; p++)
+        {
+            XkslShaderDefinition* parentShader = shader->listParents[p].parentShader;
+            if (parentShader == nullptr) {
+                error("missing link to parent shader for:" + shaderClassName);
+                return identifierLocation;
+            }
+            if (parentShader->isValid == false) continue;
+
+            const TString& parentName = parentShader->shaderFullName;
+            identifierLocation = findShaderClassBestMatchingMethod(parentName, functionCall, false);
+            if (identifierLocation.isMethod()) return identifierLocation;
+        }
+    }
+
+    return identifierLocation;
+}
+
 XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMethod(const TString& shaderClassName, const TString& methodName, bool onlyLookInParentClasses)
 {
     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
@@ -4565,8 +4691,8 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
     if (!onlyLookInParentClasses)
     {
         //look if the shader did declare the method
-        int countMethods = shader->listMethods.size();
-        for (int i = 0; i < countMethods; ++i)
+        unsigned int countMethods = shader->listMethods.size();
+        for (unsigned int i = 0; i < countMethods; ++i)
         {
             if (shader->listMethods[i].function->getDeclaredMangledName().compare(methodName) == 0)
             {
@@ -4579,8 +4705,8 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
     if (identifierLocation.isUnknown())
     {
         //method not found: we look in the parent classes
-        int countParents = shader->listParents.size();
-        for (int p = 0; p < countParents; p++)
+        unsigned int countParents = shader->listParents.size();
+        for (unsigned int p = 0; p < countParents; p++)
         {
             if (shader->listParents[p].parentShader == nullptr) {
                 error("missing link to parent shader for:" + shaderClassName);
@@ -5371,14 +5497,14 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
     TShaderCompositionVariable* compositionTargeted, HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
 {
     // arguments
-    TFunction* function = new TFunction(idToken.string, TType(EbtVoid));
+    TFunction* functionCall = new TFunction(idToken.string, TType(EbtVoid));
     TIntermTyped* arguments = nullptr;
 
     // methods have an implicit first argument of the calling object.
     if (base != nullptr)
-        parseContext.handleFunctionArgument(function, arguments, base);
+        parseContext.handleFunctionArgument(functionCall, arguments, base);
 
-    if (!acceptArguments(function, arguments))
+    if (!acceptArguments(functionCall, arguments))
         return false;
     
     TString nameOfShaderOwningTheFunction = functionClassAccessorName;
@@ -5389,9 +5515,15 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
     }
 
     // We now have the method mangled name, find the corresponding method in the shader library
-    const TString& methodMangledName = function->getDeclaredMangledName();
+    const TString& methodMangledName = functionCall->getDeclaredMangledName();
     bool onlyLookInParentClasses = (callToFunctionThroughBaseAccessor == true);
     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(nameOfShaderOwningTheFunction, methodMangledName, onlyLookInParentClasses);
+
+    if (!identifierLocation.isMethod())
+    {
+        //we keep looking if we can match another method by casting some of the function parameters
+        identifierLocation = findShaderClassBestMatchingMethod(nameOfShaderOwningTheFunction, functionCall, onlyLookInParentClasses);
+    }
 
     if (identifierLocation.isMethod())
     {
@@ -5471,7 +5603,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
     {
         //function not found as a method from our shader library, so we look in the global list of method
         //could be a call to instrisic functions
-        node = parseContext.handleFunctionCall(idToken.loc, function, arguments, false, nullptr);
+        node = parseContext.handleFunctionCall(idToken.loc, functionCall, arguments, false, nullptr);
     }
 
     return true;

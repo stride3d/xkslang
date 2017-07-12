@@ -155,6 +155,7 @@ public:
     void checkNoShaderLayouts(const TSourceLoc&, const TShaderQualifiers&);
 
     const TFunction* findFunction(const TSourceLoc& loc, TFunction& call, bool& builtIn, int& thisDepth, TIntermTyped*& args);
+    const TFunction* findBestMatchingFunctionFromCandidateList(const TSourceLoc& loc, TFunction& call, TVector<const TFunction*>& candidateList, bool builtIn, TIntermTyped*& args, bool throwErrorIfNoResult);
     void declareTypedef(const TSourceLoc&, const TString& identifier, const TType&);
     void declareStruct(const TSourceLoc&, TString& structName, TType&);
     TSymbol* lookupUserType(const TString&, TType&);
