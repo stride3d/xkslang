@@ -154,10 +154,12 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose13", "TestCompose13.xkfx" },
     //{ "TestCompose14", "TestCompose14.xkfx" },
     //{ "TestCompose15", "TestCompose15.xkfx" },
-    { "TestCompose16", "TestCompose16.xkfx" },
+    //{ "TestCompose16", "TestCompose16.xkfx" },
     //{ "TestCompose17", "TestCompose17.xkfx" },
     //{ "TestCompose18", "TestCompose18.xkfx" },
     //{ "TestCompose19", "TestCompose19.xkfx" },
+    //{ "TestCompose20", "TestCompose20.xkfx" },
+    //{ "TestCompose21", "TestCompose21.xkfx" },
     
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -261,8 +263,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceShadingSpecularMicrofacet", "MaterialSurfaceShadingSpecularMicrofacet.xkfx" },
     //{ "MaterialSurfaceLightingAndShading", "MaterialSurfaceLightingAndShading.xkfx" },
     //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
+    //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
 
-    //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
+    { "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
     ///{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
@@ -484,9 +487,8 @@ static void WriteBytecode(const vector<uint32_t>& bytecode, const string& output
     }
 }
 
-static bool GetAndWriteMixerCurrentBytecode(EffectMixerObject* mixerTarget, const string& outputFileName, bool useXkslangDll)
+static bool GetMixerCurrentBytecode(EffectMixerObject* mixerTarget, vector<uint32_t>& mixinBytecode, bool useXkslangDll)
 {
-    vector<uint32_t> mixinBytecode;
     if (useXkslangDll)
     {
         int bytecodeLength = 0;
@@ -516,6 +518,16 @@ static bool GetAndWriteMixerCurrentBytecode(EffectMixerObject* mixerTarget, cons
         }
     }
 
+    return true;
+}
+
+static bool GetAndWriteMixerCurrentBytecode(EffectMixerObject* mixerTarget, const string& outputFileName, bool useXkslangDll)
+{
+    vector<uint32_t> mixinBytecode;
+    if (!GetMixerCurrentBytecode(mixerTarget, mixinBytecode, useXkslangDll)) {
+        error("failed to get the mixer current bytecode");
+        return false;
+    }
     WriteBytecode(mixinBytecode, outputDir, outputFileName, BytecodeFileFormat::Text);
     return true;
 }
@@ -1462,8 +1474,9 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     }
     else
     {
-        if (targetedShaderName.size() > 0 && targetedShaderName.compare(shaderName) != 0)
-            return error("The shader name (" + shaderName + ") does not match the targeted shader name (" + targetedShaderName + ")");
+        //if (targetedShaderName.size() > 0 && targetedShaderName.compare(shaderName) != 0)
+        //    return error("The shader name (" + shaderName + ") does not match the targeted shader name (" + targetedShaderName + ")");
+        //Error check's obsolete: shaderName could be a parent class of targetedShaderName
     }
 
     //===================================================
@@ -1545,8 +1558,8 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         // Add the composition to the mixer
         std::cout << endl;
         std::cout << "===================" << endl;
-        std::cout << "Adding composition: \"" << (shaderName.size() > 0? (shaderName + "."): "") << variableName << " = "
-            << compositionInstruction << "\"" << " to mixer: \"" << mixerTarget->name << "\"" << endl;
+        std::cout << "Instancing composition: \"" << (shaderName.size() > 0? (shaderName + "."): "") << variableName << " = "
+            << compositionInstruction << "\"" << " from mixer: \"" << compositionSourceMixer->name << "\""  << ", to mixer: \"" << mixerTarget->name << "\"" << endl;
 
         if (useXkslangDll)
         {
@@ -1574,6 +1587,18 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         string outputFileName = effectName + "_op" + to_string(operationNum++) + "_compose" + ".hr.spv";
         success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
         if (!success) return error("Failed to get and write the mixer current bytecode");
+
+        //Do a bytecode sanity check
+        {
+            vector<string> errorMsgs;
+            vector<uint32_t> mixinBytecode;
+            if (!GetMixerCurrentBytecode(mixerTarget, mixinBytecode, useXkslangDll)) return error("failed to get the mixer current bytecode");
+            if (!XkslParser::ProcessBytecodeSanityCheck(mixinBytecode, errorMsgs)) {
+                for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
+                error("Failed to process a bytecode sanity check");
+                return false;
+            }
+        }
     }
 
     return true;
@@ -1616,7 +1641,7 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
 {
     std::cout << endl;
     std::cout << "===========================" << endl;
-    std::cout << "Process mixin instructions: \"" << mixinOperationInstructionLineLog << "\"" << endl;
+    std::cout << "Process mixin instructions: \"" << mixinOperationInstructionLineLog << "\"" << " into mixer: \"" << mixerTarget->name << "\"" << endl;
 
     if (mixinShadersInstructionString.size() == 0) return error("No shader to mix");
     bool success = true;
@@ -1688,49 +1713,63 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
 
         //=====================================================
         //Mixin the bytecode into the mixer
-        DWORD time_before, time_after;
-        vector<string> errorMsgs;
-        std::cout << endl;
-        std::cout << "mixin: " << shaderFullName << endl;
-        if (useXkslangDll)
         {
-            if (listShaderToMix.size() == 0) return error("not shader to mix");
-
-            string stringListShadersFullName;
-            for (unsigned int k = 0; k < listShaderToMix.size(); k++) stringListShadersFullName += listShaderToMix[k] + " ";
-
-            uint32_t* pBytecodeBuffer = &(shaderBytecode->getWritableBytecodeStream().front());
-            int32_t bytecodeLength = shaderBytecode->GetBytecodeSize();
-            time_before = GetTickCount();
-            success = xkslangDll::MixinShaders(mixerTarget->mixerHandleId, stringListShadersFullName.c_str(), pBytecodeBuffer, bytecodeLength);
-            time_after = GetTickCount();
-
-            if (!success)
+            DWORD time_before, time_after;
+            std::cout << endl;
+            std::cout << "mixin: " << shaderFullName << endl;
+            if (useXkslangDll)
             {
-                char* pError = xkslangDll::GetErrorMessages();
-                if (pError != nullptr) error(pError);
-                GlobalFree(pError);
+                if (listShaderToMix.size() == 0) return error("not shader to mix");
+
+                string stringListShadersFullName;
+                for (unsigned int k = 0; k < listShaderToMix.size(); k++) stringListShadersFullName += listShaderToMix[k] + " ";
+
+                uint32_t* pBytecodeBuffer = &(shaderBytecode->getWritableBytecodeStream().front());
+                int32_t bytecodeLength = shaderBytecode->GetBytecodeSize();
+                time_before = GetTickCount();
+                success = xkslangDll::MixinShaders(mixerTarget->mixerHandleId, stringListShadersFullName.c_str(), pBytecodeBuffer, bytecodeLength);
+                time_after = GetTickCount();
+
+                if (!success)
+                {
+                    char* pError = xkslangDll::GetErrorMessages();
+                    if (pError != nullptr) error(pError);
+                    GlobalFree(pError);
+                }
+            }
+            else
+            {
+                vector<string> errorMsgs;
+                time_before = GetTickCount();
+                success = mixerTarget->mixer->Mixin(*shaderBytecode, listShaderToMix, errorMsgs);
+                time_after = GetTickCount();
+
+                if (!success)
+                {
+                    for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
+                }
+            }
+
+            if (success) std::cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
+            else return false;
+
+            //write the mixer current bytecode
+            string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
+            success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
+            if (!success) return error("Failed to get and write the mixer current bytecode");
+
+            //Do a bytecode sanity check
+            {
+                vector<string> errorMsgs;
+                vector<uint32_t> mixinBytecode;
+                if (!GetMixerCurrentBytecode(mixerTarget, mixinBytecode, useXkslangDll)) return error("failed to get the mixer current bytecode");
+                if (!XkslParser::ProcessBytecodeSanityCheck(mixinBytecode, errorMsgs)) {
+                    for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
+                    error("Failed to process a bytecode sanity check");
+                    return false;
+                }
             }
         }
-        else
-        {
-            time_before = GetTickCount();
-            success = mixerTarget->mixer->Mixin(*shaderBytecode, listShaderToMix, errorMsgs);
-            time_after = GetTickCount();
-
-            if (!success)
-            {
-                for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
-            }
-        }
-
-        if (success) std::cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
-        else return false;
-
-        //write the mixer current bytecode
-        string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
-        success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
-        if (!success) return error("Failed to get and write the mixer current bytecode");
 
         string compositionString = shaderDefinition.compositionString;
         if (compositionString.size() > 0)
@@ -2183,7 +2222,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                     //Optionnal: get and display all compositions
                     {
                         vector<ShaderCompositionInfo> vecCompositions;
-                        success = mixerTarget->mixer->GetListAllCompositions(vecCompositions, errorMsgs);
+                        success = mixerTarget->mixer->GetListAllCompositionsInfo(vecCompositions, errorMsgs);
                         if (!success) { error("Failed to get the list of all compositions from the mixer"); break; }
                         if (vecCompositions.size() > 0)
                         {

@@ -155,7 +155,7 @@ namespace spv {
     }
 
     // Is this an opcode we should remove when using --strip?
-    bool spirvbin_t::isStripOp(spv::Op opCode) const
+    bool spirvbin_t::isStripOp(spv::Op opCode)
     {
         switch (opCode) {
         case spv::OpSource:
@@ -168,7 +168,7 @@ namespace spv {
     }
 
     // Return true if this opcode is flow control
-    bool spirvbin_t::isFlowCtrl(spv::Op opCode) const
+    bool spirvbin_t::isFlowCtrl(spv::Op opCode)
     {
         switch (opCode) {
         case spv::OpBranchConditional:
@@ -184,7 +184,7 @@ namespace spv {
     }
 
     // Return true if this opcode defines a variable
-    bool spirvbin_t::isVariableOp(spv::Op opCode) const
+    bool spirvbin_t::isVariableOp(spv::Op opCode)
     {
         switch (opCode) {
         case spv::OpVariable:   return true;
@@ -193,7 +193,7 @@ namespace spv {
     }
 
     // Return true if this opcode defines a pointer type
-    bool spirvbin_t::isPointerTypeOp(spv::Op opCode) const
+    bool spirvbin_t::isPointerTypeOp(spv::Op opCode)
     {
         switch (opCode) {
         case spv::OpTypePointer: return true;
@@ -202,7 +202,7 @@ namespace spv {
     }
 
     // Return true if this opcode defines a type
-    bool spirvbin_t::isTypeOp(spv::Op opCode) const
+    bool spirvbin_t::isTypeOp(spv::Op opCode)
     {
         switch (opCode) {
         case spv::OpTypeVoid:
@@ -231,11 +231,11 @@ namespace spv {
     }
 
     // Return true if this opcode defines a constant
-    bool spirvbin_t::isConstOp(spv::Op opCode) const
+    bool spirvbin_t::isConstOp(spv::Op opCode)
     {
         switch (opCode) {
-        case spv::OpConstantNull:       error("unimplemented constant type");
-        case spv::OpConstantSampler:    error("unimplemented constant type");
+        //case spv::OpConstantNull:       error("unimplemented constant type");
+        //case spv::OpConstantSampler:    error("unimplemented constant type");
 
         case spv::OpConstantTrue:
         case spv::OpConstantFalse:

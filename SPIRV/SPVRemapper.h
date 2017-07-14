@@ -171,12 +171,12 @@ private:
    // handle error
    void error(const std::string& txt) const { errorHandler(txt); }
 
-   bool     isConstOp(spv::Op opCode)      const;
-   bool     isTypeOp(spv::Op opCode)       const;
-   bool     isPointerTypeOp(spv::Op opCode) const;
-   bool     isVariableOp(spv::Op opCode)   const;
-   bool     isStripOp(spv::Op opCode)      const;
-   bool     isFlowCtrl(spv::Op opCode)     const;
+   static bool     isConstOp(spv::Op opCode);
+   static bool     isTypeOp(spv::Op opCode);
+   static bool     isPointerTypeOp(spv::Op opCode);
+   static bool     isVariableOp(spv::Op opCode);
+   static bool     isStripOp(spv::Op opCode);
+   static bool     isFlowCtrl(spv::Op opCode);
    range_t  literalRange(spv::Op opCode)   const;
    range_t  typeRange(spv::Op opCode)      const;
    range_t  constRange(spv::Op opCode)     const;
@@ -185,7 +185,11 @@ private:
 
    spv::Id&        asId(unsigned word)                { return spv[word]; }  
    const spv::Id&  asId(unsigned word)          const { return spv[word]; }
+   static spv::Id  asId(const std::vector<spirword_t>& bytecode, unsigned word) { return bytecode[word]; }
+
    int             asLiteralValue(unsigned word) { return spv[word]; }
+   static int      asLiteralValue(const std::vector<spirword_t>& bytecode, unsigned word) { return bytecode[word]; }
+
    spv::Op         asOpCode(unsigned word)      const { return opOpCode(spv[word]); }
    std::uint32_t   asOpCodeHash(unsigned word);
    spv::Decoration asDecoration(unsigned word)  const { return spv::Decoration(spv[word]); }
@@ -223,6 +227,7 @@ private:
    spirword_t  bound()    const       { return spv[3]; } // return Id bound from header
    spirword_t  bound(spirword_t b)    { return spv[3] = b; };
    spirword_t  setBound(spirword_t b) { return spv[3] = b; };
+   static spirword_t  bound(const std::vector<spirword_t>& bytecode) { return bytecode[3]; } // return Id bound from header
    static spirword_t  setBound(std::vector<spirword_t>& bytecode, spirword_t b) { return bytecode[3] = b; };
    spirword_t  genmagic() const       { return spv[2]; } // generator magic
    spirword_t  genmagic(spirword_t m) { return spv[2] = m; }

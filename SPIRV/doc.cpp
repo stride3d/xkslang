@@ -1248,7 +1248,7 @@ const char* OpcodeString(int op)
     case (OpFunctionCallBaseResolved):                  return "OpFunctionCallBaseRes";
     case (OpShaderCompositionDeclaration):              return "OpShaderCompositionDeclaration";
     case (OpShaderCompositionInstance):                 return "OpShaderCompositionInstance";
-    case (OpFunctionCallThroughCompositionVariable):    return "OpFunctionCallThroughCompositionVar";
+    case (OpFunctionCallThroughCompositionVariable):    return "OpFunctionCallThroughCompositionVariable";
     case (OpFunctionCallThroughStaticShaderClassCall):  return "OpFunctionCallThroughStaticShaderClassCall";
     case (OpForEachCompositionStartLoop):               return "OpForEachCompositionStartLoop";
     case (OpForEachCompositionEndLoop):                 return "OpForEachCompositionEndLoop";

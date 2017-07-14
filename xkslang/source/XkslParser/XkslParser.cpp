@@ -4,6 +4,7 @@
 #include "StandAlone/ResourceLimits.h"
 
 #include "XkslParser.h"
+#include "../SpxMixer/SpxCompiler.h"
 
 using namespace std;
 using namespace xkslang;
@@ -234,6 +235,12 @@ static string TrimStringFromAny(const string& str, const char* chars)
     if (first == string::npos) return str;
     size_t last = str.find_last_not_of(chars);
     return str.substr(first, (last - first + 1));
+}
+
+bool XkslParser::ProcessBytecodeSanityCheck(const vector<uint32_t>& bytecode, vector<string>& errorMsgs)
+{
+    bool success = SpxCompiler::ProcessBytecodeSanityCheck(bytecode, errorMsgs);
+    return success;
 }
 
 int XkslParser::ParseStringMacroDefinition(const char* strMacrosDefinition, vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeValuesQuotationMark)

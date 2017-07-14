@@ -15,6 +15,9 @@
 //This define allows a workaround which removes this intermediaty struct and insert the members directly within the cbuffer declaration
 #define SPIRV_CROSS_INSERT_CBUFFER_MEMBERS_DIRECTLY_WITHIN_CBUFFER_DECLARATION
 
+#define SPV_BYTECODE_BOUND_ID_POSITION 3
+#define SPV_BYTECODE_HEADER_SIZE 5
+
 namespace xkslang
 {
     enum class ShadingStageEnum : int32_t

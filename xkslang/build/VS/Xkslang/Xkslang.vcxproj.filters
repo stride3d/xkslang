@@ -71,5 +71,8 @@
     <ClCompile Include="..\..\..\source\Common\xkslangDefine.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_utils.cpp">
+      <Filter>SpxMixer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

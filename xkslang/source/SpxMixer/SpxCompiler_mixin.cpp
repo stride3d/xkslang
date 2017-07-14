@@ -26,6 +26,12 @@ bool SpxCompiler::error(const string& txt)
     return false;
 }
 
+bool SpxCompiler::error(vector<std::string>& errorMsgs, const string& txt)
+{
+    errorMsgs.push_back(txt);
+    return false;
+}
+
 //=====================================================================================================================================
 //=====================================================================================================================================
 //static const auto spx_inst_fn_nop = [](spv::Op, unsigned) { return false; };
@@ -1291,260 +1297,6 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     return true;
 }
 
-bool SpxCompiler::SetBytecode(const SpvBytecode& bytecode)
-{
-    const vector<uint32_t>& spx = bytecode.getBytecodeStream();
-    spv.clear();
-    spv.insert(spv.end(), spx.begin(), spx.end());
-
-    if (!ValidateHeader()) return error(string("Invalid bytecode header for: ") + bytecode.GetName());
-
-    return true;
-}
-
-bool SpxCompiler::ValidateHeader()
-{
-    if (spv.size() < header_size) {
-        return error("file too short");
-    }
-
-    if (magic() != spv::MagicNumber) {
-        error("bad magic number");
-    }
-
-    // field 1 = version
-    // field 2 = generator magic
-    // field 3 = result <id> bound
-
-    if (schemaNum() != 0) {
-        error("bad schema, must be 0");
-    }
-
-    if (errorMessages.size() > 0) return false;
-    return true;
-}
-
-bool SpxCompiler::ProcessBytecodeAndDataSanityCheck()
-{
-	unsigned int maxId = bound();
-	if (maxId == 0) return error("invalid bound value: " + to_string(maxId));
-
-    vector<unsigned int> listAllTypesConstsAndVariablesPosition;
-    vector<unsigned int> listAllResultIdsPosition;
-    listAllTypesConstsAndVariablesPosition.resize(bound(), 0);
-    listAllResultIdsPosition.resize(maxId, 0);
-
-    vector<spv::Id> listIds;
-    unsigned int start = header_size;
-    const unsigned int end = (unsigned int)spv.size();
-    while (start < end)
-    {
-        unsigned int wordCount = asWordCount(start);
-        spv::Op opCode = asOpCode(start);
-
-        if (wordCount == 0) return error("wordCount is 0 for instruction at pos: " + to_string(start));
-
-        bool hasAType = false;
-        spv::Id instructionTypeId = 0;
-        bool hasAResultId = false;
-        spv::Id instructionResultId = 0;
-        
-        //if the instruction has a type, check that this type is already defined
-        if (spv::InstructionDesc[opCode].hasType())
-        {
-            hasAType = true;
-            unsigned int posTypeId = start + 1;
-            if (posTypeId >= spv.size()) return error("TypeId position is out of bound for instruction at pos: " + to_string(start));
-
-            instructionTypeId = spv[start + 1];
-            if (instructionTypeId == 0 || instructionTypeId >= listAllTypesConstsAndVariablesPosition.size()) return error("instruction TypeId is out of bound: " + to_string(instructionTypeId));
-            if (listAllTypesConstsAndVariablesPosition[instructionTypeId] == 0) return error("an instruction is using an undefined type: " + to_string(instructionTypeId));
-        }
-
-        //if the instruction has a resultId, check this resultId
-        if (spv::InstructionDesc[opCode].hasResult())
-        {
-            hasAResultId = true;
-            unsigned int posResultId = hasAType ? start + 2 : start + 1;
-            if (posResultId >= spv.size()) return error("ResultId position is out of bound for instruction at pos: " + to_string(start));
-
-            instructionResultId = spv[posResultId];
-            if (instructionResultId == 0 || instructionResultId >= listAllResultIdsPosition.size()) return error("instruction ResultId is out of bound: " + to_string(instructionResultId));
-            if (listAllResultIdsPosition[instructionResultId] != 0) return error("the instruction result Id is already defined: " + to_string(instructionResultId));
-            listAllResultIdsPosition[instructionResultId] = start;
-        }
-
-        //Check more details for instruction defining types/consts/variables
-        bool isOpTypeConstOrVariableInstruction = false;
-        spv::Id typeConstVariableResultId = 0;
-        if (isConstOp(opCode)) {
-            if (start + 2 >= spv.size()) return error("resultId position is out of bound for instruction at pos: " + to_string(start));
-            isOpTypeConstOrVariableInstruction = true;
-            typeConstVariableResultId = asId(start + 2);
-        }
-        else if (isTypeOp(opCode)) {
-            if (start + 1 >= spv.size()) return error("resultId position is out of bound for instruction at pos: " + to_string(start));
-            isOpTypeConstOrVariableInstruction = true;
-            typeConstVariableResultId = asId(start + 1);
-        }
-        else if (isVariableOp(opCode)) {
-            if (start + 2 >= spv.size()) return error("resultId position is out of bound for instruction at pos: " + to_string(start));
-            isOpTypeConstOrVariableInstruction = true;
-            typeConstVariableResultId = asId(start + 2);
-        }
-
-		//parse the instruction data
-		{
-			unsigned int wordCountBis;
-			spv::Op opCodeBis;
-			spv::Id typeId;
-			spv::Id resultId;
-			listIds.clear();
-			if (!parseInstruction(start, opCodeBis, wordCountBis, typeId, resultId, listIds)) return error("Error parsing the instruction");
-			if (opCodeBis != opCode) return error("Inconsistency in the opCode parsed");
-			if (wordCountBis != wordCount) return error("Inconsistency in the wordCount parsed");
-
-			if (typeId != spvUndefinedId) listIds.push_back(typeId);
-
-			//Check that all IDs are valid
-			for (unsigned k = 0; k < listIds.size(); ++k)
-			{
-				spv::Id anId = listIds[k];
-				if (anId >= maxId) return error("anId is out of bound: " + to_string(anId));
-			}
-		}
-
-        //for every types/consts/variables: if the instruction is refering to other IDs, check that those IDs are already defined.
-        if (isOpTypeConstOrVariableInstruction)
-        {
-            if (typeConstVariableResultId == 0 || typeConstVariableResultId != instructionResultId)
-                return error("typeConstVariableResultId is inconsistent with the instruction resultId: " + to_string(typeConstVariableResultId));
-
-            if (typeConstVariableResultId >= listAllTypesConstsAndVariablesPosition.size()) return error("resultId is out of bound: " + to_string(typeConstVariableResultId));
-
-            if (listAllTypesConstsAndVariablesPosition[typeConstVariableResultId] != 0) return error("the Id is already used by another type: " + to_string(typeConstVariableResultId));
-            listAllTypesConstsAndVariablesPosition[typeConstVariableResultId] = start;
-
-            if (listAllObjects[typeConstVariableResultId] == nullptr) return error("The type, const or variable has no object data defined. Id: " + to_string(typeConstVariableResultId));
-
-			//Check that all IDs refers to by the type/const/variable are already defined
-			for (unsigned k = 0; k < listIds.size(); ++k)
-			{
-				spv::Id anId = listIds[k];
-
-				if (anId >= listAllTypesConstsAndVariablesPosition.size()) return error("anId is out of bound: " + to_string(anId));
-				if (listAllTypesConstsAndVariablesPosition[anId] == 0) return error("a type refers to an Id not defined yet: " + to_string(anId));
-			}
-        }
-
-        start += wordCount;
-    }
-
-    return true;
-}
-
-bool SpxCompiler::ValidateSpxBytecodeAndData()
-{
-    if (!ValidateHeader()) return error("Failed to validate the header");
-
-#ifdef XKSLANG_DEBUG_MODE
-    //Debug sanity check: make sure that 2 shaders or 2 variables does not share the same name
-    unordered_map<string, int> shaderVariablesDeclarationName;
-    unordered_map<string, int> shadersFunctionsDeclarationName;
-    unordered_map<string, int> shadersDeclarationName;
-
-    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
-    {
-        ShaderClassData* aShader = *itsh;
-        if (shadersDeclarationName.find(aShader->GetName()) != shadersDeclarationName.end())
-                return error(string("A shader already exists with the name: ") + aShader->GetName());
-        shadersDeclarationName[aShader->GetName()] = 1;
-
-        //2 different shaders cannot share an identical variable name
-        for (auto itt = aShader->shaderTypesList.begin(); itt != aShader->shaderTypesList.end(); itt++)
-        {
-            ShaderTypeData* type = *itt;
-            if (shaderVariablesDeclarationName.find(type->variable->GetName()) != shaderVariablesDeclarationName.end())
-                return error(string("A variable already exists with the name: ") + type->variable->GetName());
-            shaderVariablesDeclarationName[type->variable->GetName()] = 1;
-        }
-    }
-#endif
-
-    return true;
-}
-
-bool SpxCompiler::GetListAllCompositions(vector<ShaderCompositionInfo>& vecCompositions)
-{
-    vecCompositions.clear();
-
-    for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
-    {
-        ShaderClassData* aShader = *it;
-        unsigned int countCompositions = aShader->GetCountShaderComposition();
-        for (unsigned int k = 0; k < countCompositions; ++k)
-        {
-            const ShaderComposition& shaderComposition = aShader->compositionsList[k];
-            vecCompositions.push_back(ShaderCompositionInfo(
-                    shaderComposition.compositionShaderOwner->GetName(),
-                    shaderComposition.shaderType->GetName(),
-                    shaderComposition.variableName,
-                    shaderComposition.isArray,
-                    shaderComposition.countInstances
-                ));
-        }
-    }
-
-    return true;
-}
-
-bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders, vector<ShaderComposition*>& listCompositions)
-{
-#ifdef XKSLANG_DEBUG_MODE
-    if (shader == nullptr) return error("Shader is null");
-#endif
-
-    for (auto itc = shader->compositionsList.begin(); itc != shader->compositionsList.end(); itc++)
-    {
-        ShaderComposition& aComposition = *itc;
-        if (aComposition.variableName == variableName)
-        {
-            listCompositions.push_back( &aComposition);
-        }
-    }
-
-    if (lookInParentShaders)
-    {
-        unsigned int countParents = shader->parentsList.size();
-        for (unsigned int p = 0; p < countParents; ++p)
-        {
-            if (!GetAllCompositionsForVariableName(shader->parentsList[p], variableName, lookInParentShaders, listCompositions)) return false;
-        }
-    }
-
-    return true;
-}
-
-SpxCompiler::ShaderComposition* SpxCompiler::GetShaderCompositionForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders)
-{
-    vector<ShaderComposition*> listCompositions;
-    if (!GetAllCompositionsForVariableName(shader, variableName, true, listCompositions))
-    {
-        error("Fail to get all compositions for the variable: " + variableName);
-        return nullptr;
-    }
-
-    unsigned int countCompositionFound = listCompositions.size();
-    /*if (countCompositionFound > 1){
-        error("Several compositions found for the variable: " + variableName);
-        return nullptr;
-    }*/
-    // ==> In the case of several compositions exists with the same variable name: we now return the 1st one found
-
-    if (countCompositionFound == 0) return nullptr;
-    return listCompositions[0];
-}
-
 bool SpxCompiler::AddComposition(const string& shaderName, const string& variableName, SpxCompiler* source)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
@@ -1555,39 +1307,42 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
     //===================================================================================================================
     //===================================================================================================================
     //Find the shader composition target
-    ShaderClassData* shaderCompositionTarget = nullptr;
     ShaderComposition* compositionTarget = nullptr;
-    if (shaderName.size() > 0)
     {
-        //the shader is specified by the user
-        shaderCompositionTarget = this->GetShaderByName(shaderName);
-        if (shaderCompositionTarget == nullptr) return error(string("No shader exists in destination bytecode with the name: ") + shaderName);
-
-        compositionTarget = GetShaderCompositionForVariableName(shaderCompositionTarget, variableName, true);
-        if (compositionTarget == nullptr) return error(string("No composition exists in shader: ") + shaderName + string(", with the name: ") + variableName);
-    }
-    else
-    {
-        //unknown shader, we look for the shader declaring the variable name (if any conflict we return an error)
-        for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
+        ShaderClassData* shaderCompositionTarget = nullptr;
+        if (shaderName.size() > 0)
         {
-            ShaderClassData* aShader = *it;
-            ShaderComposition* aMatchingComposition = aShader->GetShaderCompositionByName(variableName);
-            if (aMatchingComposition != nullptr)
-            {
-                if (compositionTarget != nullptr) return error(string("Found at least 2 composition with the name: ") + variableName);
-                
-                shaderCompositionTarget = aShader;
-                compositionTarget = aMatchingComposition;
-            }
+            //the shader is specified by the user
+            shaderCompositionTarget = this->GetShaderByName(shaderName);
+            if (shaderCompositionTarget == nullptr) return error(string("No shader exists in destination bytecode with the name: ") + shaderName);
+
+            compositionTarget = GetShaderCompositionForVariableName(shaderCompositionTarget, variableName, true);
+            if (compositionTarget == nullptr) return error(string("No composition exists in shader: ") + shaderName + string(", with the name: ") + variableName);
         }
-        if (compositionTarget == nullptr) return error(string("No composition found with the name: ") + variableName);
+        else
+        {
+            //unknown shader, we look for the shader declaring the variable name (if any conflict we return an error)
+            for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
+            {
+                ShaderClassData* aShader = *it;
+                ShaderComposition* aMatchingComposition = aShader->GetShaderCompositionByName(variableName);
+                if (aMatchingComposition != nullptr)
+                {
+                    if (compositionTarget != nullptr) return error(string("Found at least 2 composition with the name: ") + variableName);
+                
+                    shaderCompositionTarget = aShader;
+                    compositionTarget = aMatchingComposition;
+                }
+            }
+            if (compositionTarget == nullptr) return error(string("No composition found with the name: ") + variableName);
+        }
     }
 
 #ifdef XKSLANG_DEBUG_MODE
-    if (compositionTarget == nullptr || shaderCompositionTarget == nullptr) return error("Internal error");  //should never happen
+    if (compositionTarget == nullptr || compositionTarget->compositionShaderOwner == nullptr) return error("Internal error");  //should never happen
 #endif
 
+    ShaderClassData* shaderCompositionOwner = compositionTarget->compositionShaderOwner;
     if (!compositionTarget->isArray && compositionTarget->countInstances > 0) return error(string("The composition has already been instanciated"));
     int compositionTargetId = compositionTarget->compositionShaderId;
 
@@ -1694,7 +1449,7 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
                     spv::Id shaderId = asId(start + 1);
                     int compositionId = asLiteralValue(start + 2);
 
-                    if (shaderId == shaderCompositionTarget->GetId() && compositionId == compositionTargetId)
+                    if (shaderId == shaderCompositionOwner->GetId() && compositionId == compositionTargetId)
                     {
                         //increase number of instances
                         compositionTarget->countInstances++;
@@ -1721,7 +1476,7 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
             start += wordCount;
         }
 
-        if (!compositionUpdated) return error("The composition has not been updated");
+        if (!compositionUpdated) return error("The target composition has not been updated");
 
         if (!UpdateAllMaps()) return error("Failed to update all maps");
     }
@@ -4564,16 +4319,25 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
             idPosR[resultId] = start;
         }
 
-        if (opCode == spv::Op::OpName)
+/*#ifdef XKSLANG_DEBUG_MODE
+        //Some extra checks in Debug mode, to confirm the validity of the bytecode
+        if (opCode == spv::OpShaderCompositionInstance)
         {
-            //const spv::Id target = asId(start + 1);
-            //if (mapDeclarationName.find(target) == mapDeclarationName.end())
-            //{
-            //    const string name = literalString(start + 2);
-            //    mapDeclarationName[target] = name;
-            //}
+
         }
-        else if (opCode == spv::Op::OpDeclarationName)
+#endif*/
+
+        //if (opCode == spv::Op::OpName)
+        //{
+        //    const spv::Id target = asId(start + 1);
+        //    if (mapDeclarationName.find(target) == mapDeclarationName.end())
+        //    {
+        //        const string name = literalString(start + 2);
+        //        mapDeclarationName[target] = name;
+        //    }
+        //}
+        //else
+        if (opCode == spv::Op::OpDeclarationName)
         {
             const spv::Id target = asId(start + 1);
             const string  name = literalString(start + 2);
@@ -5478,7 +5242,8 @@ bool SpxCompiler::parseInstruction(const vector<uint32_t>& bytecode, unsigned in
             return false;
         }
 #endif
-        switch (operands.getClass(op))
+        spv::OperandClass operandClass = operands.getClass(op);
+        switch (operandClass)
         {
             case spv::OperandId:
             case spv::OperandScope:
@@ -5565,8 +5330,12 @@ bool SpxCompiler::parseInstruction(const vector<uint32_t>& bytecode, unsigned in
             case spv::OperandKernelEnqueueFlags:
             case spv::OperandKernelProfilingInfo:
             case spv::OperandCapability:
+            case spv::XkslShaderDataProperty:
                 ++word;
                 break;
+
+            case spv::XkslShaderDataProperties:
+                return true;
 
             default:
                 errorMsg = "Unhandled Operand Class";

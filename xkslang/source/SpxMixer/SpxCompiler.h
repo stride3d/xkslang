@@ -554,6 +554,7 @@ public:
         int countInstances;
 
         const std::string& GetVariableName() const {return variableName;}
+        std::string GetShaderOwnerAndVariableName() const { return std::string((compositionShaderOwner == nullptr? "---": compositionShaderOwner->name)) + "." + variableName; }
 
         //ShaderClassData* instantiatedShader;  //resulting shader instance from the composition
 
@@ -716,7 +717,8 @@ public:
     //bool MixWithBytecode(const SpxBytecode& bytecode);
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& nameOfShadersToMix);
 
-    bool GetListAllCompositions(std::vector<ShaderCompositionInfo>& vecCompositions);
+    bool GetListAllCompositions(std::vector<ShaderComposition*>& vecCompositions);
+    bool GetListAllCompositionsInfo(std::vector<ShaderCompositionInfo>& vecCompositionsInfo);
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
     ShaderComposition* GetShaderCompositionForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
     bool GetAllCompositionsForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders, std::vector<ShaderComposition*>& listCompositions);
@@ -726,13 +728,17 @@ public:
     static void GetStagesPipeline(std::vector<ShadingStageEnum>& pipeline);
 
     bool error(const std::string& txt);
+    static bool error(std::vector<std::string>& errorMsgs, const std::string& txt);
     void copyMessagesTo(std::vector<std::string>& list);
 
     spv::ExecutionModel GetExecutionModeForShadingStage(ShadingStageEnum stage);
     ShadingStageEnum GetShadingStageForExecutionMode(spv::ExecutionModel model);
 
+    static bool ProcessBytecodeSanityCheck(const std::vector<uint32_t>& bytecode, std::vector<std::string>& errorMsgs);
+
 private:
     bool SetBytecode(const SpvBytecode& bytecode);
+    bool SetBytecode(const std::vector<std::uint32_t>& bytecode);
     bool MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
 
     //validate a member name (for example Shader<8>_var will return Shader_8__var)

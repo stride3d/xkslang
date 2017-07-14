@@ -1,0 +1,7 @@
+convertAndLoad "TestCompose20.xksl"
+
+mixer B
+B.mixin( ShaderMain[colorA = mixin(ShaderComp), ShaderB.colorA = mixin(ShaderComp)] )
+
+B.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+B.compile

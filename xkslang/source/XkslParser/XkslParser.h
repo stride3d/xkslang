@@ -88,6 +88,8 @@ public:
     //Format: ShaderName<generics>[compositions]
     static bool ParseStringWithShaderDefinitions(const char* strShadersWithGenerics, std::vector<ShaderParsingDefinition>& listshaderDefinition);
     static int ParseStringMacroDefinition(const char* strMacrosDefinition, std::vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeValuesQuotationMark);
+
+    static bool ProcessBytecodeSanityCheck(const std::vector<uint32_t>& bytecode, std::vector<std::string>& errorMsgs);
 };
 
 }  // namespace xkslang

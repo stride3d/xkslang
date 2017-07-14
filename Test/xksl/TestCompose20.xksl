@@ -1,0 +1,40 @@
+shader ShaderComp
+{
+	float varC;
+	
+	float Compute()
+	{
+		return varC;
+	}
+}
+
+shader ShaderA
+{
+	compose ShaderComp colorA;
+	
+	float Compute(){return 1 + colorA.Compute();}
+}
+
+shader ShaderB
+{
+	compose ShaderComp colorA;
+	
+	float Compute(){return 2 + colorA.Compute();}
+}
+
+shader ShaderMain : ShaderA, ShaderB
+{
+	float Compute(){
+		return ShaderA.Compute() + ShaderB.Compute();
+	}
+	
+	void PSMain()
+	{
+		float f = Compute();
+	}
+	
+	void VSMain()
+	{
+		float f = Compute();
+	}
+}
