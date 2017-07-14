@@ -1033,37 +1033,31 @@ static bool isInstructionLineComplete(const string& instruction)
 }
 
 //return the string between the "()" brackets
-static bool getFunctionParameterString(const string& instruction, string& parameterStr, bool leftBracketExpected)
+static bool getFunctionParameterString(const string& instruction, string& parameterStr)
 {
     int len = instruction.size();
 
-    int firstCharPos = 0;
-    if (leftBracketExpected)
+    int firstCharacterPos = 0;
+    while (firstCharacterPos < len)
     {
-        size_t first = (int)instruction.find_first_of('(');
-        if (first == string::npos) return false;
-        firstCharPos = first + 1;
+        char c = instruction[firstCharacterPos++];
+        if (c == ' ') continue;
+        if (c == '(') break;
+        return false;
     }
-    if (firstCharPos >= len - 1) return false;
+    if (firstCharacterPos == len) return false;
 
-    int rightBracketPos = firstCharPos;
-    int countBracketToPass = 0;
-    while (rightBracketPos < len)
+    int lastCharacterPos = len - 1;
+    while (lastCharacterPos > 0)
     {
-        char c = instruction[rightBracketPos];
-        if (c == ')')
-        {
-            if (countBracketToPass == 0) break;
-            else countBracketToPass--;
-        }
-        else if (c == '(') countBracketToPass++;
-        rightBracketPos++;
+        char c = instruction[lastCharacterPos--];
+        if (c == ' ') continue;
+        if (c == ')') break;
+        return false;
     }
+    if (lastCharacterPos <= 0) return false;
 
-    if (rightBracketPos == firstCharPos || rightBracketPos == len) return false;
-    int lastCharPos = rightBracketPos - 1;
-
-    parameterStr = Utils::trim(instruction.substr(firstCharPos, (lastCharPos - firstCharPos) + 1));
+    parameterStr = Utils::trim(instruction.substr(firstCharacterPos, (lastCharacterPos - firstCharacterPos) + 1));
     return true;
 }
 
@@ -1078,20 +1072,27 @@ static bool getNextWord(stringstream& stream, string& word)
     return true;
 }
 
-static bool getNextWord(stringstream& stream, const string& delimiters, string& word)
+static bool getFirstInstruction(const string& line, const char stopDelimiters, string& firstInstruction, string& remainingLine)
 {
-    word = "";
-    while (stream.peek() == ' ') stream.get(); // skip front spaces
+    unsigned int startPos = 0;
+    unsigned int len = line.size();
+    
+    while (startPos < len && line[startPos] == ' ') startPos++; // skip front spaces
+    if (startPos == len) return false;
 
-    unsigned int countDelimiters = delimiters.size();
     char c;
-    while (stream.get(c))
+    unsigned int endPos = startPos;
+    while (true)
     {
-        for (unsigned int d = 0; d < countDelimiters; d++)
-            if (c == delimiters[d]) return true;
-        word += c;
+        c = line[endPos];
+        if (c == stopDelimiters || c == ' ') break;
+        if (++endPos == len) break;
     }
 
+    if (endPos == startPos) return false;
+
+    firstInstruction = line.substr(startPos, (endPos - startPos));
+    remainingLine = line.substr(endPos);
     return true;
 }
 
@@ -1441,14 +1442,18 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
             string mixinInstructionStr;
             if (Utils::startWith(compositionInstruction, "mixin "))
             {
+                //convert mixin XXX to mixin(XXX) (to make it consistent)
                 mixinInstructionStr = compositionInstruction + ")";
                 mixinInstructionStr[ strlen("mixin") ] = '(';
             }
             else mixinInstructionStr = compositionInstruction;
 
+            string mixinWord;
+            getFirstInstruction(mixinInstructionStr, '(', mixinWord, mixinInstructionStr);
+
             //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
             string anonymousMixerInstruction;
-            if (!getFunctionParameterString(mixinInstructionStr, anonymousMixerInstruction, true)) {
+            if (!getFunctionParameterString(mixinInstructionStr, anonymousMixerInstruction)) {
                 return error("addComposition: Failed to get the instuction parameter from: \"" + mixinInstructionStr + "\"");
             }
 
@@ -1778,27 +1783,27 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         else previousPartialLine = "";
         
         string instructionFullLine = Utils::trim(parsedLine);
-        string lineItem;
-        stringstream lineSs(instructionFullLine);
-        getNextWord(lineSs, " (", lineItem);
+        string firstInstruction;
+        string remainingLine;
+        getFirstInstruction(instructionFullLine, '(', firstInstruction, remainingLine);
 
-        if (lineItem.compare("break") == 0)
+        if (firstInstruction.compare("break") == 0)
         {
             //quit parsing the effect
             break;
         }
-        else if (lineItem.compare("set") == 0)
+        else if (firstInstruction.compare("set") == 0)
         {
             string parameterName;
-            if (!getNextWord(lineSs, parameterName)) {
-                error("set: failed to get the parameter name");
+            if (!getFirstInstruction(remainingLine, ' ', parameterName, remainingLine)) {
+                error("set: failed to get the parameter value");
                 success = false; break;
             }
 
             if (parameterName.compare("automaticallyTryToLoadAndConvertUnknownMixinShader") == 0)
             {
                 string parameterValue;
-                if (!getNextWord(lineSs, parameterValue)) {
+                if (!getFirstInstruction(remainingLine, ' ', parameterValue, remainingLine)) {
                     error("set: failed to get the parameter value");
                     success = false; break;
                 }
@@ -1811,10 +1816,10 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 success = false; break;
             }
         }
-        else if (lineItem.compare("addResourcesLibrary") == 0)
+        else if (firstInstruction.compare("addResourcesLibrary") == 0)
         {
             string folder;
-            if (!getNextWord(lineSs, folder)) {
+            if (!getFirstInstruction(remainingLine, ' ', folder, remainingLine)) {
                 error("addResourcesLibrary: failed to get the library resource folder");
                 success = false; break;
             }
@@ -1823,11 +1828,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             string path = inputDir + folder + "\\";
             libraryResourcesFolders.push_back(path);
         }
-        else if (lineItem.compare("setDefine") == 0)
+        else if (firstInstruction.compare("setDefine") == 0)
         {
-            string strMacrosDefinition;
-            if (!getline(lineSs, strMacrosDefinition)) {
-                error("Fails to get the macros definition");
+            string strMacrosDefinition = Utils::trim(remainingLine);
+            if (strMacrosDefinition.size() == 0) {
+                error("missing macro definition");
                 success = false; break;
             }
 
@@ -1837,20 +1842,15 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 success = false; break;
             }
         }
-        else if (lineItem.compare("convertAndLoadRecursif") == 0)
+        else if (firstInstruction.compare("convertAndLoadRecursif") == 0)
         {
             /// recursively convert and load xksl shaders
 
             //================================================
             //Parse the command line parameters
-            string stringShaderAndgenericsValue;
-            if (!getline(lineSs, stringShaderAndgenericsValue)) {
-                error("convertAndLoadRecursif: failed to get the XKSL file parameters");
-                success = false; break;
-            }
-            stringShaderAndgenericsValue = Utils::trim(stringShaderAndgenericsValue, ' ');
+            string stringShaderAndgenericsValue = Utils::trim(remainingLine);
             if (stringShaderAndgenericsValue.size() == 0) {
-                error("convertAndLoadRecursif: failed to get the XKSL shader parameters");
+                error("convertAndLoadRecursif: failed to get the XKSL file parameters");
                 success = false; break;
             }
 
@@ -1881,14 +1881,14 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 success = false; break;
             }
         }
-        else if (lineItem.compare("convertAndLoad") == 0)
+        else if (firstInstruction.compare("convertAndLoad") == 0)
         {
             /// convert and load xksl shaders
 
             //================================================
             //Parse the command line parameters
             string xkslInputFile;
-            if (!getNextWord(lineSs, xkslInputFile)) {
+            if (!getFirstInstruction(remainingLine, ' ', xkslInputFile, remainingLine)) {
                 error("convertAndLoad: failed to get the XKSL file name");
                 success = false; break;
             }
@@ -1897,8 +1897,8 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             //================================================
             //any shader with generic values defined?
             vector<ShaderGenericValues> listShaderAndGenerics;
-            string stringShaderAndgenericsValue;
-            if (getline(lineSs, stringShaderAndgenericsValue))
+            string stringShaderAndgenericsValue = Utils::trim(remainingLine);
+            if (stringShaderAndgenericsValue.size() > 0)
             {
                 vector<ShaderParsingDefinition> listshaderDefinition;
                 if (!XkslParser::ParseStringWithShaderDefinitions(stringShaderAndgenericsValue.c_str(), listshaderDefinition))
@@ -2029,14 +2029,20 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 }
             }
         }
-        else if (lineItem.compare("mixer") == 0)
+        else if (firstInstruction.compare("mixer") == 0)
         {
             string mixerName;
-            if (!getNextWord(lineSs, mixerName)) {
+            if (!getFirstInstruction(remainingLine, ' ', mixerName, remainingLine)) {
                 error("mixer: failed to get the xksl file name");
                 success = false; break;
             }
             mixerName = Utils::trim(mixerName, '\"');
+
+            if (mixerName.find_first_of("<>()[].,+-/*\\?:;\"{}=&%^") != string::npos)
+            {
+                error("Invalid mixer name: " + mixerName);
+                success = false; break;
+            }
 
             EffectMixerObject* mixer = CreateAndAddNewMixer(mixerMap, mixerName, useXkslangDll);
             if (mixer == nullptr) {
@@ -2048,24 +2054,23 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         {
             //mixer operation (mixer.instructions)
             string mixerName, instruction;
-            if (!SeparateAdotB(lineItem, mixerName, instruction)) {
-                error("Unknown instruction: " + lineItem);
+            if (!SeparateAdotB(firstInstruction, mixerName, instruction)) {
+                error("Unknown instruction: " + firstInstruction);
                 success = false; break;
             }
 
             if (mixerMap.find(mixerName) == mixerMap.end()) {
-                error(lineItem + ": no mixer found with the name:" + mixerName);
+                error(firstInstruction + ": no mixer found with the name:" + mixerName);
                 success = false; break;
             }
             EffectMixerObject* mixerTarget = mixerMap[mixerName];
 
             //get the function parameters
-            string lineRemainingStr;
             string instructionParametersStr;
-            if (getline(lineSs, lineRemainingStr))
+            remainingLine = Utils::trim(remainingLine);
+            if (remainingLine.size() > 0)
             {
-                lineRemainingStr = Utils::trimStart(lineRemainingStr, " (");
-                if (!getFunctionParameterString(lineRemainingStr, instructionParametersStr, false)) {
+                if (!getFunctionParameterString(remainingLine, instructionParametersStr)) {
                     error(instruction + ": Failed to get the instuction parameters from: \"" + instructionFullLine + "\"");
                     success = false; break;
                 }
