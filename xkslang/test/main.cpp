@@ -25,6 +25,11 @@
 #include "../source/SPIRV-Cross/spirv_cross.hpp"
 #include "../source/XkslangDLL/XkslangDLL.h"
 
+#ifdef _DEBUG
+#define WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
+#define PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
+#endif
+
 using namespace std;
 using namespace xkslangtest;
 using namespace xkslang;
@@ -233,7 +238,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
     //{ "userCustomType01", "userCustomType01.xkfx" },
     //{ "userCustomType02", "userCustomType02.xkfx" },
-
+    
     //{ "TestLink01", "TestLink01.xkfx" },
     //{ "TestLink02", "TestLink02.xkfx" },
     //{ "TestLink03", "TestLink03.xkfx" },
@@ -245,7 +250,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestSemanticType01", "TestSemanticType01.xkfx" },
     //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
-
+    
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
@@ -264,9 +269,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceLightingAndShading", "MaterialSurfaceLightingAndShading.xkfx" },
     //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
+    //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    { "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
-    ///{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -288,7 +293,7 @@ static bool error(const string& msg)
     return false;
 }
 
-static bool ConvertBytecodeToHlsl(const string& spvFile, const  string& outputFile)
+static bool ConvertAndWriteBytecodeToHlsl(const string& spvFile, const  string& outputFile)
 {
     pair<bool, vector<uint32_t>> result = Utils::ReadSpvBinaryFile(spvFile);
     if (!result.first){
@@ -309,7 +314,7 @@ static bool ConvertBytecodeToHlsl(const string& spvFile, const  string& outputFi
     return res;
 }
 
-static bool ConvertBytecodeToGlsl(const string& spvFile, const  string& outputFile)
+static bool ConvertAndWriteBytecodeToGlsl(const string& spvFile, const  string& outputFile)
 {
     pair<bool, vector<uint32_t>> result = Utils::ReadSpvBinaryFile(spvFile);
     if (!result.first) {
@@ -328,90 +333,6 @@ static bool ConvertBytecodeToGlsl(const string& spvFile, const  string& outputFi
 
     return res;
 }
-
-/*static int ConvertSpvToShaderLanguage(string spvFile, string outputFile, ShaderLanguageEnum language)
-{
-    int argc;
-    char **argv;
-    
-    if (language == ShaderLanguageEnum::GlslLanguage)
-    {
-        argc = 4;
-        const char *args[] = {
-            "spirv_cross.lib",
-            "--output",
-            outputFile.c_str(),
-            spvFile.c_str()
-        };
-        argv = (char**)args;
-    }
-    else
-    {
-        argc = 7;
-        const char *args[] = {
-            "spirv_cross.lib",
-            "--hlsl",
-            "--shader-model",
-            "40",
-            "--output",
-            outputFile.c_str(),
-            spvFile.c_str()
-        };
-        argv = (char**)args;
-    }
-
-    return spirv_cross::SPIRV_CROSS::executeCmd(argc, argv);
-
-    /// #ifdef _DEBUG
-    ///     static string spirvCrossExeGlsl = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe";
-    ///     static string spirvCrossExeHlsl = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross_d.exe --hlsl";
-    /// #else
-    ///     static string spirvCrossExe = "D:/Prgms/glslang/source/bin/spirv-cross/SPIRV-Cross.exe";
-    /// #endif
-
-    /// STARTUPINFO si;
-    /// PROCESS_INFORMATION pi;
-    /// 
-    /// ZeroMemory(&si, sizeof(si));
-    /// si.cb = sizeof(si);
-    /// ZeroMemory(&pi, sizeof(pi));
-    /// 
-    /// string exeInstr = (language == ShaderLanguageEnum::GlslLanguage)? spirvCrossExeGlsl : spirvCrossExeHlsl;
-    /// string commandLine = exeInstr + string(" --output ") + outputFile + string(" ") + spvFile;
-    /// 
-    /// const char* cl = commandLine.c_str();
-    /// wchar_t wtext[256];
-    /// size_t size;
-    /// errno_t error = mbstowcs_s(&size, wtext, cl, strlen(cl) + 1);
-    /// LPWSTR ptr = wtext;
-    /// 
-    /// // Start the child process. 
-    /// if (!CreateProcess(NULL,     // No module name (use command line)
-    ///     ptr,                     // Command line
-    ///     NULL,                    // Process handle not inheritable
-    ///     NULL,                    // Thread handle not inheritable
-    ///     FALSE,                   // Set handle inheritance to FALSE
-    ///     0,                       // No creation flags
-    ///     NULL,                    // Use parent's environment block
-    ///     NULL,                    // Use parent's starting directory 
-    ///     &si,                     // Pointer to STARTUPINFO structure
-    ///     &pi)                     // Pointer to PROCESS_INFORMATION structure
-    ///     )
-    /// {
-    ///     int error = GetLastError();
-    ///     printf("CreateProcess failed (%d).\n", error);
-    ///     return error;
-    /// }
-    /// 
-    /// // Wait until child process exits.
-    /// WaitForSingleObject(pi.hProcess, INFINITE);
-    /// 
-    /// // Close process and thread handles. 
-    /// CloseHandle(pi.hProcess);
-    /// CloseHandle(pi.hThread);
-    /// 
-    /// return 0;
-}*/
 
 static BOOL DirectoryExists(LPCTSTR szPath)
 {
@@ -566,7 +487,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                 std::cout << labelStage << " stage: Convert into GLSL." << endl;
                 time_before = GetTickCount();
                 //int result = ConvertSpvToShaderLanguage(outputFullnameSpv, fullNameGlsl, ShaderLanguageEnum::GlslLanguage);
-                success = ConvertBytecodeToGlsl(outputFullnameSpv, fullNameGlsl);
+                success = ConvertAndWriteBytecodeToGlsl(outputFullnameSpv, fullNameGlsl);
                 time_after = GetTickCount();
 
                 if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
@@ -618,7 +539,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                 std::cout << labelStage << " stage: Convert into HLSL." << endl;
                 time_before = GetTickCount();
                 //int result = ConvertSpvToShaderLanguage(outputFullnameSpv, fullNameHlsl, ShaderLanguageEnum::HlslLanguage);
-                success = ConvertBytecodeToHlsl(outputFullnameSpv, fullNameHlsl);
+                success = ConvertAndWriteBytecodeToHlsl(outputFullnameSpv, fullNameHlsl);
                 time_after = GetTickCount();
 
                 if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
@@ -851,11 +772,15 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
         //WriteBytecode(errorSpv, outputDir, effectName + "_compile_error.hr.spv", BytecodeFileFormat::Text);
     }
 
-    //output the compiled intermediary bytecodes
-    WriteBytecode(composedSpv.getBytecodeStream(), outputDir, effectName + "_compile0_composed.hr.spv", BytecodeFileFormat::Text);
-    WriteBytecode(streamsMergedSpv.getBytecodeStream(), outputDir, effectName + "_compile1_streamsMerged.hr.spv", BytecodeFileFormat::Text);
-    WriteBytecode(streamsReshuffledSpv.getBytecodeStream(), outputDir, effectName + "_compile2_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
-    WriteBytecode(mergedCBuffersSpv.getBytecodeStream(), outputDir, effectName + "_compile3_mergedCBuffers.hr.spv", BytecodeFileFormat::Text);
+#ifdef WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
+    {
+        //output the compiled intermediary bytecodes
+        WriteBytecode(composedSpv.getBytecodeStream(), outputDir, effectName + "_compile0_composed.hr.spv", BytecodeFileFormat::Text);
+        WriteBytecode(streamsMergedSpv.getBytecodeStream(), outputDir, effectName + "_compile1_streamsMerged.hr.spv", BytecodeFileFormat::Text);
+        WriteBytecode(streamsReshuffledSpv.getBytecodeStream(), outputDir, effectName + "_compile2_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
+        WriteBytecode(mergedCBuffersSpv.getBytecodeStream(), outputDir, effectName + "_compile3_mergedCBuffers.hr.spv", BytecodeFileFormat::Text);
+    }
+#endif
 
     {
         //write the final SPIRV bytecode then convert it into GLSL
@@ -889,7 +814,7 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
 
 static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile,
     const vector<ShaderGenericValues>& listGenericsValue, const vector<XkslUserDefinedMacro> listUserDefinedMacros,
-     SpxBytecode& spirXBytecode, bool writeOutputsOnDisk)
+     SpxBytecode& spirXBytecode)
 {
     const string inputFname = inputDir + xkslInputFile;
     string xkslInput;
@@ -1360,13 +1285,15 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
         }
     }
 
-    //Save the bytecode on the disk
+#ifdef WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
     {
+        //Save the bytecode on the disk
         string prefix = xkslInputFilePrefix;
         if (prefix.size() == 0) prefix = effectName;
         WriteBytecode(spxBytecode->getBytecodeStream(), outputDir, prefix + "_" + shaderName + ".spv", BytecodeFileFormat::Binary);
         WriteBytecode(spxBytecode->getBytecodeStream(), outputDir, prefix + "_" + shaderName + ".hr.spv", BytecodeFileFormat::Text);
     }
+#endif
 
     //Query the list of shaders from the bytecode
     if (useXkslangDll)
@@ -1583,13 +1510,18 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         if (success) std::cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
         else return error("Failed to add the composition to the mixer");
 
-        //write the mixer current bytecode
-        string outputFileName = effectName + "_op" + to_string(operationNum++) + "_compose" + ".hr.spv";
-        success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
-        if (!success) return error("Failed to get and write the mixer current bytecode");
-
-        //Do a bytecode sanity check
+#ifdef WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
         {
+            //write the mixer current bytecode
+            string outputFileName = effectName + "_op" + to_string(operationNum++) + "_compose" + ".hr.spv";
+            success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
+            if (!success) return error("Failed to get and write the mixer current bytecode");
+        }
+#endif
+
+#ifdef PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
+        {
+            //Do a bytecode sanity check
             vector<string> errorMsgs;
             vector<uint32_t> mixinBytecode;
             if (!GetMixerCurrentBytecode(mixerTarget, mixinBytecode, useXkslangDll)) return error("failed to get the mixer current bytecode");
@@ -1599,6 +1531,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
                 return false;
             }
         }
+#endif
     }
 
     return true;
@@ -1753,13 +1686,18 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
             if (success) std::cout << " OK. Time:  " << (time_after - time_before) << "ms" << endl;
             else return false;
 
-            //write the mixer current bytecode
-            string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
-            success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
-            if (!success) return error("Failed to get and write the mixer current bytecode");
-
-            //Do a bytecode sanity check
+#ifdef WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
             {
+                //write the mixer current bytecode
+                string outputFileName = effectName + "_op" + to_string(operationNum++) + "_mixin" + ".hr.spv";
+                success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
+                if (!success) return error("Failed to get and write the mixer current bytecode");
+            }
+#endif
+
+#ifdef PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
+            {
+                //Do a bytecode sanity check
                 vector<string> errorMsgs;
                 vector<uint32_t> mixinBytecode;
                 if (!GetMixerCurrentBytecode(mixerTarget, mixinBytecode, useXkslangDll)) return error("failed to get the mixer current bytecode");
@@ -1769,6 +1707,7 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
                     return false;
                 }
             }
+#endif
         }
 
         string compositionString = shaderDefinition.compositionString;
@@ -1791,6 +1730,9 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 {
     bool success = true;
     updatedEffectCommandLines = "";
+
+    DWORD effect_timeStart, effect_timeEnd;
+    effect_timeStart = GetTickCount();
 
     if (useXkslangDll)
     {
@@ -2025,7 +1967,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 listAllocatedBytecodes.push_back(spxBytecode);
 
                 time_before = GetTickCount();
-                success = ParseAndConvertXkslFile(parser, xkslInputFile, listShaderAndGenerics, listUserDefinedMacros, *spxBytecode, true);
+                success = ParseAndConvertXkslFile(parser, xkslInputFile, listShaderAndGenerics, listUserDefinedMacros, *spxBytecode);
                 time_after = GetTickCount();
 
                 if (success) std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
@@ -2035,11 +1977,13 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 }
             }
             
-            //Save the bytecode on the disk
+#ifdef WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
             {
+                //Save the bytecode on the disk
                 WriteBytecode(spxBytecode->getBytecodeStream(), outputDir, xkslInputFile + ".spv", BytecodeFileFormat::Binary);
                 WriteBytecode(spxBytecode->getBytecodeStream(), outputDir, xkslInputFile + ".hr.spv", BytecodeFileFormat::Text);
             }
+#endif
 
             //Query the list of shaders from the bytecode
             if (useXkslangDll)
@@ -2115,45 +2059,36 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             }
             EffectMixerObject* mixerTarget = mixerMap[mixerName];
 
+            //get the function parameters
+            string lineRemainingStr;
+            string instructionParametersStr;
+            if (getline(lineSs, lineRemainingStr))
+            {
+                lineRemainingStr = Utils::trimStart(lineRemainingStr, " (");
+                if (!getFunctionParameterString(lineRemainingStr, instructionParametersStr, false)) {
+                    error(instruction + ": Failed to get the instuction parameters from: \"" + instructionFullLine + "\"");
+                    success = false; break;
+                }
+            }
+
             if (instruction.compare("mixin") == 0)
             {
-                string lineRemainingStr;
-                if (!getline(lineSs, lineRemainingStr))
-                {
-                    error("mixin: Failed to read the line");
-                    success = false; break;
-                }
-
-                string mixinInstructionsStr;
-                if (!getFunctionParameterString(lineRemainingStr, mixinInstructionsStr, false)) {
-                    error("mixin: Failed to get the mixin instuction parameters from: \"" + instructionFullLine + "\"");
-                    success = false; break;
-                }
+                if (instructionParametersStr.size() == 0) { error("Mixin: parameters expected"); success = false; break; }
 
                 success = MixinShaders(effectName, mapShaderNameWithBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll,
-                    mixerTarget, mixinInstructionsStr, instructionFullLine, operationNum);
+                    mixerTarget, instructionParametersStr, instructionFullLine, operationNum);
 
                 if (!success) { error("Mixin failed"); success = false; break; }
             }
             else if (instruction.compare("addComposition") == 0)
             {
-                string lineRemainingStr;
-                if (!getline(lineSs, lineRemainingStr)) {
-                    error("addComposition: Failed to read the line");
-                    success = false; break;
-                }
+                if (instructionParametersStr.size() == 0) { error("addComposition: parameters expected"); success = false; break; }
 
-                string compositionsInstructionsStr;
-                if (!getFunctionParameterString(lineRemainingStr, compositionsInstructionsStr, false)) {
-                    error("addComposition: Failed to get the composition instuction parameters from: \"" + instructionFullLine + "\"");
-                    success = false; break;
-                }
-                
                 success = AddCompositionsToMixer(effectName, mapShaderNameWithBytecode, mixerMap,
                     listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll, operationNum,
-                    mixerTarget, compositionsInstructionsStr, "");
+                    mixerTarget, instructionParametersStr, "");
 
-                if (!success) { error("Failed to add the compositions instruction to the mixer: " + compositionsInstructionsStr); success = false; break; }
+                if (!success) { error("Failed to add the compositions instruction to the mixer: " + instructionParametersStr); success = false; break; }
             }
             else if (instruction.compare("setStageEntryPoint") == 0)
             {
@@ -2162,20 +2097,10 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 //currentInstruction += " )";
                 //Utils::replaceAll(currentInstruction, compositionTargetStr, compositionTargetStr + " =");
 
-                string lineRemainingStr;
-                if (!getline(lineSs, lineRemainingStr)) {
-                    error("setStageEntryPoint: Failed to read the line");
-                    success = false; break;
-                }
-
-                string parametersStr;
-                if (!getFunctionParameterString(lineRemainingStr, parametersStr, false)) {
-                    error("Failed to get the stage entry points parameters from: \"" + instructionFullLine + "\"");
-                    success = false; break;
-                }
+                if (instructionParametersStr.size() == 0) { error("setStageEntryPoint: parameters expected"); success = false; break; }
 
                 vector<string> entryPoints;
-                if (!splitPametersString(parametersStr, entryPoints))
+                if (!splitPametersString(instructionParametersStr, entryPoints))
                     return error("failed to split the entryPoints parameters");
 
                 for (unsigned int e = 0; e < entryPoints.size(); e++)
@@ -2282,6 +2207,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         xkslangDll::ReleaseMixer();
     }
 
+    effect_timeEnd = GetTickCount();
+    std::cout << endl;
+    std::cout << "Effect Total Time: " << (effect_timeEnd - effect_timeStart) << "ms" << endl;
+    std::cout << "=================================" << endl;
+
     for (unsigned int l = 0; l < listParsedInstructions.size(); l++)
         updatedEffectCommandLines += listParsedInstructions[l] + "\n";
 
@@ -2384,7 +2314,7 @@ void main(int argc, char** argv)
 
             // parse and convert all xksl files
             SpxBytecode spirXBytecode;
-            success = ParseAndConvertXkslFile(&parser, xkslShaderInputFile, listGenericsValue, listUserDefinedMacros, spirXBytecode, true);
+            success = ParseAndConvertXkslFile(&parser, xkslShaderInputFile, listGenericsValue, listUserDefinedMacros, spirXBytecode);
 
             if (success) countParsingSuccessful++;
             else listXkslParsingFailed.push_back(xkslShaderInputFile);
@@ -2456,7 +2386,7 @@ void main(int argc, char** argv)
 
                 std::cout << "Convert into GLSL: " << effect.inputFileName << endl;
                 //result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameGlsl, ShaderLanguageEnum::GlslLanguage);
-                success = ConvertBytecodeToGlsl(inputFileSpv, outputFullNameGlsl);
+                success = ConvertAndWriteBytecodeToGlsl(inputFileSpv, outputFullNameGlsl);
 
                 if (success) std::cout << " OK." << endl;
                 else error(" Failed to convert the SPIRV file to GLSL");
@@ -2468,7 +2398,7 @@ void main(int argc, char** argv)
 
                 std::cout << "Convert into HLSL: " << effect.inputFileName << endl;
                 //result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameHlsl, ShaderLanguageEnum::HlslLanguage);
-                success = ConvertBytecodeToHlsl(inputFileSpv, outputFullNameHlsl);
+                success = ConvertAndWriteBytecodeToHlsl(inputFileSpv, outputFullNameHlsl);
             }
 
             if (success) std::cout << " OK." << endl;

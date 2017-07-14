@@ -46,6 +46,32 @@ string Utils::trim(const string& str, char c)
     return str.substr(first, (last - first + 1));
 }
 
+string Utils::trimStart(const string& str, const string& chars)
+{
+    unsigned int len = str.size();
+    unsigned int countChars = chars.size();
+    char c;
+    int startPos = 0;
+    bool loop = true;
+    while (loop)
+    {
+        if (startPos == len) return "";
+
+        loop = false;
+        c = str[startPos];
+        for (unsigned int d = 0; d < countChars; d++)
+        {
+            if (c == chars[d]) {
+                startPos++;
+                loop = true;
+                break;
+            }
+        }
+    }
+
+    return str.substr(startPos);
+}
+
 string Utils::trim(const string& str, const string& chars)
 {
     unsigned int len = str.size();

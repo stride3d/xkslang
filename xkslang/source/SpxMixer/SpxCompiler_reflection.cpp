@@ -599,8 +599,6 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         break;
                     }
 
-#ifdef XKSLANG_DEBUG_MODE
-                    //double check: we can also compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment)
                     int memberOffset = 0;
                     if (mIndex > 0)
                     {
@@ -615,6 +613,8 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     }
                     cbufferReflection.Size = memberOffset + memberReflection.ReflectionType.Size;
 
+#ifdef XKSLANG_DEBUG_MODE
+                    //double check: we can also compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment)
                     if (memberOffset != member.memberOffset) {
                         error("Offsets between reflection data and bytecode are not similar for the member:" + member.GetDeclarationNameOrSemantic());
                         break;
