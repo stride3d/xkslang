@@ -676,7 +676,6 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         //check that the shader does not already exist in the destination bytecode
         string shaderToMergeFinalName = shaderToMerge->GetName();
         if (instantiateTheShader) shaderToMergeFinalName = allInstancesPrefixToAdd + shaderToMergeFinalName;
-
         if (this->GetShaderByName(shaderToMergeFinalName) != nullptr) {
             return error(string("A shader already exists in destination bytecode with the name: ") + shaderToMergeFinalName);
         }
@@ -722,10 +721,16 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 #endif
 
             finalRemapTable[resultId] = newId++;
-            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge, shaderToMerge->GetBytecodeStartPosition());
+
+            //bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge, shaderToMerge->GetBytecodeStartPosition());
+            ///rebuild a OpTypeXlslShaderClass instruction with the shaderName updated with the prefix
+            spv::Instruction shaderTypeInstrucion(resultId, 0, spv::OpTypeXlslShaderClass);
+            shaderTypeInstrucion.addStringOperand(shaderToMergeFinalName.c_str());
+            shaderTypeInstrucion.addStringOperand(shaderToMerge->shaderOriginalTypeName.c_str());  //the original type name always stays the same
+            shaderTypeInstrucion.dump(vecTypesConstsAndVariablesToMerge);
 
             if (instantiateTheShader) {
-                listIdsWhereToAddNamePrefix[resultId] = true;
+                listIdsWhereToAddNamePrefix[resultId] = true; //to update the new shader declaration name
             }
         }
 
@@ -1410,7 +1415,6 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
             ShaderClassData* originalShader = shaderInstantiated.shader;
             ShaderClassData* instantiatedShader = originalShader->tmpClonedShader;
             if (instantiatedShader == nullptr) return error(string("Cannot retrieve the instantiated shader after having added some compositions"));
-            string originalShaderName = originalShader->GetName();
 
             for (auto itt = instantiatedShader->shaderTypesList.begin(); itt != instantiatedShader->shaderTypesList.end(); itt++)
             {
@@ -1422,7 +1426,7 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
 
                     if (cbufferData->isStage)
                     {
-                        cbufferData->shaderOwnerName = originalShaderName;
+                        cbufferData->shaderOwnerName = originalShader->shaderOriginalTypeName;
                     }
                 }
             }
@@ -4162,6 +4166,21 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::CreateAndAddNewObjectFor(Parsed
         {
             declarationNameRequired = true;
             ShaderClassData* shader = new ShaderClassData(parsedData, declarationName, this);
+
+            //The shader name and its original type name are set with the OpTypeXlslShaderClass instruction, we get them and update the shader
+            spv::Op opCode = asOpCode(shader->bytecodeStartPosition);
+#ifdef XKSLANG_DEBUG_MODE
+            if (opCode != spv::OpTypeXlslShaderClass) { error("Inconsistent opcode"); return nullptr; }
+#endif
+            string shaderName = literalString(shader->bytecodeStartPosition + 2);
+            int shaderNameCountWords = literalStringWords(shaderName);
+            string shaderOriginalTypeName = literalString(shader->bytecodeStartPosition + 2 + shaderNameCountWords);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (shaderName != declarationName) { error("Shader name and declaration name are inconsistent"); return nullptr; }
+#endif
+            shader->shaderOriginalTypeName = shaderOriginalTypeName;
+
             vecAllShaders.push_back(shader);
             newObject = shader;
             break;
@@ -4318,14 +4337,6 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
             resultId = asId(word++);
             idPosR[resultId] = start;
         }
-
-/*#ifdef XKSLANG_DEBUG_MODE
-        //Some extra checks in Debug mode, to confirm the validity of the bytecode
-        if (opCode == spv::OpShaderCompositionInstance)
-        {
-
-        }
-#endif*/
 
         //if (opCode == spv::Op::OpName)
         //{

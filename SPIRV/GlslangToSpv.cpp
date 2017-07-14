@@ -2547,7 +2547,7 @@ spv::Id TGlslangToSpvTraverser::convertGlslangStructToSpvType(const glslang::TTy
     spv::Id spvType;
     
     if (type.getBasicType() == glslang::EbtShaderClass) 
-        spvType = builder.makeXkslShaderClassType(spvMembers, type.getTypeName().c_str());
+        spvType = builder.makeXkslShaderClassType(type.getTypeName().c_str());
     else
         spvType = builder.makeStructType(spvMembers, type.getTypeName().c_str());
     if (! HasNonLayoutQualifiers(type, qualifier))

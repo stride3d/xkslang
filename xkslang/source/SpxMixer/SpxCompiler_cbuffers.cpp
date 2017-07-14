@@ -51,8 +51,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     if (listAllShaderCBuffers.size() == 0) return true;  //no cbuffer at all, we can return immediatly
 
     //flag the USED cbuffers and allocate object necessary to store their data
-    vector<CBufferTypeData*> vectorUsedCbuffers;
-    vectorUsedCbuffers.resize(bound(), nullptr);
+    vector<CBufferTypeData*> mapUsedCbuffers;
+    mapUsedCbuffers.resize(bound(), nullptr);
     bool anyCBufferUsed = false;
     {
         for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++)
@@ -65,19 +65,19 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 CBufferTypeData* cbufferData = shaderType->type->cbufferData;
 
 #ifdef XKSLANG_DEBUG_MODE
-                if (shaderType->type->GetId() >= vectorUsedCbuffers.size()) { error("cbuffer type id is out of bound. Id: " + to_string(shaderType->type->GetId())); break; }
+                if (shaderType->type->GetId() >= mapUsedCbuffers.size()) { error("cbuffer type id is out of bound. Id: " + to_string(shaderType->type->GetId())); break; }
                 if (cbufferData->cbufferCountMembers <= 0) { error("invalid count members for cbuffer: " + shaderType->type->GetName()); break; }
 #endif
 
                 cbufferData->isUsed = true;
-                if (vectorUsedCbuffers[shaderType->type->GetId()] == nullptr)
+                if (mapUsedCbuffers[shaderType->type->GetId()] == nullptr)
                 {
                     cbufferData->cbufferMembersData = new TypeStructMemberArray();
                     cbufferData->cbufferMembersData->members.resize(cbufferData->cbufferCountMembers);
 
                     //set both type and variable IDs
-                    vectorUsedCbuffers[shaderType->type->GetId()] = cbufferData;
-                    vectorUsedCbuffers[shaderType->variable->GetId()] = cbufferData;
+                    mapUsedCbuffers[shaderType->type->GetId()] = cbufferData;
+                    mapUsedCbuffers[shaderType->variable->GetId()] = cbufferData;
                 }
             }
         }
@@ -103,10 +103,10 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 case spv::OpName:
                 {
                     spv::Id id = asId(start + 1);
-                    if (vectorUsedCbuffers[id] != nullptr)
+                    if (mapUsedCbuffers[id] != nullptr)
                     {
                         //ShaderTypeData* cbuffer = fdsfsdf;
-                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = mapUsedCbuffers[id];
 
                         if (start > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start;
                         
@@ -119,9 +119,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 case spv::OpMemberAttribute:
                 {
                     const spv::Id id = asId(start + 1);
-                    if (vectorUsedCbuffers[id] != nullptr)
+                    if (mapUsedCbuffers[id] != nullptr)
                     {
-                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = mapUsedCbuffers[id];
 
                         unsigned int index = asLiteralValue(start + 2);
                         string attribute = literalString(start + 3);
@@ -138,9 +138,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 case spv::OpMemberLinkName:
                 {
                     spv::Id id = asId(start + 1);
-                    if (vectorUsedCbuffers[id] != nullptr)
+                    if (mapUsedCbuffers[id] != nullptr)
                     {
-                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = mapUsedCbuffers[id];
 
                         unsigned int index = asLiteralValue(start + 2);
                         string linkName = literalString(start + 3);
@@ -156,9 +156,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 /*case spv::OpMemberProperties:
                 {
                     const spv::Id id = asId(start + 1);
-                    if (vectorUsedCbuffers[id] != nullptr)
+                    if (mapUsedCbuffers[id] != nullptr)
                     {
-                        const ShaderTypeData* cbuffer = vectorUsedCbuffers[id];
+                        const ShaderTypeData* cbuffer = mapUsedCbuffers[id];
                         CBufferTypeData* cbufferData = cbuffer->type->cbufferData;
 
                         unsigned int index = asLiteralValue(start + 2);
@@ -186,9 +186,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 case spv::OpMemberName:
                 {
                     spv::Id id = asId(start + 1);
-                    if (vectorUsedCbuffers[id] != nullptr)
+                    if (mapUsedCbuffers[id] != nullptr)
                     {
-                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = mapUsedCbuffers[id];
 
                         if (start > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start;
 
@@ -208,9 +208,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 {
                     const spv::Id typeId = asId(start + 1);
 
-                    if (vectorUsedCbuffers[typeId] != nullptr)
+                    if (mapUsedCbuffers[typeId] != nullptr)
                     {
-                        CBufferTypeData* cbufferData = vectorUsedCbuffers[typeId];
+                        CBufferTypeData* cbufferData = mapUsedCbuffers[typeId];
 
                         if (start > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start;
 
@@ -244,9 +244,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 case spv::OpMemberDecorate:
                 {
                     spv::Id id = asId(start + 1);
-                    if (vectorUsedCbuffers[id] != nullptr)
+                    if (mapUsedCbuffers[id] != nullptr)
                     {
-                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = mapUsedCbuffers[id];
                         if (start > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start;
 
                         const unsigned int index = asLiteralValue(start + 2);
@@ -321,9 +321,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 case spv::OpTypeStruct:
                 {
                     spv::Id id = asId(start + 1);
-                    if (vectorUsedCbuffers[id] != nullptr)
+                    if (mapUsedCbuffers[id] != nullptr)
                     {
-                        CBufferTypeData* cbufferData = vectorUsedCbuffers[id];
+                        CBufferTypeData* cbufferData = mapUsedCbuffers[id];
 
                         int countMembers = wordCount - 2;
 #ifdef XKSLANG_DEBUG_MODE
@@ -493,14 +493,14 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     vector<TypeStructMemberArray*> listNewCbuffers;     //this list will contain all new cbuffer information
     vector<TypeStructMember> listResourcesNewAccessVariables;     //this list will contain access variable for all resources moved out from the cbuffer
 
-    vector<CBufferTypeData*>& vectorCbuffersToRemap = vectorUsedCbuffers;  //just reusing an existing vector to avoid creating a new one...
+    vector<CBufferTypeData*>& vectorCbuffersToRemap = mapUsedCbuffers;  //just reusing an existing vector to avoid creating a new one...
     std::fill(vectorCbuffersToRemap.begin(), vectorCbuffersToRemap.end(), nullptr);
 
     if (success && anyCBufferUsed)
     {
         //=========================================================================================================================
         //=========================================================================================================================
-        //merge all USED cbuffers having an undefined type, or sharing the same declaration name
+        //merge all USED cbuffers having an undefined name, or sharing the same declaration name
         for (unsigned int i = 0; i < listAllShaderCBuffers.size(); i++)
         {
             CBufferTypeData* cbufferA = listAllShaderCBuffers[i];
@@ -523,7 +523,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 if (mergingUndefinedCbuffers)
                 {
                     //merge all undefined cbuffers
-                    if (someCBuffersToMerge.size() == 0) someCBuffersToMerge.push_back(cbufferA);
+                    //if (someCBuffersToMerge.size() == 0) someCBuffersToMerge.push_back(cbufferA);
                     if (isBUndefinedCbuffer) someCBuffersToMerge.push_back(cbufferB);
                 }
                 else
@@ -531,7 +531,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     //merge defined cbuffers, only if they share the same name
                     if (!isBUndefinedCbuffer && cbufferA->cbufferName == cbufferB->cbufferName)
                     {
-                        if (someCBuffersToMerge.size() == 0) someCBuffersToMerge.push_back(cbufferA);
+                        //if (someCBuffersToMerge.size() == 0) someCBuffersToMerge.push_back(cbufferA);
                         someCBuffersToMerge.push_back(cbufferB);
                     }
                 }
@@ -642,7 +642,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             memberToMerge.newStructMemberIndex = -1;
                             memberToMerge.newStructTypeId = 0;
                             memberToMerge.newStructVariableAccessTypeId = 0;
-                            // We set the resource as: shader.originalName (this will be its id keyName)
+                            // We set the resource as: shaderOwnerName.originalName (this will be its id keyName)
                             memberToMerge.declarationName = cbufferToMerge->shaderOwnerName + "." + memberToMerge.declarationName;
                             memberToMerge.variableAccessTypeId = newBoundId++; //id of the new variable we'll create
 

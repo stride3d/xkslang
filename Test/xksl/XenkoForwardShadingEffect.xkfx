@@ -63,7 +63,7 @@ m.addComposition( materialVertexStage = mixin(MaterialSurfaceArray[
   ])
 )
 m.addComposition( streamInitializerPixelStage = mixin(MaterialStream, MaterialDisplacementStream) )
-m.addComposition( streamInitializerVertexStage = mixin(MaterialStream, MaterialDisplacementStream) 
+m.addComposition( streamInitializerVertexStage = mixin(MaterialStream, MaterialDisplacementStream) )
 
 m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 m.compile()

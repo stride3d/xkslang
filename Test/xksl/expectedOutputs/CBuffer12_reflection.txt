@@ -1,0 +1,55 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerDraw [size: 352]
+@C    Transform_WorldInverse => Transform.WorldInverse
+@C    Transform_WorldInverseTranspose => Transform.WorldInverseTranspose
+@C    Transform_WorldView => Transform.WorldView
+@C    Transform_WorldViewInverse => Transform.WorldViewInverse
+@C    Transform_WorldViewProjection => Transform.WorldViewProjection
+@C    Transform_WorldScale => Transform.WorldScale
+@C    Transform_EyeMS => Transform.EyeMS
+ cbuffer PerLight [size: 16]
+@C    ShaderComp_aFloat => ShaderComp.aFloat
+***********************
+*****  Resources  *****
+***********************
+@C    PerDraw => PerDraw [Stage: Vertex]
+@C    PerLight => PerLight [Stage: Vertex]
+@C    PerDraw => PerDraw [Stage: Pixel]
+@C    PerLight => PerLight [Stage: Pixel]
+
+ConstantBuffers. Count=2
+ cbuffer: Name="PerDraw" Size=352 MembersCount=7
+  KeyName="Transform.WorldInverse RawName="Transform_WorldInverse" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transform.WorldInverseTranspose RawName="Transform_WorldInverseTranspose" Offset=64
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transform.WorldView RawName="Transform_WorldView" Offset=128
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transform.WorldViewInverse RawName="Transform_WorldViewInverse" Offset=192
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transform.WorldViewProjection RawName="Transform_WorldViewProjection" Offset=256
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transform.WorldScale RawName="Transform_WorldScale" Offset=320
+  Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  KeyName="Transform.EyeMS RawName="Transform_EyeMS" Offset=336
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ cbuffer: Name="PerLight" Size=16 MembersCount=1
+  KeyName="ShaderComp.aFloat RawName="ShaderComp_aFloat" Offset=0
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ResourceBindings. Count=4
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerLight" RawName="PerLight" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerDraw" RawName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerLight" RawName="PerLight" Class=ConstantBuffer Type=ConstantBuffer
+
+InputAttributes. Count=0

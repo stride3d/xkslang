@@ -607,7 +607,7 @@ public:
 
     public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
-            : ObjectInstructionBase(parsedData, name, source), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr){
+            : ObjectInstructionBase(parsedData, name, source), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr) {
         }
         virtual ~ShaderClassData() {
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
@@ -615,7 +615,7 @@ public:
         virtual ObjectInstructionBase* CloneBasicData() {
             ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->level = level;
-            //obj->instanceOriginalShaderName = instanceOriginalShaderName;
+            obj->shaderOriginalTypeName = shaderOriginalTypeName;
             return obj;
         }
 
@@ -667,6 +667,7 @@ public:
 
     public:
         int level;
+        std::string shaderOriginalTypeName;   //when we instantiate a shader (a composition for example), we keep the original shaderName in this field
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
         std::vector<FunctionInstruction*> functionsList;

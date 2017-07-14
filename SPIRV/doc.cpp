@@ -1919,6 +1919,9 @@ void Parameterize()
 
     //======================================================================================================
     //XKSL OpCode extensions
+    InstructionDesc[OpTypeXlslShaderClass].operands.push(OperandLiteralString, "'ShaderName'");
+    InstructionDesc[OpTypeXlslShaderClass].operands.push(OperandLiteralString, "'ShaderOriginalTypeName'");
+
     InstructionDesc[OpDeclarationName].operands.push(OperandId, "'Target'");
     InstructionDesc[OpDeclarationName].operands.push(OperandLiteralString, "'DeclarationName'");
 

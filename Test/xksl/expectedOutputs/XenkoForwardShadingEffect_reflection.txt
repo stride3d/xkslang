@@ -1,0 +1,171 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerDraw [size: 768]
+@C    Transformation_World => Transformation.World
+@C    Transformation_WorldInverse => Transformation.WorldInverse
+@C    Transformation_WorldInverseTranspose => Transformation.WorldInverseTranspose
+@C    Transformation_WorldView => Transformation.WorldView
+@C    Transformation_WorldViewInverse => Transformation.WorldViewInverse
+@C    Transformation_WorldViewProjection => Transformation.WorldViewProjection
+@C    Transformation_WorldScale => Transformation.WorldScale
+@C    Transformation_EyeMS => Transformation.EyeMS
+@C    o23S2C0_Transformation_WorldInverse => o23S2C0_Transformation.WorldInverse
+@C    o23S2C0_Transformation_WorldInverseTranspose => o23S2C0_Transformation.WorldInverseTranspose
+@C    o23S2C0_Transformation_WorldView => o23S2C0_Transformation.WorldView
+@C    o23S2C0_Transformation_WorldViewInverse => o23S2C0_Transformation.WorldViewInverse
+@C    o23S2C0_Transformation_WorldViewProjection => o23S2C0_Transformation.WorldViewProjection
+@C    o23S2C0_Transformation_WorldScale => o23S2C0_Transformation.WorldScale
+@C    o23S2C0_Transformation_EyeMS => o23S2C0_Transformation.EyeMS
+ cbuffer PerView [size: 352]
+@C    Transformation_View => Transformation.View
+@C    Transformation_ViewInverse => Transformation.ViewInverse
+@C    Transformation_Projection => Transformation.Projection
+@C    Transformation_ProjectionInverse => Transformation.ProjectionInverse
+@C    Transformation_ViewProjection => Transformation.ViewProjection
+@C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
+@C    Transformation_Eye => Transformation.Eye
+ cbuffer PerMaterial [size: 60]
+@C    o11S2C0_o10S2C0_ComputeColorConstantFloatLink_Material_SpecularIntensityValue__constantFloat => Material.SpecularIntensityValue
+@C    o9S2C0_o8S2C0_ComputeColorConstantColorLink_Material_SpecularValue__constantColor => Material.SpecularValue
+@C    o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_GlossinessValue__constantFloat => Material.GlossinessValue
+@C    o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__scale => Material.TextureScale
+@C    o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__offset => Material.TextureOffset
+@C    o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__constantFloat => Material.DisplacementValue
+ cbuffer PerFrame [size: 8]
+@C    Global_Time => Global.Time
+@C    Global_TimeStep => Global.TimeStep
+***********************
+*****  Resources  *****
+***********************
+@C    PerDraw => PerDraw [Stage: Vertex]
+@C    PerView => PerView [Stage: Vertex]
+@C    PerMaterial => PerMaterial [Stage: Vertex]
+@C    PerFrame => PerFrame [Stage: Vertex]
+@C    PerDraw => PerDraw [Stage: Pixel]
+@C    PerView => PerView [Stage: Pixel]
+@C    PerMaterial => PerMaterial [Stage: Pixel]
+@C    PerFrame => PerFrame [Stage: Pixel]
+@C    o3S2C0_o2S2C0_DynamicSampler_Material_Sampler_i0_PerMaterial__Sampler => Material.Sampler.i0 [Stage: Pixel]
+@C    o3S2C0_o2S2C0_DynamicTexture_Material_DiffuseMap_PerMaterial__Texture => Material.DiffuseMap [Stage: Pixel]
+
+ConstantBuffers. Count=4
+ cbuffer: Name="PerDraw" Size=768 MembersCount=15
+  KeyName="Transformation.World RawName="Transformation_World" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldInverse RawName="Transformation_WorldInverse" Offset=64
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldInverseTranspose RawName="Transformation_WorldInverseTranspose" Offset=128
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldView RawName="Transformation_WorldView" Offset=192
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldViewInverse RawName="Transformation_WorldViewInverse" Offset=256
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldViewProjection RawName="Transformation_WorldViewProjection" Offset=320
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldScale RawName="Transformation_WorldScale" Offset=384
+  Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  KeyName="Transformation.EyeMS RawName="Transformation_EyeMS" Offset=400
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="o23S2C0_Transformation.WorldInverse RawName="o23S2C0_Transformation_WorldInverse" Offset=416
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="o23S2C0_Transformation.WorldInverseTranspose RawName="o23S2C0_Transformation_WorldInverseTranspose" Offset=480
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="o23S2C0_Transformation.WorldView RawName="o23S2C0_Transformation_WorldView" Offset=544
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="o23S2C0_Transformation.WorldViewInverse RawName="o23S2C0_Transformation_WorldViewInverse" Offset=608
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="o23S2C0_Transformation.WorldViewProjection RawName="o23S2C0_Transformation_WorldViewProjection" Offset=672
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="o23S2C0_Transformation.WorldScale RawName="o23S2C0_Transformation_WorldScale" Offset=736
+  Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  KeyName="o23S2C0_Transformation.EyeMS RawName="o23S2C0_Transformation_EyeMS" Offset=752
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ cbuffer: Name="PerView" Size=352 MembersCount=7
+  KeyName="Transformation.View RawName="Transformation_View" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ViewInverse RawName="Transformation_ViewInverse" Offset=64
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.Projection RawName="Transformation_Projection" Offset=128
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ProjectionInverse RawName="Transformation_ProjectionInverse" Offset=192
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ViewProjection RawName="Transformation_ViewProjection" Offset=256
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ProjScreenRay RawName="Transformation_ProjScreenRay" Offset=320
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Transformation.Eye RawName="Transformation_Eye" Offset=336
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ cbuffer: Name="PerMaterial" Size=60 MembersCount=6
+  KeyName="Material.SpecularIntensityValue RawName="o11S2C0_o10S2C0_ComputeColorConstantFloatLink_Material_SpecularIntensityValue__constantFloat" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Material.SpecularValue RawName="o9S2C0_o8S2C0_ComputeColorConstantColorLink_Material_SpecularValue__constantColor" Offset=16
+  Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="Material.GlossinessValue RawName="o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_GlossinessValue__constantFloat" Offset=32
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Material.TextureScale RawName="o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__scale" Offset=40
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Material.TextureOffset RawName="o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__offset" Offset=48
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Material.DisplacementValue RawName="o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__constantFloat" Offset=56
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ cbuffer: Name="PerFrame" Size=8 MembersCount=2
+  KeyName="Global.Time RawName="Global_Time" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Global.TimeStep RawName="Global_TimeStep" Offset=4
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ResourceBindings. Count=10
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerFrame" RawName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerDraw" RawName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerFrame" RawName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Material.Sampler.i0" RawName="o3S2C0_o2S2C0_DynamicSampler_Material_Sampler_i0_PerMaterial__Sampler" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="Material.DiffuseMap" RawName="o3S2C0_o2S2C0_DynamicTexture_Material_DiffuseMap_PerMaterial__Texture" Class=ShaderResourceView Type=Texture2D
+
+InputAttributes. Count=12
+ SemanticName="NORMAL" SemanticIndex=0
+ SemanticName="TANGENT" SemanticIndex=1
+ SemanticName="POSITION" SemanticIndex=2
+ SemanticName="" SemanticIndex=3
+ SemanticName="" SemanticIndex=4
+ SemanticName="" SemanticIndex=5
+ SemanticName="" SemanticIndex=6
+ SemanticName="" SemanticIndex=7
+ SemanticName="" SemanticIndex=8
+ SemanticName="" SemanticIndex=9
+ SemanticName="TEXCOORD0" SemanticIndex=10
+ SemanticName="TEXCOORD0" SemanticIndex=11

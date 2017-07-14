@@ -204,6 +204,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer09", "CBuffer09.xkfx" },
     //{ "CBuffer10", "CBuffer10.xkfx" },
     //{ "CBuffer11", "CBuffer11.xkfx" },
+    //{ "CBuffer12", "CBuffer12.xkfx" },
     
     //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
     //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
@@ -2071,8 +2072,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             if (remainingLine.size() > 0)
             {
                 if (!getFunctionParameterString(remainingLine, instructionParametersStr)) {
-                    error(instruction + ": Failed to get the instuction parameters from: \"" + instructionFullLine + "\"");
-                    success = false; break;
+                    instructionParametersStr = "";
                 }
             }
 
@@ -2179,6 +2179,12 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         }
 
         if (!success) break;
+    }
+
+    if (previousPartialLine.size() > 0)
+    {
+        error("Incomplete instruction: " + previousPartialLine);
+        success = false;
     }
 
     //Release allocated data

@@ -1,0 +1,58 @@
+shader Transform
+{
+	stage cbuffer PerDraw {
+        // Inverse World matrix. Default to Matrix.Inverse(World).
+        float4x4 WorldInverse;
+        // Inverse Transpose World matrix. Default to Matrix.Transpose(Matrix.Inverse(World)).
+        float4x4 WorldInverseTranspose;
+        // WorldView matrix. Default to = World * View.
+        float4x4 WorldView;
+        // Inverse WorldView matrix. Default to Matrix.Inverse(WorldView)
+        float4x4 WorldViewInverse;
+        // WorldViewProjection matrix. Default to = World * ViewProjection.
+        float4x4 WorldViewProjection;
+        // The scale of the World. Default to Vector2.One.
+        float3 WorldScale;
+        // Eye vector in model space. Default to = (World*View)^-1[M41,M42,M43,1.0]
+        float4 EyeMS;
+    };
+}
+
+shader ShaderComp : Transform
+{
+	stage cbuffer PerLight
+	{
+		float4 aFloat;
+	}
+	
+	float4 Compute()
+	{
+		return EyeMS + aFloat;
+	}
+}
+
+shader ShaderComp2 : ShaderComp
+{
+	compose ShaderComp comp;
+	
+	override float4 Compute()
+	{
+		return base.Compute() + comp.Compute();
+	}
+}
+
+shader ShaderMain : Transform
+{
+	compose ShaderComp comp1;
+	compose ShaderComp comp2;
+
+	stage void VSMain() 
+    {
+        float4 f = EyeMS + comp1.Compute();
+    }
+	
+    stage void PSMain() 
+    {
+        float4 f = EyeMS + comp2.Compute();
+    }
+};
