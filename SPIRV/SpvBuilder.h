@@ -116,7 +116,7 @@ public:
     Id makeUintType(int width) { return makeIntegerType(width, false); }
     Id makeFloatType(int width);
     Id makeStructType(const std::vector<Id>& members, const char*);
-    Id makeXkslShaderClassType(const char*);
+    Id makeXkslShaderClassType(int shaderType, int countGenerics, const char* name, const char* originalName);
     Id makeStructResultType(Id type0, Id type1);
     Id makeVectorType(Id component, int size);
     Id makeMatrixType(Id component, int cols, int rows);

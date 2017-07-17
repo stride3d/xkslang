@@ -1,0 +1,15 @@
+convertAndLoad "TestGenerics09.xksl" ComputeColorTextureScaledOffsetDynamicSampler<
+  Material.DiffuseMap,
+  TEXCOORD0,
+  Material.Sampler.i0,
+  rgba,
+  Material.TextureScale,
+  Material.TextureOffset,
+  1
+>
+
+mixer m
+m.mixin(ComputeColorTextureScaledOffsetDynamicSampler)
+
+m.setStageEntryPoint( Pixel="PSMain" )
+m.compile()

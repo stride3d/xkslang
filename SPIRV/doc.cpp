@@ -1919,6 +1919,8 @@ void Parameterize()
 
     //======================================================================================================
     //XKSL OpCode extensions
+    InstructionDesc[OpTypeXlslShaderClass].operands.push(XkslShaderDataProperty, "'ShaderType'");    //cf XkslPropertyEnum
+    InstructionDesc[OpTypeXlslShaderClass].operands.push(OperandLiteralNumber, "'CountGenerics'");
     InstructionDesc[OpTypeXlslShaderClass].operands.push(OperandLiteralString, "'ShaderName'");
     InstructionDesc[OpTypeXlslShaderClass].operands.push(OperandLiteralString, "'ShaderOriginalTypeName'");
 

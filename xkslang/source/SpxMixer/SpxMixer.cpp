@@ -285,7 +285,6 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
 
     //===================================================================================================================
     //===================================================================================================================
-    // (remove unused shaders (shader whose methods or members are never called by the output stages))
 	// remove all unused functions and members
     if (!clonedSpxStream->RemoveAllUnusedFunctionsAndMembers(vecMixerOutputStages))
     {
@@ -294,6 +293,8 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
         delete clonedSpxStream;
         return error(messages, "Fail to remove all unused stuff");
     }
+
+
 
     //===================================================================================================================
     // Finalize the compilation

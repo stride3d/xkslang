@@ -27,6 +27,7 @@
 
 #ifdef _DEBUG
 #define WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
+//#define OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
 #define PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
 #endif
 
@@ -192,6 +193,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics06", "TestGenerics06.xkfx" },
     //{ "TestGenerics07", "TestGenerics07.xkfx" },
     //{ "TestGenerics08", "TestGenerics08.xkfx" },
+    { "TestGenerics09", "TestGenerics09.xkfx" },
     
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
@@ -272,7 +274,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
@@ -407,6 +409,30 @@ static void WriteBytecode(const vector<uint32_t>& bytecode, const string& output
         }
         std::cout << " output: \"" << outputFileName << "\"" << endl;
     }
+}
+
+static bool displayListOfAllCompositionsForTheMixer(SpxMixer* mixer)
+{
+    if (mixer == nullptr) return true;
+
+    vector<string> errorMsgs;
+    vector<ShaderCompositionInfo> vecCompositions;
+    bool success = mixer->GetListAllCompositionsInfo(vecCompositions, errorMsgs);
+    if (!success) return error("Failed to get the list of all compositions from the mixer");
+    if (vecCompositions.size() > 0)
+    {
+        std::cout << endl;
+        std::cout << "Count Compositions: " << vecCompositions.size() << endl;
+        for (unsigned int c = 0; c < vecCompositions.size(); c++)
+        {
+            ShaderCompositionInfo& composition = vecCompositions[c];
+            std::cout << " " << composition.CompositionShaderType << " " << composition.ShaderOwner << "."
+                << composition.CompositionVariableName << (composition.IsArray ? "[]" : "") << " (instances=" << composition.CompositionCountInstances << ")" << endl;
+        }
+        std::cout << endl;
+    }
+
+    return true;
 }
 
 static bool GetMixerCurrentBytecode(EffectMixerObject* mixerTarget, vector<uint32_t>& mixinBytecode, bool useXkslangDll)
@@ -781,6 +807,11 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
         WriteBytecode(streamsReshuffledSpv.getBytecodeStream(), outputDir, effectName + "_compile2_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
         WriteBytecode(mergedCBuffersSpv.getBytecodeStream(), outputDir, effectName + "_compile3_mergedCBuffers.hr.spv", BytecodeFileFormat::Text);
     }
+#endif
+
+#ifdef OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
+    if (!displayListOfAllCompositionsForTheMixer(mixer))
+        return error("Failed to display the mixer list of compositions");
 #endif
 
     {
@@ -1525,6 +1556,11 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         }
 #endif
 
+#ifdef OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
+        if (!displayListOfAllCompositionsForTheMixer(mixerTarget->mixer))
+            return error("Failed to display the mixer list of compositions");
+#endif
+
 #ifdef PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
         {
             //Do a bytecode sanity check
@@ -1699,6 +1735,11 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
                 success = GetAndWriteMixerCurrentBytecode(mixerTarget, outputFileName, useXkslangDll);
                 if (!success) return error("Failed to get and write the mixer current bytecode");
             }
+#endif
+
+#ifdef OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
+            if (!displayListOfAllCompositionsForTheMixer(mixerTarget->mixer))
+                return error("Failed to display the mixer list of compositions");
 #endif
 
 #ifdef PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
@@ -2149,23 +2190,9 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 }
                 else
                 {
-                    //Optionnal: get and display all compositions
-                    {
-                        vector<ShaderCompositionInfo> vecCompositions;
-                        success = mixerTarget->mixer->GetListAllCompositionsInfo(vecCompositions, errorMsgs);
-                        if (!success) { error("Failed to get the list of all compositions from the mixer"); break; }
-                        if (vecCompositions.size() > 0)
-                        {
-                            std::cout << endl;
-                            std::cout << "Count Compositions: " << vecCompositions.size() << endl;
-                            for (unsigned int c = 0; c < vecCompositions.size(); c++)
-                            {
-                                ShaderCompositionInfo& composition = vecCompositions[c];
-                                std::cout << " " << composition.CompositionShaderType << " " << composition.ShaderOwner << "."
-                                    << composition.CompositionVariableName << (composition.IsArray ? "[]" : "")  << " (instances=" << composition.CompositionCountInstances << ")" << endl;
-                            }
-                            std::cout << endl;
-                        }
+                    //Optionnal: get and display all compositions before compiling
+                    if (!displayListOfAllCompositionsForTheMixer(mixerTarget->mixer)) {
+                        error("Failed to display the mixer list of compositions"); success = false;
                     }
 
                     success = CompileMixer(effectName, mixerTarget->mixer, outputStages, errorMsgs);

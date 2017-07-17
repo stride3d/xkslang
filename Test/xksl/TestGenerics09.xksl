@@ -1,0 +1,27 @@
+shader ComputeColorTextureScaledOffsetDynamicSampler<LinkType TTextureName, 
+                                             Semantic TStream, 
+                                             LinkType TSampler, 
+                                             MemberName TRgba, 
+                                             LinkType TScale, 
+                                             LinkType TOffset,
+											 int aInt>
+{
+    stage cbuffer PerMaterial
+    {
+        [Link("TScale")]
+        float2 scale;
+
+        [Link("TOffset")]
+        float2 offset;
+    }
+
+	float2 Compute()
+	{
+		return scale + offset;
+	}
+	
+    void PSMain()
+	{
+		float2 f = Compute();
+	}
+};

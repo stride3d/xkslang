@@ -659,6 +659,9 @@ enum XkslPropertyEnum {
     GSOutputPointStream = 16,
     GSOutputLineStream = 17,
     GSOutputTriangleStream = 18,
+
+    ShaderTypeBase = 31,
+    ShaderTypeInstance = 32
 };
 
 enum Op {

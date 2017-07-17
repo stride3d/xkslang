@@ -2547,7 +2547,13 @@ spv::Id TGlslangToSpvTraverser::convertGlslangStructToSpvType(const glslang::TTy
     spv::Id spvType;
     
     if (type.getBasicType() == glslang::EbtShaderClass) 
-        spvType = builder.makeXkslShaderClassType(type.getTypeName().c_str());
+    {
+        const char* shaderFullName = type.getUserIdentifierName()->c_str();
+        const char* shaderBaseName = type.getBaseName()->c_str();
+        int countGenerics = type.GetShaderCountGenerics();
+
+        spvType = builder.makeXkslShaderClassType(spv::XkslPropertyEnum::ShaderTypeBase, countGenerics, shaderFullName, shaderBaseName);
+    }
     else
         spvType = builder.makeStructType(spvMembers, type.getTypeName().c_str());
     if (! HasNonLayoutQualifiers(type, qualifier))

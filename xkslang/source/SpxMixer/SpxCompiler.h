@@ -607,7 +607,7 @@ public:
 
     public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
-            : ObjectInstructionBase(parsedData, name, source), level(-1), flag(0), flag1(0), tmpClonedShader(nullptr) {
+            : ObjectInstructionBase(parsedData, name, source), level(-1), countGenerics(0), flag(0), flag1(0), tmpClonedShader(nullptr) {
         }
         virtual ~ShaderClassData() {
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
@@ -615,6 +615,7 @@ public:
         virtual ObjectInstructionBase* CloneBasicData() {
             ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->level = level;
+            obj->countGenerics = countGenerics;
             obj->shaderOriginalTypeName = shaderOriginalTypeName;
             return obj;
         }
@@ -667,6 +668,7 @@ public:
 
     public:
         int level;
+        int countGenerics;
         std::string shaderOriginalTypeName;   //when we instantiate a shader (a composition for example), we keep the original shaderName in this field
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
@@ -715,6 +717,10 @@ public:
 
     SpxCompiler* Clone();
 
+    void CopyMixinBytecode(std::vector<std::uint32_t>& bytecodeStream);
+    const std::vector<std::uint32_t>& GetMixinBytecode();
+    static void GetStagesPipeline(std::vector<ShadingStageEnum>& pipeline);
+
     //bool MixWithBytecode(const SpxBytecode& bytecode);
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& nameOfShadersToMix);
 
@@ -723,10 +729,6 @@ public:
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
     ShaderComposition* GetShaderCompositionForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
     bool GetAllCompositionsForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders, std::vector<ShaderComposition*>& listCompositions);
-    void CopyMixinBytecode(std::vector<std::uint32_t>& bytecodeStream);
-    const std::vector<std::uint32_t>& GetMixinBytecode();
-
-    static void GetStagesPipeline(std::vector<ShadingStageEnum>& pipeline);
 
     bool error(const std::string& txt);
     static bool error(std::vector<std::string>& errorMsgs, const std::string& txt);

@@ -9,12 +9,11 @@
 @C    Transformation_ViewProjection => Transformation.ViewProjection
 @C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
 @C    Transformation_Eye => Transformation.Eye
- cbuffer PerMaterial [size: 56]
-@C    ComputeColorConstantFloatLink_Material_SpecularIntensityValue__constantFloat => Material.SpecularIntensityValue
-@C    ComputeColorConstantColorLink_Material_SpecularValue__constantColor => Material.SpecularValue
-@C    ComputeColorConstantFloatLink_Material_GlossinessValue__constantFloat => Material.GlossinessValue
-@C    ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__scale => Material.TextureScale
-@C    ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__offset => Material.TextureOffset
+ cbuffer PerMaterial [size: 48]
+@C    ComputeColorConstantFloatLink_constantFloat => Material.SpecularIntensityValue
+@C    ComputeColorConstantColorLink_constantColor => Material.SpecularValue
+@C    ComputeColorTextureScaledOffsetDynamicSampler_scale => Material.TextureScale
+@C    ComputeColorTextureScaledOffsetDynamicSampler_offset => Material.TextureOffset
  cbuffer PerFrame [size: 8]
 @C    Global_Time => Global.Time
 @C    Global_TimeStep => Global.TimeStep
@@ -24,8 +23,8 @@
 @C    PerView => PerView [Stage: Pixel]
 @C    PerMaterial => PerMaterial [Stage: Pixel]
 @C    PerFrame => PerFrame [Stage: Pixel]
-@C    DynamicSampler_Material_Sampler_i0_PerMaterial__Sampler => Material.Sampler.i0 [Stage: Pixel]
-@C    DynamicTexture_Material_DiffuseMap_PerMaterial__Texture => Material.DiffuseMap [Stage: Pixel]
+@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage: Pixel]
+@C    DynamicTexture_Texture => Material.DiffuseMap [Stage: Pixel]
 
 ConstantBuffers. Count=3
  cbuffer: Name="PerView" Size=352 MembersCount=7
@@ -50,20 +49,17 @@ ConstantBuffers. Count=3
   KeyName="Transformation.Eye RawName="Transformation_Eye" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
- cbuffer: Name="PerMaterial" Size=56 MembersCount=5
-  KeyName="Material.SpecularIntensityValue RawName="ComputeColorConstantFloatLink_Material_SpecularIntensityValue__constantFloat" Offset=0
+ cbuffer: Name="PerMaterial" Size=48 MembersCount=4
+  KeyName="Material.SpecularIntensityValue RawName="ComputeColorConstantFloatLink_constantFloat" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Material.SpecularValue RawName="ComputeColorConstantColorLink_Material_SpecularValue__constantColor" Offset=16
+  KeyName="Material.SpecularValue RawName="ComputeColorConstantColorLink_constantColor" Offset=16
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="Material.GlossinessValue RawName="ComputeColorConstantFloatLink_Material_GlossinessValue__constantFloat" Offset=32
-  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
-
-  KeyName="Material.TextureScale RawName="ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__scale" Offset=40
+  KeyName="Material.TextureScale RawName="ComputeColorTextureScaledOffsetDynamicSampler_scale" Offset=32
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="Material.TextureOffset RawName="ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__offset" Offset=48
+  KeyName="Material.TextureOffset RawName="ComputeColorTextureScaledOffsetDynamicSampler_offset" Offset=40
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
  cbuffer: Name="PerFrame" Size=8 MembersCount=2
@@ -77,8 +73,8 @@ ResourceBindings. Count=5
  Stage=Pixel KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="PerFrame" RawName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Material_Sampler_i0_PerMaterial__Sampler" Class=Sampler Type=Sampler
- Stage=Pixel KeyName="Material.DiffuseMap" RawName="DynamicTexture_Material_DiffuseMap_PerMaterial__Texture" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="Material.DiffuseMap" RawName="DynamicTexture_Texture" Class=ShaderResourceView Type=Texture2D
 
 InputAttributes. Count=12
  SemanticName="" SemanticIndex=0

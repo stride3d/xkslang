@@ -2413,6 +2413,9 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
         TTypeList* emptyList = new TTypeList();
         TType* type = new TType(emptyList, shader->shaderFullName, qualifier, nullptr);
         type->setUserIdentifierName(shader->shaderFullName.c_str());
+        type->setBaseName(shader->shaderBaseName.c_str());
+        int countGenerics = shader->listGenerics.size();
+        type->SetShaderCountGenerics(countGenerics);
         if (shader->listParents.size() > 0)
         {
             TIdentifierList listParentsName;

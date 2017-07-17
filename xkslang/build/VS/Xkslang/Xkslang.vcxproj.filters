@@ -74,5 +74,8 @@
     <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_utils.cpp">
       <Filter>SpxMixer</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_compositions.cpp">
+      <Filter>SpxMixer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

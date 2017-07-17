@@ -238,11 +238,13 @@ Id Builder::makeFloatType(int width)
     return type->getResultId();
 }
 
-Id Builder::makeXkslShaderClassType(const char* name)
+Id Builder::makeXkslShaderClassType(int shaderType, int countGenerics, const char* name, const char* originalName)
 {
     Instruction* type = new Instruction(getUniqueId(), NoType, OpTypeXlslShaderClass);
+    type->addImmediateOperand(shaderType);
+    type->addImmediateOperand(countGenerics);
     type->addStringOperand(name);
-    type->addStringOperand(name);
+    type->addStringOperand(originalName);
 
     groupedTypes[OpTypeStruct].push_back(type);
     constantsTypesGlobals.push_back(std::unique_ptr<Instruction>(type));
