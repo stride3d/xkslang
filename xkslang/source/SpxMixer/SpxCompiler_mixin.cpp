@@ -3204,13 +3204,14 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
             {
                 const spv::Id typeId = asId(start + 1);
                 spv::XkslPropertyEnum cbufferType = (spv::XkslPropertyEnum)asLiteralValue(start + 2);
-                spv::XkslPropertyEnum cbufferStage = (spv::XkslPropertyEnum)asLiteralValue(start + 3);
+                spv::XkslPropertyEnum cbufferStageEnum = (spv::XkslPropertyEnum)asLiteralValue(start + 3);
 
 #ifdef XKSLANG_DEBUG_MODE
                 if (cbufferType != spv::CBufferUndefined && cbufferType != spv::CBufferDefined) { error("Invalid cbuffer type property"); break; }
-                if (cbufferStage != spv::CBufferStage && cbufferStage != spv::CBufferUnstage) { error("Invalid cbuffer stage property"); break; }
+                if (cbufferStageEnum != spv::CBufferStage && cbufferStageEnum != spv::CBufferUnstage) { error("Invalid cbuffer stage property"); break; }
 #endif
 
+                bool isStageCbuffer = cbufferStageEnum == spv::CBufferStage ? true : false;
                 int countMembers = asLiteralValue(start + 4);
                 TypeInstruction* type = GetTypeById(typeId);
                 if (type == nullptr) return error("Cannot find the type for Id: " + to_string(typeId));
@@ -3218,10 +3219,15 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 if (countMembers <= 0) { error("Invalid number of members for the cbuffer: " + type->GetName()); break; }
 
                 string shaderOwnerName = "";
-                if (type->shaderOwner != nullptr) shaderOwnerName = type->shaderOwner->GetName();
+                if (type->shaderOwner != nullptr)
+                {
+                    //if the cbuffer is staged, we set its name to be the shader base type name, otherwise to be the shader full name (depending on generics and compositions)
+                    if (isStageCbuffer) shaderOwnerName = type->shaderOwner->GetShaderOriginalTypeName();
+                    else shaderOwnerName = type->shaderOwner->GetShaderFullName();
+                }
 
                 CBufferTypeData* cbufferData = new CBufferTypeData(typeId, shaderOwnerName, type->GetName(),
-                    cbufferType == spv::CBufferDefined? true : false, cbufferStage == spv::CBufferStage ? true : false, countMembers);
+                    cbufferType == spv::CBufferDefined? true : false, isStageCbuffer, countMembers);
                 type->SetCBufferData(cbufferData);
 
                 break;

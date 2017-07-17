@@ -56,6 +56,7 @@ layout(std140) uniform PerMaterial
 {
     float ComputeColorConstantFloatLink_constantFloat;
     vec4 ComputeColorConstantColorLink_constantColor;
+    float ComputeColorConstantFloatLink_constantFloat_1;
     vec2 ComputeColorTextureScaledOffsetDynamicSampler_scale;
     vec2 ComputeColorTextureScaledOffsetDynamicSampler_offset;
 } PerMaterial_var;
@@ -175,7 +176,7 @@ void o18S2C0_o5S2C0_MaterialSurfaceNormalMap_false_true__Compute(inout PS_STREAM
 
 vec4 o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_GlossinessValue__Compute()
 {
-    return vec4(PerMaterial_var.ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat);
+    return vec4(PerMaterial_var.ComputeColorConstantFloatLink_constantFloat_1, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat_1, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat_1, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat_1);
 }
 
 void o18S2C0_o7S2C0_MaterialSurfaceGlossinessMap_false__Compute(out PS_STREAMS _streams)

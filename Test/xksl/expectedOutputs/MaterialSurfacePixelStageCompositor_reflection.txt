@@ -9,9 +9,10 @@
 @C    Transformation_ViewProjection => Transformation.ViewProjection
 @C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
 @C    Transformation_Eye => Transformation.Eye
- cbuffer PerMaterial [size: 48]
+ cbuffer PerMaterial [size: 56]
 @C    ComputeColorConstantFloatLink_constantFloat => Material.SpecularIntensityValue
 @C    ComputeColorConstantColorLink_constantColor => Material.SpecularValue
+@C    ComputeColorConstantFloatLink_constantFloat => Material.GlossinessValue
 @C    ComputeColorTextureScaledOffsetDynamicSampler_scale => Material.TextureScale
 @C    ComputeColorTextureScaledOffsetDynamicSampler_offset => Material.TextureOffset
  cbuffer PerFrame [size: 8]
@@ -49,17 +50,20 @@ ConstantBuffers. Count=3
   KeyName="Transformation.Eye RawName="Transformation_Eye" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
- cbuffer: Name="PerMaterial" Size=48 MembersCount=4
+ cbuffer: Name="PerMaterial" Size=56 MembersCount=5
   KeyName="Material.SpecularIntensityValue RawName="ComputeColorConstantFloatLink_constantFloat" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
   KeyName="Material.SpecularValue RawName="ComputeColorConstantColorLink_constantColor" Offset=16
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="Material.TextureScale RawName="ComputeColorTextureScaledOffsetDynamicSampler_scale" Offset=32
+  KeyName="Material.GlossinessValue RawName="ComputeColorConstantFloatLink_constantFloat" Offset=32
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Material.TextureScale RawName="ComputeColorTextureScaledOffsetDynamicSampler_scale" Offset=40
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="Material.TextureOffset RawName="ComputeColorTextureScaledOffsetDynamicSampler_offset" Offset=40
+  KeyName="Material.TextureOffset RawName="ComputeColorTextureScaledOffsetDynamicSampler_offset" Offset=48
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
  cbuffer: Name="PerFrame" Size=8 MembersCount=2

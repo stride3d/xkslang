@@ -666,6 +666,9 @@ public:
             return nullptr;
         }
 
+        std::string GetShaderFullName() { return GetName(); }
+        std::string GetShaderOriginalTypeName() { return shaderOriginalTypeName; }
+
     public:
         int level;
         int countGenerics;

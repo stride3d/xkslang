@@ -10,8 +10,8 @@
 *****  Resources  *****
 ***********************
 @C    PerMaterial => PerMaterial [Stage: Vertex]
-@C    ShaderBase_Texture0 => Material.DiffuseMap [Stage: Vertex]
-@C    ShaderBase_Sampler0 => Material.DiffuseSampler [Stage: Vertex]
+@C    ShaderMain_Texture0 => Material.DiffuseMap [Stage: Vertex]
+@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage: Vertex]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerMaterial" Size=56 MembersCount=4
@@ -29,8 +29,8 @@ ConstantBuffers. Count=1
 
 ResourceBindings. Count=3
  Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="Material.DiffuseMap" RawName="ShaderBase_Texture0" Class=ShaderResourceView Type=Texture2D
- Stage=Vertex KeyName="Material.DiffuseSampler" RawName="ShaderBase_Sampler0" Class=Sampler Type=Sampler
+ Stage=Vertex KeyName="Material.DiffuseMap" RawName="ShaderMain_Texture0" Class=ShaderResourceView Type=Texture2D
+ Stage=Vertex KeyName="ShaderMain.Sampler0" RawName="ShaderMain_Sampler0" Class=Sampler Type=Sampler
 
 InputAttributes. Count=1
  SemanticName="S_INPUT" SemanticIndex=0

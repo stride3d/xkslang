@@ -194,7 +194,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics07", "TestGenerics07.xkfx" },
     //{ "TestGenerics08", "TestGenerics08.xkfx" },
     //{ "TestGenerics09", "TestGenerics09.xkfx" },
-    
+
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
     //{ "CBuffer03", "CBuffer03.xkfx" },

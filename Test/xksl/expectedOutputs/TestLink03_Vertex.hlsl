@@ -6,13 +6,13 @@ struct VS_STREAMS
 
 cbuffer PerMaterial
 {
-    float4 ShaderMain_Material_DiffuseMap_Material_DiffuseSampler_Material_TextureScale_Material_TextureOffset__scale;
-    float4 ShaderMain_Material_DiffuseMap_Material_DiffuseSampler_Material_TextureScale_Material_TextureOffset__offset;
-    float4 ShaderMain_Material_DiffuseMap_Material_DiffuseSampler_Material_TextureScale_Material_TextureOffset__aCol;
-    float2 ShaderMain_Material_DiffuseMap_Material_DiffuseSampler_Material_TextureScale_Material_TextureOffset__uv2;
+    float4 ShaderMain_scale;
+    float4 ShaderMain_offset;
+    float4 ShaderMain_aCol;
+    float2 ShaderMain_uv2;
 };
-Texture2D<float4> ShaderBase_Material_DiffuseSampler_Material_DiffuseMap__Texture0;
-SamplerState ShaderBase_Material_DiffuseSampler_Material_DiffuseMap__Sampler0;
+Texture2D<float4> ShaderBase_Texture0;
+SamplerState ShaderBase_Sampler0;
 
 static float4 VS_IN_s_in;
 static float4 VS_OUT_s_int;
@@ -31,8 +31,8 @@ void vert_main()
 {
     VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
     _streams.s_in_id0 = VS_IN_s_in;
-    float4 color = ShaderBase_Material_DiffuseSampler_Material_DiffuseMap__Texture0.Sample(ShaderBase_Material_DiffuseSampler_Material_DiffuseMap__Sampler0, ShaderMain_Material_DiffuseMap_Material_DiffuseSampler_Material_TextureScale_Material_TextureOffset__uv2);
-    _streams.s_int_id1 = _streams.s_in_id0 + ShaderMain_Material_DiffuseMap_Material_DiffuseSampler_Material_TextureScale_Material_TextureOffset__scale;
+    float4 color = ShaderBase_Texture0.Sample(ShaderBase_Sampler0, ShaderMain_uv2);
+    _streams.s_int_id1 = _streams.s_in_id0 + ShaderMain_scale;
     VS_OUT_s_int = _streams.s_int_id1;
 }
 

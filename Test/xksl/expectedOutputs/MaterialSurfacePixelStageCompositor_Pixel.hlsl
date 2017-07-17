@@ -53,6 +53,7 @@ cbuffer PerMaterial
 {
     float ComputeColorConstantFloatLink_constantFloat;
     float4 ComputeColorConstantColorLink_constantColor;
+    float ComputeColorConstantFloatLink_constantFloat_1;
     float2 ComputeColorTextureScaledOffsetDynamicSampler_scale;
     float2 ComputeColorTextureScaledOffsetDynamicSampler_offset;
 };
@@ -219,7 +220,7 @@ void o18S2C0_o5S2C0_MaterialSurfaceNormalMap_false_true__Compute(inout PS_STREAM
 
 float4 o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_GlossinessValue__Compute()
 {
-    return float4(ComputeColorConstantFloatLink_constantFloat, ComputeColorConstantFloatLink_constantFloat, ComputeColorConstantFloatLink_constantFloat, ComputeColorConstantFloatLink_constantFloat);
+    return float4(ComputeColorConstantFloatLink_constantFloat_1, ComputeColorConstantFloatLink_constantFloat_1, ComputeColorConstantFloatLink_constantFloat_1, ComputeColorConstantFloatLink_constantFloat_1);
 }
 
 void o18S2C0_o7S2C0_MaterialSurfaceGlossinessMap_false__Compute(out PS_STREAMS _streams)

@@ -30,7 +30,6 @@ shader ComputeColorTextureScaledOffsetDynamicSampler<LinkType TTextureName,
 
 	override float2 Compute()
 	{
-		
 		return base.Compute() + scale + offset;
 	}
 };
