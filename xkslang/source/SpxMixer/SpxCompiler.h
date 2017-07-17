@@ -784,6 +784,7 @@ private:
     bool IsMatrixArrayType(TypeInstruction* type);
     int GetVectorTypeCountElements(TypeInstruction* vectorType);
 
+    bool AreTypeInstructionsIdentical(spv::Id typeId1, spv::Id typeId2);
     bool GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, std::string* memberAttribute, TypeReflectionDescription& typeReflection,
         const std::vector<unsigned int>* listStartPositionOfAllMemberDecorateInstructions, int iterationCounter = 0);
     bool GetIntegerConstTypeExpressionValue(ConstInstruction* constObject, int& constValue);
@@ -855,6 +856,8 @@ private:
     ObjectInstructionBase* GetObjectById(spv::Id id);
     std::string GetDeclarationNameForId(spv::Id id);
     bool GetDeclarationNameForId(spv::Id id, std::string& name);
+    int GetCountShaders();
+    std::string GetShaderUniqueId();
     ShaderClassData* GetShaderByName(const std::string& name);
     ShaderClassData* GetShaderById(spv::Id id);
     FunctionInstruction* GetFunctionById(spv::Id id);

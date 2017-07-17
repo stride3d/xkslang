@@ -1,0 +1,56 @@
+shader ILightDirectionalGroup
+{
+	float4 GetMaxLightCount()
+	{
+		return 0;
+	}
+}
+
+shader LightDirectional
+{
+	struct DirectionalLightData
+	{
+		float4 DirectionWS;
+		[Color]
+		float4 Color;
+	};
+};
+
+shader LightDirectionalGroup<int TMaxLightCount> : LightDirectional, ILightDirectionalGroup
+{
+	stage cbuffer PerView.Lighting
+	{
+		DirectionalLightData Lights[TMaxLightCount];
+	}
+	
+	override float4 GetMaxLightCount()
+	{
+		return float4(TMaxLightCount, 0, 0, 0) + Lights[0].Color;
+	}
+}
+
+shader ShaderMain
+{
+	compose ILightDirectionalGroup directLight1;
+	compose ILightDirectionalGroup directLight2;
+	
+	stage cbuffer PerView {
+        float4x4 View;
+        float4x4 ViewInverse;
+        float4x4 Projection;
+        float4x4 ProjectionInverse;
+        float4x4 ViewProjection;
+        float2 ProjScreenRay;
+        float4 Eye;
+    };
+	
+	stage float4 ComputeShadingPosition(float4 world)
+    {
+        return mul(world, ViewProjection);
+    }
+	
+	stage void PSMain()
+	{
+		float4 f = ComputeShadingPosition(directLight1.GetMaxLightCount() + directLight2.GetMaxLightCount());
+	}
+}

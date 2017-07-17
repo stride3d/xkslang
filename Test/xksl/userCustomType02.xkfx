@@ -3,6 +3,5 @@ convertAndLoad "userCustomType02.xksl"
 mixer m
 m.mixin( ShaderMain )
 
-
 m.setStageEntryPoint( Vertex="VSMain" )
 m.compile

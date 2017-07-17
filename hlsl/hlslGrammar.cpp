@@ -2764,7 +2764,6 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             //Add the shader definition at the END (warning: new shaders must be added at the end) of the list of parsed shader
             this->xkslShaderLibrary->AddNewShader(shaderDefinition);
 
-
             break;
         }
 
@@ -2920,8 +2919,6 @@ bool HlslGrammar::validateShaderDeclaredType(const TType& type)
 //Parse a shader class: check for all variables and functions declaration (don't parse into function definition)
 bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration)
 {
-    const TString& shaderName = shader->shaderFullName;
-
     do {
         // some extra SEMI_COLON?
         while (acceptTokenClass(EHTokSemicolon)) {}
@@ -3087,7 +3084,17 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
 
                 case XkslShaderParsingOperationEnum::ParseXkslShaderMembersAndMethodsDeclarations:
                 {
-                    TFunction* function = new TFunction(&shaderName, identifierName, declaredType);
+                    TString shaderBaseName = shader->shaderFullName;
+                    /*TString shaderBaseName = shader->shaderBaseName;
+                    if (shader->GetCountGenerics() > 0)
+                    {
+                        //Previously a function name was concatenated by the shaderFullName, but this name could be very long in some case
+                        //(ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset_1)
+                        //so we changed this
+                        shaderBaseName += shader->GetShaderUniqueStringId();
+                    }*/
+                    TFunction* function = new TFunction(&shaderBaseName, identifierName, declaredType);
+
                     if (!acceptFunctionParameters(*function))
                     {
                         error("Failed to parse the function parameters");
@@ -3119,7 +3126,17 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
 
                 case XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition:
                 {
-                    TFunction* tmpFunction = new TFunction(&shaderName, identifierName, declaredType);
+                    TString shaderBaseName = shader->shaderFullName;
+                    /*TString shaderBaseName = shader->shaderBaseName;
+                    if (shader->GetCountGenerics() > 0)
+                    {
+                        //Previously a function name was concatenated by the shaderFullName, but this name could be very long in some case
+                        //(ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset_1)
+                        //so we changed this
+                        shaderBaseName += shader->GetShaderUniqueStringId();
+                    }*/
+                    TFunction* tmpFunction = new TFunction(&shaderBaseName, identifierName, declaredType);
+
                     if (!acceptFunctionParameters(*tmpFunction))
                     {
                         error("Failed to parse the function parameters");

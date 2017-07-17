@@ -1,0 +1,51 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerView [size: 832]
+@C    ShaderMain_View => ShaderMain.View
+@C    ShaderMain_ViewInverse => ShaderMain.ViewInverse
+@C    ShaderMain_Projection => ShaderMain.Projection
+@C    ShaderMain_ProjectionInverse => ShaderMain.ProjectionInverse
+@C    ShaderMain_ViewProjection => ShaderMain.ViewProjection
+@C    ShaderMain_ProjScreenRay => ShaderMain.ProjScreenRay
+@C    ShaderMain_Eye => ShaderMain.Eye
+@C    LightDirectionalGroup_Lights => LightDirectionalGroup.Lights
+@C    LightDirectionalGroup_Lights => LightDirectionalGroup.Lights
+***********************
+*****  Resources  *****
+***********************
+@C    PerView => PerView [Stage: Pixel]
+
+ConstantBuffers. Count=1
+ cbuffer: Name="PerView" Size=832 MembersCount=9
+  KeyName="ShaderMain.View RawName="ShaderMain_View" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="ShaderMain.ViewInverse RawName="ShaderMain_ViewInverse" Offset=64
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="ShaderMain.Projection RawName="ShaderMain_Projection" Offset=128
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="ShaderMain.ProjectionInverse RawName="ShaderMain_ProjectionInverse" Offset=192
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="ShaderMain.ViewProjection RawName="ShaderMain_ViewProjection" Offset=256
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="ShaderMain.ProjScreenRay RawName="ShaderMain_ProjScreenRay" Offset=320
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="ShaderMain.Eye RawName="ShaderMain_Eye" Offset=336
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="LightDirectionalGroup.Lights RawName="LightDirectionalGroup_Lights" Offset=352
+  Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
+
+  KeyName="LightDirectionalGroup.Lights RawName="LightDirectionalGroup_Lights" Offset=608
+  Class=Struct Type=Void Size=224 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=7 Rows=1 Columns=1
+
+ResourceBindings. Count=1
+ Stage=Pixel KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+
+InputAttributes. Count=0

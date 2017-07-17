@@ -180,10 +180,13 @@ public:
     };
 
 public:
-    XkslShaderDefinition() : parsingStatus(ShaderParsingStatusEnum::Undefined), tmpFlag(0), isValid(true){}
+    XkslShaderDefinition() : parsingStatus(ShaderParsingStatusEnum::Undefined), tmpFlag(0), isValid(true), shaderUniqueId(-1){}
 
     bool isValid;
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
+
+    int shaderUniqueId;
+    TString shaderUniqueStringId; 
 
     TString shaderBaseName;
     //TString shaderNameSpace;
@@ -203,6 +206,14 @@ public:
     TVector<HlslToken> listTokens;
     ShaderParsingStatusEnum parsingStatus;
     int tmpFlag;
+
+    int GetCountGenerics() { return listGenerics.size(); }
+    int GetShaderUniqueId() { return shaderUniqueId; }
+    TString GetShaderUniqueStringId() { return shaderUniqueStringId; }
+    void SetShaderUniqueId(int id) {
+        shaderUniqueId = id;
+        shaderUniqueStringId = TString("_id") + std::to_string(id).c_str();
+    }
 
     TShaderCompositionVariable* GetCompositionVariableForId(int id){
         for (unsigned int i=0; i<listCompositions.size(); ++i) if (listCompositions[i].shaderCompositionId == id) return &listCompositions[i];
@@ -227,7 +238,10 @@ public:
     TVector<XkslShaderDefinition*> listShaders;  //list of all shader parsed
 
     int GetCountShaderInLibrary() {return listShaders.size();}
-    void AddNewShader(XkslShaderDefinition* shader){listShaders.push_back(shader);}
+    void AddNewShader(XkslShaderDefinition* shader){
+        listShaders.push_back(shader);
+        shader->SetShaderUniqueId(listShaders.size());
+    }
 };
 
 //

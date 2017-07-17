@@ -294,8 +294,6 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
         return error(messages, "Fail to remove all unused stuff");
     }
 
-
-
     //===================================================================================================================
     // Finalize the compilation
     //===================================================================================================================

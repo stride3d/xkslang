@@ -659,11 +659,20 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                     TypeStructMember& anotherMember = combinedCbuffer->members[pm];
                                     if (anotherMember.isStage)
                                     {
+                                        //We merge the members if they have the same declaration name, and the same base shader owner
                                         if (anotherMember.shaderOwnerName == cbufferToMerge->shaderOwnerName && anotherMember.declarationName == memberToMerge.declarationName)
                                         {
-                                            memberAlreadyAdded = true;
-                                            memberNewIndex = pm;
-                                            break;
+                                            //unless they have been set with a different linkName
+                                            if (anotherMember.linkName == memberToMerge.linkName)
+                                            {
+                                                //or unless they have a different type
+                                                if (AreTypeInstructionsIdentical(anotherMember.memberTypeId, memberToMerge.memberTypeId))
+                                                {
+                                                    memberAlreadyAdded = true;
+                                                    memberNewIndex = pm;
+                                                    break;
+                                                }
+                                            }
                                         }
                                     }
                                 }
