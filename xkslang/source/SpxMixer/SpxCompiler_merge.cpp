@@ -701,7 +701,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     //When a composition is overriden: everytime we instantiate it, we instantiate the overridding composition instead
     //plus, when solving the composition function call, we will call the overriding composition instead
     {
-        //Set all new merged shaders flag to 1, and previous shader flag to 0
+        //Set all merged shaders flag to 1, and all previous shaders flag to 0
         for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
             ShaderClassData* shader = *itsh;
             shader->flag1 = 0;
@@ -715,10 +715,50 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         {
             ShaderClassData* aShaderMerged = listMergedShaders[is];
 
-            unsigned int countComposition = aShaderMerged->GetCountShaderComposition();
-            for (unsigned int ic = 0; ic < countComposition; ic++)
+            unsigned int countMergedComposition = aShaderMerged->GetCountShaderComposition();
+            for (unsigned int ic = 0; ic < countMergedComposition; ic++)
             {
-                const ShaderComposition& aShaderComposition = aShaderMerged->compositionsList[ic];
+                ShaderComposition& aMergedComposition = aShaderMerged->compositionsList[ic];
+                if (!aMergedComposition.isStage) continue;  //only check the staged composition
+
+                //look if an already existing shader declared a matching composition that can override the merged one
+                for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+                {
+                    ShaderClassData* existingShader = *itsh;
+                    if (existingShader->flag1 == 1) continue;
+
+                    unsigned int countExistingComposition = existingShader->GetCountShaderComposition();
+                    for (unsigned int ic2 = 0; ic2 < countExistingComposition; ic2++)
+                    {
+                        ShaderComposition& anExistingComposition = existingShader->compositionsList[ic2];
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (aMergedComposition.compositionShaderOwner == nullptr) return error("The composition is missing link to its shader owner: " + aMergedComposition.GetVariableName());
+                    if (anExistingComposition.compositionShaderOwner == nullptr) return error("The composition is missing link to its shader owner: " + anExistingComposition.GetVariableName());
+                    if (aMergedComposition.shaderType == nullptr) return error("The composition is missing link to its shader type: " + aMergedComposition.GetVariableName());
+                    if (anExistingComposition.shaderType == nullptr) return error("The composition is missing link to its shader type: " + anExistingComposition.GetVariableName());
+#endif
+
+                        if (anExistingComposition.isStage)  //both compositions are stage
+                        {
+                            if (aMergedComposition.isArray == anExistingComposition.isArray)  //both compositions are array / non-array
+                            {
+                                if (aMergedComposition.compositionShaderOwner->GetShaderOriginalTypeName() == anExistingComposition.compositionShaderOwner->GetShaderOriginalTypeName()) //both composition have been declared by the same base shader
+                                {
+                                    if (aMergedComposition.shaderType->GetShaderOriginalTypeName() == anExistingComposition.shaderType->GetShaderOriginalTypeName()) //both composition have the same shader base type
+                                    {
+                                        if (aMergedComposition.variableName == anExistingComposition.variableName) //both compositions have the same variable name
+                                        {
+                                            //Compositions are matching, we can override the merged one by the previous one
+                                            aMergedComposition.overridenBy = &(anExistingComposition);
+                                            if (anExistingComposition.overridenBy != nullptr) aMergedComposition.overridenBy = anExistingComposition.overridenBy;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
