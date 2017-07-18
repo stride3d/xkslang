@@ -1,0 +1,36 @@
+shader TestDirectLightGroupArray
+{
+	stage compose TestDirectLightGroup directLightGroups[];
+};
+	
+shader TestDirectLightGroup
+{
+	int Compute()
+	{
+		return 1;
+	}
+};
+
+shader TestShaderMain1: TestDirectLightGroupArray
+{
+	stage void VSMain()
+	{
+		int res;
+		foreach (var light in directLightGroups)
+		{
+			res += light.Compute();
+		}
+	}
+}
+
+shader TestShaderMain2: TestDirectLightGroupArray
+{
+	stage void PSMain()
+	{
+		int res;
+		foreach (var light in directLightGroups)
+		{
+			res += light.Compute();
+		}
+	}
+}

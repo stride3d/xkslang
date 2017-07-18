@@ -1,9 +1,9 @@
 convertAndLoad "mixCustomTypeAndCompose01.xksl" LightDirectionalGroup<8>
-convertAndLoad "mixCustomTypeAndCompose01.xksl" LightDirectionalGroup<7>
+//convertAndLoad "mixCustomTypeAndCompose01.xksl" LightDirectionalGroup<7>
 
 mixer m
 m.mixin( ShaderMain )
-m.addComposition(directLight1 = mixin(LightDirectionalGroup<8>), directLight2 = mixin(LightDirectionalGroup<7>))
+m.addComposition(directLight1 = mixin(LightDirectionalGroup<8>), directLight2 = mixin(LightDirectionalGroup<8>))
 
 m.setStageEntryPoint( Pixel="PSMain" )
 m.compile

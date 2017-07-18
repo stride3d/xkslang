@@ -1062,13 +1062,14 @@ void Builder::addShaderInheritanceDecoration(Id shaderId, std::vector<spv::Id>& 
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
-void Builder::addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isArray)
+void Builder::addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isStage, bool isArray)
 {
     Instruction* dec = new Instruction(OpShaderCompositionDeclaration);
     dec->addIdOperand(shaderId);
     dec->addImmediateOperand(index);
     dec->addIdOperand(shaderTypeId);
-    dec->addImmediateOperand(isArray? 1:0);
+    dec->addImmediateOperand(isStage ? 1 : 0);
+    dec->addImmediateOperand(isArray? 1 : 0);
     dec->addImmediateOperand(0); //count
     dec->addStringOperand(variableName);
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));

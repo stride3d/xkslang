@@ -550,8 +550,19 @@ public:
         ShaderClassData* compositionShaderOwner;
         ShaderClassData* shaderType;
         std::string variableName;
+        bool isStage;
         bool isArray;
         int countInstances;
+        ShaderComposition* tmpClonedComposition;
+
+        //If we merge a composition into a bytecode, this composition can be overriden by another one
+        //A composition gets overriden if:
+        // - it is set as stage
+        // - it has the same shaderOwner name (original base name) and same shaderType (original base name)
+        // - it has the same variable name
+        //When a composition is overriden: everytime we instantiate it, we instantiate the overridding composition instead
+        //plus, when solving the composition function call, we will call the overriding composition instead
+        ShaderComposition* overridenBy;
 
         const std::string& GetVariableName() const {return variableName;}
         std::string GetShaderOwnerAndVariableName() const { return std::string((compositionShaderOwner == nullptr? "---": compositionShaderOwner->name)) + "." + variableName; }
@@ -559,9 +570,9 @@ public:
         //ShaderClassData* instantiatedShader;  //resulting shader instance from the composition
 
         ShaderComposition(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType,
-            const std::string& variableName, bool isArray, int countInstances)
+            const std::string& variableName, bool isStage, bool isArray, int countInstances)
                 :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
-                variableName(variableName), isArray(isArray), countInstances(countInstances){}
+                variableName(variableName), isStage(isStage), isArray(isArray), countInstances(countInstances), tmpClonedComposition(nullptr), overridenBy(nullptr){}
 
     private:
         friend class SpxCompiler;
@@ -827,6 +838,7 @@ private:
 
     bool InitDefaultHeader();
     bool ComputeShadersLevel();
+    bool HasAnyError() { return errorMessages.size() > 0; }
 
     void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
     void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);
@@ -840,7 +852,7 @@ private:
     bool remapAllIds(std::vector<std::uint32_t>& bytecode, unsigned int begin, unsigned int end, const std::vector<spv::Id>& remapTable);
 
     bool GenerateBytecodeForStage(XkslMixerOutputStage& stage, std::vector<spv::Id>& listObjectIdsToKeep);
-
+    
 private:
     //static variable share between all SpxCompiler instances
     static unsigned int currentMergeOperationId;

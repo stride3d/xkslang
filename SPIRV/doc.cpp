@@ -1936,9 +1936,11 @@ void Parameterize()
     InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandId, "'ShaderOwnerId'");
     InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralNumber, "'CompNum'");
     InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandId, "'ShaderTypeId'");
+    InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralNumber, "'isStage'");
     InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralNumber, "'isArray'");
     InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralNumber, "'Count'");
     InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralString, "'VariableName'");
+
     InstructionDesc[OpShaderCompositionInstance].operands.push(OperandId, "'ShaderOwnerId'");
     InstructionDesc[OpShaderCompositionInstance].operands.push(OperandLiteralNumber, "'CompId'");
     InstructionDesc[OpShaderCompositionInstance].operands.push(OperandLiteralNumber, "'InstanceNum'");

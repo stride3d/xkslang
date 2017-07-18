@@ -405,12 +405,13 @@ public:
     int shaderCompositionId;  //composition id for a given shader. -1 = invalid id
     TString shaderTypeName;
     TString variableName;
+    bool isStage;
     bool isArray;
     TSourceLoc location;
 
     TShaderCompositionVariable() : shaderCompositionId(-1){}
-    TShaderCompositionVariable(const TString& shaderOwnerName, int shaderCompositionId, const TString& shaderTypeName, const TString& variableName, bool isArray) :
-        shaderOwnerName(shaderOwnerName), shaderCompositionId(shaderCompositionId), shaderTypeName(shaderTypeName), variableName(variableName), isArray(isArray) {}
+    TShaderCompositionVariable(const TString& shaderOwnerName, int shaderCompositionId, const TString& shaderTypeName, const TString& variableName, bool isStage, bool isArray) :
+        shaderOwnerName(shaderOwnerName), shaderCompositionId(shaderCompositionId), shaderTypeName(shaderTypeName), variableName(variableName), isStage(isStage), isArray(isArray) {}
 };
 
 class TShaderVariableTargetingACompositionVariable {

@@ -1,0 +1,14 @@
+convertAndLoad "TestCompose23.xksl"
+
+mixer m
+m.mixin( TestShaderMain1 )
+m.mixin( TestShaderMain2 )
+
+mixer mComp
+mComp.mixin(TestDirectLightGroup)
+
+m.addComposition( TestShaderMain1.directLightGroups = mComp )
+m.addComposition( TestShaderMain2.directLightGroups = mComp )
+
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+m.compile()

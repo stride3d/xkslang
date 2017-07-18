@@ -672,6 +672,11 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                                     memberNewIndex = pm;
                                                     break;
                                                 }
+                                                else
+                                                {
+                                                    error("2 cbuffer members share a same cbuffer, same declaration name, and same link name, yet they have a different type: " + memberToMerge.declarationName);
+                                                    break;
+                                                }
                                             }
                                         }
                                     }

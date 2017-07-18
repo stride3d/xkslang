@@ -3163,7 +3163,7 @@ bool TGlslangToSpvTraverser::makeShaderClassesType(const glslang::TIntermSequenc
                         logger->error(std::string("The type shader owner has not been created: ") + shaderTypeName);
                 }
                 else
-                    builder.addShaderCompositionDecoration(spvType, composition.shaderCompositionId, fit->second, composition.variableName.c_str(), composition.isArray);
+                    builder.addShaderCompositionDecoration(spvType, composition.shaderCompositionId, fit->second, composition.variableName.c_str(), composition.isStage, composition.isArray);
             }
         }
     }

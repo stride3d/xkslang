@@ -185,7 +185,11 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
 
     //We clone the stream before compiling it: we want to keep the original stream as it is, so that user can keep mixin and updating it if need
     SpxCompiler* clonedSpxStream = spxCompiler->Clone();
-    if (clonedSpxStream == nullptr) return error(messages, "Failed to clone the spxCompiler");
+    if (clonedSpxStream == nullptr)
+    {
+        spxCompiler->copyMessagesTo(messages);
+        return error(messages, "Failed to clone the spxCompiler");
+    }
 
     //===================================================================================================================
     //===================================================================================================================

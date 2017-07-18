@@ -670,13 +670,15 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     UpdateAllMaps();
 
     //Set reference between shaders merged and the clone shaders from destination bytecode
-    for (unsigned int is = 0; is<listShadersToMerge.size(); ++is)
+    vector<ShaderClassData*> listMergedShaders;
+    for (unsigned int is = 0; is < listShadersToMerge.size(); ++is)
     {
         ShaderClassData* shaderToMerge = listShadersToMerge[is].shader;
         spv::Id clonedShaderId = finalRemapTable[shaderToMerge->GetId()];
         ShaderClassData* clonedShader = this->GetShaderById(clonedShaderId);
         if (clonedShader == nullptr) return error(string("Cannot retrieve the merged shader: ") + to_string(clonedShaderId));
         shaderToMerge->tmpClonedShader = clonedShader;
+        listMergedShaders.push_back(clonedShader);
     }
 
     //update overriden references to merged functions
@@ -689,6 +691,36 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         if (functionOverriden == nullptr) return error(string("Cannot retrieve the merged function: ") + to_string(functionOverridenId));
         if (functionOverriding == nullptr) return error(string("Cannot retrieve the merged function: ") + to_string(functionOverridingId));
         functionOverriden->SetOverridingFunction(functionOverriding);
+    }
+
+    //For all compositions merged, we check if they get overriden by another one
+    //A composition gets overriden if:
+    // - it is set as stage
+    // - it has the same shaderOwner name (original base name) and same shaderType (original base name)
+    // - it has the same variable name
+    //When a composition is overriden: everytime we instantiate it, we instantiate the overridding composition instead
+    //plus, when solving the composition function call, we will call the overriding composition instead
+    {
+        //Set all new merged shaders flag to 1, and previous shader flag to 0
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+            ShaderClassData* shader = *itsh;
+            shader->flag1 = 0;
+        }
+        for (auto itsh = listMergedShaders.begin(); itsh != listMergedShaders.end(); itsh++) {
+            ShaderClassData* shader = *itsh;
+            shader->flag1 = 1;
+        }
+
+        for (unsigned int is = 0; is < listMergedShaders.size(); ++is)
+        {
+            ShaderClassData* aShaderMerged = listMergedShaders[is];
+
+            unsigned int countComposition = aShaderMerged->GetCountShaderComposition();
+            for (unsigned int ic = 0; ic < countComposition; ic++)
+            {
+                const ShaderComposition& aShaderComposition = aShaderMerged->compositionsList[ic];
+            }
+        }
     }
 
     if (errorMessages.size() > 0) return false;

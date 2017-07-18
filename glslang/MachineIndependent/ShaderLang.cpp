@@ -2902,7 +2902,7 @@ static bool ParseXkslShaderRecursif(
                         {
                             const std::string shaderNameToParse(parentName->c_str());
                             std::string shaderData;
-                            if (!callbackRequestDataForShader(shaderNameToParse, shaderData))
+                            if (callbackRequestDataForShader == nullptr || callbackRequestDataForShader(shaderNameToParse, shaderData) == false)
                             {
                                 error(parseContext, "unknwon identifier: " + (*parentName));
                                 success = false;
@@ -3148,7 +3148,7 @@ static bool ParseXkslShaderRecursif(
 
                 const std::string shaderNameToParse(shaderToParse.c_str());
                 std::string shaderData;
-                if (!callbackRequestDataForShader(shaderNameToParse, shaderData))
+                if (callbackRequestDataForShader == nullptr || callbackRequestDataForShader(shaderNameToParse, shaderData) == false)
                 {
                     error(parseContext, "unknwon identifier: " + shaderToParse);
                     success = false;
@@ -3239,7 +3239,7 @@ static bool ParseXkslShaderRecursif(
                     {
                         const std::string shaderNameToParse(unknownIdentifier.c_str());
                         std::string shaderData;
-                        if (!callbackRequestDataForShader(shaderNameToParse, shaderData))
+                        if (callbackRequestDataForShader == nullptr || callbackRequestDataForShader(shaderNameToParse, shaderData) == false)
                         {
                             error(parseContext, "unknwon identifier: " + unknownIdentifier);
                             success = false;
@@ -3354,7 +3354,7 @@ static bool ParseXkslShaderRecursif(
                     //unknown identiefer. Check if it is a shader which can be recursively be parsed
                     const std::string shaderNameToParse(unknownIdentifier.c_str());
                     std::string shaderData;
-                    if (!callbackRequestDataForShader(shaderNameToParse, shaderData))
+                    if (callbackRequestDataForShader == nullptr || callbackRequestDataForShader(shaderNameToParse, shaderData) == false)
                     {
                         error(parseContext, "unknwon identifier: " + unknownIdentifier);
                         success = false;
@@ -3578,7 +3578,7 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
     }
 
     std::string shaderData;
-    if (!callbackRequestDataForShader(shaderName, shaderData))
+    if (callbackRequestDataForShader == nullptr || callbackRequestDataForShader(shaderName, shaderData) == false)
     {
         if (infoMsgs != nullptr) infoMsgs->push_back("Fails to query data for shader: " + shaderName);
         return false;

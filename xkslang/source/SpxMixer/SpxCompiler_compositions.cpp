@@ -168,7 +168,7 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
                 {
                     //increase number of instances
                     compositionTarget->countInstances++;
-                    setLiteralValue(start + 5, compositionTarget->countInstances);
+                    setLiteralValue(start + 6, compositionTarget->countInstances);
 
                     //Add the instance information in the bytecode
                     spv::Id mergedShaderTypeId = mainShaderTypeMerged->GetId();

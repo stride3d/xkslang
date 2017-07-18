@@ -242,7 +242,7 @@ public:
     void addBelongToShaderDecoration(Id, Id);
     void addDeclarationNameDecoration(Id, const char* name);
     void addShaderInheritanceDecoration(Id, std::vector<spv::Id>&);
-    void addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isArray);
+    void addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isStage, bool isArray);
     void addMethodPropertyList(Id id, std::vector<int>&);
     void addGSMethodProperties(Id id, int, int);
     void addMemberPropertyList(Id id, int num, std::vector<int>&);

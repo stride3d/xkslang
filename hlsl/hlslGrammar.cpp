@@ -2940,7 +2940,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
         //declare either a shader's member or method
 
         // check if we're declaring a composition
-        bool isStageBeforeCompose = acceptTokenClass(EHTokStage);  //stage is normally processed later, but we can have the case of having "stage compose"
+        bool isStageBeforeCompose = acceptTokenClass(EHTokStage);  //stage before type is normally processed later, but we can have the case of having "stage compose"
         bool isComposition = acceptTokenClass(EHTokCompose);
         if (isComposition)
         {
@@ -2954,6 +2954,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     return false;
                 }
                 composition.shaderCompositionId = shader->listCompositions.size();
+                composition.isStage = isStageBeforeCompose;
             
                 //Make sure the shader does not already declared a composition with the same variable name
                 for (unsigned int i = 0; i < shader->listCompositions.size(); ++i)
