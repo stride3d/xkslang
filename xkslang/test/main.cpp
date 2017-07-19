@@ -173,11 +173,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose26", "TestCompose26.xkfx" },
     //{ "TestCompose27", "TestCompose27.xkfx" },
     //{ "TestCompose28", "TestCompose28.xkfx" },
-    ////////////////////////////{ "TestCompose29", "TestCompose29.xkfx" },   //not working until TestGenerics10 sample can get fix
-
-    //test compose non-array
-    //test compose with generics
-    //Add a composition after a composition has been overriden?
+    { "TestCompose29", "TestCompose29.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -206,7 +202,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics07", "TestGenerics07.xkfx" },
     //{ "TestGenerics08", "TestGenerics08.xkfx" },
     //{ "TestGenerics09", "TestGenerics09.xkfx" },
-    { "TestGenerics10", "TestGenerics10.xkfx" },
+    //{ "TestGenerics10", "TestGenerics10.xkfx" },
+    //{ "TestGenerics11", "TestGenerics11.xkfx" },
 
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },

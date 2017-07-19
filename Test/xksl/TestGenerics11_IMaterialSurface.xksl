@@ -1,0 +1,7 @@
+shader IMaterialSurface: DirectLightGroupArray<9>
+{
+	float Compute()
+	{
+		return varf;
+	}
+};

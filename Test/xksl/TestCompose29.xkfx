@@ -1,8 +1,8 @@
-convertAndLoadRecursif "TestCompose29" TestShaderMain
+convertAndLoad "TestCompose29.xksl"
 
 mixer m
 m.mixin( TestShaderMain )
-m.addComposition( directLightGroups = [mixin(TestDirectLightGroup), mixin(TestDirectLightGroup)] )
+m.addComposition( aComposition = mixin(TestDirectLightGroup) )
 m.addComposition( materialPixelStage = mixin(TestMaterialSurfaceArray) )
 
 m.setStageEntryPoint( Vertex="VSMain" )

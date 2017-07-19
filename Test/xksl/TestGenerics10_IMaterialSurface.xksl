@@ -5,17 +5,3 @@ shader IMaterialSurface: DirectLightGroupArray<8>
 		return varf;
 	}
 };
-
-/*
-shader MaterialSurfaceArray : IMaterialSurface, DirectLightGroupArray<8>
-{
-	override void Compute()
-	{
-		int res = 0;
-		foreach(var light in directLightGroups)
-		{
-			res += light.GetMaxLightCount();
-		}
-	}
-};
-*/

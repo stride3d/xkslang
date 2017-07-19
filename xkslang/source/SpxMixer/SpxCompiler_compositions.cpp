@@ -448,6 +448,8 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
                     ShaderComposition* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
                     if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
 
+                    if (composition->overridenBy != nullptr) composition = composition->overridenBy;
+
                     // If an OpFunctionCallThroughCompositionVariable instructions has no composition instance we ignore it
                     // (it won't generate an error as long as the instruction is not called by any compilation output functions)
                     if (composition->countInstances == 0) break;

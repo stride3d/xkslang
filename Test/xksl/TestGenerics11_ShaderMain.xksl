@@ -1,0 +1,13 @@
+shader ShaderMain: DirectLightGroupArray<2 + 6>
+{
+	compose IMaterialSurface aComposition[];
+	
+	stage void VSMain()
+	{
+		float f = varf;
+		foreach(var comp in aComposition)
+		{
+			f += comp.Compute();
+		}
+	}
+}
