@@ -49,7 +49,7 @@ shader ShaderMain
         return mul(world, ViewProjection);
     }
 	
-	stage void PSMain()
+	stage void VSMain()
 	{
 		float4 f = ComputeShadingPosition(directLight1.GetMaxLightCount() + directLight2.GetMaxLightCount());
 	}

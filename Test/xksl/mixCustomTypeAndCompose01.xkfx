@@ -5,5 +5,5 @@ mixer m
 m.mixin( ShaderMain )
 m.addComposition(directLight1 = mixin(LightDirectionalGroup<8>), directLight2 = mixin(LightDirectionalGroup<8>))
 
-m.setStageEntryPoint( Pixel="PSMain" )
+m.setStageEntryPoint( Vertex="VSMain" )
 m.compile

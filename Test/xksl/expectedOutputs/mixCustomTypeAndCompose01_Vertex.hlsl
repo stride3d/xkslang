@@ -14,7 +14,6 @@ cbuffer PerView
     float2 ShaderMain_ProjScreenRay;
     float4 ShaderMain_Eye;
     LightDirectional_DirectionalLightData LightDirectionalGroup_Lights[8];
-    LightDirectional_DirectionalLightData LightDirectionalGroup_Lights_1[7];
 };
 
 float4 o0S5C0_LightDirectionalGroup_8__GetMaxLightCount()
@@ -22,9 +21,9 @@ float4 o0S5C0_LightDirectionalGroup_8__GetMaxLightCount()
     return float4(8.0f, 0.0f, 0.0f, 0.0f) + LightDirectionalGroup_Lights[0].Color;
 }
 
-float4 o1S5C1_LightDirectionalGroup_7__GetMaxLightCount()
+float4 o1S5C1_LightDirectionalGroup_8__GetMaxLightCount()
 {
-    return float4(7.0f, 0.0f, 0.0f, 0.0f) + LightDirectionalGroup_Lights_1[0].Color;
+    return float4(8.0f, 0.0f, 0.0f, 0.0f) + LightDirectionalGroup_Lights[0].Color;
 }
 
 float4 ShaderMain_ComputeShadingPosition(float4 world)
@@ -32,13 +31,13 @@ float4 ShaderMain_ComputeShadingPosition(float4 world)
     return mul(world, ShaderMain_ViewProjection);
 }
 
-void frag_main()
+void vert_main()
 {
-    float4 param = o0S5C0_LightDirectionalGroup_8__GetMaxLightCount() + o1S5C1_LightDirectionalGroup_7__GetMaxLightCount();
+    float4 param = o0S5C0_LightDirectionalGroup_8__GetMaxLightCount() + o1S5C1_LightDirectionalGroup_8__GetMaxLightCount();
     float4 f = ShaderMain_ComputeShadingPosition(param);
 }
 
 void main()
 {
-    frag_main();
+    vert_main();
 }

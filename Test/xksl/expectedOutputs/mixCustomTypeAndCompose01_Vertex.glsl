@@ -16,7 +16,6 @@ layout(std140) uniform PerView
     vec2 ShaderMain_ProjScreenRay;
     vec4 ShaderMain_Eye;
     LightDirectional_DirectionalLightData LightDirectionalGroup_Lights[8];
-    LightDirectional_DirectionalLightData LightDirectionalGroup_Lights_1[7];
 } PerView_var;
 
 vec4 o0S5C0_LightDirectionalGroup_8__GetMaxLightCount()
@@ -24,9 +23,9 @@ vec4 o0S5C0_LightDirectionalGroup_8__GetMaxLightCount()
     return vec4(8.0, 0.0, 0.0, 0.0) + PerView_var.LightDirectionalGroup_Lights[0].Color;
 }
 
-vec4 o1S5C1_LightDirectionalGroup_7__GetMaxLightCount()
+vec4 o1S5C1_LightDirectionalGroup_8__GetMaxLightCount()
 {
-    return vec4(7.0, 0.0, 0.0, 0.0) + PerView_var.LightDirectionalGroup_Lights_1[0].Color;
+    return vec4(8.0, 0.0, 0.0, 0.0) + PerView_var.LightDirectionalGroup_Lights[0].Color;
 }
 
 vec4 ShaderMain_ComputeShadingPosition(vec4 world)
@@ -36,7 +35,7 @@ vec4 ShaderMain_ComputeShadingPosition(vec4 world)
 
 void main()
 {
-    vec4 param = o0S5C0_LightDirectionalGroup_8__GetMaxLightCount() + o1S5C1_LightDirectionalGroup_7__GetMaxLightCount();
+    vec4 param = o0S5C0_LightDirectionalGroup_8__GetMaxLightCount() + o1S5C1_LightDirectionalGroup_8__GetMaxLightCount();
     vec4 f = ShaderMain_ComputeShadingPosition(param);
 }
 

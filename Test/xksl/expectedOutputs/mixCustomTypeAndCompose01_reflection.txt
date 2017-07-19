@@ -1,7 +1,7 @@
 ***************************
 ****  ConstantBuffers  ****
 ***************************
- cbuffer PerView [size: 832]
+ cbuffer PerView [size: 608]
 @C    ShaderMain_View => ShaderMain.View
 @C    ShaderMain_ViewInverse => ShaderMain.ViewInverse
 @C    ShaderMain_Projection => ShaderMain.Projection
@@ -10,14 +10,13 @@
 @C    ShaderMain_ProjScreenRay => ShaderMain.ProjScreenRay
 @C    ShaderMain_Eye => ShaderMain.Eye
 @C    LightDirectionalGroup_Lights => LightDirectionalGroup.Lights
-@C    LightDirectionalGroup_Lights => LightDirectionalGroup.Lights
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerView => PerView [Stage: Pixel]
+@C    PerView => PerView [Stage: Vertex]
 
 ConstantBuffers. Count=1
- cbuffer: Name="PerView" Size=832 MembersCount=9
+ cbuffer: Name="PerView" Size=608 MembersCount=8
   KeyName="ShaderMain.View RawName="ShaderMain_View" Offset=0
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
@@ -42,10 +41,7 @@ ConstantBuffers. Count=1
   KeyName="LightDirectionalGroup.Lights RawName="LightDirectionalGroup_Lights" Offset=352
   Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
 
-  KeyName="LightDirectionalGroup.Lights RawName="LightDirectionalGroup_Lights" Offset=608
-  Class=Struct Type=Void Size=224 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=7 Rows=1 Columns=1
-
 ResourceBindings. Count=1
- Stage=Pixel KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0

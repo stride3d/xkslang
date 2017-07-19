@@ -173,7 +173,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose26", "TestCompose26.xkfx" },
     //{ "TestCompose27", "TestCompose27.xkfx" },
     //{ "TestCompose28", "TestCompose28.xkfx" },
-    { "TestCompose29", "TestCompose29.xkfx" },
+    //{ "TestCompose29", "TestCompose29.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -263,7 +263,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestSemanticType01", "TestSemanticType01.xkfx" },
     //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
-    //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
+    { "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
