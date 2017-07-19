@@ -1,0 +1,22 @@
+shader DirectLightGroupArray<int toto>
+{
+	stage float varf;
+};
+	
+/*
+shader IDirectLightGroup
+{
+	int GetMaxLightCount()
+	{
+		return 1;
+	}
+};
+
+shader DirectLightGroup : IDirectLightGroup
+{
+	override int GetMaxLightCount()
+	{
+		return base.GetMaxLightCount() + 1;
+	}
+};
+*/

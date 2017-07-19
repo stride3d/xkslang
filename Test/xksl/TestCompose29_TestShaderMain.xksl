@@ -1,0 +1,14 @@
+shader TestShaderMain: TestDirectLightGroupArray<8>
+{
+	compose TestIMaterialSurface materialPixelStage;
+	
+	stage void VSMain()
+	{
+		materialPixelStage.Compute();
+	}
+	
+	stage void PSMain()
+	{
+		materialPixelStage.Compute();
+	}
+}

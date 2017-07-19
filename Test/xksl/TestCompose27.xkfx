@@ -1,0 +1,10 @@
+convertAndLoad "TestCompose27.xksl" TestDirectLightGroup<8>
+convertAndLoad "TestCompose27.xksl" TestDirectLightGroup<7>
+
+mixer m
+m.mixin( TestShaderMain )
+m.addComposition( directLightGroups = [mixin(TestDirectLightGroup<8>), mixin(TestDirectLightGroup<7>)] )
+m.addComposition( materialPixelStage = mixin(TestMaterialSurfaceArray) )
+
+m.setStageEntryPoint( Vertex="VSMain" )
+m.compile()

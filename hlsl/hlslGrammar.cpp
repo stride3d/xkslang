@@ -2699,7 +2699,8 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             //make sure the shader has not already been declared
             for (unsigned int i = 0; i < this->xkslShaderLibrary->listShaders.size(); ++i)
             {
-                if (this->xkslShaderLibrary->listShaders.at(i)->shaderFullName == shaderName)
+                XkslShaderDefinition* aShader = this->xkslShaderLibrary->listShaders.at(i);
+                if (aShader->shaderFullName == shaderName)
                 {
                     error(TString("The shader is already declared: " + shaderName).c_str());
                     return false;

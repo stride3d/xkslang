@@ -1,0 +1,20 @@
+shader TestDirectLightGroupArray<int maxLights>
+{
+	stage compose ITestDirectLightGroup directLightGroups[];
+};
+	
+shader ITestDirectLightGroup
+{
+	int GetMaxLightCount()
+	{
+		return 1;
+	}
+};
+
+shader TestDirectLightGroup : ITestDirectLightGroup
+{
+	override int GetMaxLightCount()
+	{
+		return base.GetMaxLightCount() + 1;
+	}
+};

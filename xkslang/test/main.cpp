@@ -27,7 +27,7 @@
 
 #ifdef _DEBUG
 #define WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
-//#define OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
+#define OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
 #define PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
 #endif
 
@@ -169,8 +169,16 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose22", "TestCompose22.xkfx" },
     //{ "TestCompose23", "TestCompose23.xkfx" },
     //{ "TestCompose24", "TestCompose24.xkfx" },
-    { "TestCompose25", "TestCompose25.xkfx" },
-    
+    //{ "TestCompose25", "TestCompose25.xkfx" },
+    //{ "TestCompose26", "TestCompose26.xkfx" },
+    //{ "TestCompose27", "TestCompose27.xkfx" },
+    //{ "TestCompose28", "TestCompose28.xkfx" },
+    ////////////////////////////{ "TestCompose29", "TestCompose29.xkfx" },   //not working until TestGenerics10 sample can get fix
+
+    //test compose non-array
+    //test compose with generics
+    //Add a composition after a composition has been overriden?
+
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
     //{ "TestForEach02", "TestForEach02.xkfx" },
@@ -198,6 +206,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics07", "TestGenerics07.xkfx" },
     //{ "TestGenerics08", "TestGenerics08.xkfx" },
     //{ "TestGenerics09", "TestGenerics09.xkfx" },
+    { "TestGenerics10", "TestGenerics10.xkfx" },
 
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
@@ -432,7 +441,8 @@ static bool displayListOfAllCompositionsForTheMixer(SpxMixer* mixer)
         {
             ShaderCompositionInfo& composition = vecCompositions[c];
             std::cout << " " << composition.CompositionShaderType << " " << composition.ShaderOwner << "."
-                << composition.CompositionVariableName << (composition.IsArray ? "[]" : "") << " (instances=" << composition.CompositionCountInstances << ")" << endl;
+                << composition.CompositionVariableName << (composition.IsArray ? "[]" : "") << " (instances=" << composition.CompositionCountInstances << ")"
+                << " (overridenBy:" << composition.OverridenBy << ")" << endl;
         }
         std::cout << endl;
     }

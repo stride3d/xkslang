@@ -741,8 +741,13 @@ public:
     bool GetListAllCompositions(std::vector<ShaderComposition*>& vecCompositions);
     bool GetListAllCompositionsInfo(std::vector<ShaderCompositionInfo>& vecCompositionsInfo);
     bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
+    bool InsertNewCompositionInstanceForComposition(ShaderComposition* compositionTarget, spv::Id instanceShaderId);
     ShaderComposition* GetShaderCompositionForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
     bool GetAllCompositionsForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders, std::vector<ShaderComposition*>& listCompositions);
+    bool CheckIfAnyNewCompositionGetOverridenByExistingOnes(std::vector<ShaderClassData*>& listMergedShaders);
+    bool CheckIfTheCompositionGetOverridenByAnExistingStageComposition(ShaderComposition* newStagedComposition, std::vector<ShaderComposition*>& listStagedCompositionsPotentiallyOverriding);
+    bool GetAllShaderInstancesForComposition(const ShaderComposition* composition, std::vector<ShaderClassData*>& instances);
+    bool GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel);
 
     bool error(const std::string& txt);
     static bool error(std::vector<std::string>& errorMsgs, const std::string& txt);
@@ -887,8 +892,6 @@ private:
     FunctionInstruction* GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name);
     bool GetListAllFunctionCallInstructions(std::vector<FunctionCallInstructionData>& listFunctionCallInstructions);
     bool GetStartPositionOfAllMemberDecorateInstructions(std::vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions);
-    bool GetAllShaderInstancesForComposition(const ShaderComposition* composition, std::vector<ShaderClassData*>& instances);
-    bool GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel);
     
     void stripBytecode(std::vector<range_t>& ranges);
 

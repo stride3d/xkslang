@@ -2744,13 +2744,13 @@ static XkslShaderDefinition* GetShaderDefinition(XkslShaderLibrary& shaderLibrar
     return nullptr;
 }
 
-static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibrary, const TString& shaderName, TString* genericsValue)
+static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibrary, const TString& shaderFullName, TString* genericsValue)
 {
     TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
     for (unsigned int s = 0; s < listShaderParsed.size(); s++)
     {
         XkslShaderDefinition* shader = listShaderParsed[s];
-        if (shader->shaderFullName == shaderName) return shader;
+        if (shader->shaderFullName == shaderFullName) return shader;
     }
 
     return nullptr;
@@ -2972,8 +2972,6 @@ static bool ParseXkslShaderRecursif(
                                 if (!success) error(parseContext, "Failed to recursively parse the shader: " + (*parentName));
                                 else
                                 {
-                                    //parentShader = GetShaderFromLibrary(shaderLibrary, *parentName, nullptr);
-
                                     //Find the parent shader among the new shader (using countShadersInLibraryBeforeParsing and checking that parsingStatus == GenericsResolved)
                                     //(fullname is not necessarly matching the base name (due to generics))
                                     for (unsigned int ks = countShadersInLibraryBeforeParsing; ks < shaderLibrary.listShaders.size(); ks++)
@@ -2995,6 +2993,28 @@ static bool ParseXkslShaderRecursif(
 
                                     if (parentShader != nullptr)
                                     {
+                                        if (parentShader->isValid == false)
+                                        {
+                                            //If the newly parsed shader is not valid: it could be because after solving generics we notice that the shader fullName was already present in the library
+                                            //We check for this case and update the parentShader
+
+                                            for (unsigned int ks = 0; ks < shaderLibrary.listShaders.size(); ks++)
+                                            {
+                                                XkslShaderDefinition* anotherShader = shaderLibrary.listShaders[ks];
+                                                if (anotherShader->isValid && anotherShader->shaderFullName == parentShader->shaderFullName)
+                                                {
+                                                    parentShader = anotherShader;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        if (parentShader->isValid == false)
+                                        {
+                                            error(parseContext, "The parent shader is not valid: " + parentShader->shaderFullName);
+                                            success = false;
+                                        }
+
                                         aParentInfo.parentShader = parentShader;
                                     }
                                     else

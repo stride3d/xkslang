@@ -1,4 +1,4 @@
-convertAndLoad "TestCompose24.xksl"
+convertAndLoadRecursif "TestCompose29" TestShaderMain
 
 mixer m
 m.mixin( TestShaderMain )
