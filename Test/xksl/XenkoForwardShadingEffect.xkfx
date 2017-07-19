@@ -18,8 +18,8 @@ m.mixin (
     MaterialSurfacePixelStageCompositor
 )
 
-//m.addComposition( directLightGroups = mixin(LightDirectionalGroup<8>) )
-//m.addComposition( environmentLights = mixin(LightSimpleAmbient) )
+m.addComposition( directLightGroups = mixin(LightDirectionalGroup<8>) )
+m.addComposition( environmentLights = mixin(LightSimpleAmbient) )
 m.addComposition( materialPixelStage = mixin(MaterialSurfaceArray[
     layers = [
       mixin(MaterialSurfaceDiffuse[
@@ -45,9 +45,7 @@ m.addComposition( materialPixelStage = mixin(MaterialSurfaceArray[
             geometricShadowingFunction = mixin(MaterialSpecularMicrofacetVisibilitySmithSchlickGGX),
             normalDistributionFunction = mixin(MaterialSpecularMicrofacetNormalDistributionGGX)
           ])
-        ],
-		directLightGroups = mixin(LightDirectionalGroup<8>),
-		environmentLights = mixin(LightSimpleAmbient)
+        ]
       ])
     ]
   ])
@@ -80,48 +78,3 @@ break
 {[materialVertexStage, mixin MaterialSurfaceArray [{layers = [mixin MaterialSurfaceSetStreamFromComputeColor<matDisplacement,r> [{computeColorSource = mixin ComputeColorMultiply [{color1 = ComputeColorWave<5,0.01,-0.03>}, {color2 = ComputeColorConstantFloatLink<Material.DisplacementValue>}]}], MaterialSurfaceDisplacement<Position,meshNormal,false>]}]]}
 {[streamInitializerPixelStage, mixin MaterialStream, MaterialPixelShadingStream]}
 {[streamInitializerVertexStage, mixin MaterialStream, MaterialDisplacementStream]}
-
-
-
-mixin: MaterialSurfaceVertexStageCompositor
- IMaterialSurface MaterialSurfaceVertexStageCompositor.materialVertexStage (instances=0)
- IStreamInitializer MaterialSurfaceVertexStageCompositor.streamInitializerVertexStage (instances=0)
- 
-mixin: ShadingBase
- ComputeColor ShadingBase.ShadingColor0 (instances=0)
- 
-mixin: MaterialSurfacePixelStageCompositor
- IMaterialSurface MaterialSurfacePixelStageCompositor.materialPixelStage (instances=0)
- IStreamInitializer MaterialSurfacePixelStageCompositor.streamInitializerPixelStage (instances=0)
- EnvironmentLight EnvironmentLightArray.environmentLights[] (instances=0)
- DirectLightGroup DirectLightGroupArray.directLightGroups[] (instances=0)
- 
- 
-Count Compositions: 23
- IMaterialSurface MaterialSurfaceVertexStageCompositor.materialVertexStage (instances=1)
- IStreamInitializer MaterialSurfaceVertexStageCompositor.streamInitializerVertexStage (instances=1)
- ComputeColor ShadingBase.ShadingColor0 (instances=0)
- IMaterialSurface MaterialSurfacePixelStageCompositor.materialPixelStage (instances=1)
- IStreamInitializer MaterialSurfacePixelStageCompositor.streamInitializerPixelStage (instances=1)
- EnvironmentLight EnvironmentLightArray.environmentLights[] (instances=1)
- DirectLightGroup DirectLightGroupArray.directLightGroups[] (instances=1)
- o18S246C0_IMaterialSurface o18S246C0_MaterialSurfaceArray.layers[] (instances=6)
- o18S246C0_o17S2C0_IMaterialSurfaceShading o18S246C0_o17S2C0_MaterialSurfaceLightingAndShading.surfaces[] (instances=2)
- o18S246C0_o17S2C0_o16S2C0_IMaterialSpecularMicrofacetFresnelFunction o18S246C0_o17S2C0_o16S2C0_MaterialSurfaceShadingSpecularMicrofacet.fre
-snelFunction (instances=1)
- o18S246C0_o17S2C0_o16S2C0_IMaterialSpecularMicrofacetVisibilityFunction o18S246C0_o17S2C0_o16S2C0_MaterialSurfaceShadingSpecularMicrofacet.
-geometricShadowingFunction (instances=1)
- o18S246C0_o17S2C0_o16S2C0_IMaterialSpecularMicrofacetNormalDistributionFunction o18S246C0_o17S2C0_o16S2C0_MaterialSurfaceShadingSpecularMic
-rofacet.normalDistributionFunction (instances=1)
- o18S246C0_o17S2C0_EnvironmentLight o18S246C0_o17S2C0_EnvironmentLightArray.environmentLights[] (instances=0)
- o18S246C0_o17S2C0_DirectLightGroup o18S246C0_o17S2C0_DirectLightGroupArray.directLightGroups[] (instances=0)
- o18S246C0_o11S2C0_ComputeColor o18S246C0_o11S2C0_MaterialSurfaceSetStreamFromComputeColor<matSpecularIntensity,r>.computeColorSource (insta
-nces=1)
- o18S246C0_o9S2C0_ComputeColor o18S246C0_o9S2C0_MaterialSurfaceSetStreamFromComputeColor<matSpecular,rgb>.computeColorSource (instances=1)
- o18S246C0_o7S2C0_ComputeColor o18S246C0_o7S2C0_MaterialSurfaceGlossinessMap<false>.glossinessMap (instances=1)
- o18S246C0_o5S2C0_ComputeColor o18S246C0_o5S2C0_MaterialSurfaceNormalMap<false,true>.normalMap (instances=1)
- o18S246C0_o3S2C0_ComputeColor o18S246C0_o3S2C0_MaterialSurfaceDiffuse.diffuseMap (instances=1)
- o24S2C0_IMaterialSurface o24S2C0_MaterialSurfaceArray.layers[] (instances=2)
- o24S2C0_o22S2C0_ComputeColor o24S2C0_o22S2C0_MaterialSurfaceSetStreamFromComputeColor<matDisplacement,r>.computeColorSource (instances=1)
- o24S2C0_o22S2C0_o21S2C0_ComputeColor o24S2C0_o22S2C0_o21S2C0_ComputeColorMultiply.color1 (instances=1)
- o24S2C0_o22S2C0_o21S2C0_ComputeColor o24S2C0_o22S2C0_o21S2C0_ComputeColorMultiply.color2 (instances=1)

@@ -263,7 +263,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestSemanticType01", "TestSemanticType01.xkfx" },
     //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
-    { "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
+    //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },   ////////////////////////////// insert struct ??
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
@@ -285,7 +285,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
