@@ -665,7 +665,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                             //unless they have been set with a different linkName
                                             if (anotherMember.linkName == memberToMerge.linkName)
                                             {
-                                                //or unless they have a different type
+                                                //check that they have they same type
                                                 if (AreTypeInstructionsIdentical(anotherMember.memberTypeId, memberToMerge.memberTypeId))
                                                 {
                                                     memberAlreadyAdded = true;

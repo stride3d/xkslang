@@ -458,7 +458,7 @@ public:
         std::string declarationName;
         std::string semantic;
         std::string attribute;
-        std::string linkName;  //the user specifies a link value for the member
+        std::string linkName;  //the user specified a link value for the member
 
         //some stream member properties
         int memberPointerFunctionTypeId;  //id of the member's pointer type (TypePointer with Function storage class)
@@ -480,6 +480,7 @@ public:
 
         bool isUsed; //in some case we need to know which members are actually used or not
         bool isResourceType;
+
         std::string shaderOwnerName;  //name of the shader owning the cbuffer member (for stage cbuffer, instantiated cbuffers will keep the name of the original shader class)
 
         //temporary variables used to remap members to others

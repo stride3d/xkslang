@@ -1,0 +1,14 @@
+shader ShaderGenericWithLink<int aValue>
+{
+	cbuffer cbUnstageGenericWithLink
+	{
+		[Link("linkVar07")]
+		float var7;
+	}
+	
+	stage cbuffer cbStageGenericWithLink
+	{
+		[Link("linkVar08")]
+		float var08;
+	}
+}

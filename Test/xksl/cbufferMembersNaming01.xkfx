@@ -1,0 +1,7 @@
+convertAndLoadRecursif "cbufferMembersNaming01" ShaderMain
+
+mixer m
+m.mixin( ShaderMain )
+
+m.setStageEntryPoint( Vertex="VSMain" )
+m.compile

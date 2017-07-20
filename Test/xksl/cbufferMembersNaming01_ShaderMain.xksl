@@ -1,0 +1,74 @@
+shader ShaderMain: ShaderSimple, ShaderWithLink, ShaderGeneric<2>, ShaderGenericWithLink<3>
+{
+	stage void VSMain()
+	{
+		float f = ShaderSimple.Compute() + ShaderWithLink.Compute();
+	}
+}
+
+shader ShaderSimple
+{
+	cbuffer cbUnstage
+	{
+		float var01;
+	}
+	
+	stage cbuffer cbStage
+	{
+		float var02;
+	}
+	
+	float Compute()
+	{
+		return var01 + var02;
+	}
+}
+
+shader ShaderWithLink
+{
+	cbuffer cbUnstageLink
+	{
+		[Link("linkVar03")]
+		float var03;
+	}
+	
+	stage cbuffer cbStageLink
+	{
+		[Link("linkVar04")]
+		float var04;
+	}
+	
+	float Compute()
+	{
+		return var03 + var04;
+	}
+}
+
+shader ShaderComposition
+{
+	cbuffer cbUnstageComposition
+	{
+		float var09;
+	}
+	
+	stage cbuffer cbStageComposition
+	{
+		float var10;
+	}
+}
+
+shader ShaderCompositionWithLink
+{
+	cbuffer cbUnstageCompositionLink
+	{
+		[Link("linkVar11")]
+		float var11;
+	}
+	
+	stage cbuffer cbStageCompositionLink
+	{
+		[Link("linkVar12")]
+		float var12;
+	}
+}
+

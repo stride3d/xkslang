@@ -1,0 +1,12 @@
+shader ShaderGeneric<int aValue>
+{
+	cbuffer cbUnstageGeneric
+	{
+		float var05;
+	}
+	
+	stage cbuffer cbStageGeneric
+	{
+		float var06;
+	}
+}
