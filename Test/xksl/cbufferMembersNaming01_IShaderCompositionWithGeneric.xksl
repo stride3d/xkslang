@@ -1,0 +1,7 @@
+shader IShaderCompositionWithGeneric
+{
+	float Compute()
+	{
+		return 0;
+	}
+}

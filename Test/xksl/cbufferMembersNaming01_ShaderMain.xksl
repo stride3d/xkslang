@@ -1,8 +1,13 @@
 shader ShaderMain: ShaderSimple, ShaderWithLink, ShaderGeneric<2>, ShaderGenericWithLink<3>
 {
+	compose ShaderComposition composition01;
+	compose ShaderCompositionWithLink composition02;
+	compose IShaderCompositionWithGeneric composition03;
+	
 	stage void VSMain()
 	{
 		float f = ShaderSimple.Compute() + ShaderWithLink.Compute();
+		f += composition01.Compute() + composition02.Compute() + composition03.Compute();
 	}
 }
 
@@ -55,6 +60,11 @@ shader ShaderComposition
 	{
 		float var10;
 	}
+	
+	float Compute()
+	{
+		return var09 + var10;
+	}
 }
 
 shader ShaderCompositionWithLink
@@ -69,6 +79,11 @@ shader ShaderCompositionWithLink
 	{
 		[Link("linkVar12")]
 		float var12;
+	}
+	
+	float Compute()
+	{
+		return var11 + var12;
 	}
 }
 

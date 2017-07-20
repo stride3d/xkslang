@@ -34,8 +34,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             {
                 CBufferTypeData* cbufferData = shaderType->type->cbufferData;
                 if (cbufferData == nullptr) return error("a cbuffer type is missing cbuffer data (block decorate but no CBufferProperties?): " + shaderType->type->GetName());
-
+                
 #ifdef XKSLANG_DEBUG_MODE
+                if (cbufferData->shaderOwner == nullptr) return error("a cbuffer data is missing reference to its shader owner");
                 if (cbufferData->cbufferMembersData != nullptr) return error("a cbuffer members data has already been initialized");
 #endif
                 cbufferData->correspondingShaderType = shaderType;
@@ -620,6 +621,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 for (auto itcb = someCBuffersToMerge.begin(); itcb != someCBuffersToMerge.end(); itcb++)
                 {
                     CBufferTypeData* cbufferToMerge = *itcb;
+                    ShaderClassData* cbufferShaderOwner = cbufferToMerge->shaderOwner;
+                    const string cbufferToMergeShaderOwnerOriginalBaseName = cbufferShaderOwner->GetShaderOriginalBaseName();
                     ShaderTypeData* cbufferShaderType = cbufferToMerge->correspondingShaderType;
 
                     vectorCbuffersToRemap[cbufferShaderType->variable->GetId()] = cbufferToMerge; //store the cbuffer to remap
@@ -642,8 +645,10 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             memberToMerge.newStructMemberIndex = -1;
                             memberToMerge.newStructTypeId = 0;
                             memberToMerge.newStructVariableAccessTypeId = 0;
+
                             // We set the resource as: shaderOwnerName.originalName (this will be its id keyName)
-                            memberToMerge.declarationName = cbufferToMerge->shaderOwnerName + "." + memberToMerge.declarationName;
+                            memberToMerge.declarationName = cbufferToMerge->shaderOwner->GetShaderOriginalBaseName() + "." + memberToMerge.declarationName;
+
                             memberToMerge.variableAccessTypeId = newBoundId++; //id of the new variable we'll create
 
                             listResourcesNewAccessVariables.push_back(memberToMerge);
@@ -660,7 +665,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                     if (anotherMember.isStage)
                                     {
                                         //We merge the members if they have the same declaration name, and the same base shader owner
-                                        if (anotherMember.shaderOwnerName == cbufferToMerge->shaderOwnerName && anotherMember.declarationName == memberToMerge.declarationName)
+                                        if (anotherMember.cbufferShaderOwner->GetShaderOriginalBaseName() == cbufferToMergeShaderOwnerOriginalBaseName &&
+                                            anotherMember.declarationName == memberToMerge.declarationName)
                                         {
                                             //unless they have been set with a different linkName
                                             if (anotherMember.linkName == memberToMerge.linkName)
@@ -696,9 +702,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                                 newMember.structMemberIndex = memberNewIndex;
                                 newMember.isStage = isMemberStaged;
-                                //newMember.listMemberDecoration = memberToMerge.listMemberDecoration;
-                                newMember.shaderOwnerName = cbufferToMerge->shaderOwnerName;
-                        
+                                newMember.cbufferShaderOwner = cbufferShaderOwner;
+                                
                                 //compute the member offset (depending on the previous member's offset, its size, plus the new member's alignment
                                 int memberOffset = 0;
                                 if (memberNewIndex > 0)
@@ -730,21 +735,11 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 else
                 {
                     listNewCbuffers.push_back(combinedCbuffer);
-
                     if ((unsigned int)combinedCbuffer->members.size() > maxConstValueNeeded) maxConstValueNeeded = (unsigned int)combinedCbuffer->members.size();
 
+                    //=============================================================================================================
                     //name of the combined cbuffer is the name of the first cbuffer (all merged cbuffers have the same name)
-                    combinedCbuffer->declarationName = getRawNameFromKeyName(someCBuffersToMerge[0]->cbufferName);
-
-                    //update the new member's name with a more explicit one (ex. var1 --> ShaderA.var1, if the member is stage we use the original shader name)
-                    for (unsigned int pm = 0; pm < combinedCbuffer->members.size(); pm++)
-                    {
-                        TypeStructMember& anotherMember = combinedCbuffer->members[pm];
-
-                        ///Revision: We keep the cbuffer's member name equals to its keyname: shader.originalName
-                        //anotherMember.declarationName = validateName(anotherMember.shaderOwnerName + "_" + anotherMember.declarationName);
-                        anotherMember.declarationName = anotherMember.shaderOwnerName + "." + anotherMember.declarationName;
-                    }
+                    combinedCbuffer->declarationName = someCBuffersToMerge[0]->cbufferName;
                 }
                 
                 //all cbuffers merged will be removed
@@ -818,6 +813,56 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             }
 
             if (errorMessages.size() > 0) success = false;
+        }
+    }
+
+    //=============================================================================================================
+    //=============================================================================================================
+    // Naming: set the name to all cbuffer members
+    if (success)
+    {
+        for (unsigned int icb = 0; icb < listNewCbuffers.size(); icb++)
+        {
+            TypeStructMemberArray* cbuffer = listNewCbuffers[icb];
+            string cbufferId = string("_id") + to_string(icb);
+
+            //update the new member's name
+            for (unsigned int pm = 0; pm < cbuffer->members.size(); pm++)
+            {
+                TypeStructMember& aMember = cbuffer->members[pm];
+
+                ShaderClassData* shaderOwner = aMember.cbufferShaderOwner;
+                string shaderOriginalBaseName = shaderOwner->GetShaderOriginalBaseName();
+                string shaderFullNameWithoutGenerics = shaderOwner->GetShaderFullNameWithoutGenerics();
+                string shaderFullName = shaderOwner->GetShaderFullName();
+                
+                const string memberOriginalDeclarationName = aMember.declarationName;
+
+                //==========================================
+                //member RawName: we use the shader original base name, plus we add a unique ID if this shader has some generics
+                string memberDeclarationName = (shaderOwner->countGenerics > 0? (shaderFullNameWithoutGenerics + cbufferId) : shaderFullNameWithoutGenerics) + "." + memberOriginalDeclarationName;
+                aMember.declarationName = getRawNameFromKeyName(memberDeclarationName);
+
+                //==========================================
+                //member keyName
+                if (aMember.HasLinkName())
+                {
+                    //nothing to do: the linkname is set by the user
+                }
+                else
+                {
+                    if (aMember.isStage)
+                    {
+                        //stage member
+                        aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
+                    }
+                    else
+                    {
+                        //unstage member
+                        aMember.linkName = shaderFullName + "." + memberOriginalDeclarationName;
+                    }
+                }
+            }
         }
     }
 

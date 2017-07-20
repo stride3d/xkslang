@@ -253,14 +253,15 @@ public:
     class CBufferTypeData
     {
     public:
+        ShaderClassData* shaderOwner;           //the shader owning the cbuffer
+
         //used if the type is a cbuffer struct
         spv::Id cbufferTypeId;
         bool isDefine;
         bool isStage;
         int cbufferCountMembers;
         std::string cbufferName;
-        std::string shaderOwnerName;  //name of the shader owning the cbuffer (for stage cbuffer, instantiated cbuffers will keep the name of the original shader class)
-
+        
         bool isUsed;
         
         //temporary data used when processing the cbuffers
@@ -273,14 +274,14 @@ public:
         VariableInstruction* cbufferVariableTypeObject;
         int tmpFlag;
 
-        CBufferTypeData(spv::Id cbufferTypeId, std::string shaderOwnerName, std::string cbufferName, bool isDefine, bool isStage, int cbufferCountMembers) :
-            cbufferTypeId(cbufferTypeId), shaderOwnerName(shaderOwnerName), cbufferName(cbufferName), isDefine(isDefine), isStage(isStage),
+        CBufferTypeData(ShaderClassData* shaderOwner, spv::Id cbufferTypeId, std::string cbufferName, bool isDefine, bool isStage, int cbufferCountMembers) :
+            shaderOwner(shaderOwner), cbufferTypeId(cbufferTypeId), cbufferName(cbufferName), isDefine(isDefine), isStage(isStage),
             cbufferCountMembers(cbufferCountMembers), isUsed(false), cbufferMembersData(nullptr), correspondingShaderType(nullptr), posOpNameType(0), posOpNameVariable(0),
             cbufferTypeObject(nullptr), cbufferPointerTypeObject(nullptr), cbufferVariableTypeObject(nullptr), tmpFlag(0){}
         virtual ~CBufferTypeData() { if (cbufferMembersData != nullptr) delete cbufferMembersData; }
 
         virtual CBufferTypeData* Clone() {
-            CBufferTypeData* cbufferData = new CBufferTypeData(cbufferTypeId, shaderOwnerName, cbufferName, isDefine, isStage, cbufferCountMembers);
+            CBufferTypeData* cbufferData = new CBufferTypeData(nullptr, cbufferTypeId, cbufferName, isDefine, isStage, cbufferCountMembers);
             cbufferData->isUsed = isUsed;
             return cbufferData;
         }
@@ -440,12 +441,14 @@ public:
     class TypeStructMember
     {
     public:
-        TypeStructMember() : structTypeId(spvUndefinedId), structMemberIndex(-1),
+        TypeStructMember() : cbufferOwner(nullptr), structTypeId(spvUndefinedId), structMemberIndex(-1),
             isStream(false), isStage(false), memberTypeId(spvUndefinedId), memberType(nullptr), memberDefaultConstantTypeId(spvUndefinedId),
             memberSize(-1), memberAlignment(-1), memberOffset(-1), matrixLayoutDecoration(-1), matrixStride(0), arrayStride(0),
             newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1),
             variableAccessTypeId(0), memberTypePointerInputId(0), memberTypePointerOutputId(0), memberStageInputVariableId(0), memberStageOutputVariableId(0),
-            isUsed(false) {}
+            isUsed(false), cbufferShaderOwner(nullptr) {}
+
+        CBufferTypeData* cbufferOwner;    //the cbuffer holding the member
 
         spv::Id structTypeId;             //Id of the struct type containing the member
         int structMemberIndex;            //Id of the member within the struct
@@ -456,9 +459,9 @@ public:
         bool isStream;
         bool isStage;
         std::string declarationName;
+        std::string linkName;  //the user specified a linkname (keyname) value for the member
         std::string semantic;
         std::string attribute;
-        std::string linkName;  //the user specified a link value for the member
 
         //some stream member properties
         int memberPointerFunctionTypeId;  //id of the member's pointer type (TypePointer with Function storage class)
@@ -481,14 +484,14 @@ public:
         bool isUsed; //in some case we need to know which members are actually used or not
         bool isResourceType;
 
-        std::string shaderOwnerName;  //name of the shader owning the cbuffer member (for stage cbuffer, instantiated cbuffers will keep the name of the original shader class)
-
         //temporary variables used to remap members to others
         spv::Id newStructTypeId;
         spv::Id newStructVariableAccessTypeId;
         int newStructMemberIndex;
         int tmpRemapToIOIndex;   //used by some algo
         spv::Id variableAccessTypeId; //in some case (resources) the member is not within a struct...
+
+        ShaderClassData* cbufferShaderOwner; //used when merging and naming cbuffer members
 
         //====================================================
         bool HasSemantic() const { return semantic.size() > 0; }
@@ -628,7 +631,8 @@ public:
             ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->level = level;
             obj->countGenerics = countGenerics;
-            obj->shaderOriginalTypeName = shaderOriginalTypeName;
+            obj->shaderOriginalBaseName = shaderOriginalBaseName;
+            obj->shaderFullNameWithoutGenerics = shaderFullNameWithoutGenerics;
             return obj;
         }
 
@@ -678,13 +682,17 @@ public:
             return nullptr;
         }
 
+        std::string GetShaderOriginalBaseName() { return shaderOriginalBaseName; }
         std::string GetShaderFullName() { return GetName(); }
-        std::string GetShaderOriginalTypeName() { return shaderOriginalTypeName; }
+        std::string GetShaderFullNameWithoutGenerics() { return shaderFullNameWithoutGenerics; }
+
+        bool SetShaderName(const std::string& originalBaseName, const std::string& fullName, int countGenerics, std::string& errorMsg);
 
     public:
         int level;
         int countGenerics;
-        std::string shaderOriginalTypeName;   //when we instantiate a shader (a composition for example), we keep the original shaderName in this field
+        std::string shaderOriginalBaseName;           //The original shader base name (without instancing prefix, without generics)
+        std::string shaderFullNameWithoutGenerics;    //The shader fullname without the generics extension
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
         std::vector<FunctionInstruction*> functionsList;

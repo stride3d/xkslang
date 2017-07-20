@@ -1,7 +1,13 @@
+set automaticallyTryToLoadAndConvertUnknownMixinShader true
 convertAndLoadRecursif "cbufferMembersNaming01" ShaderMain
 
 mixer m
 m.mixin( ShaderMain )
+m.addComposition(
+  composition01 = mixin(ShaderComposition),
+  composition02 = mixin(ShaderCompositionWithLink),
+  composition03 = mixin(ShaderCompositionWithGeneric<1,2,3>)
+)
 
 m.setStageEntryPoint( Vertex="VSMain" )
 m.compile

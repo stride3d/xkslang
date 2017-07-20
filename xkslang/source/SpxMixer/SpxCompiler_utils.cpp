@@ -13,6 +13,34 @@
 using namespace std;
 using namespace xkslang;
 
+bool SpxCompiler::ShaderClassData::SetShaderName(const string& originalBaseName, const string& fullName, int countGenerics, string& errorMsg)
+{
+    this->countGenerics = countGenerics;
+    this->name = fullName;
+    this->shaderOriginalBaseName = originalBaseName;
+
+    const size_t pos = fullName.find_last_of('<');
+    if (this->countGenerics > 0)
+    {
+        //remove the "<...>" from the shaderName
+        if (pos == string::npos) {
+            errorMsg = "Invalid fullName format: \"<\" expected when a shader sets some generics";
+            return false;
+        }
+        this->shaderFullNameWithoutGenerics = fullName.substr(0, pos);
+    }
+    else
+    {
+        if (pos != string::npos) {
+            errorMsg = "Invalid fullName format: \"<\" found while the shader sets no generics";
+            return false;
+        }
+        this->shaderFullNameWithoutGenerics = fullName;
+    }
+
+    return true;
+}
+
 bool SpxCompiler::SetBytecode(const vector<uint32_t>& bytecode)
 {
     spv.clear();

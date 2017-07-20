@@ -135,11 +135,19 @@ SpxCompiler* SpxCompiler::Clone()
             case ObjectInstructionTypeEnum::Type:
             {
                 TypeInstruction* type = dynamic_cast<TypeInstruction*>(obj);
+                TypeInstruction* clonedType = dynamic_cast<TypeInstruction*>(clonedObj);
+
                 if (type->GetTypePointed() != nullptr)
-                {
-                    TypeInstruction* clonedType = dynamic_cast<TypeInstruction*>(clonedObj);
+                {    
                     TypeInstruction* pointedType = clonedSpxRemapper->GetTypeById(type->GetTypePointed()->GetId());
                     clonedType->SetTypePointed(pointedType);
+                }
+
+                CBufferTypeData* typeCbData = type->GetCBufferData();
+                if (typeCbData != nullptr && typeCbData->shaderOwner != nullptr)
+                {
+                    //update reference to the cbuffer data
+                    clonedType->GetCBufferData()->shaderOwner = clonedSpxRemapper->GetShaderById(typeCbData->shaderOwner->GetId());
                 }
                 break;
             }
@@ -2994,23 +3002,16 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 if (cbufferStageEnum != spv::CBufferStage && cbufferStageEnum != spv::CBufferUnstage) { error("Invalid cbuffer stage property"); break; }
 #endif
 
-                bool isStageCbuffer = cbufferStageEnum == spv::CBufferStage ? true : false;
                 int countMembers = asLiteralValue(start + 4);
                 TypeInstruction* type = GetTypeById(typeId);
                 if (type == nullptr) return error("Cannot find the type for Id: " + to_string(typeId));
                 if (!type->IsCBuffer()) { error("The cbuffer type is not a cbuffer (missing block decorate?): " + type->GetName()); break; }
                 if (countMembers <= 0) { error("Invalid number of members for the cbuffer: " + type->GetName()); break; }
 
-                string shaderOwnerName = "";
-                if (type->shaderOwner != nullptr)
-                {
-                    //if the cbuffer is staged, we set its name to be the shader base type name, otherwise to be the shader full name (depending on generics and compositions)
-                    if (isStageCbuffer) shaderOwnerName = type->shaderOwner->GetShaderOriginalTypeName();
-                    else shaderOwnerName = type->shaderOwner->GetShaderFullName();
-                }
+                bool isStageCbuffer = (cbufferStageEnum == spv::CBufferStage ? true : false);
+                bool isDefinedCbuffer = (cbufferType == spv::CBufferDefined ? true : false);
 
-                CBufferTypeData* cbufferData = new CBufferTypeData(typeId, shaderOwnerName, type->GetName(),
-                    cbufferType == spv::CBufferDefined? true : false, isStageCbuffer, countMembers);
+                CBufferTypeData* cbufferData = new CBufferTypeData(type->shaderOwner, typeId, type->GetName(), isDefinedCbuffer, isStageCbuffer, countMembers);
                 type->SetCBufferData(cbufferData);
 
                 break;
@@ -3097,15 +3098,19 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::CreateAndAddNewObjectFor(Parsed
 #endif
             spv::XkslPropertyEnum shaderType = (spv::XkslPropertyEnum)asLiteralValue(shader->bytecodeStartPosition + 2);
             int countGenerics = asLiteralValue(shader->bytecodeStartPosition + 3);
-            string shaderName = literalString(shader->bytecodeStartPosition + 4);
-            int shaderNameCountWords = literalStringWords(shaderName);
-            string shaderOriginalTypeName = literalString(shader->bytecodeStartPosition + 4 + shaderNameCountWords);
+            string shaderFullName = literalString(shader->bytecodeStartPosition + 4);
+            int shaderNameCountWords = literalStringWords(shaderFullName);
+            string shaderOriginalBaseName = literalString(shader->bytecodeStartPosition + 4 + shaderNameCountWords);
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (shaderName != declarationName) { error("Shader name and declaration name are inconsistent"); return nullptr; }
+            if (shaderFullName != declarationName) { error("Shader name and declaration name are inconsistent"); return nullptr; }
 #endif
-            shader->countGenerics = countGenerics;
-            shader->shaderOriginalTypeName = shaderOriginalTypeName;
+            string errorMsg;
+            if (!shader->SetShaderName(shaderOriginalBaseName, shaderFullName, countGenerics, errorMsg)) {
+                error(errorMsg);
+                error("Failed to set the shader name: " + shaderFullName);
+                return nullptr;
+            }
 
             vecAllShaders.push_back(shader);
             newObject = shader;

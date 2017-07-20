@@ -119,7 +119,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
             shaderTypeInstrucion.addImmediateOperand(shaderType);
             shaderTypeInstrucion.addImmediateOperand(shaderToMerge->countGenerics);
             shaderTypeInstrucion.addStringOperand(shaderToMergeFinalName.c_str());
-            shaderTypeInstrucion.addStringOperand(shaderToMerge->shaderOriginalTypeName.c_str());  //the original type name always stays the same
+            shaderTypeInstrucion.addStringOperand(shaderToMerge->shaderOriginalBaseName.c_str());  //the original shader base name always stays the same
             shaderTypeInstrucion.dump(vecTypesConstsAndVariablesToMerge);
 
             if (instantiateTheShader) {

@@ -194,16 +194,16 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
     
     //{ "TestGenerics01", "TestGenerics01.xkfx" },
-    //{ "TestGenerics02", "TestGenerics02.xkfx" },
-    //{ "TestGenerics03", "TestGenerics03.xkfx" },
-    //{ "TestGenerics04", "TestGenerics04.xkfx" },
-    //{ "TestGenerics05", "TestGenerics05.xkfx" },
-    //{ "TestGenerics06", "TestGenerics06.xkfx" },
-    //{ "TestGenerics07", "TestGenerics07.xkfx" },
-    //{ "TestGenerics08", "TestGenerics08.xkfx" },
-    //{ "TestGenerics09", "TestGenerics09.xkfx" },
-    //{ "TestGenerics10", "TestGenerics10.xkfx" },
-    //{ "TestGenerics11", "TestGenerics11.xkfx" },
+    { "TestGenerics02", "TestGenerics02.xkfx" },
+    { "TestGenerics03", "TestGenerics03.xkfx" },
+    { "TestGenerics04", "TestGenerics04.xkfx" },
+    { "TestGenerics05", "TestGenerics05.xkfx" },
+    { "TestGenerics06", "TestGenerics06.xkfx" },
+    { "TestGenerics07", "TestGenerics07.xkfx" },
+    { "TestGenerics08", "TestGenerics08.xkfx" },
+    { "TestGenerics09", "TestGenerics09.xkfx" },
+    { "TestGenerics10", "TestGenerics10.xkfx" },
+    { "TestGenerics11", "TestGenerics11.xkfx" },
 
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
@@ -264,7 +264,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },   ////////////////////////////// insert struct ??
-    { "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
+    
+    //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
@@ -1659,7 +1660,7 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
                 {
                     //the shader bytecode does not exist, but we can try to find and generate it
                     success = ConvertAndLoadRecursif(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes,
-                        shaderName, "", listUserDefinedMacros,
+                        shaderName, shaderFilesPrefix, listUserDefinedMacros,
                         parser, useXkslangDll);
 
                     if (!success) return error("Failed to recursively convert and load the shaders: " + shaderName);

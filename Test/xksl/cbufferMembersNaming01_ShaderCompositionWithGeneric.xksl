@@ -1,0 +1,17 @@
+shader ShaderCompositionWithGeneric<int g1, int g2, int g3> : IShaderCompositionWithGeneric
+{
+	cbuffer cbUnstageCompositionWithGeneric
+	{
+		float var13;
+	}
+	
+	stage cbuffer cbStageCompositionWithGeneric
+	{
+		float var14;
+	}
+	
+	override float Compute()
+	{
+		return var13 + var14 + g1+g2+g3;
+	}
+}

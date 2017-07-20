@@ -128,34 +128,6 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
         return error(string("Merge shader function is expected to return a reference on the merged shader"));
 
     //===================================================================================================================
-    //After having instantiated a shader, we set the original shader name to all cloned cbuffers having a STAGE property (so that we can merge them later on)
-    for (auto its = listShadersToMerge.begin(); its != listShadersToMerge.end(); its++)
-    {
-        const ShaderToMergeData& shaderInstantiated = *its;
-        if (shaderInstantiated.instantiateShader)
-        {
-            ShaderClassData* originalShader = shaderInstantiated.shader;
-            ShaderClassData* instantiatedShader = originalShader->tmpClonedShader;
-            if (instantiatedShader == nullptr) return error(string("Cannot retrieve the instantiated shader after having added some compositions"));
-
-            for (auto itt = instantiatedShader->shaderTypesList.begin(); itt != instantiatedShader->shaderTypesList.end(); itt++)
-            {
-                ShaderTypeData* aShaderType = *itt;
-                if (aShaderType->isCBufferType())
-                {
-                    CBufferTypeData* cbufferData = aShaderType->GetCBufferData();
-                    if (cbufferData == nullptr) return error("a cbuffer type is missing cbuffer data (block decorate but no CBufferProperties?): " + aShaderType->type->GetName());
-
-                    if (cbufferData->isStage)
-                    {
-                        cbufferData->shaderOwnerName = originalShader->shaderOriginalTypeName;
-                    }
-                }
-            }
-        }
-    }
-
-    //===================================================================================================================
     //===================================================================================================================
     // - update our composition data, and add the instances instruction
     {
@@ -599,8 +571,8 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
 
         if (newStagedComposition->isStage && aPotentiallyOverridingComposition->isStage &&
             newStagedComposition->isArray == aPotentiallyOverridingComposition->isArray &&
-            newStagedComposition->compositionShaderOwner->GetShaderOriginalTypeName() == aPotentiallyOverridingComposition->compositionShaderOwner->GetShaderOriginalTypeName() &&
-            newStagedComposition->shaderType->GetShaderOriginalTypeName() == aPotentiallyOverridingComposition->shaderType->GetShaderOriginalTypeName() &&
+            newStagedComposition->compositionShaderOwner->GetShaderOriginalBaseName() == aPotentiallyOverridingComposition->compositionShaderOwner->GetShaderOriginalBaseName() &&
+            newStagedComposition->shaderType->GetShaderOriginalBaseName() == aPotentiallyOverridingComposition->shaderType->GetShaderOriginalBaseName() &&
             newStagedComposition->variableName == aPotentiallyOverridingComposition->variableName
             )
         {
