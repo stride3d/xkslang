@@ -13,17 +13,17 @@ cbuffer PerView
     float4x4 ShaderMain_ViewProjection;
     float2 ShaderMain_ProjScreenRay;
     float4 ShaderMain_Eye;
-    LightDirectional_DirectionalLightData LightDirectionalGroup_Lights[8];
+    LightDirectional_DirectionalLightData o0S5C0_LightDirectionalGroup_id0_Lights[8];
 };
 
 float4 o0S5C0_LightDirectionalGroup_8__GetMaxLightCount()
 {
-    return float4(8.0f, 0.0f, 0.0f, 0.0f) + LightDirectionalGroup_Lights[0].Color;
+    return float4(8.0f, 0.0f, 0.0f, 0.0f) + o0S5C0_LightDirectionalGroup_id0_Lights[0].Color;
 }
 
 float4 o1S5C1_LightDirectionalGroup_8__GetMaxLightCount()
 {
-    return float4(8.0f, 0.0f, 0.0f, 0.0f) + LightDirectionalGroup_Lights[0].Color;
+    return float4(8.0f, 0.0f, 0.0f, 0.0f) + o0S5C0_LightDirectionalGroup_id0_Lights[0].Color;
 }
 
 float4 ShaderMain_ComputeShadingPosition(float4 world)

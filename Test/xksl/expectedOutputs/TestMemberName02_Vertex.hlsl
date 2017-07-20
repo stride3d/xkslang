@@ -6,12 +6,12 @@ struct VS_STREAMS
 
 cbuffer UpdatedGroupName
 {
-    float4 ShaderMain_UpdatedGroupName__ShadowMapTextureSize;
-    float4 ShaderMain_UpdatedGroupName__ShadowMapTextureTexelSize;
-    float4 ShaderBase_UpdatedGroupName__ShadowMapTextureSizeBase;
+    float4 ShaderMain_id0_ShadowMapTextureSize;
+    float4 ShaderMain_id0_ShadowMapTextureTexelSize;
+    float4 ShaderBase_id0_ShadowMapTextureSizeBase;
 };
-Texture2D<float4> ShaderMain_UpdatedGroupName__ShadowMapTexture;
-SamplerState ShaderMain_UpdatedGroupName__Sampler0;
+Texture2D<float4> ShaderMain_ShadowMapTexture;
+SamplerState ShaderMain_Sampler0;
 
 static float4 VS_IN_s_in;
 static float4 VS_OUT_s_int;
@@ -30,8 +30,8 @@ void vert_main()
 {
     VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
     _streams.s_in_id0 = VS_IN_s_in;
-    float4 color = ShaderMain_UpdatedGroupName__ShadowMapTexture.Sample(ShaderMain_UpdatedGroupName__Sampler0, float2(0.0f, 0.0f));
-    _streams.s_int_id1 = (_streams.s_in_id0 + ShaderMain_UpdatedGroupName__ShadowMapTextureSize) + ShaderBase_UpdatedGroupName__ShadowMapTextureSizeBase;
+    float4 color = ShaderMain_ShadowMapTexture.Sample(ShaderMain_Sampler0, float2(0.0f, 0.0f));
+    _streams.s_int_id1 = (_streams.s_in_id0 + ShaderMain_id0_ShadowMapTextureSize) + ShaderBase_id0_ShadowMapTextureSizeBase;
     VS_OUT_s_int = _streams.s_int_id1;
 }
 

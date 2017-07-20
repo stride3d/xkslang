@@ -6,7 +6,7 @@ struct VS_STREAMS
 
 cbuffer Globals
 {
-    float4 ShaderMain_aStream1__aCol;
+    float4 ShaderMain_id0_aCol;
 };
 
 static float4 VS_OUT_aStream1;
@@ -20,7 +20,7 @@ struct SPIRV_Cross_Output
 
 void ShaderMain_aStream1__Compute(out VS_STREAMS _streams)
 {
-    _streams.aStream1_id0 = ShaderMain_aStream1__aCol;
+    _streams.aStream1_id0 = ShaderMain_id0_aCol;
 }
 
 void vert_main()

@@ -1,6 +1,6 @@
 cbuffer Globals
 {
-    float ShaderMain_5__ColorAberrations[5];
+    float ShaderMain_id0_ColorAberrations[5];
 };
 
 void vert_main()
@@ -8,7 +8,7 @@ void vert_main()
     float res = 0.0f;
     for (int i = 0; i < 5; i++)
     {
-        res += ShaderMain_5__ColorAberrations[i];
+        res += ShaderMain_id0_ColorAberrations[i];
     }
 }
 

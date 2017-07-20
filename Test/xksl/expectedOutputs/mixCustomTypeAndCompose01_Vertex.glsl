@@ -15,17 +15,17 @@ layout(std140) uniform PerView
     layout(row_major) mat4 ShaderMain_ViewProjection;
     vec2 ShaderMain_ProjScreenRay;
     vec4 ShaderMain_Eye;
-    LightDirectional_DirectionalLightData LightDirectionalGroup_Lights[8];
+    LightDirectional_DirectionalLightData o0S5C0_LightDirectionalGroup_id0_Lights[8];
 } PerView_var;
 
 vec4 o0S5C0_LightDirectionalGroup_8__GetMaxLightCount()
 {
-    return vec4(8.0, 0.0, 0.0, 0.0) + PerView_var.LightDirectionalGroup_Lights[0].Color;
+    return vec4(8.0, 0.0, 0.0, 0.0) + PerView_var.o0S5C0_LightDirectionalGroup_id0_Lights[0].Color;
 }
 
 vec4 o1S5C1_LightDirectionalGroup_8__GetMaxLightCount()
 {
-    return vec4(8.0, 0.0, 0.0, 0.0) + PerView_var.LightDirectionalGroup_Lights[0].Color;
+    return vec4(8.0, 0.0, 0.0, 0.0) + PerView_var.o0S5C0_LightDirectionalGroup_id0_Lights[0].Color;
 }
 
 vec4 ShaderMain_ComputeShadingPosition(vec4 world)

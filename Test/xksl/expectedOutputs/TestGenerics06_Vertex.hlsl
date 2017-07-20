@@ -5,7 +5,7 @@ struct VS_STREAMS
 
 cbuffer PreDraw
 {
-    int ShaderBase_4_1__aVar;
+    int ShaderBase_id0_aVar;
 };
 
 static int VS_OUT_aStream;
@@ -17,7 +17,7 @@ struct SPIRV_Cross_Output
 
 int ShaderBase_4_1__compute()
 {
-    return ShaderBase_4_1__aVar + 4;
+    return ShaderBase_id0_aVar + 4;
 }
 
 int ShaderMain_7_4__compute()

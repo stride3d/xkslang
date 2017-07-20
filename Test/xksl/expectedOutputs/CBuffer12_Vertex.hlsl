@@ -10,12 +10,12 @@ cbuffer PerDraw
 };
 cbuffer PerLight
 {
-    float4 ShaderComp_aFloat;
+    float4 o0S2C0_ShaderComp_aFloat;
 };
 
 float4 o0S2C0_ShaderComp_Compute()
 {
-    return Transform_EyeMS + ShaderComp_aFloat;
+    return Transform_EyeMS + o0S2C0_ShaderComp_aFloat;
 }
 
 void vert_main()

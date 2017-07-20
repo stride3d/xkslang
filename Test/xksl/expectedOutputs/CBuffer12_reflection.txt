@@ -10,7 +10,7 @@
 @C    Transform_WorldScale => Transform.WorldScale
 @C    Transform_EyeMS => Transform.EyeMS
  cbuffer PerLight [size: 16]
-@C    ShaderComp_aFloat => ShaderComp.aFloat
+@C    o0S2C0_ShaderComp_aFloat => ShaderComp.aFloat
 ***********************
 *****  Resources  *****
 ***********************
@@ -43,7 +43,7 @@ ConstantBuffers. Count=2
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
  cbuffer: Name="PerLight" Size=16 MembersCount=1
-  KeyName="ShaderComp.aFloat RawName="ShaderComp_aFloat" Offset=0
+  KeyName="ShaderComp.aFloat RawName="o0S2C0_ShaderComp_aFloat" Offset=0
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=4

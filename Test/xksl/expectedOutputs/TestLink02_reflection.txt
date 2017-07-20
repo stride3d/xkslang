@@ -2,10 +2,10 @@
 ****  ConstantBuffers  ****
 ***************************
  cbuffer PerMaterial [size: 56]
-@C    ShaderMain_scale => Material.TextureScale
-@C    ShaderMain_offset => Material.TextureOffset
-@C    ShaderMain_aCol => TColor
-@C    ShaderMain_uv2 => ShaderMain.uv2
+@C    ShaderMain_id0_scale => Material.TextureScale
+@C    ShaderMain_id0_offset => Material.TextureOffset
+@C    ShaderMain_id0_aCol => TColor
+@C    ShaderMain_id0_uv2 => ShaderMain.uv2
 ***********************
 *****  Resources  *****
 ***********************
@@ -15,16 +15,16 @@
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerMaterial" Size=56 MembersCount=4
-  KeyName="Material.TextureScale RawName="ShaderMain_scale" Offset=0
+  KeyName="Material.TextureScale RawName="ShaderMain_id0_scale" Offset=0
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="Material.TextureOffset RawName="ShaderMain_offset" Offset=16
+  KeyName="Material.TextureOffset RawName="ShaderMain_id0_offset" Offset=16
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="TColor RawName="ShaderMain_aCol" Offset=32
+  KeyName="TColor RawName="ShaderMain_id0_aCol" Offset=32
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="ShaderMain.uv2 RawName="ShaderMain_uv2" Offset=48
+  KeyName="ShaderMain.uv2 RawName="ShaderMain_id0_uv2" Offset=48
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
 ResourceBindings. Count=3
