@@ -821,6 +821,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     // Naming: set the name to all cbuffer members
     if (success)
     {
+        map<string, bool> membersUsedRawName;
+        map<string, bool> membersUsedKeyName;
+
         for (unsigned int icb = 0; icb < listNewCbuffers.size(); icb++)
         {
             TypeStructMemberArray* cbuffer = listNewCbuffers[icb];
@@ -867,44 +870,23 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         }
                     }
                 }
-            }
-        }
 
-//#ifdef XKSLANG_DEBUG_MODE
-        //Check that we have no cbuffer members name conflicts
-        map<string, bool> usedRawName;
-        map<string, bool> usedKeyName;
-
-        for (unsigned int icb = 0; icb < listNewCbuffers.size(); icb++)
-        {
-            TypeStructMemberArray* cbuffer = listNewCbuffers[icb];
-
-            //update the new member's name
-            for (unsigned int pm = 0; pm < cbuffer->members.size(); pm++)
-            {
-                TypeStructMember& aMember = cbuffer->members[pm];
-
-                if (usedRawName.find(aMember.declarationName) != usedRawName.end())
+                //Check that the names are not conflicting
+                if (membersUsedRawName.find(aMember.declarationName) != membersUsedRawName.end())
                 {
                     error("2 cbuffer members have been assigned the same RawName: " + aMember.declarationName);
                     break;
                 }
-                usedRawName[aMember.declarationName] = true;
+                membersUsedRawName[aMember.declarationName] = true;
 
-                if (usedKeyName.find(aMember.linkName) != usedKeyName.end())
+                if (membersUsedKeyName.find(aMember.linkName) != membersUsedKeyName.end())
                 {
                     error("2 cbuffer members have been assigned the same KeyName: " + aMember.linkName);
                     break;
                 }
-                usedKeyName[aMember.linkName] = true;
-            }
-
-            if (errorMessages.size() > 0) {
-                success = false;
-                break;
+                membersUsedKeyName[aMember.linkName] = true;
             }
         }
-//#endif
 
         if (errorMessages.size() > 0) success = false;
     }

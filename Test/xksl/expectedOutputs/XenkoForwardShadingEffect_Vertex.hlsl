@@ -47,18 +47,18 @@ cbuffer PerView
     float4x4 Transformation_ViewProjection;
     float2 Transformation_ProjScreenRay;
     float4 Transformation_Eye;
-    LightDirectional_DirectionalLightData o0S450C0_LightDirectionalGroup_8__Lights[8];
+    LightDirectional_DirectionalLightData o0S450C0_LightDirectionalGroup_Lights[8];
     int o0S450C0_DirectLightGroupPerView_LightCount;
     float3 o1S435C0_LightSimpleAmbient_AmbientLight;
 };
 cbuffer PerMaterial
 {
-    float ComputeColorConstantFloatLink_constantFloat;
-    float4 ComputeColorConstantColorLink_constantColor;
-    float ComputeColorConstantFloatLink_constantFloat_1;
-    float2 ComputeColorTextureScaledOffsetDynamicSampler_scale;
-    float2 ComputeColorTextureScaledOffsetDynamicSampler_offset;
-    float ComputeColorConstantFloatLink_constantFloat_2;
+    float o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat;
+    float4 o18S246C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
+    float o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
+    float2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
+    float2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
+    float o24S2C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat;
 };
 cbuffer PerFrame
 {
@@ -154,7 +154,7 @@ float4 o24S2C0_o22S2C0_o21S2C0_o19S2C0_ComputeColorWave_5_0_01__0_03__Compute(VS
 
 float4 o24S2C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute()
 {
-    return float4(ComputeColorConstantFloatLink_constantFloat_2, ComputeColorConstantFloatLink_constantFloat_2, ComputeColorConstantFloatLink_constantFloat_2, ComputeColorConstantFloatLink_constantFloat_2);
+    return float4(o24S2C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat, o24S2C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat, o24S2C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat, o24S2C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat);
 }
 
 float4 o24S2C0_o22S2C0_o21S2C0_ComputeColorMultiply_Compute(VS_STREAMS _streams)

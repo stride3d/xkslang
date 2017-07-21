@@ -9,14 +9,14 @@ shader ShaderMain: ShaderSimple, ShaderWithLink, ShaderGeneric<2>, ShaderGeneric
 	stage void VSMain()
 	{
 		float f = 0;
-		//f += ShaderSimple.Compute();
-		//f += ShaderWithLink.Compute();
-		//f += ShaderGeneric<2>.Compute();
-		//f += ShaderGenericWithLink<3>.Compute();
-		//
+		f += ShaderSimple.Compute();
+		f += ShaderWithLink.Compute();
+		f += ShaderGeneric<2>.Compute();
+		f += ShaderGenericWithLink<3>.Compute();
+		
 		f += composition01.Compute();
-		//f += composition02.Compute();
-		//f += composition03.Compute();
+		f += composition02.Compute();
+		f += composition03.Compute();
 	}
 }
 

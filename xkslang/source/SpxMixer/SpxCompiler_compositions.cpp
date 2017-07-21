@@ -23,7 +23,7 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
     //===================================================================================================================
     //===================================================================================================================
     //Find the shader composition target
-    ShaderComposition* compositionTarget = nullptr;
+    ShaderCompositionDeclaration* compositionTarget = nullptr;
     {
         ShaderClassData* shaderCompositionTarget = nullptr;
         if (shaderName.size() > 0)
@@ -41,7 +41,7 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
             for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
             {
                 ShaderClassData* aShader = *it;
-                ShaderComposition* aMatchingComposition = aShader->GetShaderCompositionByName(variableName);
+                ShaderCompositionDeclaration* aMatchingComposition = aShader->GetShaderCompositionByName(variableName);
                 if (aMatchingComposition != nullptr)
                 {
                     if (compositionTarget != nullptr) return error(string("Found at least 2 composition with the name: ") + variableName);
@@ -164,7 +164,7 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
     return true;
 }
 
-bool SpxCompiler::InsertNewCompositionInstanceForComposition(ShaderComposition* compositionTarget, spv::Id shaderInstanceId)
+bool SpxCompiler::InsertNewCompositionInstanceForComposition(ShaderCompositionDeclaration* compositionTarget, spv::Id shaderInstanceId)
 {
     if (compositionTarget->isArray == false && compositionTarget->countInstances > 0)
     {
@@ -260,7 +260,7 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
                 CompositionForEachLoopData* forEachLoopToUnroll = &(*itfe);
                 if (forEachLoopToUnroll->nestedLevel != nestedLevelToProcess) continue;
 
-                ShaderComposition* compositionToUnroll = forEachLoopToUnroll->composition;
+                ShaderCompositionDeclaration* compositionToUnroll = forEachLoopToUnroll->composition;
                 if (compositionToUnroll->overridenBy != nullptr) compositionToUnroll = compositionToUnroll->overridenBy;
 
                 bool anythingToUnroll = true;
@@ -439,7 +439,7 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
                     ShaderClassData* compositionShaderOwner = this->GetShaderById(shaderId);
                     if (compositionShaderOwner == nullptr) { error(string("No shader exists with the Id: ") + to_string(shaderId)); break; }
 
-                    ShaderComposition* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
+                    ShaderCompositionDeclaration* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
                     if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
 
                     if (composition->overridenBy != nullptr) composition = composition->overridenBy;
@@ -504,7 +504,7 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
     return true;
 }
 
-bool SpxCompiler::GetAllShaderInstancesForComposition(const ShaderComposition* composition, vector<ShaderClassData*>& instances)
+bool SpxCompiler::GetAllShaderInstancesForComposition(const ShaderCompositionDeclaration* composition, vector<ShaderClassData*>& instances)
 {
     spv::Id compositionShaderOwnerId = composition->compositionShaderOwner->GetId();
     int compositionShaderId = composition->compositionShaderId;
@@ -565,7 +565,7 @@ bool SpxCompiler::GetAllShaderInstancesForComposition(const ShaderComposition* c
     return true;
 }
 
-bool SpxCompiler::GetListAllCompositions(vector<ShaderComposition*>& vecCompositions)
+bool SpxCompiler::GetListAllCompositions(vector<ShaderCompositionDeclaration*>& vecCompositions)
 {
     /*vecCompositions.clear();
     for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
@@ -574,7 +574,7 @@ bool SpxCompiler::GetListAllCompositions(vector<ShaderComposition*>& vecComposit
         unsigned int countCompositions = aShader->GetCountShaderComposition();
         for (unsigned int k = 0; k < countCompositions; ++k)
         {
-            ShaderComposition* shaderComposition = aShader->compositionsDeclarationList[k];
+            ShaderCompositionDeclaration* shaderComposition = aShader->compositionsDeclarationList[k];
             vecCompositions.push_back(shaderComposition);
         }
     }*/
@@ -583,7 +583,7 @@ bool SpxCompiler::GetListAllCompositions(vector<ShaderComposition*>& vecComposit
     vecCompositions.clear();
     for (unsigned int i = 0; i < countCompositions; i++)
     {
-        ShaderComposition* aComposition = listAllCompositionsDeclarations[i];
+        ShaderCompositionDeclaration* aComposition = listAllCompositionsDeclarations[i];
         if (aComposition->isValid)
         {
             vecCompositions.push_back(aComposition);
@@ -593,7 +593,7 @@ bool SpxCompiler::GetListAllCompositions(vector<ShaderComposition*>& vecComposit
     return true;
 }
 
-bool SpxCompiler::AddNewShaderCompositionDeclaration(ShaderClassData* shader, ShaderComposition* composition)
+bool SpxCompiler::AddNewShaderCompositionDeclaration(ShaderClassData* shader, ShaderCompositionDeclaration* composition)
 {
     this->listAllCompositionsDeclarations.push_back(composition);
     shader->compositionsDeclarationList.push_back(composition);
@@ -601,13 +601,13 @@ bool SpxCompiler::AddNewShaderCompositionDeclaration(ShaderClassData* shader, Sh
     return true;
 }
 
-bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(ShaderComposition* newStagedComposition, vector<ShaderComposition*>& listStagedCompositionsPotentiallyOverriding)
+bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(ShaderCompositionDeclaration* newStagedComposition, vector<ShaderCompositionDeclaration*>& listStagedCompositionsPotentiallyOverriding)
 {
-    ShaderComposition* overridingComposition = nullptr;
+    ShaderCompositionDeclaration* overridingComposition = nullptr;
 
     for (auto itc = listStagedCompositionsPotentiallyOverriding.begin(); itc != listStagedCompositionsPotentiallyOverriding.end(); itc++)
     {
-        ShaderComposition* aPotentiallyOverridingComposition = *itc;
+        ShaderCompositionDeclaration* aPotentiallyOverridingComposition = *itc;
 
         if (newStagedComposition->isStage && aPotentiallyOverridingComposition->isStage &&
             newStagedComposition->isArray == aPotentiallyOverridingComposition->isArray &&
@@ -658,7 +658,7 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
         //check that the overriding composition is in the list
         for (auto itc = listStagedCompositionsPotentiallyOverriding.begin(); itc != listStagedCompositionsPotentiallyOverriding.end(); itc++)
         {
-            ShaderComposition* aComposition = *itc;
+            ShaderCompositionDeclaration* aComposition = *itc;
             if (aComposition == overridingComposition)
             {
                 found = true;
@@ -697,6 +697,30 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
     return true;
 }
 
+bool SpxCompiler::ValidateCompositionsAfterCompiling()
+{
+    //check that no unstaged compositions have a name conflict with another one
+    map<string, bool> mapName;
+    for (auto itc = listAllCompositionsDeclarations.begin(); itc != listAllCompositionsDeclarations.end(); itc++)
+    {
+        ShaderCompositionDeclaration* anUnstagedComposition = *itc;
+        if (anUnstagedComposition->isStage) continue;
+
+        for (auto itc2 = listAllCompositionsDeclarations.begin(); itc2 != listAllCompositionsDeclarations.end(); itc2++)
+        {
+            ShaderCompositionDeclaration* anotherComposition = *itc2;
+            if (anotherComposition == anUnstagedComposition) continue;
+
+            const string& variableName = anUnstagedComposition->variableName;
+            if (mapName.find(variableName) != mapName.end())
+                return error("An unstaged compose variable has the same name as another existing compose variable: " + variableName);
+            mapName[variableName] = true;
+        }
+    }
+
+    return true;
+}
+
 //For all compositions merged, we check if they get overriden by another one
 //A composition gets overriden if:
 // - it is set as stage
@@ -706,9 +730,9 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
 //plus, when solving the composition function call, we will call the overriding composition instead
 bool SpxCompiler::CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOnes(vector<ShaderClassData*>& listMergedShaders)
 {
-    vector<ShaderComposition*> listNewUnstagedCompositions;
-    vector<ShaderComposition*> listNewStagedCompositions;
-    vector<ShaderComposition*> listStagedCompositionsPotentiallyOverriding;
+    //vector<ShaderCompositionDeclaration*> listNewUnstagedCompositions;
+    vector<ShaderCompositionDeclaration*> listNewStagedCompositions;
+    vector<ShaderCompositionDeclaration*> listStagedCompositionsPotentiallyOverriding;
 
     //Reset all shaders flag
     for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
@@ -727,39 +751,22 @@ bool SpxCompiler::CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOne
         unsigned int countCompositions = shader->GetCountShaderComposition();
         for (unsigned int ic = 0; ic < countCompositions; ic++)
         {
-            ShaderComposition* aComposition = shader->compositionsDeclarationList[ic];
+            ShaderCompositionDeclaration* aComposition = shader->compositionsDeclarationList[ic];
 
 #ifdef XKSLANG_DEBUG_MODE
             if (aComposition->compositionShaderOwner == nullptr) return error("The composition is missing link to its shader owner: " + aComposition->GetVariableName());
             if (aComposition->shaderType == nullptr) return error("The composition is missing link to its shader type: " + aComposition->GetVariableName());
 #endif
 
-            if (aComposition->isStage == false)
-            {
-                if (shader->flag1 == 1) listNewUnstagedCompositions.push_back(aComposition);
-            }
-            else
+            if (aComposition->isStage)
             {
                 if (shader->flag1 == 1) listNewStagedCompositions.push_back(aComposition);
                 else listStagedCompositionsPotentiallyOverriding.push_back(aComposition);
             }
-        }
-    }
-
-    //check that no new, unstageg compositions have the same name as another composition
-    {
-        for (auto itc1 = listNewUnstagedCompositions.begin(); itc1 != listNewUnstagedCompositions.end(); itc1++)
-        {
-            ShaderComposition* aNewUnstagedComposition = *itc1;
-
-            for (auto itc2 = listAllCompositionsDeclarations.begin(); itc2 != listAllCompositionsDeclarations.end(); itc2++)
+            /*else
             {
-                ShaderComposition* anotherComposition = *itc2;
-                if (aNewUnstagedComposition != anotherComposition && aNewUnstagedComposition->GetVariableName() == anotherComposition->GetVariableName())
-                {
-                    return error("An unstaged compose variable has the same name as another existing compose variable: " + aNewUnstagedComposition->GetVariableName());
-                }
-            }
+                if (shader->flag1 == 1) listNewUnstagedCompositions.push_back(aComposition);
+            }*/
         }
     }
 
@@ -768,7 +775,7 @@ bool SpxCompiler::CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOne
         if (listNewStagedCompositions.size() == 0 || listStagedCompositionsPotentiallyOverriding.size() == 0) return true;
         for (auto itc = listNewStagedCompositions.begin(); itc != listNewStagedCompositions.end(); itc++)
         {
-            ShaderComposition* aNewStagedComposition = *itc;
+            ShaderCompositionDeclaration* aNewStagedComposition = *itc;
             if (!CheckIfTheCompositionGetOverridenByAnExistingStageComposition(aNewStagedComposition, listStagedCompositionsPotentiallyOverriding))
                 return error("Failed to check if the composition can be overriden: " + aNewStagedComposition->GetShaderOwnerAndVariableName());
         }
@@ -781,12 +788,12 @@ bool SpxCompiler::GetListAllCompositionsInfo(vector<ShaderCompositionInfo>& vecC
 {
     vecCompositionsInfo.clear();
 
-    vector<ShaderComposition*> vecCompositions;
+    vector<ShaderCompositionDeclaration*> vecCompositions;
     GetListAllCompositions(vecCompositions);
 
     for (auto it = vecCompositions.begin(); it != vecCompositions.end(); ++it)
     {
-        ShaderComposition* shaderComposition = *it;
+        ShaderCompositionDeclaration* shaderComposition = *it;
         string overridenBy = "";
         if (shaderComposition->overridenBy != nullptr)
         {
@@ -806,7 +813,7 @@ bool SpxCompiler::GetListAllCompositionsInfo(vector<ShaderCompositionInfo>& vecC
     return true;
 }
 
-bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders, vector<ShaderComposition*>& listCompositions)
+bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders, vector<ShaderCompositionDeclaration*>& listCompositions)
 {
 #ifdef XKSLANG_DEBUG_MODE
     if (shader == nullptr) return error("Shader is null");
@@ -814,7 +821,7 @@ bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, con
 
     for (auto itc = shader->compositionsDeclarationList.begin(); itc != shader->compositionsDeclarationList.end(); itc++)
     {
-        ShaderComposition* aComposition = *itc;
+        ShaderCompositionDeclaration* aComposition = *itc;
         if (aComposition->variableName == variableName)
         {
             listCompositions.push_back(aComposition);
@@ -833,9 +840,9 @@ bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, con
     return true;
 }
 
-SpxCompiler::ShaderComposition* SpxCompiler::GetShaderCompositionForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders)
+SpxCompiler::ShaderCompositionDeclaration* SpxCompiler::GetShaderCompositionForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders)
 {
-    vector<ShaderComposition*> listCompositions;
+    vector<ShaderCompositionDeclaration*> listCompositions;
     if (!GetAllCompositionsForVariableName(shader, variableName, true, listCompositions))
     {
         error("Fail to get all compositions for the variable: " + variableName);

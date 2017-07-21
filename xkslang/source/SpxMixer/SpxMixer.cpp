@@ -306,7 +306,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
         clonedSpxStream->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) clonedSpxStream->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
         delete clonedSpxStream;
-        return error(messages, "Fail to remove and convert spx extensions");
+        return error(messages, "Fail to finalize the compilation");
     }
 
 #ifdef XKSLANG_DEBUG_MODE

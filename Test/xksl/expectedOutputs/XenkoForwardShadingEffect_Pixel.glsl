@@ -75,19 +75,19 @@ layout(std140) uniform PerView
     layout(row_major) mat4 Transformation_ViewProjection;
     vec2 Transformation_ProjScreenRay;
     vec4 Transformation_Eye;
-    LightDirectional_DirectionalLightData o0S450C0_LightDirectionalGroup_8__Lights[8];
+    LightDirectional_DirectionalLightData o0S450C0_LightDirectionalGroup_Lights[8];
     int o0S450C0_DirectLightGroupPerView_LightCount;
     vec3 o1S435C0_LightSimpleAmbient_AmbientLight;
 } PerView_var;
 
 layout(std140) uniform PerMaterial
 {
-    float ComputeColorConstantFloatLink_constantFloat;
-    vec4 ComputeColorConstantColorLink_constantColor;
-    float ComputeColorConstantFloatLink_constantFloat_1;
-    vec2 ComputeColorTextureScaledOffsetDynamicSampler_scale;
-    vec2 ComputeColorTextureScaledOffsetDynamicSampler_offset;
-    float ComputeColorConstantFloatLink_constantFloat_2;
+    float o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat;
+    vec4 o18S246C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
+    float o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
+    vec2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
+    vec2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
+    float o24S2C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat;
 } PerMaterial_var;
 
 layout(std140) uniform PerFrame
@@ -197,7 +197,7 @@ void o25S246C1_MaterialDisplacementStream_ResetStream(out PS_STREAMS _streams)
 
 vec4 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__Compute(PS_STREAMS _streams)
 {
-    return texture(SPIRV_Cross_CombinedDynamicTexture_TextureDynamicSampler_Sampler, (_streams.TexCoord_id41 * PerMaterial_var.ComputeColorTextureScaledOffsetDynamicSampler_scale) + PerMaterial_var.ComputeColorTextureScaledOffsetDynamicSampler_offset);
+    return texture(SPIRV_Cross_CombinedDynamicTexture_TextureDynamicSampler_Sampler, (_streams.TexCoord_id41 * PerMaterial_var.o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale) + PerMaterial_var.o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset);
 }
 
 void o18S246C0_o3S2C0_MaterialSurfaceDiffuse_Compute(inout PS_STREAMS _streams)
@@ -244,7 +244,7 @@ void o18S246C0_o5S2C0_MaterialSurfaceNormalMap_false_true__Compute(inout PS_STRE
 
 vec4 o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_GlossinessValue__Compute()
 {
-    return vec4(PerMaterial_var.ComputeColorConstantFloatLink_constantFloat_1, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat_1, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat_1, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat_1);
+    return vec4(PerMaterial_var.o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat);
 }
 
 void o18S246C0_o7S2C0_MaterialSurfaceGlossinessMap_false__Compute(out PS_STREAMS _streams)
@@ -259,7 +259,7 @@ void o18S246C0_o7S2C0_MaterialSurfaceGlossinessMap_false__Compute(out PS_STREAMS
 
 vec4 o18S246C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_Material_SpecularValue__Compute()
 {
-    return PerMaterial_var.ComputeColorConstantColorLink_constantColor;
+    return PerMaterial_var.o18S246C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
 }
 
 void o18S246C0_o9S2C0_MaterialSurfaceSetStreamFromComputeColor_matSpecular_rgb__Compute(out PS_STREAMS _streams)
@@ -269,7 +269,7 @@ void o18S246C0_o9S2C0_MaterialSurfaceSetStreamFromComputeColor_matSpecular_rgb__
 
 vec4 o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_Material_SpecularIntensityValue__Compute()
 {
-    return vec4(PerMaterial_var.ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.ComputeColorConstantFloatLink_constantFloat);
+    return vec4(PerMaterial_var.o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat);
 }
 
 void o18S246C0_o11S2C0_MaterialSurfaceSetStreamFromComputeColor_matSpecularIntensity_r__Compute(out PS_STREAMS _streams)
@@ -333,8 +333,8 @@ int o0S450C0_DirectLightGroupPerView_GetLightCount()
 
 void o0S450C0_LightDirectionalGroup_8__PrepareDirectLightCore(out PS_STREAMS _streams, int lightIndex)
 {
-    _streams.lightColor_id34 = PerView_var.o0S450C0_LightDirectionalGroup_8__Lights[lightIndex].Color;
-    _streams.lightDirectionWS_id33 = -PerView_var.o0S450C0_LightDirectionalGroup_8__Lights[lightIndex].DirectionWS;
+    _streams.lightColor_id34 = PerView_var.o0S450C0_LightDirectionalGroup_Lights[lightIndex].Color;
+    _streams.lightDirectionWS_id33 = -PerView_var.o0S450C0_LightDirectionalGroup_Lights[lightIndex].DirectionWS;
 }
 
 void o0S450C0_ShadowGroup_ComputeShadow(out PS_STREAMS _streams, int lightIndex)

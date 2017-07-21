@@ -215,7 +215,7 @@ bool SpxCompiler::ProcessBytecodeSanityCheck(const std::vector<uint32_t>& byteco
     //===============================================================================================================================================
     //3rd step: check the shader compositions and their instances
     {
-        vector<ShaderComposition*> vecCompositions;
+        vector<ShaderCompositionDeclaration*> vecCompositions;
         if (!spxBytecode.GetListAllCompositions(vecCompositions))
         {
             spxBytecode.copyMessagesTo(errorMsgs);
@@ -225,7 +225,7 @@ bool SpxCompiler::ProcessBytecodeSanityCheck(const std::vector<uint32_t>& byteco
         unsigned int countCompositions = vecCompositions.size();
         for (unsigned int ic = 0; ic < countCompositions; ic++)
         {
-            ShaderComposition* aComposition = vecCompositions[ic];
+            ShaderCompositionDeclaration* aComposition = vecCompositions[ic];
             vector<ShaderClassData*> vecCompositionInstances;
             if (!spxBytecode.GetAllShaderInstancesForComposition(aComposition, vecCompositionInstances))
             {
