@@ -671,15 +671,14 @@ public:
             return nullptr;
         }
 
-        unsigned int GetCountShaderComposition() { return (unsigned int)compositionsList.size(); }
-        void AddComposition(const ShaderComposition& composition) { compositionsList.push_back(composition); }
+        unsigned int GetCountShaderComposition() { return (unsigned int)compositionsDeclarationList.size(); }
         ShaderComposition* GetShaderCompositionById(int compositionId) {
-            if (compositionId<0 || compositionId>= (int)compositionsList.size()) return nullptr;
-            return &(compositionsList[compositionId]);
+            if (compositionId<0 || compositionId>= (int)compositionsDeclarationList.size()) return nullptr;
+            return compositionsDeclarationList[compositionId];
         }
         ShaderComposition* GetShaderCompositionByName(const std::string& variableName) {
-            for (unsigned int i=0; i<compositionsList.size(); ++i)
-                if (compositionsList[i].variableName == variableName) return &(compositionsList[i]);
+            for (unsigned int i=0; i<compositionsDeclarationList.size(); ++i)
+                if (compositionsDeclarationList[i]->variableName == variableName) return compositionsDeclarationList[i];
             return nullptr;
         }
 
@@ -700,7 +699,7 @@ public:
         std::vector<ShaderTypeData*> shaderTypesList;
         std::vector<FunctionInstruction*> functionsList;
 
-        std::vector<ShaderComposition> compositionsList;
+        std::vector<ShaderComposition*> compositionsDeclarationList;
 
         //std::string instanceOriginalShaderName;  //when a shader is instantiated (for composition), we store its original shader name
 
@@ -750,9 +749,10 @@ public:
     //bool MixWithBytecode(const SpxBytecode& bytecode);
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& nameOfShadersToMix);
 
+    bool AddShaderCompositionDeclaration(ShaderClassData* shader, ShaderComposition* composition);
     bool GetListAllCompositions(std::vector<ShaderComposition*>& vecCompositions);
     bool GetListAllCompositionsInfo(std::vector<ShaderCompositionInfo>& vecCompositionsInfo);
-    bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
+    bool AddCompositionInstance(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
     bool InsertNewCompositionInstanceForComposition(ShaderComposition* compositionTarget, spv::Id instanceShaderId);
     ShaderComposition* GetShaderCompositionForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
     bool GetAllCompositionsForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders, std::vector<ShaderComposition*>& listCompositions);
@@ -883,6 +883,7 @@ private:
     std::vector<ObjectInstructionBase*> listAllObjects;
     std::vector<ShaderClassData*> vecAllShaders;
     std::vector<FunctionInstruction*> vecAllFunctions;  //vec of all functions
+    std::vector<ShaderComposition*> listAllCompositionsDeclarations;
 
 private:
     ObjectInstructionBase* GetObjectById(spv::Id id);

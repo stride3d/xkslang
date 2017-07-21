@@ -378,7 +378,7 @@ namespace xkslangDll
         SpxMixer* compositionMixer = compositionMixerData->mixer;
 
         vector<string> errorMsgs;
-        bool success = mixer->AddComposition(shaderName, variableName, compositionMixer, errorMsgs);
+        bool success = mixer->AddCompositionInstance(shaderName, variableName, compositionMixer, errorMsgs);
 
         if (!success)
         {

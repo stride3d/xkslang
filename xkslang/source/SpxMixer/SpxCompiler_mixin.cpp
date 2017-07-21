@@ -236,23 +236,24 @@ SpxCompiler* SpxCompiler::Clone()
     {
         ShaderClassData* shaderToClone = *it;
         ShaderClassData* clonedShader = shaderToClone->tmpClonedShader;
-        unsigned int countCompositions = shaderToClone->compositionsList.size();
+        unsigned int countCompositions = shaderToClone->compositionsDeclarationList.size();
 
         for (unsigned int i = 0; i < countCompositions; ++i)
         {
-            ShaderComposition& compositionToClone = shaderToClone->compositionsList[i];
-            ShaderClassData* shaderType = compositionToClone.shaderType == nullptr? nullptr: compositionToClone.shaderType->tmpClonedShader;
-            ShaderClassData* shaderOwner = compositionToClone.compositionShaderOwner == nullptr ? nullptr : compositionToClone.compositionShaderOwner->tmpClonedShader;
+            ShaderComposition* compositionToClone = shaderToClone->compositionsDeclarationList[i];
+            ShaderClassData* shaderType = compositionToClone->shaderType == nullptr? nullptr: compositionToClone->shaderType->tmpClonedShader;
+            ShaderClassData* shaderOwner = compositionToClone->compositionShaderOwner == nullptr ? nullptr : compositionToClone->compositionShaderOwner->tmpClonedShader;
 
-            ShaderComposition clonedComposition(compositionToClone.compositionShaderId, shaderOwner, shaderType, compositionToClone.variableName,
-                compositionToClone.isStage, compositionToClone.isArray, compositionToClone.countInstances);
-            clonedShader->AddComposition(clonedComposition);
+            ShaderComposition* clonedComposition = new ShaderComposition(compositionToClone->compositionShaderId, shaderOwner, shaderType,
+                compositionToClone->variableName, compositionToClone->isStage, compositionToClone->isArray, compositionToClone->countInstances);
+
+            clonedSpxRemapper->AddShaderCompositionDeclaration(clonedShader, clonedComposition);
         }
 
         for (unsigned int i = 0; i < countCompositions; ++i)
         {
-            ShaderComposition* compositionToClone = &(shaderToClone->compositionsList[i]);
-            ShaderComposition* clonedComposition = &(clonedShader->compositionsList[i]);
+            ShaderComposition* compositionToClone = shaderToClone->compositionsDeclarationList[i];
+            ShaderComposition* clonedComposition = clonedShader->compositionsDeclarationList[i];
             compositionToClone->tmpClonedComposition = clonedComposition;
         }
     }
@@ -262,14 +263,14 @@ SpxCompiler* SpxCompiler::Clone()
     {
         ShaderClassData* shaderToClone = *it;
         ShaderClassData* clonedShader = shaderToClone->tmpClonedShader;
-        unsigned int countCompositions = shaderToClone->compositionsList.size();
+        unsigned int countCompositions = shaderToClone->compositionsDeclarationList.size();
 
         for (unsigned int i = 0; i < countCompositions; ++i)
         {
-            ShaderComposition& compositionToClone = shaderToClone->compositionsList[i];
-            if (compositionToClone.overridenBy != nullptr)
+            ShaderComposition* compositionToClone = shaderToClone->compositionsDeclarationList[i];
+            if (compositionToClone->overridenBy != nullptr)
             {
-                ShaderComposition* overridingCompositionToClone = compositionToClone.overridenBy;
+                ShaderComposition* overridingCompositionToClone = compositionToClone->overridenBy;
                 if (overridingCompositionToClone->tmpClonedComposition == nullptr)
                 {
                     error("A composition is missing its link to the cloned composition");
@@ -277,8 +278,8 @@ SpxCompiler* SpxCompiler::Clone()
                     return nullptr;
                 }
 
-                ShaderComposition& clonedComposition = clonedShader->compositionsList[i];
-                clonedComposition.overridenBy = overridingCompositionToClone->tmpClonedComposition;
+                ShaderComposition* clonedComposition = clonedShader->compositionsDeclarationList[i];
+                clonedComposition->overridenBy = overridingCompositionToClone->tmpClonedComposition;
             }
         }
     }
@@ -536,16 +537,23 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
 
 void SpxCompiler::ReleaseAllMaps()
 {
-    unsigned int size = (unsigned int)listAllObjects.size();
-    for (unsigned int i = 0; i < size; ++i)
+    unsigned int countObjects = (unsigned int)listAllObjects.size();
+    for (unsigned int i = 0; i < countObjects; ++i)
     {
         if (listAllObjects[i] != nullptr) delete listAllObjects[i];
+    }
+
+    unsigned int countCompositions = (unsigned int)listAllCompositionsDeclarations.size();
+    for (unsigned int i = 0; i < countCompositions; ++i)
+    {
+        if (listAllCompositionsDeclarations[i] != nullptr) delete listAllCompositionsDeclarations[i];
     }
 
     listAllObjects.clear();
     vecAllShaders.clear();
     vecAllFunctions.clear();
     mapDeclarationName.clear();
+    listAllCompositionsDeclarations.clear();
 }
 
 bool SpxCompiler::MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const vector<string>& nameOfShadersToMix)
@@ -1354,14 +1362,14 @@ bool SpxCompiler::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputSta
             }
 
             //add the composition shader instances
-            for (auto itc = aShaderInvolved->compositionsList.begin(); itc != aShaderInvolved->compositionsList.end(); itc++)
+            for (auto itc = aShaderInvolved->compositionsDeclarationList.begin(); itc != aShaderInvolved->compositionsDeclarationList.end(); itc++)
             {
-                const ShaderComposition& aComposition = *itc;
-                if (aComposition.countInstances > 0)
+                ShaderComposition* aComposition = *itc;
+                if (aComposition->countInstances > 0)
                 {
                     vector<ShaderClassData*> vecCompositionShaderInstances;
-                    if (!GetAllShaderInstancesForComposition(&aComposition, vecCompositionShaderInstances)) {
-                        error(string("Failed to retrieve the instances for the composition: ") + aComposition.variableName + string(" from shader: ") + aComposition.compositionShaderOwner->GetName());
+                    if (!GetAllShaderInstancesForComposition(aComposition, vecCompositionShaderInstances)) {
+                        error(string("Failed to retrieve the instances for the composition: ") + aComposition->variableName + string(" from shader: ") + aComposition->compositionShaderOwner->GetName());
                     }
                     else
                     {
@@ -1562,19 +1570,19 @@ bool SpxCompiler::GetShadersFullDependencies(SpxCompiler* bytecodeSource, const 
         }
 
         //add all compositions type
-        for (auto itc = aShader->compositionsList.begin(); itc != aShader->compositionsList.end(); itc++)
+        for (auto itc = aShader->compositionsDeclarationList.begin(); itc != aShader->compositionsDeclarationList.end(); itc++)
         {
-            const ShaderComposition& aComposition = *itc;
-            aComposition.shaderType->dependencyType = ShaderClassData::ShaderDependencyTypeEnum::Other;
-            if (aComposition.shaderType->flag == 0) listShaderToValidate.push_back(aComposition.shaderType);
+            ShaderComposition* aComposition = *itc;
+            aComposition->shaderType->dependencyType = ShaderClassData::ShaderDependencyTypeEnum::Other;
+            if (aComposition->shaderType->flag == 0) listShaderToValidate.push_back(aComposition->shaderType);
 
             //add the composition instances
-            if (aComposition.countInstances > 0)
+            if (aComposition->countInstances > 0)
             {
                 vector<ShaderClassData*> vecCompositionShaderInstances;
-                if (!bytecodeSource->GetAllShaderInstancesForComposition(&aComposition, vecCompositionShaderInstances)) {
-                    return bytecodeSource->error(string("Failed to retrieve the instances for the composition: ") + aComposition.variableName +
-                        string(" from shader: ") + aComposition.compositionShaderOwner->GetName());
+                if (!bytecodeSource->GetAllShaderInstancesForComposition(aComposition, vecCompositionShaderInstances)) {
+                    return bytecodeSource->error(string("Failed to retrieve the instances for the composition: ") + aComposition->variableName +
+                        string(" from shader: ") + aComposition->compositionShaderOwner->GetName());
                 }
 
                 for (unsigned int i = 0; i < vecCompositionShaderInstances.size(); ++i)
@@ -2934,8 +2942,10 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
                 const string compositionVariableName = literalString(start + 7);
 
-                ShaderComposition shaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName, isStage, isArray, count);
-                shaderCompositionOwner->AddComposition(shaderComposition);
+                ShaderComposition* shaderComposition = new ShaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName,
+                    isStage, isArray, count);
+                this->AddShaderCompositionDeclaration(shaderCompositionOwner, shaderComposition);
+
                 break;
             }
 

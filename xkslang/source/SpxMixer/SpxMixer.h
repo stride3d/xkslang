@@ -36,7 +36,7 @@ public:
     bool Mixin(const SpxBytecode& spirXBytecode, const std::string& shaderName, std::vector<std::string>& messages);
     bool Mixin(const SpxBytecode& spirXBytecode, const std::vector<std::string>& shaders, std::vector<std::string>& messages);
 
-    bool AddComposition(const std::string& shaderName, const std::string& variableName, SpxMixer* mixerSource, std::vector<std::string>& messages);
+    bool AddCompositionInstance(const std::string& shaderName, const std::string& variableName, SpxMixer* mixerSource, std::vector<std::string>& messages);
 
     const std::vector<uint32_t>* GetCurrentMixinBytecode();
     bool CopyCurrentMixinBytecode(std::vector<uint32_t>& bytecode, std::vector<std::string>& messages);

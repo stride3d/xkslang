@@ -8,3 +8,4 @@ build/
 Test/localResults/
 External/googletest
 Test/xksl/outputs
+Test/xksl/invalidOutputs

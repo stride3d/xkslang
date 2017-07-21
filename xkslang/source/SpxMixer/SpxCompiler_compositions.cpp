@@ -13,7 +13,7 @@
 using namespace std;
 using namespace xkslang;
 
-bool SpxCompiler::AddComposition(const string& shaderName, const string& variableName, SpxCompiler* source)
+bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string& variableName, SpxCompiler* source)
 {
     if (status != SpxRemapperStatusEnum::WaitingForMixin) {
         return error("Invalid remapper status");
@@ -565,18 +565,33 @@ bool SpxCompiler::GetAllShaderInstancesForComposition(const ShaderComposition* c
 
 bool SpxCompiler::GetListAllCompositions(vector<ShaderComposition*>& vecCompositions)
 {
-    vecCompositions.clear();
-
+    /*vecCompositions.clear();
     for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
     {
         ShaderClassData* aShader = *it;
         unsigned int countCompositions = aShader->GetCountShaderComposition();
         for (unsigned int k = 0; k < countCompositions; ++k)
         {
-            ShaderComposition* shaderComposition = &(aShader->compositionsList[k]);
+            ShaderComposition* shaderComposition = aShader->compositionsDeclarationList[k];
             vecCompositions.push_back(shaderComposition);
         }
+    }*/
+
+    unsigned int countCompositions = listAllCompositionsDeclarations.size();
+    vecCompositions.clear();
+    vecCompositions.resize(countCompositions, nullptr);
+    for (unsigned int i = 0; i < countCompositions; i++)
+    {
+        vecCompositions[i] = listAllCompositionsDeclarations[i];
     }
+
+    return true;
+}
+
+bool SpxCompiler::AddShaderCompositionDeclaration(ShaderClassData* shader, ShaderComposition* composition)
+{
+    this->listAllCompositionsDeclarations.push_back(composition);
+    shader->compositionsDeclarationList.push_back(composition);
 
     return true;
 }
@@ -680,7 +695,7 @@ bool SpxCompiler::CheckIfAnyNewCompositionGetOverridenByExistingOnes(vector<Shad
         unsigned int countCompositions = shader->GetCountShaderComposition();
         for (unsigned int ic = 0; ic < countCompositions; ic++)
         {
-            ShaderComposition* aComposition = &(shader->compositionsList[ic]);
+            ShaderComposition* aComposition = shader->compositionsDeclarationList[ic];
 
 #ifdef XKSLANG_DEBUG_MODE
             if (aComposition->compositionShaderOwner == nullptr) return error("The composition is missing link to its shader owner: " + aComposition->GetVariableName());
@@ -740,12 +755,12 @@ bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, con
     if (shader == nullptr) return error("Shader is null");
 #endif
 
-    for (auto itc = shader->compositionsList.begin(); itc != shader->compositionsList.end(); itc++)
+    for (auto itc = shader->compositionsDeclarationList.begin(); itc != shader->compositionsDeclarationList.end(); itc++)
     {
-        ShaderComposition& aComposition = *itc;
-        if (aComposition.variableName == variableName)
+        ShaderComposition* aComposition = *itc;
+        if (aComposition->variableName == variableName)
         {
-            listCompositions.push_back(&aComposition);
+            listCompositions.push_back(aComposition);
         }
     }
 

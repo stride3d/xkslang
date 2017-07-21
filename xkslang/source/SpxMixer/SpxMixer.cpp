@@ -116,7 +116,7 @@ bool SpxMixer::GetListAllCompositionsInfo(vector<ShaderCompositionInfo>& vecComp
     return true;
 }
 
-bool SpxMixer::AddComposition(const string& shaderName, const string& variableName, SpxMixer* mixerSource, vector<string>& msgs)
+bool SpxMixer::AddCompositionInstance(const string& shaderName, const string& variableName, SpxMixer* mixerSource, vector<string>& msgs)
 {
     if (spxCompiler == nullptr) {
         return error(msgs, "mixer is empty");
@@ -128,7 +128,7 @@ bool SpxMixer::AddComposition(const string& shaderName, const string& variableNa
         return error(msgs, "variableName is invalid");
     }
 
-    if (!spxCompiler->AddComposition(shaderName, variableName, mixerSource->spxCompiler))
+    if (!spxCompiler->AddCompositionInstance(shaderName, variableName, mixerSource->spxCompiler))
     {
         spxCompiler->copyMessagesTo(msgs);
         return error(msgs, "Failed to add the composition to the mixer");

@@ -169,7 +169,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose21", "TestCompose21.xkfx" },
     //{ "TestCompose22", "TestCompose22.xkfx" },
     //{ "TestCompose23", "TestCompose23.xkfx" },
-    { "TestCompose24", "TestCompose24.xkfx" },
+    //{ "TestCompose24", "TestCompose24.xkfx" },
     //{ "TestCompose25", "TestCompose25.xkfx" },
     //{ "TestCompose26", "TestCompose26.xkfx" },
     //{ "TestCompose27", "TestCompose27.xkfx" },
@@ -1564,7 +1564,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         {
             vector<string> errorMsgs;
             time_before = GetTickCount();
-            success = mixerTarget->mixer->AddComposition(shaderName, variableName, compositionSourceMixer->mixer, errorMsgs);
+            success = mixerTarget->mixer->AddCompositionInstance(shaderName, variableName, compositionSourceMixer->mixer, errorMsgs);
             time_after = GetTickCount();
 
             if (!success)
