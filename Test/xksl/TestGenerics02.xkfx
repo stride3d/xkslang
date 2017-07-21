@@ -3,6 +3,5 @@ convertAndLoad "TestGenerics02.xksl" ShaderMain<5>
 mixer mixerMain
 mixerMain.mixin( ShaderMain )
 
-
 mixerMain.setStageEntryPoint( Vertex="VSMain" )
 mixerMain.compile

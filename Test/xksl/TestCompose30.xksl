@@ -1,0 +1,70 @@
+shader TestDirectLightGroupArray
+{
+	stage compose ITestDirectLightGroup directLightGroups[];
+};
+
+shader ITestDirectLightGroup
+{
+	int GetMaxLightCount()
+	{
+		return 0;
+	}
+};
+
+shader TestDirectLightGroup1: ITestDirectLightGroup
+{
+	override int GetMaxLightCount()
+	{
+		return 1;
+	}
+};
+
+shader TestDirectLightGroup2: ITestDirectLightGroup
+{
+	override int GetMaxLightCount()
+	{
+		return 2;
+	}
+};
+
+shader TestDirectLightGroup3: ITestDirectLightGroup
+{
+	override int GetMaxLightCount()
+	{
+		return 3;
+	}
+};
+
+shader TestIMaterialSurface
+{
+	void Compute()
+	{
+	}
+};
+
+shader TestMaterialSurfaceArray : TestIMaterialSurface, TestDirectLightGroupArray
+{
+	override void Compute()
+	{
+		int res = 0;
+		foreach(var light in directLightGroups)
+		{
+			res += light.GetMaxLightCount();
+		}
+	}
+};
+
+shader TestShaderMain: TestDirectLightGroupArray
+{
+	compose TestIMaterialSurface materialPixelStage;
+	
+	stage void VSMain()
+	{
+		materialPixelStage.Compute();
+	}
+	
+	stage void PSMain()
+	{
+		materialPixelStage.Compute();
+	}
+}

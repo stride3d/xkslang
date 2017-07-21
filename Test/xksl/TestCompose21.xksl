@@ -17,18 +17,18 @@ shader ShaderA
 
 shader ShaderB
 {
-	compose ShaderComp colorA;
+	compose ShaderComp colorB;
 	
-	float Compute(){return 2 + colorA.Compute();}
+	float Compute(){return 2 + colorB.Compute();}
 }
 
 shader ShaderMain : ShaderA, ShaderB
 {
-	compose ShaderComp colorA;
-	compose ShaderComp colorA0;
+	compose ShaderComp colorM1;
+	compose ShaderComp colorM2;
 	
 	float Compute(){
-		return colorA.Compute() + colorA0.Compute() + ShaderA.Compute() + ShaderB.Compute();
+		return colorM1.Compute() + colorM2.Compute() + ShaderA.Compute() + ShaderB.Compute();
 	}
 	
 	void PSMain()

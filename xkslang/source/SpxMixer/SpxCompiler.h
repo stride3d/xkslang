@@ -557,6 +557,8 @@ public:
         bool isStage;
         bool isArray;
         int countInstances;
+        bool isValid;
+
         ShaderComposition* tmpClonedComposition;
 
         //If we merge a composition into a bytecode, this composition can be overriden by another one
@@ -576,7 +578,7 @@ public:
         ShaderComposition(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType,
             const std::string& variableName, bool isStage, bool isArray, int countInstances)
                 :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
-                variableName(variableName), isStage(isStage), isArray(isArray), countInstances(countInstances), tmpClonedComposition(nullptr), overridenBy(nullptr){}
+                variableName(variableName), isStage(isStage), isArray(isArray), countInstances(countInstances), isValid(true), tmpClonedComposition(nullptr), overridenBy(nullptr){}
 
     private:
         friend class SpxCompiler;
@@ -749,14 +751,14 @@ public:
     //bool MixWithBytecode(const SpxBytecode& bytecode);
     bool MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const std::vector<std::string>& nameOfShadersToMix);
 
-    bool AddShaderCompositionDeclaration(ShaderClassData* shader, ShaderComposition* composition);
+    bool AddNewShaderCompositionDeclaration(ShaderClassData* shader, ShaderComposition* composition);
     bool GetListAllCompositions(std::vector<ShaderComposition*>& vecCompositions);
     bool GetListAllCompositionsInfo(std::vector<ShaderCompositionInfo>& vecCompositionsInfo);
     bool AddCompositionInstance(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
     bool InsertNewCompositionInstanceForComposition(ShaderComposition* compositionTarget, spv::Id instanceShaderId);
     ShaderComposition* GetShaderCompositionForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
     bool GetAllCompositionsForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders, std::vector<ShaderComposition*>& listCompositions);
-    bool CheckIfAnyNewCompositionGetOverridenByExistingOnes(std::vector<ShaderClassData*>& listMergedShaders);
+    bool CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOnes(std::vector<ShaderClassData*>& listMergedShaders);
     bool CheckIfTheCompositionGetOverridenByAnExistingStageComposition(ShaderComposition* newStagedComposition, std::vector<ShaderComposition*>& listStagedCompositionsPotentiallyOverriding);
     bool GetAllShaderInstancesForComposition(const ShaderComposition* composition, std::vector<ShaderClassData*>& instances);
     bool GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel);

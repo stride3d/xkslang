@@ -861,13 +861,16 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         //unstage member (we use the shader original base name as well (even if this could make name conflicts))
                         aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
 
-                        //TOTO check compositions path
+                        if (shaderOwner->combinedCompositionPath.size() > 0)
+                        {
+                            aMember.linkName = aMember.linkName + "." + shaderOwner->combinedCompositionPath;
+                        }
                     }
                 }
             }
         }
 
-#ifdef XKSLANG_DEBUG_MODE
+//#ifdef XKSLANG_DEBUG_MODE
         //Check that we have no cbuffer members name conflicts
         map<string, bool> usedRawName;
         map<string, bool> usedKeyName;
@@ -901,7 +904,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 break;
             }
         }
-#endif
+//#endif
 
         if (errorMessages.size() > 0) success = false;
     }

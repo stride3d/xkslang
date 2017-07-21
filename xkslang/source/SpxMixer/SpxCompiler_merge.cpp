@@ -693,9 +693,9 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         functionOverriden->SetOverridingFunction(functionOverriding);
     }
 
-    if (!CheckIfAnyNewCompositionGetOverridenByExistingOnes(listMergedShaders))
+    if (!CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOnes(listMergedShaders))
     {
-        return error("Failed to check if some new compositions get overriden by the existing ones");
+        return error("Fail to override or conflicts detected with new compositions");
     }
 
     if (errorMessages.size() > 0) return false;

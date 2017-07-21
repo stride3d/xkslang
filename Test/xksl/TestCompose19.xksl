@@ -12,15 +12,15 @@ shader ShaderA
 {
 	stage stream float totoA: TOTOA;
 	
-	compose ShaderComp colorA;
-	compose ShaderComp colorB;
+	compose ShaderComp colorA1;
+	compose ShaderComp colorA2;
 	
 	float Compute(){return 5;}
 	
 	void VSMain()
 	{
 		float f = Compute();
-		streams.totoA = f + colorA.Compute() + colorB.Compute();
+		streams.totoA = f + colorA1.Compute() + colorA2.Compute();
 	}
 }
 
@@ -29,14 +29,14 @@ shader ShaderB
 	stage stream float totoA: TOTOA;
 	stage stream float totoB: TOTOB;
 	
-	compose ShaderComp colorA;
-	compose ShaderComp colorB;
+	compose ShaderComp colorB1;
+	compose ShaderComp colorB2;
 	
 	float Compute(){return 5;}
 	
 	void PSMain()
 	{
 		float f = Compute();
-		streams.totoB =  f + colorA.Compute() + colorB.Compute() + streams.totoA;
+		streams.totoB =  f + colorB1.Compute() + colorB2.Compute() + streams.totoA;
 	}
 }

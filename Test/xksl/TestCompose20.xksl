@@ -17,9 +17,9 @@ shader ShaderA
 
 shader ShaderB
 {
-	compose ShaderComp colorA;
+	compose ShaderComp colorB;
 	
-	float Compute(){return 2 + colorA.Compute();}
+	float Compute(){return 2 + colorB.Compute();}
 }
 
 shader ShaderMain : ShaderA, ShaderB

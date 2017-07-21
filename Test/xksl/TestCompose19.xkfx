@@ -3,8 +3,8 @@
 convertAndLoad "TestCompose19.xksl"
 
 mixer B
-B.mixin( ShaderA[colorA = mixin(ShaderComp), colorB = mixin(ShaderComp)] )
-B.mixin( ShaderB[colorA = mixin(ShaderComp), colorB = mixin(ShaderComp)] )
+B.mixin( ShaderA[colorA1 = mixin(ShaderComp), colorA2 = mixin(ShaderComp)] )
+B.mixin( ShaderB[colorB1 = mixin(ShaderComp), colorB2 = mixin(ShaderComp)] )
 
 B.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 B.compile

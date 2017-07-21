@@ -281,38 +281,43 @@ bool HlslGrammar::acceptShaderCustomType(const TString& shaderName, TType& type)
                     return false;
                 }
 
-                //Any Generics?
-                TVector<TString*> listGenericValuesExpression;
-                if (peekTokenClass(EHTokLeftAngle))
+                //is the name a base name of a known shader?
+                if (isRecordedAsAShaderBaseName(name))
                 {
-                    if (!checkShaderGenericValuesExpression(listGenericValuesExpression)) {
-                        error("failed to check for shader generic values");
-                        recedeToTokenIndex(tokenCurrentIndex);
-                        return false;
-                    }
-                }
-
-                //concatenate the generic to the shader name
-                unsigned int countGenerics = listGenericValuesExpression.size();
-                if (countGenerics > 0)
-                {
-                    TString nameExtension = "<";
-                    for (unsigned int g = 0; g < countGenerics; g++)
+                    //Any Generics?
+                    TVector<TString*> listGenericValuesExpression;
+                    if (peekTokenClass(EHTokLeftAngle))
                     {
-                        nameExtension += *(listGenericValuesExpression[g]);
-                        if (g == countGenerics - 1) nameExtension += ">";
-                        else nameExtension += ",";
+                        if (!checkShaderGenericValuesExpression(listGenericValuesExpression)) {
+                            error("failed to check for shader generic values");
+                            recedeToTokenIndex(tokenCurrentIndex);
+                            return false;
+                        }
                     }
-                    name += nameExtension;
+
+                    //concatenate the generic to the shader name
+                    unsigned int countGenerics = listGenericValuesExpression.size();
+                    if (countGenerics > 0)
+                    {
+                        TString nameExtension = "<";
+                        for (unsigned int g = 0; g < countGenerics; g++)
+                        {
+                            nameExtension += *(listGenericValuesExpression[g]);
+                            if (g == countGenerics - 1) nameExtension += ">";
+                            else nameExtension += ",";
+                        }
+                        name += nameExtension;
+                    }
+
+                    if (isRecordedAsAShaderName(name))
+                    {
+                        //The token is a known shader class (ShaderA.XXX or ShaderA<1,2>.XXX)
+                        referredClassName = NewPoolTString(name.c_str());
+                        areTheNextTokensAKnownShaderName = true;
+                    }
                 }
 
-                if (isRecordedAsAShaderName(name))
-                {
-                    //The token is a known shader class (ShaderA.XXX or ShaderA<1,2>.XXX)
-                    referredClassName = NewPoolTString(name.c_str());
-                    areTheNextTokensAKnownShaderName = true;
-                }
-                else recedeToTokenIndex(tokenCurrentIndex);
+                if (!areTheNextTokensAKnownShaderName) recedeToTokenIndex(tokenCurrentIndex);
             }
 
             if (areTheNextTokensAKnownShaderName)
@@ -435,39 +440,43 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
                     return false;
                 }
 
-                //Any Generics?
-                TVector<TString*> listGenericValuesExpression;
-                if (peekTokenClass(EHTokLeftAngle))
+                if (isRecordedAsAShaderBaseName(name))
                 {
-                    if (!checkShaderGenericValuesExpression(listGenericValuesExpression)) {
-                        error("failed to check for shader generic values");
-                        recedeToTokenIndex(tokenCurrentIndex);
-                        return false;
-                    }
-                }
-
-                //concatenate the generic to the shader name
-                unsigned int countGenerics = listGenericValuesExpression.size();
-                if (countGenerics > 0)
-                {
-                    TString nameExtension = "<";
-                    for (unsigned int g = 0; g < countGenerics; g++)
+                    //Any Generics?
+                    TVector<TString*> listGenericValuesExpression;
+                    if (peekTokenClass(EHTokLeftAngle))
                     {
-                        nameExtension += *(listGenericValuesExpression[g]);
-                        if (g == countGenerics - 1) nameExtension += ">";
-                        else nameExtension += ",";
+                        if (!checkShaderGenericValuesExpression(listGenericValuesExpression)) {
+                            error("failed to check for shader generic values");
+                            recedeToTokenIndex(tokenCurrentIndex);
+                            return false;
+                        }
                     }
-                    name += nameExtension;
+
+                    //concatenate the generic to the shader name
+                    unsigned int countGenerics = listGenericValuesExpression.size();
+                    if (countGenerics > 0)
+                    {
+                        TString nameExtension = "<";
+                        for (unsigned int g = 0; g < countGenerics; g++)
+                        {
+                            nameExtension += *(listGenericValuesExpression[g]);
+                            if (g == countGenerics - 1) nameExtension += ">";
+                            else nameExtension += ",";
+                        }
+                        name += nameExtension;
+                    }
+
+                    if (isRecordedAsAShaderName(name))
+                    {
+                        //The token is a known shader class (ShaderA.XXX or ShaderA<1,2>.XXX)
+                        className = NewPoolTString(name.c_str());
+                        isACallThroughStaticShaderClassName = true;
+                        isExpressionAKnownShaderName = true;
+                    }
                 }
 
-                if (isRecordedAsAShaderName(name))
-                {
-                    //The token is a known shader class (ShaderA.XXX or ShaderA<1,2>.XXX)
-                    className = NewPoolTString(name.c_str());
-                    isACallThroughStaticShaderClassName = true;
-                    isExpressionAKnownShaderName = true;
-                }
-                else recedeToTokenIndex(tokenCurrentIndex);
+                if (!isExpressionAKnownShaderName) recedeToTokenIndex(tokenCurrentIndex);
             }
 
             if (isExpressionAKnownShaderName)
@@ -5060,19 +5069,22 @@ TString* HlslGrammar::getCurrentShaderParentName(int index)
     return &(xkslShaderCurrentlyParsed->listParents[index].parentShader->shaderFullName);
 }
 
+bool HlslGrammar::isRecordedAsAShaderBaseName(const TString& baseName)
+{
+    int countShaders = this->xkslShaderLibrary->listShaders.size();
+    for (int i = 0; i < countShaders; ++i)
+    {
+        if (this->xkslShaderLibrary->listShaders[i]->shaderBaseName.compare(baseName) == 0) return true;
+    }
+    return false;
+}
+
 bool HlslGrammar::isRecordedAsAShaderName(const TString& name)
 {
     int countShaders = this->xkslShaderLibrary->listShaders.size();
     for (int i = 0; i < countShaders; ++i)
     {
-        if (this->xkslShaderLibrary->listShaders.at(i)->shaderFullName.compare(name) == 0) return true;
-    
-        // Obsolete: if we have the parents, we have to know their declaration
-        /*int countParents = listDeclaredXkslShader[i]->listParentsName.size();
-        for (int k = 0; k < countParents; ++k)
-        {
-            if (strcmp(listDeclaredXkslShader[i]->listParentsName[k].c_str(), name) == 0) return true;
-        }*/
+        if (this->xkslShaderLibrary->listShaders[i]->shaderFullName.compare(name) == 0) return true;
     }
     return false;
 }

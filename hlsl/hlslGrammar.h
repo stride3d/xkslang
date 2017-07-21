@@ -184,6 +184,7 @@ namespace glslang {
         TType* getTypeDefinedByTheShaderOrItsParents(const TString& shaderName, const TString& typeName, int uniqueId = 0);
         bool IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslShaderDefinition* maybeParent);
         bool isRecordedAsAShaderName(const TString& name);
+        bool isRecordedAsAShaderBaseName(const TString& baseName);
         bool isIdentifierRecordedAsACompositionVariableName(TString* accessorClassName, const TString& identifierName, bool lookForArraycomposition, TShaderCompositionVariable& compositionTargeted, int uniqueId = 0);
         void ResetShaderLibraryFlag();
 

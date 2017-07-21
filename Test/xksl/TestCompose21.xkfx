@@ -2,10 +2,10 @@ convertAndLoad "TestCompose21.xksl"
 
 mixer B
 B.mixin( ShaderMain[
-  colorA = mixin(ShaderComp),
-  ShaderB.colorA = mixin(ShaderComp),
+  colorM1 = mixin(ShaderComp),
+  ShaderB.colorB = mixin(ShaderComp),
   ShaderA.colorA = mixin(ShaderComp),
-  colorA0 = mixin(ShaderComp),
+  colorM2 = mixin(ShaderComp),
 ])
 
 B.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )

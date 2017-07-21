@@ -1,0 +1,11 @@
+convertAndLoad "TestCompose30.xksl"
+
+mixer m
+m.mixin( TestShaderMain )
+m.addComposition( directLightGroups = mixin(TestDirectLightGroup1) )
+m.addComposition( directLightGroups = mixin(TestDirectLightGroup2) )
+m.addComposition( materialPixelStage = mixin(TestMaterialSurfaceArray) )
+m.addComposition( TestDirectLightGroupArray.directLightGroups = mixin(TestDirectLightGroup3) )
+
+m.setStageEntryPoint( Vertex="VSMain" )
+m.compile()

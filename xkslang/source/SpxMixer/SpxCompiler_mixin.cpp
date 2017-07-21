@@ -231,30 +231,33 @@ SpxCompiler* SpxCompiler::Clone()
         clonedSpxRemapper->vecAllShaders.push_back(clonedShader);
     }
 
-    //clone the compositions
-    for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); it++)
+    //clone all compositions
     {
-        ShaderClassData* shaderToClone = *it;
-        ShaderClassData* clonedShader = shaderToClone->tmpClonedShader;
-        unsigned int countCompositions = shaderToClone->compositionsDeclarationList.size();
-
-        for (unsigned int i = 0; i < countCompositions; ++i)
+        for (auto itc = listAllCompositionsDeclarations.begin(); itc != listAllCompositionsDeclarations.end(); itc++)
         {
-            ShaderComposition* compositionToClone = shaderToClone->compositionsDeclarationList[i];
-            ShaderClassData* shaderType = compositionToClone->shaderType == nullptr? nullptr: compositionToClone->shaderType->tmpClonedShader;
+            ShaderComposition* compositionToClone = *itc;
+
+            ShaderClassData* shaderType = compositionToClone->shaderType == nullptr ? nullptr : compositionToClone->shaderType->tmpClonedShader;
             ShaderClassData* shaderOwner = compositionToClone->compositionShaderOwner == nullptr ? nullptr : compositionToClone->compositionShaderOwner->tmpClonedShader;
 
             ShaderComposition* clonedComposition = new ShaderComposition(compositionToClone->compositionShaderId, shaderOwner, shaderType,
                 compositionToClone->variableName, compositionToClone->isStage, compositionToClone->isArray, compositionToClone->countInstances);
 
-            clonedSpxRemapper->AddShaderCompositionDeclaration(clonedShader, clonedComposition);
+            compositionToClone->tmpClonedComposition = clonedComposition;
+
+            clonedSpxRemapper->listAllCompositionsDeclarations.push_back(clonedComposition);
         }
 
-        for (unsigned int i = 0; i < countCompositions; ++i)
+        for (auto its = vecAllShaders.begin(); its != vecAllShaders.end(); its++)
         {
-            ShaderComposition* compositionToClone = shaderToClone->compositionsDeclarationList[i];
-            ShaderComposition* clonedComposition = clonedShader->compositionsDeclarationList[i];
-            compositionToClone->tmpClonedComposition = clonedComposition;
+            ShaderClassData* shaderCloned = *its;
+            ShaderClassData* clonedShader = shaderCloned->tmpClonedShader;
+
+            unsigned int countCompositions = shaderCloned->GetCountShaderComposition();
+            for (unsigned int k = 0; k < countCompositions; ++k)
+            {
+                clonedShader->compositionsDeclarationList.push_back(shaderCloned->compositionsDeclarationList[k]->tmpClonedComposition);
+            }
         }
     }
 
@@ -2944,7 +2947,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
                 ShaderComposition* shaderComposition = new ShaderComposition(compositionId, shaderCompositionOwner, shaderCompositionType, compositionVariableName,
                     isStage, isArray, count);
-                this->AddShaderCompositionDeclaration(shaderCompositionOwner, shaderComposition);
+                this->AddNewShaderCompositionDeclaration(shaderCompositionOwner, shaderComposition);
 
                 break;
             }
