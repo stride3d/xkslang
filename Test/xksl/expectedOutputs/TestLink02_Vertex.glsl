@@ -8,10 +8,10 @@ struct VS_STREAMS
 
 layout(std140) uniform PerMaterial
 {
-    vec4 ShaderMain_id0_scale;
-    vec4 ShaderMain_id0_offset;
-    vec4 ShaderMain_id0_aCol;
-    vec2 ShaderMain_id0_uv2;
+    vec4 ShaderMain_scale;
+    vec4 ShaderMain_offset;
+    vec4 ShaderMain_aCol;
+    vec2 ShaderMain_uv2;
 } PerMaterial_var;
 
 uniform sampler2D SPIRV_Cross_CombinedShaderMain_Texture0ShaderMain_Sampler0;
@@ -23,8 +23,8 @@ void main()
 {
     VS_STREAMS _streams = VS_STREAMS(vec4(0.0), vec4(0.0));
     _streams.s_in_id0 = VS_IN_s_in;
-    vec4 color = texture(SPIRV_Cross_CombinedShaderMain_Texture0ShaderMain_Sampler0, PerMaterial_var.ShaderMain_id0_uv2);
-    _streams.s_int_id1 = _streams.s_in_id0 + PerMaterial_var.ShaderMain_id0_scale;
+    vec4 color = texture(SPIRV_Cross_CombinedShaderMain_Texture0ShaderMain_Sampler0, PerMaterial_var.ShaderMain_uv2);
+    _streams.s_int_id1 = _streams.s_in_id0 + PerMaterial_var.ShaderMain_scale;
     VS_OUT_s_int = _streams.s_int_id1;
 }
 

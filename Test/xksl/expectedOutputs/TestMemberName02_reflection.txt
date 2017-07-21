@@ -2,9 +2,9 @@
 ****  ConstantBuffers  ****
 ***************************
  cbuffer UpdatedGroupName [size: 48]
-@C    ShaderMain_id0_ShadowMapTextureSize => ShadowMap.TextureSize
-@C    ShaderMain_id0_ShadowMapTextureTexelSize => ShadowMap.TextureTexelSize
-@C    ShaderBase_id0_ShadowMapTextureSizeBase => ShadowMap.TextureSizeBase
+@C    ShaderMain_ShadowMapTextureSize => ShadowMap.TextureSize
+@C    ShaderMain_ShadowMapTextureTexelSize => ShadowMap.TextureTexelSize
+@C    ShaderBase_ShadowMapTextureSizeBase => ShadowMap.TextureSizeBase
 ***********************
 *****  Resources  *****
 ***********************
@@ -14,13 +14,13 @@
 
 ConstantBuffers. Count=1
  cbuffer: Name="UpdatedGroupName" Size=48 MembersCount=3
-  KeyName="ShadowMap.TextureSize RawName="ShaderMain_id0_ShadowMapTextureSize" Offset=0
+  KeyName="ShadowMap.TextureSize RawName="ShaderMain_ShadowMapTextureSize" Offset=0
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="ShadowMap.TextureTexelSize RawName="ShaderMain_id0_ShadowMapTextureTexelSize" Offset=16
+  KeyName="ShadowMap.TextureTexelSize RawName="ShaderMain_ShadowMapTextureTexelSize" Offset=16
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="ShadowMap.TextureSizeBase RawName="ShaderBase_id0_ShadowMapTextureSizeBase" Offset=32
+  KeyName="ShadowMap.TextureSizeBase RawName="ShaderBase_ShadowMapTextureSizeBase" Offset=32
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=3

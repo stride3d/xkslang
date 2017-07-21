@@ -8,7 +8,7 @@ struct VS_STREAMS
 
 layout(std140) uniform Globals
 {
-    vec4 ShaderMain_id0_aCol;
+    vec4 ShaderMain_aCol;
 } Globals_var;
 
 layout(location = 0) out vec4 VS_OUT_aStream1;
@@ -16,7 +16,7 @@ layout(location = 1) out vec4 VS_OUT_outputStream;
 
 void ShaderMain_aStream1__Compute(out VS_STREAMS _streams)
 {
-    _streams.aStream1_id0 = Globals_var.ShaderMain_id0_aCol;
+    _streams.aStream1_id0 = Globals_var.ShaderMain_aCol;
 }
 
 void main()

@@ -7,14 +7,14 @@ struct VS_STREAMS
 
 layout(std140) uniform PreDraw
 {
-    int ShaderBase_id0_aVar;
+    int ShaderBase_aVar;
 } PreDraw_var;
 
 layout(location = 0) in int VS_IN_aStream;
 
 int ShaderBase_1__compute(VS_STREAMS _streams)
 {
-    return (PreDraw_var.ShaderBase_id0_aVar + 1) + _streams.aStream_id0;
+    return (PreDraw_var.ShaderBase_aVar + 1) + _streams.aStream_id0;
 }
 
 int ShaderMain_1_1__compute(VS_STREAMS _streams)
