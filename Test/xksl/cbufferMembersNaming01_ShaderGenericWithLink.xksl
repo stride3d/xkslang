@@ -3,12 +3,17 @@ shader ShaderGenericWithLink<int aValue>
 	cbuffer cbUnstageGenericWithLink
 	{
 		[Link("linkVar07")]
-		float var7;
+		float var07;
 	}
 	
 	stage cbuffer cbStageGenericWithLink
 	{
 		[Link("linkVar08")]
 		float var08;
+	}
+	
+	float Compute()
+	{
+		return var07 + var08;
 	}
 }

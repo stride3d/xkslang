@@ -1,6 +1,14 @@
 ***************************
 ****  ConstantBuffers  ****
 ***************************
+ cbuffer cbUnstageGenericWithLink [size: 4]
+@C    ShaderGenericWithLink_id0_var07 => linkVar07
+ cbuffer cbStageGenericWithLink [size: 4]
+@C    ShaderGenericWithLink_id1_var08 => linkVar08
+ cbuffer cbUnstageGeneric [size: 4]
+@C    ShaderGeneric_id2_var05 => ShaderGeneric<2>.var05
+ cbuffer cbStageGeneric [size: 4]
+@C    ShaderGeneric_id3_var06 => ShaderGeneric.var06
  cbuffer cbUnstageLink [size: 4]
 @C    ShaderWithLink_var03 => linkVar03
  cbuffer cbStageLink [size: 4]
@@ -18,12 +26,16 @@
  cbuffer cbStageCompositionLink [size: 4]
 @C    o1S2C1_ShaderCompositionWithLink_var12 => linkVar12
  cbuffer cbUnstageCompositionWithGeneric [size: 4]
-@C    o2S2C2_ShaderCompositionWithGeneric_id8_var13 => o2S2C2_ShaderCompositionWithGeneric<1,2,3>.var13
+@C    o2S2C2_ShaderCompositionWithGeneric_id12_var13 => o2S2C2_ShaderCompositionWithGeneric<1,2,3>.var13
  cbuffer cbStageCompositionWithGeneric [size: 4]
-@C    o2S2C2_ShaderCompositionWithGeneric_id9_var14 => ShaderCompositionWithGeneric.var14
+@C    o2S2C2_ShaderCompositionWithGeneric_id13_var14 => ShaderCompositionWithGeneric.var14
 ***********************
 *****  Resources  *****
 ***********************
+@C    cbUnstageGenericWithLink => cbUnstageGenericWithLink [Stage: Vertex]
+@C    cbStageGenericWithLink => cbStageGenericWithLink [Stage: Vertex]
+@C    cbUnstageGeneric => cbUnstageGeneric [Stage: Vertex]
+@C    cbStageGeneric => cbStageGeneric [Stage: Vertex]
 @C    cbUnstageLink => cbUnstageLink [Stage: Vertex]
 @C    cbStageLink => cbStageLink [Stage: Vertex]
 @C    cbUnstage => cbUnstage [Stage: Vertex]
@@ -35,7 +47,23 @@
 @C    cbUnstageCompositionWithGeneric => cbUnstageCompositionWithGeneric [Stage: Vertex]
 @C    cbStageCompositionWithGeneric => cbStageCompositionWithGeneric [Stage: Vertex]
 
-ConstantBuffers. Count=10
+ConstantBuffers. Count=14
+ cbuffer: Name="cbUnstageGenericWithLink" Size=4 MembersCount=1
+  KeyName="linkVar07 RawName="ShaderGenericWithLink_id0_var07" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ cbuffer: Name="cbStageGenericWithLink" Size=4 MembersCount=1
+  KeyName="linkVar08 RawName="ShaderGenericWithLink_id1_var08" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ cbuffer: Name="cbUnstageGeneric" Size=4 MembersCount=1
+  KeyName="ShaderGeneric<2>.var05 RawName="ShaderGeneric_id2_var05" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ cbuffer: Name="cbStageGeneric" Size=4 MembersCount=1
+  KeyName="ShaderGeneric.var06 RawName="ShaderGeneric_id3_var06" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
  cbuffer: Name="cbUnstageLink" Size=4 MembersCount=1
   KeyName="linkVar03 RawName="ShaderWithLink_var03" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
@@ -69,14 +97,18 @@ ConstantBuffers. Count=10
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbUnstageCompositionWithGeneric" Size=4 MembersCount=1
-  KeyName="o2S2C2_ShaderCompositionWithGeneric<1,2,3>.var13 RawName="o2S2C2_ShaderCompositionWithGeneric_id8_var13" Offset=0
+  KeyName="o2S2C2_ShaderCompositionWithGeneric<1,2,3>.var13 RawName="o2S2C2_ShaderCompositionWithGeneric_id12_var13" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbStageCompositionWithGeneric" Size=4 MembersCount=1
-  KeyName="ShaderCompositionWithGeneric.var14 RawName="o2S2C2_ShaderCompositionWithGeneric_id9_var14" Offset=0
+  KeyName="ShaderCompositionWithGeneric.var14 RawName="o2S2C2_ShaderCompositionWithGeneric_id13_var14" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-ResourceBindings. Count=10
+ResourceBindings. Count=14
+ Stage=Vertex KeyName="cbUnstageGenericWithLink" RawName="cbUnstageGenericWithLink" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="cbStageGenericWithLink" RawName="cbStageGenericWithLink" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="cbUnstageGeneric" RawName="cbUnstageGeneric" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="cbStageGeneric" RawName="cbStageGeneric" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Vertex KeyName="cbUnstageLink" RawName="cbUnstageLink" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Vertex KeyName="cbStageLink" RawName="cbStageLink" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Vertex KeyName="cbUnstage" RawName="cbUnstage" Class=ConstantBuffer Type=ConstantBuffer

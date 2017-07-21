@@ -633,6 +633,7 @@ public:
             obj->countGenerics = countGenerics;
             obj->shaderOriginalBaseName = shaderOriginalBaseName;
             obj->shaderFullNameWithoutGenerics = shaderFullNameWithoutGenerics;
+            obj->combinedCompositionPath = combinedCompositionPath;
             return obj;
         }
 
@@ -685,6 +686,7 @@ public:
         std::string GetShaderOriginalBaseName() { return shaderOriginalBaseName; }
         std::string GetShaderFullName() { return GetName(); }
         std::string GetShaderFullNameWithoutGenerics() { return shaderFullNameWithoutGenerics; }
+        std::string GetShaderCombinedCompositionPath() { return combinedCompositionPath; }
 
         bool SetShaderName(const std::string& originalBaseName, const std::string& fullName, int countGenerics, std::string& errorMsg);
 
@@ -693,6 +695,7 @@ public:
         int countGenerics;
         std::string shaderOriginalBaseName;           //The original shader base name (without instancing prefix, without generics)
         std::string shaderFullNameWithoutGenerics;    //The shader fullname without the generics extension
+        std::string combinedCompositionPath;          //when a shader is instanciated through a composition: we record its composition path
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
         std::vector<FunctionInstruction*> functionsList;

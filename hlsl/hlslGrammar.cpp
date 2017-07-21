@@ -268,14 +268,56 @@ bool HlslGrammar::acceptShaderCustomType(const TString& shaderName, TType& type)
     {
         case EHTokIdentifier:
         {
-            TString* name = token.string;
-            if (name == nullptr) { error("invalid token"); return false; }
+            bool areTheNextTokensAKnownShaderName = false;
+            TString* referredClassName = nullptr;
 
-            if (isRecordedAsAShaderName(*name))
+            //check if the next tokens defines a shader from our shader library (we can have shaders with some generics value)
+            {
+                int tokenCurrentIndex = getTokenCurrentIndex();
+                TString name;
+                if (!acceptIdentifierTokenClass(name)) {
+                    error("failed to accept the identifier token");
+                    recedeToTokenIndex(tokenCurrentIndex);
+                    return false;
+                }
+
+                //Any Generics?
+                TVector<TString*> listGenericValuesExpression;
+                if (peekTokenClass(EHTokLeftAngle))
+                {
+                    if (!checkShaderGenericValuesExpression(listGenericValuesExpression)) {
+                        error("failed to check for shader generic values");
+                        recedeToTokenIndex(tokenCurrentIndex);
+                        return false;
+                    }
+                }
+
+                //concatenate the generic to the shader name
+                unsigned int countGenerics = listGenericValuesExpression.size();
+                if (countGenerics > 0)
+                {
+                    TString nameExtension = "<";
+                    for (unsigned int g = 0; g < countGenerics; g++)
+                    {
+                        nameExtension += *(listGenericValuesExpression[g]);
+                        if (g == countGenerics - 1) nameExtension += ">";
+                        else nameExtension += ",";
+                    }
+                    name += nameExtension;
+                }
+
+                if (isRecordedAsAShaderName(name))
+                {
+                    //The token is a known shader class (ShaderA.XXX or ShaderA<1,2>.XXX)
+                    referredClassName = NewPoolTString(name.c_str());
+                    areTheNextTokensAKnownShaderName = true;
+                }
+                else recedeToTokenIndex(tokenCurrentIndex);
+            }
+
+            if (areTheNextTokensAKnownShaderName)
             {
                 //The token is a known shader class (ShaderA.XXX)
-                TString* referredClassName = name;
-                advanceToken();
                 if (!acceptTokenClass(EHTokDot))
                 {
                     expected("dot");
@@ -285,7 +327,10 @@ bool HlslGrammar::acceptShaderCustomType(const TString& shaderName, TType& type)
             }
             else
             {
-                TType* typeDefinedByShader = getTypeDefinedByTheShaderOrItsParents(shaderName, *name);
+                TString* tokenName = token.string;
+                if (tokenName == nullptr) { error("invalid token"); return false; }
+
+                TType* typeDefinedByShader = getTypeDefinedByTheShaderOrItsParents(shaderName, *tokenName);
                 if (typeDefinedByShader != nullptr)
                 {
                     advanceToken();
@@ -378,12 +423,55 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
 
         case EHTokIdentifier:
         {
-            if (isRecordedAsAShaderName(*token.string))
+            bool isExpressionAKnownShaderName = false;
+
+            //check if the next tokens defines a shader from our shader library (we can have shaders with some generics value)
             {
-                //The token is a known shader class (ShaderA.XXX)
-                className = NewPoolTString(token.string->c_str());
-                isACallThroughStaticShaderClassName = true;
-                advanceToken();
+                int tokenCurrentIndex = getTokenCurrentIndex();
+                TString name;
+                if (!acceptIdentifierTokenClass(name)) {
+                    error("failed to accept the identifier token");
+                    recedeToTokenIndex(tokenCurrentIndex);
+                    return false;
+                }
+
+                //Any Generics?
+                TVector<TString*> listGenericValuesExpression;
+                if (peekTokenClass(EHTokLeftAngle))
+                {
+                    if (!checkShaderGenericValuesExpression(listGenericValuesExpression)) {
+                        error("failed to check for shader generic values");
+                        recedeToTokenIndex(tokenCurrentIndex);
+                        return false;
+                    }
+                }
+
+                //concatenate the generic to the shader name
+                unsigned int countGenerics = listGenericValuesExpression.size();
+                if (countGenerics > 0)
+                {
+                    TString nameExtension = "<";
+                    for (unsigned int g = 0; g < countGenerics; g++)
+                    {
+                        nameExtension += *(listGenericValuesExpression[g]);
+                        if (g == countGenerics - 1) nameExtension += ">";
+                        else nameExtension += ",";
+                    }
+                    name += nameExtension;
+                }
+
+                if (isRecordedAsAShaderName(name))
+                {
+                    //The token is a known shader class (ShaderA.XXX or ShaderA<1,2>.XXX)
+                    className = NewPoolTString(name.c_str());
+                    isACallThroughStaticShaderClassName = true;
+                    isExpressionAKnownShaderName = true;
+                }
+                else recedeToTokenIndex(tokenCurrentIndex);
+            }
+
+            if (isExpressionAKnownShaderName)
+            {
                 break;
             }
             else if (isIdentifierRecordedAsACompositionVariableName(className, *token.string, false, aCompositionTargeted))

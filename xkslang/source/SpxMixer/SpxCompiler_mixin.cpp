@@ -640,7 +640,7 @@ bool SpxCompiler::MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, 
     {
         ShaderClassData* shaderToMerge = listShadersToMerge[is].shader;
         ShaderClassData* shaderMerged = shaderToMerge->tmpClonedShader; //GetShaderByName(shaderToMerge->GetName());
-        if (shaderMerged == nullptr) return error(string("Cannot retrieve the shader: ") + shaderToMerge->GetName());
+        if (shaderMerged == nullptr) return error(string("Cannot retrieve the merged shader: ") + shaderToMerge->GetName());
         listShadersMerged.push_back(shaderMerged);
     }
 

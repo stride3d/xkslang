@@ -9,4 +9,9 @@ shader ShaderGeneric<int aValue>
 	{
 		float var06;
 	}
+	
+	float Compute()
+	{
+		return var05 + var06;
+	}
 }

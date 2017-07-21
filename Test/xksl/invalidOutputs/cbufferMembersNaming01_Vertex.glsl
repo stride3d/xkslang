@@ -1,5 +1,25 @@
 #version 450
 
+layout(std140) uniform cbUnstageGenericWithLink
+{
+    float ShaderGenericWithLink_id0_var07;
+} cbUnstageGenericWithLink_var;
+
+layout(std140) uniform cbStageGenericWithLink
+{
+    float ShaderGenericWithLink_id1_var08;
+} cbStageGenericWithLink_var;
+
+layout(std140) uniform cbUnstageGeneric
+{
+    float ShaderGeneric_id2_var05;
+} cbUnstageGeneric_var;
+
+layout(std140) uniform cbStageGeneric
+{
+    float ShaderGeneric_id3_var06;
+} cbStageGeneric_var;
+
 layout(std140) uniform cbUnstageLink
 {
     float ShaderWithLink_var03;
@@ -42,12 +62,12 @@ layout(std140) uniform cbStageCompositionLink
 
 layout(std140) uniform cbUnstageCompositionWithGeneric
 {
-    float o2S2C2_ShaderCompositionWithGeneric_id8_var13;
+    float o2S2C2_ShaderCompositionWithGeneric_id12_var13;
 } cbUnstageCompositionWithGeneric_var;
 
 layout(std140) uniform cbStageCompositionWithGeneric
 {
-    float o2S2C2_ShaderCompositionWithGeneric_id9_var14;
+    float o2S2C2_ShaderCompositionWithGeneric_id13_var14;
 } cbStageCompositionWithGeneric_var;
 
 float ShaderSimple_Compute()
@@ -58,6 +78,16 @@ float ShaderSimple_Compute()
 float ShaderWithLink_Compute()
 {
     return cbUnstageLink_var.ShaderWithLink_var03 + cbStageLink_var.ShaderWithLink_var04;
+}
+
+float ShaderGeneric_2__Compute()
+{
+    return cbUnstageGeneric_var.ShaderGeneric_id2_var05 + cbStageGeneric_var.ShaderGeneric_id3_var06;
+}
+
+float ShaderGenericWithLink_3__Compute()
+{
+    return cbUnstageGenericWithLink_var.ShaderGenericWithLink_id0_var07 + cbStageGenericWithLink_var.ShaderGenericWithLink_id1_var08;
 }
 
 float o0S2C0_ShaderComposition_Compute()
@@ -72,12 +102,12 @@ float o1S2C1_ShaderCompositionWithLink_Compute()
 
 float o2S2C2_ShaderCompositionWithGeneric_1_2_3__Compute()
 {
-    return (((cbUnstageCompositionWithGeneric_var.o2S2C2_ShaderCompositionWithGeneric_id8_var13 + cbStageCompositionWithGeneric_var.o2S2C2_ShaderCompositionWithGeneric_id9_var14) + 1.0) + 2.0) + 3.0;
+    return (((cbUnstageCompositionWithGeneric_var.o2S2C2_ShaderCompositionWithGeneric_id12_var13 + cbStageCompositionWithGeneric_var.o2S2C2_ShaderCompositionWithGeneric_id13_var14) + 1.0) + 2.0) + 3.0;
 }
 
 void main()
 {
-    float f = ShaderSimple_Compute() + ShaderWithLink_Compute();
+    float f = ((ShaderSimple_Compute() + ShaderWithLink_Compute()) + ShaderGeneric_2__Compute()) + ShaderGenericWithLink_3__Compute();
     f += ((o0S2C0_ShaderComposition_Compute() + o1S2C1_ShaderCompositionWithLink_Compute()) + o2S2C2_ShaderCompositionWithGeneric_1_2_3__Compute());
 }
 

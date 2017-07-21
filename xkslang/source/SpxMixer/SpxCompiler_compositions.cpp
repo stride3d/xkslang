@@ -123,6 +123,16 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
         error(string("failed to clone the shader for the composition: ") + compositionTarget->compositionShaderOwner->GetName() + string(".") + compositionTarget->variableName);
         return false;
     }
+
+    //retrieve the merged shaders from the destination bytecode
+    vector<ShaderClassData*> listShadersMerged;
+    for (unsigned int is = 0; is<listShadersToMerge.size(); ++is)
+    {
+        ShaderClassData* shaderToMerge = listShadersToMerge[is].shader;
+        ShaderClassData* shaderMerged = shaderToMerge->tmpClonedShader;
+        if (shaderMerged == nullptr) return error(string("Cannot retrieve the merged shader: ") + shaderToMerge->GetName());
+        listShadersMerged.push_back(shaderMerged);
+    }
     ShaderClassData* mainShaderTypeMerged = mainShaderTypeMergedToMergeFromSource->tmpClonedShader;
     if (mainShaderTypeMerged == nullptr)
         return error(string("Merge shader function is expected to return a reference on the merged shader"));
@@ -137,6 +147,16 @@ bool SpxCompiler::AddComposition(const string& shaderName, const string& variabl
         if (!UpdateAllMaps()) return error("Failed to update all maps");
     }
 
+    //===================================================================================================================
+    //For all instantiated shaders: we update their composition path
+    for (auto its = listShadersMerged.begin(); its != listShadersMerged.end(); its++)
+    {
+        ShaderClassData* instanciatedShader = *its;
+
+    }
+
+    //===================================================================================================================
+    //Add done
     if (errorMessages.size() > 0) return false;
     status = SpxRemapperStatusEnum::WaitingForMixin;
     return true;

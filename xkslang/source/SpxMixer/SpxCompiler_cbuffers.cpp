@@ -824,7 +824,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
         for (unsigned int icb = 0; icb < listNewCbuffers.size(); icb++)
         {
             TypeStructMemberArray* cbuffer = listNewCbuffers[icb];
-            string cbufferId = string("_id") + to_string(icb);
+            //string cbufferId = string("_id") + to_string(icb);
 
             //update the new member's name
             for (unsigned int pm = 0; pm < cbuffer->members.size(); pm++)
@@ -839,8 +839,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 const string memberOriginalDeclarationName = aMember.declarationName;
 
                 //==========================================
-                //member RawName: we use the shader original base name, plus we add a unique ID if this shader has some generics
-                string memberDeclarationName = (shaderOwner->countGenerics > 0? (shaderFullNameWithoutGenerics + cbufferId) : shaderFullNameWithoutGenerics) + "." + memberOriginalDeclarationName;
+                //string memberDeclarationName = (shaderOwner->countGenerics > 0? (shaderFullNameWithoutGenerics + cbufferId) : shaderFullNameWithoutGenerics) + "." + memberOriginalDeclarationName;
+                string memberDeclarationName = shaderFullNameWithoutGenerics + "." + memberOriginalDeclarationName;
                 aMember.declarationName = getRawNameFromKeyName(memberDeclarationName);
 
                 //==========================================
@@ -858,12 +858,52 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     }
                     else
                     {
-                        //unstage member
-                        aMember.linkName = shaderFullName + "." + memberOriginalDeclarationName;
+                        //unstage member (we use the shader original base name as well (even if this could make name conflicts))
+                        aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
+
+                        //TOTO check compositions path
                     }
                 }
             }
         }
+
+#ifdef XKSLANG_DEBUG_MODE
+        //Check that we have no cbuffer members name conflicts
+        map<string, bool> usedRawName;
+        map<string, bool> usedKeyName;
+
+        for (unsigned int icb = 0; icb < listNewCbuffers.size(); icb++)
+        {
+            TypeStructMemberArray* cbuffer = listNewCbuffers[icb];
+
+            //update the new member's name
+            for (unsigned int pm = 0; pm < cbuffer->members.size(); pm++)
+            {
+                TypeStructMember& aMember = cbuffer->members[pm];
+
+                if (usedRawName.find(aMember.declarationName) != usedRawName.end())
+                {
+                    error("2 cbuffer members have been assigned the same RawName: " + aMember.declarationName);
+                    break;
+                }
+                usedRawName[aMember.declarationName] = true;
+
+                if (usedKeyName.find(aMember.linkName) != usedKeyName.end())
+                {
+                    error("2 cbuffer members have been assigned the same KeyName: " + aMember.linkName);
+                    break;
+                }
+                usedKeyName[aMember.linkName] = true;
+            }
+
+            if (errorMessages.size() > 0) {
+                success = false;
+                break;
+            }
+        }
+#endif
+
+        if (errorMessages.size() > 0) success = false;
     }
 
     if (success)
