@@ -547,7 +547,7 @@ public:
         CBufferTypeData* GetCBufferData() { return type->GetCBufferData(); }
     };
 
-    class ShaderCompositionDeclaration;
+    /*class ShaderCompositionDeclaration;
     class ShaderCompositionInstance
     {
     public:
@@ -558,7 +558,7 @@ public:
         ShaderCompositionInstance() : compositionDeclaration(nullptr), mainShaderInstance(nullptr) {}
         ShaderCompositionInstance(ShaderCompositionDeclaration* composition, ShaderClassData* mainInstance, std::vector<ShaderClassData*>& listShadersInstantiated)
             : compositionDeclaration(composition), mainShaderInstance(mainInstance), listAllShadersInstantiatedWithTheInstance(listShadersInstantiated) {}
-    };
+    };*/
 
     class ShaderCompositionDeclaration
     {
@@ -641,6 +641,7 @@ public:
         }
         virtual ~ShaderClassData() {
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
+            for (auto it = compositionsDeclarationList.begin(); it != compositionsDeclarationList.end(); it++) delete (*it);
         }
         virtual ObjectInstructionBase* CloneBasicData() {
             ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -899,7 +900,6 @@ private:
     std::vector<ObjectInstructionBase*> listAllObjects;
     std::vector<ShaderClassData*> vecAllShaders;
     std::vector<FunctionInstruction*> vecAllFunctions;  //vec of all functions
-    std::vector<ShaderCompositionDeclaration*> listAllCompositionsDeclarations;
 
 private:
     ObjectInstructionBase* GetObjectById(spv::Id id);

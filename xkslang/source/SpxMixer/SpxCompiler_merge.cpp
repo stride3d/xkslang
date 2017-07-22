@@ -200,24 +200,25 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
             switch (opCode)
             {
-            case spv::OpShaderInheritance:
-            case spv::OpShaderCompositionDeclaration:
-            case spv::OpShaderCompositionInstance:
-            {
-                const spv::Id id = bytecodeToMerge.asId(start + 1);
-                if (listAllNewIdMerged[id])
+                case spv::OpShaderInheritance:
+                case spv::OpShaderCompositionDeclaration:
+                case spv::OpShaderCompositionInstance:
+                case spv::OpShaderInstancingPath:
                 {
-                    bytecodeToMerge.CopyInstructionToVector(vecXkslDecorationsPossesingIds, start);
+                    const spv::Id id = bytecodeToMerge.asId(start + 1);
+                    if (listAllNewIdMerged[id])
+                    {
+                        bytecodeToMerge.CopyInstructionToVector(vecXkslDecorationsPossesingIds, start);
+                    }
+                    break;
                 }
-                break;
-            }
 
-            case spv::OpTypeXlslShaderClass:
-            {
-                //all done at this point
-                start = end;
-                break;
-            }
+                case spv::OpTypeXlslShaderClass:
+                {
+                    //all done at this point
+                    start = end;
+                    break;
+                }
             }
 
             start += wordCount;
@@ -444,97 +445,98 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
             switch (opCode)
             {
-            case spv::OpName:
-            {
-                //We rename the OpName with the prefix (for debug purposes)
-                const spv::Id id = bytecodeToMerge.asId(start + 1);
-                if (listAllNewIdMerged[id])
+                case spv::OpName:
                 {
-                    if (listIdsWhereToAddNamePrefix[id])
+                    //We rename the OpName with the prefix (for debug purposes)
+                    const spv::Id id = bytecodeToMerge.asId(start + 1);
+                    if (listAllNewIdMerged[id])
                     {
-                        //disassemble and reassemble the instruction with a name updated with the prefix
-                        string strUpdatedName(allInstancesPrefixToAdd + bytecodeToMerge.literalString(start + 2));
-                        spv::Instruction nameInstr(opCode);
-                        nameInstr.addIdOperand(id);
-                        nameInstr.addStringOperand(strUpdatedName.c_str());
-                        nameInstr.dump(vecNamesAndDecorateToMerge);
+                        if (listIdsWhereToAddNamePrefix[id])
+                        {
+                            //disassemble and reassemble the instruction with a name updated with the prefix
+                            string strUpdatedName(allInstancesPrefixToAdd + bytecodeToMerge.literalString(start + 2));
+                            spv::Instruction nameInstr(opCode);
+                            nameInstr.addIdOperand(id);
+                            nameInstr.addStringOperand(strUpdatedName.c_str());
+                            nameInstr.dump(vecNamesAndDecorateToMerge);
+                        }
+                        else
+                        {
+                            bytecodeToMerge.CopyInstructionToVector(vecNamesAndDecorateToMerge, start);
+                        }
                     }
-                    else
+                    break;
+                }
+
+                case spv::OpMemberName:
+                case spv::OpDecorate:
+                case spv::OpMemberDecorate:
+                {
+                    const spv::Id id = bytecodeToMerge.asId(start + 1);
+                    if (listAllNewIdMerged[id])
                     {
                         bytecodeToMerge.CopyInstructionToVector(vecNamesAndDecorateToMerge, start);
                     }
+                    break;
                 }
-                break;
-            }
 
-            case spv::OpMemberName:
-            case spv::OpDecorate:
-            case spv::OpMemberDecorate:
-            {
-                const spv::Id id = bytecodeToMerge.asId(start + 1);
-                if (listAllNewIdMerged[id])
+                case spv::OpDeclarationName:
                 {
-                    bytecodeToMerge.CopyInstructionToVector(vecNamesAndDecorateToMerge, start);
-                }
-                break;
-            }
-
-            case spv::OpDeclarationName:
-            {
-                //We update the declaration name only for shader classes and for variables
-                const spv::Id id = bytecodeToMerge.asId(start + 1);
-                if (listAllNewIdMerged[id])
-                {
-                    bool addPrefix = false;
-                    if (listIdsWhereToAddNamePrefix[id])
+                    //We update the declaration name only for shader classes and for variables
+                    const spv::Id id = bytecodeToMerge.asId(start + 1);
+                    if (listAllNewIdMerged[id])
                     {
-                        ShaderClassData* shader = bytecodeToMerge.GetShaderById(id);
-                        if (shader != nullptr) addPrefix = true;
+                        bool addPrefix = false;
+                        if (listIdsWhereToAddNamePrefix[id])
+                        {
+                            ShaderClassData* shader = bytecodeToMerge.GetShaderById(id);
+                            if (shader != nullptr) addPrefix = true;
+                            else
+                            {
+                                VariableInstruction* variable = bytecodeToMerge.GetVariableById(id);
+                                if (variable != nullptr) addPrefix = true;
+                            }
+                        }
+
+                        if (addPrefix)
+                        {
+                            //disassemble and reassemble the instruction with a name updated with the prefix
+                            string strUpdatedName(allInstancesPrefixToAdd + bytecodeToMerge.literalString(start + 2));
+                            spv::Instruction nameInstr(opCode);
+                            nameInstr.addIdOperand(id);
+                            nameInstr.addStringOperand(strUpdatedName.c_str());
+                            nameInstr.dump(vecXkslDecoratesToMerge);
+                        }
                         else
                         {
-                            VariableInstruction* variable = bytecodeToMerge.GetVariableById(id);
-                            if (variable != nullptr) addPrefix = true;
+                            bytecodeToMerge.CopyInstructionToVector(vecXkslDecoratesToMerge, start);
                         }
                     }
+                    break;
+                }
 
-                    if (addPrefix)
-                    {
-                        //disassemble and reassemble the instruction with a name updated with the prefix
-                        string strUpdatedName(allInstancesPrefixToAdd + bytecodeToMerge.literalString(start + 2));
-                        spv::Instruction nameInstr(opCode);
-                        nameInstr.addIdOperand(id);
-                        nameInstr.addStringOperand(strUpdatedName.c_str());
-                        nameInstr.dump(vecXkslDecoratesToMerge);
-                    }
-                    else
+                case spv::OpBelongsToShader:
+                case spv::OpShaderInheritance:
+                case spv::OpShaderCompositionDeclaration:
+                case spv::OpShaderCompositionInstance:
+                case spv::OpShaderInstancingPath:
+                case spv::OpMethodProperties:
+                case spv::OpGSMethodProperties:
+                case spv::OpMemberProperties:
+                case spv::OpMemberAttribute:
+                case spv::OpCBufferProperties:
+                case spv::OpMemberSemanticName:
+                case spv::OpSemanticName:
+                case spv::OpMemberLinkName:
+                case spv::OpLinkName:
+                {
+                    const spv::Id id = bytecodeToMerge.asId(start + 1);
+                    if (listAllNewIdMerged[id])
                     {
                         bytecodeToMerge.CopyInstructionToVector(vecXkslDecoratesToMerge, start);
                     }
+                    break;
                 }
-                break;
-            }
-
-            case spv::OpBelongsToShader:
-            case spv::OpShaderInheritance:
-            case spv::OpShaderCompositionDeclaration:
-            case spv::OpShaderCompositionInstance:
-            case spv::OpMethodProperties:
-            case spv::OpGSMethodProperties:
-            case spv::OpMemberProperties:
-            case spv::OpMemberAttribute:
-            case spv::OpCBufferProperties:
-            case spv::OpMemberSemanticName:
-            case spv::OpSemanticName:
-            case spv::OpMemberLinkName:
-            case spv::OpLinkName:
-            {
-                const spv::Id id = bytecodeToMerge.asId(start + 1);
-                if (listAllNewIdMerged[id])
-                {
-                    bytecodeToMerge.CopyInstructionToVector(vecXkslDecoratesToMerge, start);
-                }
-                break;
-            }
             }
 
             start += wordCount;
@@ -629,26 +631,28 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
 
-            switch (opCode) {
-            case spv::OpDeclarationName:
-            case spv::OpShaderInheritance:
-            case spv::OpBelongsToShader:
-            case spv::OpShaderCompositionDeclaration:
-            case spv::OpShaderCompositionInstance:
-            case spv::OpMethodProperties:
-            case spv::OpGSMethodProperties:
-            case spv::OpMemberProperties:
-            case spv::OpMemberAttribute:
-            case spv::OpCBufferProperties:
-            case spv::OpMemberSemanticName:
-            case spv::OpSemanticName:
-            case spv::OpMemberLinkName:
-            case spv::OpLinkName:
+            switch (opCode)
             {
-                posToInsertNewNames = start;
-                start = end;
-                break;
-            }
+                case spv::OpDeclarationName:
+                case spv::OpShaderInheritance:
+                case spv::OpBelongsToShader:
+                case spv::OpShaderCompositionDeclaration:
+                case spv::OpShaderCompositionInstance:
+                case spv::OpShaderInstancingPath:
+                case spv::OpMethodProperties:
+                case spv::OpGSMethodProperties:
+                case spv::OpMemberProperties:
+                case spv::OpMemberAttribute:
+                case spv::OpCBufferProperties:
+                case spv::OpMemberSemanticName:
+                case spv::OpSemanticName:
+                case spv::OpMemberLinkName:
+                case spv::OpLinkName:
+                {
+                    posToInsertNewNames = start;
+                    start = end;
+                    break;
+                }
             }
             start += wordCount;
         }

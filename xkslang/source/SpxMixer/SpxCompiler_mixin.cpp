@@ -107,6 +107,20 @@ SpxCompiler::~SpxCompiler()
     ReleaseAllMaps();
 }
 
+void SpxCompiler::ReleaseAllMaps()
+{
+    unsigned int countObjects = (unsigned int)listAllObjects.size();
+    for (unsigned int i = 0; i < countObjects; ++i)
+    {
+        if (listAllObjects[i] != nullptr) delete listAllObjects[i];
+    }
+
+    listAllObjects.clear();
+    vecAllShaders.clear();
+    vecAllFunctions.clear();
+    mapDeclarationName.clear();
+}
+
 SpxCompiler* SpxCompiler::Clone()
 {
     SpxCompiler* clonedSpxRemapper = new SpxCompiler();
@@ -233,21 +247,6 @@ SpxCompiler* SpxCompiler::Clone()
 
     //clone all compositions
     {
-        for (auto itc = listAllCompositionsDeclarations.begin(); itc != listAllCompositionsDeclarations.end(); itc++)
-        {
-            ShaderCompositionDeclaration* compositionToClone = *itc;
-
-            ShaderClassData* shaderType = compositionToClone->shaderType == nullptr ? nullptr : compositionToClone->shaderType->tmpClonedShader;
-            ShaderClassData* shaderOwner = compositionToClone->compositionShaderOwner == nullptr ? nullptr : compositionToClone->compositionShaderOwner->tmpClonedShader;
-
-            ShaderCompositionDeclaration* clonedComposition = new ShaderCompositionDeclaration(compositionToClone->compositionShaderId, shaderOwner, shaderType,
-                compositionToClone->variableName, compositionToClone->isStage, compositionToClone->isArray, compositionToClone->countInstances);
-
-            compositionToClone->tmpClonedComposition = clonedComposition;
-
-            clonedSpxRemapper->listAllCompositionsDeclarations.push_back(clonedComposition);
-        }
-
         for (auto its = vecAllShaders.begin(); its != vecAllShaders.end(); its++)
         {
             ShaderClassData* shaderCloned = *its;
@@ -256,7 +255,16 @@ SpxCompiler* SpxCompiler::Clone()
             unsigned int countCompositions = shaderCloned->GetCountShaderComposition();
             for (unsigned int k = 0; k < countCompositions; ++k)
             {
-                clonedShader->compositionsDeclarationList.push_back(shaderCloned->compositionsDeclarationList[k]->tmpClonedComposition);
+                ShaderCompositionDeclaration* compositionToClone = shaderCloned->compositionsDeclarationList[k];
+
+                ShaderClassData* shaderType = compositionToClone->shaderType == nullptr ? nullptr : compositionToClone->shaderType->tmpClonedShader;
+                ShaderClassData* shaderOwner = compositionToClone->compositionShaderOwner == nullptr ? nullptr : compositionToClone->compositionShaderOwner->tmpClonedShader;
+
+                ShaderCompositionDeclaration* clonedComposition = new ShaderCompositionDeclaration(compositionToClone->compositionShaderId, shaderOwner, shaderType,
+                    compositionToClone->variableName, compositionToClone->isStage, compositionToClone->isArray, compositionToClone->countInstances);
+                
+                compositionToClone->tmpClonedComposition = clonedComposition;
+                clonedSpxRemapper->AddNewShaderCompositionDeclaration(clonedShader, clonedComposition);
             }
         }
     }
@@ -370,6 +378,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
                 case spv::OpShaderInheritance:
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
+                case spv::OpShaderInstancingPath:
                 case spv::OpBelongsToShader:
                 case spv::OpMethodProperties:
                 case spv::OpGSMethodProperties:
@@ -508,6 +517,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
                 case spv::OpShaderInheritance:
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
+                case spv::OpShaderInstancingPath:
                 case spv::OpBelongsToShader:
                 case spv::OpMethodProperties:
                 case spv::OpGSMethodProperties:
@@ -536,27 +546,6 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
     }
 
     return true;
-}
-
-void SpxCompiler::ReleaseAllMaps()
-{
-    unsigned int countObjects = (unsigned int)listAllObjects.size();
-    for (unsigned int i = 0; i < countObjects; ++i)
-    {
-        if (listAllObjects[i] != nullptr) delete listAllObjects[i];
-    }
-
-    unsigned int countCompositions = (unsigned int)listAllCompositionsDeclarations.size();
-    for (unsigned int i = 0; i < countCompositions; ++i)
-    {
-        if (listAllCompositionsDeclarations[i] != nullptr) delete listAllCompositionsDeclarations[i];
-    }
-
-    listAllObjects.clear();
-    vecAllShaders.clear();
-    vecAllFunctions.clear();
-    mapDeclarationName.clear();
-    listAllCompositionsDeclarations.clear();
 }
 
 bool SpxCompiler::MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, const vector<string>& nameOfShadersToMix)
@@ -1111,6 +1100,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 				case spv::OpShaderInheritance:
 				case spv::OpShaderCompositionDeclaration:
 				case spv::OpShaderCompositionInstance:
+                case spv::OpShaderInstancingPath:
 				case spv::OpBelongsToShader:
 				case spv::OpMethodProperties:
 				case spv::OpGSMethodProperties:
@@ -1925,6 +1915,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             case spv::OpShaderInheritance:
             case spv::OpShaderCompositionDeclaration:
             case spv::OpShaderCompositionInstance:
+            case spv::OpShaderInstancingPath:
             case spv::OpMethodProperties:
             case spv::OpGSMethodProperties:
             case spv::OpMemberProperties:
@@ -2949,6 +2940,12 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     isStage, isArray, count);
                 this->AddNewShaderCompositionDeclaration(shaderCompositionOwner, shaderComposition);
 
+                break;
+            }
+
+            case spv::OpShaderInstancingPath:
+            {
+                return error("PROUT PROUT");
                 break;
             }
 

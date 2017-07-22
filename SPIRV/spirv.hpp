@@ -981,13 +981,14 @@ enum Op {
     OpBelongsToShader = 4604,                //Link the functions and types with the shader that created them
     OpShaderCompositionDeclaration = 4605,   //Declare a composition within a shader. [OpShaderCompositionDeclaration shaderOwnerId compositionNum compositionShaderTypeId isArray countInstance name]
     OpShaderCompositionInstance = 4606,      //Declare a composition instance. [OpShaderCompositionInstance shaderOwnerId compositionNum instanceNum instanceShaderId]
-    OpMethodProperties = 4607,               //Add XKSL properties to a method: cf XkslPropertyEnum
-    OpMemberProperties = 4608,               //Add XKSL properties to a member: cf XkslPropertyEnum
-    OpMemberAttribute = 4609,                //Add an attribute to a member
-    OpMemberSemanticName = 4610,             //Record the semantic name of a struct member, as declared by the user
-    OpSemanticName = 4611,                   //Record the semantic name of a type, as declared by the user
-    OpCBufferProperties = 4612,              //Data defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts
-    OpGSMethodProperties = 4613,             //Additonnal data for GS methods. GSInputType GSOuputType
+    OpShaderInstancingPath = 4607,           //Data recording the instancing path of a shader. [OpShaderInstancingPath shaderId instanceLevel shaderCompositionOwnerId compositionNum instanceId]
+    OpMethodProperties = 4608,               //Add XKSL properties to a method: cf XkslPropertyEnum
+    OpMemberProperties = 4609,               //Add XKSL properties to a member: cf XkslPropertyEnum
+    OpMemberAttribute = 4610,                //Add an attribute to a member
+    OpMemberSemanticName = 4611,             //Record the semantic name of a struct member, as declared by the user
+    OpSemanticName = 4612,                   //Record the semantic name of a type, as declared by the user
+    OpCBufferProperties = 4613,              //Data defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts
+    OpGSMethodProperties = 4614,             //Additonnal data for GS methods. GSInputType GSOuputType
 
     OpForEachCompositionStartLoop = 4620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 46021,

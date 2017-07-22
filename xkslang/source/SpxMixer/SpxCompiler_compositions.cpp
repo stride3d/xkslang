@@ -139,8 +139,11 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
 
     //===================================================================================================================
     //===================================================================================================================
-    // - update our composition data, and add the instances instruction
     {
+        //For all instantiated shaders: we add the instance information
+        //PROUT PROUT
+
+        //add the instances OP instruction in the bytecode
         if (!InsertNewCompositionInstanceForComposition(compositionTarget, mainShaderTypeMerged->GetId()))
             return error("Failed to insert a new composition into the bytecode");
 
@@ -148,7 +151,6 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
     }
 
     //===================================================================================================================
-    //For all instantiated shaders: we update their composition path
     for (auto its = listShadersMerged.begin(); its != listShadersMerged.end(); its++)
     {
         ShaderClassData* instanciatedShader = *its;
@@ -567,7 +569,7 @@ bool SpxCompiler::GetAllShaderInstancesForComposition(const ShaderCompositionDec
 
 bool SpxCompiler::GetListAllCompositions(vector<ShaderCompositionDeclaration*>& vecCompositions)
 {
-    /*vecCompositions.clear();
+    vecCompositions.clear();
     for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
     {
         ShaderClassData* aShader = *it;
@@ -577,17 +579,6 @@ bool SpxCompiler::GetListAllCompositions(vector<ShaderCompositionDeclaration*>& 
             ShaderCompositionDeclaration* shaderComposition = aShader->compositionsDeclarationList[k];
             vecCompositions.push_back(shaderComposition);
         }
-    }*/
-
-    unsigned int countCompositions = listAllCompositionsDeclarations.size();
-    vecCompositions.clear();
-    for (unsigned int i = 0; i < countCompositions; i++)
-    {
-        ShaderCompositionDeclaration* aComposition = listAllCompositionsDeclarations[i];
-        if (aComposition->isValid)
-        {
-            vecCompositions.push_back(aComposition);
-        }
     }
 
     return true;
@@ -595,9 +586,7 @@ bool SpxCompiler::GetListAllCompositions(vector<ShaderCompositionDeclaration*>& 
 
 bool SpxCompiler::AddNewShaderCompositionDeclaration(ShaderClassData* shader, ShaderCompositionDeclaration* composition)
 {
-    this->listAllCompositionsDeclarations.push_back(composition);
     shader->compositionsDeclarationList.push_back(composition);
-
     return true;
 }
 
@@ -623,33 +612,7 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
 
     if (overridingComposition == nullptr) return true; //no overriding composition found, can return
 
-    //==========================================================================================
-    //Prototype: trying to replace a composition by another one (instead of overriding them)
-    //not working for now
-    /*newStagedComposition->isValid = false;  //deactivate the overriden composition
-
-    if (newStagedComposition->countInstances > 0) return error("PROUT PROUT PROUT");
-
-    //We merge the 2 compositions
-    bool compositionReplaced = false;
-    ShaderClassData* shaderOwner = newStagedComposition->compositionShaderOwner;
-    unsigned int countCompositionsInShader = shaderOwner->GetCountShaderComposition();
-    for (unsigned int k = 0; k < countCompositionsInShader; k++)
-    {
-        if (shaderOwner->compositionsDeclarationList[k] == newStagedComposition)
-        {
-            shaderOwner->compositionsDeclarationList[k] = overridingComposition;
-            compositionReplaced = true;
-            break;
-        }
-    }
-    if (!compositionReplaced) return error("Failed to find the composition into its shader owner");
-
-    return true;*/
-    //==========================================================================================
-
-
-    //Is the found overriding compositions overrideen by another one?
+    //Is the overriding compositions overriden by another one?
     if (overridingComposition->overridenBy != nullptr)
     {
         overridingComposition = overridingComposition->overridenBy;
@@ -690,6 +653,8 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
                     return error("Failed to insert a new composition into the bytecode");
             }
 
+            return error("TOTO HERE");
+
             if (!UpdateAllMaps()) return error("Failed to update all maps");
         }
     }
@@ -699,14 +664,18 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
 
 bool SpxCompiler::ValidateCompositionsAfterCompiling()
 {
+    vector<ShaderCompositionDeclaration*> vecAllCompositions;
+    if (!GetListAllCompositions(vecAllCompositions))
+        return error("Failed top get the list of all compositions");
+
     //check that no unstaged compositions have a name conflict with another one
     map<string, bool> mapName;
-    for (auto itc = listAllCompositionsDeclarations.begin(); itc != listAllCompositionsDeclarations.end(); itc++)
+    for (auto itc = vecAllCompositions.begin(); itc != vecAllCompositions.end(); itc++)
     {
         ShaderCompositionDeclaration* anUnstagedComposition = *itc;
         if (anUnstagedComposition->isStage) continue;
 
-        for (auto itc2 = listAllCompositionsDeclarations.begin(); itc2 != listAllCompositionsDeclarations.end(); itc2++)
+        for (auto itc2 = vecAllCompositions.begin(); itc2 != vecAllCompositions.end(); itc2++)
         {
             ShaderCompositionDeclaration* anotherComposition = *itc2;
             if (anotherComposition == anUnstagedComposition) continue;

@@ -2,7 +2,7 @@ shader TestDirectLightGroupArray
 {
 	stage compose TestDirectLightGroup directLightGroups[];
 };
-	
+
 shader TestDirectLightGroup
 {
 	cbuffer PreView
