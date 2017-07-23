@@ -821,6 +821,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     // Naming: set the name to all cbuffer members
     if (success)
     {
+        //get all shader instancing path data
+        if (!UpdateCompositionDataFromBytecodeForCompositionAndShaders(nullptr)) return error("Failed to update the composition and shaders data bytecode position");
+
         map<string, bool> membersUsedRawName;
         map<string, bool> membersUsedKeyName;
 
@@ -864,9 +867,27 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         //unstage member (we use the shader original base name as well (even if this could make name conflicts))
                         aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
 
-                        if (shaderOwner->combinedCompositionPath.size() > 0)
+                        if (shaderOwner->listInstancingPathItems.size() > 0)
                         {
-                            aMember.linkName = aMember.linkName + "." + shaderOwner->combinedCompositionPath;
+                            //shader has been instanciated through a composition: find back the compositions path to update its name
+                            unsigned int countPaths = shaderOwner->listInstancingPathItems.size();
+                            for (unsigned int ii = 0; ii < countPaths; ii++)
+                            {
+                                const ShaderInstancingPathItem& instancingPathItem = shaderOwner->listInstancingPathItems[ii];
+                                ShaderCompositionDeclaration* compositionInstantiated = GetCompositionDeclaration(instancingPathItem.compositionShaderOwnerId, instancingPathItem.compositionNum);
+                                if (compositionInstantiated == nullptr)
+                                    return error("Composition not found for ShaderId: " + to_string(instancingPathItem.compositionShaderOwnerId) + " with composition num: " + to_string(instancingPathItem.compositionNum));
+
+                                if (instancingPathItem.instanceNum >= compositionInstantiated->countInstances)
+                                    return error("ShaderInstancingPathItem has an invalid instance num");
+
+                                string suffix = "." + compositionInstantiated->variableName;
+                                if (compositionInstantiated->isArray) {
+                                    suffix = suffix + "[" + to_string(instancingPathItem.instanceNum) + "]";
+                                }
+
+                                aMember.linkName = aMember.linkName + suffix;
+                            }
                         }
                     }
                 }

@@ -203,7 +203,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpShaderInheritance:
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
-                case spv::OpShaderInstancingPath:
+                case spv::OpShaderInstancingPathItem:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
@@ -519,7 +519,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpShaderInheritance:
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
-                case spv::OpShaderInstancingPath:
+                case spv::OpShaderInstancingPathItem:
                 case spv::OpMethodProperties:
                 case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
@@ -638,7 +638,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpBelongsToShader:
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
-                case spv::OpShaderInstancingPath:
+                case spv::OpShaderInstancingPathItem:
                 case spv::OpMethodProperties:
                 case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:

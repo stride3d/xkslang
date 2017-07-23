@@ -25,9 +25,14 @@ shader TestIMaterialSurface
 
 shader TestMaterialSurfaceArray : TestIMaterialSurface, TestDirectLightGroupArray
 {
+	cbuffer PreView
+	{
+		int aVar2;
+	}
+	
 	override void Compute()
 	{
-		int res = 0;
+		int res = aVar2;
 		foreach(var light in directLightGroups)
 		{
 			res += light.GetMaxLightCount();

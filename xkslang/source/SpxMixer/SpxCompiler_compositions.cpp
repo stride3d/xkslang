@@ -32,7 +32,7 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
             shaderCompositionTarget = this->GetShaderByName(shaderName);
             if (shaderCompositionTarget == nullptr) return error(string("No shader exists in destination bytecode with the name: ") + shaderName);
 
-            compositionTarget = GetShaderCompositionForVariableName(shaderCompositionTarget, variableName, true);
+            compositionTarget = GetShaderCompositionDeclarationForVariableName(shaderCompositionTarget, variableName, true);
             if (compositionTarget == nullptr) return error(string("No composition exists in shader: ") + shaderName + string(", with the name: ") + variableName);
         }
         else
@@ -139,24 +139,57 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
 
     //===================================================================================================================
     //===================================================================================================================
+    // Record the new instance and update the instanced shaders
     {
-        //For all instantiated shaders: we add the instance information
-        //PROUT PROUT
+        //update bytecode position of all shader composition data
+        if (!UpdateCompositionDataFromBytecodeForCompositionAndShaders(compositionTarget)) return error("Failed to update the composition and shaders data bytecode position");
+        unsigned int compositionBytecodePosition = compositionTarget->tmpBytecodePosition;
+
+        BytecodeUpdateController bytecodeUpdateController;
+        BytecodeChunk* bytecodeNewInstance = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, compositionBytecodePosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+
+        spv::Id compositionShaderOwnerId = compositionTarget->compositionShaderOwner->GetId();
+        int shaderCompositionId = compositionTarget->compositionShaderId;
+        int compositionInstanceNum = compositionTarget->countInstances;
+        compositionTarget->countInstances++;
 
         //add the instances OP instruction in the bytecode
-        if (!InsertNewCompositionInstanceForComposition(compositionTarget, mainShaderTypeMerged->GetId()))
-            return error("Failed to insert a new composition into the bytecode");
+        {
+            // update number of instances
+            SetNewAtomicValueUpdate(bytecodeUpdateController, compositionBytecodePosition + 6, compositionTarget->countInstances);
 
+            // Add the instance information in the bytecode
+            spv::Id mergedShaderTypeId = mainShaderTypeMerged->GetId();
+            spv::Instruction compInstanceInstr(spv::OpShaderCompositionInstance);
+            compInstanceInstr.addIdOperand(compositionShaderOwnerId);
+            compInstanceInstr.addImmediateOperand(shaderCompositionId);
+            compInstanceInstr.addImmediateOperand(compositionInstanceNum);
+            compInstanceInstr.addIdOperand(mergedShaderTypeId);
+
+            compInstanceInstr.dump(bytecodeNewInstance->bytecode);
+        }
+
+        //For all instantiated shaders: we add the instance information
+        for (auto its = listShadersMerged.begin(); its != listShadersMerged.end(); its++)
+        {
+            ShaderClassData* anInstanciatedShader = *its;
+            int instanceLevel = anInstanciatedShader->listInstancingPathItems.size();
+
+            spv::Instruction shaderInstancingInstr(spv::OpShaderInstancingPathItem);
+            shaderInstancingInstr.addIdOperand(anInstanciatedShader->GetId());
+            shaderInstancingInstr.addImmediateOperand(instanceLevel);
+            shaderInstancingInstr.addIdOperand(compositionShaderOwnerId);
+            shaderInstancingInstr.addImmediateOperand(shaderCompositionId);
+            shaderInstancingInstr.addImmediateOperand(compositionInstanceNum);
+
+            shaderInstancingInstr.dump(bytecodeNewInstance->bytecode);
+        }
+
+        //apply the bytecode update controller
+        if (!ApplyBytecodeUpdateController(bytecodeUpdateController)) error("failed to update the bytecode update controller");
+
+        //update all maps
         if (!UpdateAllMaps()) return error("Failed to update all maps");
-    }
-
-    //===================================================================================================================
-    for (auto its = listShadersMerged.begin(); its != listShadersMerged.end(); its++)
-    {
-        ShaderClassData* instanciatedShader = *its;
-
-        if (instanciatedShader->combinedCompositionPath.size() == 0) instanciatedShader->combinedCompositionPath = compositionTarget->variableName;
-        else instanciatedShader->combinedCompositionPath = instanciatedShader->combinedCompositionPath + "." + compositionTarget->variableName;
     }
 
     //===================================================================================================================
@@ -166,9 +199,89 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
     return true;
 }
 
-bool SpxCompiler::InsertNewCompositionInstanceForComposition(ShaderCompositionDeclaration* compositionTarget, spv::Id shaderInstanceId)
+//Find some composition instructions in the bytecode, in order to update it later
+bool SpxCompiler::UpdateCompositionDataFromBytecodeForCompositionAndShaders(ShaderCompositionDeclaration* compositionToUpdate)
 {
-    if (compositionTarget->isArray == false && compositionTarget->countInstances > 0)
+    spv::Id compositionShaderOwnerId = 0;
+    int compositionShaderId = -1;
+
+    if (compositionToUpdate != nullptr)
+    {
+        compositionToUpdate->tmpBytecodePosition = 0;
+        compositionShaderOwnerId = compositionToUpdate->compositionShaderOwner->GetId();
+        compositionShaderId = compositionToUpdate->compositionShaderId;
+    }
+
+    //reset all shaders listInstancingPaths
+    for (auto its = vecAllShaders.begin(); its != vecAllShaders.end(); its++)
+    {
+        ShaderClassData* aShader = *its;
+        aShader->listInstancingPathItems.clear();
+    }
+
+    unsigned int start = header_size;
+    const unsigned int end = (unsigned int)spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        switch (opCode)
+        {
+            case spv::OpShaderCompositionDeclaration:
+            {
+                if (compositionToUpdate == nullptr) break;
+
+                spv::Id shaderId = asId(start + 1);
+                int compositionId = asLiteralValue(start + 2);
+                if (shaderId == compositionShaderOwnerId && compositionId == compositionShaderId)
+                {
+                    compositionToUpdate->tmpBytecodePosition = start;
+                }
+                break;
+            }
+
+            case spv::OpShaderInstancingPathItem:
+            {
+                const spv::Id shaderId = asId(start + 1);
+
+                ShaderClassData* shader = GetShaderById(shaderId);
+                if (shader == nullptr) return error("undeclared shader id: " + to_string(shaderId));
+
+                int instanceLevel = asLiteralValue(start + 2);
+                const spv::Id shaderCompositionOwnerId = asId(start + 3);
+                int compositionNum = asLiteralValue(start + 4);
+                int instanceNum = asLiteralValue(start + 5);
+
+                if (shader->listInstancingPathItems.size() != instanceLevel) return error("invalid instancing path level");
+                shader->listInstancingPathItems.push_back(ShaderInstancingPathItem(shaderId, instanceLevel, shaderCompositionOwnerId, compositionNum, instanceNum));
+
+                break;
+            }
+
+            case spv::OpTypeVoid:
+            case spv::OpTypeXlslShaderClass:
+            {
+                //can stop parsing the bytecode here
+                start = end;
+                break;
+            }
+        }
+
+        start += wordCount;
+    }
+
+    if (compositionToUpdate != nullptr && compositionToUpdate->tmpBytecodePosition == 0) return error("Failed to update the composition bytecode position");
+    //if (countInstanceLevelUpdated != countInstanceLevelToUpdate) return error("Failed to update the shaders instancing level data bytecode position");
+
+    return true;
+}
+
+bool SpxCompiler::RecordNewInstanceForComposition(BytecodeUpdateController& bytecodeUpdateController, ShaderCompositionDeclaration* compositionTarget, spv::Id shaderInstanceId, int instanceNum, int compositionCountInstances)
+{
+    return error("PROUT PROUT");
+
+    if (compositionTarget->isArray == false && instanceNum > 0)
     {
 #ifdef MIXIN_ADD_COMPOSITION_RETURN_AN_ERROR_IF_A_NON_ARRAYED_COMPOSITION_RECEIVES_MORE_THAN_1_INSTANCE
         return error(string("The composition has already been instanciated: " + compositionTarget->GetShaderOwnerAndVariableName()));
@@ -179,11 +292,21 @@ bool SpxCompiler::InsertNewCompositionInstanceForComposition(ShaderCompositionDe
 
     spv::Id shaderOwnerId = compositionTarget->compositionShaderOwner->GetId();
     int shaderCompositionId = compositionTarget->compositionShaderId;
+    unsigned int compositionBytecodePosition = compositionTarget->tmpBytecodePosition;
 
-    // - update our composition data, and add the instances instruction
+    //Check that the bytecode position has been correctly updated
+    if (compositionBytecodePosition >= spv.size() - 2) return error("invalid composition declaration bytecode position.");
+    spv::Op opCode = asOpCode(compositionBytecodePosition);
+    if (opCode != spv::OpShaderCompositionDeclaration) return error("invalid composition declaration bytecode position");
+    spv::Id shaderId = asIdSafe(compositionBytecodePosition + 1);
+    int compositionId = asLiteralValueSafe(compositionBytecodePosition + 2);
+    if (shaderId != shaderOwnerId || compositionId != shaderCompositionId) return error("invalid composition declaration bytecode position");
+
+    /*int compositionBytecodePosition = 0;
+
+    // find out composition declaration position in the bytecode
     unsigned int start = header_size;
     const unsigned int end = (unsigned int)spv.size();
-    bool compositionUpdated = false;
     while (start < end)
     {
         unsigned int wordCount = asWordCount(start);
@@ -195,36 +318,39 @@ bool SpxCompiler::InsertNewCompositionInstanceForComposition(ShaderCompositionDe
             {
                 spv::Id shaderId = asId(start + 1);
                 int compositionId = asLiteralValue(start + 2);
-
                 if (shaderId == shaderOwnerId && compositionId == shaderCompositionId)
                 {
-                    //increase number of instances
-                    compositionTarget->countInstances++;
-                    setLiteralValue(start + 6, compositionTarget->countInstances);
-
-                    //Add the instance information in the bytecode
-                    spv::Id mergedShaderTypeId = shaderInstanceId;
-                    spv::Instruction compInstanceInstr(spv::OpShaderCompositionInstance);
-                    compInstanceInstr.addIdOperand(shaderOwnerId);
-                    compInstanceInstr.addImmediateOperand(shaderCompositionId);
-                    compInstanceInstr.addImmediateOperand(compositionTarget->countInstances - 1);
-                    compInstanceInstr.addIdOperand(mergedShaderTypeId);
-
-                    vector<unsigned int> instructionBytecode;
-                    compInstanceInstr.dump(instructionBytecode);
-                    spv.insert(spv.begin() + (start + wordCount), instructionBytecode.begin(), instructionBytecode.end());
-
-                    compositionUpdated = true;
+                    compositionBytecodePosition = start;
                 }
                 break;
             }
         }
 
-        if (compositionUpdated) break;
+        if (compositionBytecodePosition > 0) break;
         start += wordCount;
     }
 
-    if (!compositionUpdated) return error("The target composition declaration has not been found");
+    if (compositionBytecodePosition == 0)
+        return error("The target composition declaration has not been found");*/
+
+    //update our composition data, and add the instances instruction
+    // update number of instances
+    SetNewAtomicValueUpdate(bytecodeUpdateController, compositionBytecodePosition + 6, compositionCountInstances);
+
+    // Add the instance information in the bytecode
+    BytecodeChunk* bytecodeNewInstance = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, compositionBytecodePosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+    spv::Id mergedShaderTypeId = shaderInstanceId;
+    spv::Instruction compInstanceInstr(spv::OpShaderCompositionInstance);
+    compInstanceInstr.addIdOperand(shaderOwnerId);
+    compInstanceInstr.addImmediateOperand(shaderCompositionId);
+    compInstanceInstr.addImmediateOperand(instanceNum);
+    compInstanceInstr.addIdOperand(mergedShaderTypeId);
+
+    compInstanceInstr.dump(bytecodeNewInstance->bytecode);
+
+    //vector<unsigned int> instructionBytecode;
+    //compInstanceInstr.dump(instructionBytecode);
+    //spv.insert(spv.begin() + (start + wordCount), instructionBytecode.begin(), instructionBytecode.end());
 
     return true;
 }
@@ -441,7 +567,7 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
                     ShaderClassData* compositionShaderOwner = this->GetShaderById(shaderId);
                     if (compositionShaderOwner == nullptr) { error(string("No shader exists with the Id: ") + to_string(shaderId)); break; }
 
-                    ShaderCompositionDeclaration* composition = compositionShaderOwner->GetShaderCompositionById(compositionId);
+                    ShaderCompositionDeclaration* composition = compositionShaderOwner->GetShaderCompositionDeclaration(compositionId);
                     if (composition == nullptr) { error(string("Shader: ") + compositionShaderOwner->GetName() + string(" has no composition for id: ") + to_string(compositionId)); break; }
 
                     if (composition->overridenBy != nullptr) composition = composition->overridenBy;
@@ -576,7 +702,7 @@ bool SpxCompiler::GetListAllCompositions(vector<ShaderCompositionDeclaration*>& 
         unsigned int countCompositions = aShader->GetCountShaderComposition();
         for (unsigned int k = 0; k < countCompositions; ++k)
         {
-            ShaderCompositionDeclaration* shaderComposition = aShader->compositionsDeclarationList[k];
+            ShaderCompositionDeclaration* shaderComposition = aShader->listCompositionDeclarations[k];
             vecCompositions.push_back(shaderComposition);
         }
     }
@@ -586,7 +712,7 @@ bool SpxCompiler::GetListAllCompositions(vector<ShaderCompositionDeclaration*>& 
 
 bool SpxCompiler::AddNewShaderCompositionDeclaration(ShaderClassData* shader, ShaderCompositionDeclaration* composition)
 {
-    shader->compositionsDeclarationList.push_back(composition);
+    shader->listCompositionDeclarations.push_back(composition);
     return true;
 }
 
@@ -634,27 +760,33 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
 
     //We can override the merged composition by the overriding one
     {
-        
         newStagedComposition->overridenBy = overridingComposition;
         
         if (newStagedComposition->countInstances > 0)
         {
+            return error("PROUT PROUT HERE");
+
             //the overriden composition already has some instances, we merged them into the overriding compositions
             vector<ShaderClassData*> vecCompositionShaderInstances;
             if (!GetAllShaderInstancesForComposition(newStagedComposition, vecCompositionShaderInstances)) {
                 return error(string("Failed to retrieve the instances for the composition: ") + newStagedComposition->GetShaderOwnerAndVariableName());
             }
 
+            BytecodeUpdateController bytecodeUpdateController;
             unsigned int countCompositionToTranfer = vecCompositionShaderInstances.size();
             for (unsigned int ict = 0; ict < countCompositionToTranfer; ict++)
             {
                 ShaderClassData* compositionInstanceToTransfer = vecCompositionShaderInstances[ict];
-                if (!InsertNewCompositionInstanceForComposition(overridingComposition, compositionInstanceToTransfer->GetId()))
+                int compositionInstanceNum = overridingComposition->countInstances;
+                overridingComposition->countInstances++;
+                if (!RecordNewInstanceForComposition(bytecodeUpdateController, overridingComposition, compositionInstanceToTransfer->GetId(), compositionInstanceNum, overridingComposition->countInstances))
                     return error("Failed to insert a new composition into the bytecode");
             }
 
-            return error("TOTO HERE");
+            //apply the bytecode update controller
+            if (!ApplyBytecodeUpdateController(bytecodeUpdateController)) error("failed to update the bytecode update controller");
 
+            //update all maps
             if (!UpdateAllMaps()) return error("Failed to update all maps");
         }
     }
@@ -720,7 +852,7 @@ bool SpxCompiler::CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOne
         unsigned int countCompositions = shader->GetCountShaderComposition();
         for (unsigned int ic = 0; ic < countCompositions; ic++)
         {
-            ShaderCompositionDeclaration* aComposition = shader->compositionsDeclarationList[ic];
+            ShaderCompositionDeclaration* aComposition = shader->listCompositionDeclarations[ic];
 
 #ifdef XKSLANG_DEBUG_MODE
             if (aComposition->compositionShaderOwner == nullptr) return error("The composition is missing link to its shader owner: " + aComposition->GetVariableName());
@@ -788,7 +920,7 @@ bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, con
     if (shader == nullptr) return error("Shader is null");
 #endif
 
-    for (auto itc = shader->compositionsDeclarationList.begin(); itc != shader->compositionsDeclarationList.end(); itc++)
+    for (auto itc = shader->listCompositionDeclarations.begin(); itc != shader->listCompositionDeclarations.end(); itc++)
     {
         ShaderCompositionDeclaration* aComposition = *itc;
         if (aComposition->variableName == variableName)
@@ -809,7 +941,73 @@ bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, con
     return true;
 }
 
-SpxCompiler::ShaderCompositionDeclaration* SpxCompiler::GetShaderCompositionForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders)
+SpxCompiler::ShaderCompositionDeclaration* SpxCompiler::GetCompositionDeclaration(spv::Id shaderId, int compositionId)
+{
+    ShaderClassData* shader = GetShaderById(shaderId);
+    if (shader == nullptr) return nullptr;
+    return shader->GetShaderCompositionDeclaration(compositionId);
+}
+
+bool SpxCompiler::GetAllCompositionForEachLoops(vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel)
+{
+    vecForEachLoops.clear();
+    maxForEachLoopsNestedLevel = -1;
+
+    int currentForEachLoopNestedLevel = -1;
+    vector<CompositionForEachLoopData> pileForeachLoopsCurrentlyParsed;
+    unsigned int start = header_size;
+    const unsigned int end = (unsigned int)spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+        switch (opCode)
+        {
+        case spv::OpForEachCompositionStartLoop:
+        {
+            spv::Id shaderId = asId(start + 1);
+            int compositionId = asLiteralValue(start + 2);
+
+            ShaderCompositionDeclaration* composition = GetCompositionDeclaration(shaderId, compositionId);
+            if (composition == nullptr) {
+                error("Composition not found for ShaderId: " + to_string(shaderId) + " with composition num: " + to_string(compositionId));
+                break;
+            }
+            if (!composition->isArray) { error("Foreach loop only works with array compositions."); break; }
+
+            currentForEachLoopNestedLevel++;
+            if (currentForEachLoopNestedLevel > maxForEachLoopsNestedLevel) maxForEachLoopsNestedLevel = currentForEachLoopNestedLevel;
+            pileForeachLoopsCurrentlyParsed.push_back(CompositionForEachLoopData(composition, currentForEachLoopNestedLevel, start, 0, start + wordCount, 0));
+
+            break;
+        }
+
+        case spv::OpForEachCompositionEndLoop:
+        {
+            if (currentForEachLoopNestedLevel < 0) { error("A foreach end loop instruction is missing a start instruction"); break; }
+            currentForEachLoopNestedLevel--;
+
+            CompositionForEachLoopData compositionForEachLoop = pileForeachLoopsCurrentlyParsed.back();
+            pileForeachLoopsCurrentlyParsed.pop_back();
+
+            compositionForEachLoop.lastLoopInstuctionEnd = start;
+            compositionForEachLoop.foreachLoopEnd = start + wordCount;
+            vecForEachLoops.push_back(compositionForEachLoop);
+
+            break;
+        }
+        }
+
+        start += wordCount;
+    }
+
+    if (currentForEachLoopNestedLevel >= 0) error("A foreach start loop instruction is missing an end instruction");
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+SpxCompiler::ShaderCompositionDeclaration* SpxCompiler::GetShaderCompositionDeclarationForVariableName(ShaderClassData* shader, const string& variableName, bool lookInParentShaders)
 {
     vector<ShaderCompositionDeclaration*> listCompositions;
     if (!GetAllCompositionsForVariableName(shader, variableName, true, listCompositions))

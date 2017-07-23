@@ -183,11 +183,13 @@ private:
    unsigned typeSizeInWords(spv::Id id)    const;
    unsigned idTypeSizeInWords(spv::Id id)  const;
 
+   spv::Id         asIdSafe(unsigned word)            { return (word >= spv.size()? 0: spv[word]); }
    spv::Id&        asId(unsigned word)                { return spv[word]; }  
    const spv::Id&  asId(unsigned word)          const { return spv[word]; }
    static spv::Id  asId(const std::vector<spirword_t>& bytecode, unsigned word) { return bytecode[word]; }
 
-   int             asLiteralValue(unsigned word) { return spv[word]; }
+   int             asLiteralValue(unsigned word)     { return spv[word]; }
+   int             asLiteralValueSafe(unsigned word) { return (word >= spv.size() ? 0 : spv[word]); }
    static int      asLiteralValue(const std::vector<spirword_t>& bytecode, unsigned word) { return bytecode[word]; }
 
    spv::Op         asOpCode(unsigned word)      const { return opOpCode(spv[word]); }

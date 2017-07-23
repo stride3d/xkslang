@@ -547,18 +547,20 @@ public:
         CBufferTypeData* GetCBufferData() { return type->GetCBufferData(); }
     };
 
-    /*class ShaderCompositionDeclaration;
-    class ShaderCompositionInstance
+    class ShaderInstancingPathItem
     {
     public:
-        ShaderCompositionDeclaration* compositionDeclaration;
-        ShaderClassData* mainShaderInstance;
-        std::vector<ShaderClassData*> listAllShadersInstantiatedWithTheInstance;
+        spv::Id shaderId;
+        int instancePathLevel;
+        spv::Id compositionShaderOwnerId;
+        int compositionNum;
+        int instanceNum;
 
-        ShaderCompositionInstance() : compositionDeclaration(nullptr), mainShaderInstance(nullptr) {}
-        ShaderCompositionInstance(ShaderCompositionDeclaration* composition, ShaderClassData* mainInstance, std::vector<ShaderClassData*>& listShadersInstantiated)
-            : compositionDeclaration(composition), mainShaderInstance(mainInstance), listAllShadersInstantiatedWithTheInstance(listShadersInstantiated) {}
-    };*/
+        ShaderInstancingPathItem() : shaderId(0), instancePathLevel(-1), compositionShaderOwnerId(0), compositionNum(-1), instanceNum(-1) {}
+        ShaderInstancingPathItem(spv::Id shaderId, int instanceLevel, spv::Id compositionShaderOwnerId, int compositionNum, int instanceNum)
+            : shaderId(shaderId), instancePathLevel(instanceLevel), compositionShaderOwnerId(compositionShaderOwnerId),
+            compositionNum(compositionNum), instanceNum(instanceNum){}
+    };
 
     class ShaderCompositionDeclaration
     {
@@ -572,6 +574,7 @@ public:
         int countInstances;
         bool isValid;
 
+        unsigned int tmpBytecodePosition;
         ShaderCompositionDeclaration* tmpClonedComposition;
 
         //If we merge a composition into a bytecode, this composition can be overriden by another one
@@ -588,8 +591,8 @@ public:
 
         ShaderCompositionDeclaration(int compositionShaderId, ShaderClassData* compositionShaderOwner, ShaderClassData* shaderType,
             const std::string& variableName, bool isStage, bool isArray, int countInstances)
-                :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType),
-                variableName(variableName), isStage(isStage), isArray(isArray), countInstances(countInstances), isValid(true), tmpClonedComposition(nullptr), overridenBy(nullptr){}
+                :compositionShaderId(compositionShaderId), compositionShaderOwner(compositionShaderOwner), shaderType(shaderType), variableName(variableName),
+                isStage(isStage), isArray(isArray), countInstances(countInstances), isValid(true), tmpBytecodePosition(0), tmpClonedComposition(nullptr), overridenBy(nullptr){}
 
     private:
         friend class SpxCompiler;
@@ -636,12 +639,35 @@ public:
         };
 
     public:
+        int level;
+        int countGenerics;
+        std::string shaderOriginalBaseName;           //The original shader base name (without instancing prefix, without generics)
+        std::string shaderFullNameWithoutGenerics;    //The shader fullname without the generics extension
+        //std::string combinedCompositionPath;        //when a shader is instanciated through a composition: we record its composition path
+        std::vector<ShaderClassData*> parentsList;
+        std::vector<ShaderTypeData*> shaderTypesList;
+        std::vector<FunctionInstruction*> functionsList;
+
+        std::vector<ShaderCompositionDeclaration*> listCompositionDeclarations;
+        std::vector<ShaderInstancingPathItem> listInstancingPathItems;
+
+        //std::string instanceOriginalShaderName;  //when a shader is instantiated (for composition), we store its original shader name
+
+    private:
+        //When merging/duplicating a shader into a bytecode, this field will hold a temporary reference to its resulting, cloned shader 
+        ShaderClassData* tmpClonedShader;
+
+        //some params to simplify some algos
+        int flag, flag1;
+        ShaderDependencyTypeEnum dependencyType;  //dependency type (static or not), set by GetShadersFullDependencies algorithm.
+
+    public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source), level(-1), countGenerics(0), flag(0), flag1(0), tmpClonedShader(nullptr) {
         }
         virtual ~ShaderClassData() {
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
-            for (auto it = compositionsDeclarationList.begin(); it != compositionsDeclarationList.end(); it++) delete (*it);
+            for (auto it = listCompositionDeclarations.begin(); it != listCompositionDeclarations.end(); it++) delete (*it);
         }
         virtual ObjectInstructionBase* CloneBasicData() {
             ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -649,7 +675,7 @@ public:
             obj->countGenerics = countGenerics;
             obj->shaderOriginalBaseName = shaderOriginalBaseName;
             obj->shaderFullNameWithoutGenerics = shaderFullNameWithoutGenerics;
-            obj->combinedCompositionPath = combinedCompositionPath;
+            //obj->combinedCompositionPath = combinedCompositionPath;
             return obj;
         }
 
@@ -687,47 +713,24 @@ public:
             return nullptr;
         }
 
-        unsigned int GetCountShaderComposition() { return (unsigned int)compositionsDeclarationList.size(); }
-        ShaderCompositionDeclaration* GetShaderCompositionById(int compositionId) {
-            if (compositionId<0 || compositionId>= (int)compositionsDeclarationList.size()) return nullptr;
-            return compositionsDeclarationList[compositionId];
+        unsigned int GetCountShaderComposition() { return (unsigned int)listCompositionDeclarations.size(); }
+        ShaderCompositionDeclaration* GetShaderCompositionDeclaration(int compositionId) {
+            if (compositionId<0 || compositionId>= (int)listCompositionDeclarations.size()) return nullptr;
+            return listCompositionDeclarations[compositionId];
         }
         ShaderCompositionDeclaration* GetShaderCompositionByName(const std::string& variableName) {
-            for (unsigned int i=0; i<compositionsDeclarationList.size(); ++i)
-                if (compositionsDeclarationList[i]->variableName == variableName) return compositionsDeclarationList[i];
+            for (unsigned int i=0; i<listCompositionDeclarations.size(); ++i)
+                if (listCompositionDeclarations[i]->variableName == variableName) return listCompositionDeclarations[i];
             return nullptr;
         }
 
         std::string GetShaderOriginalBaseName() { return shaderOriginalBaseName; }
         std::string GetShaderFullName() { return GetName(); }
         std::string GetShaderFullNameWithoutGenerics() { return shaderFullNameWithoutGenerics; }
-        std::string GetShaderCombinedCompositionPath() { return combinedCompositionPath; }
 
         bool SetShaderName(const std::string& originalBaseName, const std::string& fullName, int countGenerics, std::string& errorMsg);
 
-    public:
-        int level;
-        int countGenerics;
-        std::string shaderOriginalBaseName;           //The original shader base name (without instancing prefix, without generics)
-        std::string shaderFullNameWithoutGenerics;    //The shader fullname without the generics extension
-        std::string combinedCompositionPath;          //when a shader is instanciated through a composition: we record its composition path
-        std::vector<ShaderClassData*> parentsList;
-        std::vector<ShaderTypeData*> shaderTypesList;
-        std::vector<FunctionInstruction*> functionsList;
-
-        std::vector<ShaderCompositionDeclaration*> compositionsDeclarationList;
-
-        //std::string instanceOriginalShaderName;  //when a shader is instantiated (for composition), we store its original shader name
-
-    private:
-        //When merging/duplicating a shader into a bytecode, this field will hold a temporary reference to its resulting, cloned shader 
-        ShaderClassData* tmpClonedShader;
-
-        //some params to simplify some algos
-        int flag, flag1;
-        ShaderDependencyTypeEnum dependencyType;  //dependency type (static or not), set by GetShadersFullDependencies algorithm.
-
-    friend class SpxCompiler;
+        friend class SpxCompiler;
     };
 
     class ShaderToMergeData
@@ -769,8 +772,9 @@ public:
     bool GetListAllCompositions(std::vector<ShaderCompositionDeclaration*>& vecCompositions);
     bool GetListAllCompositionsInfo(std::vector<ShaderCompositionInfo>& vecCompositionsInfo);
     bool AddCompositionInstance(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
-    bool InsertNewCompositionInstanceForComposition(ShaderCompositionDeclaration* compositionTarget, spv::Id instanceShaderId);
-    ShaderCompositionDeclaration* GetShaderCompositionForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
+    bool UpdateCompositionDataFromBytecodeForCompositionAndShaders(ShaderCompositionDeclaration* composition);
+    bool RecordNewInstanceForComposition(BytecodeUpdateController& bytecodeUpdateController, ShaderCompositionDeclaration* compositionTarget, spv::Id instanceShaderId, int instanceNum, int compositionCountInstances);
+    ShaderCompositionDeclaration* GetShaderCompositionDeclarationForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
     bool GetAllCompositionsForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders, std::vector<ShaderCompositionDeclaration*>& listCompositions);
     bool CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOnes(std::vector<ShaderClassData*>& listMergedShaders);
     bool CheckIfTheCompositionGetOverridenByAnExistingStageComposition(ShaderCompositionDeclaration* newStagedComposition, std::vector<ShaderCompositionDeclaration*>& listStagedCompositionsPotentiallyOverriding);
@@ -917,7 +921,7 @@ private:
     TypeInstruction* GetTypePointingTo(TypeInstruction* targetType);
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
     HeaderPropertyInstruction* GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const std::string& name);
-    ShaderCompositionDeclaration* GetCompositionById(spv::Id shaderId, int compositionId);
+    ShaderCompositionDeclaration* GetCompositionDeclaration(spv::Id shaderId, int compositionId);
     FunctionInstruction* GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name);
     bool GetListAllFunctionCallInstructions(std::vector<FunctionCallInstructionData>& listFunctionCallInstructions);
     bool GetStartPositionOfAllMemberDecorateInstructions(std::vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions);

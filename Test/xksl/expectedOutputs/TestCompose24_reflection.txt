@@ -1,0 +1,23 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PreView [size: 8]
+@C    o0S12C0_TestDirectLightGroup_aVar1 => TestDirectLightGroup.aVar1.directLightGroups[0]
+@C    o1S2C0_TestMaterialSurfaceArray_aVar2 => TestMaterialSurfaceArray.aVar2.materialPixelStage
+***********************
+*****  Resources  *****
+***********************
+@C    PreView => PreView [Stage: Vertex]
+
+ConstantBuffers. Count=1
+ cbuffer: Name="PreView" Size=8 MembersCount=2
+  KeyName="TestDirectLightGroup.aVar1.directLightGroups[0] RawName="o0S12C0_TestDirectLightGroup_aVar1" Offset=0
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="TestMaterialSurfaceArray.aVar2.materialPixelStage RawName="o1S2C0_TestMaterialSurfaceArray_aVar2" Offset=4
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ResourceBindings. Count=1
+ Stage=Vertex KeyName="PreView" RawName="PreView" Class=ConstantBuffer Type=ConstantBuffer
+
+InputAttributes. Count=0

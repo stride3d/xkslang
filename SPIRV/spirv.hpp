@@ -981,7 +981,7 @@ enum Op {
     OpBelongsToShader = 4604,                //Link the functions and types with the shader that created them
     OpShaderCompositionDeclaration = 4605,   //Declare a composition within a shader. [OpShaderCompositionDeclaration shaderOwnerId compositionNum compositionShaderTypeId isArray countInstance name]
     OpShaderCompositionInstance = 4606,      //Declare a composition instance. [OpShaderCompositionInstance shaderOwnerId compositionNum instanceNum instanceShaderId]
-    OpShaderInstancingPath = 4607,           //Data recording the instancing path of a shader. [OpShaderInstancingPath shaderId instanceLevel shaderCompositionOwnerId compositionNum instanceId]
+    OpShaderInstancingPathItem = 4607,       //Data recording a path item for a shader instanciated through a composition. [OpShaderInstancingPath shaderId instanceLevel shaderCompositionOwnerId compositionNum instanceId]
     OpMethodProperties = 4608,               //Add XKSL properties to a method: cf XkslPropertyEnum
     OpMemberProperties = 4609,               //Add XKSL properties to a member: cf XkslPropertyEnum
     OpMemberAttribute = 4610,                //Add an attribute to a member

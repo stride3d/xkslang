@@ -255,7 +255,7 @@ SpxCompiler* SpxCompiler::Clone()
             unsigned int countCompositions = shaderCloned->GetCountShaderComposition();
             for (unsigned int k = 0; k < countCompositions; ++k)
             {
-                ShaderCompositionDeclaration* compositionToClone = shaderCloned->compositionsDeclarationList[k];
+                ShaderCompositionDeclaration* compositionToClone = shaderCloned->listCompositionDeclarations[k];
 
                 ShaderClassData* shaderType = compositionToClone->shaderType == nullptr ? nullptr : compositionToClone->shaderType->tmpClonedShader;
                 ShaderClassData* shaderOwner = compositionToClone->compositionShaderOwner == nullptr ? nullptr : compositionToClone->compositionShaderOwner->tmpClonedShader;
@@ -274,11 +274,11 @@ SpxCompiler* SpxCompiler::Clone()
     {
         ShaderClassData* shaderToClone = *it;
         ShaderClassData* clonedShader = shaderToClone->tmpClonedShader;
-        unsigned int countCompositions = shaderToClone->compositionsDeclarationList.size();
+        unsigned int countCompositions = shaderToClone->listCompositionDeclarations.size();
 
         for (unsigned int i = 0; i < countCompositions; ++i)
         {
-            ShaderCompositionDeclaration* compositionToClone = shaderToClone->compositionsDeclarationList[i];
+            ShaderCompositionDeclaration* compositionToClone = shaderToClone->listCompositionDeclarations[i];
             if (compositionToClone->overridenBy != nullptr)
             {
                 ShaderCompositionDeclaration* overridingCompositionToClone = compositionToClone->overridenBy;
@@ -289,7 +289,7 @@ SpxCompiler* SpxCompiler::Clone()
                     return nullptr;
                 }
 
-                ShaderCompositionDeclaration* clonedComposition = clonedShader->compositionsDeclarationList[i];
+                ShaderCompositionDeclaration* clonedComposition = clonedShader->listCompositionDeclarations[i];
                 clonedComposition->overridenBy = overridingCompositionToClone->tmpClonedComposition;
             }
         }
@@ -378,7 +378,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
                 case spv::OpShaderInheritance:
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
-                case spv::OpShaderInstancingPath:
+                case spv::OpShaderInstancingPathItem:
                 case spv::OpBelongsToShader:
                 case spv::OpMethodProperties:
                 case spv::OpGSMethodProperties:
@@ -517,7 +517,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
                 case spv::OpShaderInheritance:
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
-                case spv::OpShaderInstancingPath:
+                case spv::OpShaderInstancingPathItem:
                 case spv::OpBelongsToShader:
                 case spv::OpMethodProperties:
                 case spv::OpGSMethodProperties:
@@ -1100,7 +1100,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 				case spv::OpShaderInheritance:
 				case spv::OpShaderCompositionDeclaration:
 				case spv::OpShaderCompositionInstance:
-                case spv::OpShaderInstancingPath:
+                case spv::OpShaderInstancingPathItem:
 				case spv::OpBelongsToShader:
 				case spv::OpMethodProperties:
 				case spv::OpGSMethodProperties:
@@ -1355,7 +1355,7 @@ bool SpxCompiler::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputSta
             }
 
             //add the composition shader instances
-            for (auto itc = aShaderInvolved->compositionsDeclarationList.begin(); itc != aShaderInvolved->compositionsDeclarationList.end(); itc++)
+            for (auto itc = aShaderInvolved->listCompositionDeclarations.begin(); itc != aShaderInvolved->listCompositionDeclarations.end(); itc++)
             {
                 ShaderCompositionDeclaration* aComposition = *itc;
                 if (aComposition->countInstances > 0)
@@ -1563,7 +1563,7 @@ bool SpxCompiler::GetShadersFullDependencies(SpxCompiler* bytecodeSource, const 
         }
 
         //add all compositions type
-        for (auto itc = aShader->compositionsDeclarationList.begin(); itc != aShader->compositionsDeclarationList.end(); itc++)
+        for (auto itc = aShader->listCompositionDeclarations.begin(); itc != aShader->listCompositionDeclarations.end(); itc++)
         {
             ShaderCompositionDeclaration* aComposition = *itc;
             aComposition->shaderType->dependencyType = ShaderClassData::ShaderDependencyTypeEnum::Other;
@@ -1915,7 +1915,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             case spv::OpShaderInheritance:
             case spv::OpShaderCompositionDeclaration:
             case spv::OpShaderCompositionInstance:
-            case spv::OpShaderInstancingPath:
+            case spv::OpShaderInstancingPathItem:
             case spv::OpMethodProperties:
             case spv::OpGSMethodProperties:
             case spv::OpMemberProperties:
@@ -2943,11 +2943,27 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 break;
             }
 
-            case spv::OpShaderInstancingPath:
+            //To be filled manually when we need it
+            /*case spv::OpShaderInstancingPathItem:
             {
-                return error("PROUT PROUT");
+                const spv::Id shaderId = asId(start + 1);
+
+                if (shaderId >= vectorIdsToDecorate.size()) break;
+                if (!vectorIdsToDecorate[shaderId]) break;
+
+                ShaderClassData* shader = GetShaderById(shaderId);
+                if (shader == nullptr) { error("undeclared shader id: " + to_string(shaderId)); break; }
+
+                int instanceLevel = asLiteralValue(start + 2);
+                const spv::Id shaderCompositionOwnerId = asId(start + 3);
+                int compositionNum = asLiteralValue(start + 4);
+                int instanceNum = asLiteralValue(start + 5);
+
+                if (shader->listInstancingPaths.size() != instanceLevel) { error("invalid instancing path level"); break; }
+                shader->listInstancingPaths.push_back(ShaderInstancingPathItem(shaderId, instanceLevel, shaderCompositionOwnerId, compositionNum, instanceNum));
+                
                 break;
-            }
+            }*/
 
             case spv::OpGSMethodProperties:
             {
@@ -3427,72 +3443,6 @@ SpxCompiler::ShaderClassData* SpxCompiler::GetShaderByName(const string& name)
         }
     }
     return nullptr;
-}
-
-SpxCompiler::ShaderCompositionDeclaration* SpxCompiler::GetCompositionById(spv::Id shaderId, int compositionId)
-{
-    ShaderClassData* shader = GetShaderById(shaderId);
-    if (shader == nullptr) return nullptr;
-    return shader->GetShaderCompositionById(compositionId);
-}
-
-bool SpxCompiler::GetAllCompositionForEachLoops(vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel)
-{
-    vecForEachLoops.clear();
-    maxForEachLoopsNestedLevel = -1;
-
-    int currentForEachLoopNestedLevel = -1;
-    vector<CompositionForEachLoopData> pileForeachLoopsCurrentlyParsed;
-    unsigned int start = header_size;
-    const unsigned int end = (unsigned int)spv.size();
-    while (start < end)
-    {
-        unsigned int wordCount = asWordCount(start);
-        spv::Op opCode = asOpCode(start);
-
-        switch (opCode)
-        {
-            case spv::OpForEachCompositionStartLoop:
-            {
-                spv::Id shaderId = asId(start + 1);
-                int compositionId = asLiteralValue(start + 2);
-
-                ShaderCompositionDeclaration* composition = GetCompositionById(shaderId, compositionId);
-                if (composition == nullptr) {
-                    error(string("Composition not found for ShaderId: ") + to_string(shaderId) + string(" with composition id: ") + to_string(compositionId));
-                    break;
-                }
-                if (!composition->isArray) { error("Foreach loop only works with array compositions."); break; }
-
-                currentForEachLoopNestedLevel++;
-                if (currentForEachLoopNestedLevel > maxForEachLoopsNestedLevel) maxForEachLoopsNestedLevel = currentForEachLoopNestedLevel;
-                pileForeachLoopsCurrentlyParsed.push_back(CompositionForEachLoopData(composition, currentForEachLoopNestedLevel, start, 0, start + wordCount, 0));
-
-                break;
-            }
-
-            case spv::OpForEachCompositionEndLoop:
-            {
-                if (currentForEachLoopNestedLevel < 0) { error("A foreach end loop instruction is missing a start instruction"); break; }
-                currentForEachLoopNestedLevel--;
-
-                CompositionForEachLoopData compositionForEachLoop = pileForeachLoopsCurrentlyParsed.back();
-                pileForeachLoopsCurrentlyParsed.pop_back();
-
-                compositionForEachLoop.lastLoopInstuctionEnd = start;
-                compositionForEachLoop.foreachLoopEnd = start + wordCount;
-                vecForEachLoops.push_back(compositionForEachLoop);
-
-                break;
-            }
-        }
-
-        start += wordCount;
-    }
-
-    if (currentForEachLoopNestedLevel >= 0) error("A foreach start loop instruction is missing an end instruction");
-    if (errorMessages.size() > 0) return false;
-    return true;
 }
 
 bool SpxCompiler::GetStartPositionOfAllMemberDecorateInstructions(vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions)
