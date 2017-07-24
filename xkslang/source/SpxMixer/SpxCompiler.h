@@ -773,7 +773,6 @@ public:
     bool GetListAllCompositionsInfo(std::vector<ShaderCompositionInfo>& vecCompositionsInfo);
     bool AddCompositionInstance(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
     bool UpdateCompositionDataFromBytecodeForCompositionAndShaders(ShaderCompositionDeclaration* composition);
-    bool RecordNewInstanceForComposition(BytecodeUpdateController& bytecodeUpdateController, ShaderCompositionDeclaration* compositionTarget, spv::Id instanceShaderId, int instanceNum, int compositionCountInstances);
     ShaderCompositionDeclaration* GetShaderCompositionDeclarationForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
     bool GetAllCompositionsForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders, std::vector<ShaderCompositionDeclaration*>& listCompositions);
     bool CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOnes(std::vector<ShaderClassData*>& listMergedShaders);

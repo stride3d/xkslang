@@ -253,7 +253,6 @@ bool SpxCompiler::UpdateCompositionDataFromBytecodeForCompositionAndShaders(Shad
                 int compositionNum = asLiteralValue(start + 4);
                 int instanceNum = asLiteralValue(start + 5);
 
-                if (shader->listInstancingPathItems.size() != instanceLevel) return error("invalid instancing path level");
                 shader->listInstancingPathItems.push_back(ShaderInstancingPathItem(shaderId, instanceLevel, shaderCompositionOwnerId, compositionNum, instanceNum));
 
                 break;
@@ -273,84 +272,6 @@ bool SpxCompiler::UpdateCompositionDataFromBytecodeForCompositionAndShaders(Shad
 
     if (compositionToUpdate != nullptr && compositionToUpdate->tmpBytecodePosition == 0) return error("Failed to update the composition bytecode position");
     //if (countInstanceLevelUpdated != countInstanceLevelToUpdate) return error("Failed to update the shaders instancing level data bytecode position");
-
-    return true;
-}
-
-bool SpxCompiler::RecordNewInstanceForComposition(BytecodeUpdateController& bytecodeUpdateController, ShaderCompositionDeclaration* compositionTarget, spv::Id shaderInstanceId, int instanceNum, int compositionCountInstances)
-{
-    return error("PROUT PROUT");
-
-    if (compositionTarget->isArray == false && instanceNum > 0)
-    {
-#ifdef MIXIN_ADD_COMPOSITION_RETURN_AN_ERROR_IF_A_NON_ARRAYED_COMPOSITION_RECEIVES_MORE_THAN_1_INSTANCE
-        return error(string("The composition has already been instanciated: " + compositionTarget->GetShaderOwnerAndVariableName()));
-#else
-        return true;
-#endif 
-    }
-
-    spv::Id shaderOwnerId = compositionTarget->compositionShaderOwner->GetId();
-    int shaderCompositionId = compositionTarget->compositionShaderId;
-    unsigned int compositionBytecodePosition = compositionTarget->tmpBytecodePosition;
-
-    //Check that the bytecode position has been correctly updated
-    if (compositionBytecodePosition >= spv.size() - 2) return error("invalid composition declaration bytecode position.");
-    spv::Op opCode = asOpCode(compositionBytecodePosition);
-    if (opCode != spv::OpShaderCompositionDeclaration) return error("invalid composition declaration bytecode position");
-    spv::Id shaderId = asIdSafe(compositionBytecodePosition + 1);
-    int compositionId = asLiteralValueSafe(compositionBytecodePosition + 2);
-    if (shaderId != shaderOwnerId || compositionId != shaderCompositionId) return error("invalid composition declaration bytecode position");
-
-    /*int compositionBytecodePosition = 0;
-
-    // find out composition declaration position in the bytecode
-    unsigned int start = header_size;
-    const unsigned int end = (unsigned int)spv.size();
-    while (start < end)
-    {
-        unsigned int wordCount = asWordCount(start);
-        spv::Op opCode = asOpCode(start);
-
-        switch (opCode)
-        {
-            case spv::OpShaderCompositionDeclaration:
-            {
-                spv::Id shaderId = asId(start + 1);
-                int compositionId = asLiteralValue(start + 2);
-                if (shaderId == shaderOwnerId && compositionId == shaderCompositionId)
-                {
-                    compositionBytecodePosition = start;
-                }
-                break;
-            }
-        }
-
-        if (compositionBytecodePosition > 0) break;
-        start += wordCount;
-    }
-
-    if (compositionBytecodePosition == 0)
-        return error("The target composition declaration has not been found");*/
-
-    //update our composition data, and add the instances instruction
-    // update number of instances
-    SetNewAtomicValueUpdate(bytecodeUpdateController, compositionBytecodePosition + 6, compositionCountInstances);
-
-    // Add the instance information in the bytecode
-    BytecodeChunk* bytecodeNewInstance = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, compositionBytecodePosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
-    spv::Id mergedShaderTypeId = shaderInstanceId;
-    spv::Instruction compInstanceInstr(spv::OpShaderCompositionInstance);
-    compInstanceInstr.addIdOperand(shaderOwnerId);
-    compInstanceInstr.addImmediateOperand(shaderCompositionId);
-    compInstanceInstr.addImmediateOperand(instanceNum);
-    compInstanceInstr.addIdOperand(mergedShaderTypeId);
-
-    compInstanceInstr.dump(bytecodeNewInstance->bytecode);
-
-    //vector<unsigned int> instructionBytecode;
-    //compInstanceInstr.dump(instructionBytecode);
-    //spv.insert(spv.begin() + (start + wordCount), instructionBytecode.begin(), instructionBytecode.end());
 
     return true;
 }
@@ -764,7 +685,7 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
         
         if (newStagedComposition->countInstances > 0)
         {
-            return error("PROUT PROUT HERE");
+            return error("PROUT PROUT HERE");  //to update here !
 
             //the overriden composition already has some instances, we merged them into the overriding compositions
             vector<ShaderClassData*> vecCompositionShaderInstances;
@@ -779,8 +700,9 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
                 ShaderClassData* compositionInstanceToTransfer = vecCompositionShaderInstances[ict];
                 int compositionInstanceNum = overridingComposition->countInstances;
                 overridingComposition->countInstances++;
-                if (!RecordNewInstanceForComposition(bytecodeUpdateController, overridingComposition, compositionInstanceToTransfer->GetId(), compositionInstanceNum, overridingComposition->countInstances))
-                    return error("Failed to insert a new composition into the bytecode");
+                
+                //if (!RecordNewInstanceForComposition(bytecodeUpdateController, overridingComposition, compositionInstanceToTransfer->GetId(), compositionInstanceNum, overridingComposition->countInstances))
+                //    return error("Failed to insert a new composition into the bytecode");
             }
 
             //apply the bytecode update controller

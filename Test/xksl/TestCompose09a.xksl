@@ -1,0 +1,85 @@
+//Compile a composition of a class having a composition too
+
+shader ISubComp
+{
+	int Compute()
+	{
+		return 0;
+	}
+}
+
+shader SubComp1: ISubComp
+{
+	int var1;
+	
+	override int Compute()
+	{
+		return var1;
+	}
+}
+
+shader SubComp2: ISubComp
+{
+	int var2;
+	
+	override int Compute()
+	{
+		return var2;
+	}
+}
+
+shader SubComp3: ISubComp
+{
+	int var3;
+	
+	override int Compute()
+	{
+		return var3;
+	}
+}
+
+shader SubComp4: ISubComp
+{
+	int var4;
+	
+	override int Compute()
+	{
+		return var4;
+	}
+}
+
+shader Comp
+{
+	int varA;
+	
+	compose ISubComp sb[];
+	
+	int Compute()
+	{
+		float f = varA;
+		foreach (var t in sb)
+		{
+			f += t.Compute();
+		}
+		return f;
+	}
+}
+
+shader ShaderA
+{
+	compose Comp color[];
+	compose ISubComp sb[];
+	
+	void main()
+	{
+		float f = 0;
+		foreach (var t in sb)
+		{
+			f += t.Compute();
+		}
+		foreach (var t in color)
+		{
+			f += t.Compute();
+		}
+	}
+}

@@ -7,10 +7,10 @@ mixer B
 B.mixin( Comp )
 B.addComposition( Comp.sb = A )
 
-mixer C
-C.mixin( ShaderA )
-C.addComposition( ShaderA.color = B )
-C.addComposition( ShaderA.sb = A )
+mixer m
+m.mixin( ShaderA )
+m.addComposition( ShaderA.color = B )
+m.addComposition( ShaderA.sb = A )
 
-C.setStageEntryPoint( Pixel="main" )
-C.compile
+m.setStageEntryPoint( Pixel="main" )
+m.compile

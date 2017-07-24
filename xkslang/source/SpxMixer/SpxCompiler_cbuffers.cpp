@@ -871,19 +871,31 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         {
                             //shader has been instanciated through a composition: find back the compositions path to update its name
                             unsigned int countPaths = shaderOwner->listInstancingPathItems.size();
-                            for (unsigned int ii = 0; ii < countPaths; ii++)
+                            for (int pathLevel = countPaths - 1; pathLevel >= 0; pathLevel--)
                             {
-                                const ShaderInstancingPathItem& instancingPathItem = shaderOwner->listInstancingPathItems[ii];
-                                ShaderCompositionDeclaration* compositionInstantiated = GetCompositionDeclaration(instancingPathItem.compositionShaderOwnerId, instancingPathItem.compositionNum);
-                                if (compositionInstantiated == nullptr)
-                                    return error("Composition not found for ShaderId: " + to_string(instancingPathItem.compositionShaderOwnerId) + " with composition num: " + to_string(instancingPathItem.compositionNum));
+                                //look for the item matching the pathLevel
+                                const ShaderInstancingPathItem* instancingPathItem = nullptr;
+                                //for (int k = countPaths - 1; k >= 0; k--) //go backward because we're likely to have inserted the highest level at the beginning
+                                for (unsigned int k = 0; k < countPaths ; k++)
+                                {
+                                    if (shaderOwner->listInstancingPathItems[k].instancePathLevel == pathLevel)
+                                    {
+                                        instancingPathItem = &(shaderOwner->listInstancingPathItems[k]);
+                                        break;
+                                    }
+                                }
+                                if (instancingPathItem == nullptr) return error("cannot find the shader instancing pathItem for level: " + to_string(pathLevel));
 
-                                if (instancingPathItem.instanceNum >= compositionInstantiated->countInstances)
+                                ShaderCompositionDeclaration* compositionInstantiated = GetCompositionDeclaration(instancingPathItem->compositionShaderOwnerId, instancingPathItem->compositionNum);
+                                if (compositionInstantiated == nullptr)
+                                    return error("Composition not found for ShaderId: " + to_string(instancingPathItem->compositionShaderOwnerId) + " with composition num: " + to_string(instancingPathItem->compositionNum));
+
+                                if (instancingPathItem->instanceNum >= compositionInstantiated->countInstances)
                                     return error("ShaderInstancingPathItem has an invalid instance num");
 
                                 string suffix = "." + compositionInstantiated->variableName;
                                 if (compositionInstantiated->isArray) {
-                                    suffix = suffix + "[" + to_string(instancingPathItem.instanceNum) + "]";
+                                    suffix = suffix + "[" + to_string(instancingPathItem->instanceNum) + "]";
                                 }
 
                                 aMember.linkName = aMember.linkName + suffix;

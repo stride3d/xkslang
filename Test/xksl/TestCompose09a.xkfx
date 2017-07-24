@@ -1,0 +1,28 @@
+convertAndLoad "TestCompose09a.xksl"
+
+mixer A1
+A1.mixin( SubComp1 )
+
+mixer A2
+A2.mixin( SubComp2 )
+
+mixer A3
+A3.mixin( SubComp3 )
+
+mixer A4
+A4.mixin( SubComp4 )
+
+mixer B
+B.mixin( Comp )
+B.addComposition( Comp.sb = A1 )
+B.addComposition( Comp.sb = A2 )
+
+mixer m
+m.mixin( ShaderA )
+m.addComposition( ShaderA.color = B )
+m.addComposition( ShaderA.color = B )
+m.addComposition( ShaderA.sb = A3 )
+m.addComposition( ShaderA.sb = A4 )
+
+m.setStageEntryPoint( Pixel="main" )
+m.compile
