@@ -822,7 +822,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     if (success)
     {
         //get all shader instancing path data
-        if (!UpdateCompositionDataFromBytecodeForCompositionAndShaders(nullptr)) return error("Failed to update the composition and shaders data bytecode position");
+        if (!GetAllShaderInstancingPathItems()) return error("Failed to get all shaders instancing path items");
 
         map<string, bool> membersUsedRawName;
         map<string, bool> membersUsedKeyName;

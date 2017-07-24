@@ -260,7 +260,7 @@ SpxCompiler* SpxCompiler::Clone()
                 ShaderClassData* shaderType = compositionToClone->shaderType == nullptr ? nullptr : compositionToClone->shaderType->tmpClonedShader;
                 ShaderClassData* shaderOwner = compositionToClone->compositionShaderOwner == nullptr ? nullptr : compositionToClone->compositionShaderOwner->tmpClonedShader;
 
-                ShaderCompositionDeclaration* clonedComposition = new ShaderCompositionDeclaration(compositionToClone->compositionShaderId, shaderOwner, shaderType,
+                ShaderCompositionDeclaration* clonedComposition = new ShaderCompositionDeclaration(compositionToClone->compositionShaderNum, shaderOwner, shaderType,
                     compositionToClone->variableName, compositionToClone->isStage, compositionToClone->isArray, compositionToClone->countInstances);
                 
                 compositionToClone->tmpClonedComposition = clonedComposition;
