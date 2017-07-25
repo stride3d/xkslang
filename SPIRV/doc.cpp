@@ -1992,7 +1992,7 @@ void Parameterize()
     InstructionDesc[OpCBufferProperties].operands.push(XkslShaderDataProperty, "'CbufferType'");
     InstructionDesc[OpCBufferProperties].operands.push(XkslShaderDataProperty, "'CbufferStage'");
     InstructionDesc[OpCBufferProperties].operands.push(OperandLiteralNumber, "'CountMembers'");
-    //InstructionDesc[OpCBufferProperties].operands.push(OperandVariableLiterals, "'SizeAndAlignment'");
+    InstructionDesc[OpCBufferProperties].operands.push(OperandLiteralString, "'Subpart name'");
 
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");

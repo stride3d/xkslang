@@ -994,13 +994,14 @@ void Builder::addMemberSemanticName(Id id, int num, const char* semantic)
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
-void Builder::addCBufferProperties(Id id, int cbufferType, int cbufferStage, int countMembers)
+void Builder::addCBufferProperties(Id id, int cbufferType, int cbufferStage, int countMembers, const char* subpartName)
 {
     Instruction* dec = new Instruction(OpCBufferProperties);
     dec->addIdOperand(id);
     dec->addImmediateOperand(cbufferType);
     dec->addImmediateOperand(cbufferStage);
     dec->addImmediateOperand(countMembers);
+    dec->addStringOperand(subpartName == nullptr? "": subpartName);
     //for (unsigned int i = 0; i < membersSizeAndAlignment.size(); ++i) dec->addImmediateOperand(membersSizeAndAlignment[i]);
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }

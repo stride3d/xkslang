@@ -3680,6 +3680,11 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
         new(&type) TType(typeList, structName, postDeclQualifier); // sets EbtBlock
     }
 
+    if (structSubpartName.size() > 0)
+    {
+        type.setCbufferSubpartName(structSubpartName.c_str());
+    }
+
     if (isRGroupBuffer)
     {
         type.getQualifier().isRGroup = true;

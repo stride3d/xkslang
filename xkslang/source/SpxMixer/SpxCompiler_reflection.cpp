@@ -253,7 +253,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 #endif
 
                     //we can have a cbuffer with no cbufferData: the compiled bytecode not necessarily has OpCBufferProperties instruction
-                    cbufferData = new CBufferTypeData(nullptr, type->GetId(), type->GetName(), false, true, countMembers);
+                    cbufferData = new CBufferTypeData(nullptr, type->GetId(), type->GetName(), "", false, true, countMembers);
                     type->SetCBufferData(cbufferData);
                 }
 

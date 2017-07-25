@@ -13,7 +13,9 @@ cbuffer PerView
     float4x4 ShaderMain_ViewProjection;
     float2 ShaderMain_ProjScreenRay;
     float4 ShaderMain_Eye;
+    float4 o0S5C0_LightDirectionalGroup__padding__Default;
     LightDirectional_DirectionalLightData o0S5C0_LightDirectionalGroup_Lights[8];
+    float4 o1S5C1_LightDirectionalGroup__padding__Lighting;
 };
 
 float4 o0S5C0_LightDirectionalGroup_8__GetMaxLightCount()

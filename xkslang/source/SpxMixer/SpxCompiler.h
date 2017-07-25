@@ -261,6 +261,7 @@ public:
         bool isStage;
         int cbufferCountMembers;
         std::string cbufferName;
+        std::string cbufferSubpartName;
         
         bool isUsed;
         
@@ -274,17 +275,19 @@ public:
         VariableInstruction* cbufferVariableTypeObject;
         int tmpFlag;
 
-        CBufferTypeData(ShaderClassData* shaderOwner, spv::Id cbufferTypeId, std::string cbufferName, bool isDefine, bool isStage, int cbufferCountMembers) :
-            shaderOwner(shaderOwner), cbufferTypeId(cbufferTypeId), cbufferName(cbufferName), isDefine(isDefine), isStage(isStage),
+        CBufferTypeData(ShaderClassData* shaderOwner, spv::Id cbufferTypeId, std::string cbufferName, std::string subpartName, bool isDefine, bool isStage, int cbufferCountMembers) :
+            shaderOwner(shaderOwner), cbufferTypeId(cbufferTypeId), cbufferName(cbufferName), cbufferSubpartName(subpartName), isDefine(isDefine), isStage(isStage),
             cbufferCountMembers(cbufferCountMembers), isUsed(false), cbufferMembersData(nullptr), correspondingShaderType(nullptr), posOpNameType(0), posOpNameVariable(0),
             cbufferTypeObject(nullptr), cbufferPointerTypeObject(nullptr), cbufferVariableTypeObject(nullptr), tmpFlag(0){}
         virtual ~CBufferTypeData() { if (cbufferMembersData != nullptr) delete cbufferMembersData; }
 
         virtual CBufferTypeData* Clone() {
-            CBufferTypeData* cbufferData = new CBufferTypeData(nullptr, cbufferTypeId, cbufferName, isDefine, isStage, cbufferCountMembers);
+            CBufferTypeData* cbufferData = new CBufferTypeData(nullptr, cbufferTypeId, cbufferName, cbufferSubpartName, isDefine, isStage, cbufferCountMembers);
             cbufferData->isUsed = isUsed;
             return cbufferData;
         }
+
+        bool hasSubpartName() { return cbufferSubpartName.size() > 0; }
     };
 
     class TypeStructMemberArray;
@@ -518,10 +521,9 @@ public:
         spv::Id structPointerTypeId;
         spv::Id structVariableTypeId;
 
-        unsigned int tmpTargetedBytecodePosition;
         std::string declarationName;
 
-        TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId), tmpTargetedBytecodePosition(0){}
+        TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId){}
 
         unsigned int countMembers() { return (unsigned int)members.size(); }
     };
@@ -836,6 +838,8 @@ private:
     int GetVectorTypeCountElements(TypeInstruction* vectorType);
 
     bool AreTypeInstructionsIdentical(spv::Id typeId1, spv::Id typeId2);
+    bool GetTypeFloatReflectionDescription(int width, TypeReflectionDescription& typeReflection);
+    bool GetTypeFloatVectorReflectionDescription(int floatWidth, int countElements, TypeReflectionDescription& typeReflection);
     bool GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, std::string* memberAttribute, TypeReflectionDescription& typeReflection,
         const std::vector<unsigned int>* listStartPositionOfAllMemberDecorateInstructions, int iterationCounter = 0);
     bool GetIntegerConstTypeExpressionValue(ConstInstruction* constObject, int& constValue);

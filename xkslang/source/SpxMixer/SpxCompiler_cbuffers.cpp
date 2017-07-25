@@ -204,44 +204,6 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     break;
                 }
 
-                //we're not getting the size / alignment from this instruction anymore
-                /*case spv::OpCBufferProperties:
-                {
-                    const spv::Id typeId = asId(start + 1);
-
-                    if (mapUsedCbuffers[typeId] != nullptr)
-                    {
-                        CBufferTypeData* cbufferData = mapUsedCbuffers[typeId];
-
-                        if (start > posLatestMemberNameOrDecorate) posLatestMemberNameOrDecorate = start;
-
-                        spv::XkslPropertyEnum cbufferType = (spv::XkslPropertyEnum)asLiteralValue(start + 2);
-                        spv::XkslPropertyEnum cbufferStage = (spv::XkslPropertyEnum)asLiteralValue(start + 3);
-                        unsigned int countMembers = asLiteralValue(start + 4);
-                        unsigned int remainingBytes = wordCount - 5;
-
-#ifdef XKSLANG_DEBUG_MODE
-                        if (cbufferData->correspondingShaderType->type->GetId() != typeId) { error("Invalid instruction Id"); break; }
-                        if (cbufferType != cbufferData->cbufferType) { error("Invalid cbuffer type property"); break; }
-                        if (countMembers != cbufferData->cbufferCountMembers) { error("Invalid cbuffer count members property"); break; }
-#endif
-
-                        if (countMembers != cbufferData->cbufferMembersData->countMembers()) { error("Inconsistent number of members"); break; }
-                        if (remainingBytes != countMembers * 2) { error("OpCBufferProperties instruction has an invalid number of bytes"); break; }
-                        
-                        for (unsigned int m = 0; m < countMembers; m++)
-                        {
-                            unsigned int k = start + 5 + (m * 2);
-                            unsigned int memberSize = asLiteralValue(k);
-                            unsigned int memberAlignment = asLiteralValue(k + 1);
-
-                            cbufferData->cbufferMembersData->members[m].memberSize = memberSize;
-                            cbufferData->cbufferMembersData->members[m].memberAlignment = memberAlignment;
-                        }
-                    }
-                    break;
-                }*/
-
                 case spv::OpMemberDecorate:
                 {
                     spv::Id id = asId(start + 1);
@@ -404,7 +366,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         //get the member type object
                         spv::Id cbufferMemberTypeId = asId(posElemStart + m);
                         TypeInstruction* cbufferMemberType = GetTypeById(cbufferMemberTypeId);
-                        if (cbufferMemberType == nullptr) return error("failed to find the cbuffer element type for id: " + to_string(cbufferMemberTypeId));
+                        if (cbufferMemberType == nullptr) { error("failed to find the cbuffer element type for id: " + to_string(cbufferMemberTypeId)); break; }
 
                         member.memberTypeId = cbufferMemberTypeId;
                         member.memberType = cbufferMemberType;
@@ -487,7 +449,10 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     BytecodeUpdateController bytecodeUpdateController;
     BytecodeChunk* bytecodeNewNamesAndDecocates = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posLatestMemberNameOrDecorate, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
     if (bytecodeNewNamesAndDecocates == nullptr) { error("Failed to insert a new bytecode chunk to insert new names and decorates"); success = false; }
+    BytecodeChunk* bytecodeNewTypes = nullptr;
+    unsigned int posToInsertNewTypes = 0;
 
+    spv::Id idOpTypeVectorFloat4 = spvUndefinedId;  //id of the OpType: float[4]
     unsigned int maxConstValueNeeded = 0;
     vector<spv::Id> mapIndexesWithConstValueId; //map const value with their typeId
     //vector<CBufferTypeData*> listUntouchedCbuffers;   //this list will contain all cbuffers being kept as they are
@@ -496,6 +461,82 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
     vector<CBufferTypeData*>& vectorCbuffersToRemap = mapUsedCbuffers;  //just reusing an existing vector to avoid creating a new one...
     std::fill(vectorCbuffersToRemap.begin(), vectorCbuffersToRemap.end(), nullptr);
+
+    if (success)
+    {
+        //=========================================================================================================================
+        //=========================================================================================================================
+        //get or create a float[4] type in the bytecode: this type will be needed to add some padding in some merged cbuffers
+        spv::Id idOpTypeFloat32 = spvUndefinedId;
+
+        unsigned int countObjects = listAllObjects.size();
+        for (unsigned int iObj = 0; iObj < countObjects; iObj++)
+        {
+            ObjectInstructionBase* obj = listAllObjects[iObj];
+            if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Type)
+            {
+                if (obj->bytecodeStartPosition > posToInsertNewTypes) posToInsertNewTypes = obj->bytecodeStartPosition;
+
+                switch (obj->opCode)
+                {
+                    case spv::OpTypeFloat:
+                    {
+                        int width = asLiteralValue(obj->bytecodeStartPosition + 2);
+                        if (width == 32) {
+                            if (idOpTypeFloat32 != spvUndefinedId) {
+                                error("We found at least 2 type: OpTypeFloat 32"); //this could be fine, but we should consider this case in the following "case spv::OpTypeVector" then
+                            }
+                            idOpTypeFloat32 = obj->GetId();
+                        }
+                        break;
+                    }
+
+                    case spv::OpTypeVector:
+                    {
+                        spv::Id vectorType = asId(obj->bytecodeStartPosition + 2);
+                        int vectorSize = asLiteralValue(obj->bytecodeStartPosition + 3);
+                        if (vectorSize == 4 && vectorType == idOpTypeFloat32) {
+                            if (idOpTypeVectorFloat4 != spvUndefinedId) {
+                                error("We found at least 2 type: OpTypeVector float32[4]"); //this could be fine, but we should consider this case in the following "case spv::OpTypeVector" then
+                            }
+                            idOpTypeVectorFloat4 = obj->GetId();
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (idOpTypeVectorFloat4 == spvUndefinedId)
+        {
+            //create the float and float[4] types
+            if (bytecodeNewTypes == nullptr)
+                bytecodeNewTypes = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posToInsertNewTypes, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+
+            if (bytecodeNewTypes == nullptr)
+            {
+                error("Failed to create a new bytecode chunk to insert new types");
+            }
+            else
+            {
+                if (idOpTypeFloat32 == spvUndefinedId)
+                {
+                    spv::Instruction typeFloat32(newBoundId++, spv::NoType, spv::OpTypeFloat);
+                    typeFloat32.addImmediateOperand(32);
+                    typeFloat32.dump(bytecodeNewTypes->bytecode);
+                    idOpTypeFloat32 = typeFloat32.getResultId();
+                }
+
+                spv::Instruction typeVectorFloat4(newBoundId++, spv::NoType, spv::OpTypeVector);
+                typeVectorFloat4.addIdOperand(idOpTypeFloat32);
+                typeVectorFloat4.addImmediateOperand(4);
+                typeVectorFloat4.dump(bytecodeNewTypes->bytecode);
+                idOpTypeVectorFloat4 = typeVectorFloat4.getResultId();
+            }
+        }
+
+        if (errorMessages.size() > 0) success = false;
+    }
 
     if (success && anyCBufferUsed)
     {
@@ -540,9 +581,63 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
             //==========================================================================================
             //merge the cbuffers
-            if (someCBuffersToMerge.size() > 0)
+            int countCbuffersToMerge = (int)someCBuffersToMerge.size();
+            if (countCbuffersToMerge > 0)
             {
                 bool onlyMergeUsedMembers = (mergingUndefinedCbuffers? true: false); //either we merge the whole cbuffer (for defined cbuffers), or only the members used (for undefined cbuffers)
+                bool canAddPaddingBeforeAndAfterCbufferWithSubpart = false;
+                bool defaultPaddingAlreadyAdded = false;
+
+                if (mergingUndefinedCbuffers == false)
+                {
+                    canAddPaddingBeforeAndAfterCbufferWithSubpart = true;
+
+                    //we regroup the cbuffers depending on their subpart name (cbuffers with subpart name move at the end, plus we regroup those with same subpart name)
+                    vector<CBufferTypeData*> cbufferWithSubParts;
+                    vector<CBufferTypeData*> cbufferWithoutSubParts;
+                    for (int k = 0; k < countCbuffersToMerge; k++)
+                    {
+                        CBufferTypeData* aCbuffer = someCBuffersToMerge[k];
+                        if (aCbuffer->hasSubpartName()) cbufferWithSubParts.push_back(aCbuffer);
+                        else cbufferWithoutSubParts.push_back(aCbuffer);
+                    }
+
+                    int countCbWithSubParts = (int)cbufferWithSubParts.size();
+                    int countCbWithoutSubParts = (int)cbufferWithoutSubParts.size();
+                    if (countCbWithSubParts > 0)
+                    {
+                        //regroup the cbuffers having a similar subpart name
+                        for (int k1 = countCbWithSubParts - 1; k1 >= 0; k1--)
+                        {
+                            const string& subPartName = cbufferWithSubParts[k1]->cbufferSubpartName;
+                            int posToInsert = -1;
+                            for (int k2 = k1 - 1; k2 >= 0; k2--)
+                            {
+                                if (cbufferWithSubParts[k2]->cbufferSubpartName == subPartName) {
+                                    if (posToInsert == -1) {
+                                        //both cbuffers are already next to each other: do nothing
+                                    }
+                                    else {
+                                        //swap the buffers
+                                        CBufferTypeData* tmpCbuffer = cbufferWithSubParts[posToInsert];
+                                        cbufferWithSubParts[posToInsert] = cbufferWithSubParts[k2];
+                                        cbufferWithSubParts[k2] = tmpCbuffer;
+
+                                        k2 = posToInsert;
+                                        posToInsert = -1;
+                                    }
+                                }
+                                else {
+                                    if (posToInsert == -1) posToInsert = k2;
+                                }
+                            }
+                        }
+
+                        int index = 0;
+                        for (int k = 0; k < countCbWithoutSubParts; k++) someCBuffersToMerge[index++] = cbufferWithoutSubParts[k];
+                        for (int k = 0; k < countCbWithSubParts; k++) someCBuffersToMerge[index++] = cbufferWithSubParts[k];
+                    }
+                }
 
                 if (onlyMergeUsedMembers)
                 {
@@ -614,13 +709,12 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 combinedCbuffer->structTypeId = newBoundId++;
                 combinedCbuffer->structPointerTypeId = newBoundId++;
                 combinedCbuffer->structVariableTypeId = newBoundId++;
-                combinedCbuffer->tmpTargetedBytecodePosition = 0;
 
                 //==========================================================================================
                 //create the list with all members from the cbuffers we're merging
-                for (auto itcb = someCBuffersToMerge.begin(); itcb != someCBuffersToMerge.end(); itcb++)
+                for (unsigned int iCbufferBeingMerged = 0; iCbufferBeingMerged < countCbuffersToMerge; iCbufferBeingMerged++)
                 {
-                    CBufferTypeData* cbufferToMerge = *itcb;
+                    CBufferTypeData* cbufferToMerge = someCBuffersToMerge[iCbufferBeingMerged];
                     ShaderClassData* cbufferShaderOwner = cbufferToMerge->shaderOwner;
                     const string cbufferToMergeShaderOwnerOriginalBaseName = cbufferShaderOwner->GetShaderOriginalBaseName();
                     ShaderTypeData* cbufferShaderType = cbufferToMerge->correspondingShaderType;
@@ -628,12 +722,12 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     vectorCbuffersToRemap[cbufferShaderType->variable->GetId()] = cbufferToMerge; //store the cbuffer to remap
                     bool isMemberStaged = cbufferToMerge->isStage;
 
-                    //check the best position where to insert the new cbuffer in the bytecode
-                    if (cbufferShaderType->type->bytecodeStartPosition > combinedCbuffer->tmpTargetedBytecodePosition) combinedCbuffer->tmpTargetedBytecodePosition = cbufferShaderType->type->bytecodeStartPosition;
-
                     const unsigned int countMembersInBufferToMerge = (unsigned int)cbufferToMerge->cbufferMembersData->members.size();
                     for (unsigned int m = 0; m < countMembersInBufferToMerge; m++)
                     {
+                        bool isFirstCbufferMember = (m == 0? true: false);
+                        bool isLastCbufferMember = (m == (countMembersInBufferToMerge - 1) ? true : false);
+
                         TypeStructMember& memberToMerge = cbufferToMerge->cbufferMembersData->members[m];
                         if (onlyMergeUsedMembers && memberToMerge.isUsed == false){
                             continue;
@@ -655,6 +749,46 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         }
                         else
                         {
+                            if (canAddPaddingBeforeAndAfterCbufferWithSubpart && isFirstCbufferMember && cbufferToMerge->hasSubpartName())
+                            {
+                                //we have a cbuffer with a subpart name: add the paddings
+                                if (!defaultPaddingAlreadyAdded)
+                                {
+                                    defaultPaddingAlreadyAdded = true;
+
+                                    string paddingMemberName = "_padding_" + combinedCbuffer->declarationName + "_Default";
+                                    int memberIndex = (unsigned int)combinedCbuffer->members.size();
+                                    combinedCbuffer->members.push_back(TypeStructMember());
+                                    TypeStructMember& defaultPaddingStructMember = combinedCbuffer->members.back();
+                                    defaultPaddingStructMember.declarationName = paddingMemberName;
+                                    defaultPaddingStructMember.linkName = paddingMemberName;
+                                    defaultPaddingStructMember.isStage = false;
+                                    defaultPaddingStructMember.cbufferShaderOwner = cbufferShaderOwner;
+                                    defaultPaddingStructMember.memberTypeId = idOpTypeVectorFloat4;
+                                    defaultPaddingStructMember.structMemberIndex = memberIndex;
+
+                                    TypeReflectionDescription typeReflectionData;
+                                    if (!GetTypeFloatVectorReflectionDescription(32, 4, typeReflectionData)) {
+                                        error("Failed to get the float type reflection data"); break;
+                                    }
+
+                                    defaultPaddingStructMember.memberSize = typeReflectionData.Size;
+                                    defaultPaddingStructMember.memberAlignment = typeReflectionData.Alignment;
+
+                                    //compute the member offset
+                                    int memberOffset = 0;
+                                    if (memberIndex > 0)
+                                    {
+                                        int previousMemberOffset = combinedCbuffer->members[memberIndex - 1].memberOffset;
+                                        int previousMemberSize = combinedCbuffer->members[memberIndex - 1].memberSize;
+                                        memberOffset = previousMemberOffset + previousMemberSize;
+                                        int memberAlignment = defaultPaddingStructMember.memberAlignment;
+                                        memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1)); //round to pow2
+                                    }
+                                    defaultPaddingStructMember.memberOffset = memberOffset;
+                                }
+                            }
+
                             int memberNewIndex = -1;
                             bool memberAlreadyAdded = false;
                             if (isMemberStaged)
@@ -710,11 +844,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                 {
                                     int previousMemberOffset = combinedCbuffer->members[memberNewIndex - 1].memberOffset;
                                     int previousMemberSize = combinedCbuffer->members[memberNewIndex - 1].memberSize;
-
                                     memberOffset = previousMemberOffset + previousMemberSize;
                                     int memberAlignment = newMember.memberAlignment;
-                                    //round to pow2
-                                    memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1));
+                                    memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1)); //round to pow2
                                 }
                                 newMember.memberOffset = memberOffset;
                             }
@@ -723,6 +855,52 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             memberToMerge.newStructMemberIndex = memberNewIndex;
                             memberToMerge.newStructTypeId = combinedCbuffer->structTypeId;
                             memberToMerge.newStructVariableAccessTypeId = combinedCbuffer->structVariableTypeId;
+
+                            if (canAddPaddingBeforeAndAfterCbufferWithSubpart && isLastCbufferMember && cbufferToMerge->hasSubpartName())
+                            {
+                                //we add a padding, unless the next cbuffer that we're going to merge has the same subpart name
+                                bool canAddEndingPadding = true;
+                                if (iCbufferBeingMerged < countCbuffersToMerge - 1)
+                                {
+                                    CBufferTypeData* nextCbufferToMerge = someCBuffersToMerge[iCbufferBeingMerged + 1];
+                                    if (nextCbufferToMerge->cbufferSubpartName == cbufferToMerge->cbufferSubpartName) canAddEndingPadding = false;
+                                }
+
+                                if (canAddEndingPadding)
+                                {
+                                    //we have a cbuffer with a subpart name: add the padding at the end
+                                    string paddingMemberName = "_padding_" + combinedCbuffer->declarationName + "_" + cbufferToMerge->cbufferSubpartName;
+                                    int memberIndex = (unsigned int)combinedCbuffer->members.size();
+                                    combinedCbuffer->members.push_back(TypeStructMember());
+                                    TypeStructMember& defaultPaddingStructMember = combinedCbuffer->members.back();
+                                    defaultPaddingStructMember.declarationName = paddingMemberName;
+                                    defaultPaddingStructMember.linkName = paddingMemberName;
+                                    defaultPaddingStructMember.isStage = false;
+                                    defaultPaddingStructMember.cbufferShaderOwner = cbufferShaderOwner;
+                                    defaultPaddingStructMember.memberTypeId = idOpTypeVectorFloat4;
+                                    defaultPaddingStructMember.structMemberIndex = memberIndex;
+
+                                    TypeReflectionDescription typeReflectionData;
+                                    if (!GetTypeFloatVectorReflectionDescription(32, 4, typeReflectionData)) {
+                                        error("Failed to get the float type reflection data"); break;
+                                    }
+
+                                    defaultPaddingStructMember.memberSize = typeReflectionData.Size;
+                                    defaultPaddingStructMember.memberAlignment = typeReflectionData.Alignment;
+
+                                    //compute the member offset
+                                    int memberOffset = 0;
+                                    if (memberIndex > 0)
+                                    {
+                                        int previousMemberOffset = combinedCbuffer->members[memberIndex - 1].memberOffset;
+                                        int previousMemberSize = combinedCbuffer->members[memberIndex - 1].memberSize;
+                                        memberOffset = previousMemberOffset + previousMemberSize;
+                                        int memberAlignment = defaultPaddingStructMember.memberAlignment;
+                                        memberOffset = (memberOffset + memberAlignment - 1) & (~(memberAlignment - 1)); //round to pow2
+                                    }
+                                    defaultPaddingStructMember.memberOffset = memberOffset;
+                                }
+                            }
                         }
                     }
                 }
@@ -770,7 +948,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             //Build the map of const value with the existing const object Id, for each index of the global stream struct
             mapIndexesWithConstValueId.resize(maxConstValueNeeded, spvUndefinedId);
             spv::Id idOpTypeIntS32 = spvUndefinedId;
-            unsigned int posLastConstEnd = 0;
+            unsigned int posLastConst = 0;
 
             for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
             {
@@ -778,7 +956,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Const)
                 {
                     ConstInstruction* constObject = dynamic_cast<ConstInstruction*>(obj);
-                    if (constObject->bytecodeEndPosition > posLastConstEnd) posLastConstEnd = constObject->bytecodeEndPosition;
+                    if (constObject->bytecodeStartPosition > posLastConst) posLastConst = constObject->bytecodeStartPosition;
 
                     if (constObject->isS32)
                     {
@@ -789,26 +967,31 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 }
             }
 
-            BytecodeChunk* bytecodeNewConsts = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posLastConstEnd, BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction);
-            if (bytecodeNewConsts == nullptr) return error("Failed to insert a new bytecode chunk to insert new consts");
-
-            //make the missing consts and OpTypeInt
-            if (idOpTypeIntS32 == spvUndefinedId)
+            BytecodeChunk* bytecodeNewConsts = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posLastConst, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+            if (bytecodeNewConsts == nullptr)
             {
-                spv::Instruction typeInt32(newBoundId++, spv::NoType, spv::OpTypeInt);
-                typeInt32.addImmediateOperand(32);
-                typeInt32.addImmediateOperand(1);
-                typeInt32.dump(bytecodeNewConsts->bytecode);
-                idOpTypeIntS32 = typeInt32.getResultId();
+                error("Failed to insert a new bytecode chunk to insert new consts");
             }
-            for (unsigned int i = 0; i < mapIndexesWithConstValueId.size(); ++i)
+            else
             {
-                if (mapIndexesWithConstValueId[i] == spvUndefinedId)
+                //make the missing consts and OpTypeInt
+                if (idOpTypeIntS32 == spvUndefinedId)
                 {
-                    spv::Instruction constant(newBoundId++, idOpTypeIntS32, spv::OpConstant);
-                    constant.addImmediateOperand(i);
-                    constant.dump(bytecodeNewConsts->bytecode);
-                    mapIndexesWithConstValueId[i] = constant.getResultId();
+                    spv::Instruction typeInt32(newBoundId++, spv::NoType, spv::OpTypeInt);
+                    typeInt32.addImmediateOperand(32);
+                    typeInt32.addImmediateOperand(1);
+                    typeInt32.dump(bytecodeNewConsts->bytecode);
+                    idOpTypeIntS32 = typeInt32.getResultId();
+                }
+                for (unsigned int i = 0; i < mapIndexesWithConstValueId.size(); ++i)
+                {
+                    if (mapIndexesWithConstValueId[i] == spvUndefinedId)
+                    {
+                        spv::Instruction constant(newBoundId++, idOpTypeIntS32, spv::OpConstant);
+                        constant.addImmediateOperand(i);
+                        constant.dump(bytecodeNewConsts->bytecode);
+                        mapIndexesWithConstValueId[i] = constant.getResultId();
+                    }
                 }
             }
 
@@ -822,102 +1005,115 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     if (success)
     {
         //get all shader instancing path data
-        if (!GetAllShaderInstancingPathItems()) return error("Failed to get all shaders instancing path items");
-
-        map<string, bool> membersUsedRawName;
-        map<string, bool> membersUsedKeyName;
-
-        for (unsigned int icb = 0; icb < listNewCbuffers.size(); icb++)
+        if (!GetAllShaderInstancingPathItems()) {
+            error("Failed to get all shaders instancing path items");
+        }
+        else
         {
-            TypeStructMemberArray* cbuffer = listNewCbuffers[icb];
-            //string cbufferId = string("_id") + to_string(icb);
+            map<string, bool> membersUsedRawName;
+            map<string, bool> membersUsedKeyName;
 
-            //update the new member's name
-            for (unsigned int pm = 0; pm < cbuffer->members.size(); pm++)
+            for (unsigned int icb = 0; icb < listNewCbuffers.size(); icb++)
             {
-                TypeStructMember& aMember = cbuffer->members[pm];
+                TypeStructMemberArray* cbuffer = listNewCbuffers[icb];
+                //string cbufferId = string("_id") + to_string(icb);
 
-                ShaderClassData* shaderOwner = aMember.cbufferShaderOwner;
-                string shaderOriginalBaseName = shaderOwner->GetShaderOriginalBaseName();
-                string shaderFullNameWithoutGenerics = shaderOwner->GetShaderFullNameWithoutGenerics();
-                string shaderFullName = shaderOwner->GetShaderFullName();
+                //update the new member's name
+                for (unsigned int pm = 0; pm < cbuffer->members.size(); pm++)
+                {
+                    TypeStructMember& aMember = cbuffer->members[pm];
+
+                    ShaderClassData* shaderOwner = aMember.cbufferShaderOwner;
+                    string shaderOriginalBaseName = shaderOwner->GetShaderOriginalBaseName();
+                    string shaderFullNameWithoutGenerics = shaderOwner->GetShaderFullNameWithoutGenerics();
+                    string shaderFullName = shaderOwner->GetShaderFullName();
                 
-                const string memberOriginalDeclarationName = aMember.declarationName;
+                    const string memberOriginalDeclarationName = aMember.declarationName;
 
-                //==========================================
-                //string memberDeclarationName = (shaderOwner->countGenerics > 0? (shaderFullNameWithoutGenerics + cbufferId) : shaderFullNameWithoutGenerics) + "." + memberOriginalDeclarationName;
-                string memberDeclarationName = shaderFullNameWithoutGenerics + "." + memberOriginalDeclarationName;
-                aMember.declarationName = getRawNameFromKeyName(memberDeclarationName);
+                    //==========================================
+                    //string memberDeclarationName = (shaderOwner->countGenerics > 0? (shaderFullNameWithoutGenerics + cbufferId) : shaderFullNameWithoutGenerics) + "." + memberOriginalDeclarationName;
+                    string memberDeclarationName = shaderFullNameWithoutGenerics + "." + memberOriginalDeclarationName;
+                    aMember.declarationName = getRawNameFromKeyName(memberDeclarationName);
 
-                //==========================================
-                //member keyName
-                if (aMember.HasLinkName())
-                {
-                    //nothing to do: the linkname is set by the user
-                }
-                else
-                {
-                    if (aMember.isStage)
+                    //==========================================
+                    //member keyName
+                    if (aMember.HasLinkName())
                     {
-                        //stage member
-                        aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
+                        //nothing to do: the linkname is set by the user
                     }
                     else
                     {
-                        //unstage member (we use the shader original base name as well (even if this could make name conflicts))
-                        aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
-
-                        if (shaderOwner->listInstancingPathItems.size() > 0)
+                        if (aMember.isStage)
                         {
-                            //shader has been instanciated through a composition: find back the compositions path to update its name
-                            unsigned int countPaths = shaderOwner->listInstancingPathItems.size();
-                            for (int pathLevel = countPaths - 1; pathLevel >= 0; pathLevel--)
+                            //stage member
+                            aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
+                        }
+                        else
+                        {
+                            //unstage member (we use the shader original base name as well (even if this could make name conflicts))
+                            aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
+
+                            if (shaderOwner->listInstancingPathItems.size() > 0)
                             {
-                                //look for the item matching the pathLevel
-                                const ShaderInstancingPathItem* instancingPathItem = nullptr;
-                                //for (int k = countPaths - 1; k >= 0; k--) //go backward because we're likely to have inserted the highest level at the beginning
-                                for (unsigned int k = 0; k < countPaths ; k++)
+                                //shader has been instanciated through a composition: find back the compositions path to update its name
+                                unsigned int countPaths = shaderOwner->listInstancingPathItems.size();
+                                for (int pathLevel = countPaths - 1; pathLevel >= 0; pathLevel--)
                                 {
-                                    if (shaderOwner->listInstancingPathItems[k].instancePathLevel == pathLevel)
+                                    //look for the item matching the pathLevel
+                                    const ShaderInstancingPathItem* instancingPathItem = nullptr;
+                                    //for (int k = countPaths - 1; k >= 0; k--) //go backward because we're likely to have inserted the highest level at the beginning
+                                    for (unsigned int k = 0; k < countPaths ; k++)
                                     {
-                                        instancingPathItem = &(shaderOwner->listInstancingPathItems[k]);
+                                        if (shaderOwner->listInstancingPathItems[k].instancePathLevel == pathLevel)
+                                        {
+                                            instancingPathItem = &(shaderOwner->listInstancingPathItems[k]);
+                                            break;
+                                        }
+                                    }
+                                    if (instancingPathItem == nullptr) {
+                                        error("cannot find the shader instancing pathItem for level: " + to_string(pathLevel));
                                         break;
                                     }
+
+                                    ShaderCompositionDeclaration* compositionInstantiated = GetCompositionDeclaration(instancingPathItem->compositionShaderOwnerId, instancingPathItem->compositionNum);
+                                    if (compositionInstantiated == nullptr) {
+                                        error("Composition not found for ShaderId: " + to_string(instancingPathItem->compositionShaderOwnerId) + " with composition num: " + to_string(instancingPathItem->compositionNum));
+                                        break;
+                                    }
+
+                                    if (instancingPathItem->instanceNum >= compositionInstantiated->countInstances) {
+                                        error("ShaderInstancingPathItem has an invalid instance num");
+                                        break;
+                                    }
+
+                                    string suffix = "." + compositionInstantiated->variableName;
+                                    if (compositionInstantiated->isArray) {
+                                        suffix = suffix + "[" + to_string(instancingPathItem->instanceNum) + "]";
+                                    }
+
+                                    aMember.linkName = aMember.linkName + suffix;
                                 }
-                                if (instancingPathItem == nullptr) return error("cannot find the shader instancing pathItem for level: " + to_string(pathLevel));
-
-                                ShaderCompositionDeclaration* compositionInstantiated = GetCompositionDeclaration(instancingPathItem->compositionShaderOwnerId, instancingPathItem->compositionNum);
-                                if (compositionInstantiated == nullptr)
-                                    return error("Composition not found for ShaderId: " + to_string(instancingPathItem->compositionShaderOwnerId) + " with composition num: " + to_string(instancingPathItem->compositionNum));
-
-                                if (instancingPathItem->instanceNum >= compositionInstantiated->countInstances)
-                                    return error("ShaderInstancingPathItem has an invalid instance num");
-
-                                string suffix = "." + compositionInstantiated->variableName;
-                                if (compositionInstantiated->isArray) {
-                                    suffix = suffix + "[" + to_string(instancingPathItem->instanceNum) + "]";
-                                }
-
-                                aMember.linkName = aMember.linkName + suffix;
                             }
                         }
                     }
+
+                    //Check that the names are not conflicting
+                    if (membersUsedRawName.find(aMember.declarationName) != membersUsedRawName.end())
+                    {
+                        error("2 cbuffer members have been assigned the same RawName: " + aMember.declarationName);
+                        break;
+                    }
+                    membersUsedRawName[aMember.declarationName] = true;
+
+                    if (membersUsedKeyName.find(aMember.linkName) != membersUsedKeyName.end())
+                    {
+                        error("2 cbuffer members have been assigned the same KeyName: " + aMember.linkName);
+                        break;
+                    }
+                    membersUsedKeyName[aMember.linkName] = true;
                 }
 
-                //Check that the names are not conflicting
-                if (membersUsedRawName.find(aMember.declarationName) != membersUsedRawName.end())
-                {
-                    error("2 cbuffer members have been assigned the same RawName: " + aMember.declarationName);
-                    break;
-                }
-                membersUsedRawName[aMember.declarationName] = true;
-
-                if (membersUsedKeyName.find(aMember.linkName) != membersUsedKeyName.end())
-                {
-                    error("2 cbuffer members have been assigned the same KeyName: " + aMember.linkName);
-                    break;
-                }
-                membersUsedKeyName[aMember.linkName] = true;
+                if (errorMessages.size() > 0) break;
             }
         }
 
@@ -1019,18 +1215,21 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             string& cbufferName = cbuffer->declarationName;
             string cbufferVarName = cbufferName + "_var";
 
-            BytecodeChunk* bytecodeMergedCBufferType = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, cbuffer->tmpTargetedBytecodePosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
-            if (bytecodeMergedCBufferType == nullptr) { error("Failed to insert a new bytecode chunk to create a new cbuffer (if conflict, should be fine to allow it)"); break; }
+            if (bytecodeNewTypes == nullptr)
+            {
+                bytecodeNewTypes = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posToInsertNewTypes, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+                if (bytecodeNewTypes == nullptr) { error("Failed to create a new bytecode chunk to insert new types"); break; }
+            }
 
             //make the cbuffer struct type
             {
                 spv::Instruction cbufferType(cbuffer->structTypeId, spv::NoType, spv::OpTypeStruct);
                 for (unsigned int m = 0; m < cbuffer->members.size(); ++m)
                 {
-                    const TypeStructMember& aStreamMember = cbuffer->members[m];
-                    cbufferType.addIdOperand(aStreamMember.memberTypeId);
+                    const TypeStructMember& aMember = cbuffer->members[m];
+                    cbufferType.addIdOperand(aMember.memberTypeId);
                 }
-                cbufferType.dump(bytecodeMergedCBufferType->bytecode);
+                cbufferType.dump(bytecodeNewTypes->bytecode);
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
                 //cbuffer struct name
@@ -1058,6 +1257,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 structCBufferPropertiesInstr.addImmediateOperand(spv::CBufferDefined);
                 structCBufferPropertiesInstr.addImmediateOperand(spv::CBufferUnstage);
                 structCBufferPropertiesInstr.addImmediateOperand(cbuffer->countMembers());
+                structCBufferPropertiesInstr.addStringOperand("");  //no subpart name (they have been processed at this stage)
+
                 //for (unsigned int m = 0; m < cbuffer->members.size(); ++m)
                 //{
                 //    //add size and alignment for each members
@@ -1072,14 +1273,14 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 spv::Instruction pointer(cbuffer->structPointerTypeId, spv::NoType, spv::OpTypePointer);
                 pointer.addImmediateOperand(spv::StorageClass::StorageClassUniform);
                 pointer.addIdOperand(cbuffer->structTypeId);
-                pointer.dump(bytecodeMergedCBufferType->bytecode);
+                pointer.dump(bytecodeNewTypes->bytecode);
             }
             
             //make the variable
             {
                 spv::Instruction variable(cbuffer->structVariableTypeId, cbuffer->structPointerTypeId, spv::OpVariable);
                 variable.addImmediateOperand(spv::StorageClass::StorageClassUniform);
-                variable.dump(bytecodeMergedCBufferType->bytecode);
+                variable.dump(bytecodeNewTypes->bytecode);
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
                 spv::Instruction variableName(spv::OpName);

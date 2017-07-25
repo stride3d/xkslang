@@ -1,34 +1,29 @@
-struct VS_STREAMS
+cbuffer PerDraw
 {
-    float aStream_id0;
+    float4x4 Transform_WorldInverse;
+    float4x4 Transform_WorldInverseTranspose;
+    float4x4 Transform_WorldView;
+    float4x4 Transform_WorldViewInverse;
+    float4x4 Transform_WorldViewProjection;
+    float3 Transform_WorldScale;
+    float4 Transform_EyeMS;
+};
+cbuffer PerLight
+{
+    float4 o0S2C0_ShaderComp_aFloat;
 };
 
-cbuffer PerLighting
+float4 o0S2C0_ShaderComp_Compute()
 {
-    float ShaderMain_var1;
-    float ShaderMain_var2;
-    float ShaderMain_var3;
-    float ShaderMain_var4;
-};
-
-static float VS_OUT_aStream;
-
-struct SPIRV_Cross_Output
-{
-    float VS_OUT_aStream : TEXCOORD0;
-};
+    return Transform_EyeMS + o0S2C0_ShaderComp_aFloat;
+}
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f };
-    _streams.aStream_id0 = ShaderMain_var1 + ShaderMain_var3;
-    VS_OUT_aStream = _streams.aStream_id0;
+    float4 f = Transform_EyeMS + o0S2C0_ShaderComp_Compute();
 }
 
-SPIRV_Cross_Output main()
+void main()
 {
     vert_main();
-    SPIRV_Cross_Output stage_output;
-    stage_output.VS_OUT_aStream = VS_OUT_aStream;
-    return stage_output;
 }

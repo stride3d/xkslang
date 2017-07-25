@@ -252,6 +252,69 @@ spv::Id SpxCompiler::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstru
     return typeConstId;
 }
 
+bool SpxCompiler::GetTypeFloatReflectionDescription(int width, TypeReflectionDescription& typeReflection)
+{
+    int memberSize = 0;
+    int memberAlignment = 0;
+    int arrayStride = 0;
+    int matrixStride = 0;
+    int countRows = 1;
+    int countCols = 1;
+    int countElementsInArray = 0;
+    EffectParameterReflectionClass memberClass = EffectParameterReflectionClass::Undefined;
+    EffectParameterReflectionType memberType = EffectParameterReflectionType::Undefined;
+
+    memberClass = EffectParameterReflectionClass::Scalar;
+    switch (width)
+    {
+        case 16: memberType = EffectParameterReflectionType::Float; break;  //should we create a special type?
+        case 32: memberType = EffectParameterReflectionType::Float; break;
+        case 64: memberType = EffectParameterReflectionType::Double; break;
+        default: return error("OpTypeFloat: invalid type width: " + to_string(width));
+    }
+
+    int nbByte = width >> 3;
+    memberSize = nbByte;
+    memberAlignment = nbByte;
+
+    typeReflection.Set(0, memberClass, memberType, countRows, countCols, memberSize, memberAlignment, arrayStride, matrixStride, countElementsInArray);
+    return true;
+}
+
+bool SpxCompiler::GetTypeFloatVectorReflectionDescription(int floatWidth, int countElements, TypeReflectionDescription& typeReflection)
+{
+    int memberSize = 0;
+    int memberAlignment = 0;
+    int arrayStride = 0;
+    int matrixStride = 0;
+    int countRows = 1;
+    int countCols = 1;
+    int countElementsInArray = 0;
+    EffectParameterReflectionClass memberClass = EffectParameterReflectionClass::Undefined;
+    EffectParameterReflectionType memberType = EffectParameterReflectionType::Undefined;
+
+    TypeReflectionDescription subElementReflection;
+    if (!GetTypeFloatReflectionDescription(floatWidth, subElementReflection))
+        return error("Failed to get the reflection data for the vector sub-element type");
+
+    if (countElements == 2) {
+        memberSize = subElementReflection.Size * 2;
+        memberAlignment = subElementReflection.Alignment * 2;
+    }
+    else {
+        memberSize = subElementReflection.Size * countElements;
+        memberAlignment = subElementReflection.Alignment * 4;
+    }
+
+    memberType = subElementReflection.Type;
+    memberClass = EffectParameterReflectionClass::Vector;
+    countRows = 1;
+    countCols = countElements;
+
+    typeReflection.Set(0, memberClass, memberType, countRows, countCols, memberSize, memberAlignment, arrayStride, matrixStride, countElementsInArray);
+    return true;
+}
+
 //Rules are inspired from glslang TIntermediate::getBaseAlignment function
 bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, string* memberAttribute, TypeReflectionDescription& typeReflection,
     const vector<unsigned int>* listStartPositionOfAllMemberDecorateInstructions, int iterationCounter)

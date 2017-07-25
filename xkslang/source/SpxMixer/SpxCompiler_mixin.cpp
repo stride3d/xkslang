@@ -3029,6 +3029,8 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 #endif
 
                 int countMembers = asLiteralValue(start + 4);
+                string cbufferSubpartName = literalString(start + 5);
+
                 TypeInstruction* type = GetTypeById(typeId);
                 if (type == nullptr) return error("Cannot find the type for Id: " + to_string(typeId));
                 if (!type->IsCBuffer()) { error("The cbuffer type is not a cbuffer (missing block decorate?): " + type->GetName()); break; }
@@ -3037,7 +3039,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 bool isStageCbuffer = (cbufferStageEnum == spv::CBufferStage ? true : false);
                 bool isDefinedCbuffer = (cbufferType == spv::CBufferDefined ? true : false);
 
-                CBufferTypeData* cbufferData = new CBufferTypeData(type->shaderOwner, typeId, type->GetName(), isDefinedCbuffer, isStageCbuffer, countMembers);
+                CBufferTypeData* cbufferData = new CBufferTypeData(type->shaderOwner, typeId, type->GetName(), cbufferSubpartName, isDefinedCbuffer, isStageCbuffer, countMembers);
                 type->SetCBufferData(cbufferData);
 
                 break;

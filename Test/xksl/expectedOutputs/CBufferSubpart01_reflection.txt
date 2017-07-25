@@ -1,0 +1,71 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerLighting [size: 128]
+@C    ShaderMain_var7 => ShaderMain.var7
+@C    ShaderMain_var8 => ShaderMain.var8
+@C    ShaderMain__padding__Default => _padding__Default
+@C    ShaderMain_var3 => ShaderMain.var3
+@C    ShaderMain_var4 => ShaderMain.var4
+@C    ShaderMain__padding__subpart2 => _padding__subpart2
+@C    ShaderMain_var1 => ShaderMain.var1
+@C    ShaderMain_var2 => ShaderMain.var2
+@C    ShaderMain__padding__subpart1 => _padding__subpart1
+@C    ShaderMain_var9 => ShaderMain.var9
+@C    ShaderMain_var10 => ShaderMain.var10
+@C    ShaderMain_var5 => ShaderMain.var5
+@C    ShaderMain_var6 => ShaderMain.var6
+@C    ShaderMain__padding__subpart3 => _padding__subpart3
+***********************
+*****  Resources  *****
+***********************
+@C    PerLighting => PerLighting [Stage: Vertex]
+
+ConstantBuffers. Count=1
+ cbuffer: Name="PerLighting" Size=128 MembersCount=14
+  KeyName="ShaderMain.var7 RawName="ShaderMain_var7" Offset=0
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderMain.var8 RawName="ShaderMain_var8" Offset=4
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="_padding__Default RawName="ShaderMain__padding__Default" Offset=16
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="ShaderMain.var3 RawName="ShaderMain_var3" Offset=32
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderMain.var4 RawName="ShaderMain_var4" Offset=36
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="_padding__subpart2 RawName="ShaderMain__padding__subpart2" Offset=48
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="ShaderMain.var1 RawName="ShaderMain_var1" Offset=64
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderMain.var2 RawName="ShaderMain_var2" Offset=68
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="_padding__subpart1 RawName="ShaderMain__padding__subpart1" Offset=80
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="ShaderMain.var9 RawName="ShaderMain_var9" Offset=96
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderMain.var10 RawName="ShaderMain_var10" Offset=100
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderMain.var5 RawName="ShaderMain_var5" Offset=104
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderMain.var6 RawName="ShaderMain_var6" Offset=108
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="_padding__subpart3 RawName="ShaderMain__padding__subpart3" Offset=112
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ResourceBindings. Count=1
+ Stage=Vertex KeyName="PerLighting" RawName="PerLighting" Class=ConstantBuffer Type=ConstantBuffer
+
+InputAttributes. Count=0

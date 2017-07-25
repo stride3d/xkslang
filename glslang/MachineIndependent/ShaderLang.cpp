@@ -2041,6 +2041,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                 bool isStageBlock = member.type->getQualifier().isStage;
                 bool isUnnamedBuffer = member.type->getTypeName().size() == 0;
                 bool isRGroupBlock = member.type->getQualifier().isRGroup;  //XKSL rules: a rgroup can only contain resources, while a cbuffer will contains basic types
+                TString* cbufferSubpartName = member.type->getCbufferSubpartName();
 
                 {
                     //CBuffer (either named or unnamed)
@@ -2188,9 +2189,9 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                         else
                         {
                             symbol->getWritableType().setTypeName(*blockName);  //set the type name
-                                                                                //set the userName to the variable (needed to retrieve variables id when mixing shaders)
                             TVariable* variableSymbol = symbol->getAsVariable();
-                            variableSymbol->SetUserDefinedName(blockVarName->c_str());
+                            variableSymbol->SetUserDefinedName(blockVarName->c_str()); //set the userName to the variable (needed to retrieve variables id when mixing shaders)
+                            if (cbufferSubpartName != nullptr) symbol->getWritableType().setCbufferSubpartName(cbufferSubpartName->c_str());
                         }
                     }
                 }

@@ -2734,7 +2734,8 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
 
         if (cbufferType != -1)
         {
-            builder.addCBufferProperties(spvType, cbufferType, cbufferStage, countMembers);
+            const char* subpartName = type.getCbufferSubpartName() == nullptr ? nullptr : type.getCbufferSubpartName()->c_str();
+            builder.addCBufferProperties(spvType, cbufferType, cbufferStage, countMembers, subpartName);
         }
     }
     

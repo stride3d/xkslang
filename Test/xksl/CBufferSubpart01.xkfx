@@ -1,0 +1,8 @@
+//Test parsing cbuffer subpart
+convertAndLoad "CBufferSubpart01.xksl"
+
+mixer m
+m.mixin( ShaderMain )
+
+m.setStageEntryPoint( Vertex="VSMain" )
+m.compile

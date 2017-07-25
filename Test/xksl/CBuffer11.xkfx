@@ -1,9 +1,12 @@
-//Test parsing cbuffer subpart
 convertAndLoad "CBuffer11.xksl"
 
 mixer m
-m.mixin( ShaderMain )
+m.mixin( ShaderMain[
+	comp1 = mixin(ShaderComp),
+	comp2 = mixin(ShaderComp2[
+		comp = mixin(ShaderComp)
+	])
+])
 
-
-m.setStageEntryPoint( Vertex="VSMain" )
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 m.compile
