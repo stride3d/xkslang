@@ -231,6 +231,78 @@ public:
 
 //===================================================================================================================================
 //===================================================================================================================================
+// Parsing
+static bool RecordSPXShaderBytecode(string shaderFullName, SpxBytecode* spxBytecode, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, vector<string>& errorMsgs)
+{
+    mapShaderNameBytecode[shaderFullName] = spxBytecode;
+    return true;
+}
+
+static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, const string& shaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
+    const vector<ShaderGenericValues>& listGenericsValue, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, SpxBytecode& spirXBytecode, string& infoMsg)
+{
+    ostringstream errorAndDebugMessages;
+    bool success = parser->ConvertShaderToSpx(shaderName, callbackRequestDataForShader, listGenericsValue, listUserDefinedMacros, spirXBytecode, &errorAndDebugMessages);
+    infoMsg = errorAndDebugMessages.str();
+
+    return success;
+}
+
+static bool ConvertAndLoadRecursif(const string& stringShaderAndgenericsValue, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
+    unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, vector<SpxBytecode*>& listAllocatedBytecodes, XkslParser* parser, vector<string>& errorMsgs)
+{
+    //================================================
+    //Parse and get the list of shader defintion
+    vector<ShaderParsingDefinition> listshaderDefinition;
+    if (!XkslParser::ParseStringWithShaderDefinitions(stringShaderAndgenericsValue.c_str(), listshaderDefinition))
+        return error(errorMsgs, "Failed to parse the shaders definition from: " + stringShaderAndgenericsValue);
+    vector<ShaderGenericValues> listShaderAndGenerics;
+    for (unsigned int is = 0; is < listshaderDefinition.size(); is++) {
+        listShaderAndGenerics.push_back(ShaderGenericValues(listshaderDefinition[is].shaderName, listshaderDefinition[is].genericsValue));
+    }
+    if (listShaderAndGenerics.size() == 0) return error(errorMsgs, "No shader name found");
+    string shaderName = listShaderAndGenerics[0].shaderName;
+
+    //================================================
+    //Parse and convert the shader and its dependencies
+    SpxBytecode* spxBytecode = nullptr;
+    vector<string> vecShadersParsed;
+    
+    string infoMsg;
+    spxBytecode = new SpxBytecode;
+    listAllocatedBytecodes.push_back(spxBytecode);
+    string spxOutputFileName;
+
+    bool success = RecursivelyParseAndConvertXkslShader(parser, shaderName, callbackRequestDataForShader, listShaderAndGenerics, listUserDefinedMacros, *spxBytecode, infoMsg);
+
+    if (!success) {
+        error(errorMsgs, infoMsg);
+        return error(errorMsgs, "Failed to parse and convert the XKSL file name: " + shaderName);
+    }
+
+    //Query the list of shaders from the bytecode
+    if (!SpxMixer::GetListAllShadersFromBytecode(*spxBytecode, vecShadersParsed, errorMsgs))
+    {
+        error(errorMsgs, "Failed to get the list of shader names for: " + shaderName);
+        return false;
+    }
+
+    //Store the new shaders bytecode in our map
+    for (unsigned int is = 0; is < vecShadersParsed.size(); ++is)
+    {
+        string shaderName = vecShadersParsed[is];
+        if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameBytecode, errorMsgs))
+        {
+            return error(errorMsgs, "Can't add the shader into the bytecode: " + shaderName);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//===================================================================================================================================
+//===================================================================================================================================
 // Compilation
 static bool CompileMixer(SpxMixer* mixer, vector<string>& errorMsgs)
 {
@@ -260,11 +332,12 @@ static bool CompileMixer(SpxMixer* mixer, vector<string>& errorMsgs)
 // Compositions
 
 //function prototype
-static bool MixinShaders(const string& mixinShadersInstructionString, EffectMixerObject* mixerTarget,
+static bool MixinShaders(const string& mixinShadersInstructionString, EffectMixerObject* mixerTarget, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
     unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, vector<string>& errorMsgs);
+static EffectMixerObject* CreateAndAddNewMixer(unordered_map<string, EffectMixerObject*>& mixerMap, string newMixerName, vector<string>& errorMsgs);
 
-static bool AddCompositionToMixer(EffectMixerObject* mixerTarget, const string& compositionString, const string& targetedShaderName,
+static bool AddCompositionToMixer(EffectMixerObject* mixerTarget, const string& compositionString, const string& targetedShaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
     unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, vector<string>& errorMsgs)
 {
@@ -350,7 +423,7 @@ static bool AddCompositionToMixer(EffectMixerObject* mixerTarget, const string& 
             if (anonymousMixer == nullptr) return error(errorMsgs, "addComposition: Failed to create a new mixer object");
 
             //Mix the new mixer with the shaders specified in the function parameter
-            success = MixinShaders(anonymousMixerInstruction, anonymousMixer, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
+            success = MixinShaders(anonymousMixerInstruction, anonymousMixer, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
             if (!success) return error(errorMsgs, "Mixin failed: " + mixinInstructionStr);
 
             compositionSourceMixer = anonymousMixer;
@@ -379,7 +452,7 @@ static bool AddCompositionToMixer(EffectMixerObject* mixerTarget, const string& 
     return true;
 }
 
-static bool AddCompositionsToMixer(EffectMixerObject* mixerTarget, const string& compositionsString, const string& targetedShaderName,
+static bool AddCompositionsToMixer(EffectMixerObject* mixerTarget, const string& compositionsString, const string& targetedShaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
     unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, vector<string>& errorMsgs)
 {
@@ -394,7 +467,7 @@ static bool AddCompositionsToMixer(EffectMixerObject* mixerTarget, const string&
     for (unsigned int k = 0; k < compositions.size(); ++k)
     {
         const string& compositionStr = compositions[k];
-        bool success = AddCompositionToMixer(mixerTarget, compositionStr, targetedShaderName, mapShaderNameBytecode, mixerMap,
+        bool success = AddCompositionToMixer(mixerTarget, compositionStr, targetedShaderName, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
             listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
 
         if (!success) return error(errorMsgs, "Failed to add the composition into the mixer: " + compositionStr);
@@ -422,7 +495,7 @@ static EffectMixerObject* CreateAndAddNewMixer(unordered_map<string, EffectMixer
     return mixerObject;
 }
 
-static bool MixinShaders(const string& mixinShadersInstructionString, EffectMixerObject* mixerTarget,
+static bool MixinShaders(const string& mixinShadersInstructionString, EffectMixerObject* mixerTarget, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
     unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, vector<string>& errorMsgs)
 {
@@ -451,10 +524,7 @@ static bool MixinShaders(const string& mixinShadersInstructionString, EffectMixe
             if (shaderBytecode == nullptr)
             {
                 //the shader bytecode does not exist, we can try its xksl file to parse and generate it
-                success = ConvertAndLoadRecursif(effectName, mapShaderNameBytecode, listAllocatedBytecodes,
-                    shaderName, shaderFilesPrefix, listUserDefinedMacros,
-                    parser, useXkslangDll);
-
+                success = ConvertAndLoadRecursif(shaderName, listUserDefinedMacros, callbackRequestDataForShader, mapShaderNameBytecode, listAllocatedBytecodes, parser, errorMsgs);
                 if (!success) return error(errorMsgs, "Failed to recursively convert and load the shaders: " + shaderName);
 
                 shaderBytecode = XkfxParser::GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameBytecode, true, errorMsgs);
@@ -493,7 +563,7 @@ static bool MixinShaders(const string& mixinShadersInstructionString, EffectMixe
         if (compositionString.size() > 0)
         {
             //Directly add compositions into the mixed shader
-            success = AddCompositionsToMixer(mixerTarget, compositionString, shaderFullName, mapShaderNameBytecode, mixerMap,
+            success = AddCompositionsToMixer(mixerTarget, compositionString, shaderFullName, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
                 listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
 
             if (!success) 
@@ -507,7 +577,7 @@ static bool MixinShaders(const string& mixinShadersInstructionString, EffectMixe
 //===================================================================================================================================
 //===================================================================================================================================
 // XKFX command lines parsing
-bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, vector<string>& errorMsgs)
+bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, vector<string>& errorMsgs)
 {
     bool success = true;
 
@@ -520,7 +590,7 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, vector<string>& 
     if (!parser->InitialiseXkslang())
     {
         error(errorMsgs, "Failed to initialize the XkslParser");
-        return;
+        return false;
     }
 
     string previousPartialLine = "";  //to let us have an instruction defined on several lines
@@ -556,8 +626,6 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, vector<string>& 
             //quit parsing the effect
             break;
         }
-        //else if (firstInstruction.compare("set") == 0)
-        //else if (firstInstruction.compare("addResourcesLibrary") == 0)
         else if (firstInstruction.compare("setDefine") == 0)
         {
             string strMacrosDefinition = XkslangUtils::trim(remainingLine);
@@ -572,8 +640,6 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, vector<string>& 
                 success = false; break;
             }
         }
-        //else if (firstInstruction.compare("convertAndLoadRecursif") == 0)
-        //else if (firstInstruction.compare("convertAndLoad") == 0)
         else if (firstInstruction.compare("mixer") == 0)
         {
             string mixerName;
@@ -624,7 +690,7 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, vector<string>& 
             {
                 if (instructionParametersStr.size() == 0) { error(errorMsgs, "Mixin: parameters expected"); success = false; break; }
 
-                success = MixinShaders(instructionParametersStr, mixerTarget, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
+                success = MixinShaders(instructionParametersStr, mixerTarget, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
 
                 if (!success) { error(errorMsgs, "Mixin failed"); success = false; break; }
             }
@@ -632,7 +698,7 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, vector<string>& 
             {
                 if (instructionParametersStr.size() == 0) { error(errorMsgs, "addComposition: parameters expected"); success = false; break; }
 
-                success = AddCompositionsToMixer(mixerTarget, instructionParametersStr, "", mapShaderNameBytecode, mixerMap,
+                success = AddCompositionsToMixer(mixerTarget, instructionParametersStr, "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
                     listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
 
                 if (!success) { error(errorMsgs, "Failed to add the compositions instruction to the mixer: " + instructionParametersStr); success = false; break; }
