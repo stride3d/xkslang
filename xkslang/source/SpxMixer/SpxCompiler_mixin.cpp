@@ -2628,6 +2628,23 @@ bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>&
     return true;
 }
 
+bool SpxCompiler::GetListAllMethodsInfo(std::vector<MethodInfo>& vecMethodsInfo)
+{
+    vecMethodsInfo.clear();
+
+    for (auto it = vecAllFunctions.begin(); it != vecAllFunctions.end(); ++it)
+    {
+        FunctionInstruction* aFunction = *it;
+        vecMethodsInfo.push_back(MethodInfo(
+            aFunction->name,
+            aFunction->shaderOwner->shaderOriginalBaseName,
+            aFunction->IsStage()
+        ));
+    }
+
+    return true;
+}
+
 //Update the start and end position for all objects
 bool SpxCompiler::UpdateAllObjectsPositionInTheBytecode()
 {
@@ -2992,6 +3009,9 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                         break;
                     case spv::XkslPropertyEnum::PropertyMethodStatic:
                         function->ParsedStaticAttribute();
+                        break;
+                    case spv::XkslPropertyEnum::PropertyStage:
+                        function->ParsedStageAttribute();
                         break;
                     }
                 }

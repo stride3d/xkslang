@@ -102,6 +102,20 @@ bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& sha
     return true;
 }
 
+bool SpxMixer::GetListAllMethodsInfo(vector<MethodInfo>& vecMethods, vector<string>& msgs)
+{
+    if (spxCompiler == nullptr) {
+        return error(msgs, "mixer is empty");
+    }
+
+    if (!spxCompiler->GetListAllMethodsInfo(vecMethods))
+    {
+        spxCompiler->copyMessagesTo(msgs);
+        return error(msgs, "Failed to get the list of all method infos from the mixer");
+    }
+    return true;
+}
+
 bool SpxMixer::GetListAllCompositionsInfo(vector<ShaderCompositionInfo>& vecCompositions, vector<string>& msgs)
 {
     if (spxCompiler == nullptr) {

@@ -33,6 +33,18 @@ namespace xkslang
         Compute = 5,
     };
 
+    class MethodInfo
+    {
+    public:
+        std::string Name;
+        std::string ShaderClassName;
+        bool IsStage;
+
+        MethodInfo() {}
+        MethodInfo(const std::string& name, const std::string& shaderClassName, bool isStage)
+            : Name(name), ShaderClassName(shaderClassName), IsStage(isStage) {}
+    };
+
     class ShaderCompositionInfo
     {
     public:

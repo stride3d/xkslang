@@ -9,9 +9,9 @@
 @C    ShaderMain_ViewProjection => ShaderMain.ViewProjection
 @C    ShaderMain_ProjScreenRay => ShaderMain.ProjScreenRay
 @C    ShaderMain_Eye => ShaderMain.Eye
-@C    o0S5C0_LightDirectionalGroup__padding__Default => _padding__Default
+@C    o0S5C0_LightDirectionalGroup__padding_PerView_Default => _padding_PerView_Default
 @C    o0S5C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights
-@C    o1S5C1_LightDirectionalGroup__padding__Lighting => _padding__Lighting
+@C    o1S5C1_LightDirectionalGroup__padding_PerView_Lighting => _padding_PerView_Lighting
 ***********************
 *****  Resources  *****
 ***********************
@@ -40,13 +40,13 @@ ConstantBuffers. Count=1
   KeyName="ShaderMain.Eye RawName="ShaderMain_Eye" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="_padding__Default RawName="o0S5C0_LightDirectionalGroup__padding__Default" Offset=352
+  KeyName="_padding_PerView_Default RawName="o0S5C0_LightDirectionalGroup__padding_PerView_Default" Offset=352
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
   KeyName="LightDirectionalGroup.Lights RawName="o0S5C0_LightDirectionalGroup_Lights" Offset=368
   Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
 
-  KeyName="_padding__Lighting RawName="o1S5C1_LightDirectionalGroup__padding__Lighting" Offset=624
+  KeyName="_padding_PerView_Lighting RawName="o1S5C1_LightDirectionalGroup__padding_PerView_Lighting" Offset=624
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=1

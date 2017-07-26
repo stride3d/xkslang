@@ -10,7 +10,7 @@
 @C    Transformation_WorldViewProjection => Transformation.WorldViewProjection
 @C    Transformation_WorldScale => Transformation.WorldScale
 @C    Transformation_EyeMS => Transformation.EyeMS
- cbuffer PerView [size: 636]
+ cbuffer PerView [size: 672]
 @C    Transformation_View => Transformation.View
 @C    Transformation_ViewInverse => Transformation.ViewInverse
 @C    Transformation_Projection => Transformation.Projection
@@ -18,9 +18,11 @@
 @C    Transformation_ViewProjection => Transformation.ViewProjection
 @C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
 @C    Transformation_Eye => Transformation.Eye
-@C    o0S450C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups
-@C    o0S450C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups
-@C    o1S435C0_LightSimpleAmbient_AmbientLight => LightSimpleAmbient.AmbientLight.environmentLights
+@C    o0S450C0_LightDirectionalGroup__padding_PerView_Default => _padding_PerView_Default
+@C    o0S450C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups[0]
+@C    o0S450C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
+@C    o1S435C0_LightSimpleAmbient_AmbientLight => LightSimpleAmbient.AmbientLight.environmentLights[0]
+@C    o1S435C0_LightSimpleAmbient__padding_PerView_Lighting => _padding_PerView_Lighting
  cbuffer PerMaterial [size: 60]
 @C    o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat => Material.SpecularIntensityValue
 @C    o18S246C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor => Material.SpecularValue
@@ -71,7 +73,7 @@ ConstantBuffers. Count=4
   KeyName="Transformation.EyeMS RawName="Transformation_EyeMS" Offset=400
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
- cbuffer: Name="PerView" Size=636 MembersCount=10
+ cbuffer: Name="PerView" Size=672 MembersCount=12
   KeyName="Transformation.View RawName="Transformation_View" Offset=0
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
@@ -93,14 +95,20 @@ ConstantBuffers. Count=4
   KeyName="Transformation.Eye RawName="Transformation_Eye" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="LightDirectionalGroup.Lights.directLightGroups RawName="o0S450C0_LightDirectionalGroup_Lights" Offset=352
+  KeyName="_padding_PerView_Default RawName="o0S450C0_LightDirectionalGroup__padding_PerView_Default" Offset=352
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="LightDirectionalGroup.Lights.directLightGroups[0] RawName="o0S450C0_LightDirectionalGroup_Lights" Offset=368
   Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
 
-  KeyName="DirectLightGroupPerView.LightCount.directLightGroups RawName="o0S450C0_DirectLightGroupPerView_LightCount" Offset=608
+  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0] RawName="o0S450C0_DirectLightGroupPerView_LightCount" Offset=624
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="LightSimpleAmbient.AmbientLight.environmentLights RawName="o1S435C0_LightSimpleAmbient_AmbientLight" Offset=624
+  KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0] RawName="o1S435C0_LightSimpleAmbient_AmbientLight" Offset=640
   Class=Color Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  KeyName="_padding_PerView_Lighting RawName="o1S435C0_LightSimpleAmbient__padding_PerView_Lighting" Offset=656
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
  cbuffer: Name="PerMaterial" Size=60 MembersCount=6
   KeyName="Material.SpecularIntensityValue RawName="o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat" Offset=0

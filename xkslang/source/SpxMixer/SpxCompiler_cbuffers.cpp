@@ -710,9 +710,12 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 combinedCbuffer->structPointerTypeId = newBoundId++;
                 combinedCbuffer->structVariableTypeId = newBoundId++;
 
+                //name of the combined cbuffer is the name of the first cbuffer (all merged cbuffers have the same name)
+                combinedCbuffer->cbufferDeclarationName = someCBuffersToMerge[0]->cbufferName;
+
                 //==========================================================================================
                 //create the list with all members from the cbuffers we're merging
-                for (unsigned int iCbufferBeingMerged = 0; iCbufferBeingMerged < countCbuffersToMerge; iCbufferBeingMerged++)
+                for (int iCbufferBeingMerged = 0; iCbufferBeingMerged < countCbuffersToMerge; iCbufferBeingMerged++)
                 {
                     CBufferTypeData* cbufferToMerge = someCBuffersToMerge[iCbufferBeingMerged];
                     ShaderClassData* cbufferShaderOwner = cbufferToMerge->shaderOwner;
@@ -756,7 +759,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                 {
                                     defaultPaddingAlreadyAdded = true;
 
-                                    string paddingMemberName = "_padding_" + combinedCbuffer->declarationName + "_Default";
+                                    string paddingMemberName = "_padding_" + combinedCbuffer->cbufferDeclarationName + "_Default";
                                     int memberIndex = (unsigned int)combinedCbuffer->members.size();
                                     combinedCbuffer->members.push_back(TypeStructMember());
                                     TypeStructMember& defaultPaddingStructMember = combinedCbuffer->members.back();
@@ -869,7 +872,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                 if (canAddEndingPadding)
                                 {
                                     //we have a cbuffer with a subpart name: add the padding at the end
-                                    string paddingMemberName = "_padding_" + combinedCbuffer->declarationName + "_" + cbufferToMerge->cbufferSubpartName;
+                                    string paddingMemberName = "_padding_" + combinedCbuffer->cbufferDeclarationName + "_" + cbufferToMerge->cbufferSubpartName;
                                     int memberIndex = (unsigned int)combinedCbuffer->members.size();
                                     combinedCbuffer->members.push_back(TypeStructMember());
                                     TypeStructMember& defaultPaddingStructMember = combinedCbuffer->members.back();
@@ -914,10 +917,6 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 {
                     listNewCbuffers.push_back(combinedCbuffer);
                     if ((unsigned int)combinedCbuffer->members.size() > maxConstValueNeeded) maxConstValueNeeded = (unsigned int)combinedCbuffer->members.size();
-
-                    //=============================================================================================================
-                    //name of the combined cbuffer is the name of the first cbuffer (all merged cbuffers have the same name)
-                    combinedCbuffer->declarationName = someCBuffersToMerge[0]->cbufferName;
                 }
                 
                 //all cbuffers merged will be removed
@@ -1212,7 +1211,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
         for (auto itcb = listNewCbuffers.begin(); itcb != listNewCbuffers.end(); itcb++)
         {
             TypeStructMemberArray* cbuffer = *itcb;
-            string& cbufferName = cbuffer->declarationName;
+            string& cbufferName = cbuffer->cbufferDeclarationName;
             string cbufferVarName = cbufferName + "_var";
 
             if (bytecodeNewTypes == nullptr)

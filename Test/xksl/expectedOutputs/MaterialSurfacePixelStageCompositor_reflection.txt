@@ -1,0 +1,115 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerView [size: 672]
+@C    Transformation_View => Transformation.View
+@C    Transformation_ViewInverse => Transformation.ViewInverse
+@C    Transformation_Projection => Transformation.Projection
+@C    Transformation_ProjectionInverse => Transformation.ProjectionInverse
+@C    Transformation_ViewProjection => Transformation.ViewProjection
+@C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
+@C    Transformation_Eye => Transformation.Eye
+@C    o0S297C0_LightDirectionalGroup__padding_PerView_Default => _padding_PerView_Default
+@C    o0S297C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups[0]
+@C    o0S297C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
+@C    o1S282C0_LightSimpleAmbient_AmbientLight => LightSimpleAmbient.AmbientLight.environmentLights[0]
+@C    o1S282C0_LightSimpleAmbient__padding_PerView_Lighting => _padding_PerView_Lighting
+ cbuffer PerMaterial [size: 56]
+@C    o18S2C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat => Material.SpecularIntensityValue
+@C    o18S2C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor => Material.SpecularValue
+@C    o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat => Material.GlossinessValue
+@C    o18S2C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale => Material.TextureScale
+@C    o18S2C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset => Material.TextureOffset
+ cbuffer PerFrame [size: 8]
+@C    Global_Time => Global.Time
+@C    Global_TimeStep => Global.TimeStep
+***********************
+*****  Resources  *****
+***********************
+@C    PerView => PerView [Stage: Pixel]
+@C    PerMaterial => PerMaterial [Stage: Pixel]
+@C    PerFrame => PerFrame [Stage: Pixel]
+@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage: Pixel]
+@C    DynamicTexture_Texture => Material.DiffuseMap [Stage: Pixel]
+
+ConstantBuffers. Count=3
+ cbuffer: Name="PerView" Size=672 MembersCount=12
+  KeyName="Transformation.View RawName="Transformation_View" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ViewInverse RawName="Transformation_ViewInverse" Offset=64
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.Projection RawName="Transformation_Projection" Offset=128
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ProjectionInverse RawName="Transformation_ProjectionInverse" Offset=192
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ViewProjection RawName="Transformation_ViewProjection" Offset=256
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ProjScreenRay RawName="Transformation_ProjScreenRay" Offset=320
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Transformation.Eye RawName="Transformation_Eye" Offset=336
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="_padding_PerView_Default RawName="o0S297C0_LightDirectionalGroup__padding_PerView_Default" Offset=352
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="LightDirectionalGroup.Lights.directLightGroups[0] RawName="o0S297C0_LightDirectionalGroup_Lights" Offset=368
+  Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
+
+  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0] RawName="o0S297C0_DirectLightGroupPerView_LightCount" Offset=624
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0] RawName="o1S282C0_LightSimpleAmbient_AmbientLight" Offset=640
+  Class=Color Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  KeyName="_padding_PerView_Lighting RawName="o1S282C0_LightSimpleAmbient__padding_PerView_Lighting" Offset=656
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ cbuffer: Name="PerMaterial" Size=56 MembersCount=5
+  KeyName="Material.SpecularIntensityValue RawName="o18S2C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Material.SpecularValue RawName="o18S2C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor" Offset=16
+  Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="Material.GlossinessValue RawName="o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat" Offset=32
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Material.TextureScale RawName="o18S2C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale" Offset=40
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Material.TextureOffset RawName="o18S2C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset" Offset=48
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+ cbuffer: Name="PerFrame" Size=8 MembersCount=2
+  KeyName="Global.Time RawName="Global_Time" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Global.TimeStep RawName="Global_TimeStep" Offset=4
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ResourceBindings. Count=5
+ Stage=Pixel KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerFrame" RawName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="Material.DiffuseMap" RawName="DynamicTexture_Texture" Class=ShaderResourceView Type=Texture2D
+
+InputAttributes. Count=12
+ SemanticName="" SemanticIndex=0
+ SemanticName="" SemanticIndex=1
+ SemanticName="" SemanticIndex=2
+ SemanticName="" SemanticIndex=3
+ SemanticName="" SemanticIndex=4
+ SemanticName="" SemanticIndex=5
+ SemanticName="" SemanticIndex=6
+ SemanticName="POSITION_WS" SemanticIndex=7
+ SemanticName="SV_Position" SemanticIndex=8
+ SemanticName="" SemanticIndex=9
+ SemanticName="TEXCOORD0" SemanticIndex=10
+ SemanticName="TEXCOORD0" SemanticIndex=11

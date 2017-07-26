@@ -16,8 +16,6 @@
 namespace xkslang
 {
 
-//typedef bool(*CallbackRequestDataForShader)(const std::string&, std::string&);
-
 class GenericValue
 {
 public:

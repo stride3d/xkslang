@@ -471,6 +471,44 @@ namespace xkslangDll
         return true;
     }
 
+    bool GetMixerMethodsData(uint32_t mixerHandleId, MethodData** p_methods, int32_t* p_countMethods)
+    {
+        errorMessages.clear();
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) { return error("Invalid mixer handle"); }
+        
+        vector<string> errorMsgs;
+        vector<MethodInfo> vecMethods;
+        bool success = mixerData->mixer->GetListAllMethodsInfo(vecMethods, errorMsgs);
+        if (!success) { return error("Failed to get the list of all methods from the mixer"); }
+
+        unsigned int countMethods = vecMethods.size();
+        if (countMethods > 0)
+        {
+            MethodData* methodsBuffer = (MethodData*)GlobalAlloc(0, countMethods * sizeof(MethodData));
+
+            for (unsigned int k = 0; k < countMethods; k++)
+            {
+                const MethodInfo& method = vecMethods[k];
+
+                const char* methodName = allocateAndCopyStringOnGlobalHeap(method.Name.c_str());
+                const char* shaderClassName = allocateAndCopyStringOnGlobalHeap(method.ShaderClassName.c_str());
+                methodsBuffer[k] = MethodData(
+                    methodName,
+                    shaderClassName,
+                    method.IsStage? 1: 0
+                );
+            }
+            *p_methods = methodsBuffer;
+        }
+        else *p_methods = nullptr;
+
+        *p_countMethods = (int32_t)countMethods;
+
+        return true;
+    }
+
 	bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
 		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers,
 		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings,

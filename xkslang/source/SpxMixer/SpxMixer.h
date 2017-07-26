@@ -31,6 +31,7 @@ public:
 
     static bool GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, std::vector<std::string>& vecShaderName, std::vector<std::string>& messages);
     bool GetListAllCompositionsInfo(std::vector<ShaderCompositionInfo>& vecCompositions, std::vector<std::string>& messages);
+    bool GetListAllMethodsInfo(std::vector<MethodInfo>& vecMethods, std::vector<std::string>& messages);
 
     //Mix shaders linked to shaderName
     bool Mixin(const SpxBytecode& spirXBytecode, const std::string& shaderName, std::vector<std::string>& messages);

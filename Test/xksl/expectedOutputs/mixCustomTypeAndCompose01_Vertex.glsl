@@ -15,9 +15,9 @@ layout(std140) uniform PerView
     layout(row_major) mat4 ShaderMain_ViewProjection;
     vec2 ShaderMain_ProjScreenRay;
     vec4 ShaderMain_Eye;
-    vec4 o0S5C0_LightDirectionalGroup__padding__Default;
+    vec4 o0S5C0_LightDirectionalGroup__padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S5C0_LightDirectionalGroup_Lights[8];
-    vec4 o1S5C1_LightDirectionalGroup__padding__Lighting;
+    vec4 o1S5C1_LightDirectionalGroup__padding_PerView_Lighting;
 } PerView_var;
 
 vec4 o0S5C0_LightDirectionalGroup_8__GetMaxLightCount()

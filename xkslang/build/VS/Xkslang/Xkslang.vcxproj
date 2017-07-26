@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\..\source\Common\Converter.cpp" />
     <ClCompile Include="..\..\..\source\Common\xkslangDefine.cpp" />
     <ClCompile Include="..\..\..\source\Common\SpxBytecode.cpp" />
+    <ClCompile Include="..\..\..\source\Common\xkslangUtils.cpp" />
     <ClCompile Include="..\..\..\source\SpxMixer\EffectReflection.cpp" />
     <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_compositions.cpp" />
     <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_merge.cpp" />
@@ -32,16 +33,19 @@
     <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_cbuffers.cpp" />
     <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_reflection.cpp" />
     <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_streams.cpp" />
+    <ClCompile Include="..\..\..\source\XkfxProcessor\XkfxParser.cpp" />
     <ClCompile Include="..\..\..\source\XkslParser\XkslParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\Common\Converter.h" />
     <ClInclude Include="..\..\..\source\Common\xkslangDefine.h" />
     <ClInclude Include="..\..\..\source\Common\SpxBytecode.h" />
+    <ClInclude Include="..\..\..\source\Common\xkslangUtils.h" />
     <ClInclude Include="..\..\..\source\SpxMixer\EffectReflection.h" />
     <ClInclude Include="..\..\..\source\SpxMixer\OutputStageBytecode.h" />
     <ClInclude Include="..\..\..\source\SpxMixer\SpxMixer.h" />
     <ClInclude Include="..\..\..\source\SpxMixer\SpxCompiler.h" />
+    <ClInclude Include="..\..\..\source\XkfxProcessor\XkfxParser.h" />
     <ClInclude Include="..\..\..\source\XkslParser\XkslParser.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

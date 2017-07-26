@@ -70,6 +70,18 @@ namespace xkslangDll
 			: Size(size), CountMembers(countMembers), CbufferName(name), Members(members) {}
 	};
 
+    class MethodData
+    {
+    public:
+        const char* Name;
+        const char* ShaderClassName;
+        int32_t IsStage;
+
+        MethodData() {}
+        MethodData(const char* name, const char* shaderClassName, int32_t isStage)
+            : Name(name), ShaderClassName(shaderClassName), IsStage(isStage) {}
+    };
+
 	//struct containing a resource binding data (to be easily exchanged between native and managed apps)
 	struct EffectResourceBindingDescriptionData
 	{
@@ -182,6 +194,8 @@ namespace xkslangDll
     //We can use the following functions to get the size of a stage compiled bytecode buffer, then to copy its data into a buffer allocated by the caller
     extern "C" __declspec(dllexport) int32_t GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage);
     extern "C" __declspec(dllexport) int32_t CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage, uint32_t* bytecodeBuffer, int32_t bufferSize);
+
+    extern "C" __declspec(dllexport) bool GetMixerMethodsData(uint32_t mixerHandleId, MethodData** methods, int32_t* countMethods);
 
 	//After a mixer has been successfully compiled: call this function to get its Effect Reflection Data
 	extern "C" __declspec(dllexport) bool GetMixerEffectReflectionData(uint32_t mixerHandleId,

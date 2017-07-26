@@ -371,13 +371,14 @@ public:
         };
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
-            : ObjectInstructionBase(parsedData, name, source), isStatic(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
+            : ObjectInstructionBase(parsedData, name, source), isStatic(false), isStage(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
             flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined),
             streamIOStructVariableResultId(0), streamIOStructConstantCompositeId(0), streamOutputStructVariableResultId(0), streamOutputStructConstantCompositeId(0) {}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->isStatic = isStatic;
+            obj->isStage = isStage;
             obj->overrideAttributeState = overrideAttributeState;
             obj->fullName = fullName;
             return obj;
@@ -392,12 +393,16 @@ public:
         void ParsedStaticAttribute(){isStatic = true;}
         bool IsStatic(){return isStatic;}
 
+        void ParsedStageAttribute() { isStage = true; }
+        bool IsStage() { return isStage; }
+
         void ParsedOverrideAttribute(){if (overrideAttributeState == OverrideAttributeStateEnum::Undefined) overrideAttributeState = OverrideAttributeStateEnum::Defined; }
         OverrideAttributeStateEnum GetOverrideAttributeState() const { return overrideAttributeState; }
         void SetOverrideAttributeState(OverrideAttributeStateEnum state) { overrideAttributeState = state; }
 
     private:
         bool isStatic;
+        bool isStage;
         OverrideAttributeStateEnum overrideAttributeState;
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
         std::string fullName;  //name only use for debug purpose
@@ -521,7 +526,7 @@ public:
         spv::Id structPointerTypeId;
         spv::Id structVariableTypeId;
 
-        std::string declarationName;
+        std::string cbufferDeclarationName;
 
         TypeStructMemberArray() : structTypeId(spvUndefinedId), structPointerTypeId(spvUndefinedId), structVariableTypeId(spvUndefinedId){}
 
@@ -772,6 +777,7 @@ public:
     bool AddNewShaderCompositionDeclaration(ShaderClassData* shader, ShaderCompositionDeclaration* composition);
     bool GetListAllCompositions(std::vector<ShaderCompositionDeclaration*>& vecCompositions);
     bool GetListAllCompositionsInfo(std::vector<ShaderCompositionInfo>& vecCompositionsInfo);
+    bool GetListAllMethodsInfo(std::vector<MethodInfo>& vecMethodsInfo);
     bool AddCompositionInstance(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
     int GetBytecodePositionForShaderCompositionDeclaration(ShaderCompositionDeclaration* composition);
     bool GetAllShaderInstancingPathItems();

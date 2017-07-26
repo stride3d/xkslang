@@ -50,9 +50,11 @@ layout(std140) uniform PerView
     layout(row_major) mat4 Transformation_ViewProjection;
     vec2 Transformation_ProjScreenRay;
     vec4 Transformation_Eye;
+    vec4 o0S450C0_LightDirectionalGroup__padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S450C0_LightDirectionalGroup_Lights[8];
     int o0S450C0_DirectLightGroupPerView_LightCount;
     vec3 o1S435C0_LightSimpleAmbient_AmbientLight;
+    vec4 o1S435C0_LightSimpleAmbient__padding_PerView_Lighting;
 } PerView_var;
 
 layout(std140) uniform PerMaterial

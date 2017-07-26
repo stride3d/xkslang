@@ -59,9 +59,11 @@ cbuffer PerView
     float4x4 Transformation_ViewProjection;
     float2 Transformation_ProjScreenRay;
     float4 Transformation_Eye;
+    float4 o0S297C0_LightDirectionalGroup__padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S297C0_LightDirectionalGroup_Lights[8];
     int o0S297C0_DirectLightGroupPerView_LightCount;
     float3 o1S282C0_LightSimpleAmbient_AmbientLight;
+    float4 o1S282C0_LightSimpleAmbient__padding_PerView_Lighting;
 };
 cbuffer PerMaterial
 {

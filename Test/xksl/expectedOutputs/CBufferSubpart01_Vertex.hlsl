@@ -7,18 +7,18 @@ cbuffer PerLighting
 {
     int ShaderMain_var7;
     int ShaderMain_var8;
-    float4 ShaderMain__padding__Default;
+    float4 ShaderMain__padding_PerLighting_Default;
     int ShaderMain_var3;
     int ShaderMain_var4;
-    float4 ShaderMain__padding__subpart2;
+    float4 ShaderMain__padding_PerLighting_subpart2;
     int ShaderMain_var1;
     int ShaderMain_var2;
-    float4 ShaderMain__padding__subpart1;
+    float4 ShaderMain__padding_PerLighting_subpart1;
     int ShaderMain_var9;
     int ShaderMain_var10;
     int ShaderMain_var5;
     int ShaderMain_var6;
-    float4 ShaderMain__padding__subpart3;
+    float4 ShaderMain__padding_PerLighting_subpart3;
 };
 
 static int VS_OUT_aStream;

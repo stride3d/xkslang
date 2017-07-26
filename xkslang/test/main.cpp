@@ -17,7 +17,9 @@
 #include "Utils.h"
 #include "../source/Common/SpxBytecode.h"
 #include "../source/Common/Converter.h"
+#include "../source/Common/xkslangUtils.h"
 #include "../source/XkslParser/XkslParser.h"
+#include "../source/XkfxProcessor/XkfxParser.h"
 #include "../source/SpxMixer/OutputStageBytecode.h"
 #include "../source/SpxMixer/SpxMixer.h"
 #include "../source/SpxMixer/EffectReflection.h"
@@ -124,168 +126,168 @@ static bool processEffectWithDirectCallToXkslang = true;
 static bool processEffectWithDllApi = false;
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
-    { "TestMixin01", "TestMixin01.xkfx" },
-    { "TestMixin02", "TestMixin02.xkfx" },
-    { "TestMixin03", "TestMixin03.xkfx" },
-    { "TestMixin04", "TestMixin04.xkfx" },
-    { "TestMixin05", "TestMixin05.xkfx" },
-    { "TestMixin06", "TestMixin06.xkfx" },
-    { "TestMixin07", "TestMixin07.xkfx" },
-    { "TestMixin08", "TestMixin08.xkfx" },
+    //{ "TestMixin01", "TestMixin01.xkfx" },
+    //{ "TestMixin02", "TestMixin02.xkfx" },
+    //{ "TestMixin03", "TestMixin03.xkfx" },
+    //{ "TestMixin04", "TestMixin04.xkfx" },
+    //{ "TestMixin05", "TestMixin05.xkfx" },
+    //{ "TestMixin06", "TestMixin06.xkfx" },
+    //{ "TestMixin07", "TestMixin07.xkfx" },
+    //{ "TestMixin08", "TestMixin08.xkfx" },
     
-    { "TestMerge01", "TestMerge01.xkfx" },
-    { "TestMerge02", "TestMerge02.xkfx" },
-    { "TestMerge03", "TestMerge03.xkfx" },
-    { "TestMerge04", "TestMerge04.xkfx" },
-    { "TestMerge05", "TestMerge05.xkfx" },
-    { "TestMerge06", "TestMerge06.xkfx" },
-    { "TestMerge07", "TestMerge07.xkfx" },
-    { "TestMerge08", "TestMerge08.xkfx" },
-    { "TestMerge09", "TestMerge09.xkfx" },
-    { "TestMerge10", "TestMerge10.xkfx" },
-    { "TestMerge11", "TestMerge11.xkfx" },
-    { "TestMerge12", "TestMerge12.xkfx" },
-    { "TestMerge13", "TestMerge13.xkfx" },
+    //{ "TestMerge01", "TestMerge01.xkfx" },
+    //{ "TestMerge02", "TestMerge02.xkfx" },
+    //{ "TestMerge03", "TestMerge03.xkfx" },
+    //{ "TestMerge04", "TestMerge04.xkfx" },
+    //{ "TestMerge05", "TestMerge05.xkfx" },
+    //{ "TestMerge06", "TestMerge06.xkfx" },
+    //{ "TestMerge07", "TestMerge07.xkfx" },
+    //{ "TestMerge08", "TestMerge08.xkfx" },
+    //{ "TestMerge09", "TestMerge09.xkfx" },
+    //{ "TestMerge10", "TestMerge10.xkfx" },
+    //{ "TestMerge11", "TestMerge11.xkfx" },
+    //{ "TestMerge12", "TestMerge12.xkfx" },
+    //{ "TestMerge13", "TestMerge13.xkfx" },
     
-    { "TestCompose02", "TestCompose02.xkfx" },
-    { "TestCompose03", "TestCompose03.xkfx" },
-    { "TestCompose04", "TestCompose04.xkfx" },
-    { "TestCompose05", "TestCompose05.xkfx" },
-    { "TestCompose06", "TestCompose06.xkfx" },
-    { "TestCompose07", "TestCompose07.xkfx" },
-    { "TestCompose08", "TestCompose08.xkfx" },
-    { "TestCompose09", "TestCompose09.xkfx" },
-    { "TestCompose09a", "TestCompose09a.xkfx" },
-    { "TestCompose10", "TestCompose10.xkfx" },
-    { "TestCompose11", "TestCompose11.xkfx" },
-    { "TestCompose12", "TestCompose12.xkfx" },
-    { "TestCompose13", "TestCompose13.xkfx" },
-    { "TestCompose14", "TestCompose14.xkfx" },
-    { "TestCompose15", "TestCompose15.xkfx" },
-    { "TestCompose16", "TestCompose16.xkfx" },
-    { "TestCompose17", "TestCompose17.xkfx" },
-    { "TestCompose18", "TestCompose18.xkfx" },
-    { "TestCompose19", "TestCompose19.xkfx" },
-    { "TestCompose20", "TestCompose20.xkfx" },
-    { "TestCompose21", "TestCompose21.xkfx" },
-    { "TestCompose22", "TestCompose22.xkfx" },
-    { "TestCompose23", "TestCompose23.xkfx" },
-    { "TestCompose24", "TestCompose24.xkfx" },
-    { "TestCompose25", "TestCompose25.xkfx" },
-    { "TestCompose26", "TestCompose26.xkfx" },
-    { "TestCompose27", "TestCompose27.xkfx" },
-    { "TestCompose28", "TestCompose28.xkfx" },
-    { "TestCompose29", "TestCompose29.xkfx" },
-    { "TestCompose30", "TestCompose30.xkfx" },
+    //{ "TestCompose02", "TestCompose02.xkfx" },
+    //{ "TestCompose03", "TestCompose03.xkfx" },
+    //{ "TestCompose04", "TestCompose04.xkfx" },
+    //{ "TestCompose05", "TestCompose05.xkfx" },
+    //{ "TestCompose06", "TestCompose06.xkfx" },
+    //{ "TestCompose07", "TestCompose07.xkfx" },
+    //{ "TestCompose08", "TestCompose08.xkfx" },
+    //{ "TestCompose09", "TestCompose09.xkfx" },
+    //{ "TestCompose09a", "TestCompose09a.xkfx" },
+    //{ "TestCompose10", "TestCompose10.xkfx" },
+    //{ "TestCompose11", "TestCompose11.xkfx" },
+    //{ "TestCompose12", "TestCompose12.xkfx" },
+    //{ "TestCompose13", "TestCompose13.xkfx" },
+    //{ "TestCompose14", "TestCompose14.xkfx" },
+    //{ "TestCompose15", "TestCompose15.xkfx" },
+    //{ "TestCompose16", "TestCompose16.xkfx" },
+    //{ "TestCompose17", "TestCompose17.xkfx" },
+    //{ "TestCompose18", "TestCompose18.xkfx" },
+    //{ "TestCompose19", "TestCompose19.xkfx" },
+    //{ "TestCompose20", "TestCompose20.xkfx" },
+    //{ "TestCompose21", "TestCompose21.xkfx" },
+    //{ "TestCompose22", "TestCompose22.xkfx" },
+    //{ "TestCompose23", "TestCompose23.xkfx" },
+    //{ "TestCompose24", "TestCompose24.xkfx" },
+    //{ "TestCompose25", "TestCompose25.xkfx" },
+    //{ "TestCompose26", "TestCompose26.xkfx" },
+    //{ "TestCompose27", "TestCompose27.xkfx" },
+    //{ "TestCompose28", "TestCompose28.xkfx" },
+    //{ "TestCompose29", "TestCompose29.xkfx" },
+    //{ "TestCompose30", "TestCompose30.xkfx" },
 
-    { "TestForLoop", "TestForLoop.xkfx" },
-    { "TestForEach01", "TestForEach01.xkfx" },
-    { "TestForEach02", "TestForEach02.xkfx" },
-    { "TestForEach03", "TestForEach03.xkfx" },
-    { "TestForEach04", "TestForEach04.xkfx" },
-    { "TestForEachCompose01", "TestForEachCompose01.xkfx" },
-    { "TestForEachCompose02", "TestForEachCompose02.xkfx" },
-    { "TestForEachCompose03", "TestForEachCompose03.xkfx" },
-    { "TestMergeStreams01", "TestMergeStreams01.xkfx" },
+    //{ "TestForLoop", "TestForLoop.xkfx" },
+    //{ "TestForEach01", "TestForEach01.xkfx" },
+    //{ "TestForEach02", "TestForEach02.xkfx" },
+    //{ "TestForEach03", "TestForEach03.xkfx" },
+    //{ "TestForEach04", "TestForEach04.xkfx" },
+    //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
+    //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
+    //{ "TestForEachCompose03", "TestForEachCompose03.xkfx" },
+    //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
     
-    { "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
-    { "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
-    { "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
-    { "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
-    { "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
-    { "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
-    { "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
+    //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
+    //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
+    //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
+    //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
+    //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
+    //{ "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
+    //{ "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
     
-    { "TestGenerics01", "TestGenerics01.xkfx" },
-    { "TestGenerics02", "TestGenerics02.xkfx" },
-    { "TestGenerics03", "TestGenerics03.xkfx" },
-    { "TestGenerics04", "TestGenerics04.xkfx" },
-    { "TestGenerics05", "TestGenerics05.xkfx" },
-    { "TestGenerics06", "TestGenerics06.xkfx" },
-    { "TestGenerics07", "TestGenerics07.xkfx" },
-    { "TestGenerics08", "TestGenerics08.xkfx" },
-    { "TestGenerics09", "TestGenerics09.xkfx" },
-    { "TestGenerics10", "TestGenerics10.xkfx" },
-    { "TestGenerics11", "TestGenerics11.xkfx" },
+    //{ "TestGenerics01", "TestGenerics01.xkfx" },
+    //{ "TestGenerics02", "TestGenerics02.xkfx" },
+    //{ "TestGenerics03", "TestGenerics03.xkfx" },
+    //{ "TestGenerics04", "TestGenerics04.xkfx" },
+    //{ "TestGenerics05", "TestGenerics05.xkfx" },
+    //{ "TestGenerics06", "TestGenerics06.xkfx" },
+    //{ "TestGenerics07", "TestGenerics07.xkfx" },
+    //{ "TestGenerics08", "TestGenerics08.xkfx" },
+    //{ "TestGenerics09", "TestGenerics09.xkfx" },
+    //{ "TestGenerics10", "TestGenerics10.xkfx" },
+    //{ "TestGenerics11", "TestGenerics11.xkfx" },
     
     { "CBuffer01", "CBuffer01.xkfx" },
-    { "CBuffer02", "CBuffer02.xkfx" },
-    { "CBuffer03", "CBuffer03.xkfx" },
-    { "CBuffer04", "CBuffer04.xkfx" },
-    { "CBuffer05", "CBuffer05.xkfx" },
-    { "CBuffer06", "CBuffer06.xkfx" },
-    { "CBuffer07", "CBuffer07.xkfx" },
-    { "CBuffer08", "CBuffer08.xkfx" },
-    { "CBuffer09", "CBuffer09.xkfx" },
-    { "CBuffer10", "CBuffer10.xkfx" },
-    { "CBuffer11", "CBuffer11.xkfx" },
-    { "CBufferSubpart01", "CBufferSubpart01.xkfx" },
+    //{ "CBuffer02", "CBuffer02.xkfx" },
+    //{ "CBuffer03", "CBuffer03.xkfx" },
+    //{ "CBuffer04", "CBuffer04.xkfx" },
+    //{ "CBuffer05", "CBuffer05.xkfx" },
+    //{ "CBuffer06", "CBuffer06.xkfx" },
+    //{ "CBuffer07", "CBuffer07.xkfx" },
+    //{ "CBuffer08", "CBuffer08.xkfx" },
+    //{ "CBuffer09", "CBuffer09.xkfx" },
+    //{ "CBuffer10", "CBuffer10.xkfx" },
+    //{ "CBuffer11", "CBuffer11.xkfx" },
+    //{ "CBufferSubpart01", "CBufferSubpart01.xkfx" },
     
-    { "ShaderWithResources01", "ShaderWithResources01.xkfx" },
-    { "ShaderWithResources02", "ShaderWithResources02.xkfx" },
-    { "ShaderWithResources03", "ShaderWithResources03.xkfx" },
-    { "ShaderWithResources04", "ShaderWithResources04.xkfx" },
-    { "ShaderWithResources05", "ShaderWithResources05.xkfx" },
-    { "ShaderWithResources06", "ShaderWithResources06.xkfx" },
-    ///////////////////////{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },  //SPIRV-Cross crash
-    { "ShaderWithResources08", "ShaderWithResources08.xkfx" },
+    //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
+    //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
+    //{ "ShaderWithResources03", "ShaderWithResources03.xkfx" },
+    //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
+    //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
+    //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
+    /////////////////////////{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },  //SPIRV-Cross crash
+    //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
     
-    { "testDependency01", "testDependency01.xkfx" },
-    { "testDependency02", "testDependency02.xkfx" },
-    { "testDependency03", "testDependency03.xkfx" },
-    { "testDependency04", "testDependency04.xkfx" },
-    { "testDependency05", "testDependency05.xkfx" },
-    { "testDependency06", "testDependency06.xkfx" },
-    { "testDependency07", "testDependency07.xkfx" },
+    //{ "testDependency01", "testDependency01.xkfx" },
+    //{ "testDependency02", "testDependency02.xkfx" },
+    //{ "testDependency03", "testDependency03.xkfx" },
+    //{ "testDependency04", "testDependency04.xkfx" },
+    //{ "testDependency05", "testDependency05.xkfx" },
+    //{ "testDependency06", "testDependency06.xkfx" },
+    //{ "testDependency07", "testDependency07.xkfx" },
     
-    { "EffectReflection01", "EffectReflection01.xkfx" },
-    { "EffectReflection02", "EffectReflection02.xkfx" },
-    { "EffectReflection03", "EffectReflection03.xkfx" },
-    { "EffectReflection04", "EffectReflection04.xkfx" },
-    { "EffectReflection05", "EffectReflection05.xkfx" },
-    { "EffectReflection06", "EffectReflection06.xkfx" },
-	{ "EffectReflection07", "EffectReflection07.xkfx" },
+    //{ "EffectReflection01", "EffectReflection01.xkfx" },
+    //{ "EffectReflection02", "EffectReflection02.xkfx" },
+    //{ "EffectReflection03", "EffectReflection03.xkfx" },
+    //{ "EffectReflection04", "EffectReflection04.xkfx" },
+    //{ "EffectReflection05", "EffectReflection05.xkfx" },
+    //{ "EffectReflection06", "EffectReflection06.xkfx" },
+	//{ "EffectReflection07", "EffectReflection07.xkfx" },
     
-    { "SemanticTest01", "SemanticTest01.xkfx" },
-    { "testTypeSize", "testTypeSize.xkfx" },
-    { "namespaces01", "namespaces01.xkfx" },
-    { "testMacro01", "testMacro01.xkfx" },
-    { "testVarKeyword01", "testVarKeyword01.xkfx" },
-    { "userCustomType01", "userCustomType01.xkfx" },
-    { "userCustomType02", "userCustomType02.xkfx" },
-    { "TestLink01", "TestLink01.xkfx" },
-    { "TestLink02", "TestLink02.xkfx" },
-    { "TestLink03", "TestLink03.xkfx" },
-    { "TestMemberName01", "TestMemberName01.xkfx" },
-    { "TestMemberName02", "TestMemberName02.xkfx" },
-    { "TestMemberName03", "TestMemberName03.xkfx" },
-    { "TestMemberName04", "TestMemberName04.xkfx" },
-    { "TestMemberName05", "TestMemberName05.xkfx" },
-    { "TestSemanticType01", "TestSemanticType01.xkfx" },
-    { "TestSemanticType02", "TestSemanticType02.xkfx" },
-    { "functionsFinding01", "functionsFinding01.xkfx" },
-    { "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },   ////////////////////////////// insert struct ??
-    { "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
+    //{ "SemanticTest01", "SemanticTest01.xkfx" },
+    //{ "testTypeSize", "testTypeSize.xkfx" },
+    //{ "namespaces01", "namespaces01.xkfx" },
+    //{ "testMacro01", "testMacro01.xkfx" },
+    //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
+    //{ "userCustomType01", "userCustomType01.xkfx" },
+    //{ "userCustomType02", "userCustomType02.xkfx" },
+    //{ "TestLink01", "TestLink01.xkfx" },
+    //{ "TestLink02", "TestLink02.xkfx" },
+    //{ "TestLink03", "TestLink03.xkfx" },
+    //{ "TestMemberName01", "TestMemberName01.xkfx" },
+    //{ "TestMemberName02", "TestMemberName02.xkfx" },
+    //{ "TestMemberName03", "TestMemberName03.xkfx" },
+    //{ "TestMemberName04", "TestMemberName04.xkfx" },
+    //{ "TestMemberName05", "TestMemberName05.xkfx" },
+    //{ "TestSemanticType01", "TestSemanticType01.xkfx" },
+    //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
+    //{ "functionsFinding01", "functionsFinding01.xkfx" },
+    //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },   ////////////////////////////// insert struct ??
+    //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 
-    { "ShadingBase", "ShadingBase.xkfx" },
-    { "CustomEffect", "CustomEffect.xkfx" },
-    { "BackgroundShader", "BackgroundShader.xkfx" },
-    { "ComputeColorWave", "ComputeColorWave.xkfx" },
-    { "TransformationBase", "TransformationBase.xkfx" },
-    { "TransformationWAndVP", "TransformationWAndVP.xkfx" },
-    { "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
-    { "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
-    { "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
-    { "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
-    { "DynamicTexture", "DynamicTexture.xkfx" },
-    { "ComputeColorTextureScaledOffsetDynamicSampler", "ComputeColorTextureScaledOffsetDynamicSampler.xkfx" },
-    { "MaterialSurfaceArray01", "MaterialSurfaceArray01.xkfx" },
-    { "ComputeColorWaveNormal", "ComputeColorWaveNormal.xkfx" },
-    { "MaterialSurfaceShadingSpecularMicrofacet", "MaterialSurfaceShadingSpecularMicrofacet.xkfx" },
-    { "MaterialSurfaceLightingAndShading", "MaterialSurfaceLightingAndShading.xkfx" },
-    { "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
-    { "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
-    { "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
+    //{ "ShadingBase", "ShadingBase.xkfx" },
+    //{ "CustomEffect", "CustomEffect.xkfx" },
+    //{ "BackgroundShader", "BackgroundShader.xkfx" },
+    //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
+    //{ "TransformationBase", "TransformationBase.xkfx" },
+    //{ "TransformationWAndVP", "TransformationWAndVP.xkfx" },
+    //{ "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
+    //{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
+    //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
+    //{ "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
+    //{ "DynamicTexture", "DynamicTexture.xkfx" },
+    //{ "ComputeColorTextureScaledOffsetDynamicSampler", "ComputeColorTextureScaledOffsetDynamicSampler.xkfx" },
+    //{ "MaterialSurfaceArray01", "MaterialSurfaceArray01.xkfx" },
+    //{ "ComputeColorWaveNormal", "ComputeColorWaveNormal.xkfx" },
+    //{ "MaterialSurfaceShadingSpecularMicrofacet", "MaterialSurfaceShadingSpecularMicrofacet.xkfx" },
+    //{ "MaterialSurfaceLightingAndShading", "MaterialSurfaceLightingAndShading.xkfx" },
+    //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
+    //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
+    //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
@@ -428,6 +430,29 @@ static void WriteBytecode(const vector<uint32_t>& bytecode, const string& output
         }
         std::cout << " output: \"" << outputFileName << "\"" << endl;
     }
+}
+
+static bool displayListOfAllMethodsForTheMixer(SpxMixer* mixer)
+{
+    if (mixer == nullptr) return true;
+
+    vector<string> errorMsgs;
+    vector<MethodInfo> vecMethods;
+    bool success = mixer->GetListAllMethodsInfo(vecMethods, errorMsgs);
+    if (!success) return error("Failed to get the list of all methods from the mixer");
+    if (vecMethods.size() > 0)
+    {
+        std::cout << endl;
+        std::cout << "Count Methods: " << vecMethods.size() << endl;
+        for (unsigned int c = 0; c < vecMethods.size(); c++)
+        {
+            MethodInfo& method = vecMethods[c];
+            std::cout << " name:" << method.Name << " shader:" << method.ShaderClassName << " stage:" << (method.IsStage?"true":"false") << endl;
+        }
+        std::cout << endl;
+    }
+
+    return true;
 }
 
 static bool displayListOfAllCompositionsForTheMixer(SpxMixer* mixer)
@@ -981,15 +1006,6 @@ static bool RecursivelyParseAndConvertXkslShader(XkslParser* parser, const strin
     return success;
 }
 
-static bool SeparateAdotB(const string str, string& A, string& B)
-{
-    size_t pdot = str.find_first_of('.');
-    if (pdot == string::npos) return false;
-    A = str.substr(0, pdot);
-    B = str.substr(pdot + 1);
-    return true;
-}
-
 static bool GetShadingStageForString(const string& str, ShadingStageEnum& stage)
 {
     if (str.compare("Vertex") == 0) {stage = ShadingStageEnum::Vertex; return true;}
@@ -1015,217 +1031,10 @@ static string GetStringForShadingStage(ShadingStageEnum stage)
     return "";
 }
 
-static bool splitPametersString(const string& parameterStr, vector<string>& parameters)
+static SpxBytecode* GetSpxBytecodeForShader(const string& shaderName, string& shaderFullName, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, bool canLookIfUnmangledNameMatch)
 {
-    const char* ptrStr = parameterStr.c_str();
-    int len = parameterStr.size();
-
-    char c;
-    int start = 0;
-    int countParenthesis = 0;
-    int countBrackets = 0;
-    int countComparaisonSigns = 0;
-    while (true)
-    {
-        while (ptrStr[start] == ' ' || ptrStr[start] == ',') start++;
-        if (start >= len) return true;
-
-        int end = start;
-        bool loop = true;
-        while (loop)
-        {
-            if (end == len) {
-                end--;
-                break;
-            }
-
-            c = ptrStr[end++];
-            switch (c)
-            {
-                case '[': countBrackets++; break;
-                case ']': countBrackets--; break;
-                case '(': countParenthesis++; break;
-                case ')': countParenthesis--; break;
-                case '<': countComparaisonSigns++; break;
-                case '>': countComparaisonSigns--; break;
-                case ',':
-                {
-                    if (countParenthesis == 0 && countComparaisonSigns == 0 && countBrackets == 0) {
-                        loop = false;
-                        end--;
-                    }
-                    break;
-                }
-            }
-        }
-
-        int lastChar = end;
-        while (ptrStr[lastChar] == ' ' || ptrStr[lastChar] == ',') lastChar--;
-        
-        parameters.push_back(parameterStr.substr(start, (lastChar - start) + 1));
-
-        start = end + 1;
-        if (start >= len) return true;
-    }
-}
-
-static bool isInstructionLineComplete(const string& instruction)
-{
-    int countParenthesis = 0;
-    int countBrackets = 0;
-    int countComparaisonSigns = 0;
-
-    const char* ptr = instruction.c_str();
-    while (*ptr != 0)
-    {
-        char c = *ptr++;
-        switch (c)
-        {
-            case '[': countBrackets++; break;
-            case ']': countBrackets--; break;
-            case '(': countParenthesis++; break;
-            case ')': countParenthesis--; break;
-            case '<': countComparaisonSigns++; break;
-            case '>': countComparaisonSigns--; break;
-        }
-    }
-
-    return (countParenthesis == 0 && countComparaisonSigns == 0 && countBrackets == 0);
-}
-
-//return the string between the "()" brackets
-static bool getFunctionParameterString(const string& instruction, string& parameterStr)
-{
-    int len = instruction.size();
-
-    int firstCharacterPos = 0;
-    while (firstCharacterPos < len)
-    {
-        char c = instruction[firstCharacterPos++];
-        if (c == ' ') continue;
-        if (c == '(') break;
-        return false;
-    }
-    if (firstCharacterPos == len) return false;
-
-    int lastCharacterPos = len - 1;
-    while (lastCharacterPos > 0)
-    {
-        char c = instruction[lastCharacterPos--];
-        if (c == ' ') continue;
-        if (c == ')') break;
-        return false;
-    }
-    if (lastCharacterPos <= 0) return false;
-
-    parameterStr = Utils::trim(instruction.substr(firstCharacterPos, (lastCharacterPos - firstCharacterPos) + 1));
-    return true;
-}
-
-static bool getNextWord(stringstream& stream, string& word)
-{
-    while (stream.peek() == ' ') stream.get(); // skip front spaces
-
-    if (!getline(stream, word, ' ')) {
-        return false;
-    }
-
-    return true;
-}
-
-static bool getFirstInstruction(const string& line, const char stopDelimiters, string& firstInstruction, string& remainingLine)
-{
-    unsigned int startPos = 0;
-    unsigned int len = line.size();
-    
-    while (startPos < len && line[startPos] == ' ') startPos++; // skip front spaces
-    if (startPos == len) return false;
-
-    char c;
-    unsigned int endPos = startPos;
-    while (true)
-    {
-        c = line[endPos];
-        if (c == stopDelimiters || c == ' ') break;
-        if (++endPos == len) break;
-    }
-
-    if (endPos == startPos) return false;
-
-    firstInstruction = line.substr(startPos, (endPos - startPos));
-    remainingLine = line.substr(endPos);
-    return true;
-}
-
-static bool getNextWord(string& str, string& word)
-{
-    int len = str.size();
-    if (len == 0) return false;
-    const char* strPtr = str.c_str();
-    int start = 0;
-
-    while (strPtr[start] == ' ') start++; // skip front spaces
-    if (start >= len) return false;
-    int end = start;
-
-    while (end < len)
-    {
-        if (strPtr[end] == ' ') {
-            word = str.substr(start, (end - start));
-            str = str.substr(end);
-            return true;
-        }
-        end++;
-    }
-
-    word = str.substr(start);
-    word = "";
-    return true;
-}
-
-static bool getNextWord(const string& str, const string& delimiters, string& word, string& remainingStr)
-{
-    int len = str.size();
-    if (len == 0) return false;
-    const char* strPtr = str.c_str();
-    int start = 0;
-    
-    while (strPtr[start] == ' ') start++; // skip front spaces
-    if (start >= len) return false;
-    int end = start;
-
-    unsigned int countDelimiters = delimiters.size();
-    char c;
-    while (end < len)
-    {
-        c = strPtr[end];
-        for (unsigned int d = 0; d < countDelimiters; d++)
-        {
-            if (c == delimiters[d]){
-                word = str.substr(start, (end - start));
-                remainingStr = str.substr(end + 1);
-                return true;
-            }
-        }
-        end++;
-    }
-
-    word = str.substr(start);
-    remainingStr = "";
-    return true;
-}
-
-static string getShaderUnmangledName(const string& shaderFullName)
-{
-    size_t pos = shaderFullName.find_first_of('<');
-    if (pos == string::npos) return shaderFullName;
-    return shaderFullName.substr(0, pos);
-}
-
-static SpxBytecode* GetSpxBytecodeForShader(string shaderName, string& shaderFullName, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode, bool canLookIfUnmangledNameMatch)
-{
-    auto it = mapShaderNameWithBytecode.find(shaderName);
-    if (it != mapShaderNameWithBytecode.end())
+    auto it = mapShaderNameBytecode.find(shaderName);
+    if (it != mapShaderNameBytecode.end())
     {
         SpxBytecode* spxBytecode = it->second;
         shaderFullName = it->first;
@@ -1235,9 +1044,9 @@ static SpxBytecode* GetSpxBytecodeForShader(string shaderName, string& shaderFul
     if (canLookIfUnmangledNameMatch)
     {
         SpxBytecode* spxBytecode = nullptr;
-        for (auto it = mapShaderNameWithBytecode.begin(); it != mapShaderNameWithBytecode.end(); it++)
+        for (auto it = mapShaderNameBytecode.begin(); it != mapShaderNameBytecode.end(); it++)
         {
-            string anUnmangledShaderName = getShaderUnmangledName(it->first);
+            string anUnmangledShaderName = XkfxParser::GetUnmangledName(it->first);
             if (anUnmangledShaderName == shaderName)
             {
                 if (spxBytecode == nullptr)
@@ -1258,19 +1067,19 @@ static SpxBytecode* GetSpxBytecodeForShader(string shaderName, string& shaderFul
     return nullptr;
 }
     
-static bool RecordSPXShaderBytecode(string shaderFullName, SpxBytecode* spxBytecode, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode)
+static bool RecordSPXShaderBytecode(string shaderFullName, SpxBytecode* spxBytecode, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode)
 {
-    //auto it = mapShaderNameWithBytecode.find(fullShaderName);
-    //if (it != mapShaderNameWithBytecode.end()) {
+    //auto it = mapShaderNameBytecode.find(fullShaderName);
+    //if (it != mapShaderNameBytecode.end()) {
     //    error("Shader is already recorded in the map: " + fullShaderName);
     //    return false;
     //}
 
-    mapShaderNameWithBytecode[shaderFullName] = spxBytecode;
+    mapShaderNameBytecode[shaderFullName] = spxBytecode;
     return true;
 }
 
-static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode, vector<SpxBytecode*>& listAllocatedBytecodes,
+static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, vector<SpxBytecode*>& listAllocatedBytecodes,
     const string& stringShaderAndgenericsValue, const string& xkslInputFilePrefix, const vector<XkslUserDefinedMacro>& listUserDefinedMacros,
     XkslParser* parser, bool useXkslangDll)
 {
@@ -1395,7 +1204,7 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
     for (unsigned int is = 0; is < vecShadersParsed.size(); ++is)
     {
         string shaderName = vecShadersParsed[is];
-        if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameWithBytecode))
+        if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameBytecode))
         {
             error("convertAndLoadRecursif: Can't add the shader into the bytecode: " + shaderName);
             return false;
@@ -1434,12 +1243,12 @@ static EffectMixerObject* CreateAndAddNewMixer(unordered_map<string, EffectMixer
     return mixerObject;
 }
 
-static bool MixinShaders(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
+static bool MixinShaders(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, bool useXkslangDll,
     EffectMixerObject* mixerTarget, const string& mixinShadersInstructionString,
     const string mixinOperationInstructionLineLog, int& operationNum);
 
-static bool AddCompositionToMixer(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
+static bool AddCompositionToMixer(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, bool useXkslangDll, int& operationNum,
     EffectMixerObject* mixerTarget, const string& compositionString, const string& targetedShaderName)
 {
@@ -1450,13 +1259,15 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     //composition variable target
     string compositionStr = compositionString;
     string compositionVariableTargetStr;
-    if (!getNextWord(compositionStr, compositionVariableTargetStr))
+    string remainingStr;
+
+    if (!XkfxParser::GetNextInstruction(compositionStr, compositionVariableTargetStr, remainingStr))
         return error("AddCompositionToMixer: Failed to find the composition variable target from: " + compositionStr);
-    compositionVariableTargetStr = Utils::trim(compositionVariableTargetStr);
+    compositionVariableTargetStr = XkslangUtils::trim(compositionVariableTargetStr);
 
     //We can either have shader.variableName, or only a variableName
     string shaderName, variableName;
-    if (!SeparateAdotB(compositionVariableTargetStr, shaderName, variableName))
+    if (!XkfxParser::SeparateAdotB(compositionVariableTargetStr, shaderName, variableName))
     {
         variableName = compositionVariableTargetStr;
         shaderName = targetedShaderName;
@@ -1471,24 +1282,24 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     //===================================================
     //Expecting '='
     string tmpStr;
-    if (!getNextWord(compositionStr, "=", tmpStr, compositionStr)) return error("\"=\" expected");
-    if (Utils::trim(tmpStr).size() > 0) return error("Invalid assignation format");
+    if (!XkfxParser::GetNextInstruction(remainingStr, tmpStr, remainingStr, '=', false)) return error("\"=\" expected");
+    if (XkslangUtils::trim(tmpStr).size() > 0) return error("Invalid assignation format");
 
     //===================================================
     //Find or create the composition source mixer
     //We can either have a mixer name, or a mixin instruction
-    string mixerCompositionInstructionsStr = Utils::trim(compositionStr);
+    string mixerCompositionInstructionsStr = XkslangUtils::trim(remainingStr);
 
     vector<string> listCompositionInstructions;
-    if (Utils::startWith(mixerCompositionInstructionsStr, "["))
+    if (XkslangUtils::startWith(mixerCompositionInstructionsStr, "["))
     {
-        if (!Utils::endWith(mixerCompositionInstructionsStr, "]"))
+        if (!XkslangUtils::endWith(mixerCompositionInstructionsStr, "]"))
             return error("Invalid compositions instruction string: " + mixerCompositionInstructionsStr);
 
         mixerCompositionInstructionsStr = mixerCompositionInstructionsStr.substr(1, mixerCompositionInstructionsStr.size() - 2);
 
         //If the instruction start with '[', there are several compositions assigned to the target
-        if (!splitPametersString(mixerCompositionInstructionsStr, listCompositionInstructions))
+        if (!XkfxParser::SplitPametersString(mixerCompositionInstructionsStr, listCompositionInstructions))
             return error("Failed to split the compositions instruction string: " + mixerCompositionInstructionsStr);
     }
     else listCompositionInstructions.push_back(mixerCompositionInstructionsStr);
@@ -1498,10 +1309,10 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         const string compositionInstruction = listCompositionInstructions[iComp];
 
         EffectMixerObject* compositionSourceMixer = nullptr;
-        if (Utils::startWith(compositionInstruction, "mixin(") || Utils::startWith(compositionInstruction, "mixin ")) //we accept both expressions (the 2nd is compatible with Xenko)
+        if (XkslangUtils::startWith(compositionInstruction, "mixin(") || XkslangUtils::startWith(compositionInstruction, "mixin ")) //we accept both expressions (the 2nd is compatible with Xenko)
         {
             string mixinInstructionStr;
-            if (Utils::startWith(compositionInstruction, "mixin "))
+            if (XkslangUtils::startWith(compositionInstruction, "mixin "))
             {
                 //convert mixin XXX to mixin(XXX) (to make it consistent)
                 mixinInstructionStr = compositionInstruction + ")";
@@ -1510,11 +1321,11 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
             else mixinInstructionStr = compositionInstruction;
 
             string mixinWord;
-            getFirstInstruction(mixinInstructionStr, '(', mixinWord, mixinInstructionStr);
+            XkfxParser::GetNextInstruction(mixinInstructionStr, mixinWord, mixinInstructionStr, '(', true);
 
             //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
             string anonymousMixerInstruction;
-            if (!getFunctionParameterString(mixinInstructionStr, anonymousMixerInstruction)) {
+            if (!XkslangUtils::getFunctionParameterString(mixinInstructionStr, anonymousMixerInstruction)) {
                 return error("addComposition: Failed to get the instuction parameter from: \"" + mixinInstructionStr + "\"");
             }
 
@@ -1526,7 +1337,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
             }
 
             //Mix the new mixer with the shaders specified in the function parameter
-            success = MixinShaders(effectName, mapShaderNameWithBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll,
+            success = MixinShaders(effectName, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll,
                 anonymousMixer, anonymousMixerInstruction, mixinInstructionStr, operationNum);
             if (!success) return error("Mixin failed: " + mixinInstructionStr);
 
@@ -1608,7 +1419,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     return true;
 }
 
-static bool AddCompositionsToMixer(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
+static bool AddCompositionsToMixer(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, bool useXkslangDll, int& operationNum,
     EffectMixerObject* mixerTarget, const string& compositionsString, const string& targetedShaderName)
 {
@@ -1618,7 +1429,7 @@ static bool AddCompositionsToMixer(const string& effectName, unordered_map<strin
 
     //split the string
     vector<string> compositions;
-    if (!splitPametersString(compositionsString, compositions))
+    if (!XkfxParser::SplitPametersString(compositionsString, compositions))
         return error("failed to split the parameters");
 
     if (compositions.size() == 0)
@@ -1627,7 +1438,7 @@ static bool AddCompositionsToMixer(const string& effectName, unordered_map<strin
     for (unsigned int k = 0; k < compositions.size(); ++k)
     {
         const string& compositionStr = compositions[k];
-        bool success = AddCompositionToMixer(effectName, mapShaderNameWithBytecode, mixerMap,
+        bool success = AddCompositionToMixer(effectName, mapShaderNameBytecode, mixerMap,
             listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll, operationNum,
             mixerTarget, compositionStr, targetedShaderName);
 
@@ -1638,7 +1449,7 @@ static bool AddCompositionsToMixer(const string& effectName, unordered_map<strin
     return true;
 }
 
-static bool MixinShaders(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameWithBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
+static bool MixinShaders(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, bool useXkslangDll,
     EffectMixerObject* mixerTarget, const string& mixinShadersInstructionString,
     const string mixinOperationInstructionLineLog, int& operationNum)
@@ -1668,19 +1479,19 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
             string shaderName = shaderDef.GetShaderNameWithGenerics();
             string shaderFullName;   //we can omit to specify the generics when mixin a shader, we will search the best match
 
-            SpxBytecode* shaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
+            SpxBytecode* shaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameBytecode, true);
             if (shaderBytecode == nullptr)
             {
                 if (automaticallyTryToLoadAndConvertUnknownMixinShader)
                 {
                     //the shader bytecode does not exist, but we can try to find and generate it
-                    success = ConvertAndLoadRecursif(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes,
+                    success = ConvertAndLoadRecursif(effectName, mapShaderNameBytecode, listAllocatedBytecodes,
                         shaderName, shaderFilesPrefix, listUserDefinedMacros,
                         parser, useXkslangDll);
 
                     if (!success) return error("Failed to recursively convert and load the shaders: " + shaderName);
 
-                    shaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameWithBytecode, true);
+                    shaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameBytecode, true);
                 }
 
                 if (shaderBytecode == nullptr) {
@@ -1790,7 +1601,7 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
         if (compositionString.size() > 0)
         {
             //Directly add compositions into the mixed shader
-            success = AddCompositionsToMixer(effectName, mapShaderNameWithBytecode, mixerMap,
+            success = AddCompositionsToMixer(effectName, mapShaderNameBytecode, mixerMap,
                 listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll, operationNum,
                 mixerTarget, compositionString, shaderFullName);
 
@@ -1818,7 +1629,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
     vector<string> errorMsgs;
     DWORD time_before, time_after;
     vector<SpxBytecode*> listAllocatedBytecodes;
-    unordered_map<string, SpxBytecode*> mapShaderNameWithBytecode;
+    unordered_map<string, SpxBytecode*> mapShaderNameBytecode;
     unordered_map<string, EffectMixerObject*> mixerMap;
     int operationNum = 0;
 
@@ -1836,9 +1647,9 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
     {
         listParsedInstructions.push_back(parsedLine);
 
-        parsedLine = Utils::trim(parsedLine, " \t");
+        parsedLine = XkslangUtils::trim(parsedLine, " \t");
         if (parsedLine.size() == 0) continue;
-        if (Utils::startWith(parsedLine, "//"))
+        if (XkslangUtils::startWith(parsedLine, "//"))
         {
             //a comment: ignore the line
             continue;
@@ -1846,17 +1657,18 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
         //if some instructions are not complete (some unclosed parentheses or brackets, we concatenate them with the next instructions)
         parsedLine = previousPartialLine + parsedLine;
-        if (!isInstructionLineComplete(parsedLine))
+        if (!XkfxParser::IsCommandLineInstructionComplete(parsedLine))
         {
             previousPartialLine = parsedLine;
             continue;
         }
         else previousPartialLine = "";
         
-        string instructionFullLine = Utils::trim(parsedLine);
+        string instructionFullLine = XkslangUtils::trim(parsedLine);
         string firstInstruction;
         string remainingLine;
-        getFirstInstruction(instructionFullLine, '(', firstInstruction, remainingLine);
+        if (!XkfxParser::GetNextInstruction(instructionFullLine, firstInstruction, remainingLine, '(', true))
+            return error("Failed to get the next instruction from: " + instructionFullLine);
 
         if (firstInstruction.compare("break") == 0)
         {
@@ -1866,7 +1678,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         else if (firstInstruction.compare("set") == 0)
         {
             string parameterName;
-            if (!getFirstInstruction(remainingLine, ' ', parameterName, remainingLine)) {
+            if (!XkfxParser::GetNextInstruction(remainingLine, parameterName, remainingLine)) {
                 error("set: failed to get the parameter value");
                 success = false; break;
             }
@@ -1874,7 +1686,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             if (parameterName.compare("automaticallyTryToLoadAndConvertUnknownMixinShader") == 0)
             {
                 string parameterValue;
-                if (!getFirstInstruction(remainingLine, ' ', parameterValue, remainingLine)) {
+                if (!XkfxParser::GetNextInstruction(remainingLine, parameterValue, remainingLine)) {
                     error("set: failed to get the parameter value");
                     success = false; break;
                 }
@@ -1890,18 +1702,18 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         else if (firstInstruction.compare("addResourcesLibrary") == 0)
         {
             string folder;
-            if (!getFirstInstruction(remainingLine, ' ', folder, remainingLine)) {
+            if (!XkfxParser::GetNextInstruction(remainingLine, folder, remainingLine)) {
                 error("addResourcesLibrary: failed to get the library resource folder");
                 success = false; break;
             }
-            folder = Utils::trim(folder, '\"');
+            folder = XkslangUtils::trim(folder, '\"');
 
             string path = inputDir + folder + "\\";
             libraryResourcesFolders.push_back(path);
         }
         else if (firstInstruction.compare("setDefine") == 0)
         {
-            string strMacrosDefinition = Utils::trim(remainingLine);
+            string strMacrosDefinition = XkslangUtils::trim(remainingLine);
             if (strMacrosDefinition.size() == 0) {
                 error("missing macro definition");
                 success = false; break;
@@ -1919,7 +1731,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
             //================================================
             //Parse the command line parameters
-            string stringShaderAndgenericsValue = Utils::trim(remainingLine);
+            string stringShaderAndgenericsValue = XkslangUtils::trim(remainingLine);
             if (stringShaderAndgenericsValue.size() == 0) {
                 error("convertAndLoadRecursif: failed to get the XKSL file parameters");
                 success = false; break;
@@ -1937,12 +1749,12 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 }
 
                 xkslInputFilePrefix = stringShaderAndgenericsValue.substr(0, indexEnd + 1);
-                xkslInputFilePrefix = Utils::trim(xkslInputFilePrefix, '\"');
+                xkslInputFilePrefix = XkslangUtils::trim(xkslInputFilePrefix, '\"');
                 stringShaderAndgenericsValue = stringShaderAndgenericsValue.substr(indexEnd + 1);
             }
 
             //Can convert and load the shader
-            success = ConvertAndLoadRecursif(effectName, mapShaderNameWithBytecode, listAllocatedBytecodes,
+            success = ConvertAndLoadRecursif(effectName, mapShaderNameBytecode, listAllocatedBytecodes,
                 stringShaderAndgenericsValue, xkslInputFilePrefix, listUserDefinedMacros,
                 parser, useXkslangDll);
 
@@ -1959,16 +1771,16 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             //================================================
             //Parse the command line parameters
             string xkslInputFile;
-            if (!getFirstInstruction(remainingLine, ' ', xkslInputFile, remainingLine)) {
+            if (!XkfxParser::GetNextInstruction(remainingLine, xkslInputFile, remainingLine)) {
                 error("convertAndLoad: failed to get the XKSL file name");
                 success = false; break;
             }
-            xkslInputFile = Utils::trim(xkslInputFile, '\"');
+            xkslInputFile = XkslangUtils::trim(xkslInputFile, '\"');
 
             //================================================
             //any shader with generic values defined?
             vector<ShaderGenericValues> listShaderAndGenerics;
-            string stringShaderAndgenericsValue = Utils::trim(remainingLine);
+            string stringShaderAndgenericsValue = XkslangUtils::trim(remainingLine);
             if (stringShaderAndgenericsValue.size() > 0)
             {
                 vector<ShaderParsingDefinition> listshaderDefinition;
@@ -2093,7 +1905,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             for (unsigned int is = 0; is < vecShadersParsed.size(); ++is)
             {
                 string shaderName = vecShadersParsed[is];
-                if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameWithBytecode))
+                if (!RecordSPXShaderBytecode(shaderName, spxBytecode, mapShaderNameBytecode))
                 {
                     error("Can't add the shader into the bytecode: " + shaderName);
                     success = false; break;
@@ -2103,11 +1915,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         else if (firstInstruction.compare("mixer") == 0)
         {
             string mixerName;
-            if (!getFirstInstruction(remainingLine, ' ', mixerName, remainingLine)) {
+            if (!XkfxParser::GetNextInstruction(remainingLine, mixerName, remainingLine)) {
                 error("mixer: failed to get the xksl file name");
                 success = false; break;
             }
-            mixerName = Utils::trim(mixerName, '\"');
+            mixerName = XkslangUtils::trim(mixerName, '\"');
 
             if (mixerName.find_first_of("<>()[].,+-/*\\?:;\"{}=&%^") != string::npos)
             {
@@ -2125,7 +1937,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
         {
             //mixer operation (mixer.instructions)
             string mixerName, instruction;
-            if (!SeparateAdotB(firstInstruction, mixerName, instruction)) {
+            if (!XkfxParser::SeparateAdotB(firstInstruction, mixerName, instruction)) {
                 error("Unknown instruction: " + firstInstruction);
                 success = false; break;
             }
@@ -2138,10 +1950,10 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
             //get the function parameters
             string instructionParametersStr;
-            remainingLine = Utils::trim(remainingLine);
+            remainingLine = XkslangUtils::trim(remainingLine);
             if (remainingLine.size() > 0)
             {
-                if (!getFunctionParameterString(remainingLine, instructionParametersStr)) {
+                if (!XkslangUtils::getFunctionParameterString(remainingLine, instructionParametersStr)) {
                     instructionParametersStr = "";
                 }
             }
@@ -2150,7 +1962,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             {
                 if (instructionParametersStr.size() == 0) { error("Mixin: parameters expected"); success = false; break; }
 
-                success = MixinShaders(effectName, mapShaderNameWithBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll,
+                success = MixinShaders(effectName, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll,
                     mixerTarget, instructionParametersStr, instructionFullLine, operationNum);
 
                 if (!success) { error("Mixin failed"); success = false; break; }
@@ -2159,7 +1971,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             {
                 if (instructionParametersStr.size() == 0) { error("addComposition: parameters expected"); success = false; break; }
 
-                success = AddCompositionsToMixer(effectName, mapShaderNameWithBytecode, mixerMap,
+                success = AddCompositionsToMixer(effectName, mapShaderNameBytecode, mixerMap,
                     listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll, operationNum,
                     mixerTarget, instructionParametersStr, "");
 
@@ -2175,7 +1987,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 if (instructionParametersStr.size() == 0) { error("setStageEntryPoint: parameters expected"); success = false; break; }
 
                 vector<string> entryPoints;
-                if (!splitPametersString(instructionParametersStr, entryPoints))
+                if (!XkfxParser::SplitPametersString(instructionParametersStr, entryPoints))
                     return error("failed to split the entryPoints parameters");
 
                 for (unsigned int e = 0; e < entryPoints.size(); e++)
@@ -2184,11 +1996,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
                     string stageStr;
                     string entryPointStr;
-                    if (!getNextWord(entryPointInstruction, "=", stageStr, entryPointStr))
+                    if (!XkfxParser::GetNextInstruction(entryPointInstruction, stageStr, entryPointStr, '=', false))
                         return error("\"=\" expected");
-                    stageStr = Utils::trim(stageStr);
-                    entryPointStr = Utils::trim(entryPointStr);
-                    entryPointStr = Utils::trim(entryPointStr, '"');
+                    stageStr = XkslangUtils::trim(stageStr);
+                    entryPointStr = XkslangUtils::trim(entryPointStr);
+                    entryPointStr = XkslangUtils::trim(entryPointStr, '"');
 
                     ShadingStageEnum stage;
                     if (!GetShadingStageForString(stageStr, stage)) {
@@ -2219,6 +2031,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 }
                 else
                 {
+                    //Optionnal: get and display the list of all methods
+                    if (!displayListOfAllMethodsForTheMixer(mixerTarget->mixer)) {
+                        error("Failed to display the mixer list of compositions"); success = false;
+                    }
+
                     //Optionnal: get and display all compositions before compiling
                     if (!displayListOfAllCompositionsForTheMixer(mixerTarget->mixer)) {
                         error("Failed to display the mixer list of compositions"); success = false;
