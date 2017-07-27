@@ -577,21 +577,21 @@ static bool MixinShaders(const string& mixinShadersInstructionString, EffectMixe
 //===================================================================================================================================
 //===================================================================================================================================
 // XKFX command lines parsing
-bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, vector<string>& errorMsgs)
+bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, string effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, vector<string>& errorMsgs)
 {
     bool success = true;
 
-    XkslParser* parser = new XkslParser();
+    //XkslParser parser;
     vector<XkslUserDefinedMacro> listUserDefinedMacros;
     vector<SpxBytecode*> listAllocatedBytecodes;
     unordered_map<string, EffectMixerObject*> mixerMap;
     unordered_map<string, SpxBytecode*> mapShaderNameBytecode;
 
-    if (!parser->InitialiseXkslang())
+    /*if (!parser.InitialiseXkslang())
     {
         error(errorMsgs, "Failed to initialize the XkslParser");
         return false;
-    }
+    }*/
 
     string previousPartialLine = "";  //to let us have an instruction defined on several lines
     string parsedLine = "";
@@ -608,7 +608,7 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, glslang::Callbac
 
         //if some instructions are not complete (some unclosed parentheses or brackets, we concatenate them with the next instructions)
         parsedLine = previousPartialLine + parsedLine;
-        if (!IsCommandLineInstructionComplete(parsedLine))
+        if (!XkfxParser::IsCommandLineInstructionComplete(parsedLine))
         {
             previousPartialLine = parsedLine;
             continue;
@@ -625,6 +625,11 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, glslang::Callbac
         {
             //quit parsing the effect
             break;
+        }
+        else if (firstInstruction.compare("setSampleTestOptions") == 0 ||
+                 firstInstruction.compare("convertAndLoadRecursif") == 0)
+        {
+            continue;
         }
         else if (firstInstruction.compare("setDefine") == 0)
         {
@@ -690,7 +695,7 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, glslang::Callbac
             {
                 if (instructionParametersStr.size() == 0) { error(errorMsgs, "Mixin: parameters expected"); success = false; break; }
 
-                success = MixinShaders(instructionParametersStr, mixerTarget, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
+                success = MixinShaders(instructionParametersStr, mixerTarget, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
 
                 if (!success) { error(errorMsgs, "Mixin failed"); success = false; break; }
             }
@@ -699,7 +704,7 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, glslang::Callbac
                 if (instructionParametersStr.size() == 0) { error(errorMsgs, "addComposition: parameters expected"); success = false; break; }
 
                 success = AddCompositionsToMixer(mixerTarget, instructionParametersStr, "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
-                    listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
+                    listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
 
                 if (!success) { error(errorMsgs, "Failed to add the compositions instruction to the mixer: " + instructionParametersStr); success = false; break; }
             }
@@ -720,14 +725,13 @@ bool XkfxParser::ProcessXkfxCommandLines(string effectCmdLines, glslang::Callbac
 
     //Release allocated data
     {
-        parser->Finalize();
-        delete parser;
-
-        for (auto itm = mixerMap.begin(); itm != mixerMap.end(); itm++)
+        /*for (auto itm = mixerMap.begin(); itm != mixerMap.end(); itm++)
             delete (*itm).second;
 
         for (auto itv = listAllocatedBytecodes.begin(); itv != listAllocatedBytecodes.end(); itv++)
-            delete (*itv);
+            delete (*itv);*/
+
+        //parser.Finalize();
     }
 
     return success;

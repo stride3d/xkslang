@@ -1218,18 +1218,23 @@ bool HlslGrammar::acceptQualifier(TQualifier& qualifier)
         case EHTokInternal:
             break;  //we simply ignore accessibility qualifiers for now
         case EHTokStage:
+            if (qualifier.isStage) error("stage qualifier has been set twice");
             qualifier.isStage = true;
             break;
         case EHTokStream:
+            if (qualifier.isStream) error("stream qualifier has been set twice");
             qualifier.isStream = true;
             break;
         case EHTokOverride:
+            if (qualifier.isOverride) error("override qualifier has been set twice");
             qualifier.isOverride = true;
             break;
         case EHTokAbstract:
+            if (qualifier.isAbstract) error("abstract qualifier has been set twice");
             qualifier.isAbstract = true;
             break;
         case EHTokClone:
+            if (qualifier.isClone) error("clone qualifier has been set twice");
             qualifier.isClone = true;
             break;
         /*****************************************************************************************************/

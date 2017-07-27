@@ -4,8 +4,6 @@ shader ShaderMain: ShaderSimple, ShaderWithLink, ShaderGeneric<2>, ShaderGeneric
 	compose ShaderCompositionWithLink composition02;
 	compose IShaderCompositionWithGeneric composition03;
 	
-	stage 
-	
 	stage void VSMain()
 	{
 		float f = 0;

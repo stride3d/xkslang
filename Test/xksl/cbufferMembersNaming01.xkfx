@@ -1,4 +1,9 @@
-set automaticallyTryToLoadAndConvertUnknownMixinShader true
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
 convertAndLoadRecursif "cbufferMembersNaming01" ShaderMain
 
 mixer m

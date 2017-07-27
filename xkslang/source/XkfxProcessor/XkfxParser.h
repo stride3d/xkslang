@@ -9,6 +9,7 @@
 
 #include "../Common/xkslangDefine.h"
 #include "../Common/SpxBytecode.h"
+#include "../XkslParser/XkslParser.h"
 
 namespace xkslang
 {
@@ -19,7 +20,7 @@ public:
     static SpxBytecode* GetSpxBytecodeForShader(const std::string& shaderName, std::string& shaderFullName,
         std::unordered_map<std::string, SpxBytecode*>& mapShaderNameBytecode, bool canLookIfUnmangledNameMatch, std::vector<std::string>& errorMsgs);
 
-    static bool ProcessXkfxCommandLines(std::string effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, std::vector<std::string>& errorMsgs);
+    static bool ProcessXkfxCommandLines(XkslParser* parser, std::string effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, std::vector<std::string>& errorMsgs);
 
     static bool IsCommandLineInstructionComplete(const std::string& instruction);
     static bool GetNextInstruction(const std::string& line, std::string& firstInstruction, std::string& remainingLine);

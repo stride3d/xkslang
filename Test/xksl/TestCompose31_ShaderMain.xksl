@@ -1,0 +1,28 @@
+shader ShaderMain
+{
+	compose ShaderComposition composition;
+	
+	stage void VSMain()
+	{
+		float f = 0;
+		f += composition.Compute();
+	}
+}
+
+shader ShaderComposition
+{
+	cbuffer cbUnstageComposition
+	{
+		float var09;
+	}
+	
+	stage cbuffer cbStageComposition
+	{
+		float var10;
+	}
+	
+	float Compute()
+	{
+		return var09 + var10;
+	}
+}

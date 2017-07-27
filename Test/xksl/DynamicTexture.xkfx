@@ -1,5 +1,10 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
 addResourcesLibrary "library"
-set automaticallyTryToLoadAndConvertUnknownMixinShader true
 
 mixer m
 m.mixin( DynamicTexture<Material.DiffuseMap, PerMaterial> )

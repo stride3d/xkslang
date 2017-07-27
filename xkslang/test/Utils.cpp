@@ -28,6 +28,7 @@ bool Utils::ReadFile(const string& path, string& fileContent)
             istreambuf_iterator<char>());
 
         fileContent = contents;
+        fstream.close();
         return true;
     }
 
@@ -57,6 +58,7 @@ pair<bool, vector<uint32_t> > Utils::ReadSpvBinaryFile(const string& path)
             contents.push_back(inWord);
     }
 
+    fstream.close();
     return make_pair(true, contents); // hopefully, c++11 move semantics optimizes the copy away.
 }
 
@@ -69,6 +71,7 @@ bool Utils::WriteFile(const string& path, const string& contents)
     }
     fstream << contents;
     fstream.flush();
+    fstream.close();
     return true;
 }
 

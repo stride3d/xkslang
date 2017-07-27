@@ -120,6 +120,7 @@ struct XkfxEffectsToProcess {
 
 //Can be parameterized from the xkfx file
 static bool automaticallyTryToLoadAndConvertUnknownMixinShader = false;  //if true, when we mix an unknown shader, we will try to find, load and parse/convert this shader from our library
+static bool processSampleWithXkfxLibrary = false;  //if true, we also send the xkfx file into XkfxParser library
 
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
@@ -179,6 +180,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose28", "TestCompose28.xkfx" },
     //{ "TestCompose29", "TestCompose29.xkfx" },
     //{ "TestCompose30", "TestCompose30.xkfx" },
+    { "TestCompose31", "TestCompose31.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -210,7 +212,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics10", "TestGenerics10.xkfx" },
     //{ "TestGenerics11", "TestGenerics11.xkfx" },
     
-    { "CBuffer01", "CBuffer01.xkfx" },
+    //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
     //{ "CBuffer03", "CBuffer03.xkfx" },
     //{ "CBuffer04", "CBuffer04.xkfx" },
@@ -290,13 +292,6 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
-};
-
-vector<XkfxEffectsToProcess> vecSpvFileToConvertToGlslAndHlsl = {
-    //{ "TestConvert01", "TestForEach01_Pixel.spv" },
-    //{ "TestCbuffer", "cbuffer.spv" },
-    //{ "parseResources", "parseResources.spv" },
-    //{ "test", "xcross.spv" },
 };
 
 enum class ShaderLanguageEnum
@@ -926,6 +921,7 @@ static bool ParseAndConvertXkslFile(XkslParser* parser, string& xkslInputFile,
     return success;
 }
 
+static map<string, string> mapShaderNameData;
 static vector<string> libraryResourcesFolders;  //folders where we can look to find the shader file
 static string shaderFilesPrefix; //we can concatenate a prefix string to the shader name before searching them
 static bool callbackRequestDataForShader(const string& shaderName, string& shaderData)
@@ -945,12 +941,28 @@ static bool callbackRequestDataForShader(const string& shaderName, string& shade
             const string inputFname = folder + filePrefix + shaderName + ".xksl";
             if (Utils::ReadFile(inputFname, shaderData))
             {
+                mapShaderNameData[shaderName] = shaderData;
                 return true;
             }
         }
     }
     
     error("Callback function: Cannot find any data for the shader: " + shaderName);
+    return false;
+}
+
+static bool callbackRequestDataForShader_XkfxParser(const string& shaderName, string& shaderData)
+{
+    std::cout << " Parsing shader file: " << shaderName << endl;
+
+    map<string, string>::const_iterator it = mapShaderNameData.find(shaderName);
+    if (it != mapShaderNameData.end())
+    {
+        shaderData = it->second;
+        return true;
+    }
+
+    error("Callback function: Cannot find recorded data for the shader: " + shaderName);
     return false;
 }
 
@@ -1633,10 +1645,6 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
     unordered_map<string, EffectMixerObject*> mixerMap;
     int operationNum = 0;
 
-    //init library resource folders
-    libraryResourcesFolders.clear();
-    libraryResourcesFolders.push_back(inputDir);
-
     vector<string> listParsedInstructions;
     vector<XkslUserDefinedMacro> listUserDefinedMacros;
 
@@ -1675,7 +1683,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             //quit parsing the effect
             break;
         }
-        else if (firstInstruction.compare("set") == 0)
+        else if (firstInstruction.compare("setSampleTestOptions") == 0)
         {
             string parameterName;
             if (!XkfxParser::GetNextInstruction(remainingLine, parameterName, remainingLine)) {
@@ -1686,12 +1694,16 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             if (parameterName.compare("automaticallyTryToLoadAndConvertUnknownMixinShader") == 0)
             {
                 string parameterValue;
-                if (!XkfxParser::GetNextInstruction(remainingLine, parameterValue, remainingLine)) {
-                    error("set: failed to get the parameter value");
-                    success = false; break;
-                }
+                if (!XkfxParser::GetNextInstruction(remainingLine, parameterValue, remainingLine)) { error("set: failed to get the parameter value"); success = false; break; }
                 if (parameterValue.compare("true") == 0) automaticallyTryToLoadAndConvertUnknownMixinShader = true;
                 else automaticallyTryToLoadAndConvertUnknownMixinShader = false;
+            }
+            else if (parameterName.compare("processSampleWithXkfxLibrary") == 0)
+            {
+                string parameterValue;
+                if (!XkfxParser::GetNextInstruction(remainingLine, parameterValue, remainingLine)) { error("set: failed to get the parameter value"); success = false; break; }
+                if (parameterValue.compare("true") == 0) processSampleWithXkfxLibrary = true;
+                else processSampleWithXkfxLibrary = false;
             }
             else
             {
@@ -2112,6 +2124,7 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
 
     bool success1 = true;
     bool success2 = true;
+    bool success3 = true;
     const string inputFname = inputDir + effect.inputFileName;
     string effectCmdLines;
     if (!Utils::ReadFile(inputFname, effectCmdLines))
@@ -2120,13 +2133,24 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         return false;
     }
 
+    //reset processing options
+    automaticallyTryToLoadAndConvertUnknownMixinShader = false;
+    processSampleWithXkfxLibrary = false;
+
+    //reset some fields set by the xkfx commands
+    libraryResourcesFolders.clear();
+    libraryResourcesFolders.push_back(inputDir);
+    shaderFilesPrefix = "";
+    mapShaderNameData.clear();
+
     //Utils::replaceAll(effectCmdLines, "addComposition ", "addComposition = ");
     //Utils::WriteFile(inputFname, effectCmdLines);
 
     string updatedEffectCommandLines;
     if (processEffectWithDirectCallToXkslang)
     {
-        std::cout << "=================================" << endl;
+        std::cout << "=====================================================================" << endl;
+        std::cout << "=====================================================================" << endl;
         std::cout << "Process XKSL File (direct call to Xkslang classes)" << endl;
 
         success1 = ProcessEffectCommandLine(parser, effectName, effectCmdLines, false, updatedEffectCommandLines);
@@ -2137,7 +2161,8 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     if (processEffectWithDllApi)
     {
         std::cout << endl;
-        std::cout << "=================================" << endl;
+        std::cout << "=====================================================================" << endl;
+        std::cout << "=====================================================================" << endl;
         std::cout << "Process XKSL File through Xkslang Dll API" << endl;
 
         success2 = ProcessEffectCommandLine(parser, effectName, effectCmdLines, true, updatedEffectCommandLines);
@@ -2145,7 +2170,24 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         else error("Failed to process the effect");
     }
 
-    bool success = success1 && success2;
+    if (processSampleWithXkfxLibrary)
+    {
+        std::cout << endl;
+        std::cout << "=====================================================================" << endl;
+        std::cout << "=====================================================================" << endl;
+        std::cout << "Process XKSL File through Xkfx Parser classes" << endl;
+
+        vector<string> errorMsgs;
+        success3 = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader_XkfxParser, errorMsgs);
+        if (success3) std::cout << "Effect successfully processed." << endl;
+        else {
+            std::cout << endl;
+            for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
+            error("Failed to process the effect");
+        }
+    }
+
+    bool success = success1 && success2 && success3;
 
     //if (success)
     //{
@@ -2242,54 +2284,6 @@ void main(int argc, char** argv)
         xkslangDll::ReleaseParser();
     }
 
-    if (vecSpvFileToConvertToGlslAndHlsl.size() > 0)
-    {
-        std::cout << endl;
-        std::cout << "___________________________________________________________________________________" << endl;
-        std::cout << "Convert SPV Files:" << endl << endl;
-
-        for (unsigned int n = 0; n < vecSpvFileToConvertToGlslAndHlsl.size(); ++n)
-        {
-            bool success = true;
-            XkfxEffectsToProcess effect = vecSpvFileToConvertToGlslAndHlsl[n];
-            string inputFileSpv = inputDir + effect.inputFileName;
-
-            string xkslInput;
-            if (!Utils::ReadFile(inputFileSpv, xkslInput))
-            {
-                error(" Failed to read the file: " + inputFileSpv);
-                success = false;
-            }
-
-            if (success)
-            {
-                //======================================================================
-                //GLSL
-                string outputNameGlsl = effect.inputFileName + ".glsl";
-                string outputFullNameGlsl = outputDir + outputNameGlsl;
-
-                std::cout << "Convert into GLSL: " << effect.inputFileName << endl;
-                //result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameGlsl, ShaderLanguageEnum::GlslLanguage);
-                success = ConvertAndWriteBytecodeToGlsl(inputFileSpv, outputFullNameGlsl);
-
-                if (success) std::cout << " OK." << endl;
-                else error(" Failed to convert the SPIRV file to GLSL");
-
-                //======================================================================
-                //HLSL
-                string outputNameHlsl = effect.inputFileName + ".hlsl";
-                string outputFullNameHlsl = outputDir + outputNameHlsl;
-
-                std::cout << "Convert into HLSL: " << effect.inputFileName << endl;
-                //result = ConvertSpvToShaderLanguage(inputFileSpv, outputFullNameHlsl, ShaderLanguageEnum::HlslLanguage);
-                success = ConvertAndWriteBytecodeToHlsl(inputFileSpv, outputFullNameHlsl);
-            }
-
-            if (success) std::cout << " OK." << endl;
-            else error(" Failed to convert the SPIRV file to HLSL");
-        }
-    }
-    
     std::cout << endl;
     std::cout << "___________________________________________________________________________________" << endl;
     std::cout << "Results:" << endl << endl;
