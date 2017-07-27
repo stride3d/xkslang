@@ -10,9 +10,6 @@
     <Filter Include="SpxMixer">
       <UniqueIdentifier>{1bed1d10-4ce0-4d56-bfcf-912c7c6c048f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="XkfxProcessor">
-      <UniqueIdentifier>{2365de65-97f7-4567-afc5-e60cef193bcb}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\source\XkslParser\XkslParser.h">
@@ -41,9 +38,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\Common\xkslangUtils.h">
       <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\source\XkfxProcessor\XkfxParser.h">
-      <Filter>XkfxProcessor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -91,9 +85,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\source\Common\xkslangUtils.cpp">
       <Filter>Common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\source\XkfxProcessor\XkfxParser.cpp">
-      <Filter>XkfxProcessor</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -19,39 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\source\Common\Converter.cpp" />
-    <ClCompile Include="..\..\..\source\Common\xkslangDefine.cpp" />
-    <ClCompile Include="..\..\..\source\Common\SpxBytecode.cpp" />
-    <ClCompile Include="..\..\..\source\Common\xkslangUtils.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\EffectReflection.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_compositions.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_merge.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_types.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_utils.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxMixer.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_mixin.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_cbuffers.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_reflection.cpp" />
-    <ClCompile Include="..\..\..\source\SpxMixer\SpxCompiler_streams.cpp" />
-    <ClCompile Include="..\..\..\source\XkslParser\XkslParser.cpp" />
+    <ClInclude Include="..\..\..\source\XkfxProcessor\XkfxParser.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\source\Common\Converter.h" />
-    <ClInclude Include="..\..\..\source\Common\xkslangDefine.h" />
-    <ClInclude Include="..\..\..\source\Common\SpxBytecode.h" />
-    <ClInclude Include="..\..\..\source\Common\xkslangUtils.h" />
-    <ClInclude Include="..\..\..\source\SpxMixer\EffectReflection.h" />
-    <ClInclude Include="..\..\..\source\SpxMixer\OutputStageBytecode.h" />
-    <ClInclude Include="..\..\..\source\SpxMixer\SpxMixer.h" />
-    <ClInclude Include="..\..\..\source\SpxMixer\SpxCompiler.h" />
-    <ClInclude Include="..\..\..\source\XkslParser\XkslParser.h" />
+    <ClCompile Include="..\..\..\source\XkfxProcessor\XkfxParser.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{227A8054-E16B-48DA-A361-9316B8752E4E}</ProjectGuid>
+    <ProjectGuid>{5479F75B-D3C2-4D0B-B486-C01CED7B1382}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>Xkslang</RootNamespace>
+    <RootNamespace>XkfxProcessor</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
-    <ProjectName>Xkslang</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -110,8 +87,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;XKSLANG_DEBUG_MODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\..</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -124,7 +100,6 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -139,7 +114,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -156,7 +130,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
