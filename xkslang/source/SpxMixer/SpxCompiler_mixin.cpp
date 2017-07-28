@@ -94,6 +94,14 @@ SpxCompiler::VariableInstruction::~VariableInstruction()
         bytecodeSource->error("unallocated variable Data");
     }
 }
+
+//=====================================================================================================================================
+
+int SpxCompiler::ShaderTypeData::countRef = 0;
+int SpxCompiler::ShaderClassData::countRef = 0;
+int SpxCompiler::ShaderTypeData::s_uniqueId = 0;
+int SpxCompiler::ShaderClassData::s_uniqueId = 0;
+
 //=====================================================================================================================================
 //=====================================================================================================================================
 
@@ -1133,7 +1141,8 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 
 	//===================================================================================================================
 	//Remove all unused types, consts and variables
-	//method1: we parse the bytecode and delete unused declarations
+	//We parse the bytecode and delete unused declarations
+    int countShadersTypeRemoved = 0;
 	{
 		unsigned int start = header_size;
 		const unsigned int end = (unsigned int)spv.size();
@@ -1166,10 +1175,13 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 					ObjectInstructionBase* obj = listAllObjects[id];
 #ifdef XKSLANG_DEBUG_MODE
 					if (obj == nullptr || obj->GetId() != id) return error("Invalid object Id to remove: " + to_string(id));
+                    if (obj->GetKind() == ObjectInstructionTypeEnum::Function) return error("No unused functions should be parsed here");
 #endif
 
+                    if (obj->GetKind() == ObjectInstructionTypeEnum::Shader) countShadersTypeRemoved++;
+
 					stripInst(vecStripRanges, obj->GetBytecodeStartPosition(), obj->GetBytecodeEndPosition());
-					delete listAllObjects[id];
+					delete obj;
 					listAllObjects[id] = nullptr;
 				}
 			}
@@ -1180,6 +1192,9 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 			start += wordCount;
 		}
 	}
+
+    if (countShadersTypeRemoved != vecAllShaders.size()) return error("We did not parse the correct number of shaders");
+    vecAllShaders.clear();  //all shaders type have been set as unused and are now removed
 
 	stripBytecode(vecStripRanges);
 	if (!UpdateAllMaps()) return error("failed to update all maps");

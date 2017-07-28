@@ -27,6 +27,8 @@
 #include "../source/SPIRV-Cross/spirv_cross.hpp"
 #include "../source/XkslangDLL/XkslangDLL.h"
 
+//#include "vld.h"
+
 #ifdef _DEBUG
 #define WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
 #define OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
@@ -36,6 +38,7 @@
 using namespace std;
 using namespace xkslangtest;
 using namespace xkslang;
+using namespace xkfxProcessor;
 
 //To test single file parsing and convertion
 struct XkslFilesToParseAndConvert {
@@ -2177,13 +2180,16 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         std::cout << "=====================================================================" << endl;
         std::cout << "Process XKSL File through Xkfx Parser classes" << endl;
 
-        vector<string> errorMsgs;
-        success3 = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader_XkfxParser, errorMsgs);
-        if (success3) std::cout << "Effect successfully processed." << endl;
-        else {
-            std::cout << endl;
-            for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
-            error("Failed to process the effect");
+        for (int i = 0; i < 100; ++i)
+        {
+            vector<string> errorMsgs;
+            success3 = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader_XkfxParser, errorMsgs);
+            if (success3) std::cout << "Effect successfully processed." << endl;
+            else {
+                std::cout << endl;
+                for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
+                error("Failed to process the effect");
+            }
         }
     }
 

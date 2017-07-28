@@ -1,7 +1,6 @@
 //
 // Copyright (C)
 
-#include <iostream>
 #include <string>
 
 #include "../Common/xkslangUtils.h"
@@ -11,6 +10,7 @@
 #include "XkfxParser.h"
 
 using namespace std;
+using namespace xkfxProcessor;
 using namespace xkslang;
 
 //===================================================================================================================================
@@ -28,6 +28,24 @@ bool XkfxParser::SeparateAdotB(const string str, string& A, string& B)
     if (pdot == string::npos) return false;
     A = str.substr(0, pdot);
     B = str.substr(pdot + 1);
+    return true;
+}
+
+bool XkfxParser::GetNextLine(const std::string& txt, std::string& line, std::string& remainingText)
+{
+    if (txt.size() == 0) return false;
+
+    size_t pos = txt.find_first_of('\n');
+    if (pos == string::npos){
+        line = txt;
+        remainingText = "";
+    }
+    else
+    {
+        line = txt.substr(0, pos);
+        remainingText = txt.substr(pos + 1);
+    }
+    
     return true;
 }
 
@@ -488,6 +506,7 @@ static EffectMixerObject* CreateAndAddNewMixer(unordered_map<string, EffectMixer
     }
 
     EffectMixerObject* mixerObject = nullptr;
+
     SpxMixer* mixer = new SpxMixer();
     mixerObject = new EffectMixerObject(newMixerName, mixer);
 
@@ -577,7 +596,7 @@ static bool MixinShaders(const string& mixinShadersInstructionString, EffectMixe
 //===================================================================================================================================
 //===================================================================================================================================
 // XKFX command lines parsing
-bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, string effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, vector<string>& errorMsgs)
+bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, vector<string>& errorMsgs)
 {
     bool success = true;
 
@@ -593,29 +612,29 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, string effectCmdL
         return false;
     }*/
 
+    string remainingTextToParse = effectCmdLines;
     string previousPartialLine = "";  //to let us have an instruction defined on several lines
-    string parsedLine = "";
-    stringstream ss(effectCmdLines);
-    while (getline(ss, parsedLine, '\n'))
+    string lineToParse = "";
+    while (XkfxParser::GetNextLine(remainingTextToParse, lineToParse, remainingTextToParse))
     {
-        parsedLine = XkslangUtils::trim(parsedLine, " \t");
-        if (parsedLine.size() == 0) continue;
-        if (XkslangUtils::startWith(parsedLine, "//"))
+        lineToParse = XkslangUtils::trim(lineToParse, " \t");
+        if (lineToParse.size() == 0) continue;
+        if (XkslangUtils::startWith(lineToParse, "//"))
         {
             //a comment: ignore the line
             continue;
         }
 
         //if some instructions are not complete (some unclosed parentheses or brackets, we concatenate them with the next instructions)
-        parsedLine = previousPartialLine + parsedLine;
-        if (!XkfxParser::IsCommandLineInstructionComplete(parsedLine))
+        lineToParse = previousPartialLine + lineToParse;
+        if (!XkfxParser::IsCommandLineInstructionComplete(lineToParse))
         {
-            previousPartialLine = parsedLine;
+            previousPartialLine = lineToParse;
             continue;
         }
         else previousPartialLine = "";
         
-        string instructionFullLine = XkslangUtils::trim(parsedLine);
+        string instructionFullLine = XkslangUtils::trim(lineToParse);
         string firstInstruction;
         string remainingLine;
         if (!XkfxParser::GetNextInstruction(instructionFullLine, firstInstruction, remainingLine, '(', true))
@@ -638,6 +657,8 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, string effectCmdL
                 error(errorMsgs, "missing macro definition");
                 success = false; break;
             }
+
+            continue; //PROUT
 
             if (XkslParser::ParseStringMacroDefinition(strMacrosDefinition.c_str(), listUserDefinedMacros, false) != 1)
             {
@@ -675,6 +696,8 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, string effectCmdL
                 success = false; break;
             }
 
+            continue; //PROUT
+
             if (mixerMap.find(mixerName) == mixerMap.end()) {
                 error(errorMsgs, firstInstruction + ": no mixer found with the name:" + mixerName);
                 success = false; break;
@@ -695,6 +718,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, string effectCmdL
             {
                 if (instructionParametersStr.size() == 0) { error(errorMsgs, "Mixin: parameters expected"); success = false; break; }
 
+                break; //PROUT
                 success = MixinShaders(instructionParametersStr, mixerTarget, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
 
                 if (!success) { error(errorMsgs, "Mixin failed"); success = false; break; }
@@ -703,6 +727,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, string effectCmdL
             {
                 if (instructionParametersStr.size() == 0) { error(errorMsgs, "addComposition: parameters expected"); success = false; break; }
 
+                break; //PROUT
                 success = AddCompositionsToMixer(mixerTarget, instructionParametersStr, "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
                     listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
 
@@ -710,6 +735,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, string effectCmdL
             }
             if (instruction.compare("compile") == 0)
             {
+                break; //PROUT
                 success = CompileMixer(mixerTarget->mixer, errorMsgs);
                 if (!success) { error(errorMsgs, "Failed to compile the effect"); success = false; break; }
             }

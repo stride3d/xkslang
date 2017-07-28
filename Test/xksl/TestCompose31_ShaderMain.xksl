@@ -7,6 +7,11 @@ shader ShaderMain
 		float f = 0;
 		f += composition.Compute();
 	}
+	
+	void UnusedFunction()
+	{
+		float f = composition.Compute();
+	}
 }
 
 shader ShaderComposition
