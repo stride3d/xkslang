@@ -9,18 +9,18 @@ layout(std140) uniform PerLighting
 {
     int ShaderMain_var7;
     int ShaderMain_var8;
-    vec4 ShaderMain__padding__Default;
+    vec4 ShaderMain__padding_PerLighting_Default;
     int ShaderMain_var3;
     int ShaderMain_var4;
-    vec4 ShaderMain__padding__subpart2;
+    vec4 ShaderMain__padding_PerLighting_subpart2;
     int ShaderMain_var1;
     int ShaderMain_var2;
-    vec4 ShaderMain__padding__subpart1;
+    vec4 ShaderMain__padding_PerLighting_subpart1;
     int ShaderMain_var9;
     int ShaderMain_var10;
     int ShaderMain_var5;
     int ShaderMain_var6;
-    vec4 ShaderMain__padding__subpart3;
+    vec4 ShaderMain__padding_PerLighting_subpart3;
 } PerLighting_var;
 
 layout(location = 0) out int VS_OUT_aStream;

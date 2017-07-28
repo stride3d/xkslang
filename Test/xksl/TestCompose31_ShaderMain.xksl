@@ -16,18 +16,13 @@ shader ShaderMain
 
 shader ShaderComposition
 {
-	cbuffer cbUnstageComposition
+	cbuffer cbComposition
 	{
 		float var09;
 	}
 	
-	stage cbuffer cbStageComposition
-	{
-		float var10;
-	}
-	
 	float Compute()
 	{
-		return var09 + var10;
+		return var09;
 	}
 }

@@ -1,18 +1,13 @@
 #version 450
 
-layout(std140) uniform cbUnstageComposition
+layout(std140) uniform cbComposition
 {
     float o0S2C0_ShaderComposition_var09;
-} cbUnstageComposition_var;
-
-layout(std140) uniform cbStageComposition
-{
-    float o0S2C0_ShaderComposition_var10;
-} cbStageComposition_var;
+} cbComposition_var;
 
 float o0S2C0_ShaderComposition_Compute()
 {
-    return cbUnstageComposition_var.o0S2C0_ShaderComposition_var09 + cbStageComposition_var.o0S2C0_ShaderComposition_var10;
+    return cbComposition_var.o0S2C0_ShaderComposition_var09;
 }
 
 void main()

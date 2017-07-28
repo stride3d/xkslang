@@ -1,15 +1,11 @@
-cbuffer cbUnstageComposition
+cbuffer cbComposition
 {
     float o0S2C0_ShaderComposition_var09;
-};
-cbuffer cbStageComposition
-{
-    float o0S2C0_ShaderComposition_var10;
 };
 
 float o0S2C0_ShaderComposition_Compute()
 {
-    return o0S2C0_ShaderComposition_var09 + o0S2C0_ShaderComposition_var10;
+    return o0S2C0_ShaderComposition_var09;
 }
 
 void vert_main()

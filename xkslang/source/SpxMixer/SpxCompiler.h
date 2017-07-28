@@ -545,21 +545,14 @@ public:
         //data used temporarly when processing cbuffers
         int tmpFlag;
         
-        static int countRef;
-        static int s_uniqueId;
-        int uniqueId;
+        //static int countRef;
+        //static int s_uniqueId;
+        //int uniqueId;
 
         //===========================================================
         ShaderTypeData(ShaderClassData* shaderOwner, TypeInstruction* type, TypeInstruction* pointerToType, VariableInstruction* variable) :
-            shaderOwner(shaderOwner), type(type), pointerToType(pointerToType), variable(variable), tmpFlag(0){
-            countRef++;
-            uniqueId = s_uniqueId++;
-            std::cout << "Allocate ShaderTypeData. id: << " << uniqueId << " countRef: " << countRef << std::endl;
-        }
-        virtual ~ShaderTypeData(){
-            countRef--;
-            std::cout << "Free ShaderTypeData. id: << " << uniqueId << " countRef: " << countRef << std::endl;
-        }
+            shaderOwner(shaderOwner), type(type), pointerToType(pointerToType), variable(variable), tmpFlag(0){}
+        virtual ~ShaderTypeData(){}
 
         bool isCBufferType() { return type->IsCBuffer(); }
         CBufferTypeData* GetCBufferData() { return type->GetCBufferData(); }
@@ -668,9 +661,9 @@ public:
         std::vector<ShaderCompositionDeclaration*> listCompositionDeclarations;
         std::vector<ShaderInstancingPathItem> listInstancingPathItems;
 
-        static int countRef;
-        static int s_uniqueId;
-        int uniqueId;
+        //static int s_countRef;
+        //static int s_uniqueId;
+        //int uniqueId;
 
     private:
         //When merging/duplicating a shader into a bytecode, this field will hold a temporary reference to its resulting, cloned shader 
@@ -683,15 +676,13 @@ public:
     public:
         ShaderClassData(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source), level(-1), countGenerics(0), flag(0), flag1(0), tmpClonedShader(nullptr) {
-            countRef++;
-            uniqueId = s_uniqueId++;
-            std::cout << "Allocate ShaderClassData: " << name << " id: << " << uniqueId << " countRef: " << countRef << std::endl;
+            //s_countRef++;
+            //uniqueId = s_uniqueId++;
         }
         virtual ~ShaderClassData() {
+            //s_countRef--;
             for (auto it = shaderTypesList.begin(); it != shaderTypesList.end(); it++) delete (*it);
             for (auto it = listCompositionDeclarations.begin(); it != listCompositionDeclarations.end(); it++) delete (*it);
-            countRef--;
-            std::cout << "Free ShaderClassData: " << name << " id: << " << uniqueId << " countRef: " << countRef << std::endl;
         }
         virtual ObjectInstructionBase* CloneBasicData() {
             ShaderClassData* obj = new ShaderClassData(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -723,7 +714,9 @@ public:
         }
         unsigned int GetCountFunctions() { return (unsigned int)functionsList.size(); }
 
-        void AddShaderType(ShaderTypeData* type) { shaderTypesList.push_back(type); }
+        void AddShaderType(ShaderTypeData* type) {
+            shaderTypesList.push_back(type);
+        }
         bool HasType(TypeInstruction* type) {
             for (unsigned int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->type == type) return true;
             return false;

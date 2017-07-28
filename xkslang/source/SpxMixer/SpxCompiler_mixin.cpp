@@ -97,10 +97,8 @@ SpxCompiler::VariableInstruction::~VariableInstruction()
 
 //=====================================================================================================================================
 
-int SpxCompiler::ShaderTypeData::countRef = 0;
-int SpxCompiler::ShaderClassData::countRef = 0;
-int SpxCompiler::ShaderTypeData::s_uniqueId = 0;
-int SpxCompiler::ShaderClassData::s_uniqueId = 0;
+//int SpxCompiler::ShaderClassData::s_countRef = 0;
+//int SpxCompiler::ShaderClassData::s_uniqueId = 0;
 
 //=====================================================================================================================================
 //=====================================================================================================================================
@@ -360,7 +358,10 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
             //remove the element
             typeFound = true;
             iter_swap(itt, shaderOwner->shaderTypesList.end() - 1);
+            ShaderTypeData* shaderTypeToRemove = shaderOwner->shaderTypesList.back();
             shaderOwner->shaderTypesList.pop_back();
+            delete shaderTypeToRemove;
+
             break;
         }
         if (!typeFound) return error(string("Failed to find the shaderType to remove: ") + shaderTypeToRemove->type->GetName());
