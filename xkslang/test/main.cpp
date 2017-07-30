@@ -25,14 +25,19 @@
 #include "../source/SpxMixer/EffectReflection.h"
 
 #include "../source/SPIRV-Cross/spirv_cross.hpp"
-#include "../source/XkslangDLL/XkslangDLL.h"
 
 //#include "vld.h"
 
 #ifdef _DEBUG
 #define WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
 #define OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
-//#define PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
+#define PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
+#endif
+
+//#define ALLOW_ACCESS_TO_XKSLANG_DLL
+
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
+#include "../source/XkslangDLL/XkslangDLL.h"
 #endif
 
 using namespace std;
@@ -62,7 +67,7 @@ public:
 
     EffectMixerObject(string name, SpxMixer* mixer) : name(name), mixer(mixer), mixerHandleId(0) {}
     EffectMixerObject(string name, uint32_t mixerHandleId) : name(name), mixer(nullptr), mixerHandleId(mixerHandleId) {}
-    ~EffectMixerObject() { if (mixer != nullptr) delete mixer; }
+    virtual ~EffectMixerObject() { if (mixer != nullptr) delete mixer; }
 };
 
 static string inputDir = "glslang\\source\\Test\\xksl\\";
@@ -482,6 +487,7 @@ static bool GetMixerCurrentBytecode(EffectMixerObject* mixerTarget, vector<uint3
 {
     if (useXkslangDll)
     {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
         int bytecodeLength = 0;
         uint32_t* pBytecodeBuffer = xkslangDll::GetMixerCurrentBytecode(mixerTarget->mixerHandleId, &bytecodeLength);
 
@@ -497,6 +503,9 @@ static bool GetMixerCurrentBytecode(EffectMixerObject* mixerTarget, vector<uint3
 
         mixinBytecode.assign(pBytecodeBuffer, pBytecodeBuffer + bytecodeLength);
         GlobalFree(pBytecodeBuffer);
+#else
+        return error("Unauthorized access to DLL functions");
+#endif
     }
     else
     {
@@ -727,6 +736,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
 
 static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mixer, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
 {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
     DWORD time_before, time_after;
     bool success = true;
 
@@ -827,6 +837,9 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
     //write and check the stages's compiled bytecode
     success = OutputAndCheckOutputStagesCompiledBytecode(effectName, outputStages, buildEffectReflection ? &effectReflection : nullptr);
     return success;
+#else
+    return error("Unauthorized access to DLL functions");
+#endif
 }
 
 static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
@@ -1121,6 +1134,7 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
     vector<string> vecShadersParsed;
     if (useXkslangDll)
     {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
         shaderFilesPrefix = xkslInputFilePrefix; //set for the callback function
 
         string stringMacroDef = "";
@@ -1139,8 +1153,7 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
             if (pError != nullptr) error(pError);
             GlobalFree(pError);
 
-            error("convertAndLoadRecursif: failed to convert the XKSL file name: " + xkslInputFilePrefix);
-            return false;
+            return error("convertAndLoadRecursif: failed to convert the XKSL file name: " + xkslInputFilePrefix);
         }
         else std::cout << " OK. time: " << (time_after - time_before) << "ms" << endl;
 
@@ -1149,6 +1162,9 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
         vector<uint32_t>& vecBytecode = spxBytecode->getWritableBytecodeStream();
         vecBytecode.assign(pBytecodeBuffer, pBytecodeBuffer + bytecodeLength);
         if (pBytecodeBuffer != nullptr) GlobalFree(pBytecodeBuffer);
+#else
+        return error("Unauthorized access to DLL functions");
+#endif
     }
     else
     {
@@ -1184,6 +1200,7 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
     //Query the list of shaders from the bytecode
     if (useXkslangDll)
     {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
         int countShaders = 0;
         xkslangDll::BytecodeShaderInformation *shadersInfo;
         uint32_t* pBytecodeBuffer = &(spxBytecode->getWritableBytecodeStream().front());
@@ -1195,8 +1212,7 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
             if (pError != nullptr) error(pError);
             GlobalFree(pError);
 
-            error("convertAndLoadRecursif: failed to get the shader info from the bytecode");
-            return false;
+            return error("convertAndLoadRecursif: failed to get the shader info from the bytecode");
         }
 
         for (int k = 0; k < countShaders; ++k)
@@ -1205,6 +1221,9 @@ static bool ConvertAndLoadRecursif(const string& effectName, unordered_map<strin
             GlobalFree(shadersInfo[k].ShaderName);
         }
         GlobalFree(shadersInfo);
+#else
+        return error("Unauthorized access to DLL functions");
+#endif
     }
     else
     {
@@ -1239,12 +1258,17 @@ static EffectMixerObject* CreateAndAddNewMixer(unordered_map<string, EffectMixer
     EffectMixerObject* mixerObject = nullptr;
     if (useXkslangDll)
     {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
         uint32_t mixerHandleId = xkslangDll::CreateSpxShaderMixer();
         if (mixerHandleId == 0) {
             error("Failed to create a new spx mixer");
             return nullptr;
         }
         mixerObject = new EffectMixerObject(newMixerName, mixerHandleId);
+#else
+        error("Unauthorized access to DLL functions");
+        return nullptr;
+#endif
     }
     else
     {
@@ -1382,9 +1406,13 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
 
         if (useXkslangDll)
         {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
             time_before = GetTickCount();
             success = xkslangDll::AddComposition(mixerTarget->mixerHandleId, shaderName.c_str(), variableName.c_str(), compositionSourceMixer->mixerHandleId);
             time_after = GetTickCount();
+#else
+            return error("Unauthorized access to DLL functions");
+#endif
         }
         else
         {
@@ -1549,6 +1577,7 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
             std::cout << "mixin: " << shaderFullName << endl;
             if (useXkslangDll)
             {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
                 if (listShaderToMix.size() == 0) return error("not shader to mix");
 
                 string stringListShadersFullName;
@@ -1566,6 +1595,9 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
                     if (pError != nullptr) error(pError);
                     GlobalFree(pError);
                 }
+#else
+                return error("Unauthorized access to DLL functions");
+#endif
             }
             else
             {
@@ -1638,7 +1670,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
     if (useXkslangDll)
     {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
         xkslangDll::InitializeMixer();
+#else
+        return error("Unauthorized access to DLL functions");
+#endif
     }
 
     vector<string> errorMsgs;
@@ -1816,6 +1852,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             vector<string> vecShadersParsed;
             if (useXkslangDll)
             {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
                 //load and init the xksl file
                 const string inputFname = inputDir + xkslInputFile;
                 string xkslInput;
@@ -1858,6 +1895,9 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 vector<uint32_t>& vecBytecode = spxBytecode->getWritableBytecodeStream();
                 vecBytecode.assign(pBytecodeBuffer, pBytecodeBuffer + bytecodeLength);
                 GlobalFree(pBytecodeBuffer);
+#else
+                return error("Unauthorized access to DLL functions");
+#endif
             }
             else
             {
@@ -1886,6 +1926,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             //Query the list of shaders from the bytecode
             if (useXkslangDll)
             {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
                 int countShaders = 0;
                 xkslangDll::BytecodeShaderInformation *shadersInfo;
                 uint32_t* pBytecodeBuffer = &(spxBytecode->getWritableBytecodeStream().front());
@@ -1907,6 +1948,9 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                     GlobalFree(shadersInfo[k].ShaderName);
                 }
                 GlobalFree(shadersInfo);
+#else
+                return error("Unauthorized access to DLL functions");
+#endif
             }
             else
             {
@@ -2103,7 +2147,11 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
     if (useXkslangDll)
     {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
         xkslangDll::ReleaseMixer();
+#else
+        return error("Unauthorized access to DLL functions");
+#endif
     }
 
     effect_timeEnd = GetTickCount();
@@ -2113,6 +2161,155 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
     for (unsigned int l = 0; l < listParsedInstructions.size(); l++)
         updatedEffectCommandLines += listParsedInstructions[l] + "\n";
+
+    return success;
+}
+
+static bool XkfxParser____ProcessXkfxCommandLines(XkslParser* p_parser, const string& effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, vector<string>& errorMsgs)
+{
+    bool success = true;
+
+    vector<XkslUserDefinedMacro> listUserDefinedMacros;
+    vector<SpxBytecode*> listAllocatedBytecodes;
+    unordered_map<string, EffectMixerObject*> mixerMap;
+    unordered_map<string, SpxBytecode*> mapShaderNameBytecode;
+
+    string remainingTextToParse = effectCmdLines;
+    string previousPartialLine = "";  //to let us have an instruction defined on several lines
+    string lineToParse = "";
+    while (XkfxParser::GetNextLine(remainingTextToParse, lineToParse, remainingTextToParse))
+    {
+        lineToParse = XkslangUtils::trim(lineToParse, " \t");
+        if (lineToParse.size() == 0) continue;
+        if (XkslangUtils::startWith(lineToParse, "//"))
+        {
+            //a comment: ignore the line
+            continue;
+        }
+
+        //if some instructions are not complete (some unclosed parentheses or brackets, we concatenate them with the next instructions)
+        lineToParse = previousPartialLine + lineToParse;
+        if (!XkfxParser::IsCommandLineInstructionComplete(lineToParse))
+        {
+            previousPartialLine = lineToParse;
+            continue;
+        }
+        else previousPartialLine = "";
+
+        string instructionFullLine = XkslangUtils::trim(lineToParse);
+        string firstInstruction;
+        string remainingLine;
+        if (!XkfxParser::GetNextInstruction(instructionFullLine, firstInstruction, remainingLine, '(', true))
+            return error("Failed to get the next instruction from: " + instructionFullLine);
+
+        if (firstInstruction.compare("break") == 0)
+        {
+            //quit parsing the effect
+            break;
+        }
+        else if (firstInstruction.compare("setSampleTestOptions") == 0 ||
+            firstInstruction.compare("convertAndLoadRecursif") == 0)
+        {
+            continue;
+        }
+        else if (firstInstruction.compare("setDefine") == 0)
+        {
+            string strMacrosDefinition = XkslangUtils::trim(remainingLine);
+            if (strMacrosDefinition.size() == 0) {
+                error("missing macro definition");
+                success = false; break;
+            }
+
+            continue; //PROUT
+
+            /*if (XkslParser::ParseStringMacroDefinition(strMacrosDefinition.c_str(), listUserDefinedMacros, false) != 1)
+            {
+                error("Fails to parse the macros definition: " + strMacrosDefinition);
+                success = false; break;
+            }*/
+        }
+        else if (firstInstruction.compare("mixer") == 0)
+        {
+            string mixerName;
+            if (!XkfxParser::GetNextInstruction(remainingLine, mixerName, remainingLine)) {
+                error("mixer: failed to get the xksl file name");
+                success = false; break;
+            }
+            mixerName = XkslangUtils::trim(mixerName, '\"');
+
+            if (mixerName.find_first_of("<>()[].,+-/*\\?:;\"{}=&%^") != string::npos)
+            {
+                error("Invalid mixer name: " + mixerName);
+                success = false; break;
+            }
+
+            /*EffectMixerObject* mixer = CreateAndAddNewMixer(mixerMap, mixerName, errorMsgs);
+            if (mixer == nullptr) {
+                error("Failed to create a new mixer object");
+                success = false; break;
+            }*/
+        }
+        else
+        {
+            //operation on a mixer (mixer.instructions)
+            string mixerName, instruction;
+            if (!XkfxParser::SeparateAdotB(firstInstruction, mixerName, instruction)) {
+                error("Unknown instruction: " + firstInstruction);
+                success = false; break;
+            }
+
+            continue; //PROUT
+
+            /*if (mixerMap.find(mixerName) == mixerMap.end()) {
+                error(firstInstruction + ": no mixer found with the name:" + mixerName);
+                success = false; break;
+            }
+            EffectMixerObject* mixerTarget = mixerMap[mixerName];
+
+            //get the function parameters
+            string instructionParametersStr;
+            remainingLine = XkslangUtils::trim(remainingLine);
+            if (remainingLine.size() > 0)
+            {
+                if (!XkslangUtils::getFunctionParameterString(remainingLine, instructionParametersStr)) {
+                    instructionParametersStr = "";
+                }
+            }
+
+            if (instruction.compare("mixin") == 0)
+            {
+                if (instructionParametersStr.size() == 0) { error("Mixin: parameters expected"); success = false; break; }
+
+                break; //PROUT
+                success = MixinShaders(instructionParametersStr, mixerTarget, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
+
+                if (!success) { error(errorMsgs, "Mixin failed"); success = false; break; }
+            }
+            else if (instruction.compare("addComposition") == 0)
+            {
+                if (instructionParametersStr.size() == 0) { error("addComposition: parameters expected"); success = false; break; }
+
+                break; //PROUT
+                success = AddCompositionsToMixer(mixerTarget, instructionParametersStr, "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
+                    listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
+
+                if (!success) { error(errorMsgs, "Failed to add the compositions instruction to the mixer: " + instructionParametersStr); success = false; break; }
+            }
+            if (instruction.compare("compile") == 0)
+            {
+                break; //PROUT
+                success = CompileMixer(mixerTarget->mixer, errorMsgs);
+                if (!success) { error(errorMsgs, "Failed to compile the effect"); success = false; break; }
+            }
+            else
+            {
+                error("Unknown mixer instruction: " + instruction);
+                success = false; break;
+            }*/
+        }
+
+        if (!success) break;
+    }
 
     return success;
 }
@@ -2159,6 +2356,11 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         success1 = ProcessEffectCommandLine(parser, effectName, effectCmdLines, false, updatedEffectCommandLines);
         if (success1) std::cout << "Effect successfully processed." << endl;
         else error("Failed to process the effect");
+
+        //if (success)
+        //{
+        //    Utils::WriteFile(inputFname, updatedEffectCommandLines);
+        //}
     }
 
     if (processEffectWithDllApi)
@@ -2180,25 +2382,17 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         std::cout << "=====================================================================" << endl;
         std::cout << "Process XKSL File through Xkfx Parser classes" << endl;
 
-        for (int i = 0; i < 100; ++i)
-        {
-            vector<string> errorMsgs;
-            success3 = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader_XkfxParser, errorMsgs);
-            if (success3) std::cout << "Effect successfully processed." << endl;
-            else {
-                std::cout << endl;
-                for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
-                error("Failed to process the effect");
-            }
+        vector<string> errorMsgs;
+        success3 = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader_XkfxParser, errorMsgs);
+        if (success3) std::cout << "Effect successfully processed." << endl;
+        else {
+            std::cout << endl;
+            for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
+            error("Failed to process the effect");
         }
     }
 
     bool success = success1 && success2 && success3;
-
-    //if (success)
-    //{
-    //    Utils::WriteFile(inputFname, updatedEffectCommandLines);
-    //}
 
     return success;
 }
@@ -2215,6 +2409,38 @@ void main(int argc, char** argv)
     {
         error("Failed to setup the directories");
         return;
+    }
+
+    {
+        XkfxEffectsToProcess effect = vecXkfxEffectToProcess[0];
+        const string inputFname = inputDir + effect.inputFileName;
+        string effectCmdLines;
+        if (!Utils::ReadFile(inputFname, effectCmdLines))
+        {
+            error(" Failed to read the file: " + inputFname);
+            return;
+        }
+
+        processSampleWithXkfxLibrary = true;  //TMP
+        if (processSampleWithXkfxLibrary)
+        {
+            std::cout << endl;
+            std::cout << "=====================================================================" << endl;
+            std::cout << "=====================================================================" << endl;
+            std::cout << "Process XKSL File through Xkfx Parser classes" << endl;
+
+            for (int i = 0; i < 100; ++i)
+            {
+                vector<string> errorMsgs;
+                bool success3 = XkfxParser::ProcessXkfxCommandLines(nullptr, effectCmdLines, nullptr, errorMsgs);
+                if (success3) std::cout << "Effect successfully processed." << endl;
+                else {
+                    std::cout << endl;
+                    for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
+                    error("Failed to process the effect");
+                }
+            }
+        }
     }
 
     //Init parser
@@ -2261,8 +2487,13 @@ void main(int argc, char** argv)
     std::cout << "___________________________________________________________________________________" << endl;
     std::cout << "Process XKFX Effect  Files:" << endl << endl;
 
-    if (processEffectWithDllApi) {
+    if (processEffectWithDllApi)
+    {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
         xkslangDll::InitializeParser();
+#else
+        error("Unauthorized access to DLL functions");
+#endif
     }
 
     int countEffectsProcessed = 0;
@@ -2286,8 +2517,13 @@ void main(int argc, char** argv)
         }
     }
 
-    if (processEffectWithDllApi) {
+    if (processEffectWithDllApi)
+    {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
         xkslangDll::ReleaseParser();
+#else
+        error("Unauthorized access to DLL functions");
+#endif
     }
 
     std::cout << endl;
