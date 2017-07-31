@@ -92,6 +92,7 @@ bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName,
 
 bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& shaders, vector<string>& msgs)
 {
+    if (status != MixerStatusEnum::WaitingForMixin) return error(msgs, "The mixer has an invalid status");
     if (spxCompiler == nullptr) spxCompiler = new SpxCompiler();
 
     if (!spxCompiler->MixWithShadersFromBytecode(spirXBytecode, shaders))
@@ -133,6 +134,8 @@ bool SpxMixer::GetListAllCompositionsInfo(vector<ShaderCompositionInfo>& vecComp
 
 bool SpxMixer::AddCompositionInstance(const string& shaderName, const string& variableName, SpxMixer* mixerSource, vector<string>& msgs)
 {
+    if (status != MixerStatusEnum::WaitingForMixin) return error(msgs, "The mixer has an invalid status");
+
     if (spxCompiler == nullptr) {
         return error(msgs, "mixer is empty");
     }

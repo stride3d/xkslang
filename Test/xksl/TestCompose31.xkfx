@@ -16,5 +16,5 @@ m.addComposition(
 
 m.setStageEntryPoint( Vertex="VSMain" )
 m.compile
-m.compile
+
 

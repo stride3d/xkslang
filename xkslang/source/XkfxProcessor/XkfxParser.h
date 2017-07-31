@@ -13,6 +13,7 @@
 #include "../Common/xkslangDefine.h"
 #include "../Common/SpxBytecode.h"
 #include "../XkslParser/XkslParser.h"
+#include "../SpxMixer/OutputStageBytecode.h"
 
 namespace xkfxProcessor
 {
@@ -21,7 +22,7 @@ class XkfxParser
 {
 public:
     static bool ProcessXkfxCommandLines(xkslang::XkslParser* parser, const std::string& effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
-        std::vector<uint32_t>* compiledBytecode, std::vector<std::string>& errorMsgs);
+        std::vector<uint32_t>* compiledBytecode, std::vector<xkslang::OutputStageBytecode>& outputStages, std::vector<std::string>& errorMsgs);
 
     static bool IsCommandLineInstructionComplete(const char* pInstruction);
     static bool SplitLine(char* txt, char** nextLine);

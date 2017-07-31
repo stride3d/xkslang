@@ -677,7 +677,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
         string fileNameReflect = effectName + "_reflection" + ".txt";
         string fullnameReflect = outputDir + fileNameReflect;
         xkslangtest::Utils::WriteFile(fullnameReflect, reflectionTxt);
-        std::cout << " output: \"" << fileNameReflect << "\"" << endl;
+        std::cout << " output: \"" << fullnameReflect << "\"" << endl;
 
         //if the reflection file exists in the expected folder, compare them
         string reflectionExpectedOutput;
@@ -717,7 +717,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
         string fileNameAllGlsl = effectName + ".glsl";
         string fullNameAllGlsl = finalResultOutputDir + fileNameAllGlsl;
         xkslangtest::Utils::WriteFile(fullNameAllGlsl, glslAllOutputs);
-        std::cout << " output: \"" << fileNameAllGlsl << "\"" << endl;
+        std::cout << " output: \"" << fullNameAllGlsl << "\"" << endl;
     }
     if (hlslAllOutputs.size() > 0)
     {
@@ -725,7 +725,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
         string fileNameAllHlsl = effectName + ".hlsl";
         string fullNameAllHlsl = finalResultOutputDir + fileNameAllHlsl;
         xkslangtest::Utils::WriteFile(fullNameAllHlsl, hlslAllOutputs);
-        std::cout << " output: \"" << fileNameAllHlsl << "\"" << endl;
+        std::cout << " output: \"" << fullNameAllHlsl << "\"" << endl;
     }
 
     if (someExpectedOutputsDifferent) success = false;
@@ -1651,7 +1651,8 @@ static bool ProcessEffectCommandLineThroughXkfxParserApi(XkslParser* parser, str
 {
     vector<string> errorMsgs;
     vector<uint32_t> compiledBytecode;
-    bool success = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader, &compiledBytecode, errorMsgs);
+    vector<OutputStageBytecode> outputStages;
+    bool success = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader, &compiledBytecode, outputStages, errorMsgs);
     if (!success) {
         std::cout << endl;
         for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
@@ -2233,10 +2234,11 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         std::cout << "=====================================================================" << endl;
         std::cout << "Process XKSL File (direct call to Xkslang classes)" << endl;
 
+        SpxMixer::StartMixinEffect();
         success1 = ProcessEffectCommandLine(parser, effectName, effectCmdLines, false, updatedEffectCommandLines);
         if (success1) std::cout << "Effect successfully processed." << endl;
         else error("Failed to process the effect");
-
+        SpxMixer::StopMixinEffect();
         //if (success)
         //{
         //    Utils::WriteFile(inputFname, updatedEffectCommandLines);
@@ -2382,9 +2384,7 @@ void main(int argc, char** argv)
             XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
             countEffectsProcessed++;
 
-            SpxMixer::StartMixinEffect();
             bool success = ProcessEffect(&parser, effect);
-            SpxMixer::StopMixinEffect();
 
             if (success) countEffectsSuccessful++;
             else listEffectsFailed.push_back(effect.effectName);

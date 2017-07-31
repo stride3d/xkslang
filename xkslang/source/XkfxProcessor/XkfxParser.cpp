@@ -434,7 +434,7 @@ static bool ConvertAndLoadRecursif(const string& stringShaderAndgenericsValue, c
 //===================================================================================================================================
 //===================================================================================================================================
 // Compilation
-static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, vector<string>& errorMsgs)
+static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
 {
     bool success = true;
 
@@ -451,7 +451,8 @@ static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, ve
     if (!mixer->GetListAllMethodsInfo(vecMethods, errorMsgs))
         return error(errorMsgs, "Failed to get the mixer list of methods");
     unsigned int countMethods = vecMethods.size();
-    vector<OutputStageBytecode> outputStages;
+    
+    outputStages.clear();
     for (unsigned int m = 0; m < countMethods; m++)
     {
         const MethodInfo& aMethod = vecMethods[m];
@@ -737,7 +738,7 @@ static bool MixinShaders(const char* mixinShadersInstructions, XkEffectMixerObje
 //===================================================================================================================================
 // XKFX command lines parsing
 bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
-    vector<uint32_t>* compiledBytecode, vector<string>& errorMsgs)
+    vector<uint32_t>* compiledBytecode, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
 {
     bool success = true;
     vector<XkslUserDefinedMacro> listUserDefinedMacros;
@@ -746,6 +747,8 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
     unordered_map<string, SpxBytecode*> mapShaderNameBytecode;
 
     if (p_parser == nullptr) return error(errorMsgs, "Parser parameter is null");
+
+    SpxMixer::StartMixinEffect();
 
     //XkslParser parser;
     //if (!parser.InitialiseXkslang())
@@ -764,6 +767,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
     const char* const instruction_compile = "compile";
     const char* const instruction_setStageEntryPoint = "setStageEntryPoint";
     const char* const mixerNameInvalidCharacter = "<>()[].,+-/*\\?:;\"{}=&%^";
+    bool compilationDone = false;
 
     int wordBufferMaxSize = 256;
     int instructionBufferSize = 1024;
@@ -876,12 +880,12 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
         else if (XkfxParser::StartWith(nextWordBuffer, instruction_setDefine))
         {
             if (!XkfxParser::GetAndCopyNextWord(followingWordStart, nextWordBuffer, wordBufferMaxSize, &nextWordLen, &followingWordStart)) {
-                return error(errorMsgs, string("Failed to get the macro name from: ") + followingWordStart); break;
+                error(errorMsgs, string("Failed to get the macro name from: ") + followingWordStart); break;
             }
             string macroName = nextWordBuffer;
 
             if (!XkfxParser::GetNextStringExpression(followingWordStart, nextWordBuffer, wordBufferMaxSize, &nextWordLen)) {
-                return error(errorMsgs, string("Failed to get the macro expression from: ") + followingWordStart); break;
+                error(errorMsgs, string("Failed to get the macro expression from: ") + followingWordStart); break;
             }
             string macroExpression = nextWordBuffer;
 
@@ -953,7 +957,10 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
             }
             else if (XkfxParser::StartWith(mixerInstructionStart, instruction_compile))
             {
-                success = CompileMixer(mixerTarget->mixer, compiledBytecode, errorMsgs);
+                if (compilationDone) { error(errorMsgs, "One compilation onlyis  authorized per effect file"); break; }
+                compilationDone = true;
+
+                success = CompileMixer(mixerTarget->mixer, compiledBytecode, outputStages, errorMsgs);
                 if (!success) { error(errorMsgs, "Failed to compile the effect"); break; }
             }
             else if (XkfxParser::StartWith(mixerInstructionStart, instruction_setStageEntryPoint))
@@ -993,6 +1000,8 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
 
         //parser.Finalize();
     }
+
+    SpxMixer::StopMixinEffect();
 
     if (!success || errorMsgs.size() != 0) return false;
     return true;
