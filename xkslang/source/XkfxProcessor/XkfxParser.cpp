@@ -474,15 +474,6 @@ static bool CompileMixer(SpxMixer* mixer, vector<string>& errorMsgs)
     success = mixer->Compile(outputStages, errorMsgs, nullptr, nullptr, nullptr, nullptr, &compiledBytecode, nullptr);
 
     if (!success) return error(errorMsgs, "Compilation Failed");
-
-    /*{
-        //write the final SPIRV bytecode then convert it into GLSL
-        string outputFileNameFinalSpv = effectName + "_compile4_final.spv";
-        string outputFileNameFinalSpvHr = effectName + "_compile4_final.hr.spv";
-        WriteBytecode(compiledBytecode.getBytecodeStream(), outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
-        WriteBytecode(compiledBytecode.getBytecodeStream(), outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
-    }*/
-
     return success;
 }
 
@@ -738,10 +729,13 @@ static bool MixinShaders(const string& mixinShadersInstructionString, XkEffectMi
 // XKFX command lines parsing
 bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, vector<string>& errorMsgs)
 {
+    bool success = true;
     vector<XkslUserDefinedMacro> listUserDefinedMacros;
     vector<SpxBytecode*> listAllocatedBytecodes;
     unordered_map<string, XkEffectMixerObject*> mixerMap;
     unordered_map<string, SpxBytecode*> mapShaderNameBytecode;
+
+    if (p_parser == nullptr) return error(errorMsgs, "Parser parameter is null");
 
     //XkslParser parser;
     //if (!parser.InitialiseXkslang())
@@ -755,6 +749,10 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
     const char* const instruction_convertAndLoadRecursif = "convertAndLoadRecursif";
     const char* const instruction_setDefine = "setDefine";
     const char* const instruction_mixer = "mixer";
+    const char* const instruction_mixin = "mixin";
+    const char* const instruction_addComposition = "addComposition";
+    const char* const instruction_compile = "compile";
+    const char* const instruction_setStageEntryPoint = "setStageEntryPoint";
     const char* const mixerNameInvalidCharacter = "<>()[].,+-/*\\?:;\"{}=&%^";
 
     int wordBufferMaxSize = 256;
@@ -894,18 +892,18 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
         else //operation on a mixer (mixerName.instructions)
         {
             //mixer name
-            char* followingSplitWordStart;
-            if (!XkfxParser::GetNextWord(nextWordBuffer, splitWordBuffer, wordBufferMaxSize, &nextWordLen, &followingSplitWordStart, '.')) {
+            char* mixerInstructionStart;
+            if (!XkfxParser::GetNextWord(nextWordBuffer, splitWordBuffer, wordBufferMaxSize, &nextWordLen, &mixerInstructionStart, '.')) {
                 error(errorMsgs, string("Failed to get the mixer instruction: ") + nextWordBuffer); break;
             }
             string mixerName = splitWordBuffer;
 
             //mixer instruction
-            if (followingSplitWordStart == nullptr || *followingSplitWordStart != '.') {
+            if (mixerInstructionStart == nullptr || *mixerInstructionStart != '.') {
                 error(errorMsgs, string("mixer dot instruction expected: ") + nextWordBuffer); break;
             }
-            followingSplitWordStart++;
-            string mixerInstruction = followingSplitWordStart;
+            mixerInstructionStart++;
+            //string mixerInstruction = mixerInstructionStart;
 
             if (mixerMap.find(mixerName) == mixerMap.end()) {
                 error(errorMsgs, "no mixer found with the name: " + mixerName); break;
@@ -914,45 +912,45 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
 
             //get the function parameter string
             char* parameterStringStart;
-            int parameterStringLen;
-            if (!XkfxParser::getFunctionParameterString(followingWordStart, &parameterStringStart, &parameterStringLen)) {
-                error(errorMsgs, string("Failed to find the parameter string from: ") + followingWordStart); break;
+            int parameterStringLen = 0;
+            if (followingWordStart != nullptr) {
+                if (!XkfxParser::getFunctionParameterString(followingWordStart, &parameterStringStart, &parameterStringLen)) {
+                    error(errorMsgs, string("Failed to find the parameter string from: ") + followingWordStart); break;
+                }
             }
             string instructionParametersStr;
             if (parameterStringLen <= 0) instructionParametersStr = "";
             else instructionParametersStr = string(parameterStringStart, parameterStringLen);
 
-            //hgjggj;
-            /*if (instruction.compare("mixin") == 0)
+            if (XkfxParser::StartWith(mixerInstructionStart, instruction_mixin))
             {
-                if (instructionParametersStr.size() == 0) { error(errorMsgs, "Mixin: parameters expected"); success = false; break; }
+                if (instructionParametersStr.size() == 0) { error(errorMsgs, "mixin: parameters expected"); break; }
 
-                break; //PROUT
                 success = MixinShaders(instructionParametersStr, mixerTarget, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
-
-                if (!success) { error(errorMsgs, "Mixin failed"); success = false; break; }
+                if (!success) { error(errorMsgs, "Mixin failed"); break; }
             }
-            else if (instruction.compare("addComposition") == 0)
+            else if (XkfxParser::StartWith(mixerInstructionStart, instruction_addComposition))
             {
-                if (instructionParametersStr.size() == 0) { error(errorMsgs, "addComposition: parameters expected"); success = false; break; }
+                if (instructionParametersStr.size() == 0) { error(errorMsgs, "addComposition: parameters expected"); break; }
 
-                break; //PROUT
-                success = AddCompositionsToMixer(mixerTarget, instructionParametersStr, "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
+                /*success = AddCompositionsToMixer(mixerTarget, instructionParametersStr, "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
                     listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
-
-                if (!success) { error(errorMsgs, "Failed to add the compositions instruction to the mixer: " + instructionParametersStr); success = false; break; }
+                if (!success) { error(errorMsgs, "Failed to add the compositions instruction to the mixer: " + instructionParametersStr); break; }*/
             }
-            if (instruction.compare("compile") == 0)
+            else if (XkfxParser::StartWith(mixerInstructionStart, instruction_compile))
             {
-                break; //PROUT
                 success = CompileMixer(mixerTarget->mixer, errorMsgs);
-                if (!success) { error(errorMsgs, "Failed to compile the effect"); success = false; break; }
+                if (!success) { error(errorMsgs, "Failed to compile the effect"); break; }
+            }
+            else if (XkfxParser::StartWith(mixerInstructionStart, instruction_setStageEntryPoint))
+            {
+                //ignore the instruction
             }
             else
             {
-                error(errorMsgs, "Unknown mixer instruction: " + instruction);
-                success = false; break;
-            }*/
+                error(errorMsgs, string("Unknown mixer instruction: ") + mixerInstructionStart);
+                break;
+            }
         }
 
     }
@@ -972,155 +970,15 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
             delete mixerObject;
         }
             
-
         for (auto itv = listAllocatedBytecodes.begin(); itv != listAllocatedBytecodes.end(); itv++)
-            delete (*itv);
+        {
+            SpxBytecode* spxBytecode = *itv;
+            delete spxBytecode;
+        }
 
         //parser.Finalize();
     }
 
-    if (errorMsgs.size() != 0) return false;
+    if (!success || errorMsgs.size() != 0) return false;
     return true;
-
-
-    /*
-    bool success = true;
-    string remainingTextToParse = effectCmdLines;
-    string previousPartialLine = "";  //to let us have an instruction defined on several lines
-    string lineToParse = "";
-    while (XkfxParser::GetNextLine(remainingTextToParse, lineToParse, remainingTextToParse))
-    {
-        lineToParse = XkslangUtils::trim(lineToParse, " \t");
-        if (lineToParse.size() == 0) continue;
-        if (XkslangUtils::startWith(lineToParse, "//"))
-        {
-            //a comment: ignore the line
-            continue;
-        }
-
-        //if some instructions are not complete (some unclosed parentheses or brackets, we concatenate them with the next instructions)
-        lineToParse = previousPartialLine + lineToParse;
-        if (!XkfxParser::IsCommandLineInstructionComplete(lineToParse))
-        {
-            previousPartialLine = lineToParse;
-            continue;
-        }
-        else previousPartialLine = "";
-        
-        string instructionFullLine = XkslangUtils::trim(lineToParse);
-        string firstInstruction;
-        string remainingLine;
-        if (!XkfxParser::GetNextInstruction(instructionFullLine, firstInstruction, remainingLine, '(', true))
-            return error(errorMsgs, "Failed to get the next instruction from: " + instructionFullLine);
-
-        if (firstInstruction.compare("break") == 0)
-        {
-            //quit parsing the effect
-            break;
-        }
-        else if (firstInstruction.compare("setSampleTestOptions") == 0 ||
-                 firstInstruction.compare("convertAndLoadRecursif") == 0)
-        {
-            continue;
-        }
-        else if (firstInstruction.compare("setDefine") == 0)
-        {
-            string strMacrosDefinition = XkslangUtils::trim(remainingLine);
-            if (strMacrosDefinition.size() == 0) {
-                error(errorMsgs, "missing macro definition");
-                success = false; break;
-            }
-
-            continue; //PROUT
-
-            if (XkslParser::ParseStringMacroDefinition(strMacrosDefinition.c_str(), listUserDefinedMacros, false) != 1)
-            {
-                error(errorMsgs, "Fails to parse the macros definition: " + strMacrosDefinition);
-                success = false; break;
-            }
-        }
-        else if (firstInstruction.compare("mixer") == 0)
-        {
-            string mixerName;
-            if (!XkfxParser::GetNextInstruction(remainingLine, mixerName, remainingLine)) {
-                error(errorMsgs, "mixer: failed to get the xksl file name");
-                success = false; break;
-            }
-            mixerName = XkslangUtils::trim(mixerName, '\"');
-
-            if (mixerName.find_first_of("<>()[].,+-/*\\?:;\"{}=&%^") != string::npos)
-            {
-                error(errorMsgs, "Invalid mixer name: " + mixerName);
-                success = false; break;
-            }
-
-            XkEffectMixerObject* mixer = CreateAndAddNewMixer(mixerMap, mixerName, errorMsgs);
-            if (mixer == nullptr) {
-                error(errorMsgs, "Failed to create a new mixer object");
-                success = false; break;
-            }
-        }
-        else
-        {
-            //operation on a mixer (mixer.instructions)
-            string mixerName, instruction;
-            if (!XkfxParser::SeparateAdotB(firstInstruction, mixerName, instruction)) {
-                error(errorMsgs, "Unknown instruction: " + firstInstruction);
-                success = false; break;
-            }
-
-            continue; //PROUT
-
-            if (mixerMap.find(mixerName) == mixerMap.end()) {
-                error(errorMsgs, firstInstruction + ": no mixer found with the name:" + mixerName);
-                success = false; break;
-            }
-            XkEffectMixerObject* mixerTarget = mixerMap[mixerName];
-
-            //get the function parameters
-            string instructionParametersStr;
-            remainingLine = XkslangUtils::trim(remainingLine);
-            if (remainingLine.size() > 0)
-            {
-                if (!XkslangUtils::getFunctionParameterString(remainingLine, instructionParametersStr)) {
-                    instructionParametersStr = "";
-                }
-            }
-
-            if (instruction.compare("mixin") == 0)
-            {
-                if (instructionParametersStr.size() == 0) { error(errorMsgs, "Mixin: parameters expected"); success = false; break; }
-
-                break; //PROUT
-                success = MixinShaders(instructionParametersStr, mixerTarget, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
-
-                if (!success) { error(errorMsgs, "Mixin failed"); success = false; break; }
-            }
-            else if (instruction.compare("addComposition") == 0)
-            {
-                if (instructionParametersStr.size() == 0) { error(errorMsgs, "addComposition: parameters expected"); success = false; break; }
-
-                break; //PROUT
-                success = AddCompositionsToMixer(mixerTarget, instructionParametersStr, "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
-                    listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
-
-                if (!success) { error(errorMsgs, "Failed to add the compositions instruction to the mixer: " + instructionParametersStr); success = false; break; }
-            }
-            if (instruction.compare("compile") == 0)
-            {
-                break; //PROUT
-                success = CompileMixer(mixerTarget->mixer, errorMsgs);
-                if (!success) { error(errorMsgs, "Failed to compile the effect"); success = false; break; }
-            }
-            else
-            {
-                error(errorMsgs, "Unknown mixer instruction: " + instruction);
-                success = false; break;
-            }
-        }
-
-        if (!success) break;
-    }
-
-    return success;*/
 }

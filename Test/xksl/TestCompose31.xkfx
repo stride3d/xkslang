@@ -5,6 +5,8 @@ setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
 setSampleTestOptions processSampleWithXkfxLibrary true
 //============================================
 
+convertAndLoadRecursif "TestCompose31" ShaderMain
+
 mixer m
 
 m.mixin(ShaderMain)
