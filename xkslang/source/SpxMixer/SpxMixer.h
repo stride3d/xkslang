@@ -52,9 +52,10 @@ public:
     //bool FinalizeMixin(std::vector<std::string>& messages);
 
     bool Compile(std::vector<OutputStageBytecode>& outputStages, std::vector<std::string>& messages,
-        SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* compiledBytecode, SpvBytecode* errorLatestSpv);
+        std::vector<uint32_t>* composedSpv, std::vector<uint32_t>* streamsMergeSpv, std::vector<uint32_t>* streamsReshuffledSpv, std::vector<uint32_t>* mergedCBuffersSpv,
+        std::vector<uint32_t>* compiledBytecode, std::vector<uint32_t>* errorLatestSpv);
 
-    static bool GetCompiledBytecodeReflection(SpvBytecode& compiledBytecode, EffectReflection& effectReflection, std::vector<std::string>& errorMessages);
+    static bool GetCompiledBytecodeReflection(std::vector<uint32_t>& compiledBytecode, EffectReflection& effectReflection, std::vector<std::string>& errorMessages);
 
 private:
     SpxCompiler* spxCompiler;

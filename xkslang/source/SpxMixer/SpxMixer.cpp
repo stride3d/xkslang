@@ -167,7 +167,8 @@ bool SpxMixer::CopyCurrentMixinBytecode(vector<uint32_t>& bytecode, vector<strin
 }
 
 bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>& messages,
-    SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* compiledBytecode, SpvBytecode* errorLatestSpv)
+    vector<uint32_t>* composedSpv, vector<uint32_t>* streamsMergeSpv, vector<uint32_t>* streamsReshuffledSpv, vector<uint32_t>* mergedCBuffersSpv,
+    vector<uint32_t>* compiledBytecode, vector<uint32_t>* errorLatestSpv)
 {
     if (spxCompiler == nullptr) return error(messages, "you must process some mixin first");
     if (status == MixerStatusEnum::Compiled) return error(messages, "The mixer has already been compiled");
@@ -213,7 +214,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     if (!spxCompiler->InitializeCompilationProcess(vecMixerOutputStages))
     {
         spxCompiler->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(messages, "Failed to initialize the compilation process");
     }
 
@@ -224,12 +225,12 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     if (!spxCompiler->ApplyCompositionInstancesToBytecode())
     {
         spxCompiler->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(messages, "Failed to apply all compositions to the bytecode");
     }
 
     if (composedSpv != nullptr)
-        spxCompiler->CopyMixinBytecode(composedSpv->getWritableBytecodeStream());
+        spxCompiler->CopyMixinBytecode(*composedSpv);
 
     //===================================================================================================================
     // Process streams
@@ -239,19 +240,19 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     if (!spxCompiler->MergeStreamMembers(globalListOfMergedStreamVariables))
     {
         spxCompiler->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(messages, "Fail to merge the streams");
     }
 
     if (streamsMergeSpv != nullptr)
-        spxCompiler->CopyMixinBytecode(streamsMergeSpv->getWritableBytecodeStream());
+        spxCompiler->CopyMixinBytecode(*streamsMergeSpv);
 
     //===================================================================================================================
     // analyse the stream and cbuffers usage for each stage
     if (!spxCompiler->AnalyseStreamsAndCBuffersAccessesForOutputStages(vecMixerOutputStages, globalListOfMergedStreamVariables))
     {
         spxCompiler->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(messages, "Analysing the streams failed");
     }
 
@@ -265,7 +266,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
         if (!spxCompiler->ValidateStagesStreamMembersFlow(vecMixerOutputStages, globalListOfMergedStreamVariables))
         {
             spxCompiler->copyMessagesTo(messages);
-            if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+            if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
             return error(messages, "Validating the stages stream members flow failed");
         }
 
@@ -275,12 +276,12 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
         if (!spxCompiler->ReshuffleStreamVariables(vecMixerOutputStages, globalListOfMergedStreamVariables))
         {
             spxCompiler->copyMessagesTo(messages);
-            if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+            if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
             return error(messages, "Fail to reshuffle the streams");
         }
 
         if (streamsReshuffledSpv != nullptr)
-            spxCompiler->CopyMixinBytecode(streamsReshuffledSpv->getWritableBytecodeStream());
+            spxCompiler->CopyMixinBytecode(*streamsReshuffledSpv);
     }
 
     //===================================================================================================================
@@ -290,11 +291,11 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     if (!spxCompiler->ProcessCBuffers(vecMixerOutputStages))
     {
         spxCompiler->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(messages, "Fail to process the cbuffers");
     }
     if (mergedCBuffersSpv != nullptr)
-        spxCompiler->CopyMixinBytecode(mergedCBuffersSpv->getWritableBytecodeStream());
+        spxCompiler->CopyMixinBytecode(*mergedCBuffersSpv);
 
     //===================================================================================================================
     //===================================================================================================================
@@ -302,7 +303,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     if (!spxCompiler->RemoveAllUnusedFunctionsAndMembers(vecMixerOutputStages))
     {
         spxCompiler->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(messages, "Fail to remove all unused stuff");
     }
 
@@ -312,7 +313,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     if (!spxCompiler->FinalizeCompilation(vecMixerOutputStages))
     {
         spxCompiler->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(messages, "Fail to finalize the compilation");
     }
 
@@ -321,13 +322,13 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     if (!spxCompiler->ProcessBytecodeAndDataSanityCheck())
     {
         spxCompiler->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(messages, "Fail to process a bytecode and data sanity check");
     }
 #endif
 
     if (compiledBytecode != nullptr)
-        spxCompiler->CopyMixinBytecode(compiledBytecode->getWritableBytecodeStream());
+        spxCompiler->CopyMixinBytecode(*compiledBytecode);
 
     //===================================================================================================================
     // Build SPV bytecode for each output stages
@@ -335,7 +336,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     if (!spxCompiler->GenerateBytecodeForAllStages(vecMixerOutputStages))
     {
         spxCompiler->copyMessagesTo(messages);
-        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(errorLatestSpv->getWritableBytecodeStream());
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(messages, "Fail to finalize the mixin");
     }
 
@@ -345,7 +346,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     return true;
 }
 
-bool SpxMixer::GetCompiledBytecodeReflection(SpvBytecode& compiledBytecode, EffectReflection& effectReflection, vector<string>& errorMessages)
+bool SpxMixer::GetCompiledBytecodeReflection(std::vector<uint32_t>& compiledBytecode, EffectReflection& effectReflection, vector<string>& errorMessages)
 {
     SpxCompiler spxCompiler;
     if (!spxCompiler.SetBytecode(compiledBytecode))

@@ -434,7 +434,7 @@ static bool ConvertAndLoadRecursif(const string& stringShaderAndgenericsValue, c
 //===================================================================================================================================
 //===================================================================================================================================
 // Compilation
-static bool CompileMixer(SpxMixer* mixer, vector<string>& errorMsgs)
+static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, vector<string>& errorMsgs)
 {
     bool success = true;
 
@@ -465,8 +465,7 @@ static bool CompileMixer(SpxMixer* mixer, vector<string>& errorMsgs)
         else if (aMethod.Name == computeShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "CSMain"));
     }
 
-    SpvBytecode compiledBytecode;
-    success = mixer->Compile(outputStages, errorMsgs, nullptr, nullptr, nullptr, nullptr, &compiledBytecode, nullptr);
+    success = mixer->Compile(outputStages, errorMsgs, nullptr, nullptr, nullptr, nullptr, compiledBytecode, nullptr);
 
     if (!success) return error(errorMsgs, "Compilation Failed");
     return success;
@@ -738,7 +737,7 @@ static bool MixinShaders(const char* mixinShadersInstructions, XkEffectMixerObje
 //===================================================================================================================================
 // XKFX command lines parsing
 bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
-    vector<uint32_t>& compiledBytecode, vector<string>& errorMsgs)
+    vector<uint32_t>* compiledBytecode, vector<string>& errorMsgs)
 {
     bool success = true;
     vector<XkslUserDefinedMacro> listUserDefinedMacros;
@@ -954,7 +953,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
             }
             else if (XkfxParser::StartWith(mixerInstructionStart, instruction_compile))
             {
-                success = CompileMixer(mixerTarget->mixer, errorMsgs);
+                success = CompileMixer(mixerTarget->mixer, compiledBytecode, errorMsgs);
                 if (!success) { error(errorMsgs, "Failed to compile the effect"); break; }
             }
             else if (XkfxParser::StartWith(mixerInstructionStart, instruction_setStageEntryPoint))

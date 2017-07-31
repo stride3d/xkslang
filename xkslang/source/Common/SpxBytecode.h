@@ -31,7 +31,6 @@ public:
     bool IsEmpty() const { return bytecode.size() == 0; }
     unsigned int GetBytecodeSize() const { return (unsigned int)bytecode.size(); }
 
-protected:
     std::vector<uint32_t> bytecode;
     std::string name;
 };

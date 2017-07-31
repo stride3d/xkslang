@@ -447,6 +447,7 @@ namespace xkslangDll
 
         vector<string> errorMsgs;
 		SpvBytecode& finalSpv = mixerData->finalCompiledSpv;
+        std::vector<uint32_t>* pCompiledBytecode = &(finalSpv.bytecode);
 
         //set the mixer's stages to compile
         mixerData->stagesCompiledData.clear();
@@ -459,7 +460,7 @@ namespace xkslangDll
 		mixerData->compilationDone = false;
 		mixerData->effectReflectionDone = false;
 
-        bool success = mixer->Compile(mixerData->stagesCompiledData, errorMsgs, nullptr, nullptr, nullptr, nullptr, &finalSpv, nullptr);
+        bool success = mixer->Compile(mixerData->stagesCompiledData, errorMsgs, nullptr, nullptr, nullptr, nullptr, pCompiledBytecode, nullptr);
         if (!success)
         {
             for (unsigned int k = 0; k < errorMsgs.size(); ++k)
@@ -523,7 +524,7 @@ namespace xkslangDll
 		if (!mixerData->effectReflectionDone)
 		{
 			SpvBytecode& compiledBytecode = mixerData->finalCompiledSpv;
-			bool success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, mixerData->effectReflection, errorMessages);
+			bool success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode.bytecode, mixerData->effectReflection, errorMessages);
 			if (!success)
 			{
 				return error("Failed to get the reflection data from the compiled bytecode");

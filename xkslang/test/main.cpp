@@ -847,12 +847,12 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
     DWORD time_before, time_after;
     bool success = true;
 
-    SpvBytecode composedSpv;
-    SpvBytecode streamsMergedSpv;
-    SpvBytecode streamsReshuffledSpv;
-    SpvBytecode mergedCBuffersSpv;
-    SpvBytecode compiledBytecode;
-    //SpvBytecode errorSpv;
+    std::vector<uint32_t> composedSpv;
+    std::vector<uint32_t> streamsMergedSpv;
+    std::vector<uint32_t> streamsReshuffledSpv;
+    std::vector<uint32_t> mergedCBuffersSpv;
+    std::vector<uint32_t> compiledBytecode;
+    //std::vector<uint32_t> errorSpv;
     std::cout << "Compile Mixin: ";
     time_before = GetTickCount();
     success = mixer->Compile(outputStages, errorMsgs, &composedSpv, &streamsMergedSpv, &streamsReshuffledSpv, &mergedCBuffersSpv, &compiledBytecode, nullptr);
@@ -861,16 +861,16 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
     if (success) std::cout << "OK. time: " << (time_after - time_before) << "ms" << endl;
     else {
         error("Compilation Failed");
-        //WriteBytecode(errorSpv.getBytecodeStream(), outputDir, effectName + "_compile_error.hr.spv", BytecodeFileFormat::Text);
+        //WriteBytecode(errorSpv, outputDir, effectName + "_compile_error.hr.spv", BytecodeFileFormat::Text);
     }
 
 #ifdef WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
     {
         //output the compiled intermediary bytecodes
-        WriteBytecode(composedSpv.getBytecodeStream(), outputDir, effectName + "_compile0_composed.hr.spv", BytecodeFileFormat::Text);
-        WriteBytecode(streamsMergedSpv.getBytecodeStream(), outputDir, effectName + "_compile1_streamsMerged.hr.spv", BytecodeFileFormat::Text);
-        WriteBytecode(streamsReshuffledSpv.getBytecodeStream(), outputDir, effectName + "_compile2_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
-        WriteBytecode(mergedCBuffersSpv.getBytecodeStream(), outputDir, effectName + "_compile3_mergedCBuffers.hr.spv", BytecodeFileFormat::Text);
+        WriteBytecode(composedSpv, outputDir, effectName + "_compile0_composed.hr.spv", BytecodeFileFormat::Text);
+        WriteBytecode(streamsMergedSpv, outputDir, effectName + "_compile1_streamsMerged.hr.spv", BytecodeFileFormat::Text);
+        WriteBytecode(streamsReshuffledSpv, outputDir, effectName + "_compile2_streamsReshuffled.hr.spv", BytecodeFileFormat::Text);
+        WriteBytecode(mergedCBuffersSpv, outputDir, effectName + "_compile3_mergedCBuffers.hr.spv", BytecodeFileFormat::Text);
     }
 #endif
 
@@ -883,8 +883,8 @@ static bool CompileMixer(string effectName, SpxMixer* mixer, vector<OutputStageB
         //write the final SPIRV bytecode then convert it into GLSL
         string outputFileNameFinalSpv = effectName + "_compile4_final.spv";
         string outputFileNameFinalSpvHr = effectName + "_compile4_final.hr.spv";
-        WriteBytecode(compiledBytecode.getBytecodeStream(), outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
-        WriteBytecode(compiledBytecode.getBytecodeStream(), outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
+        WriteBytecode(compiledBytecode, outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
+        WriteBytecode(compiledBytecode, outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
     }
 
     if (!success) return false;
@@ -1651,11 +1651,40 @@ static bool ProcessEffectCommandLineThroughXkfxParserApi(XkslParser* parser, str
 {
     vector<string> errorMsgs;
     vector<uint32_t> compiledBytecode;
-    bool success = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader, compiledBytecode, errorMsgs);
+    bool success = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader, &compiledBytecode, errorMsgs);
     if (!success) {
         std::cout << endl;
         for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
     }
+
+    {
+        //write the final SPIRV bytecode then convert it into GLSL
+        string outputFileNameFinalSpv = effectName + "_compile4_final.spv";
+        string outputFileNameFinalSpvHr = effectName + "_compile4_final.hr.spv";
+        WriteBytecode(compiledBytecode, outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
+        WriteBytecode(compiledBytecode, outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
+    }
+
+    if (!success) return false;
+
+    //get the reflection data from the compiled bytecode
+    EffectReflection effectReflection;
+    if (buildEffectReflection)
+    {
+        success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
+        if (!success)
+        {
+            error("Failed to get the reflection data from the compiled bytecode");
+            return false;
+        }
+
+        //std::cout << endl << "EffectReflection:" << endl;
+        //std::cout << effectReflection.Print() << endl;
+    }
+
+    //write and check the stages's compiled bytecode
+    success = OutputAndCheckOutputStagesCompiledBytecode(effectName, outputStages, buildEffectReflection ? &effectReflection : nullptr);
+    return success;
 
     return true;
 }
