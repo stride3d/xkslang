@@ -23,6 +23,12 @@ class SpxCompiler;
 class SpxMixer
 {
 public:
+    enum class MixerStatusEnum
+    {
+        WaitingForMixin,
+        Compiled
+    };
+
     SpxMixer();
     virtual ~SpxMixer();
 
@@ -52,6 +58,8 @@ public:
 
 private:
     SpxCompiler* spxCompiler;
+
+    MixerStatusEnum status;
 };
 
 }  // namespace xkslang

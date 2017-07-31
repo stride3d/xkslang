@@ -967,7 +967,7 @@ static bool callbackRequestDataForShader(const string& shaderName, string& shade
     return false;
 }
 
-/*static bool callbackRequestDataForShader_XkfxParser(const string& shaderName, string& shaderData)
+static bool callbackRequestDataForShader_XkfxParser(const string& shaderName, string& shaderData)
 {
     std::cout << " Parsing shader file: " << shaderName << endl;
 
@@ -980,7 +980,7 @@ static bool callbackRequestDataForShader(const string& shaderName, string& shade
 
     error("Callback function: Cannot find recorded data for the shader: " + shaderName);
     return false;
-}*/
+}
 
 static map<string, char*> mapShaderData;
 char* __stdcall callbackRequestDataForShaderDll_Recursif(const char* shaderName, int32_t* dataLen)
@@ -1300,7 +1300,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     string compositionVariableTargetStr;
     string remainingStr;
 
-    if (!XkfxParser::GetNextInstruction(compositionStr, compositionVariableTargetStr, remainingStr))
+    if (!XkfxParser::GetNextInstruction(compositionStr, compositionVariableTargetStr, remainingStr, '=', true))
         return error("AddCompositionToMixer: Failed to find the composition variable target from: " + compositionStr);
     compositionVariableTargetStr = XkslangUtils::trim(compositionVariableTargetStr);
 
@@ -1338,7 +1338,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         mixerCompositionInstructionsStr = mixerCompositionInstructionsStr.substr(1, mixerCompositionInstructionsStr.size() - 2);
 
         //If the instruction start with '[', there are several compositions assigned to the target
-        if (!XkfxParser::SplitPametersString(mixerCompositionInstructionsStr, listCompositionInstructions))
+        if (!XkfxParser::SplitParametersString(mixerCompositionInstructionsStr.c_str(), listCompositionInstructions))
             return error("Failed to split the compositions instruction string: " + mixerCompositionInstructionsStr);
     }
     else listCompositionInstructions.push_back(mixerCompositionInstructionsStr);
@@ -1350,23 +1350,10 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
         EffectMixerObject* compositionSourceMixer = nullptr;
         if (XkslangUtils::startWith(compositionInstruction, "mixin(") || XkslangUtils::startWith(compositionInstruction, "mixin ")) //we accept both expressions (the 2nd is compatible with Xenko)
         {
-            string mixinInstructionStr;
-            if (XkslangUtils::startWith(compositionInstruction, "mixin "))
-            {
-                //convert mixin XXX to mixin(XXX) (to make it consistent)
-                mixinInstructionStr = compositionInstruction + ")";
-                mixinInstructionStr[ strlen("mixin") ] = '(';
-            }
-            else mixinInstructionStr = compositionInstruction;
-
-            string mixinWord;
-            XkfxParser::GetNextInstruction(mixinInstructionStr, mixinWord, mixinInstructionStr, '(', true);
-
-            //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
-            string anonymousMixerInstruction;
-            if (!XkslangUtils::getFunctionParameterString(mixinInstructionStr, anonymousMixerInstruction)) {
-                return error("addComposition: Failed to get the instuction parameter from: \"" + mixinInstructionStr + "\"");
-            }
+            string mixinInstructionStr = compositionInstruction.substr(strlen("mixin"));
+            mixinInstructionStr = XkslangUtils::trim(mixinInstructionStr);
+            if (XkslangUtils::startWith(mixinInstructionStr, "(") && XkslangUtils::endWith(mixinInstructionStr, ")"))
+                mixinInstructionStr = mixinInstructionStr.substr(1, mixinInstructionStr.length() - 2);
 
             //Create the anonymous mixer
             string anonymousMixerName = "_anonMixer_" + to_string(mixerMap.size());
@@ -1377,7 +1364,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
 
             //Mix the new mixer with the shaders specified in the function parameter
             success = MixinShaders(effectName, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll,
-                anonymousMixer, anonymousMixerInstruction, mixinInstructionStr, operationNum);
+                anonymousMixer, mixinInstructionStr, mixinInstructionStr, operationNum);
             if (!success) return error("Mixin failed: " + mixinInstructionStr);
 
             compositionSourceMixer = anonymousMixer;
@@ -1472,7 +1459,7 @@ static bool AddCompositionsToMixer(const string& effectName, unordered_map<strin
 
     //split the string
     vector<string> compositions;
-    if (!XkfxParser::SplitPametersString(compositionsString, compositions))
+    if (!XkfxParser::SplitParametersString(compositionsString.c_str(), compositions))
         return error("failed to split the parameters");
 
     if (compositions.size() == 0)
@@ -1660,6 +1647,19 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
     return true;
 }
 
+static bool ProcessEffectCommandLineThroughXkfxParserApi(XkslParser* parser, string effectName, string effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader)
+{
+    vector<string> errorMsgs;
+    vector<uint32_t> compiledBytecode;
+    bool success = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader, compiledBytecode, errorMsgs);
+    if (!success) {
+        std::cout << endl;
+        for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
+    }
+
+    return true;
+}
+
 static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, string effectCmdLines, bool useXkslangDll, string& updatedEffectCommandLines)
 {
     bool success = true;
@@ -1704,7 +1704,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
         //if some instructions are not complete (some unclosed parentheses or brackets, we concatenate them with the next instructions)
         parsedLine = previousPartialLine + parsedLine;
-        if (!XkfxParser::IsCommandLineInstructionComplete(parsedLine))
+        if (!XkfxParser::IsCommandLineInstructionComplete(parsedLine.c_str()))
         {
             previousPartialLine = parsedLine;
             continue;
@@ -2046,7 +2046,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 if (instructionParametersStr.size() == 0) { error("setStageEntryPoint: parameters expected"); success = false; break; }
 
                 vector<string> entryPoints;
-                if (!XkfxParser::SplitPametersString(instructionParametersStr, entryPoints))
+                if (!XkfxParser::SplitParametersString(instructionParametersStr.c_str(), entryPoints))
                     return error("failed to split the entryPoints parameters");
 
                 for (unsigned int e = 0; e < entryPoints.size(); e++)
@@ -2233,14 +2233,9 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         std::cout << "=====================================================================" << endl;
         std::cout << "Process XKSL File through Xkfx Parser classes" << endl;
 
-        vector<string> errorMsgs;
-        success3 = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader, errorMsgs);
+        success3 = ProcessEffectCommandLineThroughXkfxParserApi(parser, effectName, effectCmdLines, callbackRequestDataForShader_XkfxParser);
         if (success3) std::cout << "Effect successfully processed." << endl;
-        else {
-            std::cout << endl;
-            for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
-            error("Failed to process the effect");
-        }
+        else error("Failed to process the effect");
     }
 
     bool success = success1 && success2 && success3;
@@ -2269,6 +2264,39 @@ void main(int argc, char** argv)
         error("Failed to initialize the XkslParser");
         return;
     }
+
+    /*{
+        //To test XkfxParser before anything else
+        XkfxEffectsToProcess effect = vecXkfxEffectToProcess[0];
+        const string inputFname = inputDir + effect.inputFileName;
+        string effectCmdLines;
+        if (!Utils::ReadFile(inputFname, effectCmdLines))
+        {
+            error(" Failed to read the file: " + inputFname);
+            return;
+        }
+
+        {
+            std::cout << endl;
+            std::cout << "=====================================================================" << endl;
+            std::cout << "=====================================================================" << endl;
+            std::cout << "Process XKSL File through Xkfx Parser classes" << endl;
+
+            libraryResourcesFolders.push_back(inputDir);
+            shaderFilesPrefix = effect.effectName;
+            for (int i = 0; i < 100; ++i)
+            {
+                vector<string> errorMsgs;
+                bool success3 = ProcessEffectCommandLineThroughXkfxParserApi(&parser, effect.effectName, effectCmdLines, callbackRequestDataForShader);
+                if (success3) std::cout << "Effect successfully processed." << endl;
+                else {
+                    std::cout << endl;
+                    for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
+                    error("Failed to process the effect");
+                }
+            }
+        }
+    }*/
 
     //====================================================================================================================
     //====================================================================================================================

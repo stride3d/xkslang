@@ -1194,8 +1194,17 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		}
 	}
 
+    //Remove the list of shaders
     if (countShadersTypeRemoved != vecAllShaders.size()) return error("We did not parse the correct number of shaders");
-    vecAllShaders.clear();  //all shaders type have been set as unused and are now removed
+    vecAllShaders.clear();  //all shaders type have been set as "unused", and are now removed
+
+    //can remove the link between data and shaders
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj == nullptr) continue;
+        obj->shaderOwner = nullptr;
+    }
 
 	stripBytecode(vecStripRanges);
 	if (!UpdateAllMaps()) return error("failed to update all maps");
@@ -2653,7 +2662,7 @@ bool SpxCompiler::GetListAllMethodsInfo(std::vector<MethodInfo>& vecMethodsInfo)
         FunctionInstruction* aFunction = *it;
         vecMethodsInfo.push_back(MethodInfo(
             aFunction->name,
-            aFunction->shaderOwner->shaderOriginalBaseName,
+            aFunction->shaderOwner == nullptr? "": aFunction->shaderOwner->shaderOriginalBaseName,
             aFunction->IsStage()
         ));
     }

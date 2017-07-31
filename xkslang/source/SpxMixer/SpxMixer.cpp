@@ -37,6 +37,7 @@ void SpxMixer::StopMixinEffect()
 
 SpxMixer::SpxMixer()
 {
+    status = MixerStatusEnum::WaitingForMixin;
     spxCompiler = nullptr;
     //listSpxStream.clear();
 }
@@ -168,8 +169,9 @@ bool SpxMixer::CopyCurrentMixinBytecode(vector<uint32_t>& bytecode, vector<strin
 bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>& messages,
     SpvBytecode* composedSpv, SpvBytecode* streamsMergeSpv, SpvBytecode* streamsReshuffledSpv, SpvBytecode* mergedCBuffersSpv, SpvBytecode* compiledBytecode, SpvBytecode* errorLatestSpv)
 {
-    if (spxCompiler == nullptr)
-        return error(messages, "you must process some mixin first");
+    if (spxCompiler == nullptr) return error(messages, "you must process some mixin first");
+    if (status == MixerStatusEnum::Compiled) return error(messages, "The mixer has already been compiled");
+    status = MixerStatusEnum::Compiled;
 
     if (outputStages.size() == 0)
         return error(messages, "no output stages defined");

@@ -31,24 +31,6 @@ bool XkfxParser::SeparateAdotB(const string str, string& A, string& B)
     return true;
 }
 
-bool XkfxParser::GetNextLine(const std::string& txt, std::string& line, std::string& remainingText)
-{
-    if (txt.size() == 0) return false;
-
-    size_t pos = txt.find_first_of('\n');
-    if (pos == string::npos){
-        line = txt;
-        remainingText = "";
-    }
-    else
-    {
-        line = txt.substr(0, pos);
-        remainingText = txt.substr(pos + 1);
-    }
-    
-    return true;
-}
-
 bool XkfxParser::StartWith(const char* txt, const char* word)
 {
     while (*txt && *word)
@@ -84,13 +66,13 @@ bool XkfxParser::GetNextStringExpression(const char* txt, char* const outputBuff
     return true;
 }
 
-bool XkfxParser::GetNextWord(char* txt, char* nextWordBuffer, int bufferMaxSize, int* nextWordLen, char** followingWordStart, char additionnalStopDelimiters)
+bool XkfxParser::GetNextWord(const char* txt, const char** nextWordStart, int* nextWordLen, const char** followingWordStart, char additionnalStopDelimiters)
 {
     if (txt == nullptr) return false;
 
-    char* startPos = txt;
+    const char* startPos = txt;
     while (*startPos == ' ' || *startPos == '\t') startPos++; //skip starting spaces and tabulations
-    char* endPos = startPos;
+    const char* endPos = startPos;
 
     char c;
     while ((c = *endPos) != '\0')
@@ -103,12 +85,25 @@ bool XkfxParser::GetNextWord(char* txt, char* nextWordBuffer, int bufferMaxSize,
     }
 
     int wordLen = (endPos - startPos);
-    if (wordLen <= 0 || wordLen >= bufferMaxSize - 1) return false;
-    strncpy_s(nextWordBuffer, bufferMaxSize, startPos, wordLen);
+    if (wordLen <= 0) return false;
+
+    *nextWordStart = startPos;
     *nextWordLen = wordLen;
 
     if (c == '\0') *followingWordStart = nullptr;
     else *followingWordStart = endPos;
+
+    return true;
+}
+
+bool XkfxParser::GetAndCopyNextWord(const char* txt, char* nextWordBuffer, int bufferMaxSize, int* nextWordLen, const char** followingWordStart, char additionnalStopDelimiters)
+{
+    const char* startPos;
+    if (!XkfxParser::GetNextWord(txt, &startPos, nextWordLen, followingWordStart, additionnalStopDelimiters)) return false;
+
+    int wordLen = *nextWordLen;
+    if (wordLen <= 0 || wordLen >= bufferMaxSize - 1) return false;
+    strncpy_s(nextWordBuffer, bufferMaxSize, startPos, wordLen);
 
     return true;
 }
@@ -159,18 +154,18 @@ bool XkfxParser::IsCommandLineInstructionComplete(const char* pInstruction)
     return (countParenthesis == 0 && countComparaisonSigns == 0 && countBrackets == 0);
 }
 
-bool XkfxParser::getFunctionParameterString(char* txt, char** stringStart, int* stringLen)
+bool XkfxParser::getFunctionParameterString(const char* txt, const char** stringStart, int* stringLen)
 {
     if (txt == nullptr) return false;
     int txtLen = strlen(txt);
 
-    char* pStart = txt;
+    const char* pStart = txt;
     while (*pStart == ' ' || *pStart == '\t') pStart++;
     if (*pStart != '(') return false;
     pStart++;
     while (*pStart == ' ' || *pStart == '\t') pStart++;
 
-    char* pEnd = txt + (txtLen - 1);
+    const char* pEnd = txt + (txtLen - 1);
     while (pEnd > pStart && *pEnd != ')') pEnd--;
     if (*pEnd != ')') return false;
     pEnd--;
@@ -187,32 +182,6 @@ bool XkfxParser::getFunctionParameterString(char* txt, char** stringStart, int* 
     *stringStart = pStart;
     
     return true;
-}
-
-
-
-bool XkfxParser::IsCommandLineInstructionComplete(const string& instruction)
-{
-    int countParenthesis = 0;
-    int countBrackets = 0;
-    int countComparaisonSigns = 0;
-
-    const char* ptr = instruction.c_str();
-    while (*ptr != 0)
-    {
-        char c = *ptr++;
-        switch (c)
-        {
-        case '[': countBrackets++; break;
-        case ']': countBrackets--; break;
-        case '(': countParenthesis++; break;
-        case ')': countParenthesis--; break;
-        case '<': countComparaisonSigns++; break;
-        case '>': countComparaisonSigns--; break;
-        }
-    }
-
-    return (countParenthesis == 0 && countComparaisonSigns == 0 && countBrackets == 0);
 }
 
 bool XkfxParser::GetNextInstruction(const std::string& line, std::string& firstInstruction, std::string& remainingLine)
@@ -285,10 +254,12 @@ string XkfxParser::GetUnmangledName(const string& fullName)
     return fullName.substr(0, pos);
 }
 
-bool XkfxParser::SplitPametersString(const string& parameterStr, vector<string>& parameters)
+bool XkfxParser::SplitParametersString(const char* parameterStr, vector<string>& parameters)
 {
-    const char* ptrStr = parameterStr.c_str();
-    int len = parameterStr.size();
+    if (parameterStr == nullptr) return false;
+
+    const char* ptrStr = parameterStr;
+    int len = strlen(parameterStr);
 
     char c;
     int start = 0;
@@ -332,7 +303,7 @@ bool XkfxParser::SplitPametersString(const string& parameterStr, vector<string>&
         int lastChar = end;
         while (ptrStr[lastChar] == ' ' || ptrStr[lastChar] == ',') lastChar--;
         
-        parameters.push_back(parameterStr.substr(start, (lastChar - start) + 1));
+        parameters.push_back(string(ptrStr + start, (lastChar - start) + 1));
 
         start = end + 1;
         if (start >= len) return true;
@@ -467,8 +438,32 @@ static bool CompileMixer(SpxMixer* mixer, vector<string>& errorMsgs)
 {
     bool success = true;
 
-    //TOTO: get the output stage here
+    string vertexShaderMethodName = "VSMain(";
+    string hullShaderMethodName = "HSMain(";
+    string hullConstantShaderMethodName = "HSConstantMain(";
+    string domainShaderMethodName = "DSMain(";
+    string geometryShaderMethodName = "GSMain(";
+    string pixelShaderMethodName = "PSMain(";
+    string computeShaderMethodName = "CSMain(";
+
+    //We look for the output stages, depending on the stage functions found in the mixer
+    vector<MethodInfo> vecMethods;
+    if (!mixer->GetListAllMethodsInfo(vecMethods, errorMsgs))
+        return error(errorMsgs, "Failed to get the mixer list of methods");
+    unsigned int countMethods = vecMethods.size();
     vector<OutputStageBytecode> outputStages;
+    for (unsigned int m = 0; m < countMethods; m++)
+    {
+        const MethodInfo& aMethod = vecMethods[m];
+
+        if (aMethod.Name == vertexShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "VSMain"));
+        else if (aMethod.Name == hullShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "HSMain"));
+        else if (aMethod.Name == hullConstantShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "HSConstantMain"));
+        else if (aMethod.Name == domainShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "DSMain"));
+        else if (aMethod.Name == geometryShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "GSMain"));
+        else if (aMethod.Name == pixelShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "PSMain"));
+        else if (aMethod.Name == computeShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "CSMain"));
+    }
 
     SpvBytecode compiledBytecode;
     success = mixer->Compile(outputStages, errorMsgs, nullptr, nullptr, nullptr, nullptr, &compiledBytecode, nullptr);
@@ -482,12 +477,12 @@ static bool CompileMixer(SpxMixer* mixer, vector<string>& errorMsgs)
 // Compositions
 
 //function prototype
-static bool MixinShaders(const string& mixinShadersInstructionString, XkEffectMixerObject* mixerTarget, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
+static bool MixinShaders(const char* mixinShadersInstructions, XkEffectMixerObject* mixerTarget, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
     unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, XkEffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, vector<string>& errorMsgs);
 static XkEffectMixerObject* CreateAndAddNewMixer(unordered_map<string, XkEffectMixerObject*>& mixerMap, string newMixerName, vector<string>& errorMsgs);
 
-static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const string& compositionString, const string& targetedShaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
+static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const char* compositionStringInstructions, const string& targetedShaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
     unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, XkEffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, vector<string>& errorMsgs)
 {
@@ -495,92 +490,107 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const string
 
     //===================================================
     //composition variable target
-    string compositionStr = compositionString;
-    string compositionVariableTargetStr;
-    string remainingStr;
+    const char* pCompositionTarget;
+    int nextWordLen;
+    const char* pCompositionInstructionStart;
+    if (!XkfxParser::GetNextWord(compositionStringInstructions, &pCompositionTarget, &nextWordLen, &pCompositionInstructionStart, '=')) {
+        return error(errorMsgs, string("Failed to get the next instruction from: ") + compositionStringInstructions);
+    }
 
-    if (!XkfxParser::GetNextInstruction(compositionStr, compositionVariableTargetStr, remainingStr))
-        return error(errorMsgs, "AddCompositionToMixer: Failed to find the composition variable target from: " + compositionStr);
-    compositionVariableTargetStr = XkslangUtils::trim(compositionVariableTargetStr);
+    string shaderName;
+    string variableName;
 
-    //We can either have shader.variableName, or only a variableName
-    string shaderName, variableName;
-    if (!XkfxParser::SeparateAdotB(compositionVariableTargetStr, shaderName, variableName))
+    //We can either have shader.variableName, or only a variableName, look for '.' character
+    const char* dotPos = strchr(pCompositionTarget, '.');
+    if (dotPos != nullptr)
     {
-        variableName = compositionVariableTargetStr;
-        shaderName = targetedShaderName;
+        variableName = string(dotPos + 1, nextWordLen - (dotPos - pCompositionTarget) - 1);
+        shaderName = string(pCompositionTarget, (dotPos - pCompositionTarget));
     }
     else
     {
-        //if (targetedShaderName.size() > 0 && targetedShaderName.compare(shaderName) != 0)
-        //    return error(errorMsgs, "The shader name (" + shaderName + ") does not match the targeted shader name (" + targetedShaderName + ")");
-        //Error check's obsolete: shaderName could be a parent class of targetedShaderName
+        variableName = string(pCompositionTarget, nextWordLen);
     }
 
     //===================================================
-    //Expecting '='
-    string tmpStr;
-    if (!XkfxParser::GetNextInstruction(remainingStr, tmpStr, remainingStr, '=', false)) return error(errorMsgs, "\"=\" expected");
-    if (XkslangUtils::trim(tmpStr).size() > 0) return error(errorMsgs, "Invalid assignation format");
+    //Check for expected '=' character
+    if (pCompositionInstructionStart == nullptr) return error(errorMsgs, "\"=\" expected");
+    while (*pCompositionInstructionStart == ' ' || *pCompositionInstructionStart == '\t') pCompositionInstructionStart++;
+    if (*pCompositionInstructionStart != '=') return error(errorMsgs, "\"=\" expected");
+    pCompositionInstructionStart++;
+
+    //trim start
+    while (*pCompositionInstructionStart == ' ' || *pCompositionInstructionStart == '\t') pCompositionInstructionStart++;
+    //trim end
+    int compositionsInstructionLen = strlen(pCompositionInstructionStart);
+    while (compositionsInstructionLen > 0 && (pCompositionInstructionStart[compositionsInstructionLen - 1] == ' ' || pCompositionInstructionStart[compositionsInstructionLen - 1] == '\t'))
+        compositionsInstructionLen--;
+    if (compositionsInstructionLen == 0) return error(errorMsgs, "No composition instruction found");
 
     //===================================================
     //Find or create the composition source mixer
     //We can either have a mixer name, or a mixin instruction
-    string mixerCompositionInstructionsStr = XkslangUtils::trim(compositionStr);
+    //string mixerCompositionInstructionsStr = pCompositionInstructionStart;
 
     vector<string> listCompositionInstructions;
-    if (XkslangUtils::startWith(mixerCompositionInstructionsStr, "["))
+    if (*pCompositionInstructionStart == '[')
     {
-        if (!XkslangUtils::endWith(mixerCompositionInstructionsStr, "]"))
-            return error(errorMsgs, "Invalid compositions instruction string: " + mixerCompositionInstructionsStr);
+        if ((pCompositionInstructionStart[compositionsInstructionLen - 1] != ']'))
+            return error(errorMsgs, string("Invalid compositions instruction string: ") + pCompositionInstructionStart);
 
-        mixerCompositionInstructionsStr = mixerCompositionInstructionsStr.substr(1, mixerCompositionInstructionsStr.size() - 2);
+        string mixerCompositionInstructionsStr(pCompositionInstructionStart + 1, compositionsInstructionLen - 1);
 
         //If the instruction start with '[', there are several compositions assigned to the target
-        if (!XkfxParser::SplitPametersString(mixerCompositionInstructionsStr, listCompositionInstructions))
+        if (!XkfxParser::SplitParametersString(mixerCompositionInstructionsStr.c_str(), listCompositionInstructions))
             return error(errorMsgs, "Failed to split the compositions instruction string: " + mixerCompositionInstructionsStr);
     }
-    else listCompositionInstructions.push_back(mixerCompositionInstructionsStr);
+    else listCompositionInstructions.push_back(string(pCompositionInstructionStart));
+
+    const char* instruction_mixin = "mixin";
 
     for (unsigned int iComp = 0; iComp < listCompositionInstructions.size(); iComp++)
     {
-        const string compositionInstruction = listCompositionInstructions[iComp];
+        const string& aCompositionInstruction = listCompositionInstructions[iComp];
+        const char* paCompositionInstruction = aCompositionInstruction.c_str();
 
         XkEffectMixerObject* compositionSourceMixer = nullptr;
-        if (XkslangUtils::startWith(compositionInstruction, "mixin(") || XkslangUtils::startWith(compositionInstruction, "mixin ")) //we accept both expressions (the 2nd is compatible with Xenko)
-        {
-            string mixinInstructionStr;
-            if (XkslangUtils::startWith(compositionInstruction, "mixin "))
-            {
-                //convert mixin XXX to mixin(XXX) (to make it consistent)
-                mixinInstructionStr = compositionInstruction + ")";
-                mixinInstructionStr[ strlen("mixin") ] = '(';
-            }
-            else mixinInstructionStr = compositionInstruction;
 
-            string mixinWord;
-            XkfxParser::GetNextInstruction(mixinInstructionStr, mixinWord, mixinInstructionStr, '(', true);
+        if (XkfxParser::StartWith(paCompositionInstruction, instruction_mixin))
+        {
+            paCompositionInstruction += strlen(instruction_mixin);
+
+            //trim start
+            while (*paCompositionInstruction == ' ' || *paCompositionInstruction == '\t') paCompositionInstruction++;
+            //trim end
+            int mixinInstructionLen = strlen(paCompositionInstruction);
+            while (mixinInstructionLen > 0 && (paCompositionInstruction[mixinInstructionLen - 1] == ' ' || paCompositionInstruction[mixinInstructionLen - 1] == '\t')) mixinInstructionLen--;
+            if (mixinInstructionLen == 0) return error(errorMsgs, "Invalid composition instruction: " + aCompositionInstruction);
+
+            //we can either have "mixin(...)" or "mixin ..."
+            if (*paCompositionInstruction == '(')
+            {
+                if (paCompositionInstruction[mixinInstructionLen - 1] != ')') return error(errorMsgs, "Invalid composition instruction: \")\" expected. " + aCompositionInstruction);
+                paCompositionInstruction++;
+                mixinInstructionLen -= 2;
+            }
 
             //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
-            string anonymousMixerInstruction;
-            if (!XkslangUtils::getFunctionParameterString(mixinInstructionStr, anonymousMixerInstruction)) {
-                return error(errorMsgs, "addComposition: Failed to get the instuction parameter from: \"" + mixinInstructionStr + "\"");
-            }
+            string anonymousMixerInstruction(paCompositionInstruction, mixinInstructionLen);
 
             //Create the anonymous mixer
             string anonymousMixerName = "_anonMixer_" + to_string(mixerMap.size());
             XkEffectMixerObject* anonymousMixer = CreateAndAddNewMixer(mixerMap, anonymousMixerName, errorMsgs);
-            if (anonymousMixer == nullptr) return error(errorMsgs, "addComposition: Failed to create a new mixer object");
+            if (anonymousMixer == nullptr) return error(errorMsgs, "Failed to create a new mixer object");
 
             //Mix the new mixer with the shaders specified in the function parameter
-            success = MixinShaders(anonymousMixerInstruction, anonymousMixer, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
-            if (!success) return error(errorMsgs, "Mixin failed: " + mixinInstructionStr);
+            success = MixinShaders(anonymousMixerInstruction.c_str(), anonymousMixer, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
+            if (!success) return error(errorMsgs, "Mixin failed: " + anonymousMixerInstruction);
 
             compositionSourceMixer = anonymousMixer;
         }
         else
         {
-            const string mixerName = compositionInstruction;
+            const string& mixerName = aCompositionInstruction;
 
             //find the mixer in our mixer map
             if (mixerMap.find(mixerName) == mixerMap.end()) {
@@ -590,7 +600,7 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const string
         }
 
         if (compositionSourceMixer == nullptr) {
-            return error(errorMsgs, "addComposition: no mixer source to make the composition");
+            return error(errorMsgs, "No mixer source found to make the composition");
         }
 
         //=====================================
@@ -602,22 +612,22 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const string
     return true;
 }
 
-static bool AddCompositionsToMixer(XkEffectMixerObject* mixerTarget, const string& compositionsString, const string& targetedShaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
+static bool AddCompositionsToMixer(XkEffectMixerObject* mixerTarget, const char* compositionsParametersString, const string& targetedShaderName, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
     unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, XkEffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, vector<string>& errorMsgs)
 {
     //split the string
     vector<string> compositions;
-    if (!XkfxParser::SplitPametersString(compositionsString, compositions))
+    if (!XkfxParser::SplitParametersString(compositionsParametersString, compositions))
         return error(errorMsgs, "failed to split the parameters");
 
     if (compositions.size() == 0)
-        return error(errorMsgs, "No composition found in the string: " + compositionsString);
+        return error(errorMsgs, "No composition found in the parameter string");
 
     for (unsigned int k = 0; k < compositions.size(); ++k)
     {
         const string& compositionStr = compositions[k];
-        bool success = AddCompositionToMixer(mixerTarget, compositionStr, targetedShaderName, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
+        bool success = AddCompositionToMixer(mixerTarget, compositionStr.c_str(), targetedShaderName, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
             listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
 
         if (!success) return error(errorMsgs, "Failed to add the composition into the mixer: " + compositionStr);
@@ -645,18 +655,18 @@ static XkEffectMixerObject* CreateAndAddNewMixer(unordered_map<string, XkEffectM
     return mixerObject;
 }
 
-static bool MixinShaders(const string& mixinShadersInstructionString, XkEffectMixerObject* mixerTarget, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
+static bool MixinShaders(const char* mixinShadersInstructions, XkEffectMixerObject* mixerTarget, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
     unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, XkEffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, vector<string>& errorMsgs)
 {
-    if (mixinShadersInstructionString.size() == 0) return error(errorMsgs, "No shader to mix");
+    if (mixinShadersInstructions == nullptr) return error(errorMsgs, "No shader to mix");
     bool success = true;
 
     //================================================
     //Parse and get the list of shader defintion
     vector<ShaderParsingDefinition> listShaderDefinition;
-    if (!XkslParser::ParseStringWithShaderDefinitions(mixinShadersInstructionString.c_str(), listShaderDefinition))
-        return error(errorMsgs, "mixin: failed to parse the shaders definition from: " + mixinShadersInstructionString);
+    if (!XkslParser::ParseStringWithShaderDefinitions(mixinShadersInstructions, listShaderDefinition))
+        return error(errorMsgs, string("mixin: failed to parse the shaders definition from: ") + mixinShadersInstructions);
     if (listShaderDefinition.size() == 0) return error(errorMsgs, "mixin: list of shader is empty");
     string shaderName = listShaderDefinition[0].shaderName;
     
@@ -713,7 +723,7 @@ static bool MixinShaders(const string& mixinShadersInstructionString, XkEffectMi
         if (compositionString.size() > 0)
         {
             //Directly add compositions into the mixed shader
-            success = AddCompositionsToMixer(mixerTarget, compositionString, shaderFullName, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
+            success = AddCompositionsToMixer(mixerTarget, compositionString.c_str(), shaderFullName, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
                 listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
 
             if (!success) 
@@ -727,7 +737,8 @@ static bool MixinShaders(const string& mixinShadersInstructionString, XkEffectMi
 //===================================================================================================================================
 //===================================================================================================================================
 // XKFX command lines parsing
-bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader, vector<string>& errorMsgs)
+bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
+    vector<uint32_t>& compiledBytecode, vector<string>& errorMsgs)
 {
     bool success = true;
     vector<XkslUserDefinedMacro> listUserDefinedMacros;
@@ -759,6 +770,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
     int instructionBufferSize = 1024;
     char* instructionToParse = new char[instructionBufferSize];
     char* previousPartialInstructionLine = new char[instructionBufferSize];
+    char* functionParameterBuffer = new char[instructionBufferSize];
     char* nextWordBuffer = new char[wordBufferMaxSize];
     char* splitWordBuffer = new char[wordBufferMaxSize];
     int nextWordLen;
@@ -811,9 +823,11 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
                 //increment the buffer size
                 delete[] instructionToParse;
                 delete[] previousPartialInstructionLine;
+                delete[] functionParameterBuffer;
                 while (totalSize >= instructionBufferSize - 1) instructionBufferSize *= 2;
                 instructionToParse = new char[instructionBufferSize];
                 previousPartialInstructionLine = new char[instructionBufferSize];
+                functionParameterBuffer = new char[instructionBufferSize];
             }
             strcpy_s(instructionToParse, instructionBufferSize, previousPartialInstructionLine);
             strcpy_s(instructionToParse + instructionToAddsize, instructionBufferSize - instructionToAddsize, currentLine);
@@ -825,9 +839,11 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
                 //increment the buffer size
                 delete[] instructionToParse;
                 delete[] previousPartialInstructionLine;
+                delete[] functionParameterBuffer;
                 while (currentLineSize >= instructionBufferSize - 1) instructionBufferSize *= 2;
                 instructionToParse = new char[instructionBufferSize];
                 previousPartialInstructionLine = new char[instructionBufferSize];
+                functionParameterBuffer = new char[instructionBufferSize];
             }
             strcpy_s(instructionToParse, instructionBufferSize, currentLine);
         }
@@ -842,8 +858,8 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
 
         //=======================================================
         //get the first instruction's word
-        char* followingWordStart;
-        if (!XkfxParser::GetNextWord(instructionToParse, nextWordBuffer, wordBufferMaxSize, &nextWordLen, &followingWordStart, '(')) {
+        const char* followingWordStart;
+        if (!XkfxParser::GetAndCopyNextWord(instructionToParse, nextWordBuffer, wordBufferMaxSize, &nextWordLen, &followingWordStart, '(')) {
             error(errorMsgs, string("Failed to get the next instruction from: ") + instructionToParse); break;
         }
     
@@ -860,7 +876,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
         }
         else if (XkfxParser::StartWith(nextWordBuffer, instruction_setDefine))
         {
-            if (!XkfxParser::GetNextWord(followingWordStart, nextWordBuffer, wordBufferMaxSize, &nextWordLen, &followingWordStart)) {
+            if (!XkfxParser::GetAndCopyNextWord(followingWordStart, nextWordBuffer, wordBufferMaxSize, &nextWordLen, &followingWordStart)) {
                 return error(errorMsgs, string("Failed to get the macro name from: ") + followingWordStart); break;
             }
             string macroName = nextWordBuffer;
@@ -875,7 +891,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
         }
         else if (XkfxParser::StartWith(nextWordBuffer, instruction_mixer))
         {
-            if (!XkfxParser::GetNextWord(followingWordStart, nextWordBuffer, wordBufferMaxSize, &nextWordLen, &followingWordStart)) {
+            if (!XkfxParser::GetAndCopyNextWord(followingWordStart, nextWordBuffer, wordBufferMaxSize, &nextWordLen, &followingWordStart)) {
                 error(errorMsgs, string("Failed to get the mixer name from: ") + followingWordStart); break;
             }
             string mixerName = nextWordBuffer;
@@ -892,8 +908,8 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
         else //operation on a mixer (mixerName.instructions)
         {
             //mixer name
-            char* mixerInstructionStart;
-            if (!XkfxParser::GetNextWord(nextWordBuffer, splitWordBuffer, wordBufferMaxSize, &nextWordLen, &mixerInstructionStart, '.')) {
+            const char* mixerInstructionStart;
+            if (!XkfxParser::GetAndCopyNextWord(nextWordBuffer, splitWordBuffer, wordBufferMaxSize, &nextWordLen, &mixerInstructionStart, '.')) {
                 error(errorMsgs, string("Failed to get the mixer instruction: ") + nextWordBuffer); break;
             }
             string mixerName = splitWordBuffer;
@@ -911,31 +927,30 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
             XkEffectMixerObject* mixerTarget = mixerMap[mixerName];
 
             //get the function parameter string
-            char* parameterStringStart;
+            const char* parameterStringStart;
             int parameterStringLen = 0;
             if (followingWordStart != nullptr) {
                 if (!XkfxParser::getFunctionParameterString(followingWordStart, &parameterStringStart, &parameterStringLen)) {
                     error(errorMsgs, string("Failed to find the parameter string from: ") + followingWordStart); break;
                 }
             }
-            string instructionParametersStr;
-            if (parameterStringLen <= 0) instructionParametersStr = "";
-            else instructionParametersStr = string(parameterStringStart, parameterStringLen);
+            if (parameterStringLen <= 0) functionParameterBuffer[0] = '\0';
+            else strncpy_s(functionParameterBuffer, instructionBufferSize, parameterStringStart, parameterStringLen);
 
             if (XkfxParser::StartWith(mixerInstructionStart, instruction_mixin))
             {
-                if (instructionParametersStr.size() == 0) { error(errorMsgs, "mixin: parameters expected"); break; }
+                if (parameterStringLen <= 0) { error(errorMsgs, "mixin: parameters expected"); break; }
 
-                success = MixinShaders(instructionParametersStr, mixerTarget, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
+                success = MixinShaders(functionParameterBuffer, mixerTarget, callbackRequestDataForShader, mapShaderNameBytecode, mixerMap, listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
                 if (!success) { error(errorMsgs, "Mixin failed"); break; }
             }
             else if (XkfxParser::StartWith(mixerInstructionStart, instruction_addComposition))
             {
-                if (instructionParametersStr.size() == 0) { error(errorMsgs, "addComposition: parameters expected"); break; }
+                if (parameterStringLen <= 0) { error(errorMsgs, "addComposition: parameters expected"); break; }
 
-                /*success = AddCompositionsToMixer(mixerTarget, instructionParametersStr, "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
+                success = AddCompositionsToMixer(mixerTarget, functionParameterBuffer, "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
                     listAllocatedBytecodes, listUserDefinedMacros, p_parser, errorMsgs);
-                if (!success) { error(errorMsgs, "Failed to add the compositions instruction to the mixer: " + instructionParametersStr); break; }*/
+                if (!success) { error(errorMsgs, "Failed to add the compositions instruction to the mixer"); break; }
             }
             else if (XkfxParser::StartWith(mixerInstructionStart, instruction_compile))
             {
@@ -960,6 +975,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
     delete[] cmdLinesBuffer;
     delete[] nextWordBuffer;
     delete[] splitWordBuffer;
+    delete[] functionParameterBuffer;
 
     //Release allocated data
     {

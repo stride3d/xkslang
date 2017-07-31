@@ -11,8 +11,10 @@ mixer m
 
 m.mixin(ShaderMain)
 m.addComposition(
-  composition = mixin(ShaderComposition)
+  composition=   mixin  (ShaderComposition)
 )
 
 m.setStageEntryPoint( Vertex="VSMain" )
 m.compile
+m.compile
+
