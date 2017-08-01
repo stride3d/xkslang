@@ -188,7 +188,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose28", "TestCompose28.xkfx" },
     //{ "TestCompose29", "TestCompose29.xkfx" },
     //{ "TestCompose30", "TestCompose30.xkfx" },
-    { "TestCompose31", "TestCompose31.xkfx" },
+    //{ "TestCompose31", "TestCompose31.xkfx" },
+    { "TestCompose32", "TestCompose32.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -299,7 +300,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+//{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -1649,10 +1650,16 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
 
 static bool ProcessEffectCommandLineThroughXkfxParserApi(XkslParser* parser, string effectName, string effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader)
 {
+    DWORD effect_timeStart, effect_timeEnd;
+
     vector<string> errorMsgs;
     vector<uint32_t> compiledBytecode;
     vector<OutputStageBytecode> outputStages;
+
+    effect_timeStart = GetTickCount();
     bool success = XkfxParser::ProcessXkfxCommandLines(parser, effectCmdLines, callbackRequestDataForShader, &compiledBytecode, outputStages, errorMsgs);
+    effect_timeEnd = GetTickCount();
+
     if (!success) {
         std::cout << endl;
         for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
@@ -1668,26 +1675,33 @@ static bool ProcessEffectCommandLineThroughXkfxParserApi(XkslParser* parser, str
 
     if (!success) return false;
 
-    //get the reflection data from the compiled bytecode
-    EffectReflection effectReflection;
-    if (buildEffectReflection)
+    if (compiledBytecode.size() > 0)
     {
-        success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
-        if (!success)
+        //get the reflection data from the compiled bytecode
+        EffectReflection effectReflection;
+        if (buildEffectReflection)
         {
-            error("Failed to get the reflection data from the compiled bytecode");
-            return false;
+            success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
+            if (!success)
+            {
+                for (auto it = errorMsgs.begin(); it != errorMsgs.end(); it++) error(*it);
+                error("Failed to get the reflection data from the compiled bytecode");
+                return false;
+            }
+
+            //std::cout << endl << "EffectReflection:" << endl;
+            //std::cout << effectReflection.Print() << endl;
         }
 
-        //std::cout << endl << "EffectReflection:" << endl;
-        //std::cout << effectReflection.Print() << endl;
+        //write and check the stages's compiled bytecode
+        success = OutputAndCheckOutputStagesCompiledBytecode(effectName, outputStages, buildEffectReflection ? &effectReflection : nullptr);
     }
 
-    //write and check the stages's compiled bytecode
-    success = OutputAndCheckOutputStagesCompiledBytecode(effectName, outputStages, buildEffectReflection ? &effectReflection : nullptr);
-    return success;
+    std::cout << endl;
+    std::cout << "Effect Total Time: " << (effect_timeEnd - effect_timeStart) << "ms" << endl;
+    std::cout << "=================================" << endl;
 
-    return true;
+    return success;
 }
 
 static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, string effectCmdLines, bool useXkslangDll, string& updatedEffectCommandLines)
@@ -2296,7 +2310,7 @@ void main(int argc, char** argv)
         return;
     }
 
-    /*{
+    {
         //To test XkfxParser before anything else
         XkfxEffectsToProcess effect = vecXkfxEffectToProcess[0];
         const string inputFname = inputDir + effect.inputFileName;
@@ -2314,6 +2328,7 @@ void main(int argc, char** argv)
             std::cout << "Process XKSL File through Xkfx Parser classes" << endl;
 
             libraryResourcesFolders.push_back(inputDir);
+            libraryResourcesFolders.push_back(inputDir + "library\\");
             shaderFilesPrefix = effect.effectName;
             for (int i = 0; i < 100; ++i)
             {
@@ -2327,7 +2342,7 @@ void main(int argc, char** argv)
                 }
             }
         }
-    }*/
+    }
 
     //====================================================================================================================
     //====================================================================================================================

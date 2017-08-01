@@ -27,10 +27,12 @@ namespace xkslang
         Undefined = -1,
         Vertex = 0,
         Pixel = 1,
-        TessControl = 2,
-        TessEvaluation = 3,
+        TessControl = 2,       //(hull)
+        TessEvaluation = 3,    //(domain)
         Geometry = 4,
         Compute = 5,
+
+        CountStages = 6
     };
 
     class MethodInfo

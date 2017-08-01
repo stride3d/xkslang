@@ -725,7 +725,7 @@ bool SpxCompiler::InitializeCompilationProcess(vector<XkslMixerOutputStage>& out
         }
 
         if (lastStageMatched == stagePipeline.size())
-            return error(string("The output stage is unknown or not in the correct order: ") + GetShadingStageLabel(outputStage));
+            return error(string("The output stage is unknown, duplicated or not in the correct order: ") + GetShadingStageLabel(outputStage));
     }
 
 #endif

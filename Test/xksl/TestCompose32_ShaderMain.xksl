@@ -1,0 +1,70 @@
+shader DirectLightGroupArray
+{
+	stage compose DirectLightGroup directLightGroups[];
+};
+
+shader DirectLightGroup
+{
+	int GetMaxLightCount()
+	{
+		return 1;
+	}
+};
+
+shader IMaterialSurface
+{
+	void Compute()
+	{
+	}
+};
+
+shader AnotherComp
+{
+	int Compute()
+	{
+		return 5;
+	}
+}
+
+shader AnArrayComp
+{
+	int Compute()
+	{
+		return 6;
+	}
+}
+
+shader MaterialSurfaceArray : IMaterialSurface, DirectLightGroupArray
+{
+	compose AnotherComp aComp1;
+	compose AnotherComp aComp2;
+	compose AnArrayComp ac[];
+	
+	override void Compute()
+	{
+		int res = aComp1.Compute() + aComp2.Compute();
+		foreach(var light in directLightGroups)
+		{
+			res += light.GetMaxLightCount();
+		}
+		foreach(var toto in ac)
+		{
+			res += toto.Compute();
+		}
+	}
+};
+
+shader ShaderMain: DirectLightGroupArray
+{
+	compose IMaterialSurface materialPixelStage;
+	
+	stage void VSMain()
+	{
+		materialPixelStage.Compute();
+	}
+	
+	stage void PSMain()
+	{
+		materialPixelStage.Compute();
+	}
+}

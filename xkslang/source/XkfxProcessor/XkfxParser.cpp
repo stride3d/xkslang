@@ -440,11 +440,14 @@ static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, ve
 
     string vertexShaderMethodName = "VSMain(";
     string hullShaderMethodName = "HSMain(";
-    string hullConstantShaderMethodName = "HSConstantMain(";
+    //string hullConstantShaderMethodName = "HSConstantMain(";
     string domainShaderMethodName = "DSMain(";
     string geometryShaderMethodName = "GSMain(";
     string pixelShaderMethodName = "PSMain(";
     string computeShaderMethodName = "CSMain(";
+
+    vector<bool> stagesUsed;
+    stagesUsed.resize((int)ShadingStageEnum::CountStages, false);
 
     //We look for the output stages, depending on the stage functions found in the mixer
     vector<MethodInfo> vecMethods;
@@ -457,13 +460,31 @@ static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, ve
     {
         const MethodInfo& aMethod = vecMethods[m];
 
-        if (aMethod.Name == vertexShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "VSMain"));
-        else if (aMethod.Name == hullShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "HSMain"));
-        else if (aMethod.Name == hullConstantShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "HSConstantMain"));
-        else if (aMethod.Name == domainShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "DSMain"));
-        else if (aMethod.Name == geometryShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "GSMain"));
-        else if (aMethod.Name == pixelShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "PSMain"));
-        else if (aMethod.Name == computeShaderMethodName) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "CSMain"));
+        if (aMethod.Name == vertexShaderMethodName) {
+            if (!stagesUsed[(int)ShadingStageEnum::Vertex]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "VSMain"));
+            stagesUsed[(int)ShadingStageEnum::Vertex] = true;
+        }
+        else if (aMethod.Name == hullShaderMethodName) {
+            if (!stagesUsed[(int)ShadingStageEnum::TessControl]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::TessControl, "HSMain"));
+            stagesUsed[(int)ShadingStageEnum::TessControl] = true;
+        }
+        //else if (aMethod.Name == hullConstantShaderMethodName) { outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "HSConstantMain"));  //not implemented yet }
+        else if (aMethod.Name == domainShaderMethodName) {
+            if (!stagesUsed[(int)ShadingStageEnum::TessEvaluation]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::TessEvaluation, "DSMain"));
+            stagesUsed[(int)ShadingStageEnum::TessEvaluation] = true;
+        }
+        else if (aMethod.Name == geometryShaderMethodName) {
+            if (!stagesUsed[(int)ShadingStageEnum::Geometry]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Geometry, "GSMain"));
+            stagesUsed[(int)ShadingStageEnum::Geometry] = true;
+        }
+        else if (aMethod.Name == pixelShaderMethodName) {
+            if (!stagesUsed[(int)ShadingStageEnum::Pixel]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Pixel, "PSMain"));
+            stagesUsed[(int)ShadingStageEnum::Pixel] = true;
+        }
+        else if (aMethod.Name == computeShaderMethodName) {
+            if (!stagesUsed[(int)ShadingStageEnum::Compute]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Compute, "CSMain"));
+            stagesUsed[(int)ShadingStageEnum::Compute] = true;
+        }
     }
 
     success = mixer->Compile(outputStages, errorMsgs, nullptr, nullptr, nullptr, nullptr, compiledBytecode, nullptr);
@@ -491,9 +512,9 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const char* 
     //===================================================
     //composition variable target
     const char* pCompositionTarget;
-    int nextWordLen;
+    int compositionTargetLen;
     const char* pCompositionInstructionStart;
-    if (!XkfxParser::GetNextWord(compositionStringInstructions, &pCompositionTarget, &nextWordLen, &pCompositionInstructionStart, '=')) {
+    if (!XkfxParser::GetNextWord(compositionStringInstructions, &pCompositionTarget, &compositionTargetLen, &pCompositionInstructionStart, '=')) {
         return error(errorMsgs, string("Failed to get the next instruction from: ") + compositionStringInstructions);
     }
 
@@ -501,15 +522,16 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const char* 
     string variableName;
 
     //We can either have shader.variableName, or only a variableName, look for '.' character
-    const char* dotPos = strchr(pCompositionTarget, '.');
-    if (dotPos != nullptr)
+    int dotPos = 0;
+    while (dotPos < compositionTargetLen && pCompositionTarget[dotPos] != '.') dotPos++;
+    if (dotPos < compositionTargetLen)
     {
-        variableName = string(dotPos + 1, nextWordLen - (dotPos - pCompositionTarget) - 1);
-        shaderName = string(pCompositionTarget, (dotPos - pCompositionTarget));
+        shaderName = string(pCompositionTarget, dotPos);
+        variableName = string(pCompositionTarget + (dotPos + 1), (compositionTargetLen - dotPos) - 1);
     }
     else
     {
-        variableName = string(pCompositionTarget, nextWordLen);
+        variableName = string(pCompositionTarget, compositionTargetLen);
     }
 
     //===================================================
@@ -538,7 +560,7 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const char* 
         if ((pCompositionInstructionStart[compositionsInstructionLen - 1] != ']'))
             return error(errorMsgs, string("Invalid compositions instruction string: ") + pCompositionInstructionStart);
 
-        string mixerCompositionInstructionsStr(pCompositionInstructionStart + 1, compositionsInstructionLen - 1);
+        string mixerCompositionInstructionsStr(pCompositionInstructionStart + 1, compositionsInstructionLen - 2);
 
         //If the instruction start with '[', there are several compositions assigned to the target
         if (!XkfxParser::SplitParametersString(mixerCompositionInstructionsStr.c_str(), listCompositionInstructions))
@@ -569,7 +591,8 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const char* 
             //we can either have "mixin(...)" or "mixin ..."
             if (*paCompositionInstruction == '(')
             {
-                if (paCompositionInstruction[mixinInstructionLen - 1] != ')') return error(errorMsgs, "Invalid composition instruction: \")\" expected. " + aCompositionInstruction);
+                if (paCompositionInstruction[mixinInstructionLen - 1] != ')')
+                    return error(errorMsgs, "Invalid composition instruction: \")\" expected. " + aCompositionInstruction);
                 paCompositionInstruction++;
                 mixinInstructionLen -= 2;
             }
@@ -759,7 +782,8 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
 
     const char* const instruction_break = "break";
     const char* const instruction_setSampleTestOptions = "setSampleTestOptions";
-    const char* const instruction_convertAndLoadRecursif = "convertAndLoadRecursif";
+    const char* const instruction_convertAndLoad = "convertAndLoad";
+    const char* const instruction_addResourcesLibrary = "addResourcesLibrary";
     const char* const instruction_setDefine = "setDefine";
     const char* const instruction_mixer = "mixer";
     const char* const instruction_mixin = "mixin";
@@ -823,13 +847,18 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
 
             if (totalSize >= instructionBufferSize - 1)
             {
-                //increment the buffer size
+                //increment and reallocate the buffer size
+                while (totalSize >= instructionBufferSize - 1) instructionBufferSize *= 2;
+                char* tmp_instructionToParse = new char[instructionBufferSize];
+                char* tmp_previousPartialInstructionLine = new char[instructionBufferSize];
+                strcpy_s(tmp_instructionToParse, instructionBufferSize, instructionToParse);
+                strcpy_s(tmp_previousPartialInstructionLine, instructionBufferSize, previousPartialInstructionLine);
+
                 delete[] instructionToParse;
                 delete[] previousPartialInstructionLine;
                 delete[] functionParameterBuffer;
-                while (totalSize >= instructionBufferSize - 1) instructionBufferSize *= 2;
-                instructionToParse = new char[instructionBufferSize];
-                previousPartialInstructionLine = new char[instructionBufferSize];
+                instructionToParse = tmp_instructionToParse;
+                previousPartialInstructionLine = tmp_previousPartialInstructionLine;
                 functionParameterBuffer = new char[instructionBufferSize];
             }
             strcpy_s(instructionToParse, instructionBufferSize, previousPartialInstructionLine);
@@ -839,13 +868,18 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
         {
             if (currentLineSize >= instructionBufferSize - 1)
             {
-                //increment the buffer size
+                //increment and reallocate the buffer size
+                while (currentLineSize >= instructionBufferSize - 1) instructionBufferSize *= 2;
+                char* tmp_instructionToParse = new char[instructionBufferSize];
+                char* tmp_previousPartialInstructionLine = new char[instructionBufferSize];
+                strcpy_s(tmp_instructionToParse, instructionBufferSize, instructionToParse);
+                strcpy_s(tmp_previousPartialInstructionLine, instructionBufferSize, previousPartialInstructionLine);
+
                 delete[] instructionToParse;
                 delete[] previousPartialInstructionLine;
                 delete[] functionParameterBuffer;
-                while (currentLineSize >= instructionBufferSize - 1) instructionBufferSize *= 2;
-                instructionToParse = new char[instructionBufferSize];
-                previousPartialInstructionLine = new char[instructionBufferSize];
+                instructionToParse = tmp_instructionToParse;
+                previousPartialInstructionLine = tmp_previousPartialInstructionLine;
                 functionParameterBuffer = new char[instructionBufferSize];
             }
             strcpy_s(instructionToParse, instructionBufferSize, currentLine);
@@ -872,7 +906,8 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
             break;
         }
         else if (XkfxParser::StartWith(nextWordBuffer, instruction_setSampleTestOptions) ||
-                 XkfxParser::StartWith(nextWordBuffer, instruction_convertAndLoadRecursif))
+                 XkfxParser::StartWith(nextWordBuffer, instruction_convertAndLoad) ||
+                 XkfxParser::StartWith(nextWordBuffer, instruction_addResourcesLibrary))
         {
             //ignore those options
             continue;

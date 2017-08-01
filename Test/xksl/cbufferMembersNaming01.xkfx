@@ -1,7 +1,7 @@
 //Activate some additionnal options with xkslang main test program
 //============================================
 setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
-//setSampleTestOptions processSampleWithXkfxLibrary true
+setSampleTestOptions processSampleWithXkfxLibrary true
 //============================================
 
 convertAndLoadRecursif "cbufferMembersNaming01" ShaderMain
@@ -10,7 +10,7 @@ mixer m
 m.mixin( ShaderMain )
 m.addComposition(
   composition01 = mixin(ShaderComposition),
-  composition02 = mixin(ShaderCompositionWithLink),
+  ShaderMain.composition02 = mixin(ShaderCompositionWithLink),
   composition03 = mixin(ShaderCompositionWithGeneric<1,2,3>)
 )
 
