@@ -116,18 +116,21 @@ bool XkfxParser::SplitLine(char* txt, char** nextLine)
     char c;
     while ((c = *curPos) != '\0')
     {
-        if (c == '\n')
+        if (c == '\n' || c == '\r')
         {
             *curPos = '\0';
-            *nextLine = curPos + 1;
+            char* nextLinePos = curPos + 1;
+            while (*nextLinePos == '\n' || *nextLinePos == '\r') nextLinePos++;
+            *nextLine = nextLinePos;
             return true;
         }
+
         curPos++;
     }
 
-    if (curPos == txt) return false; //empty string
+    if (curPos == txt) return false; //end of file
 
-    *nextLine = nullptr;
+    *nextLine = nullptr; //no more next line (nothing to split)
     return true;
 }
 

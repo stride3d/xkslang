@@ -1,11 +1,13 @@
 
 #include "XkslangDLL.h"
 #include "../XkslParser/XkslParser.h"
+#include "../XkfxProcessor/XkfxParser.h"
 #include "../SpxMixer/SpxMixer.h"
 #include "../Common/Converter.h"
 
 using namespace std;
 using namespace xkslang;
+using namespace xkfxProcessor;
 
 #pragma warning(disable:4996)  //disable annoying deprecation warnings
 
@@ -299,6 +301,7 @@ namespace xkslangDll
 		bool effectReflectionDone;
 		EffectReflection effectReflection;
 
+        MixerData() : mixer(nullptr), compilationDone(false), effectReflectionDone(false) {}
         MixerData(SpxMixer* mixer) : mixer(mixer), compilationDone(false), effectReflectionDone(false) {}
         ~MixerData() { if (mixer != nullptr) delete mixer; }
     };
@@ -370,7 +373,7 @@ namespace xkslangDll
         if (shaderName == nullptr || variableName == nullptr) { error("Invalid parameters"); return false; }
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
-        if (mixerData == nullptr) return error("Invalid mixer handle");
+        if (mixerData == nullptr || mixerData->mixer == nullptr) return error("Invalid mixer handle");
         SpxMixer* mixer = mixerData->mixer;
 
         MixerData* compositionMixerData = GetMixerForHandleId(compositionMixerHandleId);
@@ -395,7 +398,7 @@ namespace xkslangDll
         if (shaderSpxBytecode == nullptr || bytecodeSize <= 0) { error("bytecode is empty"); return false; }
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
-        if (mixerData == nullptr) return error("Invalid mixer handle");
+        if (mixerData == nullptr || mixerData->mixer == nullptr) return error("Invalid mixer handle");
         SpxMixer* mixer = mixerData->mixer;
 
         //Parse and get the list of shader with their generic values
@@ -429,6 +432,41 @@ namespace xkslangDll
         return success;
     }
 
+    bool ReleaseMixinHandle(uint32_t mixerHandleId)
+    {
+        return ReleaseSpxShaderMixer(mixerHandleId);
+    }
+
+    uint32_t ExecuteEffectCommandLines(const char* effectCommandLine)
+    {
+        errorMessages.clear();
+        if (effectCommandLine == nullptr) { error("Command line is missing"); return 0; }
+        if (xkslParser == nullptr) { error("Xkslang parser has not been initialized"); return 0; }
+
+        //create a dummy mixer object to hold the data
+        MixerData* mixerData = new MixerData();
+
+        sdgdfsgsdf;
+        //callback function!!!
+
+        vector<string> errorMsgs;
+        vector<uint32_t>* compiledBytecode = &(mixerData->finalCompiledSpv.bytecode);
+        vector<OutputStageBytecode>& outputStages = mixerData->stagesCompiledData;
+        bool success = XkfxParser::ProcessXkfxCommandLines(xkslParser, effectCommandLine, callbackRequestDataForShader, compiledBytecode, outputStages, errorMsgs);
+
+        if (!success) {
+            for (unsigned int k = 0; k < errorMsgs.size(); ++k) error(errorMsgs[k]);
+            delete mixerData;
+            return 0;
+        }
+
+        mixerData->compilationDone = true;
+
+        uint32_t mixerHandleId = listMixerData.size();
+        listMixerData.push_back(mixerData);
+        return mixerHandleId + 1;
+    }
+
     bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int32_t countStages)
     {
         errorMessages.clear();
@@ -436,7 +474,7 @@ namespace xkslangDll
         if (countStages <= 0) return error("Invalid number of output stages");
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
-        if (mixerData == nullptr) return error("Invalid mixer handle");
+        if (mixerData == nullptr || mixerData->mixer == nullptr) return error("Invalid mixer handle");
         SpxMixer* mixer = mixerData->mixer;
 
         for (int s = 0; s < countStages; s++)
@@ -477,7 +515,7 @@ namespace xkslangDll
         errorMessages.clear();
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
-        if (mixerData == nullptr) { return error("Invalid mixer handle"); }
+        if (mixerData == nullptr || mixerData->mixer == nullptr) { return error("Invalid mixer handle"); }
         
         vector<string> errorMsgs;
         vector<MethodInfo> vecMethods;
@@ -632,7 +670,7 @@ namespace xkslangDll
         *bytecodeSize = 0;
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
-        if (mixerData == nullptr) { error("Invalid mixer handle"); return nullptr; }
+        if (mixerData == nullptr || mixerData->mixer == nullptr) { error("Invalid mixer handle"); return nullptr; }
 
         const vector<uint32_t>* mixerBytecode = mixerData->mixer->GetCurrentMixinBytecode();
         if (mixerBytecode == nullptr) { error("Failed to get the mixer bytecode"); return nullptr; }
@@ -657,7 +695,7 @@ namespace xkslangDll
         errorMessages.clear();
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
-        if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+        if (mixerData == nullptr || mixerData->mixer == nullptr) { error("Invalid mixer handle"); return 0; }
 
         const vector<uint32_t>* mixerBytecode = mixerData->mixer->GetCurrentMixinBytecode();
         if (mixerBytecode == nullptr) { error("Failed to get the mixer bytecode"); return 0; }
@@ -670,7 +708,7 @@ namespace xkslangDll
         errorMessages.clear();
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
-        if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+        if (mixerData == nullptr || mixerData->mixer == nullptr) { error("Invalid mixer handle"); return 0; }
 
         const vector<uint32_t>* mixerBytecode = mixerData->mixer->GetCurrentMixinBytecode();
         if (mixerBytecode == nullptr) { error("Failed to get the mixer bytecode"); return 0; }

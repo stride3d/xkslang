@@ -127,12 +127,13 @@ struct XkfxEffectsToProcess {
 };
 
 //Can be parameterized from the xkfx file
-static bool automaticallyTryToLoadAndConvertUnknownMixinShader = false;  //if true, when we mix an unknown shader, we will try to find, load and parse/convert this shader from our library
-static bool processSampleWithXkfxLibrary = false;  //if true, we also send the xkfx file into XkfxParser library
+static bool xkfxOptions_automaticallyTryToLoadAndConvertUnknownMixinShader = false;  //if true, when we mix an unknown shader, we will try to find, load and parse/convert this shader from our library
+static bool xkfxOptions_processSampleWithXkfxLibrary = false;  //if true, we also send the xkfx file into XkfxParser library
 
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
 static bool processEffectWithDllApi = false;
+static bool processEffectWithXkfxProcessorApi = true;
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin01", "TestMixin01.xkfx" },
@@ -189,7 +190,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose29", "TestCompose29.xkfx" },
     //{ "TestCompose30", "TestCompose30.xkfx" },
     //{ "TestCompose31", "TestCompose31.xkfx" },
-    { "TestCompose32", "TestCompose32.xkfx" },
+    //{ "TestCompose32", "TestCompose32.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -300,7 +301,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-//{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -766,7 +767,7 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
     }
 
     //get and save the final mixin compiled bytecode
-    SpvBytecode compiledBytecode;
+    vector<uint32_t> compiledBytecode;
     {
         int bytecodeLength = 0;
         uint32_t* pBytecodeBuffer = xkslangDll::GetMixerCompiledBytecode(mixer->mixerHandleId, &bytecodeLength);
@@ -775,14 +776,13 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
             success = false;
         }
 
-        vector<uint32_t>& vecBytecode = compiledBytecode.getWritableBytecodeStream();
-        vecBytecode.assign(pBytecodeBuffer, pBytecodeBuffer + bytecodeLength);
+        compiledBytecode.assign(pBytecodeBuffer, pBytecodeBuffer + bytecodeLength);
         if (pBytecodeBuffer != nullptr) GlobalFree(pBytecodeBuffer);
 
         string outputFileNameFinalSpv = effectName + "_compile4_final.spv";
         string outputFileNameFinalSpvHr = effectName + "_compile4_final.hr.spv";
-        WriteBytecode(compiledBytecode.getBytecodeStream(), outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
-        WriteBytecode(compiledBytecode.getBytecodeStream(), outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
+        WriteBytecode(compiledBytecode, outputDir, outputFileNameFinalSpv, BytecodeFileFormat::Binary);
+        WriteBytecode(compiledBytecode, outputDir, outputFileNameFinalSpvHr, BytecodeFileFormat::Text);
     }
 
     if (!success) return false;
@@ -1513,7 +1513,7 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
             SpxBytecode* shaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameBytecode, true);
             if (shaderBytecode == nullptr)
             {
-                if (automaticallyTryToLoadAndConvertUnknownMixinShader)
+                if (xkfxOptions_automaticallyTryToLoadAndConvertUnknownMixinShader)
                 {
                     //the shader bytecode does not exist, but we can try to find and generate it
                     success = ConvertAndLoadRecursif(effectName, mapShaderNameBytecode, listAllocatedBytecodes,
@@ -1675,9 +1675,9 @@ static bool ProcessEffectCommandLineThroughXkfxParserApi(XkslParser* parser, str
 
     if (!success) return false;
 
+    //get the reflection data from the compiled bytecode
     if (compiledBytecode.size() > 0)
     {
-        //get the reflection data from the compiled bytecode
         EffectReflection effectReflection;
         if (buildEffectReflection)
         {
@@ -1778,15 +1778,15 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             {
                 string parameterValue;
                 if (!XkfxParser::GetNextInstruction(remainingLine, parameterValue, remainingLine)) { error("set: failed to get the parameter value"); success = false; break; }
-                if (parameterValue.compare("true") == 0) automaticallyTryToLoadAndConvertUnknownMixinShader = true;
-                else automaticallyTryToLoadAndConvertUnknownMixinShader = false;
+                if (parameterValue.compare("true") == 0) xkfxOptions_automaticallyTryToLoadAndConvertUnknownMixinShader = true;
+                else xkfxOptions_automaticallyTryToLoadAndConvertUnknownMixinShader = false;
             }
             else if (parameterName.compare("processSampleWithXkfxLibrary") == 0)
             {
                 string parameterValue;
                 if (!XkfxParser::GetNextInstruction(remainingLine, parameterValue, remainingLine)) { error("set: failed to get the parameter value"); success = false; break; }
-                if (parameterValue.compare("true") == 0) processSampleWithXkfxLibrary = true;
-                else processSampleWithXkfxLibrary = false;
+                if (parameterValue.compare("true") == 0) xkfxOptions_processSampleWithXkfxLibrary = true;
+                else xkfxOptions_processSampleWithXkfxLibrary = false;
             }
             else
             {
@@ -2229,8 +2229,8 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     }
 
     //reset processing options
-    automaticallyTryToLoadAndConvertUnknownMixinShader = false;
-    processSampleWithXkfxLibrary = false;
+    xkfxOptions_automaticallyTryToLoadAndConvertUnknownMixinShader = false;
+    xkfxOptions_processSampleWithXkfxLibrary = false;
 
     //reset some fields set by the xkfx commands
     libraryResourcesFolders.clear();
@@ -2271,7 +2271,7 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         else error("Failed to process the effect");
     }
 
-    if (processSampleWithXkfxLibrary)
+    if (processEffectWithXkfxProcessorApi && xkfxOptions_processSampleWithXkfxLibrary)
     {
         std::cout << endl;
         std::cout << "=====================================================================" << endl;
@@ -2310,7 +2310,7 @@ void main(int argc, char** argv)
         return;
     }
 
-    {
+    /*{
         //To test XkfxParser before anything else
         XkfxEffectsToProcess effect = vecXkfxEffectToProcess[0];
         const string inputFname = inputDir + effect.inputFileName;
@@ -2342,7 +2342,7 @@ void main(int argc, char** argv)
                 }
             }
         }
-    }
+    }*/
 
     //====================================================================================================================
     //====================================================================================================================

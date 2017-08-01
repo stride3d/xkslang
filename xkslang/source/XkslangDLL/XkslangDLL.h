@@ -175,6 +175,12 @@ namespace xkslangDll
     extern "C" __declspec(dllexport) int32_t CopyMixerCurrentBytecode(uint32_t mixerHandleId, uint32_t* bytecodeBuffer, int32_t bufferSize);
 
     //=====================================
+    //Effect processing
+    extern "C" __declspec(dllexport) uint32_t ExecuteEffectCommandLines(const char* effectCommandLine);
+
+    extern "C" __declspec(dllexport) bool ReleaseMixinHandle(uint32_t handleId);
+
+    //=====================================
     //Mixer compilation (to be call after all mixin and compositions are done)
     extern "C" __declspec(dllexport) bool CompileMixer(uint32_t mixerHandleId, OutputStageEntryPoint* stageEntryPointArray, int32_t countStages);
 
