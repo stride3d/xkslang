@@ -437,7 +437,7 @@ namespace xkslangDll
         return ReleaseSpxShaderMixer(mixerHandleId);
     }
 
-    uint32_t ExecuteEffectCommandLines(const char* effectCommandLine)
+    uint32_t ExecuteEffectCommandLines(const char* effectCommandLine, ShaderSourceLoaderCallback shaderDependencyCallback)
     {
         errorMessages.clear();
         if (effectCommandLine == nullptr) { error("Command line is missing"); return 0; }
@@ -446,8 +446,8 @@ namespace xkslangDll
         //create a dummy mixer object to hold the data
         MixerData* mixerData = new MixerData();
 
-        sdgdfsgsdf;
-        //callback function!!!
+        //set the callback function
+        externalShaderDataCallback = shaderDependencyCallback;
 
         vector<string> errorMsgs;
         vector<uint32_t>* compiledBytecode = &(mixerData->finalCompiledSpv.bytecode);
@@ -789,32 +789,38 @@ namespace xkslangDll
 		return bytecodeLen;
 	}
 
-    uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage, int32_t* bytecodeSize)
+    int32_t GetMixerCountCompiledStages(uint32_t mixerHandleId)
     {
         errorMessages.clear();
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+        if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
+
+        int32_t countCompiledStages = (int32_t)mixerData->stagesCompiledData.size();
+        return countCompiledStages;
+    }
+
+    uint32_t* GetMixerCompiledBytecodeForStageNum(uint32_t mixerHandleId, uint32_t stageNum, xkslang::ShadingStageEnum* stage, int32_t* bytecodeSize)
+    {
+        errorMessages.clear();
+        if (bytecodeSize == nullptr) { error("Some parameters are null"); return nullptr; }
         *bytecodeSize = 0;
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
-        if (mixerData == nullptr) {error("Invalid mixer handle"); return nullptr;}
-		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return nullptr; }
+        if (mixerData == nullptr) { error("Invalid mixer handle"); return nullptr; }
+        if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return nullptr; }
 
-        OutputStageBytecode* outputStageBytecode = nullptr;
-        for (unsigned int k = 0; k < mixerData->stagesCompiledData.size(); k++) {
-            if (mixerData->stagesCompiledData[k].stage == stage) {
-                outputStageBytecode = &(mixerData->stagesCompiledData[k]);
-                break;
-            }
-        }
-        if (outputStageBytecode == nullptr || outputStageBytecode->resultingBytecode.GetBytecodeSize() == 0) {
-            error("The mixer has not been compiled for the given stage");
-            return nullptr;
-        }
+        uint32_t countCompiledStages = (uint32_t)mixerData->stagesCompiledData.size();
+        if (stageNum >= countCompiledStages) { error("Invalid stage num"); return nullptr; }
+
+        OutputStageBytecode* outputStageBytecode = &(mixerData->stagesCompiledData[stageNum]);      
+        if (outputStageBytecode == nullptr || outputStageBytecode->resultingBytecode.GetBytecodeSize() == 0) { error("The mixer has not been compiled for the given stage"); return nullptr; }
 
         /// copy the bytecode into the output buffer: allocate a byte buffer using GlobalAlloc, so we can return it to the calling framework and let it delete it
         const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
         int bytecodeLen = (int)bytecode.size();
         if (bytecodeLen <= 0) { error("the stage compiled bytecode is empty"); return nullptr; }
-        
+
         uint32_t* byteBuffer = (uint32_t*)GlobalAlloc(0, bytecodeLen * sizeof(uint32_t));
 
         uint32_t* pDest = byteBuffer;
@@ -822,8 +828,56 @@ namespace xkslangDll
         int countIteration = bytecodeLen;
         while (countIteration-- > 0) *pDest++ = *pSrc++;
 
+        if (stage != nullptr) *stage = outputStageBytecode->stage;
         *bytecodeSize = bytecodeLen;
         return byteBuffer;
+    }
+
+    uint32_t* GetMixerCompiledBytecodeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage, int32_t* bytecodeSize)
+    {
+        errorMessages.clear();
+        if (bytecodeSize == nullptr) { error("Some parameters are null"); return nullptr; }
+        *bytecodeSize = 0;
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) {error("Invalid mixer handle"); return nullptr;}
+		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return nullptr; }
+
+        unsigned int countStages = mixerData->stagesCompiledData.size();
+        uint32_t stageNum = countStages;
+        for (unsigned int k = 0; k < countStages; k++) {
+            if (mixerData->stagesCompiledData[k].stage == stage) {
+                stageNum = k;
+                break;
+            }
+        }
+        if (stageNum == countStages) {
+            error("The mixer has not been compiled for the given stage");
+            return nullptr;
+        }
+
+        return GetMixerCompiledBytecodeForStageNum(mixerHandleId, stageNum, nullptr, bytecodeSize);
+    }
+
+    int32_t GetMixerCompiledBytecodeSizeForStageNum(uint32_t mixerHandleId, uint32_t stageNum, xkslang::ShadingStageEnum* stage)
+    {
+        errorMessages.clear();
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+        if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
+
+        uint32_t countCompiledStages = (uint32_t)mixerData->stagesCompiledData.size();
+        if (stageNum >= countCompiledStages) { error("Invalid stage num"); return 0; }
+
+        OutputStageBytecode* outputStageBytecode = &(mixerData->stagesCompiledData[stageNum]);
+        if (outputStageBytecode == nullptr || outputStageBytecode->resultingBytecode.GetBytecodeSize() == 0) { error("The mixer has not been compiled for the given stage"); return 0; }
+
+        const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
+        int32_t bytecodeLen = bytecode.size();
+
+        if (stage != nullptr) *stage = outputStageBytecode->stage;
+        return bytecodeLen;
     }
 
 	int32_t GetMixerCompiledBytecodeSizeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage)
@@ -834,38 +888,34 @@ namespace xkslangDll
         if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
 		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
 
-        OutputStageBytecode* outputStageBytecode = nullptr;
-        for (unsigned int k = 0; k < mixerData->stagesCompiledData.size(); k++) {
+        unsigned int countStages = mixerData->stagesCompiledData.size();
+        uint32_t stageNum = countStages;
+        for (unsigned int k = 0; k < countStages; k++) {
             if (mixerData->stagesCompiledData[k].stage == stage) {
-                outputStageBytecode = &(mixerData->stagesCompiledData[k]);
+                stageNum = k;
                 break;
             }
         }
-        if (outputStageBytecode == nullptr || outputStageBytecode->resultingBytecode.GetBytecodeSize() == 0) {
+        if (stageNum == countStages) {
             error("The mixer has not been compiled for the given stage");
             return 0;
         }
 
-        const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
-        int bytecodeLen = bytecode.size();
-        return bytecodeLen;
+        return GetMixerCompiledBytecodeSizeForStageNum(mixerHandleId, stageNum, nullptr);
     }
 
-	int32_t CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage, uint32_t* bytecodeBuffer, int32_t bufferSize)
+    int32_t CopyMixerCompiledBytecodeForStageNum(uint32_t mixerHandleId, uint32_t stageNum, xkslang::ShadingStageEnum* stage, uint32_t* bytecodeBuffer, int32_t bufferSize)
     {
         errorMessages.clear();
 
         MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
         if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
-		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
+        if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
 
-        OutputStageBytecode* outputStageBytecode = nullptr;
-        for (unsigned int k = 0; k < mixerData->stagesCompiledData.size(); k++) {
-            if (mixerData->stagesCompiledData[k].stage == stage) {
-                outputStageBytecode = &(mixerData->stagesCompiledData[k]);
-                break;
-            }
-        }
+        uint32_t countCompiledStages = (uint32_t)mixerData->stagesCompiledData.size();
+        if (stageNum >= countCompiledStages) { error("Invalid stage num"); return 0; }
+        OutputStageBytecode* outputStageBytecode = &(mixerData->stagesCompiledData[stageNum]);
+
         if (outputStageBytecode == nullptr || outputStageBytecode->resultingBytecode.GetBytecodeSize() == 0) {
             error("The mixer has not been compiled for the given stage");
             return 0;
@@ -881,6 +931,31 @@ namespace xkslangDll
         int countIteration = bytecodeLen;
         while (countIteration-- > 0) *pDest++ = *pSrc++;
 
+        if (stage != nullptr) *stage = outputStageBytecode->stage;
         return bytecodeLen;
+    }
+
+	int32_t CopyMixerCompiledBytecodeForStage(uint32_t mixerHandleId, xkslang::ShadingStageEnum stage, uint32_t* bytecodeBuffer, int32_t bufferSize)
+    {
+        errorMessages.clear();
+
+        MixerData* mixerData = GetMixerForHandleId(mixerHandleId);
+        if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
+		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
+
+        unsigned int countStages = mixerData->stagesCompiledData.size();
+        uint32_t stageNum = countStages;
+        for (unsigned int k = 0; k < countStages; k++) {
+            if (mixerData->stagesCompiledData[k].stage == stage) {
+                stageNum = k;
+                break;
+            }
+        }
+        if (stageNum == countStages) {
+            error("The mixer has not been compiled for the given stage");
+            return 0;
+        }
+
+        return CopyMixerCompiledBytecodeForStageNum(mixerHandleId, stageNum, nullptr, bytecodeBuffer, bufferSize);
     }
 }
