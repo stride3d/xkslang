@@ -191,6 +191,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose30", "TestCompose30.xkfx" },
     //{ "TestCompose31", "TestCompose31.xkfx" },
     //{ "TestCompose32", "TestCompose32.xkfx" },
+    { "TestCompose33", "TestCompose33.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -301,7 +302,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -1338,9 +1339,16 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
 
         mixerCompositionInstructionsStr = mixerCompositionInstructionsStr.substr(1, mixerCompositionInstructionsStr.size() - 2);
 
+        fdgsdgsdfg;
+        //special case: no target expected
+
         //If the instruction start with '[', there are several compositions assigned to the target
-        if (!XkfxParser::SplitParametersString(mixerCompositionInstructionsStr.c_str(), listCompositionInstructions))
+        vector<string> errorMsgs;
+        if (!XkfxParser::SplitCompositionParametersString(mixerCompositionInstructionsStr.c_str(), listCompositionInstructions, errorMsgs))
+        {
+            for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
             return error("Failed to split the compositions instruction string: " + mixerCompositionInstructionsStr);
+        }
     }
     else listCompositionInstructions.push_back(mixerCompositionInstructionsStr);
 
@@ -1348,13 +1356,35 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     {
         const string compositionInstruction = listCompositionInstructions[iComp];
 
+        //We can have the following cases:
+        // mixin( "mixinInstruction" )
+        // mixin "mixinInstruction"
+        // "mixinInstruction"
+        // mixerName
+
         EffectMixerObject* compositionSourceMixer = nullptr;
-        if (XkslangUtils::startWith(compositionInstruction, "mixin(") || XkslangUtils::startWith(compositionInstruction, "mixin ")) //we accept both expressions (the 2nd is compatible with Xenko)
+
+        //first check if a mixer exists with the mixinInstruction name
         {
-            string mixinInstructionStr = compositionInstruction.substr(strlen("mixin"));
-            mixinInstructionStr = XkslangUtils::trim(mixinInstructionStr);
-            if (XkslangUtils::startWith(mixinInstructionStr, "(") && XkslangUtils::endWith(mixinInstructionStr, ")"))
-                mixinInstructionStr = mixinInstructionStr.substr(1, mixinInstructionStr.length() - 2);
+            const string& mixerName = compositionInstruction;
+
+            //find the mixer in our mixer map
+            auto itm = mixerMap.find(mixerName);
+            if (itm != mixerMap.end())
+                compositionSourceMixer = itm->second;
+        }
+
+        if (compositionSourceMixer == nullptr)
+        {
+            string mixinInstructionStr = compositionInstruction;
+
+            if (XkslangUtils::startWith(mixinInstructionStr, "mixin(") || XkslangUtils::startWith(mixinInstructionStr, "mixin "))
+            {
+                mixinInstructionStr = mixinInstructionStr.substr(strlen("mixin"));
+                mixinInstructionStr = XkslangUtils::trim(mixinInstructionStr);
+                if (XkslangUtils::startWith(mixinInstructionStr, "(") && XkslangUtils::endWith(mixinInstructionStr, ")"))
+                    mixinInstructionStr = mixinInstructionStr.substr(1, mixinInstructionStr.length() - 2);
+            }
 
             //Create the anonymous mixer
             string anonymousMixerName = "_anonMixer_" + to_string(mixerMap.size());
@@ -1369,16 +1399,6 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
             if (!success) return error("Mixin failed: " + mixinInstructionStr);
 
             compositionSourceMixer = anonymousMixer;
-        }
-        else
-        {
-            const string mixerName = compositionInstruction;
-
-            //find the mixer in our mixer map
-            if (mixerMap.find(mixerName) == mixerMap.end()) {
-                return error("addComposition: no mixer found with the name: \"" + mixerName + "\"");
-            }
-            compositionSourceMixer = mixerMap[mixerName];
         }
 
         if (compositionSourceMixer == nullptr) {
@@ -1460,8 +1480,12 @@ static bool AddCompositionsToMixer(const string& effectName, unordered_map<strin
 
     //split the string
     vector<string> compositions;
-    if (!XkfxParser::SplitParametersString(compositionsString.c_str(), compositions))
+    vector<string> errorMsgs;
+    if (!XkfxParser::SplitCompositionParametersString(compositionsString.c_str(), compositions, errorMsgs))
+    {
+        for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
         return error("failed to split the parameters");
+    }
 
     if (compositions.size() == 0)
         return error("No composition found in the string: " + compositionsString);

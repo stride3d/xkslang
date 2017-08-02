@@ -257,17 +257,23 @@ string XkfxParser::GetUnmangledName(const string& fullName)
     return fullName.substr(0, pos);
 }
 
-bool XkfxParser::SplitParametersString(const char* parameterStr, vector<string>& parameters)
+bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vector<string>& parameters, vector<string>& errorMsgs)
 {
     if (parameterStr == nullptr) return false;
 
     const char* ptrStr = parameterStr;
     int len = strlen(parameterStr);
 
+    //if we have the syntax: "aComp = mixin A, B,": B is not a composition parameter, but belong to the mixin definition
+    bool previousParameterStringIsAMixinWithoutParenthesis = false;
+    const char* instruction_mixin = "mixin";
+    string compositionTargerInvalidCharacter = "[]{}";
+
     char c;
     int start = 0;
     int countParenthesis = 0;
     int countBrackets = 0;
+    int countBraces = 0;
     int countComparaisonSigns = 0;
     while (true)
     {
@@ -288,13 +294,15 @@ bool XkfxParser::SplitParametersString(const char* parameterStr, vector<string>&
             {
                 case '[': countBrackets++; break;
                 case ']': countBrackets--; break;
+                case '{': countBraces++; break;
+                case '}': countBraces--; break;
                 case '(': countParenthesis++; break;
                 case ')': countParenthesis--; break;
                 case '<': countComparaisonSigns++; break;
                 case '>': countComparaisonSigns--; break;
                 case ',':
                 {
-                    if (countParenthesis == 0 && countComparaisonSigns == 0 && countBrackets == 0) {
+                    if (countParenthesis == 0 && countComparaisonSigns == 0 && countBrackets == 0 && countBraces == 0) {
                         loop = false;
                         end--;
                     }
@@ -305,6 +313,130 @@ bool XkfxParser::SplitParametersString(const char* parameterStr, vector<string>&
 
         int lastChar = end;
         while (ptrStr[lastChar] == ' ' || ptrStr[lastChar] == ',') lastChar--;
+
+        if (ptrStr[start] == '{') start++;
+        if (ptrStr[lastChar] == '}') lastChar--;
+        
+        string compositionParameterExpression(ptrStr + start, (lastChar - start) + 1);
+        bool isANewCompositionInstruction = false;
+        bool isToBeConcatenatedToPreviousMixinCompositionExpression = false;
+
+        //check the composition expression, plus detect expression of the type: "comp = mixin ....", "Shader.comp = mixin ....", so that we can merge them with the next expression if need
+        {
+            const char* pComposition = compositionParameterExpression.c_str();
+            const char* pCompositionTarget;
+            int compositionTargetLen;
+            const char* pCompositionExpression;
+            if (!XkfxParser::GetNextWord(pComposition, &pCompositionTarget, &compositionTargetLen, &pCompositionExpression, '=')) {
+                return error(errorMsgs, string("Failed to get the composition target from: ") + pComposition);
+            }
+            
+            //the composition target cannot contains '[', ']', '{' or '}'
+            string compositionTarget(pCompositionTarget, compositionTargetLen);
+            if (compositionTarget.find_first_of(compositionTargerInvalidCharacter) != string::npos) {
+                return error(errorMsgs, "Invalid composition target name: " + compositionTarget);
+            }
+
+            bool compositionAssignmentMissing = false;
+
+            if (pCompositionExpression == nullptr) compositionAssignmentMissing = true;
+            else
+            {
+                while (*pCompositionExpression == ' ' || *pCompositionExpression == '\t') pCompositionExpression++;
+                if (*pCompositionExpression != '=') compositionAssignmentMissing = true;
+            }
+
+            if (compositionAssignmentMissing)
+            {
+                if (previousParameterStringIsAMixinWithoutParenthesis) isToBeConcatenatedToPreviousMixinCompositionExpression = true;
+                else return error(errorMsgs, "\"=\" expected");
+            }
+            else
+            {
+                previousParameterStringIsAMixinWithoutParenthesis = false;
+                isANewCompositionInstruction = true;
+
+                pCompositionExpression++;
+                while (*pCompositionExpression == ' ' || *pCompositionExpression == '\t') pCompositionExpression++;
+
+                if (XkfxParser::StartWith(pCompositionExpression, instruction_mixin))
+                {
+                    //do we have "mixin(xxx)" or "mixin xxx"
+                    pCompositionExpression += strlen(instruction_mixin);
+                    while (*pCompositionExpression == ' ' || *pCompositionExpression == '\t') pCompositionExpression++; //trim start
+                    if (*pCompositionExpression != '(') {
+                        previousParameterStringIsAMixinWithoutParenthesis = true;
+                    }
+                }
+            }
+        }
+        
+        if (isANewCompositionInstruction) {
+            parameters.push_back(compositionParameterExpression);
+        }
+        if (isToBeConcatenatedToPreviousMixinCompositionExpression) {
+            parameters[parameters.size() - 1] += ", " + compositionParameterExpression;
+        }
+
+        start = end + 1;
+        if (start >= len) return true;
+    }
+}
+
+bool XkfxParser::SplitParametersString(const char* parameterStr, vector<string>& parameters)
+{
+    if (parameterStr == nullptr) return false;
+
+    const char* ptrStr = parameterStr;
+    int len = strlen(parameterStr);
+
+    char c;
+    int start = 0;
+    int countParenthesis = 0;
+    int countBrackets = 0;
+    int countBraces = 0;
+    int countComparaisonSigns = 0;
+    while (true)
+    {
+        while (ptrStr[start] == ' ' || ptrStr[start] == ',') start++;
+        if (start >= len) return true;
+
+        int end = start;
+        bool loop = true;
+        while (loop)
+        {
+            if (end == len) {
+                end--;
+                break;
+            }
+
+            c = ptrStr[end++];
+            switch (c)
+            {
+                case '[': countBrackets++; break;
+                case ']': countBrackets--; break;
+                case '{': countBraces++; break;
+                case '}': countBraces--; break;
+                case '(': countParenthesis++; break;
+                case ')': countParenthesis--; break;
+                case '<': countComparaisonSigns++; break;
+                case '>': countComparaisonSigns--; break;
+                case ',':
+                {
+                    if (countParenthesis == 0 && countComparaisonSigns == 0 && countBrackets == 0 && countBraces == 0) {
+                        loop = false;
+                        end--;
+                    }
+                    break;
+                }
+            }
+        }
+
+        int lastChar = end;
+        while (ptrStr[lastChar] == ' ' || ptrStr[lastChar] == ',') lastChar--;
+
+        if (ptrStr[start] == '{') start++;
+        if (ptrStr[lastChar] == '}') lastChar--;
         
         parameters.push_back(string(ptrStr + start, (lastChar - start) + 1));
 
@@ -518,7 +650,7 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const char* 
     int compositionTargetLen;
     const char* pCompositionInstructionStart;
     if (!XkfxParser::GetNextWord(compositionStringInstructions, &pCompositionTarget, &compositionTargetLen, &pCompositionInstructionStart, '=')) {
-        return error(errorMsgs, string("Failed to get the next instruction from: ") + compositionStringInstructions);
+        return error(errorMsgs, string("Failed to get the composition target from: ") + compositionStringInstructions);
     }
 
     string shaderName;
@@ -580,24 +712,47 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const char* 
 
         XkEffectMixerObject* compositionSourceMixer = nullptr;
 
-        if (XkfxParser::StartWith(paCompositionInstruction, instruction_mixin))
+        //We can have the following cases:
+        // mixin( "mixinInstruction" )
+        // mixin "mixinInstruction"
+        // "mixinInstruction"
+        // mixerName
+
+        //first check if a mixer exists with the mixinInstruction name
         {
-            paCompositionInstruction += strlen(instruction_mixin);
+            const string& mixerName = aCompositionInstruction;
 
-            //trim start
-            while (*paCompositionInstruction == ' ' || *paCompositionInstruction == '\t') paCompositionInstruction++;
-            //trim end
-            int mixinInstructionLen = strlen(paCompositionInstruction);
-            while (mixinInstructionLen > 0 && (paCompositionInstruction[mixinInstructionLen - 1] == ' ' || paCompositionInstruction[mixinInstructionLen - 1] == '\t')) mixinInstructionLen--;
-            if (mixinInstructionLen == 0) return error(errorMsgs, "Invalid composition instruction: " + aCompositionInstruction);
+            auto itm = mixerMap.find(mixerName);
+            if (itm != mixerMap.end())
+                compositionSourceMixer = itm->second;
+        }
 
-            //we can either have "mixin(...)" or "mixin ..."
-            if (*paCompositionInstruction == '(')
+        if (compositionSourceMixer == nullptr)
+        {
+            int mixinInstructionLen;
+            if (XkfxParser::StartWith(paCompositionInstruction, instruction_mixin))
             {
-                if (paCompositionInstruction[mixinInstructionLen - 1] != ')')
-                    return error(errorMsgs, "Invalid composition instruction: \")\" expected. " + aCompositionInstruction);
-                paCompositionInstruction++;
-                mixinInstructionLen -= 2;
+                paCompositionInstruction += strlen(instruction_mixin);
+
+                //trim start
+                while (*paCompositionInstruction == ' ' || *paCompositionInstruction == '\t') paCompositionInstruction++;
+                //trim end
+                mixinInstructionLen = strlen(paCompositionInstruction);
+                while (mixinInstructionLen > 0 && (paCompositionInstruction[mixinInstructionLen - 1] == ' ' || paCompositionInstruction[mixinInstructionLen - 1] == '\t')) mixinInstructionLen--;
+                if (mixinInstructionLen == 0) return error(errorMsgs, "Invalid composition instruction: " + aCompositionInstruction);
+
+                //we can either have "mixin(...)" or "mixin ..."
+                if (*paCompositionInstruction == '(')
+                {
+                    if (paCompositionInstruction[mixinInstructionLen - 1] != ')')
+                        return error(errorMsgs, "Invalid composition instruction: \")\" expected. " + aCompositionInstruction);
+                    paCompositionInstruction++;
+                    mixinInstructionLen -= 2;
+                }
+            }
+            else
+            {
+                mixinInstructionLen = strlen(paCompositionInstruction);
             }
 
             //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
@@ -613,16 +768,6 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const char* 
             if (!success) return error(errorMsgs, "Mixin failed: " + anonymousMixerInstruction);
 
             compositionSourceMixer = anonymousMixer;
-        }
-        else
-        {
-            const string& mixerName = aCompositionInstruction;
-
-            //find the mixer in our mixer map
-            if (mixerMap.find(mixerName) == mixerMap.end()) {
-                return error(errorMsgs, "addComposition: no mixer found with the name: \"" + mixerName + "\"");
-            }
-            compositionSourceMixer = mixerMap[mixerName];
         }
 
         if (compositionSourceMixer == nullptr) {

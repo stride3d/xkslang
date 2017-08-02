@@ -32,6 +32,7 @@ public:
     static bool StartWith(const char* txt, const char* word);
     static bool getFunctionParameterString(const char* txt, const char** stringStart, int* stringLen);
     static bool SplitParametersString(const char* parameterStr, std::vector<std::string>& parameters);
+    static bool SplitCompositionParametersString(const char* parameterStr, std::vector<std::string>& parameters, std::vector<std::string>& errorMsgs);
 
     static bool GetNextInstruction(const std::string& line, std::string& firstInstruction, std::string& remainingLine);
     static bool GetNextInstruction(const std::string& line, std::string& firstInstruction, std::string& remainingLine, const char stopDelimiters, bool keepTheStopDelimiterInTheRemainingString);

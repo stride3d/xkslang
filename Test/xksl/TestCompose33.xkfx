@@ -1,0 +1,40 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+convertAndLoadRecursif "TestCompose33" ShaderMain
+
+mixer m
+m.mixin( ShaderMain[
+	directLightGroups = DirectLightGroup,
+	materialPixelStage = MaterialSurfaceArray[
+		aComp1 = AnotherComp,
+		aComp2 = mixin AnotherComp, AnotherCompBis,
+		ac = [
+			mixin(AnArrayComp, AnArrayCompBis),
+			mixin AnArrayComp,
+		]
+	],
+	DirectLightGroupArray.directLightGroups = mixin(DirectLightGroup),
+])
+
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+m.compile()
+
+
+break
+
+mixer m
+m.mixin( ShaderMain[
+	{directLightGroups = DirectLightGroup},
+	{materialPixelStage = MaterialSurfaceArray[
+		{aComp1 = mixin(AnotherComp)},
+		{aComp2 = mixin(AnotherComp)},
+		{ac = [
+			mixin AnArrayComp, AnArrayCompBis,
+			mixin AnArrayComp,
+		]}
+	])},
+	{DirectLightGroupArray.directLightGroups = DirectLightGroup}
+])
