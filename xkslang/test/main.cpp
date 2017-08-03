@@ -30,7 +30,7 @@
 
 #ifdef _DEBUG
 #define WRITE_BYTECODE_ON_DISK_AFTER_EVERY_MIXIN_STEPS
-#define OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
+//#define OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
 #define PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
 #endif
 
@@ -1291,72 +1291,53 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
 
 static bool AddCompositionToMixer(const string& effectName, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, unordered_map<string, EffectMixerObject*>& mixerMap,
     vector<SpxBytecode*>& listAllocatedBytecodes, const vector<XkslUserDefinedMacro>& listUserDefinedMacros, XkslParser* parser, bool useXkslangDll, int& operationNum,
-    EffectMixerObject* mixerTarget, const string& compositionString, const string& targetedShaderName)
+    EffectMixerObject* mixerTarget, const CompositionExpression& compositionExpression, const string& targetedShaderName)
 {
     bool success = false;
     DWORD time_before, time_after;
 
     //===================================================
     //composition variable target
-    string compositionStr = compositionString;
-    string compositionVariableTargetStr;
-    string remainingStr;
-
-    if (!XkfxParser::GetNextInstruction(compositionStr, compositionVariableTargetStr, remainingStr, '=', true))
-        return error("AddCompositionToMixer: Failed to find the composition variable target from: " + compositionStr);
-    compositionVariableTargetStr = XkslangUtils::trim(compositionVariableTargetStr);
+    const string& compTarget = compositionExpression.Target;
 
     //We can either have shader.variableName, or only a variableName
     string shaderName, variableName;
-    if (!XkfxParser::SeparateAdotB(compositionVariableTargetStr, shaderName, variableName))
+    if (!XkfxParser::SeparateAdotB(compTarget, shaderName, variableName))
     {
-        variableName = compositionVariableTargetStr;
+        variableName = compTarget;
         shaderName = targetedShaderName;
     }
-    else
-    {
-        //if (targetedShaderName.size() > 0 && targetedShaderName.compare(shaderName) != 0)
-        //    return error("The shader name (" + shaderName + ") does not match the targeted shader name (" + targetedShaderName + ")");
-        //Error check's obsolete: shaderName could be a parent class of targetedShaderName
-    }
 
     //===================================================
-    //Expecting '='
-    string tmpStr;
-    if (!XkfxParser::GetNextInstruction(remainingStr, tmpStr, remainingStr, '=', false)) return error("\"=\" expected");
-    if (XkslangUtils::trim(tmpStr).size() > 0) return error("Invalid assignation format");
-
-    //===================================================
-    //Find or create the composition source mixer
-    //We can either have a mixer name, or a mixin instruction
-    string mixerCompositionInstructionsStr = XkslangUtils::trim(remainingStr);
+    //composition expression: we can either have a single expression, or a multiple one
+    string compExpression = compositionExpression.Expression;
 
     vector<string> listCompositionInstructions;
-    if (XkslangUtils::startWith(mixerCompositionInstructionsStr, "["))
+    if (XkslangUtils::startWith(compExpression.c_str(), "["))
     {
-        if (!XkslangUtils::endWith(mixerCompositionInstructionsStr, "]"))
-            return error("Invalid compositions instruction string: " + mixerCompositionInstructionsStr);
+        if (!XkslangUtils::endWith(compExpression, "]"))
+            return error("Invalid compositions instruction string: " + compExpression);
 
-        mixerCompositionInstructionsStr = mixerCompositionInstructionsStr.substr(1, mixerCompositionInstructionsStr.size() - 2);
-
-        fdgsdgsdfg;
-        //special case: no target expected
+        compExpression = compExpression.substr(1, compExpression.size() - 2);
 
         //If the instruction start with '[', there are several compositions assigned to the target
         vector<string> errorMsgs;
-        if (!XkfxParser::SplitCompositionParametersString(mixerCompositionInstructionsStr.c_str(), listCompositionInstructions, errorMsgs))
+        vector<CompositionExpression> compositionExpressions;
+        if (!XkfxParser::SplitCompositionParametersString(compExpression.c_str(), compositionExpressions, false, errorMsgs))
         {
             for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
-            return error("Failed to split the compositions instruction string: " + mixerCompositionInstructionsStr);
+            return error("Failed to split the compositions instruction string: " + compExpression);
         }
+        for (unsigned int k = 0; k < compositionExpressions.size(); ++k) listCompositionInstructions.push_back(compositionExpressions[k].Expression);
     }
-    else listCompositionInstructions.push_back(mixerCompositionInstructionsStr);
+    else listCompositionInstructions.push_back(compExpression);
 
+    //===================================================
     for (unsigned int iComp = 0; iComp < listCompositionInstructions.size(); iComp++)
     {
         const string compositionInstruction = listCompositionInstructions[iComp];
 
-        //We can have the following cases:
+        //expression can have the following cases:
         // mixin( "mixinInstruction" )
         // mixin "mixinInstruction"
         // "mixinInstruction"
@@ -1479,9 +1460,9 @@ static bool AddCompositionsToMixer(const string& effectName, unordered_map<strin
     std::cout << "Process AddCompositions instructions: \"" << compositionsString << "\"" << endl;
 
     //split the string
-    vector<string> compositions;
     vector<string> errorMsgs;
-    if (!XkfxParser::SplitCompositionParametersString(compositionsString.c_str(), compositions, errorMsgs))
+    vector<CompositionExpression> compositions;
+    if (!XkfxParser::SplitCompositionParametersString(compositionsString.c_str(), compositions, true, errorMsgs))
     {
         for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
         return error("failed to split the parameters");
@@ -1492,13 +1473,13 @@ static bool AddCompositionsToMixer(const string& effectName, unordered_map<strin
 
     for (unsigned int k = 0; k < compositions.size(); ++k)
     {
-        const string& compositionStr = compositions[k];
+        const CompositionExpression& compositionExpression = compositions[k];
         bool success = AddCompositionToMixer(effectName, mapShaderNameBytecode, mixerMap,
             listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll, operationNum,
-            mixerTarget, compositionStr, targetedShaderName);
+            mixerTarget, compositionExpression, targetedShaderName);
 
         if (!success)
-            return error("Failed to add the composition into the mixer: " + compositionStr);
+            return error("Failed to add the composition into the mixer");
     }
 
     return true;

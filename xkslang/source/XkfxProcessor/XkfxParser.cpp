@@ -257,7 +257,7 @@ string XkfxParser::GetUnmangledName(const string& fullName)
     return fullName.substr(0, pos);
 }
 
-bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vector<string>& parameters, vector<string>& errorMsgs)
+bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vector<CompositionExpression>& listCompositions, bool targetRequired, vector<string>& errorMsgs)
 {
     if (parameterStr == nullptr) return false;
 
@@ -317,65 +317,93 @@ bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vect
         if (ptrStr[start] == '{') start++;
         if (ptrStr[lastChar] == '}') lastChar--;
         
-        string compositionParameterExpression(ptrStr + start, (lastChar - start) + 1);
-        bool isANewCompositionInstruction = false;
-        bool isToBeConcatenatedToPreviousMixinCompositionExpression = false;
-
         //check the composition expression, plus detect expression of the type: "comp = mixin ....", "Shader.comp = mixin ....", so that we can merge them with the next expression if need
         {
-            const char* pComposition = compositionParameterExpression.c_str();
-            const char* pCompositionTarget;
-            int compositionTargetLen;
-            const char* pCompositionExpression;
-            if (!XkfxParser::GetNextWord(pComposition, &pCompositionTarget, &compositionTargetLen, &pCompositionExpression, '=')) {
-                return error(errorMsgs, string("Failed to get the composition target from: ") + pComposition);
-            }
+            string compositionFullExpression(ptrStr + start, (lastChar - start) + 1);
+
+            string compositionTarget;
+            string compositionExpression;
+            bool isExpressionAnOpenMissingInstruction = false;
+            bool concatenateExpressionWithPreviousComposition = false;
+
+            if (targetRequired)
+            {
+                const char* pComposition = compositionFullExpression.c_str();
+                const char* pCompositionTarget;
+                int compositionTargetLen;
+                const char* pCompositionExpression;
+                if (!XkfxParser::GetNextWord(pComposition, &pCompositionTarget, &compositionTargetLen, &pCompositionExpression, '=')) {
+                    return error(errorMsgs, string("Failed to get the composition target from: ") + pComposition);
+                }
             
-            //the composition target cannot contains '[', ']', '{' or '}'
-            string compositionTarget(pCompositionTarget, compositionTargetLen);
-            if (compositionTarget.find_first_of(compositionTargerInvalidCharacter) != string::npos) {
-                return error(errorMsgs, "Invalid composition target name: " + compositionTarget);
+                //the composition target cannot contains '[', ']', '{' or '}'
+                compositionTarget = string(pCompositionTarget, compositionTargetLen);
+                if (compositionTarget.find_first_of(compositionTargerInvalidCharacter) != string::npos) {
+                    return error(errorMsgs, "Invalid composition target name: " + compositionTarget);
+                }
+
+                bool assignmentMissing = false;
+                if (pCompositionExpression == nullptr) assignmentMissing = true;
+                else
+                {
+                    while (*pCompositionExpression == ' ' || *pCompositionExpression == '\t') pCompositionExpression++;
+                    if (*pCompositionExpression != '=') assignmentMissing = true;
+                }
+
+                if (assignmentMissing)
+                {
+                    unsigned int count = listCompositions.size();
+                    if (count > 0 && listCompositions[count - 1].IsExpressionAnOpenMissingInstruction) {
+                        concatenateExpressionWithPreviousComposition = true;
+                        compositionExpression = compositionTarget;
+                    }
+                    else {
+                        return error(errorMsgs, "\"=\" expected");
+                    }
+                }
+                else
+                {
+                    pCompositionExpression++;
+                    while (*pCompositionExpression == ' ' || *pCompositionExpression == '\t') pCompositionExpression++;
+                    compositionExpression = pCompositionExpression;
+                }
             }
-
-            bool compositionAssignmentMissing = false;
-
-            if (pCompositionExpression == nullptr) compositionAssignmentMissing = true;
             else
             {
-                while (*pCompositionExpression == ' ' || *pCompositionExpression == '\t') pCompositionExpression++;
-                if (*pCompositionExpression != '=') compositionAssignmentMissing = true;
+                compositionTarget = "";
+                compositionExpression = compositionFullExpression;
+
+                //if the expression does not start by mixin, but the previous one does, the current expression belongs to the previous mixin instruction
+                if (XkfxParser::StartWith(compositionExpression.c_str(), instruction_mixin) == false)
+                {
+                    unsigned int count = listCompositions.size();
+                    if (count > 0 && listCompositions[count - 1].IsExpressionAnOpenMissingInstruction) {
+                        concatenateExpressionWithPreviousComposition = true;
+                    }
+                }
             }
 
-            if (compositionAssignmentMissing)
+            if (concatenateExpressionWithPreviousComposition)
             {
-                if (previousParameterStringIsAMixinWithoutParenthesis) isToBeConcatenatedToPreviousMixinCompositionExpression = true;
-                else return error(errorMsgs, "\"=\" expected");
+                unsigned int count = listCompositions.size();
+                if (count == 0) return error(errorMsgs, "list of composition is empty: cannot concatenate anything");
+                listCompositions[count - 1].Expression += (", " + compositionExpression);
             }
             else
             {
-                previousParameterStringIsAMixinWithoutParenthesis = false;
-                isANewCompositionInstruction = true;
-
-                pCompositionExpression++;
-                while (*pCompositionExpression == ' ' || *pCompositionExpression == '\t') pCompositionExpression++;
-
+                //check if we have an open mixin instruction
+                const char* pCompositionExpression = compositionExpression.c_str();
                 if (XkfxParser::StartWith(pCompositionExpression, instruction_mixin))
                 {
                     //do we have "mixin(xxx)" or "mixin xxx"
                     pCompositionExpression += strlen(instruction_mixin);
                     while (*pCompositionExpression == ' ' || *pCompositionExpression == '\t') pCompositionExpression++; //trim start
-                    if (*pCompositionExpression != '(') {
-                        previousParameterStringIsAMixinWithoutParenthesis = true;
-                    }
+                    if (*pCompositionExpression != '(') isExpressionAnOpenMissingInstruction = true;
                 }
+
+                listCompositions.push_back(CompositionExpression(compositionTarget, compositionExpression, isExpressionAnOpenMissingInstruction));
             }
-        }
-        
-        if (isANewCompositionInstruction) {
-            parameters.push_back(compositionParameterExpression);
-        }
-        if (isToBeConcatenatedToPreviousMixinCompositionExpression) {
-            parameters[parameters.size() - 1] += ", " + compositionParameterExpression;
+
         }
 
         start = end + 1;

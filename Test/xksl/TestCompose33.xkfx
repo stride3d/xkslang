@@ -1,6 +1,6 @@
 //Activate some additionnal options with xkslang main test program
 //============================================
-setSampleTestOptions processSampleWithXkfxLibrary true
+setSampleTestOptions processSampleWithXkfxLibrary false
 //============================================
 
 convertAndLoadRecursif "TestCompose33" ShaderMain
@@ -12,7 +12,7 @@ m.mixin( ShaderMain[
 		aComp1 = AnotherComp,
 		aComp2 = mixin AnotherComp, AnotherCompBis,
 		ac = [
-			mixin(AnArrayComp, AnArrayCompBis),
+			mixin AnArrayComp, AnArrayCompBis,
 			mixin AnArrayComp,
 		]
 	],
