@@ -42,6 +42,7 @@ public:
     static bool GetAndCopyNextWord(const char* txt, char* nextWordBuffer, int bufferMaxSize, int* nextWordLen, const char** followingWordStart, char additionnalStopDelimiters = ' ');
     static bool GetNextStringExpression(const char* txt, char* const outputBuffer, int bufferMaxSize, int* expressionLen);
     static bool StartWith(const char* txt, const char* word);
+    static bool StartWithThenImmediatelyFollowByAny(const char* txt, const char* word, const char* charList);
     static bool getFunctionParameterString(const char* txt, const char** stringStart, int* stringLen);
     static bool SplitParametersString(const char* parameterStr, std::vector<std::string>& parameters);
     static bool SplitCompositionParametersString(const char* parameterStr, std::vector<CompositionExpression>& listCompositions, bool targetRequired, std::vector<std::string>& errorMsgs);

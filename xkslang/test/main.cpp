@@ -1309,7 +1309,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     }
 
     //===================================================
-    //composition expression: we can either have a single expression, or a multiple one
+    //composition expression: we can either have a single expression, or multiple ones
     string compExpression = compositionExpression.Expression;
 
     vector<string> listCompositionInstructions;
@@ -1333,6 +1333,7 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
     else listCompositionInstructions.push_back(compExpression);
 
     //===================================================
+    //Process all compositions
     for (unsigned int iComp = 0; iComp < listCompositionInstructions.size(); iComp++)
     {
         const string compositionInstruction = listCompositionInstructions[iComp];
