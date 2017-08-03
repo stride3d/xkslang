@@ -305,7 +305,7 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
 
     while (true)
     {
-        while (pos < len && txt[pos] == ' ') pos++;
+        while (pos < len && (txt[pos] == ' ' || txt[pos] == '\t' || txt[pos] == ',')) pos++;
         if (pos == len) return true;
 
         //shader name: parse until we meet ' ', '<' or '['
@@ -331,6 +331,7 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
                     loop = false;
                     break;
                 }
+                case '\t':
                 case ' ':
                 {
                     loop = false;
@@ -358,7 +359,7 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
             while (true)
             {
                 pos = end + 1;
-                while (pos < len && txt[pos] == ' ') pos++;
+                while (pos < len && (txt[pos] == ' ' || txt[pos] == '\t')) pos++;
                 if (pos == len) return false;
 
                 end = pos + 1;
@@ -377,7 +378,7 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
             end++;
         }
 
-        while (end < len && (txt[end] == ' ' || txt[end] == ',')) end++;
+        while (end < len && (txt[end] == ' ' || txt[end] == '\t' || txt[end] == ',')) end++;
         if (end < len && txt[end] == '[') hasCompositions = true;
 
         if (hasCompositions)

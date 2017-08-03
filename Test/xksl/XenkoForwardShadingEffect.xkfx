@@ -13,9 +13,9 @@ setDefine SILICON_STUDIO_MULTISAMPLE_COUNT "1"
 
 mixer m
 m.mixin (
-    MaterialSurfaceVertexStageCompositor,
     ShaderBase,
     ShadingBase,
+	MaterialSurfaceVertexStageCompositor,
     TransformationBase,
     NormalStream,
     TransformationWAndVP,
@@ -24,7 +24,9 @@ m.mixin (
 )
 
 m.addComposition( directLightGroups = mixin(LightDirectionalGroup<8>) )
+
 m.addComposition( environmentLights = mixin(LightSimpleAmbient) )
+
 m.addComposition( materialPixelStage = mixin(MaterialSurfaceArray[
     layers = [
       mixin(MaterialSurfaceDiffuse[
@@ -55,19 +57,24 @@ m.addComposition( materialPixelStage = mixin(MaterialSurfaceArray[
     ]
   ])
 )
+
 m.addComposition( materialVertexStage = mixin(MaterialSurfaceArray[
     layers = [
-	  mixin(MaterialSurfaceSetStreamFromComputeColor<matDisplacement,r> [
-	    computeColorSource = mixin(ComputeColorMultiply [
-		  color1 = mixin(ComputeColorWave<5,0.01,-0.03>),
-		  color2 = mixin(ComputeColorConstantFloatLink<Material.DisplacementValue>)
-		])
-	  ]),
-	  mixin(MaterialSurfaceDisplacement<Position,meshNormal,false>)
+	  mixin(
+		MaterialSurfaceSetStreamFromComputeColor<matDisplacement,r> [
+	      computeColorSource = mixin(ComputeColorMultiply [
+		    color1 = mixin(ComputeColorWave<5,0.01,-0.03>),
+		    color2 = mixin(ComputeColorConstantFloatLink<Material.DisplacementValue>)
+		  ])
+	    ],
+		MaterialSurfaceDisplacement<Position,meshNormal,false>
+	  )
 	]
   ])
 )
-m.addComposition( streamInitializerPixelStage = mixin(MaterialStream, MaterialDisplacementStream) )
+
+m.addComposition( streamInitializerPixelStage = mixin(MaterialStream, MaterialPixelShadingStream) )
+
 m.addComposition( streamInitializerVertexStage = mixin(MaterialStream, MaterialDisplacementStream) )
 
 m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
@@ -75,11 +82,13 @@ m.compile()
 
 break
 
-//For reference: data from CompileEffect mixinTree parameter
-{[directLightGroups, [mixin LightDirectionalGroup<8>]]}
-{[environmentLights, [mixin LightSimpleAmbient]]}
-{[materialPixelStage, mixin MaterialSurfaceArray
-    [{layers = [mixin MaterialSurfaceDiffuse [{diffuseMap = ComputeColorTextureScaledOffsetDynamicSampler<Material.DiffuseMap,TEXCOORD0,Material.Sampler.i0,rgba,Material.TextureScale,Material.TextureOffset>}], mixin MaterialSurfaceNormalMap<false,true> [{normalMap = ComputeColorWaveNormal<5,0.1,-0.03>}], mixin MaterialSurfaceGlossinessMap<false> [{glossinessMap = ComputeColorConstantFloatLink<Material.GlossinessValue>}], mixin MaterialSurfaceSetStreamFromComputeColor<matSpecular,rgb> [{computeColorSource = ComputeColorConstantColorLink<Material.SpecularValue>}], mixin MaterialSurfaceSetStreamFromComputeColor<matSpecularIntensity,r> [{computeColorSource = ComputeColorConstantFloatLink<Material.SpecularIntensityValue>}], mixin MaterialSurfaceLightingAndShading [{surfaces = [MaterialSurfaceShadingDiffuseLambert<false>, mixin MaterialSurfaceShadingSpecularMicrofacet [{fresnelFunction = MaterialSpecularMicrofacetFresnelSchlick}, {geometricShadowingFunction = MaterialSpecularMicrofacetVisibilitySmithSchlickGGX}, {normalDistributionFunction = MaterialSpecularMicrofacetNormalDistributionGGX}]]}]]}]]}
-{[materialVertexStage, mixin MaterialSurfaceArray [{layers = [mixin MaterialSurfaceSetStreamFromComputeColor<matDisplacement,r> [{computeColorSource = mixin ComputeColorMultiply [{color1 = ComputeColorWave<5,0.01,-0.03>}, {color2 = ComputeColorConstantFloatLink<Material.DisplacementValue>}]}], MaterialSurfaceDisplacement<Position,meshNormal,false>]}]]}
-{[streamInitializerPixelStage, mixin MaterialStream, MaterialPixelShadingStream]}
-{[streamInitializerVertexStage, mixin MaterialStream, MaterialDisplacementStream]}
+//For reference: data from CompileEffect mixinTree parameters
+mixer m
+m.mixin( ShaderBase, ShadingBase, MaterialSurfaceVertexStageCompositor, TransformationBase, NormalStream, TransformationWAndVP, NormalFromNormalMapping, MaterialSurfacePixelStageCompositor )
+
+m.addComposition( directLightGroups = [mixin LightDirectionalGroup<8>] )
+m.addComposition( environmentLights = [mixin LightSimpleAmbient] )
+m.addComposition( materialPixelStage = mixin MaterialSurfaceArray [{layers = [mixin MaterialSurfaceDiffuse [{diffuseMap = ComputeColorTextureScaledOffsetDynamicSampler<Material.DiffuseMap,TEXCOORD0,Material.Sampler.i0,rgba,Material.TextureScale,Material.TextureOffset>}], mixin MaterialSurfaceNormalMap<false,true> [{normalMap = ComputeColorWaveNormal<5,0.1,-0.03>}], mixin MaterialSurfaceGlossinessMap<false> [{glossinessMap = ComputeColorConstantFloatLink<Material.GlossinessValue>}], mixin MaterialSurfaceSetStreamFromComputeColor<matSpecular,rgb> [{computeColorSource = ComputeColorConstantColorLink<Material.SpecularValue>}], mixin MaterialSurfaceSetStreamFromComputeColor<matSpecularIntensity,r> [{computeColorSource = ComputeColorConstantFloatLink<Material.SpecularIntensityValue>}], mixin MaterialSurfaceLightingAndShading [{surfaces = [MaterialSurfaceShadingDiffuseLambert<false>, mixin MaterialSurfaceShadingSpecularMicrofacet [{fresnelFunction = MaterialSpecularMicrofacetFresnelSchlick}, {geometricShadowingFunction = MaterialSpecularMicrofacetVisibilitySmithSchlickGGX}, {normalDistributionFunction = MaterialSpecularMicrofacetNormalDistributionGGX}]]}]]}] )
+m.addComposition( materialVertexStage = mixin MaterialSurfaceArray [{layers = [mixin MaterialSurfaceSetStreamFromComputeColor<matDisplacement,r> [{computeColorSource = mixin ComputeColorMultiply [{color1 = ComputeColorWave<5,0.01,-0.03>}, {color2 = ComputeColorConstantFloatLink<Material.DisplacementValue>}]}], MaterialSurfaceDisplacement<Position,meshNormal,false>]}] )
+m.addComposition( streamInitializerPixelStage = mixin MaterialStream, MaterialPixelShadingStream )
+m.addComposition( streamInitializerVertexStage = mixin MaterialStream, MaterialDisplacementStream )

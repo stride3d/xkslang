@@ -8,9 +8,9 @@ struct LightDirectional_DirectionalLightData
 
 struct PS_STREAMS
 {
-    float matBlend_id0;
-    vec4 ShadingPosition_id1;
-    vec4 ColorTarget_id2;
+    vec4 ShadingPosition_id0;
+    vec4 ColorTarget_id1;
+    float matBlend_id2;
     vec3 meshNormal_id3;
     vec4 meshTangent_id4;
     vec3 normalWS_id5;
@@ -27,31 +27,33 @@ struct PS_STREAMS
     float matCavity_id16;
     float matCavityDiffuse_id17;
     float matCavitySpecular_id18;
-    vec2 matDiffuseSpecularAlphaBlend_id19;
-    vec3 matAlphaBlendColor_id20;
-    vec3 viewWS_id21;
-    vec3 matDiffuseVisible_id22;
-    float alphaRoughness_id23;
-    vec3 matSpecularVisible_id24;
-    float NdotV_id25;
-    vec3 shadingColor_id26;
-    float shadingColorAlpha_id27;
-    vec3 H_id28;
-    float NdotH_id29;
-    float LdotH_id30;
-    float VdotH_id31;
-    vec3 lightPositionWS_id32;
-    vec3 lightDirectionWS_id33;
-    vec3 lightColor_id34;
-    vec3 lightColorNdotL_id35;
-    vec3 envLightDiffuseColor_id36;
-    vec3 envLightSpecularColor_id37;
-    float NdotL_id38;
-    float lightDirectAmbientOcclusion_id39;
-    vec3 shadowColor_id40;
-    vec2 TexCoord_id41;
-    vec2 TexCoord_id42;
-    float matDisplacement_id43;
+    vec4 matEmissive_id19;
+    float matEmissiveIntensity_id20;
+    vec2 matDiffuseSpecularAlphaBlend_id21;
+    vec3 matAlphaBlendColor_id22;
+    float matAlphaDiscard_id23;
+    vec3 viewWS_id24;
+    vec3 matDiffuseVisible_id25;
+    float alphaRoughness_id26;
+    vec3 matSpecularVisible_id27;
+    float NdotV_id28;
+    vec3 shadingColor_id29;
+    float shadingColorAlpha_id30;
+    vec3 H_id31;
+    float NdotH_id32;
+    float LdotH_id33;
+    float VdotH_id34;
+    vec3 lightPositionWS_id35;
+    vec3 lightDirectionWS_id36;
+    vec3 lightColor_id37;
+    vec3 lightColorNdotL_id38;
+    vec3 envLightDiffuseColor_id39;
+    vec3 envLightSpecularColor_id40;
+    float NdotL_id41;
+    float lightDirectAmbientOcclusion_id42;
+    vec3 shadowColor_id43;
+    vec2 TexCoord_id44;
+    vec2 TexCoord_id45;
 };
 
 layout(std140) uniform PerDraw
@@ -89,7 +91,6 @@ layout(std140) uniform PerMaterial
     float o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
     vec2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
     vec2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
-    float o24S2C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat;
 } PerMaterial_var;
 
 layout(std140) uniform PerFrame
@@ -104,17 +105,10 @@ layout(location = 0) in vec4 PS_IN_ShadingPosition;
 layout(location = 1) in vec3 PS_IN_meshNormal;
 layout(location = 2) in vec4 PS_IN_meshTangent;
 layout(location = 3) in vec4 PS_IN_PositionWS;
-layout(location = 4) in float PS_IN_matAmbientOcclusion;
-layout(location = 5) in float PS_IN_matAmbientOcclusionDirectLightingFactor;
-layout(location = 6) in float PS_IN_matCavity;
-layout(location = 7) in float PS_IN_matCavityDiffuse;
-layout(location = 8) in float PS_IN_matCavitySpecular;
-layout(location = 9) in vec2 PS_IN_matDiffuseSpecularAlphaBlend;
-layout(location = 10) in vec3 PS_IN_matAlphaBlendColor;
-layout(location = 11) in vec2 PS_IN_TexCoord;
-layout(location = 12) in vec2 PS_IN_TexCoord_1;
-layout(location = 0) out float PS_OUT_matBlend;
-layout(location = 1) out vec4 PS_OUT_ColorTarget;
+layout(location = 4) in vec2 PS_IN_TexCoord;
+layout(location = 5) in vec2 PS_IN_TexCoord_1;
+layout(location = 0) out vec4 PS_OUT_ColorTarget;
+layout(location = 1) out float PS_OUT_matBlend;
 layout(location = 2) out vec3 PS_OUT_normalWS;
 layout(location = 3) out mat3 PS_OUT_tangentToWorld;
 layout(location = 4) out vec3 PS_OUT_matNormal;
@@ -123,27 +117,36 @@ layout(location = 6) out vec4 PS_OUT_matDiffuse;
 layout(location = 7) out float PS_OUT_matGlossiness;
 layout(location = 8) out vec3 PS_OUT_matSpecular;
 layout(location = 9) out float PS_OUT_matSpecularIntensity;
-layout(location = 10) out vec3 PS_OUT_viewWS;
-layout(location = 11) out vec3 PS_OUT_matDiffuseVisible;
-layout(location = 12) out float PS_OUT_alphaRoughness;
-layout(location = 13) out vec3 PS_OUT_matSpecularVisible;
-layout(location = 14) out float PS_OUT_NdotV;
-layout(location = 15) out vec3 PS_OUT_shadingColor;
-layout(location = 16) out float PS_OUT_shadingColorAlpha;
-layout(location = 17) out vec3 PS_OUT_H;
-layout(location = 18) out float PS_OUT_NdotH;
-layout(location = 19) out float PS_OUT_LdotH;
-layout(location = 20) out float PS_OUT_VdotH;
-layout(location = 21) out vec3 PS_OUT_lightPositionWS;
-layout(location = 22) out vec3 PS_OUT_lightDirectionWS;
-layout(location = 23) out vec3 PS_OUT_lightColor;
-layout(location = 24) out vec3 PS_OUT_lightColorNdotL;
-layout(location = 25) out vec3 PS_OUT_envLightDiffuseColor;
-layout(location = 26) out vec3 PS_OUT_envLightSpecularColor;
-layout(location = 27) out float PS_OUT_NdotL;
-layout(location = 28) out float PS_OUT_lightDirectAmbientOcclusion;
-layout(location = 29) out vec3 PS_OUT_shadowColor;
-layout(location = 30) out float PS_OUT_matDisplacement;
+layout(location = 10) out float PS_OUT_matAmbientOcclusion;
+layout(location = 11) out float PS_OUT_matAmbientOcclusionDirectLightingFactor;
+layout(location = 12) out float PS_OUT_matCavity;
+layout(location = 13) out float PS_OUT_matCavityDiffuse;
+layout(location = 14) out float PS_OUT_matCavitySpecular;
+layout(location = 15) out vec4 PS_OUT_matEmissive;
+layout(location = 16) out float PS_OUT_matEmissiveIntensity;
+layout(location = 17) out vec2 PS_OUT_matDiffuseSpecularAlphaBlend;
+layout(location = 18) out vec3 PS_OUT_matAlphaBlendColor;
+layout(location = 19) out float PS_OUT_matAlphaDiscard;
+layout(location = 20) out vec3 PS_OUT_viewWS;
+layout(location = 21) out vec3 PS_OUT_matDiffuseVisible;
+layout(location = 22) out float PS_OUT_alphaRoughness;
+layout(location = 23) out vec3 PS_OUT_matSpecularVisible;
+layout(location = 24) out float PS_OUT_NdotV;
+layout(location = 25) out vec3 PS_OUT_shadingColor;
+layout(location = 26) out float PS_OUT_shadingColorAlpha;
+layout(location = 27) out vec3 PS_OUT_H;
+layout(location = 28) out float PS_OUT_NdotH;
+layout(location = 29) out float PS_OUT_LdotH;
+layout(location = 30) out float PS_OUT_VdotH;
+layout(location = 31) out vec3 PS_OUT_lightPositionWS;
+layout(location = 32) out vec3 PS_OUT_lightDirectionWS;
+layout(location = 33) out vec3 PS_OUT_lightColor;
+layout(location = 34) out vec3 PS_OUT_lightColorNdotL;
+layout(location = 35) out vec3 PS_OUT_envLightDiffuseColor;
+layout(location = 36) out vec3 PS_OUT_envLightSpecularColor;
+layout(location = 37) out float PS_OUT_NdotL;
+layout(location = 38) out float PS_OUT_lightDirectAmbientOcclusion;
+layout(location = 39) out vec3 PS_OUT_shadowColor;
 
 void NormalBase_GenerateNormal_PS()
 {
@@ -181,25 +184,49 @@ void ShaderBase_PSMain()
 {
 }
 
-void o25S246C1_IStreamInitializer_ResetStream()
+void o24S246C1_IStreamInitializer_ResetStream()
 {
 }
 
-void o25S246C1_MaterialStream_ResetStream(out PS_STREAMS _streams)
+void o24S246C1_MaterialStream_ResetStream(out PS_STREAMS _streams)
 {
-    o25S246C1_IStreamInitializer_ResetStream();
-    _streams.matBlend_id0 = 0.0;
+    o24S246C1_IStreamInitializer_ResetStream();
+    _streams.matBlend_id2 = 0.0;
 }
 
-void o25S246C1_MaterialDisplacementStream_ResetStream(out PS_STREAMS _streams)
+void o24S246C1_MaterialPixelStream_ResetStream(out PS_STREAMS _streams)
 {
-    o25S246C1_MaterialStream_ResetStream(_streams);
-    _streams.matDisplacement_id43 = 0.0;
+    o24S246C1_MaterialStream_ResetStream(_streams);
+    _streams.matNormal_id8 = vec3(0.0, 0.0, 1.0);
+    _streams.matColorBase_id9 = vec4(0.0);
+    _streams.matDiffuse_id10 = vec4(0.0);
+    _streams.matDiffuseVisible_id25 = vec3(0.0);
+    _streams.matSpecular_id12 = vec3(0.0);
+    _streams.matSpecularVisible_id27 = vec3(0.0);
+    _streams.matSpecularIntensity_id13 = 1.0;
+    _streams.matGlossiness_id11 = 0.0;
+    _streams.alphaRoughness_id26 = 1.0;
+    _streams.matAmbientOcclusion_id14 = 1.0;
+    _streams.matAmbientOcclusionDirectLightingFactor_id15 = 0.0;
+    _streams.matCavity_id16 = 1.0;
+    _streams.matCavityDiffuse_id17 = 0.0;
+    _streams.matCavitySpecular_id18 = 0.0;
+    _streams.matEmissive_id19 = vec4(0.0);
+    _streams.matEmissiveIntensity_id20 = 0.0;
+    _streams.matDiffuseSpecularAlphaBlend_id21 = vec2(1.0);
+    _streams.matAlphaBlendColor_id22 = vec3(1.0);
+    _streams.matAlphaDiscard_id23 = 0.0;
+}
+
+void o24S246C1_MaterialPixelShadingStream_ResetStream(out PS_STREAMS _streams)
+{
+    o24S246C1_MaterialPixelStream_ResetStream(_streams);
+    _streams.shadingColorAlpha_id30 = 1.0;
 }
 
 vec4 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__Compute(PS_STREAMS _streams)
 {
-    return texture(SPIRV_Cross_CombinedDynamicTexture_TextureDynamicSampler_Sampler, (_streams.TexCoord_id41 * PerMaterial_var.o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale) + PerMaterial_var.o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset);
+    return texture(SPIRV_Cross_CombinedDynamicTexture_TextureDynamicSampler_Sampler, (_streams.TexCoord_id44 * PerMaterial_var.o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale) + PerMaterial_var.o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset);
 }
 
 void o18S246C0_o3S2C0_MaterialSurfaceDiffuse_Compute(inout PS_STREAMS _streams)
@@ -216,16 +243,16 @@ vec2 o18S246C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(fl
 
 vec4 o18S246C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(PS_STREAMS _streams)
 {
-    vec2 offset = _streams.TexCoord_id42 - vec2(0.5);
+    vec2 offset = _streams.TexCoord_id45 - vec2(0.5);
     float phase = length(offset);
     float derivative = cos((((phase + (PerFrame_var.Global_Time * -0.02999999932944774627685546875)) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.100000001490116119384765625;
     float param = offset.y / offset.x;
     vec2 xz = o18S246C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(param);
     float param_1 = derivative;
     vec2 xy = o18S246C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(param_1);
-    vec2 _821 = (((xz.yx * sign(offset.x)) * -xy.x) * 0.5) + vec2(0.5);
+    vec2 _823 = (((xz.yx * sign(offset.x)) * -xy.x) * 0.5) + vec2(0.5);
     vec3 normal;
-    normal = vec3(_821.x, _821.y, normal.z);
+    normal = vec3(_823.x, _823.y, normal.z);
     normal.z = xy.y;
     return vec4(normal, 1.0);
 }
@@ -286,14 +313,14 @@ void o18S246C0_o17S2C0_NormalStream_UpdateNormalFromTangentSpace(inout PS_STREAM
 
 void o18S246C0_o17S2C0_LightStream_ResetLightStream(out PS_STREAMS _streams)
 {
-    _streams.lightPositionWS_id32 = vec3(0.0);
-    _streams.lightDirectionWS_id33 = vec3(0.0);
-    _streams.lightColor_id34 = vec3(0.0);
-    _streams.lightColorNdotL_id35 = vec3(0.0);
-    _streams.envLightDiffuseColor_id36 = vec3(0.0);
-    _streams.envLightSpecularColor_id37 = vec3(0.0);
-    _streams.lightDirectAmbientOcclusion_id39 = 1.0;
-    _streams.NdotL_id38 = 0.0;
+    _streams.lightPositionWS_id35 = vec3(0.0);
+    _streams.lightDirectionWS_id36 = vec3(0.0);
+    _streams.lightColor_id37 = vec3(0.0);
+    _streams.lightColorNdotL_id38 = vec3(0.0);
+    _streams.envLightDiffuseColor_id39 = vec3(0.0);
+    _streams.envLightSpecularColor_id40 = vec3(0.0);
+    _streams.lightDirectAmbientOcclusion_id42 = 1.0;
+    _streams.NdotL_id41 = 0.0;
 }
 
 float o18S246C0_o17S2C0_MaterialPixelStream_GetFilterSquareRoughnessAdjustment(PS_STREAMS _streams, vec3 averageNormal)
@@ -309,14 +336,14 @@ float o18S246C0_o17S2C0_MaterialPixelStream_GetFilterSquareRoughnessAdjustment(P
 
 void o18S246C0_o17S2C0_MaterialPixelStream_PrepareMaterialForLightingAndShading(inout PS_STREAMS _streams)
 {
-    _streams.lightDirectAmbientOcclusion_id39 = mix(1.0, _streams.matAmbientOcclusion_id14, _streams.matAmbientOcclusionDirectLightingFactor_id15);
-    _streams.matDiffuseVisible_id22 = ((_streams.matDiffuse_id10.xyz * mix(1.0, _streams.matCavity_id16, _streams.matCavityDiffuse_id17)) * _streams.matDiffuseSpecularAlphaBlend_id19.x) * _streams.matAlphaBlendColor_id20;
-    _streams.matSpecularVisible_id24 = (((_streams.matSpecular_id12 * _streams.matSpecularIntensity_id13) * mix(1.0, _streams.matCavity_id16, _streams.matCavitySpecular_id18)) * _streams.matDiffuseSpecularAlphaBlend_id19.y) * _streams.matAlphaBlendColor_id20;
-    _streams.NdotV_id25 = max(dot(_streams.normalWS_id5, _streams.viewWS_id21), 9.9999997473787516355514526367188e-05);
+    _streams.lightDirectAmbientOcclusion_id42 = mix(1.0, _streams.matAmbientOcclusion_id14, _streams.matAmbientOcclusionDirectLightingFactor_id15);
+    _streams.matDiffuseVisible_id25 = ((_streams.matDiffuse_id10.xyz * mix(1.0, _streams.matCavity_id16, _streams.matCavityDiffuse_id17)) * _streams.matDiffuseSpecularAlphaBlend_id21.x) * _streams.matAlphaBlendColor_id22;
+    _streams.matSpecularVisible_id27 = (((_streams.matSpecular_id12 * _streams.matSpecularIntensity_id13) * mix(1.0, _streams.matCavity_id16, _streams.matCavitySpecular_id18)) * _streams.matDiffuseSpecularAlphaBlend_id21.y) * _streams.matAlphaBlendColor_id22;
+    _streams.NdotV_id28 = max(dot(_streams.normalWS_id5, _streams.viewWS_id24), 9.9999997473787516355514526367188e-05);
     float roughness = 1.0 - _streams.matGlossiness_id11;
     vec3 param = _streams.matNormal_id8;
     float roughnessAdjust = o18S246C0_o17S2C0_MaterialPixelStream_GetFilterSquareRoughnessAdjustment(_streams, param);
-    _streams.alphaRoughness_id23 = max((roughness * roughness) + roughnessAdjust, 0.001000000047497451305389404296875);
+    _streams.alphaRoughness_id26 = max((roughness * roughness) + roughnessAdjust, 0.001000000047497451305389404296875);
 }
 
 void o0S450C0_DirectLightGroup_PrepareDirectLights()
@@ -335,41 +362,41 @@ int o0S450C0_DirectLightGroupPerView_GetLightCount()
 
 void o0S450C0_LightDirectionalGroup_8__PrepareDirectLightCore(out PS_STREAMS _streams, int lightIndex)
 {
-    _streams.lightColor_id34 = PerView_var.o0S450C0_LightDirectionalGroup_Lights[lightIndex].Color;
-    _streams.lightDirectionWS_id33 = -PerView_var.o0S450C0_LightDirectionalGroup_Lights[lightIndex].DirectionWS;
+    _streams.lightColor_id37 = PerView_var.o0S450C0_LightDirectionalGroup_Lights[lightIndex].Color;
+    _streams.lightDirectionWS_id36 = -PerView_var.o0S450C0_LightDirectionalGroup_Lights[lightIndex].DirectionWS;
 }
 
 void o0S450C0_ShadowGroup_ComputeShadow(out PS_STREAMS _streams, int lightIndex)
 {
-    _streams.shadowColor_id40 = vec3(1.0);
+    _streams.shadowColor_id43 = vec3(1.0);
 }
 
 void o0S450C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int lightIndex)
 {
     int param = lightIndex;
     o0S450C0_LightDirectionalGroup_8__PrepareDirectLightCore(_streams, param);
-    _streams.NdotL_id38 = max(dot(_streams.normalWS_id5, _streams.lightDirectionWS_id33), 9.9999997473787516355514526367188e-05);
+    _streams.NdotL_id41 = max(dot(_streams.normalWS_id5, _streams.lightDirectionWS_id36), 9.9999997473787516355514526367188e-05);
     int param_1 = lightIndex;
     o0S450C0_ShadowGroup_ComputeShadow(_streams, param_1);
-    _streams.lightColorNdotL_id35 = ((_streams.lightColor_id34 * _streams.shadowColor_id40) * _streams.NdotL_id38) * _streams.lightDirectAmbientOcclusion_id39;
+    _streams.lightColorNdotL_id38 = ((_streams.lightColor_id37 * _streams.shadowColor_id43) * _streams.NdotL_id41) * _streams.lightDirectAmbientOcclusion_id42;
 }
 
 void o18S246C0_o17S2C0_MaterialPixelShadingStream_PrepareMaterialPerDirectLight(inout PS_STREAMS _streams)
 {
-    _streams.H_id28 = normalize(_streams.viewWS_id21 + _streams.lightDirectionWS_id33);
-    _streams.NdotH_id29 = max(dot(_streams.normalWS_id5, _streams.H_id28), 9.9999997473787516355514526367188e-05);
-    _streams.LdotH_id30 = max(dot(_streams.lightDirectionWS_id33, _streams.H_id28), 9.9999997473787516355514526367188e-05);
-    _streams.VdotH_id31 = _streams.LdotH_id30;
+    _streams.H_id31 = normalize(_streams.viewWS_id24 + _streams.lightDirectionWS_id36);
+    _streams.NdotH_id32 = max(dot(_streams.normalWS_id5, _streams.H_id31), 9.9999997473787516355514526367188e-05);
+    _streams.LdotH_id33 = max(dot(_streams.lightDirectionWS_id36, _streams.H_id31), 9.9999997473787516355514526367188e-05);
+    _streams.VdotH_id34 = _streams.LdotH_id33;
 }
 
 vec3 o18S246C0_o17S2C0_o12S2C0_MaterialSurfaceShadingDiffuseLambert_false__ComputeDirectLightContribution(PS_STREAMS _streams)
 {
-    vec3 diffuseColor = _streams.matDiffuseVisible_id22;
+    vec3 diffuseColor = _streams.matDiffuseVisible_id25;
     if (false)
     {
-        diffuseColor *= (vec3(1.0) - _streams.matSpecularVisible_id24);
+        diffuseColor *= (vec3(1.0) - _streams.matSpecularVisible_id27);
     }
-    return ((diffuseColor / vec3(3.1415927410125732421875)) * _streams.lightColorNdotL_id35) * _streams.matDiffuseSpecularAlphaBlend_id19.x;
+    return ((diffuseColor / vec3(3.1415927410125732421875)) * _streams.lightColorNdotL_id38) * _streams.matDiffuseSpecularAlphaBlend_id21.x;
 }
 
 vec3 o18S246C0_o17S2C0_o16S2C0_o13S2C0_BRDFMicrofacet_FresnelSchlick(vec3 f0, vec3 f90, float lOrVDotH)
@@ -388,7 +415,7 @@ vec3 o18S246C0_o17S2C0_o16S2C0_o13S2C0_BRDFMicrofacet_FresnelSchlick(vec3 f0, fl
 vec3 o18S246C0_o17S2C0_o16S2C0_o13S2C0_MaterialSpecularMicrofacetFresnelSchlick_Compute(PS_STREAMS _streams, vec3 f0)
 {
     vec3 param = f0;
-    float param_1 = _streams.LdotH_id30;
+    float param_1 = _streams.LdotH_id33;
     return o18S246C0_o17S2C0_o16S2C0_o13S2C0_BRDFMicrofacet_FresnelSchlick(param, param_1);
 }
 
@@ -409,9 +436,9 @@ float o18S246C0_o17S2C0_o16S2C0_o14S2C1_BRDFMicrofacet_VisibilitySmithSchlickGGX
 
 float o18S246C0_o17S2C0_o16S2C0_o14S2C1_MaterialSpecularMicrofacetVisibilitySmithSchlickGGX_Compute(PS_STREAMS _streams)
 {
-    float param = _streams.alphaRoughness_id23;
-    float param_1 = _streams.NdotL_id38;
-    float param_2 = _streams.NdotV_id25;
+    float param = _streams.alphaRoughness_id26;
+    float param_1 = _streams.NdotL_id41;
+    float param_2 = _streams.NdotV_id28;
     return o18S246C0_o17S2C0_o16S2C0_o14S2C1_BRDFMicrofacet_VisibilitySmithSchlickGGX(param, param_1, param_2);
 }
 
@@ -423,44 +450,44 @@ float o18S246C0_o17S2C0_o16S2C0_o15S2C2_BRDFMicrofacet_NormalDistributionGGX(flo
 
 float o18S246C0_o17S2C0_o16S2C0_o15S2C2_MaterialSpecularMicrofacetNormalDistributionGGX_Compute(PS_STREAMS _streams)
 {
-    float param = _streams.alphaRoughness_id23;
-    float param_1 = _streams.NdotH_id29;
+    float param = _streams.alphaRoughness_id26;
+    float param_1 = _streams.NdotH_id32;
     return o18S246C0_o17S2C0_o16S2C0_o15S2C2_BRDFMicrofacet_NormalDistributionGGX(param, param_1);
 }
 
 vec3 o18S246C0_o17S2C0_o16S2C0_MaterialSurfaceShadingSpecularMicrofacet_ComputeDirectLightContribution(PS_STREAMS _streams)
 {
-    vec3 specularColor = _streams.matSpecularVisible_id24;
+    vec3 specularColor = _streams.matSpecularVisible_id27;
     vec3 param = specularColor;
     vec3 fresnel = o18S246C0_o17S2C0_o16S2C0_o13S2C0_MaterialSpecularMicrofacetFresnelSchlick_Compute(_streams, param);
     float geometricShadowing = o18S246C0_o17S2C0_o16S2C0_o14S2C1_MaterialSpecularMicrofacetVisibilitySmithSchlickGGX_Compute(_streams);
     float normalDistribution = o18S246C0_o17S2C0_o16S2C0_o15S2C2_MaterialSpecularMicrofacetNormalDistributionGGX_Compute(_streams);
     vec3 reflected = ((fresnel * geometricShadowing) * normalDistribution) / vec3(4.0);
-    return (reflected * _streams.lightColorNdotL_id35) * _streams.matDiffuseSpecularAlphaBlend_id19.y;
+    return (reflected * _streams.lightColorNdotL_id38) * _streams.matDiffuseSpecularAlphaBlend_id21.y;
 }
 
 void o1S435C0_EnvironmentLight_PrepareEnvironmentLight(out PS_STREAMS _streams)
 {
-    _streams.envLightDiffuseColor_id36 = vec3(0.0);
-    _streams.envLightSpecularColor_id37 = vec3(0.0);
+    _streams.envLightDiffuseColor_id39 = vec3(0.0);
+    _streams.envLightSpecularColor_id40 = vec3(0.0);
 }
 
 void o1S435C0_LightSimpleAmbient_PrepareEnvironmentLight(inout PS_STREAMS _streams)
 {
     o1S435C0_EnvironmentLight_PrepareEnvironmentLight(_streams);
     vec3 lightColor = PerView_var.o1S435C0_LightSimpleAmbient_AmbientLight * _streams.matAmbientOcclusion_id14;
-    _streams.envLightDiffuseColor_id36 = lightColor;
-    _streams.envLightSpecularColor_id37 = lightColor;
+    _streams.envLightDiffuseColor_id39 = lightColor;
+    _streams.envLightSpecularColor_id40 = lightColor;
 }
 
 vec3 o18S246C0_o17S2C0_o12S2C0_MaterialSurfaceShadingDiffuseLambert_false__ComputeEnvironmentLightContribution(PS_STREAMS _streams)
 {
-    vec3 diffuseColor = _streams.matDiffuseVisible_id22;
+    vec3 diffuseColor = _streams.matDiffuseVisible_id25;
     if (false)
     {
-        diffuseColor *= (vec3(1.0) - _streams.matSpecularVisible_id24);
+        diffuseColor *= (vec3(1.0) - _streams.matSpecularVisible_id27);
     }
-    return diffuseColor * _streams.envLightDiffuseColor_id36;
+    return diffuseColor * _streams.envLightDiffuseColor_id39;
 }
 
 vec3 o18S246C0_o17S2C0_o16S2C0_BRDFMicrofacet_EnvironmentLightingDFG_GGX_Fresnel_SmithSchlickGGX(vec3 specularColor, float alphaR, float nDotV)
@@ -489,11 +516,11 @@ vec3 o18S246C0_o17S2C0_o16S2C0_BRDFMicrofacet_EnvironmentLightingDFG_GGX_Fresnel
 
 vec3 o18S246C0_o17S2C0_o16S2C0_MaterialSurfaceShadingSpecularMicrofacet_ComputeEnvironmentLightContribution(PS_STREAMS _streams)
 {
-    vec3 specularColor = _streams.matSpecularVisible_id24;
+    vec3 specularColor = _streams.matSpecularVisible_id27;
     vec3 param = specularColor;
-    float param_1 = _streams.alphaRoughness_id23;
-    float param_2 = _streams.NdotV_id25;
-    return o18S246C0_o17S2C0_o16S2C0_BRDFMicrofacet_EnvironmentLightingDFG_GGX_Fresnel_SmithSchlickGGX(param, param_1, param_2) * _streams.envLightSpecularColor_id37;
+    float param_1 = _streams.alphaRoughness_id26;
+    float param_2 = _streams.NdotV_id28;
+    return o18S246C0_o17S2C0_o16S2C0_BRDFMicrofacet_EnvironmentLightingDFG_GGX_Fresnel_SmithSchlickGGX(param, param_1, param_2) * _streams.envLightSpecularColor_id40;
 }
 
 void o18S246C0_o17S2C0_MaterialSurfaceLightingAndShading_Compute(inout PS_STREAMS _streams)
@@ -522,8 +549,8 @@ void o18S246C0_o17S2C0_MaterialSurfaceLightingAndShading_Compute(inout PS_STREAM
     o1S435C0_LightSimpleAmbient_PrepareEnvironmentLight(_streams);
     environmentLightingContribution += o18S246C0_o17S2C0_o12S2C0_MaterialSurfaceShadingDiffuseLambert_false__ComputeEnvironmentLightContribution(_streams);
     environmentLightingContribution += o18S246C0_o17S2C0_o16S2C0_MaterialSurfaceShadingSpecularMicrofacet_ComputeEnvironmentLightContribution(_streams);
-    _streams.shadingColor_id26 += ((directLightingContribution * 3.1415927410125732421875) + environmentLightingContribution);
-    _streams.shadingColorAlpha_id27 = _streams.matDiffuse_id10.w;
+    _streams.shadingColor_id29 += ((directLightingContribution * 3.1415927410125732421875) + environmentLightingContribution);
+    _streams.shadingColorAlpha_id30 = _streams.matDiffuse_id10.w;
 }
 
 void o18S246C0_MaterialSurfaceArray_Compute(out PS_STREAMS _streams)
@@ -538,40 +565,33 @@ void o18S246C0_MaterialSurfaceArray_Compute(out PS_STREAMS _streams)
 
 vec4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 {
-    _streams.viewWS_id21 = normalize(PerView_var.Transformation_Eye.xyz - _streams.PositionWS_id7.xyz);
-    _streams.shadingColor_id26 = vec3(0.0);
-    o25S246C1_MaterialDisplacementStream_ResetStream(_streams);
+    _streams.viewWS_id24 = normalize(PerView_var.Transformation_Eye.xyz - _streams.PositionWS_id7.xyz);
+    _streams.shadingColor_id29 = vec3(0.0);
+    o24S246C1_MaterialPixelShadingStream_ResetStream(_streams);
     o18S246C0_MaterialSurfaceArray_Compute(_streams);
-    return vec4(_streams.shadingColor_id26, _streams.shadingColorAlpha_id27);
+    return vec4(_streams.shadingColor_id29, _streams.shadingColorAlpha_id30);
 }
 
 void ShadingBase_PSMain(inout PS_STREAMS _streams)
 {
     ShaderBase_PSMain();
-    vec4 _15 = MaterialSurfacePixelStageCompositor_Shading(_streams);
-    _streams.ColorTarget_id2 = _15;
+    vec4 _12 = MaterialSurfacePixelStageCompositor_Shading(_streams);
+    _streams.ColorTarget_id1 = _12;
 }
 
 void main()
 {
-    PS_STREAMS _streams = PS_STREAMS(0.0, vec4(0.0), vec4(0.0), vec3(0.0), vec4(0.0), vec3(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec2(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), vec2(0.0), vec2(0.0), 0.0);
-    _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
+    PS_STREAMS _streams = PS_STREAMS(vec4(0.0), vec4(0.0), 0.0, vec3(0.0), vec4(0.0), vec3(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec4(0.0), 0.0, vec2(0.0), vec3(0.0), 0.0, vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), vec2(0.0), vec2(0.0));
+    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.meshNormal_id3 = PS_IN_meshNormal;
     _streams.meshTangent_id4 = PS_IN_meshTangent;
     _streams.PositionWS_id7 = PS_IN_PositionWS;
-    _streams.matAmbientOcclusion_id14 = PS_IN_matAmbientOcclusion;
-    _streams.matAmbientOcclusionDirectLightingFactor_id15 = PS_IN_matAmbientOcclusionDirectLightingFactor;
-    _streams.matCavity_id16 = PS_IN_matCavity;
-    _streams.matCavityDiffuse_id17 = PS_IN_matCavityDiffuse;
-    _streams.matCavitySpecular_id18 = PS_IN_matCavitySpecular;
-    _streams.matDiffuseSpecularAlphaBlend_id19 = PS_IN_matDiffuseSpecularAlphaBlend;
-    _streams.matAlphaBlendColor_id20 = PS_IN_matAlphaBlendColor;
-    _streams.TexCoord_id41 = PS_IN_TexCoord;
-    _streams.TexCoord_id42 = PS_IN_TexCoord_1;
+    _streams.TexCoord_id44 = PS_IN_TexCoord;
+    _streams.TexCoord_id45 = PS_IN_TexCoord_1;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShadingBase_PSMain(_streams);
-    PS_OUT_matBlend = _streams.matBlend_id0;
-    PS_OUT_ColorTarget = _streams.ColorTarget_id2;
+    PS_OUT_ColorTarget = _streams.ColorTarget_id1;
+    PS_OUT_matBlend = _streams.matBlend_id2;
     PS_OUT_normalWS = _streams.normalWS_id5;
     PS_OUT_tangentToWorld = _streams.tangentToWorld_id6;
     PS_OUT_matNormal = _streams.matNormal_id8;
@@ -580,26 +600,35 @@ void main()
     PS_OUT_matGlossiness = _streams.matGlossiness_id11;
     PS_OUT_matSpecular = _streams.matSpecular_id12;
     PS_OUT_matSpecularIntensity = _streams.matSpecularIntensity_id13;
-    PS_OUT_viewWS = _streams.viewWS_id21;
-    PS_OUT_matDiffuseVisible = _streams.matDiffuseVisible_id22;
-    PS_OUT_alphaRoughness = _streams.alphaRoughness_id23;
-    PS_OUT_matSpecularVisible = _streams.matSpecularVisible_id24;
-    PS_OUT_NdotV = _streams.NdotV_id25;
-    PS_OUT_shadingColor = _streams.shadingColor_id26;
-    PS_OUT_shadingColorAlpha = _streams.shadingColorAlpha_id27;
-    PS_OUT_H = _streams.H_id28;
-    PS_OUT_NdotH = _streams.NdotH_id29;
-    PS_OUT_LdotH = _streams.LdotH_id30;
-    PS_OUT_VdotH = _streams.VdotH_id31;
-    PS_OUT_lightPositionWS = _streams.lightPositionWS_id32;
-    PS_OUT_lightDirectionWS = _streams.lightDirectionWS_id33;
-    PS_OUT_lightColor = _streams.lightColor_id34;
-    PS_OUT_lightColorNdotL = _streams.lightColorNdotL_id35;
-    PS_OUT_envLightDiffuseColor = _streams.envLightDiffuseColor_id36;
-    PS_OUT_envLightSpecularColor = _streams.envLightSpecularColor_id37;
-    PS_OUT_NdotL = _streams.NdotL_id38;
-    PS_OUT_lightDirectAmbientOcclusion = _streams.lightDirectAmbientOcclusion_id39;
-    PS_OUT_shadowColor = _streams.shadowColor_id40;
-    PS_OUT_matDisplacement = _streams.matDisplacement_id43;
+    PS_OUT_matAmbientOcclusion = _streams.matAmbientOcclusion_id14;
+    PS_OUT_matAmbientOcclusionDirectLightingFactor = _streams.matAmbientOcclusionDirectLightingFactor_id15;
+    PS_OUT_matCavity = _streams.matCavity_id16;
+    PS_OUT_matCavityDiffuse = _streams.matCavityDiffuse_id17;
+    PS_OUT_matCavitySpecular = _streams.matCavitySpecular_id18;
+    PS_OUT_matEmissive = _streams.matEmissive_id19;
+    PS_OUT_matEmissiveIntensity = _streams.matEmissiveIntensity_id20;
+    PS_OUT_matDiffuseSpecularAlphaBlend = _streams.matDiffuseSpecularAlphaBlend_id21;
+    PS_OUT_matAlphaBlendColor = _streams.matAlphaBlendColor_id22;
+    PS_OUT_matAlphaDiscard = _streams.matAlphaDiscard_id23;
+    PS_OUT_viewWS = _streams.viewWS_id24;
+    PS_OUT_matDiffuseVisible = _streams.matDiffuseVisible_id25;
+    PS_OUT_alphaRoughness = _streams.alphaRoughness_id26;
+    PS_OUT_matSpecularVisible = _streams.matSpecularVisible_id27;
+    PS_OUT_NdotV = _streams.NdotV_id28;
+    PS_OUT_shadingColor = _streams.shadingColor_id29;
+    PS_OUT_shadingColorAlpha = _streams.shadingColorAlpha_id30;
+    PS_OUT_H = _streams.H_id31;
+    PS_OUT_NdotH = _streams.NdotH_id32;
+    PS_OUT_LdotH = _streams.LdotH_id33;
+    PS_OUT_VdotH = _streams.VdotH_id34;
+    PS_OUT_lightPositionWS = _streams.lightPositionWS_id35;
+    PS_OUT_lightDirectionWS = _streams.lightDirectionWS_id36;
+    PS_OUT_lightColor = _streams.lightColor_id37;
+    PS_OUT_lightColorNdotL = _streams.lightColorNdotL_id38;
+    PS_OUT_envLightDiffuseColor = _streams.envLightDiffuseColor_id39;
+    PS_OUT_envLightSpecularColor = _streams.envLightSpecularColor_id40;
+    PS_OUT_NdotL = _streams.NdotL_id41;
+    PS_OUT_lightDirectAmbientOcclusion = _streams.lightDirectAmbientOcclusion_id42;
+    PS_OUT_shadowColor = _streams.shadowColor_id43;
 }
 

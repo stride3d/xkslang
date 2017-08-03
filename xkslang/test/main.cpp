@@ -34,6 +34,8 @@
 #define PROCESS_BYTECODE_SANITY_CHECK_AFTER_EVERY_MIXIN_STEPS
 #endif
 
+//#define DISPLAY_OUTPUT_AND_EXPECTED_OUTPUT_DIFFERENCES
+
 //#define ALLOW_ACCESS_TO_XKSLANG_DLL
 
 #ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
@@ -191,7 +193,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose30", "TestCompose30.xkfx" },
     //{ "TestCompose31", "TestCompose31.xkfx" },
     //{ "TestCompose32", "TestCompose32.xkfx" },
-    { "TestCompose33", "TestCompose33.xkfx" },
+    //{ "TestCompose33", "TestCompose33.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -302,7 +304,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -589,9 +591,12 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                         if (Utils::ReadFile(expectedOutputFullNameGlsl, glslExpectedOutput))
                         {
                             if (glslExpectedOutput.compare(glslConvertedOutput) != 0) {
+#ifdef DISPLAY_OUTPUT_AND_EXPECTED_OUTPUT_DIFFERENCES
                                 std::cout << "expected output:" << endl << glslExpectedOutput;
                                 std::cout << "output:" << endl << glslConvertedOutput;
+#endif
                                 std::cout << " Glsl output and expected output are different !!!" << endl;
+
                                 someExpectedOutputsDifferent = true;
 
                                 //copy the invalid output in the folder
@@ -644,8 +649,10 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                         if (Utils::ReadFile(expectedOutputFullNameHlsl, hlslExpectedOutput))
                         {
                             if (hlslExpectedOutput.compare(hlslConvertedOutput) != 0) {
+#ifdef DISPLAY_OUTPUT_AND_EXPECTED_OUTPUT_DIFFERENCES
                                 std::cout << "expected output:" << endl << hlslExpectedOutput;
                                 std::cout << "output:" << endl << hlslConvertedOutput;
+#endif
                                 std::cout << " Hlsl output and expected output are different !!!" << endl;
                                 someExpectedOutputsDifferent = true;
 
@@ -691,8 +698,10 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
             if (Utils::ReadFile(expectedOutputFullNameReflect, reflectionExpectedOutput))
             {
                 if (reflectionExpectedOutput.compare(reflectionLatestOutput) != 0) {
+#ifdef DISPLAY_OUTPUT_AND_EXPECTED_OUTPUT_DIFFERENCES
                     std::cout << "expected output:" << endl << reflectionExpectedOutput;
                     std::cout << "output:" << endl << reflectionLatestOutput;
+#endif
                     std::cout << " Reflection: output and expected output are different !!!" << endl;
                     someExpectedOutputsDifferent = true;
 
