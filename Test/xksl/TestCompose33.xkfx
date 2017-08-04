@@ -10,10 +10,10 @@ m.mixin( ShaderMain[
 	{directLightGroups = DirectLightGroup},
 	{materialPixelStage = MaterialSurfaceArray[
 		{aComp1 = AnotherComp},
-		aComp2 = mixin AnotherComp, AnotherCompBis,
+		aComp2 = mixin (AnotherComp, AnotherCompBis),
 		{ac = [
-			mixin AnArrayComp, AnArrayCompBis,
-			mixin AnArrayComp,
+			mixin (AnArrayComp, AnArrayCompBis),
+			mixin (AnArrayComp),
 		]}
 	]},
 	{DirectLightGroupArray.directLightGroups = mixin(DirectLightGroup)}

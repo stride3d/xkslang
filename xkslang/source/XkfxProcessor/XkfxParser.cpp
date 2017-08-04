@@ -285,8 +285,6 @@ bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vect
 
     //if we have the syntax: "aComp = mixin A, B,": B is not a composition parameter, but belong to the mixin definition
     bool previousParameterStringIsAMixinWithoutParenthesis = false;
-    const char* instruction_mixin = "mixin";
-    const char* instruction_instructionFollowingAcceptableCharacter = " \t(";
     string compositionTargetInvalidCharacter = "[]{}";
 
     char c;
@@ -341,14 +339,12 @@ bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vect
             lastChar--;
         }
         
-        //check the composition expression, plus detect expression of the type: "comp = mixin ....", "Shader.comp = mixin ....", so that we can merge them with the next expression if need
+        //check the composition expression
         {
             string compositionFullExpression(ptrStr + start, (lastChar - start) + 1);
 
             string compositionTarget;
             string compositionExpression;
-            bool isExpressionAnOpenMissingInstruction = false;
-            bool concatenateExpressionWithPreviousComposition = false;
 
             if (targetRequired)
             {
@@ -376,14 +372,7 @@ bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vect
 
                 if (assignmentMissing)
                 {
-                    unsigned int count = listCompositions.size();
-                    if (count > 0 && listCompositions[count - 1].IsExpressionAnOpenMissingInstruction) {
-                        concatenateExpressionWithPreviousComposition = true;
-                        compositionExpression = compositionTarget;
-                    }
-                    else {
-                        return error(errorMsgs, "\"=\" expected");
-                    }
+                    return error(errorMsgs, "\"=\" expected");
                 }
                 else
                 {
@@ -396,38 +385,9 @@ bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vect
             {
                 compositionTarget = "";
                 compositionExpression = compositionFullExpression;
-
-                //if the expression does not start by mixin, but the previous one does, the current expression belongs to the previous mixin instruction
-                if (XkfxParser::StartWithThenImmediatelyFollowByAny(compositionExpression.c_str(), instruction_mixin, instruction_instructionFollowingAcceptableCharacter) == false)
-                {
-                    unsigned int count = listCompositions.size();
-                    if (count > 0 && listCompositions[count - 1].IsExpressionAnOpenMissingInstruction) {
-                        concatenateExpressionWithPreviousComposition = true;
-                    }
-                }
             }
 
-            if (concatenateExpressionWithPreviousComposition)
-            {
-                unsigned int count = listCompositions.size();
-                if (count == 0) return error(errorMsgs, "list of composition is empty: cannot concatenate anything");
-                listCompositions[count - 1].Expression += (", " + compositionExpression);
-            }
-            else
-            {
-                //check if we have an open mixin instruction
-                const char* pCompositionExpression = compositionExpression.c_str();
-                if (XkfxParser::StartWithThenImmediatelyFollowByAny(compositionExpression.c_str(), instruction_mixin, instruction_instructionFollowingAcceptableCharacter))
-                {
-                    //do we have "mixin (xxx)" or "mixin xxx"
-                    pCompositionExpression += strlen(instruction_mixin);
-                    while (*pCompositionExpression == ' ' || *pCompositionExpression == '\t') pCompositionExpression++; //trim start
-                    if (*pCompositionExpression != '(') isExpressionAnOpenMissingInstruction = true;
-                }
-
-                listCompositions.push_back(CompositionExpression(compositionTarget, compositionExpression, isExpressionAnOpenMissingInstruction));
-            }
-
+            listCompositions.push_back(CompositionExpression(compositionTarget, compositionExpression));
         }
 
         start = end + 1;
@@ -775,9 +735,14 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const Compos
                 if (*paCompositionInstruction == '(')
                 {
                     if (paCompositionInstruction[mixinInstructionLen - 1] != ')')
-                        return error(errorMsgs, "Invalid composition instruction: \")\" expected. " + aCompositionInstruction);
+                        return error(errorMsgs, "Invalid composition mixin instruction: \")\" expected. " + aCompositionInstruction);
                     paCompositionInstruction++;
                     mixinInstructionLen -= 2;
+                }
+                else
+                {
+                    //actually, not anymore (we only accept "mixin(...)" syntax)
+                    return error(errorMsgs, "Invalid composition mixin instruction: \"(\" expected. " + aCompositionInstruction);
                 }
             }
             else

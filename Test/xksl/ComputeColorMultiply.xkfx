@@ -1,0 +1,14 @@
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+
+addResourcesLibrary "library"
+//convertAndLoadRecursif "ComputeColorMultiply" ComputeColorWave<1,2,3.645541313>
+
+mixer m
+m.mixin(ComputeColorMultiply[
+		color1 = mixin(ComputeColorWave<5,0.01,-0.03>),
+		color2 = mixin(ComputeColorConstantFloatLink<Material.DisplacementValue>)
+	  ]
+)
+
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+m.compile

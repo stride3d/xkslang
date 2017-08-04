@@ -23,11 +23,11 @@ class CompositionExpression
 public:
     std::string Target;
     std::string Expression;
-    bool IsExpressionAnOpenMissingInstruction;
+    //bool IsExpressionAnOpenMissingInstruction;
 
     CompositionExpression() {}
-    CompositionExpression(const std::string& target, const std::string& expression, bool isExpressionAnOpenMissingInstruction)
-        : Target(target), Expression(expression), IsExpressionAnOpenMissingInstruction(isExpressionAnOpenMissingInstruction) {}
+    CompositionExpression(const std::string& target, const std::string& expression)
+        : Target(target), Expression(expression) {}
 };
 
 class XkfxParser

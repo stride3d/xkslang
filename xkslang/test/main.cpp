@@ -289,6 +289,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
     //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
+    //{ "ComputeColorMultiply", "ComputeColorMultiply.xkfx" },
     //{ "TransformationBase", "TransformationBase.xkfx" },
     //{ "TransformationWAndVP", "TransformationWAndVP.xkfx" },
     //{ "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
@@ -305,7 +306,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -1376,6 +1377,8 @@ static bool AddCompositionToMixer(const string& effectName, unordered_map<string
                 mixinInstructionStr = XkslangUtils::trim(mixinInstructionStr);
                 if (XkslangUtils::startWith(mixinInstructionStr, "(") && XkslangUtils::endWith(mixinInstructionStr, ")"))
                     mixinInstructionStr = mixinInstructionStr.substr(1, mixinInstructionStr.length() - 2);
+                else
+                    return error("mixin instruction: parenthesis are missing");
             }
 
             //Create the anonymous mixer
