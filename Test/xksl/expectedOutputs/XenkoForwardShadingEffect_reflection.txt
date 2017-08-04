@@ -23,12 +23,13 @@
 @C    o0S450C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
 @C    o1S435C0_LightSimpleAmbient_AmbientLight => LightSimpleAmbient.AmbientLight.environmentLights[0]
 @C    o1S435C0_LightSimpleAmbient__padding_PerView_Lighting => _padding_PerView_Lighting
- cbuffer PerMaterial [size: 56]
+ cbuffer PerMaterial [size: 60]
 @C    o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat => Material.SpecularIntensityValue
 @C    o18S246C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor => Material.SpecularValue
 @C    o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat => Material.GlossinessValue
 @C    o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale => Material.TextureScale
 @C    o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset => Material.TextureOffset
+@C    o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat => Material.DisplacementValue
  cbuffer PerFrame [size: 8]
 @C    Global_Time => Global.Time
 @C    Global_TimeStep => Global.TimeStep
@@ -37,6 +38,8 @@
 ***********************
 @C    PerDraw => PerDraw [Stage: Vertex]
 @C    PerView => PerView [Stage: Vertex]
+@C    PerMaterial => PerMaterial [Stage: Vertex]
+@C    PerFrame => PerFrame [Stage: Vertex]
 @C    PerDraw => PerDraw [Stage: Pixel]
 @C    PerView => PerView [Stage: Pixel]
 @C    PerMaterial => PerMaterial [Stage: Pixel]
@@ -107,7 +110,7 @@ ConstantBuffers. Count=4
   KeyName="_padding_PerView_Lighting RawName="o1S435C0_LightSimpleAmbient__padding_PerView_Lighting" Offset=656
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
- cbuffer: Name="PerMaterial" Size=56 MembersCount=5
+ cbuffer: Name="PerMaterial" Size=60 MembersCount=6
   KeyName="Material.SpecularIntensityValue RawName="o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
@@ -123,6 +126,9 @@ ConstantBuffers. Count=4
   KeyName="Material.TextureOffset RawName="o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset" Offset=48
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
+  KeyName="Material.DisplacementValue RawName="o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat" Offset=56
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
  cbuffer: Name="PerFrame" Size=8 MembersCount=2
   KeyName="Global.Time RawName="Global_Time" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
@@ -130,9 +136,11 @@ ConstantBuffers. Count=4
   KeyName="Global.TimeStep RawName="Global_TimeStep" Offset=4
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-ResourceBindings. Count=8
+ResourceBindings. Count=10
  Stage=Vertex KeyName="PerDraw" RawName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Vertex KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerFrame" RawName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="PerDraw" RawName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer

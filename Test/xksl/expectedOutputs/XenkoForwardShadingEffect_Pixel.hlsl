@@ -87,6 +87,7 @@ cbuffer PerMaterial
     float o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
     float2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
     float2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
+    float o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat;
 };
 cbuffer PerFrame
 {
@@ -233,19 +234,19 @@ void ShaderBase_PSMain()
 {
 }
 
-void o24S246C1_IStreamInitializer_ResetStream()
+void o25S246C1_IStreamInitializer_ResetStream()
 {
 }
 
-void o24S246C1_MaterialStream_ResetStream(out PS_STREAMS _streams)
+void o25S246C1_MaterialStream_ResetStream(out PS_STREAMS _streams)
 {
-    o24S246C1_IStreamInitializer_ResetStream();
+    o25S246C1_IStreamInitializer_ResetStream();
     _streams.matBlend_id2 = 0.0f;
 }
 
-void o24S246C1_MaterialPixelStream_ResetStream(out PS_STREAMS _streams)
+void o25S246C1_MaterialPixelStream_ResetStream(out PS_STREAMS _streams)
 {
-    o24S246C1_MaterialStream_ResetStream(_streams);
+    o25S246C1_MaterialStream_ResetStream(_streams);
     _streams.matNormal_id8 = float3(0.0f, 0.0f, 1.0f);
     _streams.matColorBase_id9 = float4(0.0f, 0.0f, 0.0f, 0.0f);
     _streams.matDiffuse_id10 = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -267,9 +268,9 @@ void o24S246C1_MaterialPixelStream_ResetStream(out PS_STREAMS _streams)
     _streams.matAlphaDiscard_id23 = 0.0f;
 }
 
-void o24S246C1_MaterialPixelShadingStream_ResetStream(out PS_STREAMS _streams)
+void o25S246C1_MaterialPixelShadingStream_ResetStream(out PS_STREAMS _streams)
 {
-    o24S246C1_MaterialPixelStream_ResetStream(_streams);
+    o25S246C1_MaterialPixelStream_ResetStream(_streams);
     _streams.shadingColorAlpha_id30 = 1.0f;
 }
 
@@ -617,7 +618,7 @@ float4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 {
     _streams.viewWS_id24 = normalize(Transformation_Eye.xyz - _streams.PositionWS_id7.xyz);
     _streams.shadingColor_id29 = float3(0.0f, 0.0f, 0.0f);
-    o24S246C1_MaterialPixelShadingStream_ResetStream(_streams);
+    o25S246C1_MaterialPixelShadingStream_ResetStream(_streams);
     o18S246C0_MaterialSurfaceArray_Compute(_streams);
     return float4(_streams.shadingColor_id29, _streams.shadingColorAlpha_id30);
 }

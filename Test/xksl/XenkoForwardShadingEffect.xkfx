@@ -24,7 +24,6 @@ m.mixin (
 )
 
 m.addComposition( directLightGroups = mixin(LightDirectionalGroup<8>) )
-
 m.addComposition( environmentLights = mixin(LightSimpleAmbient) )
 
 m.addComposition( materialPixelStage = mixin(MaterialSurfaceArray[
@@ -66,8 +65,7 @@ m.addComposition( materialVertexStage = mixin(MaterialSurfaceArray[
 		    color1 = mixin(ComputeColorWave<5,0.01,-0.03>),
 		    color2 = mixin(ComputeColorConstantFloatLink<Material.DisplacementValue>)
 		  ])
-	    ],
-		//MaterialSurfaceDisplacement<Position,meshNormal,false>
+	    ]
 	  ),
 	  MaterialSurfaceDisplacement<Position,meshNormal,false>
 	]
@@ -75,7 +73,6 @@ m.addComposition( materialVertexStage = mixin(MaterialSurfaceArray[
 )
 
 m.addComposition( streamInitializerPixelStage = mixin(MaterialStream, MaterialPixelShadingStream) )
-
 m.addComposition( streamInitializerVertexStage = mixin(MaterialStream, MaterialDisplacementStream) )
 
 m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )

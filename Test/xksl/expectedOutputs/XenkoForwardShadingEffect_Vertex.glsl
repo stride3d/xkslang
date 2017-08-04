@@ -50,6 +50,22 @@ layout(std140) uniform PerView
     vec4 o1S435C0_LightSimpleAmbient__padding_PerView_Lighting;
 } PerView_var;
 
+layout(std140) uniform PerMaterial
+{
+    float o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat;
+    vec4 o18S246C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
+    float o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
+    vec2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
+    vec2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
+    float o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat;
+} PerMaterial_var;
+
+layout(std140) uniform PerFrame
+{
+    float Global_Time;
+    float Global_TimeStep;
+} PerFrame_var;
+
 layout(location = 0) in vec3 VS_IN_meshNormal;
 layout(location = 1) in vec4 VS_IN_meshTangent;
 layout(location = 2) in vec4 VS_IN_Position;
@@ -66,23 +82,47 @@ void ShaderBase_VSMain()
 {
 }
 
-void o25S34C1_IStreamInitializer_ResetStream()
+void o26S34C1_IStreamInitializer_ResetStream()
 {
 }
 
-void o25S34C1_MaterialStream_ResetStream(out VS_STREAMS _streams)
+void o26S34C1_MaterialStream_ResetStream(out VS_STREAMS _streams)
 {
-    o25S34C1_IStreamInitializer_ResetStream();
+    o26S34C1_IStreamInitializer_ResetStream();
     _streams.matBlend_id1 = 0.0;
 }
 
-void o25S34C1_MaterialDisplacementStream_ResetStream(out VS_STREAMS _streams)
+void o26S34C1_MaterialDisplacementStream_ResetStream(out VS_STREAMS _streams)
 {
-    o25S34C1_MaterialStream_ResetStream(_streams);
+    o26S34C1_MaterialStream_ResetStream(_streams);
     _streams.matDisplacement_id11 = 0.0;
 }
 
-void o23S34C0_o22S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(inout VS_STREAMS _streams)
+vec4 o24S34C0_o22S2C0_o21S2C0_o19S2C0_ComputeColorWave_5_0_01__0_03__Compute(VS_STREAMS _streams)
+{
+    float phase = length(_streams.TexCoord_id10 - vec2(0.5));
+    return vec4(sin((((phase + (PerFrame_var.Global_Time * -0.02999999932944774627685546875)) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.00999999977648258209228515625);
+}
+
+vec4 o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute()
+{
+    return vec4(PerMaterial_var.o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat);
+}
+
+vec4 o24S34C0_o22S2C0_o21S2C0_ComputeColorMultiply_Compute(VS_STREAMS _streams)
+{
+    vec4 tex1 = o24S34C0_o22S2C0_o21S2C0_o19S2C0_ComputeColorWave_5_0_01__0_03__Compute(_streams);
+    vec4 tex2 = o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute();
+    vec4 mix1 = tex1 * tex2;
+    return mix1;
+}
+
+void o24S34C0_o22S2C0_MaterialSurfaceSetStreamFromComputeColor_matDisplacement_r__Compute(inout VS_STREAMS _streams)
+{
+    _streams.matDisplacement_id11 = o24S34C0_o22S2C0_o21S2C0_ComputeColorMultiply_Compute(_streams).x;
+}
+
+void o24S34C0_o23S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(inout VS_STREAMS _streams)
 {
     vec3 scaledNormal = _streams.meshNormal_id2;
     if (false)
@@ -92,16 +132,17 @@ void o23S34C0_o22S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Com
     _streams.Position_id5 = vec4(_streams.Position_id5.xyz + (scaledNormal * _streams.matDisplacement_id11), _streams.Position_id5.w);
 }
 
-void o23S34C0_MaterialSurfaceArray_Compute(out VS_STREAMS _streams)
+void o24S34C0_MaterialSurfaceArray_Compute(out VS_STREAMS _streams)
 {
-    o23S34C0_o22S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(_streams);
+    o24S34C0_o22S2C0_MaterialSurfaceSetStreamFromComputeColor_matDisplacement_r__Compute(_streams);
+    o24S34C0_o23S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(_streams);
 }
 
 void MaterialSurfaceVertexStageCompositor_VSMain(out VS_STREAMS _streams)
 {
     ShaderBase_VSMain();
-    o25S34C1_MaterialDisplacementStream_ResetStream(_streams);
-    o23S34C0_MaterialSurfaceArray_Compute(_streams);
+    o26S34C1_MaterialDisplacementStream_ResetStream(_streams);
+    o24S34C0_MaterialSurfaceArray_Compute(_streams);
 }
 
 void TransformationBase_PreTransformPosition()

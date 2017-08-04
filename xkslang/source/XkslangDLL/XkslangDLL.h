@@ -574,7 +574,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         };
 
         //=====================================================================================================================
-        //Conversion functions
+        //Enum Conversion functions
         //=====================================================================================================================
         public static ShaderStage ConvertShadingStageEnum(ShadingStageEnum stage)
         {
@@ -660,6 +660,140 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
             throw new Exception("Unknown EffectParameterReflectionTypeEnum: " + t);
         }
+
+        //=====================================================================================================================
+        //ShaderMixinSource to Xkfx cmd lines Conversion functions
+        //=====================================================================================================================
+        public static string ConvertShaderSourceToXkfxCommandLine(ShaderSource shaderSource)
+        {
+            if (shaderSource is ShaderMixinSource)
+            {
+                var shaderMixinSource = shaderSource as ShaderMixinSource;
+                StringBuilder shaderSourceBuilder = new StringBuilder();
+
+                int countMixins = shaderMixinSource.Mixins.Count;
+                if (countMixins > 0)
+                {
+                    if (countMixins > 1) shaderSourceBuilder.Append("mixin({");
+                    else shaderSourceBuilder.Append("mixin(");
+                    for (int i = 0; i < countMixins; i++)
+                    {
+                        ShaderClassSource mixin = shaderMixinSource.Mixins.ElementAt(i);
+                        shaderSourceBuilder.Append(mixin.ToClassName());
+                        if (i < countMixins - 1) shaderSourceBuilder.Append(", ");
+                    }
+                    if (countMixins > 1) shaderSourceBuilder.Append("}");
+
+                    int countCompositions = shaderMixinSource.Compositions.Count;
+                    if (countCompositions > 0)
+                    {
+                        shaderSourceBuilder.Append("[");
+                        for (int i = 0; i < countCompositions; i++)
+                        {
+                            string compositionTargetName = shaderMixinSource.Compositions.ElementAt(i).Key;
+                            var compositionTargetMixin = shaderMixinSource.Compositions.ElementAt(i).Value;
+
+                            shaderSourceBuilder.Append(compositionTargetName + "=");
+
+                            string compositionString = ConvertShaderSourceToXkfxCommandLine(compositionTargetMixin);
+                            if (compositionString == null) return null;
+                            if (compositionTargetMixin is ShaderArraySource)
+                                shaderSourceBuilder.Append("[" + compositionString + "]");
+                            else
+                                shaderSourceBuilder.Append(compositionString);
+
+                            if (countCompositions > 1)
+                            {
+                                if (i < countCompositions - 1) shaderSourceBuilder.Append(", ");
+                            }
+                        }
+                        shaderSourceBuilder.Append("]");
+                    }
+
+                    shaderSourceBuilder.Append(")");
+                }
+                return shaderSourceBuilder.ToString();
+            }
+
+            if (shaderSource is ShaderClassSource)
+            {
+                var shaderClassSource = shaderSource as ShaderClassSource;
+                StringBuilder shaderSourceBuilder = new StringBuilder();
+
+                shaderSourceBuilder.Append("mixin(");
+                shaderSourceBuilder.Append(shaderClassSource.ToClassName());
+                shaderSourceBuilder.Append(")");
+
+                return shaderSourceBuilder.ToString();
+            }
+
+            if (shaderSource is ShaderArraySource)
+            {
+                var shaderArraySource = shaderSource as ShaderArraySource;
+                StringBuilder shaderSourceBuilder = new StringBuilder();
+
+                int countShaders = shaderArraySource.Values.Count;
+                for (int i = 0; i < countShaders; i++)
+                {
+                    var shader = shaderArraySource.Values.ElementAt(i);
+
+                    string shaderCommandLine = ConvertShaderSourceToXkfxCommandLine(shader);
+                    if (shaderCommandLine == null) return null;
+
+                    shaderSourceBuilder.Append(shaderCommandLine);
+
+                    if (countShaders > 1)
+                    {
+                        if (i < countShaders - 1) shaderSourceBuilder.Append(", ");
+                    }
+                }
+
+                return shaderSourceBuilder.ToString();
+            }
+
+            return null;
+        }
+
+        public static string ConvertShaderMixinSourceToXkfxCommandLines(ShaderMixinSource mixinTree)
+        {
+            StringBuilder xkfxCommandLinesBuilder = new StringBuilder();
+
+            //Add the macros
+            foreach (var macro in mixinTree.Macros)
+            {
+                xkfxCommandLinesBuilder.AppendLine("setDefine " + macro.Name + " \"" + macro.Definition + "\"");
+            }
+
+            //main mixer
+            xkfxCommandLinesBuilder.AppendLine("mixer _m");
+
+            //Add the mixins
+            xkfxCommandLinesBuilder.Append("_m.mixin( ");
+            int countMixins = mixinTree.Mixins.Count;
+            for (int i = 0; i < countMixins; i++)
+            {
+                xkfxCommandLinesBuilder.Append(mixinTree.Mixins[i].ClassName + ((i == countMixins - 1) ? " " : ", "));
+            }
+            xkfxCommandLinesBuilder.AppendLine(")");
+            xkfxCommandLinesBuilder.AppendLine("");
+
+            //Add the compositions
+            foreach (var composition in mixinTree.Compositions)
+            {
+                string compositionCommandLine = ConvertShaderSourceToXkfxCommandLine(composition.Value);
+                if (compositionCommandLine == null) return null;
+
+                string compositionString = "_m.addComposition( " + composition.Key + " = " + compositionCommandLine + " )";
+                xkfxCommandLinesBuilder.AppendLine(compositionString);
+            }
+
+            //instruction to compile the mixer
+            xkfxCommandLinesBuilder.AppendLine("");
+            xkfxCommandLinesBuilder.AppendLine("_m.compile()");
+
+            string xkfxCommandLines = xkfxCommandLinesBuilder.ToString();
+            return xkfxCommandLines;
+        }
     }
 
     public class ShaderSpvBytecode
@@ -727,7 +861,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                 return shaderMixinParser;
             }
         }
-
+        
         //public static readonly bool CompileEffectUsingXkslang = true;
         public static readonly bool CompileEffectUsingXkslangXkfxParserLibrary = true;
 
@@ -756,14 +890,8 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
                 //===================================================================
                 //Build the effect command lines
-                StringBuilder xkfxCommandLinesBuilder = new StringBuilder();
-                xkfxCommandLinesBuilder.AppendLine("mixer m");
-                foreach (var mixin in mixinTree.Mixins)
-                {
-                    xkfxCommandLinesBuilder.AppendLine( "m.mixin(" + mixin.ClassName + ")");
-                }
-                xkfxCommandLinesBuilder.AppendLine("m.compileTOTO()");
-                string xkfxCommandLines = xkfxCommandLinesBuilder.ToString();
+                string xkfxCommandLines = XkslangDLLBindingClass.ConvertShaderMixinSourceToXkfxCommandLines(mixinTree);
+                if (xkfxCommandLines == null) throw new Exception("Failed to convert the mixin source to XKFX command lines");
 
                 //write the effect's command line on the disk
                 {
