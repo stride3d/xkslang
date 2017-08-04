@@ -67,8 +67,9 @@ m.addComposition( materialVertexStage = mixin(MaterialSurfaceArray[
 		    color2 = mixin(ComputeColorConstantFloatLink<Material.DisplacementValue>)
 		  ])
 	    ],
-		MaterialSurfaceDisplacement<Position,meshNormal,false>
-	  )
+		//MaterialSurfaceDisplacement<Position,meshNormal,false>
+	  ),
+	  MaterialSurfaceDisplacement<Position,meshNormal,false>
 	]
   ])
 )

@@ -1,0 +1,44 @@
+shader ShaderComp
+{
+	float varC;
+	
+	float Compute()
+	{
+		return varC;
+	}
+}
+
+shader ShaderMain
+{
+	stage stream float totoA: TOTOA;
+	
+	compose ShaderComp colorA1;
+	compose ShaderComp colorA2;
+	
+	float Compute(){return 1;}
+	
+	void VSMain()
+	{
+		float f = Compute();
+		streams.totoA = f + colorA1.Compute() + colorA2.Compute();
+	}
+}
+
+shader ShaderB: ShaderMain
+{
+	stage stream float totoB: TOTOB;
+	
+	compose ShaderComp colorB1;
+	compose ShaderComp colorB2;
+	
+	override float Compute()
+	{
+		return base.Compute() + 2;
+	}
+	
+	void PSMain()
+	{
+		float f = Compute();
+		streams.totoB =  f + colorB1.Compute() + colorB2.Compute() + streams.totoA;
+	}
+}

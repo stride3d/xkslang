@@ -194,6 +194,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose31", "TestCompose31.xkfx" },
     //{ "TestCompose32", "TestCompose32.xkfx" },
     //{ "TestCompose33", "TestCompose33.xkfx" },
+    { "TestCompose34", "TestCompose34.xkfx" },
 
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -304,7 +305,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -1504,14 +1505,28 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
     std::cout << "===========================" << endl;
     std::cout << "Process mixin instructions: \"" << mixinOperationInstructionLineLog << "\"" << " into mixer: \"" << mixerTarget->name << "\"" << endl;
 
-    if (mixinShadersInstructionString.size() == 0) return error("No shader to mix");
     bool success = true;
+
+    //we can either have a list of shaders (with some generics and compositions) directly in the function defintion,
+    //or having those shaders encapsulated in {} brackets (to let us apply some compositions to the whole mixin)
+    string listShadersToMix;
+    string compositionInstructionsToApplyToTheMixin;
+    {
+        vector<string> errorMsgs;
+        if (!XkslParser::ParseStringWithMixinShadersAndCompositions(mixinShadersInstructionString.c_str(), listShadersToMix, compositionInstructionsToApplyToTheMixin, errorMsgs))
+        {
+            for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
+            return error("Failed to parse the mixin instructions: " + mixinShadersInstructionString);
+        }
+    }
+
+    if (listShadersToMix.size() == 0) return error("No shader to mix");
 
     //================================================
     //Parse and get the list of shader defintion
     vector<ShaderParsingDefinition> listShaderDefinition;
-    if (!XkslParser::ParseStringWithShaderDefinitions(mixinShadersInstructionString.c_str(), listShaderDefinition))
-        return error("mixin: failed to parse the shaders definition from: " + mixinShadersInstructionString);
+    if (!XkslParser::ParseStringWithShaderDefinitions(listShadersToMix.c_str(), listShaderDefinition))
+        return error("mixin: failed to parse the shaders definition from: " + listShadersToMix);
     if (listShaderDefinition.size() == 0) return error("mixin: list of shader is empty");
     string shaderName = listShaderDefinition[0].shaderName;
     
@@ -1544,15 +1559,6 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
                     return error("cannot find or generate a bytecode for the shader: " + shaderName);
                 }
             }
-
-            /*if (spxBytecode == nullptr) spxBytecode = aShaderBytecode;
-            else
-            {
-                if (spxBytecode != aShaderBytecode) {
-                    error("2 shaders to mix are defined in different bytecode (maybe we could merge them)");
-                    return false;
-                }
-            }*/
 
             listShaderBytecodeToMix.push_back(pair<string, SpxBytecode*>(shaderFullName, shaderBytecode));
         }
@@ -1658,6 +1664,17 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
             if (!success) 
                 return error("Failed to add the compositions instruction to the mixer: " + compositionString);
         }
+    }
+
+    //Add the compositions into the mixin
+    if (compositionInstructionsToApplyToTheMixin.size() > 0)
+    {
+        success = AddCompositionsToMixer(effectName, mapShaderNameBytecode, mixerMap,
+            listAllocatedBytecodes, listUserDefinedMacros, parser, useXkslangDll, operationNum,
+            mixerTarget, compositionInstructionsToApplyToTheMixin, "");
+
+        if (!success)
+            return error("Failed to add the compositions instruction to the mixin: " + compositionInstructionsToApplyToTheMixin);
     }
 
     return true;
@@ -2071,9 +2088,12 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
             remainingLine = XkslangUtils::trim(remainingLine);
             if (remainingLine.size() > 0)
             {
-                if (!XkslangUtils::getFunctionParameterString(remainingLine, instructionParametersStr)) {
+                const char* paramStart;
+                int paramLen;
+                if (!XkfxParser::getFunctionParameterString(remainingLine.c_str(), &paramStart, &paramLen))
                     instructionParametersStr = "";
-                }
+                else
+                    instructionParametersStr = string(paramStart, paramLen);
             }
 
             if (instruction.compare("mixin") == 0)

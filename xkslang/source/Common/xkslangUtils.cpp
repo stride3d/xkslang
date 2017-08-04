@@ -145,31 +145,3 @@ void XkslangUtils::replaceAll(string& str, const string& from, const string& to)
         start_pos += to.length();
     }
 }
-
-bool XkslangUtils::getFunctionParameterString(const string& instruction, string& parameterStr)
-{
-    int len = instruction.size();
-
-    int firstCharacterPos = 0;
-    while (firstCharacterPos < len)
-    {
-        char c = instruction[firstCharacterPos++];
-        if (c == ' ') continue;
-        if (c == '(') break;
-        return false;
-    }
-    if (firstCharacterPos == len) return false;
-
-    int lastCharacterPos = len - 1;
-    while (lastCharacterPos > 0)
-    {
-        char c = instruction[lastCharacterPos--];
-        if (c == ' ') continue;
-        if (c == ')') break;
-        return false;
-    }
-    if (lastCharacterPos <= 0) return false;
-
-    parameterStr = XkslangUtils::trim(instruction.substr(firstCharacterPos, (lastCharacterPos - firstCharacterPos) + 1));
-    return true;
-}

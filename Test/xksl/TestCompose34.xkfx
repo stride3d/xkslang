@@ -1,0 +1,19 @@
+//Upgrade xkfx syntax with the possibility to apply composition to a mixin
+
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+convertAndLoadRecursif "TestCompose34" ShaderMain
+
+mixer B
+B.mixin( 	 {ShaderMain, ShaderB}[
+	colorA1=mixin(ShaderComp),
+	ShaderMain.colorA2=mixin(ShaderComp),
+	colorB1=mixin(ShaderComp),
+	colorB2=mixin(ShaderComp),
+])
+
+B.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+B.compile

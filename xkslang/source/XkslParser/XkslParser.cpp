@@ -9,6 +9,12 @@
 using namespace std;
 using namespace xkslang;
 
+static bool error(vector<string>& msgs, const string& msg)
+{
+    msgs.push_back(msg);
+    return false;
+}
+
 //===================================================================================================================================
 //===================================================================================================================================
 string ShaderGenericValues::GetShaderNameWithGenerics() const
@@ -292,6 +298,108 @@ int XkslParser::ParseStringMacroDefinition(const char* strMacrosDefinition, vect
     }
 
     return countMacrosParsed;
+}
+
+//Format: {shaders}[compositions]
+bool XkslParser::ParseStringWithMixinShadersAndCompositions(const char* strMixinInstruction, string& mixinShaders, string& mixinCompositions, vector<string>& errorMsgs)
+{
+    if (strMixinInstruction == nullptr) return false;
+
+    const char* mixinStart = strMixinInstruction;
+    while (*mixinStart == ' ' || *mixinStart == '\t') mixinStart++;
+    if (*mixinStart != '{')
+    {
+        mixinShaders = mixinStart;
+        mixinCompositions = "";
+        return true;
+    }
+
+    mixinStart++;
+    while (*mixinStart == ' ' || *mixinStart == '\t') mixinStart++;
+    const char* mixinEnd = mixinStart;
+
+    {
+        int countParenthesis = 0;
+        int countBrackets = 0;
+        int countBraces = 1;
+        int countComparaisonSigns = 0;
+
+        bool loop = true;
+        while (loop)
+        {
+            char c = *mixinEnd++;
+            switch (c)
+            {
+                case 0: return error(errorMsgs, "Failed to find the closing \"}\" for the mixin string");
+                case '[': countBrackets++; break;
+                case ']': countBrackets--; break;
+                case '(': countParenthesis++; break;
+                case ')': countParenthesis--; break;
+                case '<': countComparaisonSigns++; break;
+                case '>': countComparaisonSigns--; break;
+                case '{': countBraces++; break;
+                case '}':
+                    countBraces--; 
+                    if ((countParenthesis & countBrackets & countBraces & countComparaisonSigns) == 0) loop = false;
+                    break;
+            }
+        }
+    }
+
+    if (mixinEnd == mixinStart) return error(errorMsgs, "Failed to read the mixin shaders");
+    mixinShaders = string(mixinStart, (mixinEnd - mixinStart) - 1);
+
+    //any composition string?
+    const char* compositionsStart = mixinEnd;
+    while (*compositionsStart == ' ' || *compositionsStart == '\t') compositionsStart++;
+    if (*compositionsStart == 0)
+    {
+        mixinCompositions = "";
+    }
+    else if (*compositionsStart != '[')
+    {
+        return error(errorMsgs, string("Invalid compositions definition: ") + compositionsStart);
+    }
+    else
+    {
+        compositionsStart++;
+
+        while (*compositionsStart == ' ' || *compositionsStart == '\t') compositionsStart++;
+        const char* compositionsEnd = compositionsStart;
+
+        {
+            int countParenthesis = 0;
+            int countBrackets = 1;
+            int countBraces = 0;
+            int countComparaisonSigns = 0;
+
+            bool loop = true;
+            while (loop)
+            {
+                char c = *compositionsEnd++;
+                switch (c)
+                {
+                    case 0: return error(errorMsgs, "Failed to find the closing \"]\" for the composition string");
+                    case '{': countBraces++; break;
+                    case '}': countBraces--; break;
+                    case '(': countParenthesis++; break;
+                    case ')': countParenthesis--; break;
+                    case '<': countComparaisonSigns++; break;
+                    case '>': countComparaisonSigns--; break;
+                    case '[': countBrackets++; break;
+                    case ']':
+                        countBrackets--;
+                        if ((countParenthesis & countBrackets & countBraces & countComparaisonSigns) == 0) loop = false;
+                        break;
+                }
+            }
+        }
+
+        if (compositionsEnd == compositionsStart) return error(errorMsgs, "Failed to read the composition string");
+        mixinCompositions = string(compositionsStart, (compositionsEnd - compositionsStart) - 1);
+    }
+
+    return true;
 }
 
 //Format: ShaderName<generics>[compositions]

@@ -83,6 +83,8 @@ public:
         SpxBytecode& spirXBytecode, std::ostringstream* errorAndDebugMessages);
 
     ///Utilities functions
+    //Format: {shaders}[compositions]
+    static bool ParseStringWithMixinShadersAndCompositions(const char* strMixinInstruction, std::string& mixinShaders, std::string& mixinCompositions, std::vector<std::string>& errorMsgs);
     //Format: ShaderName<generics>[compositions]
     static bool ParseStringWithShaderDefinitions(const char* strShadersWithGenerics, std::vector<ShaderParsingDefinition>& listshaderDefinition);
     static int ParseStringMacroDefinition(const char* strMacrosDefinition, std::vector<XkslUserDefinedMacro>& listMacrosDefinition, bool removeValuesQuotationMark);

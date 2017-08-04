@@ -21,7 +21,6 @@ public:
     static void replaceAll(std::string& str, const std::string& from, const std::string& to);
     static bool startWith(const std::string& str, const std::string& prefix);
     static bool endWith(const std::string& str, const std::string& suffix);
-    static bool getFunctionParameterString(const std::string& instruction, std::string& parameterStr);
 };
 
 } //namespace xkslang

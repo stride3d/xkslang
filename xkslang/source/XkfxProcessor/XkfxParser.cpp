@@ -859,11 +859,24 @@ static bool MixinShaders(const char* mixinShadersInstructions, XkEffectMixerObje
     if (mixinShadersInstructions == nullptr) return error(errorMsgs, "No shader to mix");
     bool success = true;
 
+    //we can either have a list of shaders (with some generics and compositions) directly in the function defintion,
+    //or having those shaders encapsulated in {} brackets (to let us apply some compositions to the whole mixin)
+    string listShadersToMix;
+    string compositionInstructionsToApplyToTheMixin;
+    {
+        if (!XkslParser::ParseStringWithMixinShadersAndCompositions(mixinShadersInstructions, listShadersToMix, compositionInstructionsToApplyToTheMixin, errorMsgs))
+        {
+            return error(errorMsgs, string("Failed to parse the mixin instructions: ") + mixinShadersInstructions);
+        }
+    }
+    if (listShadersToMix.size() == 0) return error(errorMsgs, "No shader to mix");
+    const char* plistShadersToMix = listShadersToMix.c_str();
+
     //================================================
     //Parse and get the list of shader defintion
     vector<ShaderParsingDefinition> listShaderDefinition;
-    if (!XkslParser::ParseStringWithShaderDefinitions(mixinShadersInstructions, listShaderDefinition))
-        return error(errorMsgs, string("mixin: failed to parse the shaders definition from: ") + mixinShadersInstructions);
+    if (!XkslParser::ParseStringWithShaderDefinitions(plistShadersToMix, listShaderDefinition))
+        return error(errorMsgs, string("mixin: failed to parse the shaders definition from: ") + plistShadersToMix);
     if (listShaderDefinition.size() == 0) return error(errorMsgs, "mixin: list of shader is empty");
     string shaderName = listShaderDefinition[0].shaderName;
     
@@ -926,6 +939,16 @@ static bool MixinShaders(const char* mixinShadersInstructions, XkEffectMixerObje
             if (!success) 
                 return error(errorMsgs, "Failed to add the compositions instruction to the mixer: " + compositionString);
         }
+    }
+
+    //Add the compositions into the mixin
+    if (compositionInstructionsToApplyToTheMixin.size() > 0)
+    {
+        success = AddCompositionsToMixer(mixerTarget, compositionInstructionsToApplyToTheMixin.c_str(), "", callbackRequestDataForShader, mapShaderNameBytecode, mixerMap,
+            listAllocatedBytecodes, listUserDefinedMacros, parser, errorMsgs);
+
+        if (!success)
+            return error(errorMsgs, "Failed to add the compositions instruction to the mixin: " + compositionInstructionsToApplyToTheMixin);
     }
 
     return true;
