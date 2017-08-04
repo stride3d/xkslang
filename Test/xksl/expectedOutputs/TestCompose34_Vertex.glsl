@@ -10,7 +10,8 @@ layout(std140) uniform Globals
     float o0S5C0_ShaderComp_varC;
     float o1S5C1_ShaderComp_varC;
     float o2S39C0_ShaderComp_varC;
-    float o3S39C1_ShaderComp_varC;
+    float o4S39C1_ShaderComp_varC;
+    float o4S39C1_o3S15C0_ShaderComp_varC;
 } Globals_var;
 
 layout(location = 0) out float VS_OUT_totoA;

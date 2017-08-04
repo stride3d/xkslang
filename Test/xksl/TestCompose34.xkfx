@@ -12,7 +12,7 @@ B.mixin( 	 {ShaderMain, ShaderB}[
 	colorA1=mixin(ShaderComp),
 	ShaderMain.colorA2=mixin(ShaderComp),
 	colorB1=mixin(ShaderComp),
-	colorB2=mixin(ShaderComp),
+	colorB2=mixin({ShaderComp, ShaderCompBis}[aComp = mixin(ShaderComp)])
 ])
 
 B.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )

@@ -389,7 +389,7 @@ bool XkslParser::ParseStringWithMixinShadersAndCompositions(const char* strMixin
                     case '[': countBrackets++; break;
                     case ']':
                         countBrackets--;
-                        if ((countParenthesis & countBrackets & countBraces & countComparaisonSigns) == 0) loop = false;
+                        if ((countParenthesis | countBrackets | countBraces | countComparaisonSigns) == 0) loop = false;
                         break;
                 }
             }

@@ -8,6 +8,16 @@ shader ShaderComp
 	}
 }
 
+shader ShaderCompBis: ShaderComp
+{
+	compose ShaderComp aComp;
+	
+	override float Compute()
+	{
+		return base.Compute() + aComp.Compute();
+	}
+}
+
 shader ShaderMain
 {
 	stage stream float totoA: TOTOA;

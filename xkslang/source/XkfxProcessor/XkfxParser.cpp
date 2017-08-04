@@ -287,7 +287,7 @@ bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vect
     bool previousParameterStringIsAMixinWithoutParenthesis = false;
     const char* instruction_mixin = "mixin";
     const char* instruction_instructionFollowingAcceptableCharacter = " \t(";
-    string compositionTargerInvalidCharacter = "[]{}";
+    string compositionTargetInvalidCharacter = "[]{}";
 
     char c;
     int start = 0;
@@ -332,10 +332,14 @@ bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vect
         }
 
         int lastChar = end;
-        while (ptrStr[lastChar] == ' ' || ptrStr[lastChar] == ',') lastChar--;
+        while (ptrStr[lastChar] == ' ' || ptrStr[lastChar] == '\t' || ptrStr[lastChar] == ',') lastChar--;
 
-        if (ptrStr[start] == '{') start++;
-        if (ptrStr[lastChar] == '}') lastChar--;
+        if (ptrStr[start] == '{')
+        {
+            start++;
+            if (ptrStr[lastChar] != '}') return error(errorMsgs, "} expected");
+            lastChar--;
+        }
         
         //check the composition expression, plus detect expression of the type: "comp = mixin ....", "Shader.comp = mixin ....", so that we can merge them with the next expression if need
         {
@@ -358,7 +362,7 @@ bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vect
             
                 //the composition target cannot contains '[', ']', '{' or '}'
                 compositionTarget = string(pCompositionTarget, compositionTargetLen);
-                if (compositionTarget.find_first_of(compositionTargerInvalidCharacter) != string::npos) {
+                if (compositionTarget.find_first_of(compositionTargetInvalidCharacter) != string::npos) {
                     return error(errorMsgs, "Invalid composition target name: " + compositionTarget);
                 }
 
