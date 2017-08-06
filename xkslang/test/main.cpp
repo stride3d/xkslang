@@ -134,7 +134,7 @@ static bool xkfxOptions_processSampleWithXkfxLibrary = false;  //if true, we als
 
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
-static bool processEffectWithDllApi = true;
+static bool processEffectWithDllApi = false;
 static bool processEffectWithXkfxProcessorApi = true;
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
@@ -270,7 +270,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testMacro01", "testMacro01.xkfx" },
     //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
     //{ "userCustomType01", "userCustomType01.xkfx" },
-    { "userCustomType02", "userCustomType02.xkfx" },
+    //{ "userCustomType02", "userCustomType02.xkfx" },
     //{ "TestLink01", "TestLink01.xkfx" },
     //{ "TestLink02", "TestLink02.xkfx" },
     //{ "TestLink03", "TestLink03.xkfx" },
@@ -306,7 +306,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -775,18 +775,18 @@ static bool ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(
     {
         if (structMemberSrc.StructMembers != nullptr)
         {
-            TypeMemberReflectionDescription* structMembers = new TypeMemberReflectionDescription[structMemberSrc.CountMembers];
+            TypeMemberReflectionDescription* structMemberSubStruct = new TypeMemberReflectionDescription[structMemberSrc.CountMembers];
 
             //Set the cbuffer member's struct members
             for (int im = 0; im < structMemberSrc.CountMembers; im++)
             {
-                const xkslangDll::ConstantBufferMemberReflectionDescriptionData& structMemberSrc = structMemberSrc.StructMembers[im];
-                TypeMemberReflectionDescription& structMemberDst = structMembers[im];
-                if (!ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(structMemberSrc, structMemberDst))
+                const xkslangDll::ConstantBufferMemberReflectionDescriptionData& structMemberSubStructSrc = structMemberSrc.StructMembers[im];
+                TypeMemberReflectionDescription& structMemberSubStructDst = structMemberSubStruct[im];
+                if (!ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(structMemberSubStructSrc, structMemberSubStructDst))
                     return error("Failed to convert the struct member");
             }
 
-            structMemberDst.Type.SetStructMembers(structMembers, structMemberSrc.CountMembers);
+            structMemberDst.Type.SetStructMembers(structMemberSubStruct, structMemberSrc.CountMembers);
 
             GlobalFree((HGLOBAL)structMemberSrc.StructMembers);
         }

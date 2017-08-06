@@ -75,9 +75,10 @@ namespace xkslangDll
             this->StructMembers = nullptr;
         }
 
-        void SetMembersDetails(ConstantBufferMemberReflectionDescriptionData* structMembers)
+        void SetMembersDetails(ConstantBufferMemberReflectionDescriptionData* structMembers, int countMembers)
         {
             this->StructMembers = structMembers;
+            this->CountMembers = countMembers;
         }
 	};
 

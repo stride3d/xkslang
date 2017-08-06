@@ -569,23 +569,22 @@ namespace xkslangDll
 
         if (structMemberSrc.Type.Class == EffectParameterReflectionClass::Struct)
         {
-            int lgsdfjgl = 524235;
-            /*int structCountMembers = structMemberSrc.Type.CountMembers;
-            if (structCountMembers > 0 && structMemberSrc.Type.Members != nullptr)
+            int structMemberCountSubMembers = structMemberSrc.Type.CountMembers;
+            if (structMemberCountSubMembers > 0 && structMemberSrc.Type.Members != nullptr)
             {
                 //create the struct sub members details
-                ConstantBufferMemberReflectionDescriptionData* structMembers = nullptr;
-                structMembers = (ConstantBufferMemberReflectionDescriptionData*)GlobalAlloc(0, structCountMembers * sizeof(ConstantBufferMemberReflectionDescriptionData));
+                ConstantBufferMemberReflectionDescriptionData* structMemberSubStruct = nullptr;
+                structMemberSubStruct = (ConstantBufferMemberReflectionDescriptionData*)GlobalAlloc(0, structMemberCountSubMembers * sizeof(ConstantBufferMemberReflectionDescriptionData));
 
-                for (int sm = 0; sm < structCountMembers; ++sm)
+                for (int sm = 0; sm < structMemberCountSubMembers; ++sm)
                 {
-                    const TypeMemberReflectionDescription& structMemberSrc = structMemberSrc.Type.Members[sm];
-                    ConstantBufferMemberReflectionDescriptionData& structMemberDst = structMembers[sm];
-                    ConvertStructMemberToDllData(structMemberSrc, structMemberDst);
+                    const TypeMemberReflectionDescription& structSubMemberSrc = structMemberSrc.Type.Members[sm];
+                    ConstantBufferMemberReflectionDescriptionData& structSubMemberDst = structMemberSubStruct[sm];
+                    ConvertStructMemberToDllData(structSubMemberSrc, structSubMemberDst);
                 }
 
-                structMemberDst.SetMembersDetails(structMembers);
-            }*/
+                structMemberDst.SetMembersDetails(structMemberSubStruct, structMemberCountSubMembers);
+            }
         }
     }
 
@@ -660,7 +659,7 @@ namespace xkslangDll
                                     ConvertStructMemberToDllData(structMemberSrc, structMemberDst);
                                 }
 
-                                membersInfo[m].SetMembersDetails(structMembers);
+                                membersInfo[m].SetMembersDetails(structMembers, structCountMembers);
                             }
                         }
 					}
