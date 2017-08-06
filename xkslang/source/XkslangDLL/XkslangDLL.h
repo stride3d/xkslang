@@ -478,7 +478,9 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             public Int32 Alignment;
             public Int32 ArrayStride;
             public Int32 MatrixStride;
+
             public Int32 CountMembers;
+            public IntPtr StructMembers;
         }
 
         //ConstantBuffer struct
@@ -887,6 +889,60 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             }
         }
         
+        public bool ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(
+            ref XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData structMemberSrc,
+            ref EffectTypeMemberDescription structMemberDst)
+        {
+            if (structMemberSrc.KeyName == null) return false;
+
+            string structMemberName = Marshal.PtrToStringAnsi(structMemberSrc.KeyName);
+            structMemberDst.Name = structMemberName;
+            structMemberDst.Offset = structMemberSrc.Offset;
+            structMemberDst.Type = new EffectTypeDescription()
+            {
+                Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(structMemberSrc.Class),
+                Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(structMemberSrc.Type),
+                RowCount = structMemberSrc.RowCount,
+                ColumnCount = structMemberSrc.ColumnCount,
+                Elements = structMemberSrc.ArrayElements,
+                ElementSize = structMemberSrc.Size,
+                Name = structMemberName,
+                Members = null,
+            };
+
+            if (structMemberSrc.KeyName == null) { Marshal.FreeHGlobal(structMemberSrc.KeyName); }
+            if (structMemberSrc.RawName == null) { Marshal.FreeHGlobal(structMemberSrc.RawName); }
+
+            if (structMemberSrc.CountMembers > 0)
+            {
+                if (structMemberSrc.StructMembers != null)
+                {
+                    EffectTypeMemberDescription[] structmemberSubMembers = new EffectTypeMemberDescription[structMemberSrc.CountMembers];
+
+                    //Set the cbuffer member's struct members
+                    for (int im = 0; im < structMemberSrc.CountMembers; im++)
+                    {
+                        XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData structMemberSubMemberSrc;
+                        structMemberSubMemberSrc = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
+                            new IntPtr(structMemberSrc.StructMembers.ToInt32() + (structMemberSrc.CountMembers * im)),
+                            typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
+
+                        EffectTypeMemberDescription structMemberSubMemberDst = new EffectTypeMemberDescription();
+
+                        if (!ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(ref structMemberSubMemberSrc, ref structMemberSubMemberDst))
+                            throw new Exception("Failed to convert the EffectReflection cbuffer struct member data");
+
+                        structmemberSubMembers[im] = structMemberSubMemberDst;
+                    }
+
+                    structMemberDst.Type.Members = structmemberSubMembers;
+                    Marshal.FreeHGlobal(structMemberSrc.StructMembers);
+                }
+                else throw new Exception("A cbuffer struct member is missing Reflection data about its members");
+            }
+            return true;
+        }
+
         //public static readonly bool CompileEffectUsingXkslang = true;
         public static readonly bool CompileEffectUsingXkslangXkfxParserLibrary = true;
 
@@ -1082,6 +1138,9 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                 constantBufferData = (XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData)Marshal.PtrToStructure(
                                     new IntPtr(pAllocsConstantBuffers.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
 
+                                string cbufferName = Marshal.PtrToStringAnsi(constantBufferData.CbufferName);
+                                Marshal.FreeHGlobal(constantBufferData.CbufferName);
+
                                 //process the cbuffer members
                                 EffectValueDescription[] cbufferMembers = null;
                                 if (constantBufferData.CountMembers > 0)
@@ -1116,19 +1175,47 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                                 Elements = memberData.ArrayElements,
                                                 ElementSize = memberData.Size,
                                                 Name = rawName,
-                                                Members = null,  //we have memberData.CountMembers, but not the members data yet
+                                                Members = null,  //will be set below
                                             },
                                         };
 
                                         Marshal.FreeHGlobal(memberData.KeyName);
                                         Marshal.FreeHGlobal(memberData.RawName);
+
+                                        //if the cbuffer member is a struct, we analyse its struct members
+                                        if (memberData.CountMembers > 0)
+                                        {
+                                            if (memberData.StructMembers != null)
+                                            {
+                                                EffectTypeMemberDescription[] structMembers = new EffectTypeMemberDescription[memberData.CountMembers];
+
+                                                //Set the cbuffer member's struct members
+                                                for (int im = 0; im < memberData.CountMembers; im++)
+                                                {
+                                                    XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData structMemberSrc;
+                                                    structMemberSrc = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
+                                                        new IntPtr(memberData.StructMembers.ToInt32() + (memberStructSize * im)),
+                                                        typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
+
+                                                    EffectTypeMemberDescription structMemberDst = new EffectTypeMemberDescription();
+
+                                                    if (!ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(ref structMemberSrc, ref structMemberDst))
+                                                        throw new Exception("Failed to convert the EffectReflection cbuffer struct member data");
+
+                                                    structMembers[im] = structMemberDst;
+                                                }
+
+                                                cbufferMembers[m].Type.Members = structMembers;
+                                                Marshal.FreeHGlobal(memberData.StructMembers);
+                                            }
+                                            else throw new Exception("A cbuffer struct member is missing Reflection data about its members");
+                                        }
                                     }
 
                                     Marshal.FreeHGlobal(constantBufferData.Members);
                                 }
 
                                 //create the cbuffer
-                                string cbufferName = Marshal.PtrToStringAnsi(constantBufferData.CbufferName);
                                 EffectConstantBufferDescription constantBuffer = new EffectConstantBufferDescription()
                                 {
                                     Name = cbufferName,
@@ -1136,9 +1223,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                     Type = ConstantBufferType.ConstantBuffer,
                                     Members = cbufferMembers,
                                 };
-                                xkslangEffectReflection.ConstantBuffers.Add(constantBuffer);
-
-                                Marshal.FreeHGlobal(constantBufferData.CbufferName);
+                                xkslangEffectReflection.ConstantBuffers.Add(constantBuffer);                                
                             }
 
                             Marshal.FreeHGlobal(pAllocsConstantBuffers);
@@ -1250,10 +1335,14 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
                     foreach (var stageShaderSpvBytecode in shaderStageSpvBytecodes)
                     {
+                        stageShaderSpvBytecode.BytecodeHlslConversion = stageShaderSpvBytecode.BytecodeHlslConversion.Replace("(out VS_STREAMS ", "(inout VS_STREAMS ");
+                        stageShaderSpvBytecode.BytecodeHlslConversion = stageShaderSpvBytecode.BytecodeHlslConversion.Replace("(out PS_STREAMS ", "(inout PS_STREAMS ");
                         string shaderSource = stageShaderSpvBytecode.BytecodeHlslConversion;
+                        
                         string entryPoint = "main";
                         ShaderStage stage = stageShaderSpvBytecode.Stage;
                         var result = d3dcompiler.Compile(shaderSource, entryPoint, stage, effectParameters, xkslangEffectReflection, null);
+                        result.CopyTo(log);
 
                         if (result.HasErrors)
                         {
@@ -1286,6 +1375,19 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     lock (WriterLock) // protect write in case the same shader is created twice
                     {
                         var builder = new StringBuilder();
+
+                        if (log.HasErrors)
+                        {
+                            builder.AppendLine("/**************************");
+                            builder.AppendLine("***** Compilation Errors *****");
+                            builder.AppendLine("***************************");
+                            foreach (var error in log.Messages)
+                            {
+                                builder.AppendLine(error.Text);
+                            }
+                            builder.AppendLine("***************************");
+                        }
+
                         builder.AppendLine("/**************************");
                         builder.AppendLine("***** Compiler Parameters *****");
                         builder.AppendLine("***************************");
@@ -1358,9 +1460,9 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
             }
 
-//Previous prototype: we can also manually parse xksl shaders and mix them
-//#ifdef XKSLANG_PROTOTYPE_OBSOLETE
-//            else if (CompileEffectUsingXkslang && fullEffectName == "Effect")
+//////Previous prototype: we can also manually parse xksl shaders and mix them
+//////#ifdef XKSLANG_PROTOTYPE_OBSOLETE
+//            if (CompileEffectUsingXkslang && fullEffectName == "Effect")
 //            {
 //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
 //                var logDir = Path.Combine(PlatformFolders.ApplicationBinaryDirectory, "log");
@@ -1369,16 +1471,16 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                    Directory.CreateDirectory(logDir);
 //                }
 //#endif
-
+//
 //                //=====================================================================================================================================
 //                //TEST loading and parsing the xksl shader
 //                string shaderName = mixinTree.Name;
 //                Int32[] effectSpxBytecode = null;
 //                string effectSpxBytecode_AsciiText = null;
-
+//
 //                Int32[] mixinCompiledBytecode = null;
 //                string mixinCompiledBytecode_AsciiText;
-
+//
 //                Int32[] spvBytecodeVS = null;
 //                Int32[] spvBytecodePS = null;
 //                string spvBytecodeVS_AsciiText = null;
@@ -1388,18 +1490,18 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                string shaderGlslPS = null;
 //                string shaderHlslVS = null;
 //                string shaderHlslPS = null;
-
+//
 //                try
 //                {
 //                    XkslangDLLBindingClass.ShaderSourceManager = GetMixinParser().SourceManager;
 //                    XkslangDLLBindingClass.ListShaderSourcesLoaded = new List<ShaderSourceManager.ShaderSourceWithHash>();
-
+//
 //                    bool success = true;
-
+//
 //                    //initialise xkslang
 //                    success = XkslangDLLBindingClass.InitializeParser();
 //                    if (!success) throw new Exception("Error initializing Xkslang");
-
+//
 //                    //convert the XKSL shader to SPX bytecode
 //                    int bytecodeLength = 0;
 //                    IntPtr pBytecodeBuffer = XkslangDLLBindingClass.ConvertXkslShaderToSPX(shaderName, null, null, XkslangDLLBindingClass.ShaderSourceLoaderCallback, out bytecodeLength);
@@ -1408,12 +1510,12 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        log.Error($"No Spx bytecode generated for effect [{fullEffectName}]");
 //                        return new EffectBytecodeCompilerResult(null, log);
 //                    }
-
+//
 //                    //copy the bytecode and free the object (allocated by the dll)
 //                    effectSpxBytecode = new Int32[bytecodeLength];
 //                    Marshal.Copy(pBytecodeBuffer, effectSpxBytecode, 0, bytecodeLength);
 //                    Marshal.FreeHGlobal(pBytecodeBuffer);
-
+//
 //                    //=====================================================================================================================================
 //                    //Optionnal: Query the shader name from the bytecode
 //                    {
@@ -1421,7 +1523,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        IntPtr pAllocShadersInfo = IntPtr.Zero;
 //                        success = XkslangDLLBindingClass.GetBytecodeShadersInformation(effectSpxBytecode, effectSpxBytecode.Length, out pAllocShadersInfo, out countShaders);
 //                        if (!success) throw new Exception("Failed to query the shader information from the bytecode");
-
+//
 //                        if (countShaders > 0 && pAllocShadersInfo != IntPtr.Zero)
 //                        {
 //                            int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.BytecodeShaderInformation));
@@ -1429,21 +1531,21 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            {
 //                                XkslangDLLBindingClass.BytecodeShaderInformation bytecodeShader = (XkslangDLLBindingClass.BytecodeShaderInformation)Marshal.PtrToStructure(
 //                                    new IntPtr(pAllocShadersInfo.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.BytecodeShaderInformation));
-
+//
 //                                string bytecodeShaderName = Marshal.PtrToStringAnsi(bytecodeShader.ShaderName);
 //                                Marshal.FreeHGlobal(bytecodeShader.ShaderName);
 //                            }
 //                            Marshal.FreeHGlobal(pAllocShadersInfo); //delete the data allocated on the native code
 //                        }
 //                    }
-
+//
 //                    //=====================================================================================================================================
 //                    //Optionnal: convert the bytecode to human readable ascii text
 //                    {
 //                        int asciiBufferLength = 0;
 //                        IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(effectSpxBytecode, effectSpxBytecode.Length, out asciiBufferLength);
 //                        if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the Spx bytecode into Ascii");
-
+//
 //                        Byte[] asciiByteArray = new Byte[asciiBufferLength];
 //                        Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
 //                        Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
@@ -1453,7 +1555,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                catch (Exception e)
 //                {
 //                    string errorMessages = e.Message;
-
+//
 //                    //Check if we can get some error messages from xkslang DLL
 //                    IntPtr pErrorMsgs = XkslangDLLBindingClass.GetErrorMessages();
 //                    if (pErrorMsgs != IntPtr.Zero)
@@ -1462,7 +1564,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        if (xkslangErrorMsg != null && xkslangErrorMsg.Length > 0) errorMessages = errorMessages + '\n' + xkslangErrorMsg;
 //                        Marshal.FreeHGlobal(pErrorMsgs);
 //                    }
-
+//
 //                    string[] messages = errorMessages.Split('\n');
 //                    foreach (string str in messages) if (str.Length > 0) Console.WriteLine(str);
 //                    throw e;
@@ -1471,7 +1573,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                {
 //                    XkslangDLLBindingClass.ReleaseParser();
 //                }
-
+//
 //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
 //                //=====================================================================================================================================
 //                //write the SPX ascii bytecodes on the disk
@@ -1480,7 +1582,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                    //var bytecodeId = ObjectId.FromBytes(Encoding.UTF8.GetBytes(spxAsciiBytecode));
 //                    //var bytecodeSourceFilename = Path.Combine(strLogDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_" + bytecodeId + ".hr.spv");
 //                    var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + ".hr.spv");
-
+//
 //                    lock (WriterLock) // protect write in case the same shader is created twice
 //                    {
 //                        // Write shader before generating to make sure that we are having a trace before compiling it (compiler may crash...etc.)
@@ -1491,9 +1593,9 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                    }
 //                }
 //#endif
-
+//
 //                EffectReflection xkslangEffectReflection = new EffectReflection();
-
+//
 //                //=====================================================================================================================================
 //                //Mix the effect to generate the output stage SPV bytecode. Hardcoded for now: mix the effect shader class only, for PS and VS stages
 //                UInt32 mixerHandleId = 0;
@@ -1501,22 +1603,22 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                {
 //                    if (!XkslangDLLBindingClass.InitializeMixer())
 //                        throw new Exception("Failed to initialize the mixer");
-
+//
 //                    mixerHandleId = XkslangDLLBindingClass.CreateSpxShaderMixer();
 //                    if (mixerHandleId == 0) throw new Exception("Failed to create a new spx mixer");
-
+//
 //                    bool success;
 //                    success = XkslangDLLBindingClass.MixinShaders(mixerHandleId, shaderName, effectSpxBytecode, effectSpxBytecode.Length);
 //                    if (!success) throw new Exception("Failed to mix the shader: " + shaderName);
-
+//
 //                    XkslangDLLBindingClass.OutputStageEntryPoint[] stageEntryPointArray = {
 //                        new XkslangDLLBindingClass.OutputStageEntryPoint(XkslangDLLBindingClass.ShadingStageEnum.Vertex, "VSMain"),
 //                        new XkslangDLLBindingClass.OutputStageEntryPoint(XkslangDLLBindingClass.ShadingStageEnum.Pixel, "PSMain")
 //                    };
-
+//
 //                    success = XkslangDLLBindingClass.CompileMixer(mixerHandleId, stageEntryPointArray, stageEntryPointArray.Length);
 //                    if (!success) throw new Exception("Failed to compile the shader: " + shaderName);
-
+//
 //                    //=====================================================================================================================================
 //                    //get the mixin compiled bytecode
 //                    {
@@ -1528,27 +1630,27 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        //mixinCompiledBytecode = new Int32[bytecodeLength];
 //                        //Marshal.Copy(pBytecodeBuffer, mixinCompiledBytecode, 0, bytecodeLength);
 //                        //Marshal.FreeHGlobal(pBytecodeBuffer);
-
+//
 //                        //2nd option: allocate the buffer on the caller side and ask the dll to fill it
 //                        int bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSize(mixerHandleId);
 //                        if (bytecodeLength <= 0) throw new Exception("Failed to get the mixer compiled bytecode size");
 //                        mixinCompiledBytecode = new Int32[bytecodeLength];
 //                        int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecode(mixerHandleId, mixinCompiledBytecode, mixinCompiledBytecode.Length);
 //                        if (aLen != bytecodeLength) throw new Exception("Failed to get the mixer compiled bytecode");
-
+//
 //                        //Optionnal: convert the bytecode to human readable ascii text
 //                        {
 //                            int asciiBufferLength = 0;
 //                            IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(mixinCompiledBytecode, mixinCompiledBytecode.Length, out asciiBufferLength);
 //                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the bytecode to Ascii");
-
+//
 //                            Byte[] asciiByteArray = new Byte[asciiBufferLength];
 //                            Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
 //                            Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
 //                            mixinCompiledBytecode_AsciiText = System.Text.Encoding.UTF8.GetString(asciiByteArray);
 //                        }
 //                    }
-
+//
 //                    {
 //                        //test calling those functions
 //                        Int32 countStages = XkslangDLLBindingClass.GetMixerCountCompiledStages(mixerHandleId);
@@ -1562,7 +1664,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            Int32[] aBytecode = new Int32[bytecodeLength];
 //                            Marshal.Copy(pBytecodeBuffer, aBytecode, 0, bytecodeLength);
 //                            Marshal.FreeHGlobal(pBytecodeBuffer);
-
+//
 //                            bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSizeForStageNum(mixerHandleId, stageNum, out stage);
 //                            if (bytecodeLength <= 0) throw new Exception("Failed to get the bytecode size for VS");
 //                            aBytecode = new Int32[bytecodeLength];
@@ -1570,7 +1672,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            if (aLen != bytecodeLength) throw new Exception("Failed to get the bytecode for VS");
 //                        }
 //                    }
-
+//
 //                    //=====================================================================================================================================
 //                    //get the VS SPIRV bytecode
 //                    {
@@ -1582,51 +1684,51 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        //spvBytecodeVS = new Int32[bytecodeLength];
 //                        //Marshal.Copy(pBytecodeBuffer, spvBytecodeVS, 0, bytecodeLength);
 //                        //Marshal.FreeHGlobal(pBytecodeBuffer);
-
+//
 //                        //2nd option: allocate the buffer on the caller side and ask the dll to fill it
 //                        int bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSizeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Vertex);
 //                        if (bytecodeLength <= 0) throw new Exception("Failed to get the bytecode size for VS");
 //                        spvBytecodeVS = new Int32[bytecodeLength];
 //                        int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecodeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Vertex, spvBytecodeVS, spvBytecodeVS.Length);
 //                        if (aLen != bytecodeLength) throw new Exception("Failed to get the bytecode for VS");
-
+//
 //                        //Optionnal: convert the bytecode to human readable ascii text
 //                        {
 //                            int asciiBufferLength = 0;
 //                            IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(spvBytecodeVS, spvBytecodeVS.Length, out asciiBufferLength);
 //                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the bytecode to Ascii");
-
+//
 //                            Byte[] asciiByteArray = new Byte[asciiBufferLength];
 //                            Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
 //                            Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
 //                            spvBytecodeVS_AsciiText = System.Text.Encoding.UTF8.GetString(asciiByteArray);
 //                        }
-
+//
 //                        //convert the bytecode to GLSL
 //                        {
 //                            int bufferLen = 0;
 //                            IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToGlsl(spvBytecodeVS, spvBytecodeVS.Length, out bufferLen);
 //                            if (pBuffer == null || bufferLen <= 0) throw new Exception("Failed to convert the VS bytecode to GLSL");
-
+//
 //                            Byte[] byteArray = new Byte[bufferLen];
 //                            Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
 //                            Marshal.FreeHGlobal(pBuffer);
 //                            shaderGlslVS = System.Text.Encoding.UTF8.GetString(byteArray);
 //                        }
-
+//
 //                        //convert the bytecode to HLSL
 //                        {
 //                            int bufferLen = 0;
 //                            IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToHlsl(spvBytecodeVS, spvBytecodeVS.Length, hlslShaderModel, out bufferLen);
 //                            if (pBuffer == IntPtr.Zero || bufferLen <= 0) throw new Exception("Failed to convert the VS bytecode to HLSL");
-
+//
 //                            Byte[] byteArray = new Byte[bufferLen];
 //                            Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
 //                            Marshal.FreeHGlobal(pBuffer);
 //                            shaderHlslVS = System.Text.Encoding.UTF8.GetString(byteArray);
 //                        }
 //                    }
-
+//
 //                    //=====================================================================================================================================
 //                    //get the PS SPIRV bytecode
 //                    {
@@ -1638,51 +1740,51 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        //spvBytecodePS = new Int32[bytecodeLength];
 //                        //Marshal.Copy(pBytecodeBuffer, spvBytecodePS, 0, bytecodeLength);
 //                        //Marshal.FreeHGlobal(pBytecodeBuffer);
-
+//
 //                        //2nd option: allocate the buffer on the caller side and ask the dll to fill it
 //                        int bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSizeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Pixel);
 //                        if (bytecodeLength <= 0) throw new Exception("Failed to get the bytecode size for PS");
 //                        spvBytecodePS = new Int32[bytecodeLength];
 //                        int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecodeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Pixel, spvBytecodePS, spvBytecodePS.Length);
 //                        if (aLen != bytecodeLength) throw new Exception("Failed to get the bytecode for PS");
-
+//
 //                        //Optionnal: convert the bytecode to human readable ascii text
 //                        {
 //                            int asciiBufferLength = 0;
 //                            IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(spvBytecodePS, spvBytecodePS.Length, out asciiBufferLength);
 //                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the PS bytecode to Ascii");
-
+//
 //                            Byte[] asciiByteArray = new Byte[asciiBufferLength];
 //                            Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
 //                            Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
 //                            spvBytecodePS_AsciiText = System.Text.Encoding.UTF8.GetString(asciiByteArray);
 //                        }
-
+//
 //                        //convert the bytecode to GLSL
 //                        {
 //                            int bufferLen = 0;
 //                            IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToGlsl(spvBytecodePS, spvBytecodePS.Length, out bufferLen);
 //                            if (pBuffer == null || bufferLen <= 0) throw new Exception("Failed to convert the PS bytecode to GLSL");
-
+//
 //                            Byte[] byteArray = new Byte[bufferLen];
 //                            Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
 //                            Marshal.FreeHGlobal(pBuffer);
 //                            shaderGlslPS = System.Text.Encoding.UTF8.GetString(byteArray);
 //                        }
-
+//
 //                        //convert the bytecode to HLSL
 //                        {
 //                            int bufferLen = 0;
 //                            IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToHlsl(spvBytecodePS, spvBytecodePS.Length, hlslShaderModel, out bufferLen);
 //                            if (pBuffer == IntPtr.Zero || bufferLen <= 0) throw new Exception("Failed to convert the PS bytecode to HLSL");
-
+//
 //                            Byte[] byteArray = new Byte[bufferLen];
 //                            Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
 //                            Marshal.FreeHGlobal(pBuffer);
 //                            shaderHlslPS = System.Text.Encoding.UTF8.GetString(byteArray);
 //                        }
 //                    }
-
+//
 //                    //Query and build the EffectReflection data
 //                    {
 //                        int countConstantBuffers = 0;
@@ -1691,13 +1793,13 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        IntPtr pAllocsResourceBindings = IntPtr.Zero;
 //                        int countInputAttributes = 0;
 //                        IntPtr pAllocsInputAttributes = IntPtr.Zero;
-
+//
 //                        success = XkslangDLLBindingClass.GetMixerEffectReflectionData(mixerHandleId,
 //                            out pAllocsConstantBuffers, out countConstantBuffers,
 //                            out pAllocsResourceBindings, out countResourceBindings,
 //                            out pAllocsInputAttributes, out countInputAttributes);
 //                        if (!success) throw new Exception("Failed to get the Effect Reflection data");
-
+//
 //                        //Process the ResourceBindings
 //                        if (countResourceBindings > 0 && pAllocsResourceBindings != IntPtr.Zero)
 //                        {
@@ -1707,7 +1809,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            {
 //                                effectResourceBinding = (XkslangDLLBindingClass.EffectResourceBindingDescriptionData)Marshal.PtrToStructure(
 //                                    new IntPtr(pAllocsResourceBindings.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
-
+//
 //                                string keyName = Marshal.PtrToStringAnsi(effectResourceBinding.KeyName);
 //                                string rawName = Marshal.PtrToStringAnsi(effectResourceBinding.RawName);
 //                                var binding = new EffectResourceBindingDescription()
@@ -1723,15 +1825,15 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                                    },
 //                                };
 //                                xkslangEffectReflection.ResourceBindings.Add(binding);
-
+//
 //                                Marshal.FreeHGlobal(effectResourceBinding.KeyName);
 //                                Marshal.FreeHGlobal(effectResourceBinding.RawName);
 //                            }
-
+//
 //                            //delete the data allocated on the native code
 //                            Marshal.FreeHGlobal(pAllocsResourceBindings);
 //                        }
-
+//
 //                        //Process the InputAttributes
 //                        if (countInputAttributes > 0 && pAllocsInputAttributes != IntPtr.Zero)
 //                        {
@@ -1741,21 +1843,21 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            {
 //                                shaderInputAttribute = (XkslangDLLBindingClass.ShaderInputAttributeDescriptionData)Marshal.PtrToStructure(
 //                                    new IntPtr(pAllocsInputAttributes.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
-
+//
 //                                var inputAttribute = new ShaderInputAttributeDescription()
 //                                {
 //                                    SemanticName = Marshal.PtrToStringAnsi(shaderInputAttribute.SemanticName),
 //                                    SemanticIndex = shaderInputAttribute.SemanticIndex,
 //                                };
 //                                xkslangEffectReflection.InputAttributes.Add(inputAttribute);
-
+//
 //                                Marshal.FreeHGlobal(shaderInputAttribute.SemanticName);
 //                            }
-
+//
 //                            //delete the data allocated on the native code
 //                            Marshal.FreeHGlobal(pAllocsInputAttributes);
 //                        }
-
+//
 //                        //Process the ConstantBuffers
 //                        if (countConstantBuffers > 0 && pAllocsConstantBuffers != IntPtr.Zero)
 //                        {
@@ -1766,13 +1868,13 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                                XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData constantBufferData;
 //                                constantBufferData = (XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData)Marshal.PtrToStructure(
 //                                    new IntPtr(pAllocsConstantBuffers.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
-
+//
 //                                //process the cbuffer members
 //                                EffectValueDescription[] cbufferMembers = null;
 //                                if (constantBufferData.CountMembers > 0)
 //                                {
 //                                    cbufferMembers = new EffectValueDescription[constantBufferData.CountMembers];
-
+//
 //                                    //read the member data
 //                                    int memberStructSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
 //                                    for (int m = 0; m < constantBufferData.CountMembers; ++m)
@@ -1780,7 +1882,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                                        XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData memberData;
 //                                        memberData = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
 //                                            new IntPtr(constantBufferData.Members.ToInt32() + (memberStructSize * m)), typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
-
+//
 //                                        string keyName = Marshal.PtrToStringAnsi(memberData.KeyName);
 //                                        string rawName = Marshal.PtrToStringAnsi(memberData.RawName);
 //                                        cbufferMembers[m] = new EffectValueDescription()
@@ -1804,14 +1906,14 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                                                Members = null,  //we have memberData.CountMembers, but not the members data yet
 //                                            },
 //                                        };
-
+//
 //                                        Marshal.FreeHGlobal(memberData.KeyName);
 //                                        Marshal.FreeHGlobal(memberData.RawName);
 //                                    }
-
+//
 //                                    Marshal.FreeHGlobal(constantBufferData.Members);
 //                                }
-
+//
 //                                //create the cbuffer
 //                                string cbufferName = Marshal.PtrToStringAnsi(constantBufferData.CbufferName);
 //                                EffectConstantBufferDescription constantBuffer = new EffectConstantBufferDescription()
@@ -1822,19 +1924,19 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                                    Members = cbufferMembers,
 //                                };
 //                                xkslangEffectReflection.ConstantBuffers.Add(constantBuffer);
-
+//
 //                                Marshal.FreeHGlobal(constantBufferData.CbufferName);
 //                            }
-
+//
 //                            Marshal.FreeHGlobal(pAllocsConstantBuffers);
 //                        }
-
+//
 //                    }  //end of: //Query and build the EffectReflection data
 //                }
 //                catch (Exception e)
 //                {
 //                    string errorMessages = e.Message;
-
+//
 //                    IntPtr pErrorMsgs = XkslangDLLBindingClass.GetErrorMessages();
 //                    if (pErrorMsgs != IntPtr.Zero)
 //                    {
@@ -1842,7 +1944,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        if (xkslangErrorMsg != null && xkslangErrorMsg.Length > 0) errorMessages = errorMessages + '\n' + xkslangErrorMsg;
 //                        Marshal.FreeHGlobal(pErrorMsgs);
 //                    }
-
+//
 //                    string[] messages = errorMessages.Split('\n');
 //                    foreach (string str in messages) if (str.Length > 0) Console.WriteLine(str);
 //                    throw e;
@@ -1852,7 +1954,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                    if (mixerHandleId > 0) XkslangDLLBindingClass.ReleaseSpxShaderMixer(mixerHandleId); //release the mixer handle
 //                    XkslangDLLBindingClass.ReleaseMixer();
 //                }
-
+//
 //                //Write all generated shaders on the disk
 //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
 //                {
@@ -1865,7 +1967,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            File.WriteAllText(bytecodeSourceFilename, mixinCompiledBytecode_AsciiText);
 //                        }
 //                    }
-
+//
 //                    if (spvBytecodeVS_AsciiText != null)
 //                    {
 //                        var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_compiled_VS.hr.spv");
@@ -1916,16 +2018,16 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                    }
 //                }
 //#endif
-
+//
 //                //=====================================================================================================
 //                //Compile the generated HLSL shaders
 //                {
 //                    var shaderStageBytecodes = new List<ShaderBytecode>();
-
+//
 //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
 //                    var stageStringBuilder = new StringBuilder();
 //#endif
-
+//
 //                    Dictionary<ShaderStage, string> entryPoints = new Dictionary<ShaderStage, string>();
 //                    entryPoints.Add(ShaderStage.Vertex, "main");
 //                    entryPoints.Add(ShaderStage.Pixel, "main");
@@ -1934,12 +2036,13 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                    {
 //                        string shaderSource = (stageBinding.Key == ShaderStage.Vertex) ? shaderHlslVS : shaderHlslPS;
 //                        var result = d3dcompiler.Compile(shaderSource, stageBinding.Value, stageBinding.Key, effectParameters, xkslangEffectReflection, null);
-
+//                        result.CopyTo(log);
+//
 //                        if (result.HasErrors)
 //                        {
 //                            continue;
 //                        }
-
+//
 //                        // -------------------------------------------------------
 //                        // Append bytecode id to shader log
 //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
@@ -1950,14 +2053,14 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        }
 //#endif
 //                        // -------------------------------------------------------
-
+//
 //                        shaderStageBytecodes.Add(result.Bytecode);
-
+//
 //                        // When this is a compute shader, there is no need to scan other stages
 //                        if (stageBinding.Key == ShaderStage.Compute)
 //                            break;
 //                    }
-
+//
 //                    //Get the list of hashSources loaded
 //                    HashSourceCollection hashSources = null;
 //                    if (XkslangDLLBindingClass.ListShaderSourcesLoaded != null && XkslangDLLBindingClass.ListShaderSourcesLoaded.Count > 0)
@@ -1969,11 +2072,11 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        }
 //                    }
 //                    var bytecode = new EffectBytecode { Reflection = xkslangEffectReflection, HashSources = hashSources };
-
+//
 //                    // Remove unused reflection data, as it is entirely resolved at compile time.
 //                    CleanupReflection(bytecode.Reflection);
 //                    bytecode.Stages = shaderStageBytecodes.ToArray();
-
+//
 //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
 //                    lock (WriterLock) // protect write in case the same shader is created twice
 //                    {
@@ -1985,7 +2088,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                        builder.AppendLine(fullEffectName ?? "");
 //                        builder.Append(compilerParameters?.ToStringPermutationsDetailed());
 //                        builder.AppendLine("***************************");
-
+//
 //                        if (bytecode.Reflection.ConstantBuffers.Count > 0)
 //                        {
 //                            builder.AppendLine("****  ConstantBuffers  ****");
@@ -2000,7 +2103,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            }
 //                            builder.AppendLine("***************************");
 //                        }
-
+//
 //                        if (bytecode.Reflection.ResourceBindings.Count > 0)
 //                        {
 //                            builder.AppendLine("******  Resources    ******");
@@ -2011,7 +2114,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            }
 //                            builder.AppendLine("***************************");
 //                        }
-
+//
 //                        if (bytecode.HashSources != null && bytecode.HashSources.Count > 0)
 //                        {
 //                            builder.AppendLine("*****     Sources     *****");
@@ -2022,7 +2125,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            }
 //                            builder.AppendLine("***************************");
 //                        }
-
+//
 //                        if (bytecode.Stages.Length > 0)
 //                        {
 //                            builder.AppendLine("*****     Stages      *****");
@@ -2031,27 +2134,27 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 //                            builder.AppendLine("***************************");
 //                        }
 //                        builder.AppendLine("*************************/");
-
+//
 //                        builder.AppendLine("");
 //                        builder.AppendLine("/*************************/");
 //                        builder.AppendLine("//Vertex Stage");
 //                        builder.Append(shaderHlslVS);
-
+//
 //                        builder.AppendLine("");
 //                        builder.AppendLine("/*************************/");
 //                        builder.AppendLine("//Pixel Stage");
 //                        builder.Append(shaderHlslPS);
-
+//
 //                        var shaderSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_fullLogs" + ".hlsl");
 //                        File.WriteAllText(shaderSourceFilename, builder.ToString());
 //                    }
 //#endif
-
+//
 //                    return new EffectBytecodeCompilerResult(bytecode, log);
 //                } //end of compilation
-
+//
 //            }  //end of: CompileEffectUsingXkslang
-//#endif //XKSLANG_PROTOTYPE_OBSOLETE
+//////#endif //XKSLANG_PROTOTYPE_OBSOLETE
 
 
             {
