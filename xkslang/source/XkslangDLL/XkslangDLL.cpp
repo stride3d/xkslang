@@ -548,6 +548,47 @@ namespace xkslangDll
         return true;
     }
 
+    static void ConvertStructMemberToDllData(const TypeMemberReflectionDescription& structMemberSrc, ConstantBufferMemberReflectionDescriptionData& structMemberDst)
+    {
+        const char* memberName = allocateAndCopyStringOnGlobalHeap(structMemberSrc.Name.c_str());
+        structMemberDst.Set(
+            structMemberSrc.Offset,
+            memberName,
+            nullptr,
+            structMemberSrc.Type.Class,
+            structMemberSrc.Type.Type,
+            structMemberSrc.Type.RowCount,
+            structMemberSrc.Type.ColumnCount,
+            structMemberSrc.Type.Size,
+            structMemberSrc.Type.Alignment,
+            structMemberSrc.Type.ArrayStride,
+            structMemberSrc.Type.MatrixStride,
+            structMemberSrc.Type.ArrayElements,
+            structMemberSrc.Type.CountMembers
+        );
+
+        if (structMemberSrc.Type.Class == EffectParameterReflectionClass::Struct)
+        {
+            int lgsdfjgl = 524235;
+            /*int structCountMembers = structMemberSrc.Type.CountMembers;
+            if (structCountMembers > 0 && structMemberSrc.Type.Members != nullptr)
+            {
+                //create the struct sub members details
+                ConstantBufferMemberReflectionDescriptionData* structMembers = nullptr;
+                structMembers = (ConstantBufferMemberReflectionDescriptionData*)GlobalAlloc(0, structCountMembers * sizeof(ConstantBufferMemberReflectionDescriptionData));
+
+                for (int sm = 0; sm < structCountMembers; ++sm)
+                {
+                    const TypeMemberReflectionDescription& structMemberSrc = structMemberSrc.Type.Members[sm];
+                    ConstantBufferMemberReflectionDescriptionData& structMemberDst = structMembers[sm];
+                    ConvertStructMemberToDllData(structMemberSrc, structMemberDst);
+                }
+
+                structMemberDst.SetMembersDetails(structMembers);
+            }*/
+        }
+    }
+
 	bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
 		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers,
 		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings,
@@ -602,6 +643,26 @@ namespace xkslangDll
                             memberRawName,
 							memberSrc.ReflectionType
 						);
+
+                        if (memberSrc.ReflectionType.Class == EffectParameterReflectionClass::Struct)
+                        {
+                            int structCountMembers = memberSrc.ReflectionType.CountMembers;
+                            if (structCountMembers > 0 && memberSrc.ReflectionType.Members != nullptr)
+                            {
+                                //create the struct sub members details
+                                ConstantBufferMemberReflectionDescriptionData* structMembers = nullptr;
+                                structMembers = (ConstantBufferMemberReflectionDescriptionData*)GlobalAlloc(0, structCountMembers * sizeof(ConstantBufferMemberReflectionDescriptionData));
+
+                                for (int sm = 0; sm < structCountMembers; ++sm)
+                                {
+                                    const TypeMemberReflectionDescription& structMemberSrc = memberSrc.ReflectionType.Members[sm];
+                                    ConstantBufferMemberReflectionDescriptionData& structMemberDst = structMembers[sm];
+                                    ConvertStructMemberToDllData(structMemberSrc, structMemberDst);
+                                }
+
+                                membersInfo[m].SetMembersDetails(structMembers);
+                            }
+                        }
 					}
 
 					const char* cbufferName = allocateAndCopyStringOnGlobalHeap(constantBufferSrc.CbufferName.c_str());

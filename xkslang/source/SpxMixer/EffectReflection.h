@@ -431,6 +431,8 @@ public:
     TypeReflectionDescription ReflectionType;
 
     ConstantBufferMemberReflectionDescription(){}
+    ConstantBufferMemberReflectionDescription(const std::string& keyName, const std::string& rawName, int offset, const TypeReflectionDescription& reflectionType)
+        : KeyName(KeyName), RawName(rawName), Offset(offset), ReflectionType(reflectionType) {}
 
 public:
     std::string Print(int padding);
@@ -461,7 +463,7 @@ public:
 
 public:
 	EffectResourceBindingDescription() {}
-	EffectResourceBindingDescription(ShadingStageEnum stage, std::string keyName, std::string rawName, EffectParameterReflectionClass c, EffectParameterReflectionType t)
+	EffectResourceBindingDescription(ShadingStageEnum stage, const std::string& keyName, const std::string& rawName, EffectParameterReflectionClass c, EffectParameterReflectionType t)
         : Stage(stage), KeyName(keyName), RawName(rawName), Class(c), Type(t){}
 };
 
@@ -476,7 +478,7 @@ public:
 
 public:
 	ShaderInputAttributeDescription() {}
-	ShaderInputAttributeDescription(int semanticIndex, std::string semanticName) : SemanticIndex(semanticIndex), SemanticName(semanticName) {}
+	ShaderInputAttributeDescription(int semanticIndex, const std::string& semanticName) : SemanticIndex(semanticIndex), SemanticName(semanticName) {}
 };
 
 //=====================================================================================================================
@@ -503,6 +505,9 @@ public:
     static std::string GetEffectParameterReflectionClassLabel(EffectParameterReflectionClass parameterClass);
     static std::string GetEffectParameterReflectionTypeLabel(EffectParameterReflectionType parameterType);
     std::string Print();
+
+    void SetResourcesBindings(const std::vector<EffectResourceBindingDescription>& bindings);
+    void SetInputAttributes(const std::vector<ShaderInputAttributeDescription>& inputAttributes);
 };
 
 }  // namespace xkslang

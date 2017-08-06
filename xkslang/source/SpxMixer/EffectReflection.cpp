@@ -37,6 +37,42 @@ void EffectReflection::Clear()
 	CountInputAttributes = 0;
 }
 
+void EffectReflection::SetResourcesBindings(const vector<EffectResourceBindingDescription>& bindings)
+{
+    if (ResourceBindings != nullptr) {
+        delete[] ResourceBindings;
+        ResourceBindings = nullptr;
+    }
+
+    CountResourceBindings = (int)bindings.size();
+    if (CountResourceBindings > 0)
+    {
+        ResourceBindings = new EffectResourceBindingDescription[CountResourceBindings];
+        for (int k = 0; k < CountResourceBindings; k++)
+        {
+            ResourceBindings[k] = bindings[k];
+        }
+    }
+}
+
+void EffectReflection::SetInputAttributes(const vector<ShaderInputAttributeDescription>& inputAttributes)
+{
+    if (InputAttributes != nullptr) {
+        delete[] InputAttributes;
+        InputAttributes = nullptr;
+    }
+
+    CountInputAttributes = (int)inputAttributes.size();
+    if (CountInputAttributes > 0)
+    {
+        InputAttributes = new ShaderInputAttributeDescription[CountInputAttributes];
+        for (int k = 0; k < CountInputAttributes; k++)
+        {
+            InputAttributes[k] = inputAttributes[k];
+        }
+    }
+}
+
 //=====================================================================================================================
 //=====================================================================================================================
 // ConstantBuffer
@@ -144,7 +180,14 @@ string TypeReflectionDescription::Print(int padding)
     {
         paddingStr += ' ';
         stream << paddingStr << "CountMembers=" << CountMembers << endl;
-        for (int m = 0; m < CountMembers; m++) stream << Members[m].Print(padding + 1);
+        if (Members == nullptr)
+        {
+            stream << paddingStr << "Members undefined" << endl;
+        }
+        else
+        {
+            for (int m = 0; m < CountMembers; m++) stream << Members[m].Print(padding + 1);
+        }
     }
     return stream.str();
 }

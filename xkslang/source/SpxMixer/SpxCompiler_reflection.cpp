@@ -553,6 +553,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                 //Set the cbuffer name
                 ConstantBufferReflectionDescription& cbufferReflection = effectReflection.ConstantBuffers[icb];
                 cbufferReflection.CbufferName = cbufferData->cbufferName;
+                cbufferReflection.Members.clear();
                 cbufferReflection.Members.resize(countMembers);
 
                 //Get the reflection data for all cbuffer members
@@ -884,12 +885,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 		//copy the ResourceBindings vector into the EffectReflection
 		if (success)
 		{
-			effectReflection.CountResourceBindings = vecAllResourceBindings.size();
-			if (effectReflection.CountResourceBindings > 0) effectReflection.ResourceBindings = new EffectResourceBindingDescription[effectReflection.CountResourceBindings];
-			for (int k = 0; k < effectReflection.CountResourceBindings; k++)
-			{
-				effectReflection.ResourceBindings[k] = vecAllResourceBindings[k];
-			}
+            effectReflection.SetResourcesBindings(vecAllResourceBindings);
 		}
     }
 

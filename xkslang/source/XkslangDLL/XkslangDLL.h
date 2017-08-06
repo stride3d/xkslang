@@ -31,7 +31,7 @@ namespace xkslangDll
         BytecodeShaderInformation(char* shaderName): ShaderName(shaderName) {}
     };
 
-	//struct containing a constant buffer member data (to be easily exchanged between native and managed apps)
+	//Defines a constant buffer member data (to be easily exchanged between native and managed apps)
 	struct ConstantBufferMemberReflectionDescriptionData
 	{
 	public:
@@ -49,12 +49,36 @@ namespace xkslangDll
 		int32_t ArrayStride;
 		int32_t MatrixStride;
 		int32_t CountMembers;
-		//TypeMemberReflectionDescription* Members;
+        ConstantBufferMemberReflectionDescriptionData* StructMembers;
 
 		ConstantBufferMemberReflectionDescriptionData(const int32_t offset, const char* keyName, const char* rawName, const xkslang::TypeReflectionDescription& t)
 			: Offset(offset), KeyName(keyName), RawName(rawName),
             Class(t.Class), Type(t.Type), RowCount(t.RowCount), ColumnCount(t.ColumnCount), ArrayElements(t.ArrayElements), Size(t.Size),
-			Alignment(t.Alignment), ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), CountMembers(t.CountMembers) {}
+			Alignment(t.Alignment), ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), CountMembers(t.CountMembers), StructMembers(nullptr) {}
+
+        void Set(const int32_t offset, const char* keyName, const char* rawName, xkslang::EffectParameterReflectionClass c, xkslang::EffectParameterReflectionType t,
+            int countRow, int countColumn, int size, int alignment, int arrayStride, int matrixStride, int arrayElements, int countMembers)
+        {
+            this->Offset = offset;
+            this->KeyName = keyName;
+            this->RawName = rawName;
+            this->Class = c;
+            this->Type = t;
+            this->RowCount = countRow;
+            this->ColumnCount = countColumn;
+            this->Size = size;
+            this->Alignment = alignment;
+            this->ArrayStride = arrayStride;
+            this->MatrixStride = matrixStride;
+            this->ArrayElements = arrayElements;
+            this->CountMembers = countMembers;
+            this->StructMembers = nullptr;
+        }
+
+        void SetMembersDetails(ConstantBufferMemberReflectionDescriptionData* structMembers)
+        {
+            this->StructMembers = structMembers;
+        }
 	};
 
 	//struct containing a constant buffer data (to be easily exchanged between native and managed apps)

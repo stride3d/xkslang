@@ -36,7 +36,7 @@
 
 //#define DISPLAY_OUTPUT_AND_EXPECTED_OUTPUT_DIFFERENCES
 
-//#define ALLOW_ACCESS_TO_XKSLANG_DLL
+#define ALLOW_ACCESS_TO_XKSLANG_DLL
 
 #ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
 #include "../source/XkslangDLL/XkslangDLL.h"
@@ -134,7 +134,7 @@ static bool xkfxOptions_processSampleWithXkfxLibrary = false;  //if true, we als
 
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
-static bool processEffectWithDllApi = false;
+static bool processEffectWithDllApi = true;
 static bool processEffectWithXkfxProcessorApi = true;
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
@@ -270,7 +270,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testMacro01", "testMacro01.xkfx" },
     //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
     //{ "userCustomType01", "userCustomType01.xkfx" },
-    //{ "userCustomType02", "userCustomType02.xkfx" },
+    { "userCustomType02", "userCustomType02.xkfx" },
     //{ "TestLink01", "TestLink01.xkfx" },
     //{ "TestLink02", "TestLink02.xkfx" },
     //{ "TestLink03", "TestLink03.xkfx" },
@@ -748,6 +748,57 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
     return success;
 }
 
+static bool ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(
+    const xkslangDll::ConstantBufferMemberReflectionDescriptionData& structMemberSrc, TypeMemberReflectionDescription& structMemberDst)
+{
+    if (structMemberSrc.KeyName == nullptr) return error("struct member src keyname is null");
+
+    structMemberDst.Name = structMemberSrc.KeyName;
+    structMemberDst.Offset = structMemberSrc.Offset;
+    structMemberDst.Type.Set(
+        0,
+        structMemberSrc.Class,
+        structMemberSrc.Type,
+        structMemberSrc.RowCount,
+        structMemberSrc.ColumnCount,
+        structMemberSrc.Size,
+        structMemberSrc.Alignment,
+        structMemberSrc.ArrayStride,
+        structMemberSrc.MatrixStride,
+        structMemberSrc.ArrayElements
+    );
+
+    if (structMemberSrc.KeyName == nullptr) { GlobalFree((HGLOBAL)structMemberSrc.KeyName); }
+    if (structMemberSrc.RawName == nullptr) { GlobalFree((HGLOBAL)structMemberSrc.RawName); }
+
+    if (structMemberSrc.CountMembers > 0)
+    {
+        if (structMemberSrc.StructMembers != nullptr)
+        {
+            TypeMemberReflectionDescription* structMembers = new TypeMemberReflectionDescription[structMemberSrc.CountMembers];
+
+            //Set the cbuffer member's struct members
+            for (int im = 0; im < structMemberSrc.CountMembers; im++)
+            {
+                const xkslangDll::ConstantBufferMemberReflectionDescriptionData& structMemberSrc = structMemberSrc.StructMembers[im];
+                TypeMemberReflectionDescription& structMemberDst = structMembers[im];
+                if (!ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(structMemberSrc, structMemberDst))
+                    return error("Failed to convert the struct member");
+            }
+
+            structMemberDst.Type.SetStructMembers(structMembers, structMemberSrc.CountMembers);
+
+            GlobalFree((HGLOBAL)structMemberSrc.StructMembers);
+        }
+        else
+        {
+            structMemberDst.Type.SetStructMembers(nullptr, structMemberSrc.CountMembers);
+        }
+    }
+
+    return true;
+}
+
 static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mixer, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
 {
 #ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
@@ -803,15 +854,15 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
     EffectReflection effectReflection;
     if (buildEffectReflection)
     {
-        /*xkslangDll::ConstantBufferReflectionDescriptionData* constantBuffers;
-        xkslangDll::EffectResourceBindingDescriptionData* resourceBindings;
-        xkslangDll::ShaderInputAttributeDescriptionData* inputAttributes;
+        xkslangDll::ConstantBufferReflectionDescriptionData* pAllocsConstantBuffers;
+        xkslangDll::EffectResourceBindingDescriptionData* pAllocsResourceBindings;
+        xkslangDll::ShaderInputAttributeDescriptionData* pAllocsInputAttributes;
         int32_t countConstantBuffers, countResourceBindings, countInputAttributes;
 
         success = xkslangDll::GetMixerEffectReflectionData(mixer->mixerHandleId,
-            &constantBuffers, &countConstantBuffers,
-            &resourceBindings, &countResourceBindings,
-            &inputAttributes, &countInputAttributes);
+            &pAllocsConstantBuffers, &countConstantBuffers,
+            &pAllocsResourceBindings, &countResourceBindings,
+            &pAllocsInputAttributes, &countInputAttributes);
 
         if (!success)
         {
@@ -821,15 +872,157 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
 
             error("Failed to get the Effect Reflection data");
             return false;
-        }*/
+        }
+
+        //Convert the data into the effectReflection object
+        //Process the ResourceBindings
+        vector<EffectResourceBindingDescription> vecAllResourceBindings;
+        if (countResourceBindings > 0 && pAllocsResourceBindings != nullptr)
+        {
+            xkslangDll::EffectResourceBindingDescriptionData* effectResourceBinding;
+            for (int i = 0; i < countResourceBindings; i++)
+            {
+                effectResourceBinding = pAllocsResourceBindings + i;
+
+                string keyName = effectResourceBinding->KeyName;
+                string rawName = effectResourceBinding->RawName;
+                EffectResourceBindingDescription binding
+                (
+                    effectResourceBinding->Stage,
+                    keyName,
+                    rawName,
+                    effectResourceBinding->Class,
+                    effectResourceBinding->Type
+                );
+                vecAllResourceBindings.push_back(binding);
+
+                GlobalFree((HGLOBAL)effectResourceBinding->KeyName);
+                GlobalFree((HGLOBAL)effectResourceBinding->RawName);
+            }
+
+            //delete the data allocated on the native code
+            GlobalFree((HGLOBAL)pAllocsResourceBindings);
+        }
+        effectReflection.SetResourcesBindings(vecAllResourceBindings);
+
+        //Process the InputAttributes
+        vector<ShaderInputAttributeDescription> vecAllInputAttributes;
+        if (countInputAttributes > 0 && pAllocsInputAttributes != nullptr)
+        {
+            xkslangDll::ShaderInputAttributeDescriptionData* shaderInputAttribute;
+            for (int i = 0; i < countInputAttributes; i++)
+            {
+                shaderInputAttribute = pAllocsInputAttributes + i;
+
+                ShaderInputAttributeDescription inputAttribute
+                (
+                    shaderInputAttribute->SemanticIndex,
+                    shaderInputAttribute->SemanticName
+                );
+                vecAllInputAttributes.push_back(inputAttribute);
+
+                GlobalFree((HGLOBAL)shaderInputAttribute->SemanticName);
+            }
+
+            //delete the data allocated on the native code
+            GlobalFree((HGLOBAL)pAllocsInputAttributes);
+        }
+        effectReflection.SetInputAttributes(vecAllInputAttributes);
+
+        //Process the ConstantBuffers
+        if (countConstantBuffers > 0 && pAllocsConstantBuffers != nullptr)
+        {
+            effectReflection.CountConstantBuffers = countConstantBuffers;
+            effectReflection.ConstantBuffers = new ConstantBufferReflectionDescription[countConstantBuffers];
+
+            for (int i = 0; i < countConstantBuffers; i++)
+            {
+                //read the cbuffer data
+                xkslangDll::ConstantBufferReflectionDescriptionData* constantBufferData;
+                constantBufferData = pAllocsConstantBuffers + i;
+
+                //create the cbuffer
+                string cbufferName = constantBufferData->CbufferName;
+                GlobalFree((HGLOBAL)constantBufferData->CbufferName);
+
+                ConstantBufferReflectionDescription& constantBuffer = effectReflection.ConstantBuffers[i];
+                constantBuffer.CbufferName = cbufferName;
+                constantBuffer.Size = constantBufferData->Size;
+
+                //process the cbuffer members
+                if (constantBufferData->CountMembers > 0)
+                {
+                    constantBuffer.Members.clear();
+                    constantBuffer.Members.resize(constantBufferData->CountMembers);
+
+                    for (int m = 0; m < constantBufferData->CountMembers; ++m)
+                    {
+                        ConstantBufferMemberReflectionDescription& cbufferMember = constantBuffer.Members[m];
+
+                        xkslangDll::ConstantBufferMemberReflectionDescriptionData* memberData;
+                        memberData = constantBufferData->Members + m;
+
+                        cbufferMember.KeyName = memberData->KeyName;
+                        cbufferMember.RawName = memberData->RawName;
+                        cbufferMember.Offset = memberData->Offset;
+                        cbufferMember.ReflectionType.Set(
+                            0,
+                            memberData->Class,
+                            memberData->Type,
+                            memberData->RowCount,
+                            memberData->ColumnCount,
+                            memberData->Size,
+                            memberData->Alignment,
+                            memberData->ArrayStride,
+                            memberData->MatrixStride,
+                            memberData->ArrayElements
+                        );
+
+                        if (memberData->CountMembers > 0)
+                        {
+                            if (memberData->StructMembers != nullptr)
+                            {
+                                TypeMemberReflectionDescription* structMembers = new TypeMemberReflectionDescription[memberData->CountMembers];
+
+                                //Set the cbuffer member's struct members
+                                for (int im = 0; im < memberData->CountMembers; im++)
+                                {
+                                    const xkslangDll::ConstantBufferMemberReflectionDescriptionData& structMemberSrc = memberData->StructMembers[im];
+                                    TypeMemberReflectionDescription& structMemberDst = structMembers[im];
+                                    if (!ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(structMemberSrc, structMemberDst))
+                                        return error("Failed to convert the struct member");
+                                }
+
+                                cbufferMember.ReflectionType.SetStructMembers(structMembers, memberData->CountMembers);
+
+                                GlobalFree((HGLOBAL)memberData->StructMembers);
+                            }
+                            else
+                            {
+                                cbufferMember.ReflectionType.SetStructMembers(nullptr, memberData->CountMembers);
+                            }
+                        }
+
+                        GlobalFree((HGLOBAL)memberData->KeyName);
+                        GlobalFree((HGLOBAL)memberData->RawName);
+                    }
+
+                    GlobalFree((HGLOBAL)constantBufferData->Members);
+                }
+            }
+
+            GlobalFree((HGLOBAL)pAllocsConstantBuffers);
+        }
+
+        int gfdsjgl = 5454;
 
         //TMP: directly call xkslang classes
-        success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
+        /*success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);
         if (!success)
         {
             error("Failed to get the reflection data from the compiled bytecode");
             return false;
-        }
+        }*/
     }
 
     //get the output stages' compiled bytecode
