@@ -271,6 +271,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
     //{ "userCustomType01", "userCustomType01.xkfx" },
     //{ "userCustomType02", "userCustomType02.xkfx" },
+    //{ "userCustomType03", "userCustomType03.xkfx" },
     //{ "TestLink01", "TestLink01.xkfx" },
     //{ "TestLink02", "TestLink02.xkfx" },
     //{ "TestLink03", "TestLink03.xkfx" },
@@ -792,7 +793,7 @@ static bool ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(
         }
         else
         {
-            structMemberDst.Type.SetStructMembers(nullptr, structMemberSrc.CountMembers);
+            return error("A cbuffer struct member is missing Reflection data about its members");
         }
     }
 
@@ -999,7 +1000,7 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
                             }
                             else
                             {
-                                cbufferMember.ReflectionType.SetStructMembers(nullptr, memberData->CountMembers);
+                                return error("A cbuffer struct member is missing Reflection data about its members");
                             }
                         }
 

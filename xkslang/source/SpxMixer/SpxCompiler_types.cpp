@@ -521,6 +521,17 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
             countCols = subElementReflection.ColumnCount;
             countElementsInArray = arrayCountElems;
 
+            if (subElementReflection.Members != nullptr && subElementReflection.CountMembers > 0)
+            {
+                //Array of struct: we recover the struct information
+                structMembers = subElementReflection.Members;
+                countStructMembers = subElementReflection.CountMembers;
+
+                //set the subelements members to null, otherwise the data will be deleted by its destructor
+                subElementReflection.Members = nullptr;
+                subElementReflection.CountMembers = 0;
+            }
+
             break;
         }
 

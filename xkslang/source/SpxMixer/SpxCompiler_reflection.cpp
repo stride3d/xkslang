@@ -649,17 +649,34 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 
         if (listStructMembers.size() > 0)
         {
-            //sort the struct members by their typeId
+            //flag all id we for which we need to recover the member names
             vector<TypeReflectionDescription*> listStructMembersByResultId;
             listStructMembersByResultId.resize(bound(), nullptr);
             for (auto itm = listStructMembers.begin(); itm != listStructMembers.end(); itm++)
             {
                 TypeReflectionDescription* structMember = *itm;
+
+                spv::Id spvStructTypeId = structMember->SpvTypeId;
+
 #ifdef XKSLANG_DEBUG_MODE
-                if (structMember->SpvTypeId >= (unsigned int)listStructMembersByResultId.size()) { error("Id out of bound: " + to_string(structMember->SpvTypeId)); break; }
+                if (spvStructTypeId >= (unsigned int)listStructMembersByResultId.size()) { error("Id out of bound: " + to_string(spvStructTypeId)); break; }
 #endif
-                structMember->nextTypeInList = listStructMembersByResultId[structMember->SpvTypeId];
-                listStructMembersByResultId[structMember->SpvTypeId] = structMember;
+                
+                //special case if the member is an array of structs: the structTypeId that we want to match is the id of the array type
+                if (structMember->ArrayElements > 0)
+                {
+                    TypeInstruction* cbufferMemberType = GetTypeById(spvStructTypeId);
+                    if (cbufferMemberType == nullptr) { error("failed to find the type object for the cbuffer struct array id: " + to_string(spvStructTypeId)); break; }
+                    if (cbufferMemberType->opCode != spv::OpTypeArray) { error("Invalid type for the cbuffer struct array id: " + to_string(spvStructTypeId)); break; }
+                    spvStructTypeId = asId(cbufferMemberType->GetBytecodeStartPosition() + 2);
+#ifdef XKSLANG_DEBUG_MODE
+                    if (spvStructTypeId >= (unsigned int)listStructMembersByResultId.size()) { error("Id out of bound: " + to_string(spvStructTypeId)); break; }
+#endif
+                }
+
+                //link the struct members having the same typeId (different members can use the same typeId (and will have the same name))
+                structMember->nextTypeInList = listStructMembersByResultId[spvStructTypeId];
+                listStructMembersByResultId[spvStructTypeId] = structMember;
             }
 
             //Fill the struct members name

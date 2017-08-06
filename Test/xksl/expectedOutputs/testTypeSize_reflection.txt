@@ -1,0 +1,115 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer Globals [size: 1248]
+@C    ShaderMain_s1 => ShaderMain.s1
+@C    ShaderMain_s2 => ShaderMain.s2
+@C    ShaderMain_s3 => ShaderMain.s3
+@C    ShaderMain_s3_rm => ShaderMain.s3_rm
+@C    ShaderMain_s4 => ShaderMain.s4
+@C    ShaderMain_s6 => ShaderMain.s6
+***********************
+*****  Resources  *****
+***********************
+@C    Globals => Globals [Stage: Pixel]
+
+ConstantBuffers. Count=1
+ cbuffer: Name="Globals" Size=1248 MembersCount=6
+  KeyName="ShaderMain.s1 RawName="ShaderMain_s1" Offset=0
+  Class=Struct Type=Void Size=32 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   CountMembers=5
+   Name="aHalf" Offset=0
+   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   Name="aBool" Offset=4
+   Class=Scalar Type=UInt Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   Name="aInt" Offset=8
+   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   Name="aFloat" Offset=12
+   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   Name="aDouble" Offset=16
+   Class=Scalar Type=Double Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderMain.s2 RawName="ShaderMain_s2" Offset=32
+  Class=Struct Type=Void Size=48 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   CountMembers=3
+   Name="aFloat2" Offset=0
+   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+   Name="aFloat3" Offset=16
+   Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+   Name="aFloat4" Offset=32
+   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="ShaderMain.s3 RawName="ShaderMain_s3" Offset=80
+  Class=Struct Type=Void Size=368 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   CountMembers=8
+   Name="aMat44" Offset=0
+   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+   Name="aMat34" Offset=64
+   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=3
+   Name="aMat23" Offset=128
+   Class=MatrixRows Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=2
+   Name="aMat43" Offset=176
+   Class=MatrixRows Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=4
+   Name="aMat42" Offset=224
+   Class=MatrixRows Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=4
+   Name="aMat32" Offset=256
+   Class=MatrixRows Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=3
+   Name="aMat33" Offset=288
+   Class=MatrixRows Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=3
+   Name="aMat22" Offset=336
+   Class=MatrixRows Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=2
+
+  KeyName="ShaderMain.s3_rm RawName="ShaderMain_s3_rm" Offset=448
+  Class=Struct Type=Void Size=400 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   CountMembers=8
+   Name="aMat44_rm" Offset=0
+   Class=MatrixColumns Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+   Name="aMat34_rm" Offset=64
+   Class=MatrixColumns Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=4
+   Name="aMat23_rm" Offset=112
+   Class=MatrixColumns Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=3
+   Name="aMat43_rm" Offset=144
+   Class=MatrixColumns Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=3
+   Name="aMat42_rm" Offset=208
+   Class=MatrixColumns Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=2
+   Name="aMat32_rm" Offset=272
+   Class=MatrixColumns Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=2
+   Name="aMat33_rm" Offset=320
+   Class=MatrixColumns Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=3
+   Name="aMat22_rm" Offset=368
+   Class=MatrixColumns Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=2
+
+  KeyName="ShaderMain.s4 RawName="ShaderMain_s4" Offset=848
+  Class=Struct Type=Void Size=272 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   CountMembers=3
+   Name="ColorArray" Offset=0
+   Class=Vector Type=Float Size=32 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=2 Rows=1 Columns=4
+   Name="IntArray" Offset=32
+   Class=Scalar Type=Int Size=48 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=3 Rows=1 Columns=1
+   Name="aMatArray" Offset=80
+   Class=MatrixRows Type=Float Size=192 Alignment=16 ArrayStride=48 MatrixStride=16 ArrayElements=4 Rows=3 Columns=2
+
+  KeyName="ShaderMain.s6 RawName="ShaderMain_s6" Offset=1120
+  Class=Struct Type=Void Size=128 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+   CountMembers=2
+   Name="s0" Offset=0
+   Class=Struct Type=Void Size=80 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+    CountMembers=2
+    Name="aMat43" Offset=0
+    Class=MatrixRows Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=4
+    Name="aMat22" Offset=48
+    Class=MatrixRows Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=2
+   Name="s1" Offset=80
+   Class=Struct Type=Void Size=48 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+    CountMembers=3
+    Name="i" Offset=0
+    Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+    Name="f4" Offset=16
+    Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+    Name="b" Offset=32
+    Class=Scalar Type=UInt Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ResourceBindings. Count=1
+ Stage=Pixel KeyName="Globals" RawName="Globals" Class=ConstantBuffer Type=ConstantBuffer
+
+InputAttributes. Count=0

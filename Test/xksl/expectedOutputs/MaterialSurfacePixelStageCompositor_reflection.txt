@@ -60,6 +60,11 @@ ConstantBuffers. Count=3
 
   KeyName="LightDirectionalGroup.Lights.directLightGroups[0] RawName="o0S297C0_LightDirectionalGroup_Lights" Offset=368
   Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
+   CountMembers=2
+   Name="DirectionWS" Offset=0
+   Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+   Name="Color" Offset=16
+   Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
   KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0] RawName="o0S297C0_DirectLightGroupPerView_LightCount" Offset=624
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
