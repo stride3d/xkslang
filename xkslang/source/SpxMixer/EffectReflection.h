@@ -478,7 +478,7 @@ public:
 
 public:
 	ShaderInputAttributeDescription() {}
-	ShaderInputAttributeDescription(int semanticIndex, const std::string& semanticName) : SemanticIndex(semanticIndex), SemanticName(semanticName) {}
+	ShaderInputAttributeDescription(const std::string& semanticName, int semanticIndex) : SemanticName(semanticName), SemanticIndex(semanticIndex) {}
 };
 
 //=====================================================================================================================

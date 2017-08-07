@@ -711,7 +711,7 @@ namespace xkslangDll
 				for (int k = 0; k < effectReflectionSrc.CountInputAttributes; ++k)
 				{
 					const char* semanticName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.InputAttributes[k].SemanticName.c_str());
-					arrayInputAttributes[k] = ShaderInputAttributeDescriptionData(effectReflectionSrc.InputAttributes[k].SemanticIndex, semanticName);
+					arrayInputAttributes[k] = ShaderInputAttributeDescriptionData(semanticName, effectReflectionSrc.InputAttributes[k].SemanticIndex);
 				}
 				*inputAttributes = arrayInputAttributes;
 			}

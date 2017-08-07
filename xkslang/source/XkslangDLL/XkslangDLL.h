@@ -125,10 +125,10 @@ namespace xkslangDll
 	struct ShaderInputAttributeDescriptionData
 	{
 	public:
-		int SemanticIndex;
 		const char* SemanticName;
+        int SemanticIndex;
 
-		ShaderInputAttributeDescriptionData(int semanticIndex, const char* semanticName) : SemanticIndex(semanticIndex), SemanticName(semanticName) {}
+		ShaderInputAttributeDescriptionData(const char* semanticName, int semanticIndex) : SemanticName(semanticName), SemanticIndex(semanticIndex) {}
 	};
 
 	//=====================================================================================================================

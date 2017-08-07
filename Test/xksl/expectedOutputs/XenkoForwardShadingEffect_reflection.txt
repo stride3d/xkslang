@@ -157,4 +157,4 @@ InputAttributes. Count=4
  SemanticName="NORMAL" SemanticIndex=0
  SemanticName="TANGENT" SemanticIndex=0
  SemanticName="POSITION" SemanticIndex=0
- SemanticName="TEXCOORD0" SemanticIndex=0
+ SemanticName="TEXCOORD" SemanticIndex=0

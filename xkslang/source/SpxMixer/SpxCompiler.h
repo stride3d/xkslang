@@ -829,6 +829,7 @@ private:
     bool GetBytecodeReflectionData(EffectReflection& effectReflection);
 	bool GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
 	bool GetInputAttributesFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
+    std::pair<std::string, int> ParseSemanticNameAndIndex(const std::string& semanticBaseName);
 
     bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
 

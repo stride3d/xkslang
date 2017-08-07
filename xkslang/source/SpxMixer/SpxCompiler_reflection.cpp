@@ -190,7 +190,10 @@ bool SpxCompiler::GetInputAttributesFromBytecode(EffectReflection& effectReflect
 		for (int k = 0; k < effectReflection.CountInputAttributes; k++)
 		{
 			VariableData* variableData = vecInputVariables[k]->variableData;
-			effectReflection.InputAttributes[k] = ShaderInputAttributeDescription(variableData->semanticIndex, variableData->semanticName);
+
+            //Parses the specified semantic and index depending on the base name: ex: COLOR1 -> {COLOR, 1}
+            pair<string, int> semantic = ParseSemanticNameAndIndex(variableData->semanticName);
+			effectReflection.InputAttributes[k] = ShaderInputAttributeDescription(semantic.first, semantic.second);
 		}
 	}
 
@@ -206,6 +209,27 @@ bool SpxCompiler::GetInputAttributesFromBytecode(EffectReflection& effectReflect
 	}
 
 	return success;
+}
+
+std::pair<std::string, int> SpxCompiler::ParseSemanticNameAndIndex(const std::string& semanticBaseName)
+{
+    int len = (int)semanticBaseName.size();
+    int pos = len - 1;
+    int index = 0;
+    int mult = 1;
+    while (pos >= 0)
+    {
+        int c = (int)semanticBaseName[pos];
+        if (c >= '0' && c <= '9'){
+            index += (c - '0') * mult;
+            mult *= 10;
+            pos--;
+        }
+        else break;
+    }
+
+    string semanticName = semanticBaseName.substr(0, pos + 1);
+    return std::pair<std::string, int>(semanticName, index);
 }
 
 bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, vector<OutputStageEntryPoint>& listEntryPoints)

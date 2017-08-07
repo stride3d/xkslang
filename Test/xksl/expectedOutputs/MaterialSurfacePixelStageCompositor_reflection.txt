@@ -116,4 +116,4 @@ InputAttributes. Count=11
  SemanticName="POSITION_WS" SemanticIndex=0
  SemanticName="SV_Position" SemanticIndex=0
  SemanticName="" SemanticIndex=0
- SemanticName="TEXCOORD0" SemanticIndex=0
+ SemanticName="TEXCOORD" SemanticIndex=0
