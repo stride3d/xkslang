@@ -1298,9 +1298,8 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             }
             if (stage.listStreamVariablesAccessed[index].IsNeededAsOutput())
             {
-                ///TBC !!!!!!!!
                 // if PS: pixel output is only SV_Targetx and SV_Depth, everything else are intermediate variable
-                /*bool canOutputStream = true;
+                bool canOutputStream = true;
                 if (shadingStageEnum == ShadingStageEnum::Pixel)
                 {
                     TypeStructMember& streamMember = globalListOfMergedStreamVariables.members[index];
@@ -1311,9 +1310,8 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                         canOutputStream = false;
                     }
                 }
-                if (canOutputStream) vecStageOutputMembersIndex.push_back(index);*/
 
-                vecStageOutputMembersIndex.push_back(index);
+                if (canOutputStream) vecStageOutputMembersIndex.push_back(index);
                 if (!memberAdded) vecStageIOMembersIndex.push_back(index);
                 memberAdded = true;
             }
