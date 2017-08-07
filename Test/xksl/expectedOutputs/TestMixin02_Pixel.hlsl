@@ -7,7 +7,7 @@ static int PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Output
 {
-    int PS_OUT_ColorTarget : TOTO;
+    int PS_OUT_ColorTarget : SV_Target0;
 };
 
 int OverrideB_Compute()

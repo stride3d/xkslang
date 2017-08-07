@@ -20,18 +20,12 @@ cbuffer PerDraw
 static float3 PS_IN_meshNormal;
 static float4 PS_IN_meshTangent;
 static float4 PS_IN_ShadingPosition;
-static float3x3 PS_OUT_tangentToWorld;
 
 struct SPIRV_Cross_Input
 {
     float3 PS_IN_meshNormal : NORMAL;
     float4 PS_IN_meshTangent : TANGENT;
     float4 PS_IN_ShadingPosition : SV_Position;
-};
-
-struct SPIRV_Cross_Output
-{
-    float3x3 PS_OUT_tangentToWorld : SV_Target0;
 };
 
 void NormalBase_GenerateNormal_PS()
@@ -78,16 +72,12 @@ void frag_main()
     _streams.ShadingPosition_id3 = PS_IN_ShadingPosition;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShaderBase_PSMain();
-    PS_OUT_tangentToWorld = _streams.tangentToWorld_id2;
 }
 
-SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
+void main(SPIRV_Cross_Input stage_input)
 {
     PS_IN_meshNormal = stage_input.PS_IN_meshNormal;
     PS_IN_meshTangent = stage_input.PS_IN_meshTangent;
     PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
     frag_main();
-    SPIRV_Cross_Output stage_output;
-    stage_output.PS_OUT_tangentToWorld = PS_OUT_tangentToWorld;
-    return stage_output;
 }

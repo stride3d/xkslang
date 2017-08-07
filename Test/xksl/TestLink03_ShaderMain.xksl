@@ -18,7 +18,7 @@ shader ShaderMain<LinkType TTexture, LinkType TSampler, LinkType TScale, LinkTyp
 	
 	stage stream float4 s_in : S_INPUT;
 	stage stream float4 s_int : S_INT;
-	stage stream float4 s_out : S_OUTPUT;
+	stage stream float4 s_out : SV_Target0;
 	
 	stage void VSMain() 
     {

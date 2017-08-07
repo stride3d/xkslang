@@ -1,6 +1,6 @@
 shader Base
 {
-	stage stream int streamI: TOTO;
+	stage stream int streamI: SV_Target0;
 	stage stream float streamF;
 	
 	stream bool streamB;

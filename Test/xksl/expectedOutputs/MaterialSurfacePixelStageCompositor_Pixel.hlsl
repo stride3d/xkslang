@@ -93,36 +93,7 @@ static float4 PS_IN_ShadingPosition;
 static float3x3 PS_IN_tangentToWorld;
 static float2 PS_IN_TexCoord;
 static float2 PS_IN_TexCoord_1;
-static float3 PS_OUT_matNormal;
-static float4 PS_OUT_matColorBase;
-static float4 PS_OUT_matDiffuse;
-static float PS_OUT_matGlossiness;
-static float3 PS_OUT_matSpecular;
-static float PS_OUT_matSpecularIntensity;
-static float3 PS_OUT_viewWS;
-static float3 PS_OUT_matDiffuseVisible;
-static float PS_OUT_alphaRoughness;
-static float3 PS_OUT_matSpecularVisible;
-static float PS_OUT_NdotV;
-static float3 PS_OUT_shadingColor;
-static float PS_OUT_shadingColorAlpha;
-static float3 PS_OUT_H;
-static float PS_OUT_NdotH;
-static float PS_OUT_LdotH;
-static float PS_OUT_VdotH;
 static float4 PS_OUT_ColorTarget;
-static float3 PS_OUT_lightPositionWS;
-static float3 PS_OUT_lightDirectionWS;
-static float3 PS_OUT_lightColor;
-static float3 PS_OUT_lightColorNdotL;
-static float3 PS_OUT_envLightDiffuseColor;
-static float3 PS_OUT_envLightSpecularColor;
-static float PS_OUT_NdotL;
-static float PS_OUT_lightDirectAmbientOcclusion;
-static float3 PS_OUT_normalWS;
-static float PS_OUT_matBlend;
-static float3 PS_OUT_shadowColor;
-static float PS_OUT_matDisplacement;
 
 struct SPIRV_Cross_Input
 {
@@ -144,36 +115,7 @@ struct SPIRV_Cross_Input
 
 struct SPIRV_Cross_Output
 {
-    float3 PS_OUT_matNormal : SV_Target0;
-    float4 PS_OUT_matColorBase : SV_Target1;
-    float4 PS_OUT_matDiffuse : SV_Target2;
-    float PS_OUT_matGlossiness : SV_Target3;
-    float3 PS_OUT_matSpecular : SV_Target4;
-    float PS_OUT_matSpecularIntensity : SV_Target5;
-    float3 PS_OUT_viewWS : SV_Target6;
-    float3 PS_OUT_matDiffuseVisible : SV_Target7;
-    float PS_OUT_alphaRoughness : SV_Target8;
-    float3 PS_OUT_matSpecularVisible : SV_Target9;
-    float PS_OUT_NdotV : SV_Target10;
-    float3 PS_OUT_shadingColor : SV_Target11;
-    float PS_OUT_shadingColorAlpha : SV_Target12;
-    float3 PS_OUT_H : SV_Target13;
-    float PS_OUT_NdotH : SV_Target14;
-    float PS_OUT_LdotH : SV_Target15;
-    float PS_OUT_VdotH : SV_Target16;
     float4 PS_OUT_ColorTarget : SV_Target0;
-    float3 PS_OUT_lightPositionWS : SV_Target18;
-    float3 PS_OUT_lightDirectionWS : SV_Target19;
-    float3 PS_OUT_lightColor : SV_Target20;
-    float3 PS_OUT_lightColorNdotL : SV_Target21;
-    float3 PS_OUT_envLightDiffuseColor : SV_Target22;
-    float3 PS_OUT_envLightSpecularColor : SV_Target23;
-    float PS_OUT_NdotL : SV_Target24;
-    float PS_OUT_lightDirectAmbientOcclusion : SV_Target25;
-    float3 PS_OUT_normalWS : NORMALWS;
-    float PS_OUT_matBlend : SV_Target27;
-    float3 PS_OUT_shadowColor : SV_Target28;
-    float PS_OUT_matDisplacement : SV_Target29;
 };
 
 void ShaderBase_PSMain()
@@ -563,36 +505,7 @@ void frag_main()
     ShaderBase_PSMain();
     float4 _27 = MaterialSurfacePixelStageCompositor_Shading(_streams);
     _streams.ColorTarget_id26 = _27;
-    PS_OUT_matNormal = _streams.matNormal_id0;
-    PS_OUT_matColorBase = _streams.matColorBase_id1;
-    PS_OUT_matDiffuse = _streams.matDiffuse_id2;
-    PS_OUT_matGlossiness = _streams.matGlossiness_id3;
-    PS_OUT_matSpecular = _streams.matSpecular_id4;
-    PS_OUT_matSpecularIntensity = _streams.matSpecularIntensity_id5;
-    PS_OUT_viewWS = _streams.viewWS_id13;
-    PS_OUT_matDiffuseVisible = _streams.matDiffuseVisible_id14;
-    PS_OUT_alphaRoughness = _streams.alphaRoughness_id15;
-    PS_OUT_matSpecularVisible = _streams.matSpecularVisible_id16;
-    PS_OUT_NdotV = _streams.NdotV_id17;
-    PS_OUT_shadingColor = _streams.shadingColor_id19;
-    PS_OUT_shadingColorAlpha = _streams.shadingColorAlpha_id20;
-    PS_OUT_H = _streams.H_id21;
-    PS_OUT_NdotH = _streams.NdotH_id22;
-    PS_OUT_LdotH = _streams.LdotH_id23;
-    PS_OUT_VdotH = _streams.VdotH_id24;
     PS_OUT_ColorTarget = _streams.ColorTarget_id26;
-    PS_OUT_lightPositionWS = _streams.lightPositionWS_id27;
-    PS_OUT_lightDirectionWS = _streams.lightDirectionWS_id28;
-    PS_OUT_lightColor = _streams.lightColor_id29;
-    PS_OUT_lightColorNdotL = _streams.lightColorNdotL_id30;
-    PS_OUT_envLightDiffuseColor = _streams.envLightDiffuseColor_id31;
-    PS_OUT_envLightSpecularColor = _streams.envLightSpecularColor_id32;
-    PS_OUT_NdotL = _streams.NdotL_id33;
-    PS_OUT_lightDirectAmbientOcclusion = _streams.lightDirectAmbientOcclusion_id34;
-    PS_OUT_normalWS = _streams.normalWS_id35;
-    PS_OUT_matBlend = _streams.matBlend_id37;
-    PS_OUT_shadowColor = _streams.shadowColor_id38;
-    PS_OUT_matDisplacement = _streams.matDisplacement_id41;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
@@ -613,35 +526,6 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     PS_IN_TexCoord_1 = stage_input.PS_IN_TexCoord_1;
     frag_main();
     SPIRV_Cross_Output stage_output;
-    stage_output.PS_OUT_matNormal = PS_OUT_matNormal;
-    stage_output.PS_OUT_matColorBase = PS_OUT_matColorBase;
-    stage_output.PS_OUT_matDiffuse = PS_OUT_matDiffuse;
-    stage_output.PS_OUT_matGlossiness = PS_OUT_matGlossiness;
-    stage_output.PS_OUT_matSpecular = PS_OUT_matSpecular;
-    stage_output.PS_OUT_matSpecularIntensity = PS_OUT_matSpecularIntensity;
-    stage_output.PS_OUT_viewWS = PS_OUT_viewWS;
-    stage_output.PS_OUT_matDiffuseVisible = PS_OUT_matDiffuseVisible;
-    stage_output.PS_OUT_alphaRoughness = PS_OUT_alphaRoughness;
-    stage_output.PS_OUT_matSpecularVisible = PS_OUT_matSpecularVisible;
-    stage_output.PS_OUT_NdotV = PS_OUT_NdotV;
-    stage_output.PS_OUT_shadingColor = PS_OUT_shadingColor;
-    stage_output.PS_OUT_shadingColorAlpha = PS_OUT_shadingColorAlpha;
-    stage_output.PS_OUT_H = PS_OUT_H;
-    stage_output.PS_OUT_NdotH = PS_OUT_NdotH;
-    stage_output.PS_OUT_LdotH = PS_OUT_LdotH;
-    stage_output.PS_OUT_VdotH = PS_OUT_VdotH;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;
-    stage_output.PS_OUT_lightPositionWS = PS_OUT_lightPositionWS;
-    stage_output.PS_OUT_lightDirectionWS = PS_OUT_lightDirectionWS;
-    stage_output.PS_OUT_lightColor = PS_OUT_lightColor;
-    stage_output.PS_OUT_lightColorNdotL = PS_OUT_lightColorNdotL;
-    stage_output.PS_OUT_envLightDiffuseColor = PS_OUT_envLightDiffuseColor;
-    stage_output.PS_OUT_envLightSpecularColor = PS_OUT_envLightSpecularColor;
-    stage_output.PS_OUT_NdotL = PS_OUT_NdotL;
-    stage_output.PS_OUT_lightDirectAmbientOcclusion = PS_OUT_lightDirectAmbientOcclusion;
-    stage_output.PS_OUT_normalWS = PS_OUT_normalWS;
-    stage_output.PS_OUT_matBlend = PS_OUT_matBlend;
-    stage_output.PS_OUT_shadowColor = PS_OUT_shadowColor;
-    stage_output.PS_OUT_matDisplacement = PS_OUT_matDisplacement;
     return stage_output;
 }

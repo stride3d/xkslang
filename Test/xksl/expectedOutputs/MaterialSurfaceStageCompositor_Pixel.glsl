@@ -25,8 +25,6 @@ layout(location = 0) in vec4 PS_IN_ShadingPosition;
 layout(location = 1) in vec4 PS_IN_PositionWS;
 layout(location = 2) in float PS_IN_shadingColorAlpha;
 layout(location = 0) out vec4 PS_OUT_ColorTarget;
-layout(location = 1) out vec3 PS_OUT_viewWS;
-layout(location = 2) out vec3 PS_OUT_shadingColor;
 
 void ShaderBase_PSMain()
 {
@@ -59,7 +57,5 @@ void main()
     vec4 _36 = MaterialSurfacePixelStageCompositor_Shading(_streams);
     _streams.ColorTarget_id1 = _36;
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;
-    PS_OUT_viewWS = _streams.viewWS_id2;
-    PS_OUT_shadingColor = _streams.shadingColor_id4;
 }
 

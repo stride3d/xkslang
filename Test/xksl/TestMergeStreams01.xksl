@@ -4,7 +4,7 @@ shader Color
 	stream int aStream1;
 	stage stream int aStream2;
 	stage stream float4 aStream3: SV_SEMANTIC;
-	stage stream float4 aStreamBis: SV_OUTPUT;
+	stage stream float4 aStreamBis: : SV_Target0;
 	
 	int Compute(int i)
 	{
@@ -16,7 +16,7 @@ shader Color
 
 shader ShaderA
 {
-	stage stream float4 outStream: SV_OUTPUT;
+	stage stream float4 outStream: : SV_Target0;
 	
 	//return an error for now
 	//stage stream float4 sameSemanticWithType1: SV_TOTO;
@@ -30,6 +30,6 @@ shader ShaderA
 			res += color.Compute(1);
 		}
 		streams.outStream += res;
-		int i = streams.outStream;
+		int i = streams.outStream; kjdfhkgjhdfkhgkdf;
 	}
 }

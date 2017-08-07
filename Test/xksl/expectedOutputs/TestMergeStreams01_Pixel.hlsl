@@ -9,21 +9,11 @@ struct PS_STREAMS
 
 static int PS_IN_aStream2;
 static float4 PS_IN_aStream3;
-static float4 PS_OUT_aStreamBis;
-static int PS_OUT_aStream1;
-static int PS_OUT_aStream1_1;
 
 struct SPIRV_Cross_Input
 {
     int PS_IN_aStream2 : TEXCOORD0;
     float4 PS_IN_aStream3 : SV_SEMANTIC;
-};
-
-struct SPIRV_Cross_Output
-{
-    float4 PS_OUT_aStreamBis : SV_OUTPUT;
-    int PS_OUT_aStream1 : SV_Target1;
-    int PS_OUT_aStream1_1 : SV_Target2;
 };
 
 int o0S5C0_Color_Compute(inout PS_STREAMS _streams, int i)
@@ -59,19 +49,11 @@ void frag_main()
     float _8 = float(res);
     _streams.aStreamBis_id2 += float4(_8, _8, _8, _8);
     int i = int4(_streams.aStreamBis_id2).x;
-    PS_OUT_aStreamBis = _streams.aStreamBis_id2;
-    PS_OUT_aStream1 = _streams.aStream1_id3;
-    PS_OUT_aStream1_1 = _streams.aStream1_id4;
 }
 
-SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
+void main(SPIRV_Cross_Input stage_input)
 {
     PS_IN_aStream2 = stage_input.PS_IN_aStream2;
     PS_IN_aStream3 = stage_input.PS_IN_aStream3;
     frag_main();
-    SPIRV_Cross_Output stage_output;
-    stage_output.PS_OUT_aStreamBis = PS_OUT_aStreamBis;
-    stage_output.PS_OUT_aStream1 = PS_OUT_aStream1;
-    stage_output.PS_OUT_aStream1_1 = PS_OUT_aStream1_1;
-    return stage_output;
 }

@@ -14,7 +14,7 @@ shader ShaderMain
 	stage stream int aBool : ABOOL;
 	stage stream float4 aF4Tab[4] : AF4Tab;
 	stage stream float2 aF2 : AF2;
-	stage stream float4 aF4: AF4;
+	stage stream float4 aF4: SV_Target0;
 	stage stream float2 aF2b: AF2b;
 	stage stream float aFloat: AF;
 	stage stream Toto aToto1 : ATOTO;

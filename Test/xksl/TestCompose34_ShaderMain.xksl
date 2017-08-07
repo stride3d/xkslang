@@ -36,7 +36,7 @@ shader ShaderMain
 
 shader ShaderB: ShaderMain
 {
-	stage stream float totoB: TOTOB;
+	stage stream float totoB: SV_Target0;
 	
 	compose ShaderComp colorB1;
 	compose ShaderComp colorB2;

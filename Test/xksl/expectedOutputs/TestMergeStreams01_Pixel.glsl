@@ -11,9 +11,6 @@ struct PS_STREAMS
 
 layout(location = 0) in int PS_IN_aStream2;
 layout(location = 1) in vec4 PS_IN_aStream3;
-layout(location = 0) out vec4 PS_OUT_aStreamBis;
-layout(location = 1) out int PS_OUT_aStream1;
-layout(location = 2) out int PS_OUT_aStream1_1;
 
 int o0S5C0_Color_Compute(inout PS_STREAMS _streams, int i)
 {
@@ -43,8 +40,5 @@ void main()
     res += _72;
     _streams.aStreamBis_id2 += vec4(float(res));
     int i = ivec4(_streams.aStreamBis_id2).x;
-    PS_OUT_aStreamBis = _streams.aStreamBis_id2;
-    PS_OUT_aStream1 = _streams.aStream1_id3;
-    PS_OUT_aStream1_1 = _streams.aStream1_id4;
 }
 

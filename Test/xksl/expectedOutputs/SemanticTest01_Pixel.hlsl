@@ -9,7 +9,6 @@ struct PS_STREAMS
 static float4 PS_IN_ShadingPosition;
 static float4 PS_OUT_ColorTarget;
 static float PS_OUT_Depth;
-static float PS_OUT_CustomStream;
 
 struct SPIRV_Cross_Input
 {
@@ -20,7 +19,6 @@ struct SPIRV_Cross_Output
 {
     float4 PS_OUT_ColorTarget : SV_Target0;
     float PS_OUT_Depth : SV_Depth;
-    float PS_OUT_CustomStream : SV_CUSTOM;
 };
 
 void frag_main()
@@ -32,7 +30,6 @@ void frag_main()
     _streams.ColorTarget_id1 = float4(_streams.ShadingPosition_id0.x, _streams.ShadingPosition_id0.y, 1.0f, 1.0f);
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;
     PS_OUT_Depth = _streams.Depth_id2;
-    PS_OUT_CustomStream = _streams.CustomStream_id3;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
@@ -42,6 +39,5 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;
     stage_output.PS_OUT_Depth = PS_OUT_Depth;
-    stage_output.PS_OUT_CustomStream = PS_OUT_CustomStream;
     return stage_output;
 }

@@ -23,8 +23,6 @@ static float4 PS_IN_ShadingPosition;
 static float4 PS_IN_PositionWS;
 static float PS_IN_shadingColorAlpha;
 static float4 PS_OUT_ColorTarget;
-static float3 PS_OUT_viewWS;
-static float3 PS_OUT_shadingColor;
 
 struct SPIRV_Cross_Input
 {
@@ -36,8 +34,6 @@ struct SPIRV_Cross_Input
 struct SPIRV_Cross_Output
 {
     float4 PS_OUT_ColorTarget : SV_Target0;
-    float3 PS_OUT_viewWS : SV_Target1;
-    float3 PS_OUT_shadingColor : SV_Target2;
 };
 
 void ShaderBase_PSMain()
@@ -71,8 +67,6 @@ void frag_main()
     float4 _36 = MaterialSurfacePixelStageCompositor_Shading(_streams);
     _streams.ColorTarget_id1 = _36;
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;
-    PS_OUT_viewWS = _streams.viewWS_id2;
-    PS_OUT_shadingColor = _streams.shadingColor_id4;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
@@ -83,7 +77,5 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;
-    stage_output.PS_OUT_viewWS = PS_OUT_viewWS;
-    stage_output.PS_OUT_shadingColor = PS_OUT_shadingColor;
     return stage_output;
 }

@@ -1,6 +1,6 @@
 shader Base
 {
-	stream int ColorTarget;
+	stream int ColorTarget: SV_Target0;
 
     int Compute()
     {

@@ -14,7 +14,7 @@ struct SPIRV_Cross_Input
 
 struct SPIRV_Cross_Output
 {
-    float4 PS_OUT_s_out : S_OUTPUT;
+    float4 PS_OUT_s_out : SV_Target0;
 };
 
 void frag_main()

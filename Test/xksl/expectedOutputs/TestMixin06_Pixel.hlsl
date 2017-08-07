@@ -7,7 +7,7 @@ static int PS_OUT_streamI;
 
 struct SPIRV_Cross_Output
 {
-    int PS_OUT_streamI : TOTO;
+    int PS_OUT_streamI : SV_Target0;
 };
 
 void frag_main()

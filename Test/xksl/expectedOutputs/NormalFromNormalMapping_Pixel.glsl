@@ -22,7 +22,6 @@ layout(std140) uniform PerDraw
 layout(location = 0) in vec3 PS_IN_meshNormal;
 layout(location = 1) in vec4 PS_IN_meshTangent;
 layout(location = 2) in vec4 PS_IN_ShadingPosition;
-layout(location = 0) out mat3 PS_OUT_tangentToWorld;
 
 void NormalBase_GenerateNormal_PS()
 {
@@ -68,6 +67,5 @@ void main()
     _streams.ShadingPosition_id3 = PS_IN_ShadingPosition;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShaderBase_PSMain();
-    PS_OUT_tangentToWorld = _streams.tangentToWorld_id2;
 }
 

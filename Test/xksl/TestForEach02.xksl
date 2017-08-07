@@ -10,7 +10,7 @@ shader ShaderA
 {
 	compose ComputeColor SubComputes[];
 	
-	stream int svar;
+	stream int svar: SV_Target0;
 	
 	void main()
 	{

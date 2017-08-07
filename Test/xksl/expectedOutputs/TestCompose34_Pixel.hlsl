@@ -23,7 +23,7 @@ struct SPIRV_Cross_Input
 
 struct SPIRV_Cross_Output
 {
-    float PS_OUT_totoB : TOTOB;
+    float PS_OUT_totoB : SV_Target0;
 };
 
 float ShaderMain_Compute()
