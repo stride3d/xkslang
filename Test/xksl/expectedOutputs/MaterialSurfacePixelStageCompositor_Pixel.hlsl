@@ -46,8 +46,7 @@ struct PS_STREAMS
     float matBlend_id37;
     float3 shadowColor_id38;
     float2 TexCoord_id39;
-    float2 TexCoord_id40;
-    float matDisplacement_id41;
+    float matDisplacement_id40;
 };
 
 cbuffer PerView
@@ -92,7 +91,6 @@ static float4 PS_IN_PositionWS;
 static float4 PS_IN_ShadingPosition;
 static float3x3 PS_IN_tangentToWorld;
 static float2 PS_IN_TexCoord;
-static float2 PS_IN_TexCoord_1;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
@@ -110,7 +108,6 @@ struct SPIRV_Cross_Input
     float3 PS_IN_tangentToWorld_1 : TEXCOORD10;
     float3 PS_IN_tangentToWorld_2 : TEXCOORD11;
     float2 PS_IN_TexCoord : TEXCOORD0;
-    float2 PS_IN_TexCoord_1 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -135,7 +132,7 @@ void o19S2C1_MaterialStream_ResetStream(out PS_STREAMS _streams)
 void o19S2C1_MaterialDisplacementStream_ResetStream(out PS_STREAMS _streams)
 {
     o19S2C1_MaterialStream_ResetStream(_streams);
-    _streams.matDisplacement_id41 = 0.0f;
+    _streams.matDisplacement_id40 = 0.0f;
 }
 
 float4 o18S2C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__Compute(PS_STREAMS _streams)
@@ -158,7 +155,7 @@ float2 o18S2C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(fl
 
 float4 o18S2C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(PS_STREAMS _streams)
 {
-    float2 offset = _streams.TexCoord_id40 - float2(0.5f, 0.5f);
+    float2 offset = _streams.TexCoord_id39 - float2(0.5f, 0.5f);
     float phase = length(offset);
     float derivative = cos((((phase + (Global_Time * -0.02999999932944774627685546875f)) * 2.0f) * 3.1400001049041748046875f) * 5.0f) * 0.100000001490116119384765625f;
     float param = offset.y / offset.x;
@@ -489,7 +486,7 @@ float4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, float2(0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), 0.0f, float3(0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f), float2(0.0f, 0.0f), 0.0f };
+    PS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, float2(0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), 0.0f, float3(0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f), 0.0f };
     _streams.matAmbientOcclusion_id6 = PS_IN_matAmbientOcclusion;
     _streams.matAmbientOcclusionDirectLightingFactor_id7 = PS_IN_matAmbientOcclusionDirectLightingFactor;
     _streams.matCavity_id8 = PS_IN_matCavity;
@@ -501,7 +498,6 @@ void frag_main()
     _streams.ShadingPosition_id25 = PS_IN_ShadingPosition;
     _streams.tangentToWorld_id36 = PS_IN_tangentToWorld;
     _streams.TexCoord_id39 = PS_IN_TexCoord;
-    _streams.TexCoord_id40 = PS_IN_TexCoord_1;
     ShaderBase_PSMain();
     float4 _27 = MaterialSurfacePixelStageCompositor_Shading(_streams);
     _streams.ColorTarget_id26 = _27;
@@ -523,7 +519,6 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     PS_IN_tangentToWorld[1] = stage_input.PS_IN_tangentToWorld_1;
     PS_IN_tangentToWorld[2] = stage_input.PS_IN_tangentToWorld_2;
     PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
-    PS_IN_TexCoord_1 = stage_input.PS_IN_TexCoord_1;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

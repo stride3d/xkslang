@@ -11,7 +11,6 @@ struct VS_STREAMS
     float4 ShadingPosition_id8;
     float3x3 tangentToWorld_id9;
     float2 TexCoord_id10;
-    float2 TexCoord_id11;
 };
 
 static float VS_IN_matAmbientOcclusion;
@@ -25,7 +24,6 @@ static float4 VS_IN_PositionWS;
 static float4 VS_IN_ShadingPosition;
 static float3x3 VS_IN_tangentToWorld;
 static float2 VS_IN_TexCoord;
-static float2 VS_IN_TexCoord_1;
 static float VS_OUT_matAmbientOcclusion;
 static float VS_OUT_matAmbientOcclusionDirectLightingFactor;
 static float VS_OUT_matCavity;
@@ -37,7 +35,6 @@ static float4 VS_OUT_PositionWS;
 static float4 VS_OUT_ShadingPosition;
 static float3x3 VS_OUT_tangentToWorld;
 static float2 VS_OUT_TexCoord;
-static float2 VS_OUT_TexCoord_1;
 
 struct SPIRV_Cross_Input
 {
@@ -54,7 +51,6 @@ struct SPIRV_Cross_Input
     float3 VS_IN_tangentToWorld_1 : TEXCOORD10;
     float3 VS_IN_tangentToWorld_2 : TEXCOORD11;
     float2 VS_IN_TexCoord : TEXCOORD0;
-    float2 VS_IN_TexCoord_1 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -72,12 +68,11 @@ struct SPIRV_Cross_Output
     float3 VS_OUT_tangentToWorld_1 : TEXCOORD10;
     float3 VS_OUT_tangentToWorld_2 : TEXCOORD11;
     float2 VS_OUT_TexCoord : TEXCOORD0;
-    float2 VS_OUT_TexCoord_1 : TEXCOORD0;
 };
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, float2(0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float2(0.0f, 0.0f), float2(0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, float2(0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float2(0.0f, 0.0f) };
     _streams.matAmbientOcclusion_id0 = VS_IN_matAmbientOcclusion;
     _streams.matAmbientOcclusionDirectLightingFactor_id1 = VS_IN_matAmbientOcclusionDirectLightingFactor;
     _streams.matCavity_id2 = VS_IN_matCavity;
@@ -89,7 +84,6 @@ void vert_main()
     _streams.ShadingPosition_id8 = VS_IN_ShadingPosition;
     _streams.tangentToWorld_id9 = VS_IN_tangentToWorld;
     _streams.TexCoord_id10 = VS_IN_TexCoord;
-    _streams.TexCoord_id11 = VS_IN_TexCoord_1;
     VS_OUT_matAmbientOcclusion = _streams.matAmbientOcclusion_id0;
     VS_OUT_matAmbientOcclusionDirectLightingFactor = _streams.matAmbientOcclusionDirectLightingFactor_id1;
     VS_OUT_matCavity = _streams.matCavity_id2;
@@ -101,7 +95,6 @@ void vert_main()
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id8;
     VS_OUT_tangentToWorld = _streams.tangentToWorld_id9;
     VS_OUT_TexCoord = _streams.TexCoord_id10;
-    VS_OUT_TexCoord_1 = _streams.TexCoord_id11;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
@@ -119,7 +112,6 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     VS_IN_tangentToWorld[1] = stage_input.VS_IN_tangentToWorld_1;
     VS_IN_tangentToWorld[2] = stage_input.VS_IN_tangentToWorld_2;
     VS_IN_TexCoord = stage_input.VS_IN_TexCoord;
-    VS_IN_TexCoord_1 = stage_input.VS_IN_TexCoord_1;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_matAmbientOcclusion = VS_OUT_matAmbientOcclusion;
@@ -133,6 +125,5 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     stage_output.VS_OUT_ShadingPosition = VS_OUT_ShadingPosition;
     stage_output.VS_OUT_tangentToWorld = VS_OUT_tangentToWorld;
     stage_output.VS_OUT_TexCoord = VS_OUT_TexCoord;
-    stage_output.VS_OUT_TexCoord_1 = VS_OUT_TexCoord_1;
     return stage_output;
 }

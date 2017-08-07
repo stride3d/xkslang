@@ -48,8 +48,7 @@ struct PS_STREAMS
     float matBlend_id37;
     vec3 shadowColor_id38;
     vec2 TexCoord_id39;
-    vec2 TexCoord_id40;
-    float matDisplacement_id41;
+    float matDisplacement_id40;
 };
 
 layout(std140) uniform PerView
@@ -96,7 +95,6 @@ layout(location = 7) in vec4 PS_IN_PositionWS;
 layout(location = 8) in vec4 PS_IN_ShadingPosition;
 layout(location = 9) in mat3 PS_IN_tangentToWorld;
 layout(location = 10) in vec2 PS_IN_TexCoord;
-layout(location = 11) in vec2 PS_IN_TexCoord_1;
 layout(location = 0) out vec4 PS_OUT_ColorTarget;
 
 void ShaderBase_PSMain()
@@ -116,7 +114,7 @@ void o19S2C1_MaterialStream_ResetStream(out PS_STREAMS _streams)
 void o19S2C1_MaterialDisplacementStream_ResetStream(out PS_STREAMS _streams)
 {
     o19S2C1_MaterialStream_ResetStream(_streams);
-    _streams.matDisplacement_id41 = 0.0;
+    _streams.matDisplacement_id40 = 0.0;
 }
 
 vec4 o18S2C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__Compute(PS_STREAMS _streams)
@@ -138,7 +136,7 @@ vec2 o18S2C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(floa
 
 vec4 o18S2C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(PS_STREAMS _streams)
 {
-    vec2 offset = _streams.TexCoord_id40 - vec2(0.5);
+    vec2 offset = _streams.TexCoord_id39 - vec2(0.5);
     float phase = length(offset);
     float derivative = cos((((phase + (PerFrame_var.Global_Time * -0.02999999932944774627685546875)) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.100000001490116119384765625;
     float param = offset.y / offset.x;
@@ -469,7 +467,7 @@ vec4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 
 void main()
 {
-    PS_STREAMS _streams = PS_STREAMS(vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec2(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec4(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec4(0.0), vec4(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), 0.0, vec3(0.0), vec2(0.0), vec2(0.0), 0.0);
+    PS_STREAMS _streams = PS_STREAMS(vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec2(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec4(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec4(0.0), vec4(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), 0.0, vec3(0.0), vec2(0.0), 0.0);
     _streams.matAmbientOcclusion_id6 = PS_IN_matAmbientOcclusion;
     _streams.matAmbientOcclusionDirectLightingFactor_id7 = PS_IN_matAmbientOcclusionDirectLightingFactor;
     _streams.matCavity_id8 = PS_IN_matCavity;
@@ -481,7 +479,6 @@ void main()
     _streams.ShadingPosition_id25 = PS_IN_ShadingPosition;
     _streams.tangentToWorld_id36 = PS_IN_tangentToWorld;
     _streams.TexCoord_id39 = PS_IN_TexCoord;
-    _streams.TexCoord_id40 = PS_IN_TexCoord_1;
     ShaderBase_PSMain();
     vec4 _27 = MaterialSurfacePixelStageCompositor_Shading(_streams);
     _streams.ColorTarget_id26 = _27;

@@ -13,7 +13,6 @@ struct VS_STREAMS
     vec4 ShadingPosition_id8;
     mat3 tangentToWorld_id9;
     vec2 TexCoord_id10;
-    vec2 TexCoord_id11;
 };
 
 layout(location = 0) in float VS_IN_matAmbientOcclusion;
@@ -27,7 +26,6 @@ layout(location = 7) in vec4 VS_IN_PositionWS;
 layout(location = 8) in vec4 VS_IN_ShadingPosition;
 layout(location = 9) in mat3 VS_IN_tangentToWorld;
 layout(location = 10) in vec2 VS_IN_TexCoord;
-layout(location = 11) in vec2 VS_IN_TexCoord_1;
 layout(location = 0) out float VS_OUT_matAmbientOcclusion;
 layout(location = 1) out float VS_OUT_matAmbientOcclusionDirectLightingFactor;
 layout(location = 2) out float VS_OUT_matCavity;
@@ -39,11 +37,10 @@ layout(location = 7) out vec4 VS_OUT_PositionWS;
 layout(location = 8) out vec4 VS_OUT_ShadingPosition;
 layout(location = 9) out mat3 VS_OUT_tangentToWorld;
 layout(location = 10) out vec2 VS_OUT_TexCoord;
-layout(location = 11) out vec2 VS_OUT_TexCoord_1;
 
 void main()
 {
-    VS_STREAMS _streams = VS_STREAMS(0.0, 0.0, 0.0, 0.0, 0.0, vec2(0.0), vec3(0.0), vec4(0.0), vec4(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec2(0.0), vec2(0.0));
+    VS_STREAMS _streams = VS_STREAMS(0.0, 0.0, 0.0, 0.0, 0.0, vec2(0.0), vec3(0.0), vec4(0.0), vec4(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec2(0.0));
     _streams.matAmbientOcclusion_id0 = VS_IN_matAmbientOcclusion;
     _streams.matAmbientOcclusionDirectLightingFactor_id1 = VS_IN_matAmbientOcclusionDirectLightingFactor;
     _streams.matCavity_id2 = VS_IN_matCavity;
@@ -55,7 +52,6 @@ void main()
     _streams.ShadingPosition_id8 = VS_IN_ShadingPosition;
     _streams.tangentToWorld_id9 = VS_IN_tangentToWorld;
     _streams.TexCoord_id10 = VS_IN_TexCoord;
-    _streams.TexCoord_id11 = VS_IN_TexCoord_1;
     VS_OUT_matAmbientOcclusion = _streams.matAmbientOcclusion_id0;
     VS_OUT_matAmbientOcclusionDirectLightingFactor = _streams.matAmbientOcclusionDirectLightingFactor_id1;
     VS_OUT_matCavity = _streams.matCavity_id2;
@@ -67,6 +63,5 @@ void main()
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id8;
     VS_OUT_tangentToWorld = _streams.tangentToWorld_id9;
     VS_OUT_TexCoord = _streams.TexCoord_id10;
-    VS_OUT_TexCoord_1 = _streams.TexCoord_id11;
 }
 
