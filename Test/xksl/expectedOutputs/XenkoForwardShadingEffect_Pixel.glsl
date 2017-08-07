@@ -53,7 +53,6 @@ struct PS_STREAMS
     float lightDirectAmbientOcclusion_id42;
     vec3 shadowColor_id43;
     vec2 TexCoord_id44;
-    vec2 TexCoord_id45;
 };
 
 layout(std140) uniform PerDraw
@@ -107,7 +106,6 @@ layout(location = 1) in vec3 PS_IN_meshNormal;
 layout(location = 2) in vec4 PS_IN_meshTangent;
 layout(location = 3) in vec4 PS_IN_PositionWS;
 layout(location = 4) in vec2 PS_IN_TexCoord;
-layout(location = 5) in vec2 PS_IN_TexCoord_1;
 layout(location = 0) out vec4 PS_OUT_ColorTarget;
 
 void NormalBase_GenerateNormal_PS()
@@ -205,7 +203,7 @@ vec2 o18S246C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(fl
 
 vec4 o18S246C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(PS_STREAMS _streams)
 {
-    vec2 offset = _streams.TexCoord_id45 - vec2(0.5);
+    vec2 offset = _streams.TexCoord_id44 - vec2(0.5);
     float phase = length(offset);
     float derivative = cos((((phase + (PerFrame_var.Global_Time * -0.02999999932944774627685546875)) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.100000001490116119384765625;
     float param = offset.y / offset.x;
@@ -543,13 +541,12 @@ void ShadingBase_PSMain(inout PS_STREAMS _streams)
 
 void main()
 {
-    PS_STREAMS _streams = PS_STREAMS(vec4(0.0), vec4(0.0), 0.0, vec3(0.0), vec4(0.0), vec3(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec4(0.0), 0.0, vec2(0.0), vec3(0.0), 0.0, vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), vec2(0.0), vec2(0.0));
+    PS_STREAMS _streams = PS_STREAMS(vec4(0.0), vec4(0.0), 0.0, vec3(0.0), vec4(0.0), vec3(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec4(0.0), 0.0, vec2(0.0), vec3(0.0), 0.0, vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), vec2(0.0));
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.meshNormal_id3 = PS_IN_meshNormal;
     _streams.meshTangent_id4 = PS_IN_meshTangent;
     _streams.PositionWS_id7 = PS_IN_PositionWS;
     _streams.TexCoord_id44 = PS_IN_TexCoord;
-    _streams.TexCoord_id45 = PS_IN_TexCoord_1;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShadingBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;

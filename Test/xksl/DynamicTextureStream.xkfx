@@ -1,0 +1,10 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+addResourcesLibrary "library"
+
+mixer m
+m.mixin( DynamicTextureStream<TEXCOORD0> )

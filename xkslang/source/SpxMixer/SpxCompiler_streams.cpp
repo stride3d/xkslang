@@ -44,77 +44,77 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
 
                 switch (opCode)
                 {
-                //case spv::OpMemberDecorate:
-                //{
-                //    //store members builtin to clone them with new steam members
-                //    const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
-                //    if (dec == spv::DecorationBuiltIn)
-                //    {
-                //        const spv::Id typeId = asId(start + 1);
-                //        const unsigned int memberId = asLiteralValue(start + 2);
-                //        const unsigned int value = asLiteralValue(start + 4);
-                //        vectorParsedMembersBuiltin.push_back(MemberDecorateData(typeId, memberId, dec, value));
-                //    }
-                //    break;
-                //}
+                    //case spv::OpMemberDecorate:
+                    //{
+                    //    //store members builtin to clone them with new steam members
+                    //    const spv::Decoration dec = (spv::Decoration)asLiteralValue(start + 3);
+                    //    if (dec == spv::DecorationBuiltIn)
+                    //    {
+                    //        const spv::Id typeId = asId(start + 1);
+                    //        const unsigned int memberId = asLiteralValue(start + 2);
+                    //        const unsigned int value = asLiteralValue(start + 4);
+                    //        vectorParsedMembersBuiltin.push_back(MemberDecorateData(typeId, memberId, dec, value));
+                    //    }
+                    //    break;
+                    //}
 
-                case spv::OpMemberProperties:
-                {
-                    poslastMemberXkslPropertiesEnd = start + wordCount;
-
-                    const spv::Id typeId = asId(start + 1);
-                    const unsigned int memberId = asLiteralValue(start + 2);
-                    TypeInstruction* type = GetTypeById(typeId);
-                    if (type == nullptr) { error(string("Cannot find the type for Id: ") + to_string(typeId)); break; }
-
-                    int countProperties = wordCount - 3;
-                    bool isStream = false, isStage = false;
-                    for (int a = 0; a < countProperties; ++a)
+                    case spv::OpMemberProperties:
                     {
-                        int prop = asLiteralValue(start + 3 + a);
-                        switch (prop)
+                        poslastMemberXkslPropertiesEnd = start + wordCount;
+
+                        const spv::Id typeId = asId(start + 1);
+                        const unsigned int memberId = asLiteralValue(start + 2);
+                        TypeInstruction* type = GetTypeById(typeId);
+                        if (type == nullptr) { error(string("Cannot find the type for Id: ") + to_string(typeId)); break; }
+
+                        int countProperties = wordCount - 3;
+                        bool isStream = false, isStage = false;
+                        for (int a = 0; a < countProperties; ++a)
                         {
-                        case spv::XkslPropertyEnum::PropertyStream:
-                            isStream = true;
-                            break;
-                        case spv::XkslPropertyEnum::PropertyStage:
-                            isStage = true;
-                            break;
+                            int prop = asLiteralValue(start + 3 + a);
+                            switch (prop)
+                            {
+                                case spv::XkslPropertyEnum::PropertyStream:
+                                    isStream = true;
+                                    break;
+                                case spv::XkslPropertyEnum::PropertyStage:
+                                    isStage = true;
+                                    break;
+                                }
                         }
+
+                        if (isStream)
+                        {
+                            TypeStructMemberArray* typeStreamBufferData = nullptr;
+                            if (type->streamStructData == nullptr)
+                            {
+                                ShaderClassData* shaderOwningTheType = type->GetShaderOwner();
+                                if (shaderOwningTheType == nullptr) { error(string("A stream member does not belong to a shader: ") + type->GetName()); break; }
+                                ShaderTypeData* shaderTypeData = shaderOwningTheType->GetShaderTypeDataForType(type);
+                                if (shaderOwningTheType == nullptr) { error(string("Cannot find the shader type data for the stream type: ") + type->GetName()); break; }
+
+                                typeStreamBufferData = new TypeStructMemberArray();
+                                type->streamStructData = typeStreamBufferData;
+                                type->connectedShaderTypeData = shaderTypeData;
+                                listAllShaderTypeHoldingStreamVariables.push_back(type);
+                            }
+                            else typeStreamBufferData = type->streamStructData;
+
+                            if (memberId >= typeStreamBufferData->members.size()) typeStreamBufferData->members.resize(memberId + 1);
+                            typeStreamBufferData->members[memberId].structTypeId = type->GetId();
+                            typeStreamBufferData->members[memberId].structMemberIndex = memberId;
+                            typeStreamBufferData->members[memberId].isStream = true;
+                            typeStreamBufferData->members[memberId].isStage = isStage;
+                        }
+                        break;
                     }
 
-                    if (isStream)
+                    case spv::OpTypeXlslShaderClass:
                     {
-                        TypeStructMemberArray* typeStreamBufferData = nullptr;
-                        if (type->streamStructData == nullptr)
-                        {
-                            ShaderClassData* shaderOwningTheType = type->GetShaderOwner();
-                            if (shaderOwningTheType == nullptr) { error(string("A stream member does not belong to a shader: ") + type->GetName()); break; }
-                            ShaderTypeData* shaderTypeData = shaderOwningTheType->GetShaderTypeDataForType(type);
-                            if (shaderOwningTheType == nullptr) { error(string("Cannot find the shader type data for the stream type: ") + type->GetName()); break; }
-
-                            typeStreamBufferData = new TypeStructMemberArray();
-                            type->streamStructData = typeStreamBufferData;
-                            type->connectedShaderTypeData = shaderTypeData;
-                            listAllShaderTypeHoldingStreamVariables.push_back(type);
-                        }
-                        else typeStreamBufferData = type->streamStructData;
-
-                        if (memberId >= typeStreamBufferData->members.size()) typeStreamBufferData->members.resize(memberId + 1);
-                        typeStreamBufferData->members[memberId].structTypeId = type->GetId();
-                        typeStreamBufferData->members[memberId].structMemberIndex = memberId;
-                        typeStreamBufferData->members[memberId].isStream = true;
-                        typeStreamBufferData->members[memberId].isStage = isStage;
+                        //all member property are set before: we can stop parsing the rest of the bytecode
+                        start = end;
+                        break;
                     }
-                    break;
-                }
-
-                case spv::OpTypeXlslShaderClass:
-                {
-                    //all member property are set before: we can stop parsing the rest of the bytecode
-                    start = end;
-                    break;
-                }
                 }
                 start += wordCount;
             }
@@ -165,6 +165,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                             string name = literalString(start + 3);
                             type->streamStructData->members[memberId].declarationName = name;
                         }
+
                         break;
                     }
 
@@ -250,7 +251,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
 
     //===================================================================================================================
     //===================================================================================================================
-    //regroup all stream variables in the same struct, merge the STAGE stream variables having the same semantic (or name, if no semantic is set)
+    //regroup all stream variables in the same struct, merge the stream variables having the same semantic (or name, if no semantic is set)
     if (success)
     {
         for (auto itt = listAllShaderTypeHoldingStreamVariables.begin(); itt != listAllShaderTypeHoldingStreamVariables.end(); itt++)
@@ -261,12 +262,13 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                 TypeStructMember& aStreamMember = *iatm;
                 int mergeWithStreamIndex = -1;
 
-                if (aStreamMember.isStage)
+                if (aStreamMember.isStage || aStreamMember.HasSemantic())
                 {
                     //stage variable are unique, we check if a variable with same semantic or same name already exist
                     if (aStreamMember.HasSemantic()) { //compare semantic name
                         for (unsigned int i = 0; i < listOfMergedStreamVariables.size(); ++i) {
-                            if (listOfMergedStreamVariables[i].isStage && listOfMergedStreamVariables[i].semantic == aStreamMember.semantic) {
+                            //if (listOfMergedStreamVariables[i].isStage && listOfMergedStreamVariables[i].semantic == aStreamMember.semantic) {
+                            if (listOfMergedStreamVariables[i].semantic == aStreamMember.semantic) {
                                 mergeWithStreamIndex = (int)i;
                                 break;
                             }

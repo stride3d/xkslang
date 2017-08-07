@@ -153,9 +153,8 @@ ResourceBindings. Count=10
  Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" Class=Sampler Type=Sampler
  Stage=Pixel KeyName="Material.DiffuseMap" RawName="DynamicTexture_Texture" Class=ShaderResourceView Type=Texture2D
 
-InputAttributes. Count=5
+InputAttributes. Count=4
  SemanticName="NORMAL" SemanticIndex=0
  SemanticName="TANGENT" SemanticIndex=1
  SemanticName="POSITION" SemanticIndex=2
  SemanticName="TEXCOORD0" SemanticIndex=3
- SemanticName="TEXCOORD0" SemanticIndex=4

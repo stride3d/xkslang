@@ -1,0 +1,20 @@
+
+shader ShaderA
+{
+	stage stream float4 outStreamA : SV_Target0;
+	
+	void VSMain()
+	{
+		streams.outStreamA = 5;
+	}
+}
+
+shader ShaderB
+{
+	stage stream float4 outStreamB : SV_Target0;
+
+	void PSMain()
+	{
+		streams.outStreamB = 2;
+	}
+}

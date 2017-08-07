@@ -204,7 +204,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
     //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
     //{ "TestForEachCompose03", "TestForEachCompose03.xkfx" },
-    { "TestMergeStreams01", "TestMergeStreams01.xkfx" },
+    //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
+    //{ "TestMergeStreams02", "TestMergeStreams02.xkfx" },
+    //{ "TestMergeStreams03", "TestMergeStreams03.xkfx" },
     
     //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
     //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
@@ -298,6 +300,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
     //{ "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
     //{ "DynamicTexture", "DynamicTexture.xkfx" },
+    //{ "DynamicTextureStream", "DynamicTextureStream.xkfx" },
     //{ "ComputeColorTextureScaledOffsetDynamicSampler", "ComputeColorTextureScaledOffsetDynamicSampler.xkfx" },
     //{ "MaterialSurfaceArray01", "MaterialSurfaceArray01.xkfx" },
     //{ "ComputeColorWaveNormal", "ComputeColorWaveNormal.xkfx" },
@@ -307,7 +310,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum

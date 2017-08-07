@@ -51,7 +51,6 @@ struct PS_STREAMS
     float lightDirectAmbientOcclusion_id42;
     float3 shadowColor_id43;
     float2 TexCoord_id44;
-    float2 TexCoord_id45;
 };
 
 cbuffer PerDraw
@@ -102,7 +101,6 @@ static float3 PS_IN_meshNormal;
 static float4 PS_IN_meshTangent;
 static float4 PS_IN_PositionWS;
 static float2 PS_IN_TexCoord;
-static float2 PS_IN_TexCoord_1;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
@@ -112,7 +110,6 @@ struct SPIRV_Cross_Input
     float4 PS_IN_meshTangent : TANGENT;
     float4 PS_IN_PositionWS : POSITION_WS;
     float2 PS_IN_TexCoord : TEXCOORD0;
-    float2 PS_IN_TexCoord_1 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -216,7 +213,7 @@ float2 o18S246C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(
 
 float4 o18S246C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(PS_STREAMS _streams)
 {
-    float2 offset = _streams.TexCoord_id45 - float2(0.5f, 0.5f);
+    float2 offset = _streams.TexCoord_id44 - float2(0.5f, 0.5f);
     float phase = length(offset);
     float derivative = cos((((phase + (Global_Time * -0.02999999932944774627685546875f)) * 2.0f) * 3.1400001049041748046875f) * 5.0f) * 0.100000001490116119384765625f;
     float param = offset.y / offset.x;
@@ -554,13 +551,12 @@ void ShadingBase_PSMain(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float2(0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f), float2(0.0f, 0.0f) };
+    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float2(0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f) };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.meshNormal_id3 = PS_IN_meshNormal;
     _streams.meshTangent_id4 = PS_IN_meshTangent;
     _streams.PositionWS_id7 = PS_IN_PositionWS;
     _streams.TexCoord_id44 = PS_IN_TexCoord;
-    _streams.TexCoord_id45 = PS_IN_TexCoord_1;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShadingBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;
@@ -573,7 +569,6 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     PS_IN_meshTangent = stage_input.PS_IN_meshTangent;
     PS_IN_PositionWS = stage_input.PS_IN_PositionWS;
     PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
-    PS_IN_TexCoord_1 = stage_input.PS_IN_TexCoord_1;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

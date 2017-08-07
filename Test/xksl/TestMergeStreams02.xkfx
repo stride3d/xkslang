@@ -1,0 +1,7 @@
+convertAndLoad "TestMergeStreams02.xksl"
+
+mixer m
+m.mixin( ShaderMain )
+
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+m.compile

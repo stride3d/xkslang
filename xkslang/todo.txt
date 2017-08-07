@@ -1,3 +1,23 @@
+Shader Compiler integration TODO:
+* SPIRV-Cross: replace out by inout?
+  - update SPIRV-Cross, check with community, check the code
+
+* automatically copy the DLL when creating a new project
+
+concerning the xkslang.dll, look at this file:
+https://eris.xenko.com/bitbucket/projects/XK/repos/xenko/browse/sources/engine/SiliconStudio.Xenko.Shaders.Compiler/SiliconStudio.Xenko.Shaders.Compiler.csproj#105
+
+ ```
+ <SiliconStudioNativeLib Include="..\..\..\deps\glsl-optimizer\$(SiliconStudioPlatform)\**\glsl_optimizer.dll">
+  <Link>..\%(RecursiveDir)%(Filename)%(Extension)</Link>
+  <RelativePath>%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+</SiliconStudioNativeLib>
+```
+the `**` in  `**\glsl_optimizer.dll` means x86/x64
+the `..` in `<Link>..\%(RecursiveDir)%(Filename)%(Extension)</Link>` is only needed if the .csproj you are adding it is x86/x64 platform specific (please let me know to which you are adding it if you are not sure)
+
+
 XKSLANG TODO:
 (Tod file is a bit messy and not well organized: just here to keep track of possible ideas / optimizations / updates...)
 

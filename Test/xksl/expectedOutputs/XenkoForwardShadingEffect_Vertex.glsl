@@ -18,8 +18,7 @@ struct VS_STREAMS
     float DepthVS_id7;
     vec4 PositionH_id8;
     vec2 TexCoord_id9;
-    vec2 TexCoord_id10;
-    float matDisplacement_id11;
+    float matDisplacement_id10;
 };
 
 layout(std140) uniform PerDraw
@@ -70,13 +69,11 @@ layout(location = 0) in vec3 VS_IN_meshNormal;
 layout(location = 1) in vec4 VS_IN_meshTangent;
 layout(location = 2) in vec4 VS_IN_Position;
 layout(location = 3) in vec2 VS_IN_TexCoord;
-layout(location = 4) in vec2 VS_IN_TexCoord_1;
 layout(location = 0) out vec4 VS_OUT_ShadingPosition;
 layout(location = 1) out vec3 VS_OUT_meshNormal;
 layout(location = 2) out vec4 VS_OUT_meshTangent;
 layout(location = 3) out vec4 VS_OUT_PositionWS;
 layout(location = 4) out vec2 VS_OUT_TexCoord;
-layout(location = 5) out vec2 VS_OUT_TexCoord_1;
 
 void ShaderBase_VSMain()
 {
@@ -95,12 +92,12 @@ void o26S34C1_MaterialStream_ResetStream(out VS_STREAMS _streams)
 void o26S34C1_MaterialDisplacementStream_ResetStream(out VS_STREAMS _streams)
 {
     o26S34C1_MaterialStream_ResetStream(_streams);
-    _streams.matDisplacement_id11 = 0.0;
+    _streams.matDisplacement_id10 = 0.0;
 }
 
 vec4 o24S34C0_o22S2C0_o21S2C0_o19S2C0_ComputeColorWave_5_0_01__0_03__Compute(VS_STREAMS _streams)
 {
-    float phase = length(_streams.TexCoord_id10 - vec2(0.5));
+    float phase = length(_streams.TexCoord_id9 - vec2(0.5));
     return vec4(sin((((phase + (PerFrame_var.Global_Time * -0.02999999932944774627685546875)) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.00999999977648258209228515625);
 }
 
@@ -119,7 +116,7 @@ vec4 o24S34C0_o22S2C0_o21S2C0_ComputeColorMultiply_Compute(VS_STREAMS _streams)
 
 void o24S34C0_o22S2C0_MaterialSurfaceSetStreamFromComputeColor_matDisplacement_r__Compute(inout VS_STREAMS _streams)
 {
-    _streams.matDisplacement_id11 = o24S34C0_o22S2C0_o21S2C0_ComputeColorMultiply_Compute(_streams).x;
+    _streams.matDisplacement_id10 = o24S34C0_o22S2C0_o21S2C0_ComputeColorMultiply_Compute(_streams).x;
 }
 
 void o24S34C0_o23S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(inout VS_STREAMS _streams)
@@ -129,7 +126,7 @@ void o24S34C0_o23S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Com
     {
         scaledNormal *= PerDraw_var.Transformation_WorldScale;
     }
-    _streams.Position_id5 = vec4(_streams.Position_id5.xyz + (scaledNormal * _streams.matDisplacement_id11), _streams.Position_id5.w);
+    _streams.Position_id5 = vec4(_streams.Position_id5.xyz + (scaledNormal * _streams.matDisplacement_id10), _streams.Position_id5.w);
 }
 
 void o24S34C0_MaterialSurfaceArray_Compute(out VS_STREAMS _streams)
@@ -197,12 +194,11 @@ void NormalBase_GenerateNormal_VS(out VS_STREAMS _streams)
 
 void main()
 {
-    VS_STREAMS _streams = VS_STREAMS(vec4(0.0), 0.0, vec3(0.0), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec4(0.0), vec2(0.0), vec2(0.0), 0.0);
+    VS_STREAMS _streams = VS_STREAMS(vec4(0.0), 0.0, vec3(0.0), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec4(0.0), vec2(0.0), 0.0);
     _streams.meshNormal_id2 = VS_IN_meshNormal;
     _streams.meshTangent_id3 = VS_IN_meshTangent;
     _streams.Position_id5 = VS_IN_Position;
     _streams.TexCoord_id9 = VS_IN_TexCoord;
-    _streams.TexCoord_id10 = VS_IN_TexCoord_1;
     TransformationBase_VSMain(_streams);
     NormalBase_GenerateNormal_VS(_streams);
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
@@ -210,6 +206,5 @@ void main()
     VS_OUT_meshTangent = _streams.meshTangent_id3;
     VS_OUT_PositionWS = _streams.PositionWS_id6;
     VS_OUT_TexCoord = _streams.TexCoord_id9;
-    VS_OUT_TexCoord_1 = _streams.TexCoord_id10;
 }
 
