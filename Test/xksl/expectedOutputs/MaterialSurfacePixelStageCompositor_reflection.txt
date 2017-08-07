@@ -107,13 +107,13 @@ ResourceBindings. Count=5
 
 InputAttributes. Count=11
  SemanticName="" SemanticIndex=0
- SemanticName="" SemanticIndex=1
- SemanticName="" SemanticIndex=2
- SemanticName="" SemanticIndex=3
- SemanticName="" SemanticIndex=4
- SemanticName="" SemanticIndex=5
- SemanticName="" SemanticIndex=6
- SemanticName="POSITION_WS" SemanticIndex=7
- SemanticName="SV_Position" SemanticIndex=8
- SemanticName="" SemanticIndex=9
- SemanticName="TEXCOORD0" SemanticIndex=10
+ SemanticName="" SemanticIndex=0
+ SemanticName="" SemanticIndex=0
+ SemanticName="" SemanticIndex=0
+ SemanticName="" SemanticIndex=0
+ SemanticName="" SemanticIndex=0
+ SemanticName="" SemanticIndex=0
+ SemanticName="POSITION_WS" SemanticIndex=0
+ SemanticName="SV_Position" SemanticIndex=0
+ SemanticName="" SemanticIndex=0
+ SemanticName="TEXCOORD0" SemanticIndex=0

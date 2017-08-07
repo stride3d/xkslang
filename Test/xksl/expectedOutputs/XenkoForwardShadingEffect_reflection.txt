@@ -155,6 +155,6 @@ ResourceBindings. Count=10
 
 InputAttributes. Count=4
  SemanticName="NORMAL" SemanticIndex=0
- SemanticName="TANGENT" SemanticIndex=1
- SemanticName="POSITION" SemanticIndex=2
- SemanticName="TEXCOORD0" SemanticIndex=3
+ SemanticName="TANGENT" SemanticIndex=0
+ SemanticName="POSITION" SemanticIndex=0
+ SemanticName="TEXCOORD0" SemanticIndex=0

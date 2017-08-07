@@ -26,5 +26,5 @@ ResourceBindings. Count=1
 
 InputAttributes. Count=3
  SemanticName="" SemanticIndex=0
- SemanticName="" SemanticIndex=1
- SemanticName="" SemanticIndex=2
+ SemanticName="" SemanticIndex=0
+ SemanticName="" SemanticIndex=0

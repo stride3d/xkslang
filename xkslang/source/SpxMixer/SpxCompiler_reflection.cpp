@@ -163,7 +163,8 @@ bool SpxCompiler::GetInputAttributesFromBytecode(EffectReflection& effectReflect
 						if (mapStreamInputVariableById[id] != nullptr)
 						{
 							VariableInstruction* variable = mapStreamInputVariableById[id];
-							variable->variableData->semanticIndex = asLiteralValue(start + 3);
+							//variable->variableData->semanticIndex = asLiteralValue(start + 3);
+                            variable->variableData->semanticIndex = 0;
 						}
 					}
 					break;
