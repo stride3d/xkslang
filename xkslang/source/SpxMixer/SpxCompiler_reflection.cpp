@@ -435,10 +435,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
                         if (opCode == spv::OpMemberLinkName) cbufferData->cbufferMembersData->members[index].linkName = name;
-                        else {
-                            int gklfdjsglkjfsdl = 545454;
-                            cbufferData->cbufferMembersData->members[index].logicalGroup = name;
-                        }
+                        else cbufferData->cbufferMembersData->members[index].logicalGroup = name;
                     }
                     break;
                 }
@@ -598,6 +595,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     if (member.HasLinkName()) memberReflection.KeyName = member.linkName;
                     else memberReflection.KeyName = memberDeclarationName;
                     memberReflection.RawName = getRawNameFromKeyName(memberDeclarationName);
+                    if (member.HasLogicalGroup()) memberReflection.LogicalGroup = member.logicalGroup;
 
                     //get the member type object
                     spv::Id cbufferMemberTypeId = asId(posElemStart + mIndex);

@@ -40,10 +40,10 @@ ConstantBuffers. Count=1
   KeyName="ShaderMain.Eye" RawName="ShaderMain_Eye" LogicalGroup="" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="_padding_PerView_Default" RawName="o0S5C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="" Offset=352
+  KeyName="_padding_PerView_Default" RawName="o0S5C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="Default" Offset=352
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="LightDirectionalGroup.Lights" RawName="o0S5C0_LightDirectionalGroup_Lights" LogicalGroup="" Offset=368
+  KeyName="LightDirectionalGroup.Lights" RawName="o0S5C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=368
   Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
    CountMembers=2
    Name="DirectionWS" Offset=0
@@ -51,7 +51,7 @@ ConstantBuffers. Count=1
    Name="Color" Offset=16
    Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="_padding_PerView_Lighting" RawName="o1S5C1_LightDirectionalGroup__padding_PerView_Lighting" LogicalGroup="" Offset=624
+  KeyName="_padding_PerView_Lighting" RawName="o1S5C1_LightDirectionalGroup__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=624
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=1

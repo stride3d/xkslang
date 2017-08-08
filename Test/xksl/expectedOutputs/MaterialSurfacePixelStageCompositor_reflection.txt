@@ -55,10 +55,10 @@ ConstantBuffers. Count=3
   KeyName="Transformation.Eye" RawName="Transformation_Eye" LogicalGroup="" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="_padding_PerView_Default" RawName="o0S297C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="" Offset=352
+  KeyName="_padding_PerView_Default" RawName="o0S297C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="Default" Offset=352
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S297C0_LightDirectionalGroup_Lights" LogicalGroup="" Offset=368
+  KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S297C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=368
   Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
    CountMembers=2
    Name="DirectionWS" Offset=0
@@ -66,13 +66,13 @@ ConstantBuffers. Count=3
    Name="Color" Offset=16
    Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
-  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0]" RawName="o0S297C0_DirectLightGroupPerView_LightCount" LogicalGroup="" Offset=624
+  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0]" RawName="o0S297C0_DirectLightGroupPerView_LightCount" LogicalGroup="Lighting" Offset=624
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0]" RawName="o1S282C0_LightSimpleAmbient_AmbientLight" LogicalGroup="" Offset=640
+  KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0]" RawName="o1S282C0_LightSimpleAmbient_AmbientLight" LogicalGroup="Lighting" Offset=640
   Class=Color Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
-  KeyName="_padding_PerView_Lighting" RawName="o1S282C0_LightSimpleAmbient__padding_PerView_Lighting" LogicalGroup="" Offset=656
+  KeyName="_padding_PerView_Lighting" RawName="o1S282C0_LightSimpleAmbient__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=656
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
  cbuffer: Name="PerMaterial" Size=56 MembersCount=5

@@ -635,6 +635,17 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             }
                         }
 
+                        //For members belonging to a subpart cbuffer: we set their logicalGroup name
+                        for (int k = 0; k < countCbWithSubParts; k++)
+                        {
+                            CBufferTypeData* aCbufferWithSubpart = cbufferWithSubParts[k];
+                            for (int m = 0; m < aCbufferWithSubpart->cbufferCountMembers; m++)
+                            {
+                                aCbufferWithSubpart->cbufferMembersData->members[m].logicalGroup = aCbufferWithSubpart->cbufferSubpartName;
+                            }
+                        }
+
+                        //reshuffle the cbuffers
                         int index = 0;
                         for (int k = 0; k < countCbWithoutSubParts; k++) someCBuffersToMerge[index++] = cbufferWithoutSubParts[k];
                         for (int k = 0; k < countCbWithSubParts; k++) someCBuffersToMerge[index++] = cbufferWithSubParts[k];
@@ -767,6 +778,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                     TypeStructMember& defaultPaddingStructMember = combinedCbuffer->members.back();
                                     defaultPaddingStructMember.declarationName = paddingMemberName;
                                     defaultPaddingStructMember.linkName = paddingMemberName;
+                                    defaultPaddingStructMember.logicalGroup = "Default";
                                     defaultPaddingStructMember.isStage = false;
                                     defaultPaddingStructMember.cbufferShaderOwner = cbufferShaderOwner;
                                     defaultPaddingStructMember.memberTypeId = idOpTypeVectorFloat4;
@@ -880,6 +892,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                     TypeStructMember& defaultPaddingStructMember = combinedCbuffer->members.back();
                                     defaultPaddingStructMember.declarationName = paddingMemberName;
                                     defaultPaddingStructMember.linkName = paddingMemberName;
+                                    defaultPaddingStructMember.logicalGroup = cbufferToMerge->cbufferSubpartName;
                                     defaultPaddingStructMember.isStage = false;
                                     defaultPaddingStructMember.cbufferShaderOwner = cbufferShaderOwner;
                                     defaultPaddingStructMember.memberTypeId = idOpTypeVectorFloat4;
