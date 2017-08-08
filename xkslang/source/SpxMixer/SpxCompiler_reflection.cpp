@@ -403,6 +403,25 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     break;
                 }
 
+                case spv::OpResourceGroupName:
+                {
+                    //apply to a resource variable
+                    const spv::Id id = asId(start + 1);
+
+                    if (vectorCBuffersIds[id] != nullptr)
+                    {
+                        error("ResourceGroupName attribute cannot apply to a cbuffer");
+                        break;
+                    }
+                    else if (vectorResourceVariablesId[id] != nullptr)
+                    {
+                        VariableData* variableData = vectorResourceVariablesId[id]->variableData;
+                        const string name = literalString(start + 2);
+                        variableData->SetVariableResourceGroupName(name);
+                    }
+                    break;
+                }
+
                 case spv::OpMemberName:
                 {
                     spv::Id id = asId(start + 1);
@@ -890,11 +909,14 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         CBufferTypeData* cbufferData = *itcb;
                         if (cbufferData->tmpFlag == 1)
                         {
+                            string cbufferRawName = getRawNameFromKeyName(cbufferData->cbufferName);
+
 							vecAllResourceBindings.push_back(
                                 EffectResourceBindingDescription(
                                     stage,
                                     cbufferData->cbufferName,
-                                    getRawNameFromKeyName(cbufferData->cbufferName),
+                                    cbufferRawName,
+                                    cbufferRawName,
                                     EffectParameterReflectionClass::ConstantBuffer,
                                     EffectParameterReflectionType::ConstantBuffer
                                 ));
@@ -916,6 +938,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                     stage,
                                     variableData->variableKeyName,
                                     variableData->variableRawName,
+                                    variableData->resourceGroupName,
                                     variableData->variableTypeReflection.Class,
                                     variableData->variableTypeReflection.Type
                                 ));

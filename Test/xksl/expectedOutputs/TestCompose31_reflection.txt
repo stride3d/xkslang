@@ -14,6 +14,6 @@ ConstantBuffers. Count=1
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
 ResourceBindings. Count=1
- Stage=Vertex KeyName="cbComposition" RawName="cbComposition" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="cbComposition" RawName="cbComposition" ResourceGroupName="cbComposition" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0

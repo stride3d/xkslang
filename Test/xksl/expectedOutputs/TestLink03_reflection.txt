@@ -28,9 +28,9 @@ ConstantBuffers. Count=1
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
 ResourceBindings. Count=3
- Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="Material.DiffuseMap" RawName="ShaderBase_Texture0" Class=ShaderResourceView Type=Texture2D
- Stage=Vertex KeyName="Material.DiffuseSampler" RawName="ShaderBase_Sampler0" Class=Sampler Type=Sampler
+ Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="Material.DiffuseMap" RawName="ShaderBase_Texture0" ResourceGroupName="LocalResourceGroup" Class=ShaderResourceView Type=Texture2D
+ Stage=Vertex KeyName="Material.DiffuseSampler" RawName="ShaderBase_Sampler0" ResourceGroupName="LocalResourceGroup" Class=Sampler Type=Sampler
 
 InputAttributes. Count=1
  SemanticName="S_INPUT" SemanticIndex=0

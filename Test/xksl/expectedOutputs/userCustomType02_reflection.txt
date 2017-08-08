@@ -19,6 +19,6 @@ ConstantBuffers. Count=1
    Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
 ResourceBindings. Count=1
- Stage=Vertex KeyName="aCBuffer" RawName="aCBuffer" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="aCBuffer" RawName="aCBuffer" ResourceGroupName="aCBuffer" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0

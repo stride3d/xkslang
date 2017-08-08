@@ -18,6 +18,6 @@ ConstantBuffers. Count=1
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
 ResourceBindings. Count=1
- Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0

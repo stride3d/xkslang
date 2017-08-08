@@ -118,9 +118,10 @@ namespace xkslangDll
 		xkslang::EffectParameterReflectionType Type;
 		const char* KeyName;
         const char* RawName;
+        const char* ResourceGroupName;
 
-		EffectResourceBindingDescriptionData(const xkslang::EffectResourceBindingDescription& e, const char* keyName, const char* rawName)
-            : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName), RawName(rawName) {}
+		EffectResourceBindingDescriptionData(const xkslang::EffectResourceBindingDescription& e, const char* keyName, const char* rawName, const char* resourceGroupName)
+            : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName) {}
 	};
 
 	//struct containing an input attribute data (to be easily exchanged between native and managed apps)
@@ -470,6 +471,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             public Int32 Offset;
             public IntPtr KeyName;
             public IntPtr RawName;
+            public IntPtr LogicalGroup;
 
             public EffectParameterReflectionClassEnum Class;
             public EffectParameterReflectionTypeEnum Type;
@@ -504,6 +506,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             public EffectParameterReflectionTypeEnum Type;
             public IntPtr KeyName;
             public IntPtr RawName;
+            public IntPtr ResourceGroupName;
 
             //[MarshalAs(UnmanagedType.LPStr)]
             //public string KeyName;
@@ -513,8 +516,8 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct ShaderInputAttributeDescriptionData
         {
-            public Int32 SemanticIndex;
             public IntPtr SemanticName;
+            public Int32 SemanticIndex;
         }
 
         [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -1083,13 +1086,14 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
                                 string keyName = Marshal.PtrToStringAnsi(effectResourceBinding.KeyName);
                                 string rawName = Marshal.PtrToStringAnsi(effectResourceBinding.RawName);
+                                string resourceGroupName = Marshal.PtrToStringAnsi(effectResourceBinding.ResourceGroupName);
                                 var binding = new EffectResourceBindingDescription()
                                 {
                                     Stage = ShaderStage.None, //XkslangDLLBindingClass.ConvertShadingStageEnum(effectResourceBinding.Stage), (this will be set by ShaderCompiler)
                                     Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(effectResourceBinding.Class),
                                     Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(effectResourceBinding.Type),
                                     RawName = rawName,
-                                    ResourceGroup = rawName,
+                                    ResourceGroup = resourceGroupName == null? rawName: resourceGroupName,
                                     KeyInfo =
                                     {
                                         KeyName = keyName,
@@ -1097,8 +1101,9 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                 };
                                 xkslangEffectReflection.ResourceBindings.Add(binding);
 
-                                Marshal.FreeHGlobal(effectResourceBinding.KeyName);
-                                Marshal.FreeHGlobal(effectResourceBinding.RawName);
+                                if (effectResourceBinding.KeyName != null) Marshal.FreeHGlobal(effectResourceBinding.KeyName);
+                                if (effectResourceBinding.RawName != null) Marshal.FreeHGlobal(effectResourceBinding.RawName);
+                                if (effectResourceBinding.ResourceGroupName != null) Marshal.FreeHGlobal(effectResourceBinding.ResourceGroupName);
                             }
 
                             //delete the data allocated on the native code
@@ -1159,6 +1164,8 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
                                         string keyName = Marshal.PtrToStringAnsi(memberData.KeyName);
                                         string rawName = Marshal.PtrToStringAnsi(memberData.RawName);
+                                        string logicalGroup = Marshal.PtrToStringAnsi(memberData.LogicalGroup);
+
                                         cbufferMembers[m] = new EffectValueDescription()
                                         {
                                             KeyInfo =
@@ -1168,6 +1175,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                             RawName = rawName,
                                             Offset = memberData.Offset,
                                             Size = memberData.Size,
+                                            LogicalGroup = logicalGroup,
                                             Type = new EffectTypeDescription()
                                             {
                                                 Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(memberData.Class),
@@ -1181,8 +1189,9 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                             },
                                         };
 
-                                        Marshal.FreeHGlobal(memberData.KeyName);
-                                        Marshal.FreeHGlobal(memberData.RawName);
+                                        if (memberData.KeyName != null) Marshal.FreeHGlobal(memberData.KeyName);
+                                        if (memberData.RawName != null) Marshal.FreeHGlobal(memberData.RawName);
+                                        if (memberData.LogicalGroup != null) Marshal.FreeHGlobal(memberData.LogicalGroup);
 
                                         //if the cbuffer member is a struct, we analyse its struct members
                                         if (memberData.CountMembers > 0)

@@ -697,7 +697,8 @@ namespace xkslangDll
 				{
 					const char* keyName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.ResourceBindings[k].KeyName.c_str());
                     const char* rawName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.ResourceBindings[k].RawName.c_str());
-					arrayResourceBindings[k] = EffectResourceBindingDescriptionData(effectReflectionSrc.ResourceBindings[k], keyName, rawName);
+                    const char* resourceGroupName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.ResourceBindings[k].ResourceGroupName.c_str());
+					arrayResourceBindings[k] = EffectResourceBindingDescriptionData(effectReflectionSrc.ResourceBindings[k], keyName, rawName, resourceGroupName);
 				}
 				*resourceBindings = arrayResourceBindings;
 			}

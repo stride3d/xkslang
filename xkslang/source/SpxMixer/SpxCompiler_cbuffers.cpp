@@ -759,6 +759,8 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             // We set the resource as: shaderOwnerName.originalName (this will be its id keyName)
                             memberToMerge.declarationName = cbufferToMerge->shaderOwner->GetShaderOriginalBaseName() + "." + memberToMerge.declarationName;
 
+                            if (cbufferToMerge->isDefine) memberToMerge.resourceGroupName = cbufferToMerge->cbufferName;
+
                             memberToMerge.variableAccessTypeId = newBoundId++; //id of the new variable we'll create
 
                             listResourcesNewAccessVariables.push_back(memberToMerge);
@@ -1167,7 +1169,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             spv::Id pointerTypeId = 0;
             if (resourcePointerType == nullptr)
             {
-                bytecodeResourceVariable = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, resourceType->bytecodeStartPosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+                bytecodeResourceVariable = GetOrCreateNewBytecodeChunckToInsert(bytecodeUpdateController, resourceType->bytecodeStartPosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
                 if (bytecodeResourceVariable == nullptr) { error("Failed to insert a new bytecode chunk to create a resource pointer type"); break; }
 
                 //make the pointer type
@@ -1184,7 +1186,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 spv::StorageClass pointerStorageClass = (spv::StorageClass)asLiteralValue(resourcePointerType->GetBytecodeStartPosition() + 2);
                 if (pointerStorageClass != spv::StorageClass::StorageClassUniformConstant) { error("Invalid storage class, expected StorageClassUniform"); break; }
 
-                bytecodeResourceVariable = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, resourcePointerType->bytecodeStartPosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+                bytecodeResourceVariable = GetOrCreateNewBytecodeChunckToInsert(bytecodeUpdateController, resourcePointerType->bytecodeStartPosition, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
                 if (bytecodeResourceVariable == nullptr) { error("Failed to insert a new bytecode chunk to create a resource variable"); break; }
             }
 
@@ -1215,6 +1217,15 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     spv::Instruction memberNameInstr(spv::OpLinkName);
                     memberNameInstr.addIdOperand(variable.getResultId());
                     memberNameInstr.addStringOperand(memberToMoveOut.linkName.c_str());
+                    memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }
+
+                //variable resourceGroupName (if any)
+                if (memberToMoveOut.HasResourceGroupName())
+                {
+                    spv::Instruction memberNameInstr(spv::OpResourceGroupName);
+                    memberNameInstr.addIdOperand(variable.getResultId());
+                    memberNameInstr.addStringOperand(memberToMoveOut.resourceGroupName.c_str());
                     memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
             }

@@ -134,7 +134,7 @@ static bool xkfxOptions_processSampleWithXkfxLibrary = false;  //if true, we als
 
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
-static bool processEffectWithDllApi = false;
+static bool processEffectWithDllApi = true;
 static bool processEffectWithXkfxProcessorApi = true;
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
@@ -300,6 +300,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     { "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
     { "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
     { "DynamicTexture", "DynamicTexture.xkfx" },
+    { "DynamicTexture01", "DynamicTexture01.xkfx" },
     { "DynamicTextureStream", "DynamicTextureStream.xkfx" },
     { "ComputeColorTextureScaledOffsetDynamicSampler", "ComputeColorTextureScaledOffsetDynamicSampler.xkfx" },
     { "MaterialSurfaceArray01", "MaterialSurfaceArray01.xkfx" },
@@ -752,13 +753,20 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
     return success;
 }
 
+static string ConvertCharPtrToString(const char* ptr)
+{
+    if (ptr == nullptr) return string("");
+    return string(ptr);
+}
+
 static bool ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(
     const xkslangDll::ConstantBufferMemberReflectionDescriptionData& structMemberSrc, TypeMemberReflectionDescription& structMemberDst)
 {
     if (structMemberSrc.KeyName == nullptr) return error("struct member src keyname is null");
 
-    structMemberDst.Name = structMemberSrc.KeyName;
+    structMemberDst.Name = ConvertCharPtrToString(structMemberSrc.KeyName);
     structMemberDst.Offset = structMemberSrc.Offset;
+
     structMemberDst.Type.Set(
         0,
         structMemberSrc.Class,
@@ -772,8 +780,8 @@ static bool ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(
         structMemberSrc.ArrayElements
     );
 
-    if (structMemberSrc.KeyName == nullptr) { GlobalFree((HGLOBAL)structMemberSrc.KeyName); }
-    if (structMemberSrc.RawName == nullptr) { GlobalFree((HGLOBAL)structMemberSrc.RawName); }
+    if (structMemberSrc.KeyName != nullptr) { GlobalFree((HGLOBAL)structMemberSrc.KeyName); }
+    if (structMemberSrc.RawName != nullptr) { GlobalFree((HGLOBAL)structMemberSrc.RawName); }
 
     if (structMemberSrc.CountMembers > 0)
     {
@@ -888,20 +896,23 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
             {
                 effectResourceBinding = pAllocsResourceBindings + i;
 
-                string keyName = effectResourceBinding->KeyName;
-                string rawName = effectResourceBinding->RawName;
+                string keyName = ConvertCharPtrToString(effectResourceBinding->KeyName);
+                string rawName = ConvertCharPtrToString(effectResourceBinding->RawName);
+                string resourceGroupName = ConvertCharPtrToString(effectResourceBinding->ResourceGroupName);
                 EffectResourceBindingDescription binding
                 (
                     effectResourceBinding->Stage,
                     keyName,
                     rawName,
+                    resourceGroupName,
                     effectResourceBinding->Class,
                     effectResourceBinding->Type
                 );
                 vecAllResourceBindings.push_back(binding);
 
-                GlobalFree((HGLOBAL)effectResourceBinding->KeyName);
-                GlobalFree((HGLOBAL)effectResourceBinding->RawName);
+                if (effectResourceBinding->KeyName != nullptr) GlobalFree((HGLOBAL)effectResourceBinding->KeyName);
+                if (effectResourceBinding->RawName != nullptr) GlobalFree((HGLOBAL)effectResourceBinding->RawName);
+                if (effectResourceBinding->ResourceGroupName != nullptr) GlobalFree((HGLOBAL)effectResourceBinding->ResourceGroupName);
             }
 
             //delete the data allocated on the native code
@@ -920,12 +931,12 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
 
                 ShaderInputAttributeDescription inputAttribute
                 (
-                    shaderInputAttribute->SemanticName,
+                    ConvertCharPtrToString(shaderInputAttribute->SemanticName),
                     shaderInputAttribute->SemanticIndex
                 );
                 vecAllInputAttributes.push_back(inputAttribute);
 
-                GlobalFree((HGLOBAL)shaderInputAttribute->SemanticName);
+                if (shaderInputAttribute->SemanticName != nullptr) GlobalFree((HGLOBAL)shaderInputAttribute->SemanticName);
             }
 
             //delete the data allocated on the native code
@@ -946,8 +957,8 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
                 constantBufferData = pAllocsConstantBuffers + i;
 
                 //create the cbuffer
-                string cbufferName = constantBufferData->CbufferName;
-                GlobalFree((HGLOBAL)constantBufferData->CbufferName);
+                string cbufferName = ConvertCharPtrToString(constantBufferData->CbufferName);
+                if (constantBufferData->CbufferName != nullptr) GlobalFree((HGLOBAL)constantBufferData->CbufferName);
 
                 ConstantBufferReflectionDescription& constantBuffer = effectReflection.ConstantBuffers[i];
                 constantBuffer.CbufferName = cbufferName;
@@ -966,8 +977,9 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
                         xkslangDll::ConstantBufferMemberReflectionDescriptionData* memberData;
                         memberData = constantBufferData->Members + m;
 
-                        cbufferMember.KeyName = memberData->KeyName;
-                        cbufferMember.RawName = memberData->RawName;
+                        cbufferMember.KeyName = ConvertCharPtrToString(memberData->KeyName);
+                        cbufferMember.RawName = ConvertCharPtrToString(memberData->RawName);
+                        cbufferMember.LogicalGroup = ConvertCharPtrToString(memberData->LogicalGroup);
                         cbufferMember.Offset = memberData->Offset;
                         cbufferMember.ReflectionType.Set(
                             0,
@@ -1007,8 +1019,9 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
                             }
                         }
 
-                        GlobalFree((HGLOBAL)memberData->KeyName);
-                        GlobalFree((HGLOBAL)memberData->RawName);
+                        if (memberData->KeyName != nullptr) GlobalFree((HGLOBAL)memberData->KeyName);
+                        if (memberData->RawName != nullptr) GlobalFree((HGLOBAL)memberData->RawName);
+                        if (memberData->LogicalGroup != nullptr) GlobalFree((HGLOBAL)memberData->LogicalGroup);
                     }
 
                     GlobalFree((HGLOBAL)constantBufferData->Members);
@@ -1017,8 +1030,6 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
 
             GlobalFree((HGLOBAL)pAllocsConstantBuffers);
         }
-
-        int gfdsjgl = 5454;
 
         //TMP: directly call xkslang classes
         /*success = SpxMixer::GetCompiledBytecodeReflection(compiledBytecode, effectReflection, errorMsgs);

@@ -1,0 +1,13 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+convertAndLoadRecursif "DynamicTexture01" ShaderMain<Material.DiffuseMap, PerMaterial>
+
+mixer m
+m.mixin( ShaderMain<Material.DiffuseMap, PerMaterial> )
+
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+m.compile()

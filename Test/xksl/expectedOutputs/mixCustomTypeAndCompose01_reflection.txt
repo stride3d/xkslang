@@ -55,6 +55,6 @@ ConstantBuffers. Count=1
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=1
- Stage=Vertex KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0

@@ -42,6 +42,6 @@ ConstantBuffers. Count=1
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
 ResourceBindings. Count=1
- Stage=Pixel KeyName="Globals" RawName="Globals" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0

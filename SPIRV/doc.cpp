@@ -1235,6 +1235,7 @@ const char* OpcodeString(int op)
     case (OpMemberLinkName):                            return "OpMemberLinkName";
     case (OpMemberLogicalGroup):                        return "OpMemberLogicalGroup";
     case (OpLinkName):                                  return "OpLinkName";
+    case (OpResourceGroupName):                         return "OpResourceGroupName";
     case (OpShaderInheritance):                         return "OpShaderInheritance";
     case (OpBelongsToShader):                           return "OpBelongsToShader";
     case (OpMethodProperties):                          return "OpMethodProperties";
@@ -1393,6 +1394,7 @@ void Parameterize()
     InstructionDesc[OpMemberLinkName].setResultAndType(false, false);
     InstructionDesc[OpMemberLogicalGroup].setResultAndType(false, false);
     InstructionDesc[OpLinkName].setResultAndType(false, false);
+    InstructionDesc[OpResourceGroupName].setResultAndType(false, false);
     InstructionDesc[OpShaderInheritance].setResultAndType(false, false);
     InstructionDesc[OpBelongsToShader].setResultAndType(false, false);
     InstructionDesc[OpShaderCompositionDeclaration].setResultAndType(false, false);
@@ -1989,10 +1991,13 @@ void Parameterize()
 
     InstructionDesc[OpMemberLogicalGroup].operands.push(OperandId, "'Type'");
     InstructionDesc[OpMemberLogicalGroup].operands.push(OperandLiteralNumber, "'Member'");
-    InstructionDesc[OpMemberLogicalGroup].operands.push(OperandLiteralString, "'LinkName'");
+    InstructionDesc[OpMemberLogicalGroup].operands.push(OperandLiteralString, "'LogicalGroup'");
 
     InstructionDesc[OpLinkName].operands.push(OperandId, "'Type'");
     InstructionDesc[OpLinkName].operands.push(OperandLiteralString, "'LinkName'");
+
+    InstructionDesc[OpResourceGroupName].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpResourceGroupName].operands.push(OperandLiteralString, "'ResourceGroupName'");
 
     InstructionDesc[OpCBufferProperties].operands.push(OperandId, "'Type'");
     InstructionDesc[OpCBufferProperties].operands.push(XkslShaderDataProperty, "'CbufferType'");

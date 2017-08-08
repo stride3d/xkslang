@@ -99,11 +99,11 @@ ConstantBuffers. Count=3
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
 ResourceBindings. Count=5
- Stage=Pixel KeyName="PerView" RawName="PerView" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerFrame" RawName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" Class=Sampler Type=Sampler
- Stage=Pixel KeyName="Material.DiffuseMap" RawName="DynamicTexture_Texture" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="Material.DiffuseMap" RawName="DynamicTexture_Texture" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D
 
 InputAttributes. Count=11
  SemanticName="" SemanticIndex=0

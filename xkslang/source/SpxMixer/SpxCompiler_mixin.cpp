@@ -399,6 +399,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
                 case spv::OpMemberLinkName:
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
+                case spv::OpResourceGroupName:
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
@@ -539,6 +540,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
                 case spv::OpMemberLinkName:
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
+                case spv::OpResourceGroupName:
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
@@ -1123,6 +1125,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
                 case spv::OpMemberLinkName:
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
+                case spv::OpResourceGroupName:
 				{
 					const spv::Id id = asId(start + 1);
 					if (listIdsUsed[id] == false) {
@@ -1960,6 +1963,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             //case spv::OpMemberLinkName:
             //case spv::OpMemberLogicalGroup:
             //case spv::OpLinkName:
+            //case spv::OpResourceGroupName:
             //{
             //}
         }
@@ -4293,7 +4297,13 @@ BytecodePortionToRemove* SpxCompiler::AddPortionToRemove(BytecodeUpdateControlle
     return &(*itListPos);
 }
 
-BytecodeChunk* SpxCompiler::CreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType, unsigned int offset)
+BytecodeChunk* SpxCompiler::GetOrCreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType, unsigned int offset)
+{
+    return CreateNewBytecodeChunckToInsert(bytecodeUpdateController, instructionPos, insertionType, offset, true);
+}
+
+BytecodeChunk* SpxCompiler::CreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType,
+    unsigned int offset, bool returnExisintChunkInCaseOfConflict)
 {
     //get the position where to insert the new bytecode chunck
     unsigned int instructionWordCount = asWordCount(instructionPos);
@@ -4332,6 +4342,8 @@ BytecodeChunk* SpxCompiler::CreateNewBytecodeChunckToInsert(BytecodeUpdateContro
                 //same instruction updated: we then look at which position within the instruction
                 if (insertionType == itListPos->insertionType)
                 {
+                    if (returnExisintChunkInCaseOfConflict) return &(*itListPos);
+
                     error("conflict: We're adding 2 chuncks to the same instruction and same position");
                     return nullptr;
                 }

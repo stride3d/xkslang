@@ -47,9 +47,9 @@ ConstantBuffers. Count=2
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=4
- Stage=Vertex KeyName="PerDraw" RawName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="PerLight" RawName="PerLight" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerDraw" RawName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerLight" RawName="PerLight" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerLight" RawName="PerLight" ResourceGroupName="PerLight" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerLight" RawName="PerLight" ResourceGroupName="PerLight" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0

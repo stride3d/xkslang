@@ -238,6 +238,7 @@ public:
     public:
         std::string variableRawName;
         std::string variableKeyName;
+        std::string resourceGroupName;
 		std::string semanticName;
 		int semanticIndex;
         TypeReflectionDescription variableTypeReflection;
@@ -246,8 +247,10 @@ public:
 
         bool hasKeyName() { return variableKeyName.size() > 0; }
         bool hasRawName() { return variableRawName.size() > 0; }
+        bool hasResourceGroupName() { return resourceGroupName.size() > 0; }
         void SetVariableRawName(const std::string& rawName) { variableRawName = rawName;}
         void SetVariableKeyName(const std::string& keyName) { variableKeyName = keyName; }
+        void SetVariableResourceGroupName(const std::string& name) { resourceGroupName = name; }
     };
 
     class CBufferTypeData
@@ -469,6 +472,7 @@ public:
         std::string declarationName;
         std::string linkName;  //the user specified a linkname (keyname) value for the member
         std::string logicalGroup;
+        std::string resourceGroupName;
         std::string semantic;
         std::string attribute;
 
@@ -508,6 +512,7 @@ public:
         bool HasAttribute() const { return attribute.size() > 0; }
         bool HasLinkName() const { return linkName.size() > 0; }
         bool HasLogicalGroup() const { return logicalGroup.size() > 0; }
+        bool HasResourceGroupName() const { return resourceGroupName.size() > 0; }
 
         const std::string& GetSemanticOrDeclarationName() const { return HasSemantic()? semantic: declarationName; }
         const std::string& GetDeclarationNameOrSemantic() const { return HasDeclarationName() ? declarationName : semantic; }
@@ -891,7 +896,9 @@ private:
     bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
 
     //bytecode Update controller
-    BytecodeChunk* CreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType, unsigned int offset = 0);
+    BytecodeChunk* GetOrCreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType, unsigned int offset = 0);
+    BytecodeChunk* CreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType,
+        unsigned int offset = 0, bool returnExisintChunkInCaseOfConflict = false);
     bool SetNewAtomicValueUpdate(BytecodeUpdateController& bytecodeUpdateController, unsigned int pos, uint32_t value);
     BytecodePortionToReplace* SetNewPortionToReplace(BytecodeUpdateController& bytecodeUpdateController, unsigned int pos);
     BytecodePortionToRemove* AddPortionToRemove(BytecodeUpdateController& bytecodeUpdateController, unsigned int position, unsigned int count);

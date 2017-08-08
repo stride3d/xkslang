@@ -24,9 +24,9 @@ ConstantBuffers. Count=1
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=3
- Stage=Vertex KeyName="UpdatedGroupName" RawName="UpdatedGroupName" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="ShadowMap.Texture" RawName="ShaderMain_ShadowMapTexture" Class=ShaderResourceView Type=Texture2D
- Stage=Vertex KeyName="ShadowMap.Sampler" RawName="ShaderMain_Sampler0" Class=Sampler Type=Sampler
+ Stage=Vertex KeyName="UpdatedGroupName" RawName="UpdatedGroupName" ResourceGroupName="UpdatedGroupName" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="ShadowMap.Texture" RawName="ShaderMain_ShadowMapTexture" ResourceGroupName="UpdatedGroupName" Class=ShaderResourceView Type=Texture2D
+ Stage=Vertex KeyName="ShadowMap.Sampler" RawName="ShaderMain_Sampler0" ResourceGroupName="UpdatedGroupName" Class=Sampler Type=Sampler
 
 InputAttributes. Count=1
  SemanticName="S_INPUT" SemanticIndex=0

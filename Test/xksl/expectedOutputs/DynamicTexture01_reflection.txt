@@ -1,0 +1,19 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+***********************
+*****  Resources  *****
+***********************
+@C    ShaderMain_Texture0 => Material.DiffuseMap [Stage: Pixel]
+@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage: Pixel]
+@C    ShaderMain_Texture1 => ShaderMain.Texture1 [Stage: Pixel]
+@C    ShaderMain_Sampler1 => ShaderMain.Sampler1 [Stage: Pixel]
+
+ConstantBuffers. Count=0
+ResourceBindings. Count=4
+ Stage=Pixel KeyName="Material.DiffuseMap" RawName="ShaderMain_Texture0" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="ShaderMain.Sampler0" RawName="ShaderMain_Sampler0" ResourceGroupName="ResourceGroup" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.Texture1" RawName="ShaderMain_Texture1" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="ShaderMain.Sampler1" RawName="ShaderMain_Sampler1" ResourceGroupName="" Class=Sampler Type=Sampler
+
+InputAttributes. Count=0
