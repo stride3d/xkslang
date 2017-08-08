@@ -427,12 +427,13 @@ class ConstantBufferMemberReflectionDescription
 public:
     std::string KeyName;   //Key Name: effect.originalName (used to link the member with the editor)
     std::string RawName;   //Raw name: member name as set in the shader file
+    std::string LogicalGroup;
     int Offset;
     TypeReflectionDescription ReflectionType;
 
     ConstantBufferMemberReflectionDescription(){}
-    ConstantBufferMemberReflectionDescription(const std::string& keyName, const std::string& rawName, int offset, const TypeReflectionDescription& reflectionType)
-        : KeyName(KeyName), RawName(rawName), Offset(offset), ReflectionType(reflectionType) {}
+    ConstantBufferMemberReflectionDescription(const std::string& keyName, const std::string& rawName, const std::string& logicalGroup, int offset, const TypeReflectionDescription& reflectionType)
+        : KeyName(KeyName), RawName(rawName), LogicalGroup(logicalGroup), Offset(offset), ReflectionType(reflectionType) {}
 
 public:
     std::string Print(int padding);

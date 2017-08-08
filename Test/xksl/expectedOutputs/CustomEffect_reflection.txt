@@ -20,26 +20,26 @@
 
 ConstantBuffers. Count=2
  cbuffer: Name="Globals" Size=28 MembersCount=6
-  KeyName="Effect.Center RawName="Effect_Center" Offset=0
+  KeyName="Effect.Center" RawName="Effect_Center" LogicalGroup="" Offset=0
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="Effect.Frequency RawName="Effect_Frequency" Offset=8
+  KeyName="Effect.Frequency" RawName="Effect_Frequency" LogicalGroup="" Offset=8
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Effect.Phase RawName="Effect_Phase" Offset=12
+  KeyName="Effect.Phase" RawName="Effect_Phase" LogicalGroup="" Offset=12
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Effect.Spread RawName="Effect_Spread" Offset=16
+  KeyName="Effect.Spread" RawName="Effect_Spread" LogicalGroup="" Offset=16
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Effect.Amplitude RawName="Effect_Amplitude" Offset=20
+  KeyName="Effect.Amplitude" RawName="Effect_Amplitude" LogicalGroup="" Offset=20
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Effect.InvAspectRatio RawName="Effect_InvAspectRatio" Offset=24
+  KeyName="Effect.InvAspectRatio" RawName="Effect_InvAspectRatio" LogicalGroup="" Offset=24
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="PerDraw" Size=64 MembersCount=1
-  KeyName="SpriteBase.MatrixTransform RawName="SpriteBase_MatrixTransform" Offset=0
+  KeyName="SpriteBase.MatrixTransform" RawName="SpriteBase_MatrixTransform" LogicalGroup="" Offset=0
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
 ResourceBindings. Count=4

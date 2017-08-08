@@ -38,6 +38,7 @@ namespace xkslangDll
 		int32_t Offset;
 		const char* KeyName;
         const char* RawName;
+        const char* LogicalGroup;
 
         xkslang::EffectParameterReflectionClass Class;
         xkslang::EffectParameterReflectionType Type;
@@ -51,17 +52,18 @@ namespace xkslangDll
 		int32_t CountMembers;
         ConstantBufferMemberReflectionDescriptionData* StructMembers;
 
-		ConstantBufferMemberReflectionDescriptionData(const int32_t offset, const char* keyName, const char* rawName, const xkslang::TypeReflectionDescription& t)
-			: Offset(offset), KeyName(keyName), RawName(rawName),
-            Class(t.Class), Type(t.Type), RowCount(t.RowCount), ColumnCount(t.ColumnCount), ArrayElements(t.ArrayElements), Size(t.Size),
-			Alignment(t.Alignment), ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), CountMembers(t.CountMembers), StructMembers(nullptr) {}
+		ConstantBufferMemberReflectionDescriptionData(const int32_t offset, const char* keyName, const char* rawName, const char* logicalGroup, const xkslang::TypeReflectionDescription& t)
+			: Offset(offset), KeyName(keyName), RawName(rawName), LogicalGroup(logicalGroup),
+              Class(t.Class), Type(t.Type), RowCount(t.RowCount), ColumnCount(t.ColumnCount), ArrayElements(t.ArrayElements), Size(t.Size),
+			  Alignment(t.Alignment), ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), CountMembers(t.CountMembers), StructMembers(nullptr) {}
 
-        void Set(const int32_t offset, const char* keyName, const char* rawName, xkslang::EffectParameterReflectionClass c, xkslang::EffectParameterReflectionType t,
+        void Set(const int32_t offset, const char* keyName, const char* rawName, const char* logicalGroup, xkslang::EffectParameterReflectionClass c, xkslang::EffectParameterReflectionType t,
             int countRow, int countColumn, int size, int alignment, int arrayStride, int matrixStride, int arrayElements, int countMembers)
         {
             this->Offset = offset;
             this->KeyName = keyName;
             this->RawName = rawName;
+            this->LogicalGroup = logicalGroup;
             this->Class = c;
             this->Type = t;
             this->RowCount = countRow;

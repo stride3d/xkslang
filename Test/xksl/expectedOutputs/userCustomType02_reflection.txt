@@ -10,7 +10,7 @@
 
 ConstantBuffers. Count=1
  cbuffer: Name="aCBuffer" Size=32 MembersCount=1
-  KeyName="ShaderMain.toto RawName="ShaderMain_toto" Offset=0
+  KeyName="ShaderMain.toto" RawName="ShaderMain_toto" LogicalGroup="" Offset=0
   Class=Struct Type=Void Size=32 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
    CountMembers=2
    Name="DirectionWS" Offset=0

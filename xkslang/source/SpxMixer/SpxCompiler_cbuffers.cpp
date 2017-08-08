@@ -137,6 +137,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 }
 
                 case spv::OpMemberLinkName:
+                case spv::OpMemberLogicalGroup:
                 {
                     spv::Id id = asId(start + 1);
                     if (mapUsedCbuffers[id] != nullptr)
@@ -144,12 +145,13 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         CBufferTypeData* cbufferData = mapUsedCbuffers[id];
 
                         unsigned int index = asLiteralValue(start + 2);
-                        string linkName = literalString(start + 3);
+                        string name = literalString(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
                         if (cbufferData->correspondingShaderType->type->GetId() != id) { error("Invalid instruction Id"); break; }
                         if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
-                        cbufferData->cbufferMembersData->members[index].linkName = linkName;
+                        if (opCode == spv::OpMemberLinkName) cbufferData->cbufferMembersData->members[index].linkName = name;
+                        else cbufferData->cbufferMembersData->members[index].logicalGroup = name;
                     }
                     break;
                 }
@@ -1331,6 +1333,15 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     memberNameInstr.addIdOperand(cbuffer->structTypeId);
                     memberNameInstr.addImmediateOperand(memberIndex);
                     memberNameInstr.addStringOperand(cbufferMember.linkName.c_str());
+                    memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }
+
+                if (cbufferMember.HasLogicalGroup())
+                {
+                    spv::Instruction memberNameInstr(spv::OpMemberLogicalGroup);
+                    memberNameInstr.addIdOperand(cbuffer->structTypeId);
+                    memberNameInstr.addImmediateOperand(memberIndex);
+                    memberNameInstr.addStringOperand(cbufferMember.logicalGroup.c_str());
                     memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
 

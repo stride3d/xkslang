@@ -15,19 +15,19 @@
 
 ConstantBuffers. Count=1
  cbuffer: Name="Globals" Size=20 MembersCount=5
-  KeyName="ShaderComp.varC.colorA1 RawName="o0S5C0_ShaderComp_varC" Offset=0
+  KeyName="ShaderComp.varC.colorA1" RawName="o0S5C0_ShaderComp_varC" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="ShaderComp.varC.colorA2 RawName="o1S5C1_ShaderComp_varC" Offset=4
+  KeyName="ShaderComp.varC.colorA2" RawName="o1S5C1_ShaderComp_varC" LogicalGroup="" Offset=4
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="ShaderComp.varC.colorB1 RawName="o2S39C0_ShaderComp_varC" Offset=8
+  KeyName="ShaderComp.varC.colorB1" RawName="o2S39C0_ShaderComp_varC" LogicalGroup="" Offset=8
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="ShaderComp.varC.colorB2 RawName="o4S39C1_ShaderComp_varC" Offset=12
+  KeyName="ShaderComp.varC.colorB2" RawName="o4S39C1_ShaderComp_varC" LogicalGroup="" Offset=12
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="ShaderComp.varC.colorB2.aComp RawName="o4S39C1_o3S15C0_ShaderComp_varC" Offset=16
+  KeyName="ShaderComp.varC.colorB2.aComp" RawName="o4S39C1_o3S15C0_ShaderComp_varC" LogicalGroup="" Offset=16
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
 ResourceBindings. Count=2

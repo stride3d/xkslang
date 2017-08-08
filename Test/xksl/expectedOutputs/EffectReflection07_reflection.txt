@@ -16,10 +16,10 @@
 
 ConstantBuffers. Count=1
  cbuffer: Name="cb" Size=24 MembersCount=2
-  KeyName="ShaderMain.direction RawName="ShaderMain_direction" Offset=0
+  KeyName="ShaderMain.direction" RawName="ShaderMain_direction" LogicalGroup="" Offset=0
   Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
-  KeyName="ShaderMain.uv2 RawName="ShaderMain_uv2" Offset=16
+  KeyName="ShaderMain.uv2" RawName="ShaderMain_uv2" LogicalGroup="" Offset=16
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
 ResourceBindings. Count=6

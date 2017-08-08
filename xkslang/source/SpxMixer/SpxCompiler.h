@@ -468,6 +468,7 @@ public:
         bool isStage;
         std::string declarationName;
         std::string linkName;  //the user specified a linkname (keyname) value for the member
+        std::string logicalGroup;
         std::string semantic;
         std::string attribute;
 
@@ -506,6 +507,7 @@ public:
         bool HasDeclarationName() const { return declarationName.size() > 0; }
         bool HasAttribute() const { return attribute.size() > 0; }
         bool HasLinkName() const { return linkName.size() > 0; }
+        bool HasLogicalGroup() const { return logicalGroup.size() > 0; }
 
         const std::string& GetSemanticOrDeclarationName() const { return HasSemantic()? semantic: declarationName; }
         const std::string& GetDeclarationNameOrSemantic() const { return HasDeclarationName() ? declarationName : semantic; }

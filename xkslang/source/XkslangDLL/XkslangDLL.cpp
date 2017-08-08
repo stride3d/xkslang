@@ -35,6 +35,8 @@ namespace xkslangDll
 	{
 		if (txt == nullptr) return nullptr;
 		int len = strlen(txt);
+        if (len == 0) return nullptr;
+
 		char* res = (char*)GlobalAlloc(0, (len + 1) * sizeof(char));
 		strncpy(res, txt, len);
 		res[len] = '\0';
@@ -551,9 +553,11 @@ namespace xkslangDll
     static void ConvertStructMemberToDllData(const TypeMemberReflectionDescription& structMemberSrc, ConstantBufferMemberReflectionDescriptionData& structMemberDst)
     {
         const char* memberName = allocateAndCopyStringOnGlobalHeap(structMemberSrc.Name.c_str());
+
         structMemberDst.Set(
             structMemberSrc.Offset,
             memberName,
+            nullptr,
             nullptr,
             structMemberSrc.Type.Class,
             structMemberSrc.Type.Type,
@@ -636,10 +640,12 @@ namespace xkslangDll
 						const ConstantBufferMemberReflectionDescription& memberSrc = constantBufferSrc.Members[m];
 						const char* memberKeyName = allocateAndCopyStringOnGlobalHeap(memberSrc.KeyName.c_str());
                         const char* memberRawName = allocateAndCopyStringOnGlobalHeap(memberSrc.RawName.c_str());
+                        const char* logicalGroup = allocateAndCopyStringOnGlobalHeap(memberSrc.LogicalGroup.c_str());
 						membersInfo[m] = ConstantBufferMemberReflectionDescriptionData(
 							memberSrc.Offset,
                             memberKeyName,
                             memberRawName,
+                            logicalGroup,
 							memberSrc.ReflectionType
 						);
 

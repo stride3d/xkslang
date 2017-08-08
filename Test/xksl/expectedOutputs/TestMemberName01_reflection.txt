@@ -13,10 +13,10 @@
 
 ConstantBuffers. Count=1
  cbuffer: Name="UpdatedGroupName" Size=32 MembersCount=2
-  KeyName="ShadowMap.TextureSize RawName="ShaderMain_ShadowMapTextureSize" Offset=0
+  KeyName="ShadowMap.TextureSize" RawName="ShaderMain_ShadowMapTextureSize" LogicalGroup="" Offset=0
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="ShadowMap.TextureTexelSize RawName="ShaderMain_ShadowMapTextureTexelSize" Offset=16
+  KeyName="ShadowMap.TextureTexelSize" RawName="ShaderMain_ShadowMapTextureTexelSize" LogicalGroup="" Offset=16
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=3

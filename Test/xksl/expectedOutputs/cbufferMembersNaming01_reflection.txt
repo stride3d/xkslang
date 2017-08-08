@@ -49,59 +49,59 @@
 
 ConstantBuffers. Count=14
  cbuffer: Name="cbUnstageGenericWithLink" Size=4 MembersCount=1
-  KeyName="linkVar07 RawName="ShaderGenericWithLink_var07" Offset=0
+  KeyName="linkVar07" RawName="ShaderGenericWithLink_var07" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbStageGenericWithLink" Size=4 MembersCount=1
-  KeyName="linkVar08 RawName="ShaderGenericWithLink_var08" Offset=0
+  KeyName="linkVar08" RawName="ShaderGenericWithLink_var08" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbUnstageGeneric" Size=4 MembersCount=1
-  KeyName="ShaderGeneric.var05 RawName="ShaderGeneric_var05" Offset=0
+  KeyName="ShaderGeneric.var05" RawName="ShaderGeneric_var05" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbStageGeneric" Size=4 MembersCount=1
-  KeyName="ShaderGeneric.var06 RawName="ShaderGeneric_var06" Offset=0
+  KeyName="ShaderGeneric.var06" RawName="ShaderGeneric_var06" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbUnstageLink" Size=4 MembersCount=1
-  KeyName="linkVar03 RawName="ShaderWithLink_var03" Offset=0
+  KeyName="linkVar03" RawName="ShaderWithLink_var03" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbStageLink" Size=4 MembersCount=1
-  KeyName="linkVar04 RawName="ShaderWithLink_var04" Offset=0
+  KeyName="linkVar04" RawName="ShaderWithLink_var04" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbUnstage" Size=4 MembersCount=1
-  KeyName="ShaderSimple.var01 RawName="ShaderSimple_var01" Offset=0
+  KeyName="ShaderSimple.var01" RawName="ShaderSimple_var01" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbStage" Size=4 MembersCount=1
-  KeyName="ShaderSimple.var02 RawName="ShaderSimple_var02" Offset=0
+  KeyName="ShaderSimple.var02" RawName="ShaderSimple_var02" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbUnstageComposition" Size=4 MembersCount=1
-  KeyName="ShaderComposition.var09.composition01 RawName="o0S2C0_ShaderComposition_var09" Offset=0
+  KeyName="ShaderComposition.var09.composition01" RawName="o0S2C0_ShaderComposition_var09" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbStageComposition" Size=4 MembersCount=1
-  KeyName="ShaderComposition.var10 RawName="o0S2C0_ShaderComposition_var10" Offset=0
+  KeyName="ShaderComposition.var10" RawName="o0S2C0_ShaderComposition_var10" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbUnstageCompositionLink" Size=4 MembersCount=1
-  KeyName="linkVar11 RawName="o1S2C1_ShaderCompositionWithLink_var11" Offset=0
+  KeyName="linkVar11" RawName="o1S2C1_ShaderCompositionWithLink_var11" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbStageCompositionLink" Size=4 MembersCount=1
-  KeyName="linkVar12 RawName="o1S2C1_ShaderCompositionWithLink_var12" Offset=0
+  KeyName="linkVar12" RawName="o1S2C1_ShaderCompositionWithLink_var12" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbUnstageCompositionWithGeneric" Size=4 MembersCount=1
-  KeyName="ShaderCompositionWithGeneric.var13.composition03 RawName="o2S2C2_ShaderCompositionWithGeneric_var13" Offset=0
+  KeyName="ShaderCompositionWithGeneric.var13.composition03" RawName="o2S2C2_ShaderCompositionWithGeneric_var13" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="cbStageCompositionWithGeneric" Size=4 MembersCount=1
-  KeyName="ShaderCompositionWithGeneric.var14 RawName="o2S2C2_ShaderCompositionWithGeneric_var14" Offset=0
+  KeyName="ShaderCompositionWithGeneric.var14" RawName="o2S2C2_ShaderCompositionWithGeneric_var14" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
 ResourceBindings. Count=14

@@ -19,31 +19,31 @@
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerView" Size=640 MembersCount=10
-  KeyName="ShaderMain.View RawName="ShaderMain_View" Offset=0
+  KeyName="ShaderMain.View" RawName="ShaderMain_View" LogicalGroup="" Offset=0
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="ShaderMain.ViewInverse RawName="ShaderMain_ViewInverse" Offset=64
+  KeyName="ShaderMain.ViewInverse" RawName="ShaderMain_ViewInverse" LogicalGroup="" Offset=64
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="ShaderMain.Projection RawName="ShaderMain_Projection" Offset=128
+  KeyName="ShaderMain.Projection" RawName="ShaderMain_Projection" LogicalGroup="" Offset=128
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="ShaderMain.ProjectionInverse RawName="ShaderMain_ProjectionInverse" Offset=192
+  KeyName="ShaderMain.ProjectionInverse" RawName="ShaderMain_ProjectionInverse" LogicalGroup="" Offset=192
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="ShaderMain.ViewProjection RawName="ShaderMain_ViewProjection" Offset=256
+  KeyName="ShaderMain.ViewProjection" RawName="ShaderMain_ViewProjection" LogicalGroup="" Offset=256
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="ShaderMain.ProjScreenRay RawName="ShaderMain_ProjScreenRay" Offset=320
+  KeyName="ShaderMain.ProjScreenRay" RawName="ShaderMain_ProjScreenRay" LogicalGroup="" Offset=320
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="ShaderMain.Eye RawName="ShaderMain_Eye" Offset=336
+  KeyName="ShaderMain.Eye" RawName="ShaderMain_Eye" LogicalGroup="" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="_padding_PerView_Default RawName="o0S5C0_LightDirectionalGroup__padding_PerView_Default" Offset=352
+  KeyName="_padding_PerView_Default" RawName="o0S5C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="" Offset=352
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="LightDirectionalGroup.Lights RawName="o0S5C0_LightDirectionalGroup_Lights" Offset=368
+  KeyName="LightDirectionalGroup.Lights" RawName="o0S5C0_LightDirectionalGroup_Lights" LogicalGroup="" Offset=368
   Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
    CountMembers=2
    Name="DirectionWS" Offset=0
@@ -51,7 +51,7 @@ ConstantBuffers. Count=1
    Name="Color" Offset=16
    Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="_padding_PerView_Lighting RawName="o1S5C1_LightDirectionalGroup__padding_PerView_Lighting" Offset=624
+  KeyName="_padding_PerView_Lighting" RawName="o1S5C1_LightDirectionalGroup__padding_PerView_Lighting" LogicalGroup="" Offset=624
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=1

@@ -397,6 +397,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
                 case spv::OpMemberLinkName:
+                case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 {
                     const spv::Id id = asId(start + 1);
@@ -536,6 +537,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
                 case spv::OpMemberSemanticName:
                 case spv::OpSemanticName:
                 case spv::OpMemberLinkName:
+                case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 {
                     const spv::Id id = asId(start + 1);
@@ -1119,6 +1121,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 				case spv::OpMemberSemanticName:
 				case spv::OpSemanticName:
                 case spv::OpMemberLinkName:
+                case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
 				{
 					const spv::Id id = asId(start + 1);
@@ -1955,6 +1958,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             //case spv::OpSemanticName:
             //case spv::OpMemberAttribute:
             //case spv::OpMemberLinkName:
+            //case spv::OpMemberLogicalGroup:
             //case spv::OpLinkName:
             //{
             //}

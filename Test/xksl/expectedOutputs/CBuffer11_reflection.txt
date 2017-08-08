@@ -21,29 +21,29 @@
 
 ConstantBuffers. Count=2
  cbuffer: Name="PerDraw" Size=352 MembersCount=7
-  KeyName="Transform.WorldInverse RawName="Transform_WorldInverse" Offset=0
+  KeyName="Transform.WorldInverse" RawName="Transform_WorldInverse" LogicalGroup="" Offset=0
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="Transform.WorldInverseTranspose RawName="Transform_WorldInverseTranspose" Offset=64
+  KeyName="Transform.WorldInverseTranspose" RawName="Transform_WorldInverseTranspose" LogicalGroup="" Offset=64
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="Transform.WorldView RawName="Transform_WorldView" Offset=128
+  KeyName="Transform.WorldView" RawName="Transform_WorldView" LogicalGroup="" Offset=128
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="Transform.WorldViewInverse RawName="Transform_WorldViewInverse" Offset=192
+  KeyName="Transform.WorldViewInverse" RawName="Transform_WorldViewInverse" LogicalGroup="" Offset=192
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="Transform.WorldViewProjection RawName="Transform_WorldViewProjection" Offset=256
+  KeyName="Transform.WorldViewProjection" RawName="Transform_WorldViewProjection" LogicalGroup="" Offset=256
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="Transform.WorldScale RawName="Transform_WorldScale" Offset=320
+  KeyName="Transform.WorldScale" RawName="Transform_WorldScale" LogicalGroup="" Offset=320
   Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
-  KeyName="Transform.EyeMS RawName="Transform_EyeMS" Offset=336
+  KeyName="Transform.EyeMS" RawName="Transform_EyeMS" LogicalGroup="" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
  cbuffer: Name="PerLight" Size=16 MembersCount=1
-  KeyName="ShaderComp.aFloat RawName="o0S2C0_ShaderComp_aFloat" Offset=0
+  KeyName="ShaderComp.aFloat" RawName="o0S2C0_ShaderComp_aFloat" LogicalGroup="" Offset=0
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=4

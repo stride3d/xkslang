@@ -1233,6 +1233,7 @@ const char* OpcodeString(int op)
 
     case (OpDeclarationName):                           return "OpDeclarationName";
     case (OpMemberLinkName):                            return "OpMemberLinkName";
+    case (OpMemberLogicalGroup):                        return "OpMemberLogicalGroup";
     case (OpLinkName):                                  return "OpLinkName";
     case (OpShaderInheritance):                         return "OpShaderInheritance";
     case (OpBelongsToShader):                           return "OpBelongsToShader";
@@ -1390,6 +1391,7 @@ void Parameterize()
     //XKSL extensions
     InstructionDesc[OpDeclarationName].setResultAndType(false, false);
     InstructionDesc[OpMemberLinkName].setResultAndType(false, false);
+    InstructionDesc[OpMemberLogicalGroup].setResultAndType(false, false);
     InstructionDesc[OpLinkName].setResultAndType(false, false);
     InstructionDesc[OpShaderInheritance].setResultAndType(false, false);
     InstructionDesc[OpBelongsToShader].setResultAndType(false, false);
@@ -1984,6 +1986,10 @@ void Parameterize()
     InstructionDesc[OpMemberLinkName].operands.push(OperandId, "'Type'");
     InstructionDesc[OpMemberLinkName].operands.push(OperandLiteralNumber, "'Member'");
     InstructionDesc[OpMemberLinkName].operands.push(OperandLiteralString, "'LinkName'");
+
+    InstructionDesc[OpMemberLogicalGroup].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpMemberLogicalGroup].operands.push(OperandLiteralNumber, "'Member'");
+    InstructionDesc[OpMemberLogicalGroup].operands.push(OperandLiteralString, "'LinkName'");
 
     InstructionDesc[OpLinkName].operands.push(OperandId, "'Type'");
     InstructionDesc[OpLinkName].operands.push(OperandLiteralString, "'LinkName'");

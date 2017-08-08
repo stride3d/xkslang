@@ -421,6 +421,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                 }
 
                 case spv::OpMemberLinkName:
+                case spv::OpMemberLogicalGroup:
                 {
                     //apply to a cbuffer member
                     spv::Id id = asId(start + 1);
@@ -429,11 +430,15 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         CBufferTypeData* cbufferData = vectorCBuffersIds[id];
 
                         unsigned int index = asLiteralValue(start + 2);
-                        string linkName = literalString(start + 3);
+                        string name = literalString(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
                         if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
 #endif
-                        cbufferData->cbufferMembersData->members[index].linkName = linkName;
+                        if (opCode == spv::OpMemberLinkName) cbufferData->cbufferMembersData->members[index].linkName = name;
+                        else {
+                            int gklfdjsglkjfsdl = 545454;
+                            cbufferData->cbufferMembersData->members[index].logicalGroup = name;
+                        }
                     }
                     break;
                 }
