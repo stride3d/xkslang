@@ -2731,7 +2731,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     if (type.getBasicType() == glslang::EbtBlock)
     {
         bool isCbuffer = true;
-        unsigned int countMembers = glslangMembers->size();
+        unsigned int countMembers = (unsigned int)(glslangMembers->size());
 
         //Get the size and alignment of the cbuffer members
         //std::vector<unsigned int> membersSizeAndAlignment;

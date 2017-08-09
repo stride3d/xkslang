@@ -154,7 +154,7 @@ namespace glslang {
         if (tokenBufferPos == tokenBuffer.size())
         {
             pushTokenBuffer(token);
-            tokenBufferPos = tokenBuffer.size() - 1;
+            tokenBufferPos = (int)(tokenBuffer.size()) - 1;
         }
 
         for (int i = 0; i < countTokens; ++i)

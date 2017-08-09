@@ -233,7 +233,7 @@ bool HlslParseContext::parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* 
     ppContext.setInput(emptyInput, true);
 
     HlslToken* expressionTokensList = &(tokenList[0]);
-    int countTokens = tokenList.size();
+    int countTokens = (int)(tokenList.size());
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);
@@ -267,7 +267,7 @@ bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefi
     ppContext.setInput(emptyInput, true);
 
     HlslToken* expressionTokensList = &(tokenList[0]);
-    int countTokens = tokenList.size();
+    int countTokens = (int)(tokenList.size());
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);
@@ -301,7 +301,7 @@ bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderDefinition* sh
     ppContext.setInput(emptyInput, true);
 
     HlslToken* expressionTokensList = &(tokenList[0]);
-    int countTokens = tokenList.size();
+    int countTokens = (int)(tokenList.size());
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);

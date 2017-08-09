@@ -296,7 +296,7 @@ bool HlslGrammar::acceptShaderCustomType(const TString& shaderName, TType& type)
                     }
 
                     //concatenate the generic to the shader name
-                    unsigned int countGenerics = listGenericValuesExpression.size();
+                    unsigned int countGenerics = (unsigned int)(listGenericValuesExpression.size());
                     if (countGenerics > 0)
                     {
                         TString nameExtension = "<";
@@ -454,7 +454,7 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
                     }
 
                     //concatenate the generic to the shader name
-                    unsigned int countGenerics = listGenericValuesExpression.size();
+                    unsigned int countGenerics = (unsigned int)(listGenericValuesExpression.size());
                     if (countGenerics > 0)
                     {
                         TString nameExtension = "<";
@@ -2814,11 +2814,11 @@ bool HlslGrammar::acceptShaderClass(TType& type)
             shaderDefinition->location = token.loc;
             shaderDefinition->shaderBaseName = shaderName;
             shaderDefinition->shaderFullName = shaderName;
-            unsigned int countGenerics = listGenericTypes.size();
+            unsigned int countGenerics = (unsigned int)(listGenericTypes.size());
             for (unsigned int i = 0; i < countGenerics; ++i) {
                 shaderDefinition->listGenerics.push_back(ShaderGenericAttribute(listGenericTypes[i]));
             }
-            unsigned int countParents = listParents.size();
+            unsigned int countParents = (unsigned int)(listParents.size());
             for (unsigned int i = 0; i < countParents; ++i) {
                 shaderDefinition->AddParent(listParents[i]);
             }
@@ -3056,7 +3056,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     error("Failed to accept the composition declaration");
                     return false;
                 }
-                composition.shaderCompositionId = shader->listCompositions.size();
+                composition.shaderCompositionId = (int)(shader->listCompositions.size());
                 composition.isStage = isStageBeforeCompose;
             
                 //Make sure the shader does not already declared a composition with the same variable name
@@ -3619,7 +3619,7 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
     //XKSL extensions: a shader can override struct or rgroup name with "MemberName" generic
     if (this->xkslShaderCurrentlyParsed != nullptr)
     {
-        unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+        unsigned int countGenerics = (unsigned int)(this->xkslShaderCurrentlyParsed->listGenerics.size());
         for (unsigned int c = 0; c < countGenerics; c++)
         {
             const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
@@ -4628,7 +4628,7 @@ XkslShaderDefinition* HlslGrammar::getShaderClassDefinition(const TString& shade
     XkslShaderDefinition* shader = nullptr;
 
     //find the shader declaration
-    int countShaders = this->xkslShaderLibrary->listShaders.size();
+    int countShaders = (int)(this->xkslShaderLibrary->listShaders.size());
     for (int i = 0; i < countShaders; ++i)
     {
         if (this->xkslShaderLibrary->listShaders.at(i)->shaderFullName.compare(shaderClassName) == 0)
@@ -4664,7 +4664,7 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     shader->tmpFlag = uniqueId;
 
     //look if the shader defined the type
-    int countTypes = shader->listCustomTypes.size();
+    int countTypes = (int)(shader->listCustomTypes.size());
     for (int i = 0; i < countTypes; ++i)
     {
         if (shader->listCustomTypes[i].type->getUserIdentifierName()->compare(typeName) == 0)
@@ -4674,7 +4674,7 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     }
 
     //type not found: we look in the parent classes
-    int countParents = shader->listParents.size();
+    int countParents = (int)(shader->listParents.size());
     for (int p = 0; p < countParents; p++)
     {
         if (shader->listParents[p].parentShader == nullptr) {
@@ -4701,7 +4701,7 @@ bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* s
     if (!onlyLookInParentClasses)
     {
         //look if the shader declared some method with 
-        unsigned int countMethods = shader->listMethods.size();
+        unsigned int countMethods = (unsigned int)(shader->listMethods.size());
         for (unsigned int i = 0; i < countMethods; ++i)
         {
             const TShaderClassFunction* aShaderMethod = &(shader->listMethods[i]);
@@ -4716,7 +4716,7 @@ bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* s
     if (recursivelyLookInParents)
     {
         //method not found: we look in the parent classes
-        unsigned int countParents = shader->listParents.size();
+        unsigned int countParents = (unsigned int)(shader->listParents.size());
         for (unsigned int p = 0; p < countParents; p++)
         {
             XkslShaderDefinition* parentShader = shader->listParents[p].parentShader;
@@ -4759,7 +4759,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
         return identifierLocation;
     }
 
-    unsigned int countCandidates = shaderMethodsList.size();
+    unsigned int countCandidates = (unsigned int)(shaderMethodsList.size());
     if (countCandidates == 0) return identifierLocation;
     TVector<const TFunction*> candidateList;
     for (unsigned int k = 0; k < countCandidates; k++) candidateList.push_back(shaderMethodsList[k]->function);
@@ -4792,7 +4792,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
     //Look into the parents
     {
         //method not found: we look in the parent classes
-        unsigned int countParents = shader->listParents.size();
+        unsigned int countParents = (unsigned int)(shader->listParents.size());
         for (unsigned int p = 0; p < countParents; p++)
         {
             XkslShaderDefinition* parentShader = shader->listParents[p].parentShader;
@@ -4828,7 +4828,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
     if (!onlyLookInParentClasses)
     {
         //look if the shader did declare the method
-        unsigned int countMethods = shader->listMethods.size();
+        unsigned int countMethods = (unsigned int)(shader->listMethods.size());
         for (unsigned int i = 0; i < countMethods; ++i)
         {
             if (shader->listMethods[i].function->getDeclaredMangledName().compare(methodName) == 0)
@@ -4842,7 +4842,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
     if (identifierLocation.isUnknown())
     {
         //method not found: we look in the parent classes
-        unsigned int countParents = shader->listParents.size();
+        unsigned int countParents = (unsigned int)(shader->listParents.size());
         for (unsigned int p = 0; p < countParents; p++)
         {
             if (shader->listParents[p].parentShader == nullptr) {
@@ -4874,7 +4874,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
     if (className == nullptr) return false;
 
     //we first look if a foreach loop declare a composition variable
-    int countForEachLoopVariables = this->listForeachArrayCompositionVariable.size();
+    int countForEachLoopVariables = (int)(this->listForeachArrayCompositionVariable.size());
     for (int i = countForEachLoopVariables - 1; i >= 0; i--)
     {
         const TShaderVariableTargetingACompositionVariable& variableTargetingACompositionVariable = this->listForeachArrayCompositionVariable[i];
@@ -4906,7 +4906,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
     shader->tmpFlag = uniqueId;
 
     //look if the shader declare the composition variable
-    int countCompositions = shader->listCompositions.size();
+    int countCompositions = (int)(shader->listCompositions.size());
     for (int i = 0; i < countCompositions; ++i)
     {
         if (shader->listCompositions[i].isArray == lookForArraycomposition)
@@ -4922,7 +4922,7 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
     }
 
     //look for the composition name is declared in the shader parents
-    int countParents = shader->listParents.size();
+    int countParents = (int)(shader->listParents.size());
     for (int p = 0; p < countParents; p++)
     {
         if (shader->listParents[p].parentShader == nullptr) {
@@ -4951,7 +4951,7 @@ bool HlslGrammar::IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslSh
 
     if (shader == maybeParent) return true;
 
-    int countParents = shader->listParents.size();
+    int countParents = (int)(shader->listParents.size());
     for (int p = 0; p < countParents; p++)
     {
         if (shader->listParents[p].parentShader == nullptr) {
@@ -5001,7 +5001,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
     if (!onlyLookInParentClasses)
     {
         //look if the shader did declare the identifier
-        int countMembers = shader->listAllDeclaredMembers.size();
+        int countMembers = (int)(shader->listAllDeclaredMembers.size());
         for (int i = 0; i < countMembers; ++i)
         {
             if (shader->listAllDeclaredMembers[i].type->getUserIdentifierName()->compare(memberName) == 0)
@@ -5037,7 +5037,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
     if (identifierLocation.isUnknown())
     {
         //member not found: we look in the parent classes
-        int countParents = shader->listParents.size();
+        int countParents = (int)(shader->listParents.size());
         for (int p = 0; p < countParents; p++)
         {
             if (shader->listParents[p].parentShader == nullptr) {
@@ -5074,7 +5074,7 @@ TString* HlslGrammar::getCurrentShaderName()
 int HlslGrammar::getCurrentShaderCountParents()
 {
     if (xkslShaderCurrentlyParsed == nullptr) return 0;
-    return xkslShaderCurrentlyParsed->listParents.size();
+    return (int)(xkslShaderCurrentlyParsed->listParents.size());
 }
 
 TString* HlslGrammar::getCurrentShaderParentName(int index)
@@ -5092,7 +5092,7 @@ TString* HlslGrammar::getCurrentShaderParentName(int index)
 
 bool HlslGrammar::isRecordedAsAShaderBaseName(const TString& baseName)
 {
-    int countShaders = this->xkslShaderLibrary->listShaders.size();
+    int countShaders = (int)(this->xkslShaderLibrary->listShaders.size());
     for (int i = 0; i < countShaders; ++i)
     {
         if (this->xkslShaderLibrary->listShaders[i]->shaderBaseName.compare(baseName) == 0) return true;
@@ -5102,7 +5102,7 @@ bool HlslGrammar::isRecordedAsAShaderBaseName(const TString& baseName)
 
 bool HlslGrammar::isRecordedAsAShaderName(const TString& name)
 {
-    int countShaders = this->xkslShaderLibrary->listShaders.size();
+    int countShaders = (int)(this->xkslShaderLibrary->listShaders.size());
     for (int i = 0; i < countShaders; ++i)
     {
         if (this->xkslShaderLibrary->listShaders[i]->shaderFullName.compare(name) == 0) return true;
@@ -5228,7 +5228,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                         //XKSL extensions: a shader can override the memberName with a "MemberName" generic
                         if (this->xkslShaderCurrentlyParsed != nullptr)
                         {
-                            unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+                            unsigned int countGenerics = (unsigned int)(this->xkslShaderCurrentlyParsed->listGenerics.size());
                             for (unsigned int c = 0; c < countGenerics; c++)
                             {
                                 const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
@@ -5516,7 +5516,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                 //XKSL extensiosn: a shader can have MemberName generics overriding the `field` name
                 if (this->xkslShaderCurrentlyParsed != nullptr)
                 {
-                    unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+                    unsigned int countGenerics = (unsigned int)(this->xkslShaderCurrentlyParsed->listGenerics.size());
                     for (unsigned int c = 0; c < countGenerics; c++)
                     {
                         const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
@@ -6068,7 +6068,7 @@ bool HlslGrammar::checkForXkslStructMemberAttribute(TVector<TShaderMemberAttribu
                 error("No shader currently parsed"); return false;
             }
 
-            unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+            unsigned int countGenerics = (unsigned int)(this->xkslShaderCurrentlyParsed->listGenerics.size());
             for (unsigned int c = 0; c < countGenerics; c++)
             {
                 const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
@@ -6810,7 +6810,7 @@ bool HlslGrammar::acceptPostDecls(TQualifier& qualifier, TString* userDefinedSem
                 //XKSL extensiosn: a shader can have a Semantic generics overriding the semantic name
                 if (this->xkslShaderCurrentlyParsed != nullptr)
                 {
-                    unsigned int countGenerics = this->xkslShaderCurrentlyParsed->listGenerics.size();
+                    unsigned int countGenerics = (unsigned int)(this->xkslShaderCurrentlyParsed->listGenerics.size());
                     for (unsigned int c = 0; c < countGenerics; c++)
                     {
                         const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];

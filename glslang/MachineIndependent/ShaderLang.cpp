@@ -2067,7 +2067,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
             //Add the member in the global stream buffer
             TTypeLoc typeLoc = { member.type, member.loc };
             streambufferStructTypeList->push_back(typeLoc);
-            int indexInStruct = streambufferStructTypeList->size() - 1;
+            int indexInStruct = (int)(streambufferStructTypeList->size()) - 1;
             identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer, streamBufferVarName, indexInStruct);
 
             member.memberLocation = identifierLocation;
@@ -2125,13 +2125,13 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                                 if (isStageMember)
                                 {
                                     rgroupStageGlobalStructTypeList->push_back(typeLoc);
-                                    int indexInBuffer = rgroupStageGlobalStructTypeList->size() - 1;
+                                    int indexInBuffer = (int)(rgroupStageGlobalStructTypeList->size()) - 1;
                                     identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, rgroupStageGlobalBlockVarName, indexInBuffer);
                                 }
                                 else
                                 {
                                     rgroupUnstageGlobalStructTypeList->push_back(typeLoc);
-                                    int indexInBuffer = rgroupUnstageGlobalStructTypeList->size() - 1;
+                                    int indexInBuffer = (int)(rgroupUnstageGlobalStructTypeList->size()) - 1;
                                     identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, rgroupUnstageGlobalBlockVarName, indexInBuffer);
                                 }
                             }
@@ -2140,13 +2140,13 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                                 if (isStageMember)
                                 {
                                     cbufferStageGlobalStructTypeList->push_back(typeLoc);
-                                    int indexInBuffer = cbufferStageGlobalStructTypeList->size() - 1;
+                                    int indexInBuffer = (int)(cbufferStageGlobalStructTypeList->size()) - 1;
                                     identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferStageGlobalBlockVarName, indexInBuffer);
                                 }
                                 else
                                 {
                                     cbufferUnstageGlobalStructTypeList->push_back(typeLoc);
-                                    int indexInBuffer = cbufferUnstageGlobalStructTypeList->size() - 1;
+                                    int indexInBuffer = (int)(cbufferUnstageGlobalStructTypeList->size()) - 1;
                                     identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferUnstageGlobalBlockVarName, indexInBuffer);
                                 }
                             }
@@ -2249,13 +2249,13 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                     {
                         member.type->getQualifier().isStage = false;
                         cbufferStageGlobalStructTypeList->push_back(typeLoc);
-                        int indexInBuffer = cbufferStageGlobalStructTypeList->size() - 1;
+                        int indexInBuffer = (int)(cbufferStageGlobalStructTypeList->size()) - 1;
                         identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferStageGlobalBlockVarName, indexInBuffer);
                     }
                     else
                     {
                         cbufferUnstageGlobalStructTypeList->push_back(typeLoc);
-                        int indexInBuffer = cbufferUnstageGlobalStructTypeList->size() - 1;
+                        int indexInBuffer = (int)(cbufferUnstageGlobalStructTypeList->size()) - 1;
                         identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, cbufferUnstageGlobalBlockVarName, indexInBuffer);
                     }
                     member.memberLocation = identifierLocation;
@@ -2267,13 +2267,13 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                     {
                         member.type->getQualifier().isStage = false;
                         rgroupStageGlobalStructTypeList->push_back(typeLoc);
-                        int indexInbuffer = rgroupStageGlobalStructTypeList->size() - 1;
+                        int indexInbuffer = (int)(rgroupStageGlobalStructTypeList->size()) - 1;
                         identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, rgroupStageGlobalBlockVarName, indexInbuffer);
                     }
                     else
                     {
                         rgroupUnstageGlobalStructTypeList->push_back(typeLoc);
-                        int indexInbuffer = rgroupUnstageGlobalStructTypeList->size() - 1;
+                        int indexInbuffer = (int)(rgroupUnstageGlobalStructTypeList->size()) - 1;
                         identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::CBuffer, rgroupUnstageGlobalBlockVarName, indexInbuffer);
                     }
                     member.memberLocation = identifierLocation;
@@ -2455,7 +2455,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
         TType* type = new TType(emptyList, shader->shaderFullName, qualifier, nullptr);
         type->setUserIdentifierName(shader->shaderFullName.c_str());
         type->setBaseName(shader->shaderBaseName.c_str());
-        int countGenerics = shader->listGenerics.size();
+        int countGenerics = (int)(shader->listGenerics.size());
         type->SetShaderCountGenerics(countGenerics);
         if (shader->listParents.size() > 0)
         {
@@ -2480,7 +2480,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
 static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, const std::vector<ClassGenericValues>& listGenericValues,
     HlslParseContext* parseContext, TPpContext& ppContext, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound)
 {
-    unsigned int shaderCountGenerics = shader->listGenerics.size();
+    unsigned int shaderCountGenerics = (unsigned int)(shader->listGenerics.size());
     std::string shaderFullName = std::string(shader->shaderFullName.c_str());
     if (shaderCountGenerics == 0)
     {
@@ -2723,7 +2723,7 @@ static bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shader
             bool deleteMember = false;
 
             HlslToken* expressionTokensList = &(constMember->expressionTokensList->at(0));
-            int countTokens = constMember->expressionTokensList->size();
+            int countTokens = (int)(constMember->expressionTokensList->size());
             bool errorWhenParsingUnidentifiedSymbol = false;
             TIntermTyped* expressionNode = parseContext->parseXkslExpression(&shaderLibrary, constMember->shader,
                 ppContext, expressionTokensList, countTokens, unknownIdentifier, errorWhenParsingUnidentifiedSymbol);
@@ -2919,7 +2919,7 @@ static bool ParseXkslShaderRecursif(
             {
                 parsedShader->parsingStatus = currentProcessingOperation;
 
-                unsigned int countParents = parsedShader->listParents.size();
+                unsigned int countParents = (unsigned int)(parsedShader->listParents.size());
                 for (unsigned int p = 0; p < countParents; p++)
                 {
                     XkslShaderDefinition::ParentInformation& aParentInfo = parsedShader->listParents[p];
@@ -3102,7 +3102,7 @@ static bool ParseXkslShaderRecursif(
                 success = parseContext->parseXkslShaderNewTypesDeclaration(shader, &shaderLibrary, ppContext);
                 if (success)
                 {
-                    int countCustomTypes = shader->listCustomTypes.size();
+                    int countCustomTypes = (int)(shader->listCustomTypes.size());
                     for (int i = 0; i < countCustomTypes; ++i)
                     {
                         TType* type = shader->listCustomTypes[i].type;
@@ -3475,14 +3475,14 @@ static bool ParseXkslShaderRecursif(
                 shader->parsingStatus = currentProcessingOperation;
                 
                 //Add all methods in the global tree root (and set all methods nodes as node aggregator)
-                int countFunctionNodes = shader->listMethods.size();
+                int countFunctionNodes = (int)(shader->listMethods.size());
                 for (int i = 0; i< countFunctionNodes; i++)
                 {
                     TIntermNode* functionNodeList = shader->listMethods.at(i).bodyNode;
                     if (functionNodeList != nullptr)
                     {
                         const TIntermSequence& sequence = functionNodeList->getAsAggregate()->getSequence();
-                        unsigned int countNodes = sequence.size();
+                        unsigned int countNodes = (unsigned int)(sequence.size());
                         for (unsigned int k = 0; k < countNodes; k++)
                         {
                             glslang::TIntermAggregate* functionNode = sequence[k]->getAsAggregate();

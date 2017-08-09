@@ -107,7 +107,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SPIRV\Debug\SPVRemapperd.lib;glslang\Debug\glslangd.lib;glslang\OSDependent\Windows\Debug\OSDependentd.lib;OGLCompilersDLL\Debug\OGLCompilerd.lib;hlsl\Debug\HLSLd.lib;SPIRV\Debug\SPIRVd.lib;StandAlone\Debug\glslang-default-resource-limitsd.lib;Win32\Debug\Xkslang.lib;Win32\Debug\XkfxProcessor.lib;Win32\Debug\spirvcrossd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SPIRV\Debug\SPVRemapperd.lib;glslang\Debug\glslangd.lib;glslang\OSDependent\Windows\Debug\OSDependentd.lib;OGLCompilersDLL\Debug\OGLCompilerd.lib;hlsl\Debug\HLSLd.lib;SPIRV\Debug\SPIRVd.lib;StandAlone\Debug\glslang-default-resource-limitsd.lib;Win32\Debug\Xkslang.lib;Win32\Debug\XkfxProcessor.lib;Win32\Debug\spirvcross.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\..\build; ..\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

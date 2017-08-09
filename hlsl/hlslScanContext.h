@@ -207,7 +207,7 @@ public:
     ShaderParsingStatusEnum parsingStatus;
     int tmpFlag;
 
-    int GetCountGenerics() { return listGenerics.size(); }
+    int GetCountGenerics() { return (int)(listGenerics.size()); }
     int GetShaderUniqueId() { return shaderUniqueId; }
     TString GetShaderUniqueStringId() { return shaderUniqueStringId; }
     void SetShaderUniqueId(int id) {
@@ -237,10 +237,10 @@ class XkslShaderLibrary
 public:
     TVector<XkslShaderDefinition*> listShaders;  //list of all shader parsed
 
-    int GetCountShaderInLibrary() {return listShaders.size();}
+    int GetCountShaderInLibrary() {return (int)(listShaders.size());}
     void AddNewShader(XkslShaderDefinition* shader){
         listShaders.push_back(shader);
-        shader->SetShaderUniqueId(listShaders.size());
+        shader->SetShaderUniqueId((int)(listShaders.size()));
     }
 };
 
