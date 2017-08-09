@@ -1,12 +1,31 @@
 
-float3 compute(float3 f)
+struct VS_INPUT
 {
-	return f;
+    float4 Pos : POSITION;
+    float4 Color : COLOR;
+};
+
+struct PS_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float4 Color : COLOR;
+};
+
+
+void Compute(inout PS_INPUT output)
+{
+    output.Color = float4(1, 0, 0, 1);
 }
 
-void main()
+PS_INPUT main( VS_INPUT input )
 {
-	float3 f3 = compute(1.0);
+    PS_INPUT output = (PS_INPUT)0;
+    output.Pos = input.Pos;
+    output.Color = input.Color;
+    
+    Compute(output);
+
+    return output;
 }
 
 //=========================================================================
