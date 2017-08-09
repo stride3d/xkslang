@@ -39,6 +39,8 @@
 #include "../glslang/MachineIndependent/parseVersions.h"
 #include "../glslang/MachineIndependent/ParseHelper.h"
 
+#include <array>
+
 namespace glslang {
 
 class TAttributeMap; // forward declare
@@ -102,10 +104,11 @@ public:
     void remapNonEntryPointIO(TFunction& function);
     TIntermNode* handleReturnValue(const TSourceLoc&, TIntermTyped*);
     void handleFunctionArgument(TFunction*, TIntermTyped*& arguments, TIntermTyped* newArg);
+    TIntermAggregate* executeFlattenedInitializer(const TSourceLoc&, TIntermSymbol*, const TIntermAggregate&);
     TIntermTyped* handleAssign(const TSourceLoc&, TOperator, TIntermTyped* left, TIntermTyped* right);
     TIntermTyped* handleAssignToMatrixSwizzle(const TSourceLoc&, TOperator, TIntermTyped* left, TIntermTyped* right);
     TIntermTyped* handleFunctionCall(const TSourceLoc&, TFunction*, TIntermTyped*, bool callBaseClass = false, bool callThroughStaticShaderClassName = false, TShaderCompositionVariable* calledThroughCompositionVariable = nullptr);
-    TIntermAggregate* assignClipCullDistance(const TSourceLoc&, TOperator, TIntermTyped* left, TIntermTyped* right);
+    TIntermAggregate* assignClipCullDistance(const TSourceLoc&, TOperator, int semanticId, TIntermTyped* left, TIntermTyped* right);
     void decomposeIntrinsic(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeSampleMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeStructBufferMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
@@ -145,7 +148,6 @@ public:
     void mergeQualifiers(TQualifier& dst, const TQualifier& src);
     int computeSamplerTypeIndex(TSampler&);
     TSymbol* redeclareBuiltinVariable(const TSourceLoc&, const TString&, const TQualifier&, const TShaderQualifiers&);
-    void redeclareBuiltinBlock(const TSourceLoc&, TTypeList& typeList, const TString& blockName, const TString* instanceName, TArraySizes* arraySizes);
     void paramFix(TType& type);
     void specializationCheck(const TSourceLoc&, const TType&, const char* op);
 
@@ -209,6 +211,7 @@ public:
     // Apply L-value conversions.  E.g, turning a write to a RWTexture into an ImageStore.
     TIntermTyped* handleLvalue(const TSourceLoc&, const char* op, TIntermTyped*& node);
     TIntermTyped* handleSamplerLvalue(const TSourceLoc&, const char* op, TIntermTyped*& node);
+    TIntermTyped* setOpaqueLvalue(TIntermTyped* left, TIntermTyped* right);
     bool lValueErrorCheck(const TSourceLoc&, const char* op, TIntermTyped*) override;
 
     TLayoutFormat getLayoutFromTxType(const TSourceLoc&, const TType&);
@@ -225,7 +228,7 @@ public:
     // Potentially rename shader entry point function
     void renameShaderFunction(const TString*& name) const;
 
-    TIntermNode* executeInitializer(const TSourceLoc&, TIntermTyped* initializer, TVariable* variable);
+    TIntermNode* executeInitializer(const TSourceLoc&, TIntermTyped* initializer, TVariable* variable, bool flattened);
 
     // Share struct buffer deep types
     void shareStructBufferType(TType&);
@@ -264,30 +267,24 @@ protected:
     bool shouldFlatten(const TType&) const;
     bool wasFlattened(const TIntermTyped* node) const;
     bool wasFlattened(int id) const { return flattenMap.find(id) != flattenMap.end(); }
-    int  addFlattenedMember(const TSourceLoc& loc, const TVariable&, const TType&, TFlattenData&, const TString& name, bool track);
+    int  addFlattenedMember(const TVariable&, const TType&, TFlattenData&, const TString& name, bool track);
     bool isFinalFlattening(const TType& type) const { return !(type.isStruct() || type.isArray()); }
 
     // Structure splitting (splits interstage built-in types into its own struct)
-    TIntermTyped* splitAccessStruct(const TSourceLoc& loc, TIntermTyped*& base, int& member);
-    void splitAccessArray(const TSourceLoc& loc, TIntermTyped* base, TIntermTyped* index);
     TType& split(TType& type, TString name, const TType* outerStructType = nullptr);
-    void split(TIntermTyped*);
     void split(const TVariable&);
     bool wasSplit(const TIntermTyped* node) const;
-    bool wasSplit(int id) const { return splitIoVars.find(id) != splitIoVars.end(); }
-    TVariable* getSplitIoVar(const TIntermTyped* node) const;
-    TVariable* getSplitIoVar(const TVariable* var) const;
-    TVariable* getSplitIoVar(int id) const;
-    void addInterstageIoToLinkage();
+    bool wasSplit(int id) const { return splitNonIoVars.find(id) != splitNonIoVars.end(); }
+    TVariable* getSplitNonIoVar(int id) const;
     void addPatchConstantInvocation();
     TIntermTyped* makeIntegerIndex(TIntermTyped*);
 
     void fixBuiltInIoType(TType&);
 
-    void flatten(const TSourceLoc& loc, const TVariable& variable);
-    int flatten(const TSourceLoc& loc, const TVariable& variable, const TType&, TFlattenData&, TString name);
-    int flattenStruct(const TSourceLoc& loc, const TVariable& variable, const TType&, TFlattenData&, TString name);
-    int flattenArray(const TSourceLoc& loc, const TVariable& variable, const TType&, TFlattenData&, TString name);
+    void flatten(const TVariable& variable, bool linkage);
+    int flatten(const TVariable& variable, const TType&, TFlattenData&, TString name, bool linkage);
+    int flattenStruct(const TVariable& variable, const TType&, TFlattenData&, TString name, bool linkage);
+    int flattenArray(const TVariable& variable, const TType&, TFlattenData&, TString name, bool linkage);
 
     bool hasUniform(const TQualifier& qualifier) const;
     void clearUniform(TQualifier& qualifier);
@@ -325,15 +322,19 @@ protected:
     // Finalization step: remove unused buffer blocks from linkage (we don't know until the
     // shader is entirely compiled)
     void removeUnusedStructBufferCounters();
+ 
+    static bool isClipOrCullDistance(TBuiltInVariable);
+    static bool isClipOrCullDistance(const TQualifier& qual) { return isClipOrCullDistance(qual.builtIn); }
+    static bool isClipOrCullDistance(const TType& type) { return isClipOrCullDistance(type.getQualifier()); }
 
-    // Pass through to base class after remembering builtin mappings.
+    // Pass through to base class after remembering built-in mappings.
     using TParseContextBase::trackLinkage;
     void trackLinkage(TSymbol& variable) override;
 
     void finish() override; // post-processing
 
     // Linkage symbol helpers
-    TIntermSymbol* findLinkageSymbol(TBuiltInVariable biType) const;
+    TIntermSymbol* findTessLinkageSymbol(TBuiltInVariable biType) const;
 
     // Current state of parsing
     int annotationNestingLevel;  // 0 if outside all annotations
@@ -385,7 +386,6 @@ protected:
     TVector<TSymbol*> ioArraySymbolResizeList;
 
     TMap<int, TFlattenData> flattenMap;
-    TVector<int> flattenLevel;  // nested postfix operator level for flattening
 
     // IO-type map. Maps a pure symbol-table form of a structure-member list into
     // each of the (up to) three kinds of IO, as each as different allowed decorations,
@@ -398,14 +398,14 @@ protected:
     TMap<const TTypeList*, tIoKinds> ioTypeMap;
 
     // Structure splitting data:
-    TMap<int, TVariable*>              splitIoVars;  // variables with the builtin interstage IO removed, indexed by unique ID.
+    TMap<int, TVariable*> splitNonIoVars;  // variables with the built-in interstage IO removed, indexed by unique ID.
 
     // Structuredbuffer shared types.  Typically there are only a few.
     TVector<TType*> structBufferTypes;
     
     TMap<TString, bool> structBufferCounter;
 
-    // The builtin interstage IO map considers e.g, EvqPosition on input and output separately, so that we
+    // The built-in interstage IO map considers e.g, EvqPosition on input and output separately, so that we
     // can build the linkage correctly if position appears on both sides.  Otherwise, multiple positions
     // are considered identical.
     struct tInterstageIoData {
@@ -425,14 +425,8 @@ protected:
         }
     };
 
-    TMap<tInterstageIoData, TVariable*> interstageBuiltInIo; // individual builtin interstage IO vars, indexed by builtin type.
+    TMap<tInterstageIoData, TVariable*> splitBuiltIns; // split built-ins, indexed by built-in type.
     TVariable* inputPatch;
-
-    // We have to move array references to structs containing builtin interstage IO to the split variables.
-    // This is only handled for one level.  This stores the index, because we'll need it in the future, since
-    // unlike normal array references, here the index happens before we discover what it applies to.
-    TIntermTyped* builtInIoIndex;
-    TIntermTyped* builtInIoBase;
 
     unsigned int nextInLocation;
     unsigned int nextOutLocation;
@@ -442,12 +436,19 @@ protected:
     TIntermNode* entryPointFunctionBody;
 
     TString patchConstantFunctionName; // hull shader patch constant function name, from function level attribute.
-    TMap<TBuiltInVariable, TSymbol*> builtInLinkageSymbols; // used for tessellation, finding declared builtins
+    TMap<TBuiltInVariable, TSymbol*> builtInTessLinkageSymbols; // used for tessellation, finding declared built-ins
 
     TVector<TString> currentTypePrefix;      // current scoping prefix for nested structures
     TVector<TVariable*> implicitThisStack;   // currently active 'this' variables for nested structures
 
     TVariable* gsStreamOutput;               // geometry shader stream outputs, for emit (Append method)
+
+    TVariable* clipDistanceOutput;           // synthesized clip distance output variable (shader might have >1)
+    TVariable* cullDistanceOutput;           // synthesized cull distance output variable (shader might have >1)
+
+    static const int maxClipCullRegs = 2;
+    std::array<int, maxClipCullRegs> clipSemanticNSize; // vector, indexed by clip semantic ID
+    std::array<int, maxClipCullRegs> cullSemanticNSize; // vector, indexed by cull semantic ID
 
     // This tracks the first (mip level) argument to the .mips[][] operator.  Since this can be nested as
     // in tx.mips[tx.mips[0][1].x][2], we need a stack.  We also track the TSourceLoc for error reporting 
@@ -461,7 +462,7 @@ protected:
     TVector<tMipsOperatorData> mipsOperatorMipArg;
 };
 
-// This is the prefix we use for builtin methods to avoid namespace collisions with
+// This is the prefix we use for built-in methods to avoid namespace collisions with
 // global scope user functions.
 // TODO: this would be better as a nonparseable character, but that would
 // require changing the scanner.
