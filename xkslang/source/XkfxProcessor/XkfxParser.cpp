@@ -78,7 +78,7 @@ bool XkfxParser::GetNextStringExpression(const char* txt, char* const outputBuff
 
     if (*endPos == '\0') return false;
 
-    int wordLen = (endPos - startPos) + 1;
+    int wordLen = (int)((endPos - startPos) + 1);
     if (wordLen <= 0 || wordLen >= bufferMaxSize - 1) return false;
     strncpy_s(outputBuffer, bufferMaxSize, startPos, wordLen);
 
@@ -103,7 +103,7 @@ bool XkfxParser::GetNextWord(const char* txt, const char** nextWordStart, int* n
         endPos++;
     }
 
-    int wordLen = (endPos - startPos);
+    int wordLen = (int)(endPos - startPos);
     if (wordLen <= 0) return false;
 
     *nextWordStart = startPos;
@@ -179,7 +179,7 @@ bool XkfxParser::IsCommandLineInstructionComplete(const char* pInstruction)
 bool XkfxParser::getFunctionParameterString(const char* txt, const char** stringStart, int* stringLen)
 {
     if (txt == nullptr) return false;
-    int txtLen = strlen(txt);
+    int txtLen = (int)(strlen(txt));
 
     const char* pStart = txt;
     while (*pStart == ' ' || *pStart == '\t') pStart++;
@@ -193,7 +193,7 @@ bool XkfxParser::getFunctionParameterString(const char* txt, const char** string
     pEnd--;
     while (*pEnd == ' ' || *pEnd == '\t') pEnd--;
 
-    int len = (pEnd - pStart) + 1;
+    int len = (int)((pEnd - pStart) + 1);
     if (len <= 0)
     {
         *stringLen = 0;
@@ -209,7 +209,7 @@ bool XkfxParser::getFunctionParameterString(const char* txt, const char** string
 bool XkfxParser::GetNextInstruction(const std::string& line, std::string& firstInstruction, std::string& remainingLine)
 {
     unsigned int startPos = 0;
-    unsigned int len = line.size();
+    unsigned int len = (unsigned int)(line.size());
 
     while (startPos < len && line[startPos] == ' ') startPos++; // skip front spaces
     if (startPos == len) return false;
@@ -234,7 +234,7 @@ bool XkfxParser::GetNextInstruction(const std::string& line, std::string& firstI
 bool XkfxParser::GetNextInstruction(const string& line, string& firstInstruction, string& remainingLine, const char stopDelimiters, bool keepTheStopDelimiterInTheRemainingString)
 {
     unsigned int startPos = 0;
-    unsigned int len = line.size();
+    unsigned int len = (unsigned int)(line.size());
 
     while (startPos < len && line[startPos] == ' ') startPos++; // skip front spaces
     if (startPos == len) return false;
@@ -281,7 +281,7 @@ bool XkfxParser::SplitCompositionParametersString(const char* parameterStr, vect
     if (parameterStr == nullptr) return false;
 
     const char* ptrStr = parameterStr;
-    int len = strlen(parameterStr);
+    int len = (int)(strlen(parameterStr));
 
     //if we have the syntax: "aComp = mixin A, B,": B is not a composition parameter, but belong to the mixin definition
     bool previousParameterStringIsAMixinWithoutParenthesis = false;
@@ -400,7 +400,7 @@ bool XkfxParser::SplitParametersString(const char* parameterStr, vector<string>&
     if (parameterStr == nullptr) return false;
 
     const char* ptrStr = parameterStr;
-    int len = strlen(parameterStr);
+    int len = (int)(strlen(parameterStr));
 
     char c;
     int start = 0;
@@ -600,7 +600,7 @@ static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, ve
     vector<MethodInfo> vecMethods;
     if (!mixer->GetListAllMethodsInfo(vecMethods, errorMsgs))
         return error(errorMsgs, "Failed to get the mixer list of methods");
-    unsigned int countMethods = vecMethods.size();
+    unsigned int countMethods = (unsigned int)(vecMethods.size());
     
     outputStages.clear();
     for (unsigned int m = 0; m < countMethods; m++)
@@ -676,7 +676,7 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const Compos
     vector<string> listCompositionInstructions;
     if (*pCompExpression == '[')
     {
-        unsigned int len = strlen(pCompExpression);
+        unsigned int len = (unsigned int)(strlen(pCompExpression));
         if (pCompExpression[len - 1] != ']')
             return error(errorMsgs, string("Invalid compositions instruction string, ] expected: ") + pCompExpression);
 
@@ -727,7 +727,7 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const Compos
                 //trim start
                 while (*paCompositionInstruction == ' ' || *paCompositionInstruction == '\t') paCompositionInstruction++;
                 //trim end
-                mixinInstructionLen = strlen(paCompositionInstruction);
+                mixinInstructionLen = (int)(strlen(paCompositionInstruction));
                 while (mixinInstructionLen > 0 && (paCompositionInstruction[mixinInstructionLen - 1] == ' ' || paCompositionInstruction[mixinInstructionLen - 1] == '\t')) mixinInstructionLen--;
                 if (mixinInstructionLen == 0) return error(errorMsgs, "Invalid composition instruction: " + aCompositionInstruction);
 
@@ -747,7 +747,7 @@ static bool AddCompositionToMixer(XkEffectMixerObject* mixerTarget, const Compos
             }
             else
             {
-                mixinInstructionLen = strlen(paCompositionInstruction);
+                mixinInstructionLen = (int)(strlen(paCompositionInstruction));
             }
 
             //We create a new, anonymous mixer and directly mix the shader specified in the function parameter
@@ -877,7 +877,7 @@ static bool MixinShaders(const char* mixinShadersInstructions, XkEffectMixerObje
         }
     }
 
-    unsigned int countShadersToMix = listShaderBytecodeToMix.size();
+    unsigned int countShadersToMix = (unsigned int)(listShaderBytecodeToMix.size());
     if (countShadersToMix == 0) return error(errorMsgs, "No bytecode to mix");
     if (countShadersToMix != listShaderDefinition.size()) return error(errorMsgs, "Invalid size");
 
@@ -970,7 +970,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
     int nextWordLen;
     previousPartialInstructionLine[0] = '\0';
 
-    unsigned int fileSize = effectCmdLines.length();
+    unsigned int fileSize = (unsigned int)(effectCmdLines.length());
     char* const cmdLinesBuffer = new char[fileSize + 1];
     strcpy_s(cmdLinesBuffer, fileSize + 1, effectCmdLines.c_str());
     cmdLinesBuffer[fileSize] = '\0';
@@ -994,7 +994,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
             continue;
         }
 
-        int currentLineSize = strlen(currentLine);
+        int currentLineSize = (int)(strlen(currentLine));
 
         //trim line end
         while (currentLineSize > 0 && (currentLine[currentLineSize - 1] == ' ' || currentLine[currentLineSize - 1] == '\t')) {
@@ -1009,7 +1009,7 @@ bool XkfxParser::ProcessXkfxCommandLines(XkslParser* p_parser, const string& eff
         //concatenate with the previous line in the case of the instruction wasn't complete
         if (previousPartialInstructionLine[0] != '\0')
         {
-            int instructionToAddsize = strlen(previousPartialInstructionLine);
+            int instructionToAddsize = (int)(strlen(previousPartialInstructionLine));
             int totalSize = instructionToAddsize + currentLineSize;
 
             if (totalSize >= instructionBufferSize - 1)

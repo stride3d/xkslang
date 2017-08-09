@@ -185,7 +185,7 @@ bool SpxCompiler::GetInputAttributesFromBytecode(EffectReflection& effectReflect
 	//Create the inputAttributes
 	if (success)
 	{
-		effectReflection.CountInputAttributes = vecInputVariables.size();
+		effectReflection.CountInputAttributes = (int)(vecInputVariables.size());
 		if (effectReflection.CountInputAttributes > 0) effectReflection.InputAttributes = new ShaderInputAttributeDescription[effectReflection.CountInputAttributes];
 		for (int k = 0; k < effectReflection.CountInputAttributes; k++)
 		{

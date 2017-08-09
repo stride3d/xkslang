@@ -174,7 +174,7 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
         for (auto its = listShadersMerged.begin(); its != listShadersMerged.end(); its++)
         {
             ShaderClassData* anInstanciatedShader = *its;
-            int instanceLevel = anInstanciatedShader->listInstancingPathItems.size();
+            int instanceLevel = (int)(anInstanciatedShader->listInstancingPathItems.size());
 
             spv::Instruction shaderInstancingInstr(spv::OpShaderInstancingPathItem);
             shaderInstancingInstr.addIdOperand(anInstanciatedShader->GetId());
@@ -711,7 +711,7 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
             if (!GetAllShaderInstancesForComposition(newStagedComposition, vecCompositionShaderInstances)) {
                 return error(string("Failed to retrieve the instances for the composition: ") + newStagedComposition->GetShaderOwnerAndVariableName());
             }
-            int countInstancesToCopy = vecCompositionShaderInstances.size();
+            int countInstancesToCopy = (int)(vecCompositionShaderInstances.size());
             if (countInstancesToCopy != newStagedComposition->countInstances) return error("Inconsistent number of instances");
 
             unsigned int overridingCompositionBytecodePosition = GetBytecodePositionForShaderCompositionDeclaration(overridingComposition);
@@ -734,7 +734,7 @@ bool SpxCompiler::CheckIfTheCompositionGetOverridenByAnExistingStageComposition(
                 for (auto its = vecAllShaders.begin(); its != vecAllShaders.end(); its++)
                 {
                     ShaderClassData* aShader = *its;
-                    const unsigned aShaderCountInstancePaths = aShader->listInstancingPathItems.size();
+                    const unsigned int aShaderCountInstancePaths = (const unsigned int)(aShader->listInstancingPathItems.size());
                     if (aShaderCountInstancePaths > 0)
                     {
                         for (unsigned int ik = 0; ik < aShaderCountInstancePaths; ik++)
@@ -932,7 +932,7 @@ bool SpxCompiler::GetAllCompositionsForVariableName(ShaderClassData* shader, con
 
     if (lookInParentShaders)
     {
-        unsigned int countParents = shader->parentsList.size();
+        unsigned int countParents = (unsigned int)(shader->parentsList.size());
         for (unsigned int p = 0; p < countParents; ++p)
         {
             if (!GetAllCompositionsForVariableName(shader->parentsList[p], variableName, lookInParentShaders, listCompositions)) return false;
@@ -1017,7 +1017,7 @@ SpxCompiler::ShaderCompositionDeclaration* SpxCompiler::GetShaderCompositionDecl
         return nullptr;
     }
 
-    unsigned int countCompositionFound = listCompositions.size();
+    unsigned int countCompositionFound = (unsigned int)(listCompositions.size());
     /*if (countCompositionFound > 1){
     error("Several compositions found for the variable: " + variableName);
     return nullptr;

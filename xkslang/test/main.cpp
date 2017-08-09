@@ -288,7 +288,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },   ////////////////////////////// insert struct ??
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 
-    //{ "ShadingBase", "ShadingBase.xkfx" },
+    { "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
     //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
@@ -311,7 +311,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -817,7 +817,7 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
     DWORD time_before, time_after;
     bool success = true;
 
-    unsigned int countOutputStages = outputStages.size();
+    unsigned int countOutputStages = (unsigned int)(outputStages.size());
     xkslangDll::OutputStageEntryPoint* stageEntryPointArray = new xkslangDll::OutputStageEntryPoint[countOutputStages];
     for (unsigned int i = 0; i < countOutputStages; i++)
     {
@@ -1213,7 +1213,7 @@ char* __stdcall callbackRequestDataForShaderDll_Recursif(const char* shaderName,
     if (it != mapShaderData.end())
     {
         char* pShaderData = it->second;
-        *dataLen = strlen(pShaderData);
+        *dataLen = (int32_t)(strlen(pShaderData));
         return pShaderData;
     }
     else
@@ -1222,7 +1222,7 @@ char* __stdcall callbackRequestDataForShaderDll_Recursif(const char* shaderName,
         bool success = callbackRequestDataForShader(shaderNameStr, shaderData);
         if (!success) return nullptr;
 
-        int len = shaderData.size();
+        int len = (int)(shaderData.size());
         if (len <= 0) return nullptr;
 
         char* pShaderData = new char[len + 1];
@@ -1239,7 +1239,7 @@ static char* singleXkslShaderToReturn = nullptr;
 char* __stdcall callbackRequestDataForShaderDll_Single(const char* shaderName, int32_t* dataLen)
 {
     if (singleXkslShaderToReturn == nullptr) return nullptr;
-    *dataLen = strlen(singleXkslShaderToReturn);
+    *dataLen = (int32_t)(strlen(singleXkslShaderToReturn));
     return singleXkslShaderToReturn;
 }
 
@@ -1775,7 +1775,7 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
         }
     }
 
-    unsigned int countShadersToMix = listShaderBytecodeToMix.size();
+    unsigned int countShadersToMix = (unsigned int)(listShaderBytecodeToMix.size());
     if (countShadersToMix == 0) return error("No bytecode to mix");
     if (countShadersToMix != listShaderDefinition.size()) return error("Invalid size");
 
@@ -2149,7 +2149,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                     success = false; break;
                 }
                 if (singleXkslShaderToReturn != nullptr) delete[] singleXkslShaderToReturn;
-                int len = xkslInput.size() + 1;
+                int len = (int)(xkslInput.size() + 1);
                 singleXkslShaderToReturn = new char[len + 1];
                 strncpy_s(singleXkslShaderToReturn, len + 1, xkslInput.c_str(), len);
                 singleXkslShaderToReturn[xkslInput.size()] = 0;

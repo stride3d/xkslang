@@ -20,7 +20,7 @@ static bool error(vector<string>& msgs, const string& msg)
 string ShaderGenericValues::GetShaderNameWithGenerics() const
 {
     string name = shaderName;
-    unsigned int size = genericsValue.size();
+    unsigned int size = (unsigned int)(genericsValue.size());
     if (size > 0)
     {
         name += '<';
@@ -37,7 +37,7 @@ string ShaderGenericValues::GetShaderNameWithGenerics() const
 string ShaderParsingDefinition::GetShaderNameWithGenerics() const
 {
     string name = shaderName;
-    unsigned int size = genericsValue.size();
+    unsigned int size = (unsigned int)(genericsValue.size());
     if (size > 0)
     {
         name += '<';
@@ -122,7 +122,7 @@ bool XkslParser::ConvertXkslFileToSpx(const string& shaderFileName, const string
 
             //remove the \" delimiter (if any)
             const string& macroValue = listUserDefinedMacros[k].macroValue;
-            int macroValueLen = macroValue.length();
+            int macroValueLen = (int)(macroValue.length());
             if (macroValueLen > 1 && macroValue[0] == '"' && macroValue[macroValueLen - 1] == '"')
                 m.macroValue = macroValue.substr(1, macroValueLen - 2);
             else
@@ -195,7 +195,7 @@ bool XkslParser::ConvertShaderToSpx(const std::string shaderName, glslang::Callb
 
             //remove the \" delimiter (if any)
             const string& macroValue = listUserDefinedMacros[k].macroValue;
-            int macroValueLen = macroValue.length();
+            int macroValueLen = (int)(macroValue.length());
             if (macroValueLen > 1 && macroValue[0] == '"' && macroValue[macroValueLen - 1] == '"')
                 m.macroValue = macroValue.substr(1, macroValueLen - 2);
             else
@@ -408,7 +408,7 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
     if (strShadersWithGenerics == nullptr) return true;
 
     string txt(strShadersWithGenerics);
-    int len = txt.size();
+    int len = (int)(txt.size());
     int pos = 0, end = 0;
 
     while (true)

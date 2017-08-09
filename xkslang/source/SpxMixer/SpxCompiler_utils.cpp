@@ -80,7 +80,7 @@ bool SpxCompiler::ValidateHeader()
 
 bool SpxCompiler::ProcessBytecodeSanityCheck(const std::vector<uint32_t>& bytecode, std::vector<std::string>& errorMsgs)
 {
-    unsigned int bytecodeSize = bytecode.size();
+    unsigned int bytecodeSize = (unsigned int)(bytecode.size());
     if (bytecodeSize < header_size) return error(errorMsgs, "invalid bytecode size");
     unsigned int maxId = bound(bytecode);
     if (maxId == 0) return error(errorMsgs, "invalid bound value: " + to_string(maxId));
@@ -222,7 +222,7 @@ bool SpxCompiler::ProcessBytecodeSanityCheck(const std::vector<uint32_t>& byteco
             return error(errorMsgs, "Failed to get the list of all compositions");
         }
 
-        unsigned int countCompositions = vecCompositions.size();
+        unsigned int countCompositions = (unsigned int)(vecCompositions.size());
         for (unsigned int ic = 0; ic < countCompositions; ic++)
         {
             ShaderCompositionDeclaration* aComposition = vecCompositions[ic];
@@ -233,7 +233,7 @@ bool SpxCompiler::ProcessBytecodeSanityCheck(const std::vector<uint32_t>& byteco
                 return error(errorMsgs, "Failed to get the list of instances for the composition: " + aComposition->GetShaderOwnerAndVariableName());
             }
 
-            unsigned int countInstances = vecCompositionInstances.size();
+            unsigned int countInstances = (unsigned int)(vecCompositionInstances.size());
             if (countInstances != aComposition->countInstances)
                 return error(errorMsgs, "Invalid number of instances for the composition: " + aComposition->GetShaderOwnerAndVariableName());
         }

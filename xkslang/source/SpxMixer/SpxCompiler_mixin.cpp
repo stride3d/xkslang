@@ -280,7 +280,7 @@ SpxCompiler* SpxCompiler::Clone()
     {
         ShaderClassData* shaderToClone = *it;
         ShaderClassData* clonedShader = shaderToClone->tmpClonedShader;
-        unsigned int countCompositions = shaderToClone->listCompositionDeclarations.size();
+        unsigned int countCompositions = (unsigned int)(shaderToClone->listCompositionDeclarations.size());
 
         for (unsigned int i = 0; i < countCompositions; ++i)
         {
@@ -932,7 +932,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		}
 	}
 
-    countFunctionsUnused = vecAllFunctions.size() - countFunctionsUsed;
+    countFunctionsUnused = (int)(vecAllFunctions.size()) - countFunctionsUsed;
 #ifdef XKSLANG_DEBUG_MODE
     if (countFunctionsUnused < 0 || (unsigned int)countFunctionsUsed > vecAllFunctions.size()) return error("count functions: Internal error");
 #endif
@@ -3476,7 +3476,7 @@ SpxCompiler::FunctionInstruction* SpxCompiler::GetTargetedFunctionByNameWithinSh
 
 int SpxCompiler::GetCountShaders()
 {
-    return vecAllShaders.size();
+    return (int)(vecAllShaders.size());
 }
 
 string SpxCompiler::GetShaderUniqueId()

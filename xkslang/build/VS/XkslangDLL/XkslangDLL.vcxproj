@@ -77,21 +77,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <TargetName>XkslangDll</TargetName>
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <TargetName>XkslangDll</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -105,7 +107,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SPIRV\Debug\SPVRemapperd.lib;glslang\Debug\glslangd.lib;glslang\OSDependent\Windows\Debug\OSDependentd.lib;OGLCompilersDLL\Debug\OGLCompilerd.lib;hlsl\Debug\HLSLd.lib;SPIRV\Debug\SPIRVd.lib;StandAlone\Debug\glslang-default-resource-limitsd.lib;Debug\Xkslang.lib;Debug\XkfxProcessor.lib;Debug\spirvcrossd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SPIRV\Debug\SPVRemapperd.lib;glslang\Debug\glslangd.lib;glslang\OSDependent\Windows\Debug\OSDependentd.lib;OGLCompilersDLL\Debug\OGLCompilerd.lib;hlsl\Debug\HLSLd.lib;SPIRV\Debug\SPIRVd.lib;StandAlone\Debug\glslang-default-resource-limitsd.lib;Win32\Debug\Xkslang.lib;Win32\Debug\XkfxProcessor.lib;Win32\Debug\spirvcrossd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\..\build; ..\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -116,10 +118,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;XKSLANGDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\..\..\..\..\build; ..\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SPIRV\Debug\SPVRemapper.lib;glslang\Debug\glslang.lib;glslang\OSDependent\Windows\Debug\OSDependent.lib;OGLCompilersDLL\Debug\OGLCompiler.lib;hlsl\Debug\HLSL.lib;SPIRV\Debug\SPIRV.lib;StandAlone\Debug\glslang-default-resource-limits.lib;x64\Debug\Xkslang.lib;x64\Debug\XkfxProcessor.lib;x64\Debug\spirvcross.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -138,7 +143,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SPIRV\Release\SPVRemapper.lib;glslang\Release\glslang.lib;glslang\OSDependent\Windows\Release\OSDependent.lib;OGLCompilersDLL\Release\OGLCompiler.lib;hlsl\Release\HLSL.lib;SPIRV\Release\SPIRV.lib;StandAlone\Release\glslang-default-resource-limits.lib;Release\Xkslang.lib;Release\XkfxProcessor.lib;Release\spirvcross.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SPIRV\Release\SPVRemapper.lib;glslang\Release\glslang.lib;glslang\OSDependent\Windows\Release\OSDependent.lib;OGLCompilersDLL\Release\OGLCompiler.lib;hlsl\Release\HLSL.lib;SPIRV\Release\SPIRV.lib;StandAlone\Release\glslang-default-resource-limits.lib;Win32\Release\Xkslang.lib;Win32\Release\XkfxProcessor.lib;Win32\Release\spirvcross.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\..\build; ..\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -151,12 +156,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;XKSLANGDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\..\..\..\..\build; ..\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SPIRV\Release\SPVRemapper.lib;glslang\Release\glslang.lib;glslang\OSDependent\Windows\Release\OSDependent.lib;OGLCompilersDLL\Release\OGLCompiler.lib;hlsl\Release\HLSL.lib;SPIRV\Release\SPIRV.lib;StandAlone\Release\glslang-default-resource-limits.lib;x64\Release\Xkslang.lib;x64\Release\XkfxProcessor.lib;x64\Release\spirvcross.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

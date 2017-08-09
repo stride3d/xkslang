@@ -471,7 +471,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
         //get or create a float[4] type in the bytecode: this type will be needed to add some padding in some merged cbuffers
         spv::Id idOpTypeFloat32 = spvUndefinedId;
 
-        unsigned int countObjects = listAllObjects.size();
+        unsigned int countObjects = (unsigned int)(listAllObjects.size());
         for (unsigned int iObj = 0; iObj < countObjects; iObj++)
         {
             ObjectInstructionBase* obj = listAllObjects[iObj];
@@ -1072,7 +1072,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             if (shaderOwner->listInstancingPathItems.size() > 0)
                             {
                                 //shader has been instanciated through a composition: find back the compositions path to update its name
-                                unsigned int countPaths = shaderOwner->listInstancingPathItems.size();
+                                unsigned int countPaths = (unsigned int)(shaderOwner->listInstancingPathItems.size());
                                 for (int pathLevel = countPaths - 1; pathLevel >= 0; pathLevel--)
                                 {
                                     //look for the item matching the pathLevel

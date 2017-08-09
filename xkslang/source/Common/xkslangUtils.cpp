@@ -41,8 +41,8 @@ string XkslangUtils::trim(const string& str, char c)
 
 string XkslangUtils::trimStart(const string& str, const string& chars)
 {
-    unsigned int len = str.size();
-    unsigned int countChars = chars.size();
+    unsigned int len = (unsigned int)(str.size());
+    unsigned int countChars = (unsigned int)(chars.size());
     char c;
     int startPos = 0;
     bool loop = true;
@@ -67,8 +67,8 @@ string XkslangUtils::trimStart(const string& str, const string& chars)
 
 string XkslangUtils::trimEnd(const string& str, const string& chars)
 {
-    unsigned int len = str.size();
-    unsigned int countChars = chars.size();
+    unsigned int len = (unsigned int)(str.size());
+    unsigned int countChars = (unsigned int)(chars.size());
     char c;
     int endPos = len - 1;
     bool loop = true;
@@ -93,8 +93,8 @@ string XkslangUtils::trimEnd(const string& str, const string& chars)
 
 string XkslangUtils::trim(const string& str, const string& chars)
 {
-    unsigned int len = str.size();
-    unsigned int countChars = chars.size();
+    unsigned int len = (unsigned int)(str.size());
+    unsigned int countChars = (unsigned int)(chars.size());
     char c;
     int startPos = 0;
     bool loop = true;

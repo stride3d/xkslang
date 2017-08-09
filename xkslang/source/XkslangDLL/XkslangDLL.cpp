@@ -34,7 +34,7 @@ namespace xkslangDll
 	static char* allocateAndCopyStringOnGlobalHeap(const char* txt)
 	{
 		if (txt == nullptr) return nullptr;
-		int len = strlen(txt);
+		int len = (int)(strlen(txt));
         if (len == 0) return nullptr;
 
 		char* res = (char*)GlobalAlloc(0, (len + 1) * sizeof(char));
@@ -52,7 +52,7 @@ namespace xkslangDll
 			stream << errorMessages[n] << endl;
 
 		string str = stream.str();
-		unsigned int len = str.size();
+		unsigned int len = (unsigned int)(str.size());
 
 		//allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
 		char* pBuffer = allocateAndCopyStringOnGlobalHeap(str.c_str());
@@ -80,7 +80,7 @@ namespace xkslangDll
             return nullptr;
         }
 
-        int asciiBufferLen = bytecodeText.size();
+        int asciiBufferLen = (int)(bytecodeText.size());
         if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
         //allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
@@ -107,7 +107,7 @@ namespace xkslangDll
             return nullptr;
         }
 
-        int asciiBufferLen = bytecodeText.size();
+        int asciiBufferLen = (int)(bytecodeText.size());
         if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
 		//allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
@@ -135,7 +135,7 @@ namespace xkslangDll
             return nullptr;
         }
 
-        int asciiBufferLen = bytecodeText.size();
+        int asciiBufferLen = (int)(bytecodeText.size());
         if (asciiBufferLen == 0) { error("The Ascii buffer is empty"); return nullptr; }
 
 		//allocate a byte buffer using GlobalAlloc, so we can return it to the calling app and let it delete it
@@ -164,7 +164,7 @@ namespace xkslangDll
             return false;
         }
 
-        int countShaders = vecShaderName.size();
+        int countShaders = (int)(vecShaderName.size());
         if (countShaders == 0) return true;
 
         BytecodeShaderInformation* tabShadersInfo = (BytecodeShaderInformation*)GlobalAlloc(0, countShaders * sizeof(BytecodeShaderInformation));
@@ -336,7 +336,7 @@ namespace xkslangDll
         SpxMixer* mixer = new SpxMixer();
         MixerData* mixerData = new MixerData(mixer);
 
-        uint32_t handleId = listMixerData.size();
+        uint32_t handleId = (uint32_t)(listMixerData.size());
         listMixerData.push_back(mixerData);
 
         return handleId + 1;
@@ -357,7 +357,7 @@ namespace xkslangDll
         delete mixerData;
         listMixerData[index] = nullptr;
 
-        int indexLastValidElement = listMixerData.size() - 1;
+        int indexLastValidElement = (int)(listMixerData.size()) - 1;
         while (indexLastValidElement >= 0 && listMixerData[indexLastValidElement] == nullptr) indexLastValidElement--;
 
         if (indexLastValidElement != listMixerData.size() - 1)
@@ -464,7 +464,7 @@ namespace xkslangDll
 
         mixerData->compilationDone = true;
 
-        uint32_t mixerHandleId = listMixerData.size();
+        uint32_t mixerHandleId = (uint32_t)(listMixerData.size());
         listMixerData.push_back(mixerData);
         return mixerHandleId + 1;
     }
@@ -524,7 +524,7 @@ namespace xkslangDll
         bool success = mixerData->mixer->GetListAllMethodsInfo(vecMethods, errorMsgs);
         if (!success) { return error("Failed to get the list of all methods from the mixer"); }
 
-        unsigned int countMethods = vecMethods.size();
+        unsigned int countMethods = (unsigned int)(vecMethods.size());
         if (countMethods > 0)
         {
             MethodData* methodsBuffer = (MethodData*)GlobalAlloc(0, countMethods * sizeof(MethodData));
@@ -632,7 +632,7 @@ namespace xkslangDll
 				{
 					const ConstantBufferReflectionDescription& constantBufferSrc = effectReflectionSrc.ConstantBuffers[k];
 					
-					int countMembers = constantBufferSrc.Members.size();
+					int countMembers = (int)(constantBufferSrc.Members.size());
 					ConstantBufferMemberReflectionDescriptionData* membersInfo = nullptr;
 					membersInfo = (ConstantBufferMemberReflectionDescriptionData*)GlobalAlloc(0, countMembers * sizeof(ConstantBufferMemberReflectionDescriptionData));
 					for (int m = 0; m < countMembers; ++m)
@@ -780,7 +780,7 @@ namespace xkslangDll
         const vector<uint32_t>* mixerBytecode = mixerData->mixer->GetCurrentMixinBytecode();
         if (mixerBytecode == nullptr) { error("Failed to get the mixer bytecode"); return 0; }
 
-        int bytecodeLen = mixerBytecode->size();
+        int bytecodeLen = (int)(mixerBytecode->size());
         if (bytecodeLen <= 0) { error("The mixer current bytecode is empty"); return 0; }
         if (bytecodeLen < bufferSize) { error("The given bytecode buffer has an invalid size. Expected (at least): " + to_string(bytecodeLen)); return 0; }
 
@@ -844,7 +844,7 @@ namespace xkslangDll
 
 		SpvBytecode& compiledBytecode = mixerData->finalCompiledSpv;
 		const std::vector<uint32_t>& bytecode = compiledBytecode.getBytecodeStream();
-		int bytecodeLen = bytecode.size();
+		int bytecodeLen = (int)(bytecode.size());
 		if (bytecodeLen <= 0) { error("The mixer compiled bytecode is empty"); return 0; }
 		if (bytecodeLen < bufferSize) { error("The given bytecode buffer has an invalid size. Expected (at least): " + to_string(bytecodeLen)); return 0; }
 
@@ -910,7 +910,7 @@ namespace xkslangDll
         if (mixerData == nullptr) {error("Invalid mixer handle"); return nullptr;}
 		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return nullptr; }
 
-        unsigned int countStages = mixerData->stagesCompiledData.size();
+        unsigned int countStages = (unsigned int)(mixerData->stagesCompiledData.size());
         uint32_t stageNum = countStages;
         for (unsigned int k = 0; k < countStages; k++) {
             if (mixerData->stagesCompiledData[k].stage == stage) {
@@ -941,7 +941,7 @@ namespace xkslangDll
         if (outputStageBytecode == nullptr || outputStageBytecode->resultingBytecode.GetBytecodeSize() == 0) { error("The mixer has not been compiled for the given stage"); return 0; }
 
         const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
-        int32_t bytecodeLen = bytecode.size();
+        int32_t bytecodeLen = (int32_t)(bytecode.size());
 
         if (stage != nullptr) *stage = outputStageBytecode->stage;
         return bytecodeLen;
@@ -955,7 +955,7 @@ namespace xkslangDll
         if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
 		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
 
-        unsigned int countStages = mixerData->stagesCompiledData.size();
+        unsigned int countStages = (unsigned int)(mixerData->stagesCompiledData.size());
         uint32_t stageNum = countStages;
         for (unsigned int k = 0; k < countStages; k++) {
             if (mixerData->stagesCompiledData[k].stage == stage) {
@@ -989,7 +989,7 @@ namespace xkslangDll
         }
 
         const std::vector<uint32_t>& bytecode = outputStageBytecode->resultingBytecode.getBytecodeStream();
-        int bytecodeLen = bytecode.size();
+        int bytecodeLen = (int)(bytecode.size());
         if (bytecodeLen <= 0) { error("the stage compiled bytecode is empty"); return 0; }
         if (bytecodeLen < bufferSize) { error("The given bytecode buffer has an invalid size. Expected (at least): " + to_string(bytecodeLen)); return 0; }
 
@@ -1010,7 +1010,7 @@ namespace xkslangDll
         if (mixerData == nullptr) { error("Invalid mixer handle"); return 0; }
 		if (!mixerData->compilationDone) { error("The mixer has not been compiled"); return 0; }
 
-        unsigned int countStages = mixerData->stagesCompiledData.size();
+        unsigned int countStages = (unsigned int)(mixerData->stagesCompiledData.size());
         uint32_t stageNum = countStages;
         for (unsigned int k = 0; k < countStages; k++) {
             if (mixerData->stagesCompiledData[k].stage == stage) {
