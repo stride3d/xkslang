@@ -288,7 +288,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 
-    { "ShadingBase", "ShadingBase.xkfx" },
+    //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
     //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
@@ -311,7 +311,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
