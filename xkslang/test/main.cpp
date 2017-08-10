@@ -134,7 +134,7 @@ static bool xkfxOptions_processSampleWithXkfxLibrary = false;  //if true, we als
 
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
-static bool processEffectWithDllApi = false;
+static bool processEffectWithDllApi = true;
 static bool processEffectWithXkfxProcessorApi = true;
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
@@ -289,6 +289,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
+    { "LuminanceLogShader", "LuminanceLogShader.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
     //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
@@ -311,7 +312,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
 
-    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -866,15 +867,16 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
     EffectReflection effectReflection;
     if (buildEffectReflection)
     {
+        int32_t constantBufferStructSize, resourceBindingsStructSize, inputAttributesStructSize;
         xkslangDll::ConstantBufferReflectionDescriptionData* pAllocsConstantBuffers;
         xkslangDll::EffectResourceBindingDescriptionData* pAllocsResourceBindings;
         xkslangDll::ShaderInputAttributeDescriptionData* pAllocsInputAttributes;
         int32_t countConstantBuffers, countResourceBindings, countInputAttributes;
 
         success = xkslangDll::GetMixerEffectReflectionData(mixer->mixerHandleId,
-            &pAllocsConstantBuffers, &countConstantBuffers,
-            &pAllocsResourceBindings, &countResourceBindings,
-            &pAllocsInputAttributes, &countInputAttributes);
+            &pAllocsConstantBuffers, &countConstantBuffers, &constantBufferStructSize,
+            &pAllocsResourceBindings, &countResourceBindings, &resourceBindingsStructSize,
+            &pAllocsInputAttributes, &countInputAttributes, &inputAttributesStructSize);
 
         if (!success)
         {
@@ -882,8 +884,7 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
             if (pError != nullptr) error(pError);
             GlobalFree(pError);
 
-            error("Failed to get the Effect Reflection data");
-            return false;
+            return error("Failed to get the Effect Reflection data");
         }
 
         //Convert the data into the effectReflection object
@@ -891,6 +892,8 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
         vector<EffectResourceBindingDescription> vecAllResourceBindings;
         if (countResourceBindings > 0 && pAllocsResourceBindings != nullptr)
         {
+            if (sizeof(xkslangDll::EffectResourceBindingDescriptionData) != resourceBindingsStructSize) return error("Invalid data struct size");
+
             xkslangDll::EffectResourceBindingDescriptionData* effectResourceBinding;
             for (int i = 0; i < countResourceBindings; i++)
             {
@@ -924,6 +927,8 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
         vector<ShaderInputAttributeDescription> vecAllInputAttributes;
         if (countInputAttributes > 0 && pAllocsInputAttributes != nullptr)
         {
+            if (sizeof(xkslangDll::ShaderInputAttributeDescriptionData) != inputAttributesStructSize) return error("Invalid data struct size");
+
             xkslangDll::ShaderInputAttributeDescriptionData* shaderInputAttribute;
             for (int i = 0; i < countInputAttributes; i++)
             {
@@ -947,6 +952,8 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
         //Process the ConstantBuffers
         if (countConstantBuffers > 0 && pAllocsConstantBuffers != nullptr)
         {
+            if (sizeof(xkslangDll::ConstantBufferReflectionDescriptionData) != constantBufferStructSize) return error("Invalid data struct size");
+
             effectReflection.CountConstantBuffers = countConstantBuffers;
             effectReflection.ConstantBuffers = new ConstantBufferReflectionDescription[countConstantBuffers];
 

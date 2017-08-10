@@ -239,9 +239,9 @@ namespace xkslangDll
 
 	//After a mixer has been successfully compiled: call this function to get its Effect Reflection Data
 	extern "C" __declspec(dllexport) bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
-		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers,
-		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings,
-		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes);
+		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers, int32_t* constantBufferStructSize,
+		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings, int32_t* resourceBindingsStructSize,
+		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes, int32_t* inputAttributesStructSize);
 }
 
 
@@ -523,9 +523,9 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         [DllImport("XkslangDll.dll", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool GetMixerEffectReflectionData(UInt32 mixerHandleId,
-            out IntPtr constantBuffersData, out Int32 countConstantBuffers,
-            out IntPtr resourceBindingsData, out Int32 countResourceBindings,
-            out IntPtr inputAttributesData, out Int32 countInputAttributes);
+            out IntPtr constantBuffersData, out Int32 countConstantBuffers, out Int32 constantBufferStructSize,
+            out IntPtr resourceBindingsData, out Int32 countResourceBindings, out Int32 resourceBindingsStructSize,
+            out IntPtr inputAttributesData, out Int32 countInputAttributes, out Int32 inputAttributesStructSize);
 
         //=====================================================================================================================
         // Enums: these enums are similar to xkslang enums, and set to 32bits
@@ -1067,17 +1067,20 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         IntPtr pAllocsResourceBindings = IntPtr.Zero;
                         int countInputAttributes = 0;
                         IntPtr pAllocsInputAttributes = IntPtr.Zero;
+                        int constantBufferStructSize = 0, resourceBindingsStructSize = 0, inputAttributesStructSize = 0;
 
                         success = XkslangDLLBindingClass.GetMixerEffectReflectionData(effectHandleId,
-                            out pAllocsConstantBuffers, out countConstantBuffers,
-                            out pAllocsResourceBindings, out countResourceBindings,
-                            out pAllocsInputAttributes, out countInputAttributes);
+                            out pAllocsConstantBuffers, out countConstantBuffers, out constantBufferStructSize,
+                            out pAllocsResourceBindings, out countResourceBindings, out resourceBindingsStructSize,
+                            out pAllocsInputAttributes, out countInputAttributes, out inputAttributesStructSize);
                         if (!success) throw new Exception("Failed to get the Effect Reflection data");
 
                         //Process the ResourceBindings
                         if (countResourceBindings > 0 && pAllocsResourceBindings != IntPtr.Zero)
                         {
                             int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
+                            if (structSize != resourceBindingsStructSize) throw new Exception("Incompatible data structure for EffectReflection ResourceBinding object");
+
                             XkslangDLLBindingClass.EffectResourceBindingDescriptionData effectResourceBinding;
                             for (int i = 0; i < countResourceBindings; i++)
                             {
@@ -1114,6 +1117,8 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         if (countInputAttributes > 0 && pAllocsInputAttributes != IntPtr.Zero)
                         {
                             int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
+                            if (structSize != inputAttributesStructSize) throw new Exception("Incompatible data structure for EffectReflection InputAttribute object");
+
                             XkslangDLLBindingClass.ShaderInputAttributeDescriptionData shaderInputAttribute;
                             for (int i = 0; i < countInputAttributes; i++)
                             {
@@ -1138,6 +1143,8 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         if (countConstantBuffers > 0 && pAllocsConstantBuffers != IntPtr.Zero)
                         {
                             int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
+                            if (structSize != constantBufferStructSize) throw new Exception("Incompatible data structure for EffectReflection ConstantBuffer object");
+
                             for (int i = 0; i < countConstantBuffers; i++)
                             {
                                 //read the cbuffer data

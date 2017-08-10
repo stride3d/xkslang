@@ -1,0 +1,14 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+addResourcesLibrary "library"
+
+mixer _m
+_m.mixin( LuminanceLogShader )
+
+_m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+_m.compile()
+

@@ -593,9 +593,9 @@ namespace xkslangDll
     }
 
 	bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
-		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers,
-		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings,
-		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes)
+		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers, int32_t* constantBufferStructSize,
+		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings, int32_t* resourceBindingsStructSize,
+		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes, int32_t* inputAttributesStructSize)
 	{
 		errorMessages.clear();
 
@@ -625,9 +625,11 @@ namespace xkslangDll
 		if (constantBuffers != nullptr && countConstantBuffers != nullptr)
 		{
 			*countConstantBuffers = effectReflectionSrc.CountConstantBuffers;
+            if (constantBufferStructSize != nullptr) *constantBufferStructSize = sizeof(ConstantBufferReflectionDescriptionData);
 			if (effectReflectionSrc.CountConstantBuffers > 0)
 			{
-				ConstantBufferReflectionDescriptionData* arrayConstantBuffer = (ConstantBufferReflectionDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountConstantBuffers * sizeof(ConstantBufferReflectionDescriptionData));
+				ConstantBufferReflectionDescriptionData* arrayConstantBuffer =
+                    (ConstantBufferReflectionDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountConstantBuffers * sizeof(ConstantBufferReflectionDescriptionData));
 				for (int k = 0; k < effectReflectionSrc.CountConstantBuffers; ++k)
 				{
 					const ConstantBufferReflectionDescription& constantBufferSrc = effectReflectionSrc.ConstantBuffers[k];
@@ -690,9 +692,11 @@ namespace xkslangDll
 		if (resourceBindings != nullptr && countResourceBindings != nullptr)
 		{
 			*countResourceBindings = effectReflectionSrc.CountResourceBindings;
+            if (resourceBindingsStructSize != nullptr) *resourceBindingsStructSize = sizeof(EffectResourceBindingDescriptionData);
 			if (effectReflectionSrc.CountResourceBindings > 0)
 			{
-				EffectResourceBindingDescriptionData* arrayResourceBindings = (EffectResourceBindingDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountResourceBindings * sizeof(EffectResourceBindingDescriptionData));
+				EffectResourceBindingDescriptionData* arrayResourceBindings =
+                    (EffectResourceBindingDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountResourceBindings * sizeof(EffectResourceBindingDescriptionData));
 				for (int k = 0; k < effectReflectionSrc.CountResourceBindings; ++k)
 				{
 					const char* keyName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.ResourceBindings[k].KeyName.c_str());
@@ -712,9 +716,11 @@ namespace xkslangDll
 		if (inputAttributes != nullptr && countInputAttributes != nullptr)
 		{
 			*countInputAttributes = effectReflectionSrc.CountInputAttributes;
+            if (inputAttributesStructSize != nullptr) *inputAttributesStructSize = sizeof(ShaderInputAttributeDescriptionData);
 			if (effectReflectionSrc.CountInputAttributes > 0)
 			{
-				ShaderInputAttributeDescriptionData* arrayInputAttributes = (ShaderInputAttributeDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountInputAttributes * sizeof(ShaderInputAttributeDescriptionData));
+				ShaderInputAttributeDescriptionData* arrayInputAttributes =
+                    (ShaderInputAttributeDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountInputAttributes * sizeof(ShaderInputAttributeDescriptionData));
 				for (int k = 0; k < effectReflectionSrc.CountInputAttributes; ++k)
 				{
 					const char* semanticName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.InputAttributes[k].SemanticName.c_str());
