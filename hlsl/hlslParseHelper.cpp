@@ -5208,7 +5208,7 @@ void HlslParseContext::expandArguments(const TSourceLoc& loc, const TFunction& f
                 aggregate->getSequence().insert(it, args.begin(), args.end());
             }
         }
-        functionParamNumberOffset += (args.size() - 1);
+        functionParamNumberOffset += ((int)(args.size()) - 1);
     };
 
     // Process each argument's conversion

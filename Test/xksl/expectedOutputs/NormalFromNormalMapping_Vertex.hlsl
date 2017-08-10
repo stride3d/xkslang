@@ -31,7 +31,7 @@ void ShaderBase_VSMain()
 {
 }
 
-void NormalBase_GenerateNormal_VS(out VS_STREAMS _streams)
+void NormalBase_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
     _streams.normalWS_id2 = float3(0.0f, 0.0f, 0.0f);
 }

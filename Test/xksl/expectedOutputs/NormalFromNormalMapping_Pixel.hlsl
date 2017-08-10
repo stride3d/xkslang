@@ -54,7 +54,7 @@ void NormalStream_UpdateTangentToWorld(inout PS_STREAMS _streams)
     _streams.tangentToWorld_id2 = mul(tangentMatrix, tangentWorldTransform);
 }
 
-void NormalFromNormalMapping_GenerateNormal_PS(out PS_STREAMS _streams)
+void NormalFromNormalMapping_GenerateNormal_PS(inout PS_STREAMS _streams)
 {
     NormalBase_GenerateNormal_PS();
     NormalStream_UpdateTangentToWorld(_streams);

@@ -7,12 +7,12 @@ struct PS_STREAMS
 
 layout(location = 0) out vec4 PS_OUT_outStreamA;
 
-void ShaderA_computeA(out PS_STREAMS _streams)
+void ShaderA_computeA(inout PS_STREAMS _streams)
 {
     _streams.outStreamA_id0 = vec4(2.0);
 }
 
-void ShaderB_computeB(out PS_STREAMS _streams)
+void ShaderB_computeB(inout PS_STREAMS _streams)
 {
     _streams.outStreamA_id0 = vec4(2.0);
 }

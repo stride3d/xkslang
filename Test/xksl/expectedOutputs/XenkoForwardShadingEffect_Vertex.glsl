@@ -83,13 +83,13 @@ void o26S34C1_IStreamInitializer_ResetStream()
 {
 }
 
-void o26S34C1_MaterialStream_ResetStream(out VS_STREAMS _streams)
+void o26S34C1_MaterialStream_ResetStream(inout VS_STREAMS _streams)
 {
     o26S34C1_IStreamInitializer_ResetStream();
     _streams.matBlend_id1 = 0.0;
 }
 
-void o26S34C1_MaterialDisplacementStream_ResetStream(out VS_STREAMS _streams)
+void o26S34C1_MaterialDisplacementStream_ResetStream(inout VS_STREAMS _streams)
 {
     o26S34C1_MaterialStream_ResetStream(_streams);
     _streams.matDisplacement_id10 = 0.0;
@@ -98,7 +98,7 @@ void o26S34C1_MaterialDisplacementStream_ResetStream(out VS_STREAMS _streams)
 vec4 o24S34C0_o22S2C0_o21S2C0_o19S2C0_ComputeColorWave_5_0_01__0_03__Compute(VS_STREAMS _streams)
 {
     float phase = length(_streams.TexCoord_id9 - vec2(0.5));
-    return vec4(sin((((phase + (PerFrame_var.Global_Time * -0.02999999932944774627685546875)) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.00999999977648258209228515625);
+    return vec4(sin((((phase + (PerFrame_var.Global_Time * (-0.02999999932944774627685546875))) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.00999999977648258209228515625);
 }
 
 vec4 o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute()
@@ -129,13 +129,13 @@ void o24S34C0_o23S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Com
     _streams.Position_id5 = vec4(_streams.Position_id5.xyz + (scaledNormal * _streams.matDisplacement_id10), _streams.Position_id5.w);
 }
 
-void o24S34C0_MaterialSurfaceArray_Compute(out VS_STREAMS _streams)
+void o24S34C0_MaterialSurfaceArray_Compute(inout VS_STREAMS _streams)
 {
     o24S34C0_o22S2C0_MaterialSurfaceSetStreamFromComputeColor_matDisplacement_r__Compute(_streams);
     o24S34C0_o23S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(_streams);
 }
 
-void MaterialSurfaceVertexStageCompositor_VSMain(out VS_STREAMS _streams)
+void MaterialSurfaceVertexStageCompositor_VSMain(inout VS_STREAMS _streams)
 {
     ShaderBase_VSMain();
     o26S34C1_MaterialDisplacementStream_ResetStream(_streams);
@@ -174,20 +174,20 @@ void TransformationWAndVP_PostTransformPosition(inout VS_STREAMS _streams)
     _streams.DepthVS_id7 = _streams.ShadingPosition_id0.w;
 }
 
-void TransformationBase_BaseTransformVS(out VS_STREAMS _streams)
+void TransformationBase_BaseTransformVS(inout VS_STREAMS _streams)
 {
     TransformationWAndVP_PreTransformPosition(_streams);
     TransformationBase_TransformPosition();
     TransformationWAndVP_PostTransformPosition(_streams);
 }
 
-void TransformationBase_VSMain(out VS_STREAMS _streams)
+void TransformationBase_VSMain(inout VS_STREAMS _streams)
 {
     MaterialSurfaceVertexStageCompositor_VSMain(_streams);
     TransformationBase_BaseTransformVS(_streams);
 }
 
-void NormalBase_GenerateNormal_VS(out VS_STREAMS _streams)
+void NormalBase_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
     _streams.normalWS_id4 = vec3(0.0);
 }

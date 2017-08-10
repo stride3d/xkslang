@@ -23,7 +23,7 @@ struct SPIRV_Cross_Input
 float4 o0S2C0_ComputeColorWave_5_0_01__0_03__Compute(PS_STREAMS _streams)
 {
     float phase = length(_streams.TexCoord_id0 - float2(0.5f, 0.5f));
-    float _40 = sin((((phase + (Global_Time * -0.02999999932944774627685546875f)) * 2.0f) * 3.1400001049041748046875f) * 5.0f) * 0.00999999977648258209228515625f;
+    float _40 = sin((((phase + (Global_Time * (-0.02999999932944774627685546875f))) * 2.0f) * 3.1400001049041748046875f) * 5.0f) * 0.00999999977648258209228515625f;
     return float4(_40, _40, _40, _40);
 }
 

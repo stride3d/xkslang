@@ -21,7 +21,7 @@ layout(location = 0) in vec2 PS_IN_TexCoord;
 vec4 o0S2C0_ComputeColorWave_5_0_01__0_03__Compute(PS_STREAMS _streams)
 {
     float phase = length(_streams.TexCoord_id0 - vec2(0.5));
-    return vec4(sin((((phase + (PerFrame_var.Global_Time * -0.02999999932944774627685546875)) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.00999999977648258209228515625);
+    return vec4(sin((((phase + (PerFrame_var.Global_Time * (-0.02999999932944774627685546875))) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.00999999977648258209228515625);
 }
 
 vec4 o1S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute()

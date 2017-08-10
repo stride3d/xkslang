@@ -461,7 +461,7 @@ public:
 
     int erase(const TString& name)
     {
-        return level.erase(name);
+        return (int)(level.erase(name));
     }
 
     bool eraseFirst(const TString& name)

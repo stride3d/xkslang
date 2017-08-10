@@ -67,7 +67,7 @@ void TransformationWAndVP_PostTransformPosition(inout VS_STREAMS _streams)
     _streams.DepthVS_id2 = _streams.ShadingPosition_id3.w;
 }
 
-void TransformationBase_BaseTransformVS(out VS_STREAMS _streams)
+void TransformationBase_BaseTransformVS(inout VS_STREAMS _streams)
 {
     TransformationWAndVP_PreTransformPosition(_streams);
     TransformationBase_TransformPosition();

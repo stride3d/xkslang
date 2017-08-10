@@ -101,7 +101,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;SPIRV\Debug\SPVRemapperd.lib;glslang\Debug\glslangd.lib;glslang\OSDependent\Windows\Debug\OSDependentd.lib;OGLCompilersDLL\Debug\OGLCompilerd.lib;hlsl\Debug\HLSLd.lib;SPIRV\Debug\SPIRVd.lib;StandAlone\Debug\glslang-default-resource-limitsd.lib;Win32\Debug\Xkslang.lib;Win32\Debug\spirvcross.lib;Win32\Debug\XkslangDll.lib;Win32\Debug\XkfxProcessor.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;SPIRV\Debug\SPVRemapperd.lib;glslang\Debug\glslangd.lib;glslang\OSDependent\Windows\Debug\OSDependentd.lib;OGLCompilersDLL\Debug\OGLCompilerd.lib;hlsl\Debug\HLSLd.lib;SPIRV\Debug\SPIRVd.lib;StandAlone\Debug\glslang-default-resource-limitsd.lib;Win32\Debug\Xkslang_d.lib;Win32\Debug\spirvcross_d.lib;Win32\Debug\XkslangDll_d.lib;Win32\Debug\XkfxProcessor_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\..\build; ..\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -118,7 +118,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\..\..\..\..\build; ..\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;SPIRV\Debug\SPVRemapperd.lib;glslang\Debug\glslangd.lib;glslang\OSDependent\Windows\Debug\OSDependentd.lib;OGLCompilersDLL\Debug\OGLCompilerd.lib;hlsl\Debug\HLSLd.lib;SPIRV\Debug\SPIRVd.lib;StandAlone\Debug\glslang-default-resource-limitsd.lib;x64\Debug\Xkslang.lib;x64\Debug\spirvcross.lib;x64\Debug\XkslangDll.lib;x64\Debug\XkfxProcessor.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;SPIRV\Debug\SPVRemapperd.lib;glslang\Debug\glslangd.lib;glslang\OSDependent\Windows\Debug\OSDependentd.lib;OGLCompilersDLL\Debug\OGLCompilerd.lib;hlsl\Debug\HLSLd.lib;SPIRV\Debug\SPIRVd.lib;StandAlone\Debug\glslang-default-resource-limitsd.lib;x64\Debug\Xkslang_d.lib;x64\Debug\spirvcross_d.lib;x64\Debug\XkslangDll_d.lib;x64\Debug\XkfxProcessor_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

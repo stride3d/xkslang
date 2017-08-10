@@ -19,7 +19,7 @@ void ShaderBase_VSMain()
 {
 }
 
-void NormalBase_GenerateNormal_VS(out VS_STREAMS _streams)
+void NormalBase_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
     _streams.normalWS_id2 = vec3(0.0);
 }

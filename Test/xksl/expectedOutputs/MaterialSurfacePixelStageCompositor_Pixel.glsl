@@ -105,13 +105,13 @@ void o19S2C1_IStreamInitializer_ResetStream()
 {
 }
 
-void o19S2C1_MaterialStream_ResetStream(out PS_STREAMS _streams)
+void o19S2C1_MaterialStream_ResetStream(inout PS_STREAMS _streams)
 {
     o19S2C1_IStreamInitializer_ResetStream();
     _streams.matBlend_id37 = 0.0;
 }
 
-void o19S2C1_MaterialDisplacementStream_ResetStream(out PS_STREAMS _streams)
+void o19S2C1_MaterialDisplacementStream_ResetStream(inout PS_STREAMS _streams)
 {
     o19S2C1_MaterialStream_ResetStream(_streams);
     _streams.matDisplacement_id40 = 0.0;
@@ -138,12 +138,12 @@ vec4 o18S2C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(PS_STREAM
 {
     vec2 offset = _streams.TexCoord_id39 - vec2(0.5);
     float phase = length(offset);
-    float derivative = cos((((phase + (PerFrame_var.Global_Time * -0.02999999932944774627685546875)) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.100000001490116119384765625;
+    float derivative = cos((((phase + (PerFrame_var.Global_Time * (-0.02999999932944774627685546875))) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.100000001490116119384765625;
     float param = offset.y / offset.x;
     vec2 xz = o18S2C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(param);
     float param_1 = derivative;
     vec2 xy = o18S2C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(param_1);
-    vec2 _743 = (((xz.yx * sign(offset.x)) * -xy.x) * 0.5) + vec2(0.5);
+    vec2 _743 = (((xz.yx * sign(offset.x)) * (-xy.x)) * 0.5) + vec2(0.5);
     vec3 normal;
     normal = vec3(_743.x, _743.y, normal.z);
     normal.z = xy.y;
@@ -169,7 +169,7 @@ vec4 o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_GlossinessValu
     return vec4(PerMaterial_var.o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat);
 }
 
-void o18S2C0_o7S2C0_MaterialSurfaceGlossinessMap_false__Compute(out PS_STREAMS _streams)
+void o18S2C0_o7S2C0_MaterialSurfaceGlossinessMap_false__Compute(inout PS_STREAMS _streams)
 {
     float glossiness = o18S2C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_GlossinessValue__Compute().x;
     if (false)
@@ -184,7 +184,7 @@ vec4 o18S2C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_Material_SpecularValue_
     return PerMaterial_var.o18S2C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
 }
 
-void o18S2C0_o9S2C0_MaterialSurfaceSetStreamFromComputeColor_matSpecular_rgb__Compute(out PS_STREAMS _streams)
+void o18S2C0_o9S2C0_MaterialSurfaceSetStreamFromComputeColor_matSpecular_rgb__Compute(inout PS_STREAMS _streams)
 {
     _streams.matSpecular_id4 = o18S2C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_Material_SpecularValue__Compute().xyz;
 }
@@ -194,7 +194,7 @@ vec4 o18S2C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_Material_SpecularInte
     return vec4(PerMaterial_var.o18S2C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S2C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S2C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat, PerMaterial_var.o18S2C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat);
 }
 
-void o18S2C0_o11S2C0_MaterialSurfaceSetStreamFromComputeColor_matSpecularIntensity_r__Compute(out PS_STREAMS _streams)
+void o18S2C0_o11S2C0_MaterialSurfaceSetStreamFromComputeColor_matSpecularIntensity_r__Compute(inout PS_STREAMS _streams)
 {
     _streams.matSpecularIntensity_id5 = o18S2C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_Material_SpecularIntensityValue__Compute().x;
 }
@@ -204,7 +204,7 @@ void o18S2C0_o17S2C0_NormalStream_UpdateNormalFromTangentSpace(inout PS_STREAMS 
     _streams.normalWS_id35 = normalize(_streams.tangentToWorld_id36 * normalInTangentSpace);
 }
 
-void o18S2C0_o17S2C0_LightStream_ResetLightStream(out PS_STREAMS _streams)
+void o18S2C0_o17S2C0_LightStream_ResetLightStream(inout PS_STREAMS _streams)
 {
     _streams.lightPositionWS_id27 = vec3(0.0);
     _streams.lightDirectionWS_id28 = vec3(0.0);
@@ -253,13 +253,13 @@ int o0S297C0_DirectLightGroupPerView_GetLightCount()
     return PerView_var.o0S297C0_DirectLightGroupPerView_LightCount;
 }
 
-void o0S297C0_LightDirectionalGroup_8__PrepareDirectLightCore(out PS_STREAMS _streams, int lightIndex)
+void o0S297C0_LightDirectionalGroup_8__PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndex)
 {
     _streams.lightColor_id29 = PerView_var.o0S297C0_LightDirectionalGroup_Lights[lightIndex].Color;
     _streams.lightDirectionWS_id28 = -PerView_var.o0S297C0_LightDirectionalGroup_Lights[lightIndex].DirectionWS;
 }
 
-void o0S297C0_ShadowGroup_ComputeShadow(out PS_STREAMS _streams, int lightIndex)
+void o0S297C0_ShadowGroup_ComputeShadow(inout PS_STREAMS _streams, int lightIndex)
 {
     _streams.shadowColor_id38 = vec3(1.0);
 }
@@ -359,7 +359,7 @@ vec3 o18S2C0_o17S2C0_o16S2C0_MaterialSurfaceShadingSpecularMicrofacet_ComputeDir
     return (reflected * _streams.lightColorNdotL_id30) * _streams.matDiffuseSpecularAlphaBlend_id11.y;
 }
 
-void o1S282C0_EnvironmentLight_PrepareEnvironmentLight(out PS_STREAMS _streams)
+void o1S282C0_EnvironmentLight_PrepareEnvironmentLight(inout PS_STREAMS _streams)
 {
     _streams.envLightDiffuseColor_id31 = vec3(0.0);
     _streams.envLightSpecularColor_id32 = vec3(0.0);
@@ -446,7 +446,7 @@ void o18S2C0_o17S2C0_MaterialSurfaceLightingAndShading_Compute(inout PS_STREAMS 
     _streams.shadingColorAlpha_id20 = _streams.matDiffuse_id2.w;
 }
 
-void o18S2C0_MaterialSurfaceArray_Compute(out PS_STREAMS _streams)
+void o18S2C0_MaterialSurfaceArray_Compute(inout PS_STREAMS _streams)
 {
     o18S2C0_o3S2C0_MaterialSurfaceDiffuse_Compute(_streams);
     o18S2C0_o5S2C0_MaterialSurfaceNormalMap_false_true__Compute(_streams);
