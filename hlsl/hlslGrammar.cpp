@@ -3604,7 +3604,7 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
         advanceToken();
 
         //XKSL extensions: we can have struct name composed with a subpart (cbuffer PerLighting.subpart1)
-        if (isCBuffer)
+        if (isCBuffer || isRGroupBuffer)
         {
             if (acceptTokenClass(EHTokDot))
             {

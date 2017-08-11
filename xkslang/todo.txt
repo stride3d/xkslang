@@ -1,7 +1,4 @@
-Shader Compiler integration TODO:
-* SPIRV-Cross: replace out by inout?
-  - update SPIRV-Cross, check with community, check the code
-https://github.com/KhronosGroup/SPIRV-Cross/issues/250#issuecomment-321168162
+* enfore rules warning and update Xenka shaders accordingly
   
 * automatically copy the DLL when creating a new project
 

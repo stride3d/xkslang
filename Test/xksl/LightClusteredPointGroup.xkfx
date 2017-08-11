@@ -1,0 +1,5 @@
+//Parse and compile shader from Xenko MaterialShader sample
+
+addResourcesLibrary "library"
+
+convertAndLoadRecursif "LightClusteredPointGroup" LightClusteredPointGroup

@@ -1,0 +1,37 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer Globals [size: 56]
+@C    GaussianBlurShader_OffsetsWeights => GaussianBlurShader.OffsetsWeights
+@C    Texturing_Texture0TexelSize => Texturing.Texture0TexelSize
+ cbuffer PerDraw [size: 64]
+@C    SpriteBase_MatrixTransform => SpriteBase.MatrixTransform
+***********************
+*****  Resources  *****
+***********************
+@C    PerDraw => PerDraw [Stage: Vertex]
+@C    Globals => Globals [Stage: Pixel]
+@C    Texturing_Texture0 => Texturing.Texture0 [Stage: Pixel]
+@C    Texturing_LinearSampler => Texturing.LinearSampler [Stage: Pixel]
+
+ConstantBuffers. Count=2
+ cbuffer: Name="Globals" Size=56 MembersCount=2
+  KeyName="GaussianBlurShader.OffsetsWeights" RawName="GaussianBlurShader_OffsetsWeights" LogicalGroup="" Offset=0
+  Class=Vector Type=Float Size=48 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=3 Rows=1 Columns=2
+
+  KeyName="Texturing.Texture0TexelSize" RawName="Texturing_Texture0TexelSize" LogicalGroup="" Offset=48
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+ cbuffer: Name="PerDraw" Size=64 MembersCount=1
+  KeyName="SpriteBase.MatrixTransform" RawName="SpriteBase_MatrixTransform" LogicalGroup="" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+ResourceBindings. Count=4
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Texturing.Texture0" RawName="Texturing_Texture0" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="Texturing.LinearSampler" RawName="Texturing_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+
+InputAttributes. Count=2
+ SemanticName="TEXCOORD" SemanticIndex=0
+ SemanticName="POSITION" SemanticIndex=0

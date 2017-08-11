@@ -593,7 +593,7 @@ namespace xkslangDll
     }
 
 	bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
-		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers, int32_t* constantBufferStructSize,
+		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers, int32_t* constantBufferStructSize, int32_t* constantBufferMemberStructSize,
 		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings, int32_t* resourceBindingsStructSize,
 		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes, int32_t* inputAttributesStructSize)
 	{
@@ -626,6 +626,7 @@ namespace xkslangDll
 		{
 			*countConstantBuffers = effectReflectionSrc.CountConstantBuffers;
             if (constantBufferStructSize != nullptr) *constantBufferStructSize = sizeof(ConstantBufferReflectionDescriptionData);
+            if (constantBufferMemberStructSize != nullptr) *constantBufferMemberStructSize = sizeof(ConstantBufferMemberReflectionDescriptionData);
 			if (effectReflectionSrc.CountConstantBuffers > 0)
 			{
 				ConstantBufferReflectionDescriptionData* arrayConstantBuffer =

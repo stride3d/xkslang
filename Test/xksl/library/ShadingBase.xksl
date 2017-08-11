@@ -8,7 +8,7 @@
 /// </remarks>
 
 #ifndef SILICON_STUDIO_RENDER_TARGET_COUNT
-#define SILICON_STUDIO_RENDER_TARGET_COUNT 1
+# define SILICON_STUDIO_RENDER_TARGET_COUNT 1
 #endif
 
 shader ShadingBase : ShaderBase

@@ -134,7 +134,7 @@ static bool xkfxOptions_processSampleWithXkfxLibrary = false;  //if true, we als
 
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
-static bool processEffectWithDllApi = true;
+static bool processEffectWithDllApi = false;
 static bool processEffectWithXkfxProcessorApi = true;
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
@@ -247,7 +247,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
-    /////////////////////////{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },  //SPIRV-Cross crash
+    { "ShaderWithResources07", "ShaderWithResources07.xkfx" },  //SPIRV-Cross crash
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
     
     //{ "testDependency01", "testDependency01.xkfx" },
@@ -289,7 +289,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
-    { "LuminanceLogShader", "LuminanceLogShader.xkfx" },
+    //{ "LuminanceLogShader", "LuminanceLogShader.xkfx" },
+    //{ "GaussianBlurShader", "GaussianBlurShader.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
     //{ "ComputeColorWave", "ComputeColorWave.xkfx" },
@@ -311,8 +312,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
-
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
+
+    /////////////////{ "XenkoEditorForwardShadingEffect", "XenkoEditorForwardShadingEffect.xkfx" },   //SPIRV-Cross crash
 };
 
 enum class ShaderLanguageEnum
@@ -867,14 +870,14 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
     EffectReflection effectReflection;
     if (buildEffectReflection)
     {
-        int32_t constantBufferStructSize, resourceBindingsStructSize, inputAttributesStructSize;
+        int32_t constantBufferStructSize, resourceBindingsStructSize, inputAttributesStructSize, constantBufferMemberStructSize;
         xkslangDll::ConstantBufferReflectionDescriptionData* pAllocsConstantBuffers;
         xkslangDll::EffectResourceBindingDescriptionData* pAllocsResourceBindings;
         xkslangDll::ShaderInputAttributeDescriptionData* pAllocsInputAttributes;
         int32_t countConstantBuffers, countResourceBindings, countInputAttributes;
 
         success = xkslangDll::GetMixerEffectReflectionData(mixer->mixerHandleId,
-            &pAllocsConstantBuffers, &countConstantBuffers, &constantBufferStructSize,
+            &pAllocsConstantBuffers, &countConstantBuffers, &constantBufferStructSize, &constantBufferMemberStructSize,
             &pAllocsResourceBindings, &countResourceBindings, &resourceBindingsStructSize,
             &pAllocsInputAttributes, &countInputAttributes, &inputAttributesStructSize);
 
@@ -953,6 +956,7 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
         if (countConstantBuffers > 0 && pAllocsConstantBuffers != nullptr)
         {
             if (sizeof(xkslangDll::ConstantBufferReflectionDescriptionData) != constantBufferStructSize) return error("Invalid data struct size");
+            if (sizeof(xkslangDll::ConstantBufferMemberReflectionDescriptionData) != constantBufferMemberStructSize) return error("Invalid data struct size");
 
             effectReflection.CountConstantBuffers = countConstantBuffers;
             effectReflection.ConstantBuffers = new ConstantBufferReflectionDescription[countConstantBuffers];
@@ -2352,11 +2356,13 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
                     string stageStr;
                     string entryPointStr;
-                    if (!XkfxParser::GetNextInstruction(entryPointInstruction, stageStr, entryPointStr, '=', false))
-                        return error("\"=\" expected");
+                    if (!XkfxParser::GetNextInstruction(entryPointInstruction, stageStr, entryPointStr, '=', true)) return error("Failed to parse the instruction");
+                    
                     stageStr = XkslangUtils::trim(stageStr);
                     entryPointStr = XkslangUtils::trim(entryPointStr);
-                    entryPointStr = XkslangUtils::trim(entryPointStr, '"');
+                    if (!XkslangUtils::startWith(entryPointStr.c_str(), "=")) return error("\"=\" expected");
+                    entryPointStr = entryPointStr.substr(1);
+                    entryPointStr = XkslangUtils::trim(entryPointStr, " \"");
 
                     ShadingStageEnum stage;
                     if (!GetShadingStageForString(stageStr, stage)) {
