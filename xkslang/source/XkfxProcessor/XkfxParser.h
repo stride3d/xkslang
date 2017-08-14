@@ -36,6 +36,8 @@ public:
     static bool ProcessXkfxCommandLines(xkslang::XkslParser* parser, const std::string& effectCmdLines, glslang::CallbackRequestDataForShader callbackRequestDataForShader,
         std::vector<uint32_t>* compiledBytecode, std::vector<xkslang::OutputStageBytecode>& outputStages, std::vector<std::string>& errorMsgs);
 
+    static bool GetOutputStagesEntryPointFromMethodsList(const std::vector<xkslang::MethodInfo>& vecMethods, std::vector<xkslang::OutputStageBytecode>& vecOutputStages);
+
     static bool IsCommandLineInstructionComplete(const char* pInstruction);
     static bool SplitLine(char* txt, char** nextLine);
     static bool GetNextWord(const char* txt, const char** nextWordStart, int* nextWordLen, const char** followingWordStart, const char additionnalStopDelimiters = ' ');

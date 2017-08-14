@@ -581,10 +581,9 @@ static bool ConvertAndLoadRecursif(const string& stringShaderAndgenericsValue, c
 //===================================================================================================================================
 //===================================================================================================================================
 // Compilation
-static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
-{
-    bool success = true;
 
+bool XkfxParser::GetOutputStagesEntryPointFromMethodsList(const std::vector<xkslang::MethodInfo>& vecMethods, std::vector<xkslang::OutputStageBytecode>& vecOutputStages)
+{
     string vertexShaderMethodName = "VSMain(";
     string hullShaderMethodName = "HSMain(";
     //string hullConstantShaderMethodName = "HSConstantMain(";
@@ -597,44 +596,57 @@ static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, ve
     stagesUsed.resize((int)ShadingStageEnum::CountStages, false);
 
     //We look for the output stages, depending on the stage functions found in the mixer
-    vector<MethodInfo> vecMethods;
-    if (!mixer->GetListAllMethodsInfo(vecMethods, errorMsgs))
-        return error(errorMsgs, "Failed to get the mixer list of methods");
     unsigned int countMethods = (unsigned int)(vecMethods.size());
-    
-    outputStages.clear();
+
+    vecOutputStages.clear();
     for (unsigned int m = 0; m < countMethods; m++)
     {
         const MethodInfo& aMethod = vecMethods[m];
 
         if (aMethod.Name == vertexShaderMethodName) {
-            if (!stagesUsed[(int)ShadingStageEnum::Vertex]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "VSMain"));
+            if (!stagesUsed[(int)ShadingStageEnum::Vertex]) vecOutputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "VSMain"));
             stagesUsed[(int)ShadingStageEnum::Vertex] = true;
         }
         else if (aMethod.Name == hullShaderMethodName) {
-            if (!stagesUsed[(int)ShadingStageEnum::TessControl]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::TessControl, "HSMain"));
+            if (!stagesUsed[(int)ShadingStageEnum::TessControl]) vecOutputStages.push_back(OutputStageBytecode(ShadingStageEnum::TessControl, "HSMain"));
             stagesUsed[(int)ShadingStageEnum::TessControl] = true;
         }
-        //else if (aMethod.Name == hullConstantShaderMethodName) { outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "HSConstantMain"));  //not implemented yet }
+        //else if (aMethod.Name == hullConstantShaderMethodName) { vecOutputStages.push_back(OutputStageBytecode(ShadingStageEnum::Vertex, "HSConstantMain"));  //not implemented yet }
         else if (aMethod.Name == domainShaderMethodName) {
-            if (!stagesUsed[(int)ShadingStageEnum::TessEvaluation]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::TessEvaluation, "DSMain"));
+            if (!stagesUsed[(int)ShadingStageEnum::TessEvaluation]) vecOutputStages.push_back(OutputStageBytecode(ShadingStageEnum::TessEvaluation, "DSMain"));
             stagesUsed[(int)ShadingStageEnum::TessEvaluation] = true;
         }
         else if (aMethod.Name == geometryShaderMethodName) {
-            if (!stagesUsed[(int)ShadingStageEnum::Geometry]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Geometry, "GSMain"));
+            if (!stagesUsed[(int)ShadingStageEnum::Geometry]) vecOutputStages.push_back(OutputStageBytecode(ShadingStageEnum::Geometry, "GSMain"));
             stagesUsed[(int)ShadingStageEnum::Geometry] = true;
         }
         else if (aMethod.Name == pixelShaderMethodName) {
-            if (!stagesUsed[(int)ShadingStageEnum::Pixel]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Pixel, "PSMain"));
+            if (!stagesUsed[(int)ShadingStageEnum::Pixel]) vecOutputStages.push_back(OutputStageBytecode(ShadingStageEnum::Pixel, "PSMain"));
             stagesUsed[(int)ShadingStageEnum::Pixel] = true;
         }
         else if (aMethod.Name == computeShaderMethodName) {
-            if (!stagesUsed[(int)ShadingStageEnum::Compute]) outputStages.push_back(OutputStageBytecode(ShadingStageEnum::Compute, "CSMain"));
+            if (!stagesUsed[(int)ShadingStageEnum::Compute]) vecOutputStages.push_back(OutputStageBytecode(ShadingStageEnum::Compute, "CSMain"));
             stagesUsed[(int)ShadingStageEnum::Compute] = true;
         }
     }
 
-    success = mixer->Compile(outputStages, errorMsgs, nullptr, nullptr, nullptr, nullptr, compiledBytecode, nullptr);
+    return true;
+}
+
+static bool CompileMixer(SpxMixer* mixer, vector<uint32_t>* compiledBytecode, vector<OutputStageBytecode>& outputStages, vector<string>& errorMsgs)
+{
+    outputStages.clear();
+
+    //We look for the output stages, depending on the stage functions found in the mixer
+    vector<MethodInfo> vecMethods;
+    if (!mixer->GetListAllMethodsInfo(vecMethods, errorMsgs))
+        return error(errorMsgs, "Failed to get the mixer list of methods");
+    unsigned int countMethods = (unsigned int)(vecMethods.size());
+
+    if (!XkfxParser::GetOutputStagesEntryPointFromMethodsList(vecMethods, outputStages))
+        return error(errorMsgs, "Failed to get the output stages entry point from the list of methods");
+    
+    bool success = mixer->Compile(outputStages, errorMsgs, nullptr, nullptr, nullptr, nullptr, compiledBytecode, nullptr);
 
     if (!success) return error(errorMsgs, "Compilation Failed");
     return success;

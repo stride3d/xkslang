@@ -1,27 +1,5 @@
-//Sample using all the different kind of resources found in Xenko shaders
-shader ShaderA
-{
-	rgroup ResourceGroup
-	{
-		SamplerState Sampler0;
-		Texture2D Texture0;
-		TextureCube CubeMap;
-	}
-	
-	cbuffer cb
-	{
-		float3 direction;
-		float2 uv2;
-	}
 
-	void VSMain()
-	{
-		float4 color1 = Texture0.Sample(Sampler0, uv2);
-		float4 color2 = CubeMap.Sample(Sampler0, direction);
-	}
-}
-
-shader ShaderB
+shader ShaderMain
 {
 	cbuffer cb
 	{

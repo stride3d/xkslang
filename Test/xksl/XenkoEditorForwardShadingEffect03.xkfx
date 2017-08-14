@@ -1,0 +1,16 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+addResourcesLibrary "library"
+
+mixer _m
+_m.mixin( ShaderBase, ShadingBase, TransformationBase, NormalStream, TransformationWAndVP, NormalFromMesh, MaterialSurfacePixelStageCompositor, EffectCompiling )
+
+_m.addComposition( environmentLights = [mixin(LightConstantWhite)] )
+_m.addComposition( materialPixelStage = mixin(MaterialSurfaceArray[layers=[mixin(MaterialSurfaceDiffuse[diffuseMap=mixin(ComputeColorConstantColorLink<Material.DiffuseValue>)]), mixin(MaterialSurfaceLightingAndShading[surfaces=[mixin(MaterialSurfaceShadingDiffuseLambert<false>)]])]]) )
+_m.addComposition( streamInitializerPixelStage = mixin({MaterialStream, MaterialPixelShadingStream}) )
+
+_m.compile()

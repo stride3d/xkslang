@@ -789,6 +789,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
         public static string ConvertShaderMixinSourceToXkfxCommandLines(ShaderMixinSource mixinTree)
         {
             StringBuilder xkfxCommandLinesBuilder = new StringBuilder();
+            xkfxCommandLinesBuilder.AppendLine("//" + mixinTree.Name);
 
             //Add the macros
             foreach (var macro in mixinTree.Macros)
@@ -954,360 +955,362 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             return true;
         }
 
-        //If true, we compile the mixin using xkslangDll library
-        public static readonly bool CompileEffectUsingXkslangLibrary = true;
-
-        public override TaskOrResult<EffectBytecodeCompilerResult> Compile(ShaderMixinSource mixinTree, EffectCompilerParameters effectParameters, CompilerParameters compilerParameters)
+        public TaskOrResult<EffectBytecodeCompilerResult> CompileEffectWithXkslangApi(ShaderMixinSource mixinTree, EffectCompilerParameters effectParameters, CompilerParameters compilerParameters)
         {
             var log = new LoggerResult();
             var fullEffectName = mixinTree.Name;
 
-            if (CompileEffectUsingXkslangLibrary)
-            {
-                EffectReflection xkslangEffectReflection = new EffectReflection();
-                List<ShaderSpvBytecode> shaderStageSpvBytecodes = new List<ShaderSpvBytecode>();
-                HashSourceCollection hashSources = null;
-                int hlslShaderModel = 40;
-                string mixinCompiledBytecode_AsciiText;
+            EffectReflection xkslangEffectReflection = new EffectReflection();
+            List<ShaderSpvBytecode> shaderStageSpvBytecodes = new List<ShaderSpvBytecode>();
+            HashSourceCollection hashSources = null;
+            int hlslShaderModel = 40;
+            string mixinCompiledBytecode_AsciiText;
+            string xkfxSourceHash = "";
 
 #if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-                var logDir = Path.Combine(PlatformFolders.ApplicationBinaryDirectory, "log");
-                if (!Directory.Exists(logDir))
+            var logDir = Path.Combine(PlatformFolders.ApplicationBinaryDirectory, "log");
+            if (!Directory.Exists(logDir))
+            {
+                Directory.CreateDirectory(logDir);
+            }
+#endif
+
+            //Parsing and mixin using XkslangDll is not threadsafe for now
+            lock (XkslangMixinLock)
+            {
+                if (Platform.IsWindowsDesktop && !xkslangDllLoaded)
                 {
-                    Directory.CreateDirectory(logDir);
+                    NativeLibrary.PreloadLibrary("XkslangDll.dll");
+                    xkslangDllLoaded = true;
+                }
+
+                UInt32 effectHandleId = 0;
+                Int32[] mixinCompiledBytecode = null;
+
+                //===================================================================
+                //Build the effect command lines
+                string xkfxCommandLines = XkslangDLLBindingClass.ConvertShaderMixinSourceToXkfxCommandLines(mixinTree);
+                if (xkfxCommandLines == null) throw new Exception("Failed to convert the mixin source to XKFX command lines");
+
+#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
+                xkfxSourceHash = ObjectId.FromBytes(Encoding.UTF8.GetBytes(xkfxCommandLines)).ToString();
+
+                //write the effect's command line on the disk
+                {
+                    var effectFilename = Path.Combine(logDir, "effect_" + mixinTree.Name.Replace('.', '_') + "_" + xkfxSourceHash + ".xkfx");
+                    lock (WriterLock) // protect write in case the same shader is created twice
+                    {
+                        //if (!File.Exists(effectFilename))
+                        {
+                            File.WriteAllText(effectFilename, xkfxCommandLines);
+                        }
+                    }
                 }
 #endif
 
-                //Parsing and mixin using XkslangDll is not threadsafe for now
-                lock (XkslangMixinLock)
+                //===================================================================
+                //Execute the effect
+                try
                 {
-                    if (Platform.IsWindowsDesktop && !xkslangDllLoaded)
+                    XkslangDLLBindingClass.ShaderSourceManager = GetMixinParser().SourceManager;
+                    XkslangDLLBindingClass.ListShaderSourcesLoaded = new List<ShaderSourceManager.ShaderSourceWithHash>();
+
+                    bool success = XkslangDLLBindingClass.InitializeParser();
+                    if (!success) throw new Exception("Error initializing Xkslang");
+
+                    //execute the effect command line
                     {
-                        NativeLibrary.PreloadLibrary("XkslangDll.dll");
-                        xkslangDllLoaded = true;
+                        effectHandleId = XkslangDLLBindingClass.ExecuteEffectCommandLines(xkfxCommandLines, XkslangDLLBindingClass.ShaderSourceLoaderCallback);
+                        if (effectHandleId == 0) throw new Exception("Failed to execute the effect command line for effect: " + fullEffectName);
                     }
 
-                    UInt32 effectHandleId = 0;
-                    Int32[] mixinCompiledBytecode = null;
-
-                    //===================================================================
-                    //Build the effect command lines
-                    string xkfxCommandLines = XkslangDLLBindingClass.ConvertShaderMixinSourceToXkfxCommandLines(mixinTree);
-                    if (xkfxCommandLines == null) throw new Exception("Failed to convert the mixin source to XKFX command lines");
-
-                    //write the effect's command line on the disk
+                    //=====================================================================================================================================
+                    //get the effect compiled bytecode
                     {
-                        var effectFilename = Path.Combine(logDir, "effect_" + mixinTree.Name.Replace('.', '_') + ".xkfx");
-                        lock (WriterLock) // protect write in case the same shader is created twice
-                        {
-                            //if (!File.Exists(bytecodeSourceFilename))
-                            {
-                                File.WriteAllText(effectFilename, xkfxCommandLines);
-                            }
-                        }
-                    }
-
-                    //===================================================================
-                    //Execute the effect
-                    try
-                    {
-                        XkslangDLLBindingClass.ShaderSourceManager = GetMixinParser().SourceManager;
-                        XkslangDLLBindingClass.ListShaderSourcesLoaded = new List<ShaderSourceManager.ShaderSourceWithHash>();
-
-                        bool success = XkslangDLLBindingClass.InitializeParser();
-                        if (!success) throw new Exception("Error initializing Xkslang");
-
-                        //execute the effect command line
-                        {
-                            effectHandleId = XkslangDLLBindingClass.ExecuteEffectCommandLines(xkfxCommandLines, XkslangDLLBindingClass.ShaderSourceLoaderCallback);
-                            if (effectHandleId == 0) throw new Exception("Failed to execute the effect command line for effect: " + fullEffectName);
-                        }
-
-                        //=====================================================================================================================================
-                        //get the effect compiled bytecode
-                        {
-                            int bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSize(effectHandleId);
-                            if (bytecodeLength <= 0) throw new Exception("Failed to get the mixer compiled bytecode size");
-                            mixinCompiledBytecode = new Int32[bytecodeLength];
-                            int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecode(effectHandleId, mixinCompiledBytecode, mixinCompiledBytecode.Length);
-                            if (aLen != bytecodeLength) throw new Exception("Failed to get the mixer compiled bytecode");
-
-                            //Optionnal: convert the bytecode to human readable ascii text
-                            {
-                                int asciiBufferLength = 0;
-                                IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(mixinCompiledBytecode, mixinCompiledBytecode.Length, out asciiBufferLength);
-                                if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the bytecode to Ascii");
-
-                                Byte[] asciiByteArray = new Byte[asciiBufferLength];
-                                Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
-                                Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
-                                mixinCompiledBytecode_AsciiText = System.Text.Encoding.UTF8.GetString(asciiByteArray);
-                            }
-                        }
-
-                        //=====================================================================================================================================
-                        //Get the compiled bytecode for all output stages
-                        Int32 countStages = XkslangDLLBindingClass.GetMixerCountCompiledStages(effectHandleId);
-                        for (UInt32 stageNum = 0; stageNum < countStages; ++stageNum)
-                        {
-                            ShaderSpvBytecode stageShaderBytecode = new ShaderSpvBytecode();
-
-                            XkslangDLLBindingClass.ShadingStageEnum stage;
-                            int bytecodeLength = 0;
-                            bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSizeForStageNum(effectHandleId, stageNum, out stage);
-                            if (bytecodeLength <= 0) throw new Exception("Failed to get the bytecode size for VS");
-                            Int32[] stageCompiledBytecode = new Int32[bytecodeLength];
-                            int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecodeForStageNum(effectHandleId, stageNum, out stage, stageCompiledBytecode, stageCompiledBytecode.Length);
-                            if (aLen != bytecodeLength) throw new Exception("Failed to get the bytecode for VS");
-
-                            stageShaderBytecode.Stage = XkslangDLLBindingClass.ConvertShadingStageEnum(stage);
-                            stageShaderBytecode.CompiledSpvBytecode = stageCompiledBytecode;
-                            shaderStageSpvBytecodes.Add(stageShaderBytecode);
-                        }
-
-                        //Get the list of hashSources for the loaded shader
-                        if (XkslangDLLBindingClass.ListShaderSourcesLoaded != null && XkslangDLLBindingClass.ListShaderSourcesLoaded.Count > 0)
-                        {
-                            hashSources = new HashSourceCollection();
-                            foreach (var shaderLoaded in XkslangDLLBindingClass.ListShaderSourcesLoaded)
-                            {
-                                hashSources[shaderLoaded.ShaderName] = shaderLoaded.Hash;
-                            }
-                        }
-
-                        //Query and build the EffectReflection data
-                        {
-                            int countConstantBuffers = 0;
-                            IntPtr pAllocsConstantBuffers = IntPtr.Zero;
-                            int countResourceBindings = 0;
-                            IntPtr pAllocsResourceBindings = IntPtr.Zero;
-                            int countInputAttributes = 0;
-                            IntPtr pAllocsInputAttributes = IntPtr.Zero;
-                            int constantBufferStructSize = 0, constantBufferMemberStructSize = 0, resourceBindingsStructSize = 0, inputAttributesStructSize = 0;
-
-                            success = XkslangDLLBindingClass.GetMixerEffectReflectionData(effectHandleId,
-                                out pAllocsConstantBuffers, out countConstantBuffers, out constantBufferStructSize, out constantBufferMemberStructSize,
-                                out pAllocsResourceBindings, out countResourceBindings, out resourceBindingsStructSize,
-                                out pAllocsInputAttributes, out countInputAttributes, out inputAttributesStructSize);
-                            if (!success) throw new Exception("Failed to get the Effect Reflection data");
-
-                            //Process the ResourceBindings
-                            if (countResourceBindings > 0 && pAllocsResourceBindings != IntPtr.Zero)
-                            {
-                                long structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
-                                if (structSize != resourceBindingsStructSize) throw new Exception("Incompatible data structure for EffectReflection ResourceBinding object");
-
-                                XkslangDLLBindingClass.EffectResourceBindingDescriptionData effectResourceBinding;
-                                for (int i = 0; i < countResourceBindings; i++)
-                                {
-                                    effectResourceBinding = (XkslangDLLBindingClass.EffectResourceBindingDescriptionData)Marshal.PtrToStructure(
-                                        new IntPtr(pAllocsResourceBindings.ToInt64() + (structSize * i)), typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
-
-                                    string keyName = Marshal.PtrToStringAnsi(effectResourceBinding.KeyName);
-                                    string rawName = Marshal.PtrToStringAnsi(effectResourceBinding.RawName);
-                                    string resourceGroupName = Marshal.PtrToStringAnsi(effectResourceBinding.ResourceGroupName);
-                                    var binding = new EffectResourceBindingDescription()
-                                    {
-                                        Stage = ShaderStage.None, //XkslangDLLBindingClass.ConvertShadingStageEnum(effectResourceBinding.Stage), (this will be set by ShaderCompiler)
-                                        Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(effectResourceBinding.Class),
-                                        Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(effectResourceBinding.Type),
-                                        RawName = rawName,
-                                        ResourceGroup = resourceGroupName == null ? rawName : resourceGroupName,
-                                        KeyInfo =
-                                        {
-                                            KeyName = keyName,
-                                        },
-                                    };
-                                    xkslangEffectReflection.ResourceBindings.Add(binding);
-
-                                    if (effectResourceBinding.KeyName != null) Marshal.FreeHGlobal(effectResourceBinding.KeyName);
-                                    if (effectResourceBinding.RawName != null) Marshal.FreeHGlobal(effectResourceBinding.RawName);
-                                    if (effectResourceBinding.ResourceGroupName != null) Marshal.FreeHGlobal(effectResourceBinding.ResourceGroupName);
-                                }
-
-                                //delete the data allocated on the native code
-                                Marshal.FreeHGlobal(pAllocsResourceBindings);
-                            }
-
-                            //Process the InputAttributes
-                            if (countInputAttributes > 0 && pAllocsInputAttributes != IntPtr.Zero)
-                            {
-                                long structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
-                                if (structSize != inputAttributesStructSize) throw new Exception("Incompatible data structure for EffectReflection InputAttribute object");
-
-                                XkslangDLLBindingClass.ShaderInputAttributeDescriptionData shaderInputAttribute;
-                                for (int i = 0; i < countInputAttributes; i++)
-                                {
-                                    shaderInputAttribute = (XkslangDLLBindingClass.ShaderInputAttributeDescriptionData)Marshal.PtrToStructure(
-                                        new IntPtr(pAllocsInputAttributes.ToInt64() + (structSize * i)), typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
-
-                                    var inputAttribute = new ShaderInputAttributeDescription()
-                                    {
-                                        SemanticName = Marshal.PtrToStringAnsi(shaderInputAttribute.SemanticName),
-                                        SemanticIndex = shaderInputAttribute.SemanticIndex,
-                                    };
-                                    xkslangEffectReflection.InputAttributes.Add(inputAttribute);
-
-                                    Marshal.FreeHGlobal(shaderInputAttribute.SemanticName);
-                                }
-
-                                //delete the data allocated on the native code
-                                Marshal.FreeHGlobal(pAllocsInputAttributes);
-                            }
-
-                            //Process the ConstantBuffers
-                            if (countConstantBuffers > 0 && pAllocsConstantBuffers != IntPtr.Zero)
-                            {
-                                long structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
-                                if (structSize != constantBufferStructSize) throw new Exception("Incompatible data structure for EffectReflection ConstantBuffer object");
-                                long memberStructSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
-                                if (memberStructSize != constantBufferMemberStructSize) throw new Exception("Incompatible data structure for EffectReflection ConstantBuffer member object");
-
-                                for (int i = 0; i < countConstantBuffers; i++)
-                                {
-                                    //read the cbuffer data
-                                    XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData constantBufferData;
-                                    constantBufferData = (XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData)Marshal.PtrToStructure(
-                                        new IntPtr(pAllocsConstantBuffers.ToInt64() + (structSize * i)), typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
-
-                                    string cbufferName = Marshal.PtrToStringAnsi(constantBufferData.CbufferName);
-                                    Marshal.FreeHGlobal(constantBufferData.CbufferName);
-
-                                    //process the cbuffer members
-                                    EffectValueDescription[] cbufferMembers = null;
-                                    if (constantBufferData.CountMembers > 0)
-                                    {
-                                        cbufferMembers = new EffectValueDescription[constantBufferData.CountMembers];
-
-                                        //read the member data
-                                        for (int m = 0; m < constantBufferData.CountMembers; ++m)
-                                        {
-                                            XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData memberData;
-                                            memberData = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
-                                                new IntPtr(constantBufferData.Members.ToInt64() + (memberStructSize * m)), typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
-
-                                            string keyName = Marshal.PtrToStringAnsi(memberData.KeyName);
-                                            string rawName = Marshal.PtrToStringAnsi(memberData.RawName);
-                                            string logicalGroup = Marshal.PtrToStringAnsi(memberData.LogicalGroup);
-
-                                            cbufferMembers[m] = new EffectValueDescription()
-                                            {
-                                                KeyInfo =
-                                                {
-                                                    KeyName = keyName,
-                                                },
-                                                RawName = rawName,
-                                                Offset = memberData.Offset,
-                                                Size = memberData.Size,
-                                                LogicalGroup = logicalGroup,
-                                                Type = new EffectTypeDescription()
-                                                {
-                                                    Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(memberData.Class),
-                                                    Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(memberData.Type),
-                                                    RowCount = memberData.RowCount,
-                                                    ColumnCount = memberData.ColumnCount,
-                                                    Elements = memberData.ArrayElements,
-                                                    ElementSize = memberData.Size,
-                                                    Name = rawName,
-                                                    Members = null,  //will be set below
-                                                },
-                                            };
-
-                                            if (memberData.KeyName != null) Marshal.FreeHGlobal(memberData.KeyName);
-                                            if (memberData.RawName != null) Marshal.FreeHGlobal(memberData.RawName);
-                                            if (memberData.LogicalGroup != null) Marshal.FreeHGlobal(memberData.LogicalGroup);
-
-                                            //if the cbuffer member is a struct, we analyse its struct members
-                                            if (memberData.CountMembers > 0)
-                                            {
-                                                if (memberData.StructMembers != null)
-                                                {
-                                                    EffectTypeMemberDescription[] structMembers = new EffectTypeMemberDescription[memberData.CountMembers];
-
-                                                    //Set the cbuffer member's struct members
-                                                    for (int im = 0; im < memberData.CountMembers; im++)
-                                                    {
-                                                        XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData structMemberSrc;
-                                                        structMemberSrc = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
-                                                            new IntPtr(memberData.StructMembers.ToInt32() + (memberStructSize * im)),
-                                                            typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
-
-                                                        EffectTypeMemberDescription structMemberDst = new EffectTypeMemberDescription();
-
-                                                        if (!ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(ref structMemberSrc, ref structMemberDst))
-                                                            throw new Exception("Failed to convert the EffectReflection cbuffer struct member data");
-
-                                                        structMembers[im] = structMemberDst;
-                                                    }
-
-                                                    cbufferMembers[m].Type.Members = structMembers;
-                                                    Marshal.FreeHGlobal(memberData.StructMembers);
-                                                }
-                                                else throw new Exception("A cbuffer struct member is missing Reflection data about its members");
-                                            }
-                                        }
-
-                                        Marshal.FreeHGlobal(constantBufferData.Members);
-                                    }
-
-                                    //create the cbuffer
-                                    EffectConstantBufferDescription constantBuffer = new EffectConstantBufferDescription()
-                                    {
-                                        Name = cbufferName,
-                                        Size = constantBufferData.Size,
-                                        Type = ConstantBufferType.ConstantBuffer,
-                                        Members = cbufferMembers,
-                                    };
-                                    xkslangEffectReflection.ConstantBuffers.Add(constantBuffer);
-                                }
-
-                                Marshal.FreeHGlobal(pAllocsConstantBuffers);
-                            }
-                        }  //end of: //Query and build the EffectReflection data
-                    }
-                    catch (Exception e)
-                    {
-                        string errorMessages = e.Message;
-
-                        //Get details about the error from Xkslang
-                        IntPtr pErrorMsgs = XkslangDLLBindingClass.GetErrorMessages();
-                        if (pErrorMsgs != IntPtr.Zero)
-                        {
-                            string xkslangErrorMsg = Marshal.PtrToStringAnsi(pErrorMsgs);
-                            if (xkslangErrorMsg != null && xkslangErrorMsg.Length > 0) errorMessages = errorMessages + '\n' + xkslangErrorMsg;
-                            Marshal.FreeHGlobal(pErrorMsgs);
-                        }
-
-                        string[] messages = errorMessages.Split('\n');
-                        foreach (string str in messages) if (str.Length > 0) Console.WriteLine(str);
-                        throw e;
-                    }
-                    finally
-                    {
-                        if (effectHandleId > 0) XkslangDLLBindingClass.ReleaseMixinHandle(effectHandleId); //release the mixer handle
-                        XkslangDLLBindingClass.ReleaseMixer();
-                        XkslangDLLBindingClass.ReleaseParser();
-
-                        XkslangDLLBindingClass.ShaderSourceManager = null;
-                        XkslangDLLBindingClass.ListShaderSourcesLoaded = null;
-                    }
-
-                    //convert the stages bytecode to Hlsl and ascii (optionnal)
-                    foreach (var stageShaderSpvBytecode in shaderStageSpvBytecodes)
-                    {
-                        var stageCompiledBytecode = stageShaderSpvBytecode.CompiledSpvBytecode;
+                        int bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSize(effectHandleId);
+                        if (bytecodeLength <= 0) throw new Exception("Failed to get the mixer compiled bytecode size");
+                        mixinCompiledBytecode = new Int32[bytecodeLength];
+                        int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecode(effectHandleId, mixinCompiledBytecode, mixinCompiledBytecode.Length);
+                        if (aLen != bytecodeLength) throw new Exception("Failed to get the mixer compiled bytecode");
 
                         //Optionnal: convert the bytecode to human readable ascii text
                         {
                             int asciiBufferLength = 0;
-                            IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(stageCompiledBytecode, stageCompiledBytecode.Length, out asciiBufferLength);
+                            IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(mixinCompiledBytecode, mixinCompiledBytecode.Length, out asciiBufferLength);
                             if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the bytecode to Ascii");
 
                             Byte[] asciiByteArray = new Byte[asciiBufferLength];
                             Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
                             Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
-                            stageShaderSpvBytecode.BytecodeAsciiFormat = System.Text.Encoding.UTF8.GetString(asciiByteArray);
+                            mixinCompiledBytecode_AsciiText = System.Text.Encoding.UTF8.GetString(asciiByteArray);
                         }
+                    }
+
+                    //=====================================================================================================================================
+                    //Get the compiled bytecode for all output stages
+                    Int32 countStages = XkslangDLLBindingClass.GetMixerCountCompiledStages(effectHandleId);
+                    for (UInt32 stageNum = 0; stageNum < countStages; ++stageNum)
+                    {
+                        ShaderSpvBytecode stageShaderBytecode = new ShaderSpvBytecode();
+
+                        XkslangDLLBindingClass.ShadingStageEnum stage;
+                        int bytecodeLength = 0;
+                        bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSizeForStageNum(effectHandleId, stageNum, out stage);
+                        if (bytecodeLength <= 0) throw new Exception("Failed to get the bytecode size for VS");
+                        Int32[] stageCompiledBytecode = new Int32[bytecodeLength];
+                        int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecodeForStageNum(effectHandleId, stageNum, out stage, stageCompiledBytecode, stageCompiledBytecode.Length);
+                        if (aLen != bytecodeLength) throw new Exception("Failed to get the bytecode for VS");
+
+                        stageShaderBytecode.Stage = XkslangDLLBindingClass.ConvertShadingStageEnum(stage);
+                        stageShaderBytecode.CompiledSpvBytecode = stageCompiledBytecode;
+                        shaderStageSpvBytecodes.Add(stageShaderBytecode);
+                    }
+
+                    //Get the list of hashSources for the loaded shader
+                    if (XkslangDLLBindingClass.ListShaderSourcesLoaded != null && XkslangDLLBindingClass.ListShaderSourcesLoaded.Count > 0)
+                    {
+                        hashSources = new HashSourceCollection();
+                        foreach (var shaderLoaded in XkslangDLLBindingClass.ListShaderSourcesLoaded)
+                        {
+                            hashSources[shaderLoaded.ShaderName] = shaderLoaded.Hash;
+                        }
+                    }
+
+                    //Query and build the EffectReflection data
+                    {
+                        int countConstantBuffers = 0;
+                        IntPtr pAllocsConstantBuffers = IntPtr.Zero;
+                        int countResourceBindings = 0;
+                        IntPtr pAllocsResourceBindings = IntPtr.Zero;
+                        int countInputAttributes = 0;
+                        IntPtr pAllocsInputAttributes = IntPtr.Zero;
+                        int constantBufferStructSize = 0, constantBufferMemberStructSize = 0, resourceBindingsStructSize = 0, inputAttributesStructSize = 0;
+
+                        success = XkslangDLLBindingClass.GetMixerEffectReflectionData(effectHandleId,
+                            out pAllocsConstantBuffers, out countConstantBuffers, out constantBufferStructSize, out constantBufferMemberStructSize,
+                            out pAllocsResourceBindings, out countResourceBindings, out resourceBindingsStructSize,
+                            out pAllocsInputAttributes, out countInputAttributes, out inputAttributesStructSize);
+                        if (!success) throw new Exception("Failed to get the Effect Reflection data");
+
+                        //Process the ResourceBindings
+                        if (countResourceBindings > 0 && pAllocsResourceBindings != IntPtr.Zero)
+                        {
+                            long structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
+                            if (structSize != resourceBindingsStructSize) throw new Exception("Incompatible data structure for EffectReflection ResourceBinding object");
+
+                            XkslangDLLBindingClass.EffectResourceBindingDescriptionData effectResourceBinding;
+                            for (int i = 0; i < countResourceBindings; i++)
+                            {
+                                effectResourceBinding = (XkslangDLLBindingClass.EffectResourceBindingDescriptionData)Marshal.PtrToStructure(
+                                    new IntPtr(pAllocsResourceBindings.ToInt64() + (structSize * i)), typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
+
+                                string keyName = Marshal.PtrToStringAnsi(effectResourceBinding.KeyName);
+                                string rawName = Marshal.PtrToStringAnsi(effectResourceBinding.RawName);
+                                string resourceGroupName = Marshal.PtrToStringAnsi(effectResourceBinding.ResourceGroupName);
+                                var binding = new EffectResourceBindingDescription()
+                                {
+                                    Stage = ShaderStage.None, //XkslangDLLBindingClass.ConvertShadingStageEnum(effectResourceBinding.Stage), (this will be set by ShaderCompiler)
+                                    Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(effectResourceBinding.Class),
+                                    Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(effectResourceBinding.Type),
+                                    RawName = rawName,
+                                    ResourceGroup = resourceGroupName == null ? rawName : resourceGroupName,
+                                    KeyInfo =
+                                        {
+                                            KeyName = keyName,
+                                        },
+                                };
+                                xkslangEffectReflection.ResourceBindings.Add(binding);
+
+                                if (effectResourceBinding.KeyName != null) Marshal.FreeHGlobal(effectResourceBinding.KeyName);
+                                if (effectResourceBinding.RawName != null) Marshal.FreeHGlobal(effectResourceBinding.RawName);
+                                if (effectResourceBinding.ResourceGroupName != null) Marshal.FreeHGlobal(effectResourceBinding.ResourceGroupName);
+                            }
+
+                            //delete the data allocated on the native code
+                            Marshal.FreeHGlobal(pAllocsResourceBindings);
+                        }
+
+                        //Process the InputAttributes
+                        if (countInputAttributes > 0 && pAllocsInputAttributes != IntPtr.Zero)
+                        {
+                            long structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
+                            if (structSize != inputAttributesStructSize) throw new Exception("Incompatible data structure for EffectReflection InputAttribute object");
+
+                            XkslangDLLBindingClass.ShaderInputAttributeDescriptionData shaderInputAttribute;
+                            for (int i = 0; i < countInputAttributes; i++)
+                            {
+                                shaderInputAttribute = (XkslangDLLBindingClass.ShaderInputAttributeDescriptionData)Marshal.PtrToStructure(
+                                    new IntPtr(pAllocsInputAttributes.ToInt64() + (structSize * i)), typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
+
+                                var inputAttribute = new ShaderInputAttributeDescription()
+                                {
+                                    SemanticName = Marshal.PtrToStringAnsi(shaderInputAttribute.SemanticName),
+                                    SemanticIndex = shaderInputAttribute.SemanticIndex,
+                                };
+                                xkslangEffectReflection.InputAttributes.Add(inputAttribute);
+
+                                Marshal.FreeHGlobal(shaderInputAttribute.SemanticName);
+                            }
+
+                            //delete the data allocated on the native code
+                            Marshal.FreeHGlobal(pAllocsInputAttributes);
+                        }
+
+                        //Process the ConstantBuffers
+                        if (countConstantBuffers > 0 && pAllocsConstantBuffers != IntPtr.Zero)
+                        {
+                            long structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
+                            if (structSize != constantBufferStructSize) throw new Exception("Incompatible data structure for EffectReflection ConstantBuffer object");
+                            long memberStructSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
+                            if (memberStructSize != constantBufferMemberStructSize) throw new Exception("Incompatible data structure for EffectReflection ConstantBuffer member object");
+
+                            for (int i = 0; i < countConstantBuffers; i++)
+                            {
+                                //read the cbuffer data
+                                XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData constantBufferData;
+                                constantBufferData = (XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData)Marshal.PtrToStructure(
+                                    new IntPtr(pAllocsConstantBuffers.ToInt64() + (structSize * i)), typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
+
+                                string cbufferName = Marshal.PtrToStringAnsi(constantBufferData.CbufferName);
+                                Marshal.FreeHGlobal(constantBufferData.CbufferName);
+
+                                //process the cbuffer members
+                                EffectValueDescription[] cbufferMembers = null;
+                                if (constantBufferData.CountMembers > 0)
+                                {
+                                    cbufferMembers = new EffectValueDescription[constantBufferData.CountMembers];
+
+                                    //read the member data
+                                    for (int m = 0; m < constantBufferData.CountMembers; ++m)
+                                    {
+                                        XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData memberData;
+                                        memberData = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
+                                            new IntPtr(constantBufferData.Members.ToInt64() + (memberStructSize * m)), typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
+
+                                        string keyName = Marshal.PtrToStringAnsi(memberData.KeyName);
+                                        string rawName = Marshal.PtrToStringAnsi(memberData.RawName);
+                                        string logicalGroup = Marshal.PtrToStringAnsi(memberData.LogicalGroup);
+
+                                        cbufferMembers[m] = new EffectValueDescription()
+                                        {
+                                            KeyInfo =
+                                                {
+                                                    KeyName = keyName,
+                                                },
+                                            RawName = rawName,
+                                            Offset = memberData.Offset,
+                                            Size = memberData.Size,
+                                            LogicalGroup = logicalGroup,
+                                            Type = new EffectTypeDescription()
+                                            {
+                                                Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(memberData.Class),
+                                                Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(memberData.Type),
+                                                RowCount = memberData.RowCount,
+                                                ColumnCount = memberData.ColumnCount,
+                                                Elements = memberData.ArrayElements,
+                                                ElementSize = memberData.Size,
+                                                Name = rawName,
+                                                Members = null,  //will be set below
+                                            },
+                                        };
+
+                                        if (memberData.KeyName != null) Marshal.FreeHGlobal(memberData.KeyName);
+                                        if (memberData.RawName != null) Marshal.FreeHGlobal(memberData.RawName);
+                                        if (memberData.LogicalGroup != null) Marshal.FreeHGlobal(memberData.LogicalGroup);
+
+                                        //if the cbuffer member is a struct, we analyse its struct members
+                                        if (memberData.CountMembers > 0)
+                                        {
+                                            if (memberData.StructMembers != null)
+                                            {
+                                                EffectTypeMemberDescription[] structMembers = new EffectTypeMemberDescription[memberData.CountMembers];
+
+                                                //Set the cbuffer member's struct members
+                                                for (int im = 0; im < memberData.CountMembers; im++)
+                                                {
+                                                    XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData structMemberSrc;
+                                                    structMemberSrc = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
+                                                        new IntPtr(memberData.StructMembers.ToInt64() + (memberStructSize * im)),
+                                                        typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
+
+                                                    EffectTypeMemberDescription structMemberDst = new EffectTypeMemberDescription();
+
+                                                    if (!ConvertAndReleaseDllStructMemberDataToReflectionStructMemberType(ref structMemberSrc, ref structMemberDst))
+                                                        throw new Exception("Failed to convert the EffectReflection cbuffer struct member data");
+
+                                                    structMembers[im] = structMemberDst;
+                                                }
+
+                                                cbufferMembers[m].Type.Members = structMembers;
+                                                Marshal.FreeHGlobal(memberData.StructMembers);
+                                            }
+                                            else throw new Exception("A cbuffer struct member is missing Reflection data about its members");
+                                        }
+                                    }
+
+                                    Marshal.FreeHGlobal(constantBufferData.Members);
+                                }
+
+                                //create the cbuffer
+                                EffectConstantBufferDescription constantBuffer = new EffectConstantBufferDescription()
+                                {
+                                    Name = cbufferName,
+                                    Size = constantBufferData.Size,
+                                    Type = ConstantBufferType.ConstantBuffer,
+                                    Members = cbufferMembers,
+                                };
+                                xkslangEffectReflection.ConstantBuffers.Add(constantBuffer);
+                            }
+
+                            Marshal.FreeHGlobal(pAllocsConstantBuffers);
+                        }
+                    }  //end of: //Query and build the EffectReflection data
+                }
+                catch (Exception e)
+                {
+                    string errorMessages = e.Message;
+
+                    //Get details about the error from Xkslang
+                    IntPtr pErrorMsgs = XkslangDLLBindingClass.GetErrorMessages();
+                    if (pErrorMsgs != IntPtr.Zero)
+                    {
+                        string xkslangErrorMsg = Marshal.PtrToStringAnsi(pErrorMsgs);
+                        if (xkslangErrorMsg != null && xkslangErrorMsg.Length > 0) errorMessages = errorMessages + '\n' + xkslangErrorMsg;
+                        Marshal.FreeHGlobal(pErrorMsgs);
+                    }
+
+                    //string[] messages = errorMessages.Split('\n');
+                    //foreach (string str in messages) if (str.Length > 0) Console.WriteLine(str);
+                    throw new Exception(errorMessages, e);
+                }
+                finally
+                {
+                    if (effectHandleId > 0) XkslangDLLBindingClass.ReleaseMixinHandle(effectHandleId); //release the mixer handle
+                    XkslangDLLBindingClass.ReleaseMixer();
+                    XkslangDLLBindingClass.ReleaseParser();
+
+                    XkslangDLLBindingClass.ShaderSourceManager = null;
+                    XkslangDLLBindingClass.ListShaderSourcesLoaded = null;
+                }
+
+                try
+                {
+                    //convert the stages bytecode to Hlsl and ascii (optionnal)
+                    foreach (var stageShaderSpvBytecode in shaderStageSpvBytecodes)
+                    {
+                        var stageCompiledBytecode = stageShaderSpvBytecode.CompiledSpvBytecode;
+
+                        ////Optionnal: convert the bytecode to human readable ascii text
+                        //{
+                        //    int asciiBufferLength = 0;
+                        //    IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(stageCompiledBytecode, stageCompiledBytecode.Length, out asciiBufferLength);
+                        //    if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the bytecode to Ascii");
+                        //
+                        //    Byte[] asciiByteArray = new Byte[asciiBufferLength];
+                        //    Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
+                        //    Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
+                        //    stageShaderSpvBytecode.BytecodeAsciiFormat = System.Text.Encoding.UTF8.GetString(asciiByteArray);
+                        //}
 
                         //convert the bytecode to HLSL
                         {
@@ -1321,7 +1324,13 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                             stageShaderSpvBytecode.BytecodeHlslConversion = System.Text.Encoding.UTF8.GetString(byteArray);
                         }
                     }
-                } //end of lock (XkslangMixinLock)
+                }
+                catch (Exception e)
+                {
+                    //string errorMessages = e.Message;
+                    //Console.WriteLine(errorMessages);
+                    throw e;
+                }
 
                 //Optionnal: write all generated shaders on the log folder
 #if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
@@ -1329,7 +1338,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     //write the stages SPV ascii and shaders on the disk
                     if (mixinCompiledBytecode_AsciiText != null)
                     {
-                        var bytecodeSourceFilename = Path.Combine(logDir, "effect_" + fullEffectName.Replace('.', '_') + "_compiled_final.spv.txt");
+                        var bytecodeSourceFilename = Path.Combine(logDir, "effect_" + fullEffectName.Replace('.', '_') + "_" + xkfxSourceHash + "_compiled_final.spv.txt");
                         lock (WriterLock)
                         {
                             File.WriteAllText(bytecodeSourceFilename, mixinCompiledBytecode_AsciiText);
@@ -1339,7 +1348,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     {
                         if (stageShaderSpvBytecode.BytecodeAsciiFormat != null)
                         {
-                            var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_" + stageShaderSpvBytecode.Stage + "_compiled.spv.txt");
+                            var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_" + xkfxSourceHash + "_" + stageShaderSpvBytecode.Stage + "_compiled.spv.txt");
                             lock (WriterLock)
                             {
                                 File.WriteAllText(bytecodeSourceFilename, stageShaderSpvBytecode.BytecodeAsciiFormat);
@@ -1347,7 +1356,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         }
                         if (stageShaderSpvBytecode.BytecodeHlslConversion != null)
                         {
-                            var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_" + stageShaderSpvBytecode.Stage + ".hlsl");
+                            var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_" + xkfxSourceHash + "_" + stageShaderSpvBytecode.Stage + ".hlsl");
                             lock (WriterLock)
                             {
                                 File.WriteAllText(bytecodeSourceFilename, stageShaderSpvBytecode.BytecodeHlslConversion);
@@ -1356,1010 +1365,27 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     }
                 }
 #endif
+            } //end of lock (XkslangMixinLock)
 
-                //=====================================================================================================
-                //Compile the generated HLSL shaders
-                {
-                    var shaderStageBytecodes = new List<ShaderBytecode>();
-
-#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-                    var stageStringBuilder = new StringBuilder();
-#endif
-
-                    //TODO: check with other compilers !
-                    IShaderCompiler d3dcompiler = new Direct3D.ShaderCompiler();
-
-                    foreach (var stageShaderSpvBytecode in shaderStageSpvBytecodes)
-                    {
-                        string shaderSource = stageShaderSpvBytecode.BytecodeHlslConversion;
-
-                        string entryPoint = "main";
-                        ShaderStage stage = stageShaderSpvBytecode.Stage;
-                        var result = d3dcompiler.Compile(shaderSource, entryPoint, stage, effectParameters, xkslangEffectReflection, null);
-                        result.CopyTo(log);
-
-                        if (result.HasErrors)
-                        {
-                            continue;
-                        }
-
-                        // -------------------------------------------------------
-                        // Append bytecode id to shader log
-#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-                        stageStringBuilder.AppendLine("@G    {0} => {1}".ToFormat(stage, result.Bytecode.Id));
-                        if (result.DisassembleText != null)
-                        {
-                            stageStringBuilder.Append(result.DisassembleText);
-                        }
-#endif
-                        // -------------------------------------------------------
-
-                        shaderStageBytecodes.Add(result.Bytecode);
-
-                        // When this is a compute shader, there is no need to scan other stages
-                        if (stage == ShaderStage.Compute)
-                            break;
-                    }
-
-                    var bytecode = new EffectBytecode { Reflection = xkslangEffectReflection, HashSources = hashSources };
-                    CleanupReflection(bytecode.Reflection);  // Remove unused reflection data, as it is entirely resolved at compile time.
-                    bytecode.Stages = shaderStageBytecodes.ToArray();
-
-#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-                    lock (WriterLock) // protect write in case the same shader is created twice
-                    {
-                        var builder = new StringBuilder();
-
-                        if (log.HasErrors)
-                        {
-                            builder.AppendLine("/**************************");
-                            builder.AppendLine("***** Compilation Errors *****");
-                            builder.AppendLine("***************************");
-                            foreach (var error in log.Messages)
-                            {
-                                builder.AppendLine(error.Text);
-                            }
-                            builder.AppendLine("***************************");
-                        }
-
-                        builder.AppendLine("/**************************");
-                        builder.AppendLine("***** Compiler Parameters *****");
-                        builder.AppendLine("***************************");
-                        builder.Append("@P EffectName: ");
-                        builder.AppendLine(fullEffectName ?? "");
-                        builder.Append(compilerParameters?.ToStringPermutationsDetailed());
-                        builder.AppendLine("***************************");
-
-                        if (bytecode.Reflection.ConstantBuffers.Count > 0)
-                        {
-                            builder.AppendLine("****  ConstantBuffers  ****");
-                            builder.AppendLine("***************************");
-                            foreach (var cBuffer in bytecode.Reflection.ConstantBuffers)
-                            {
-                                builder.AppendFormat("cbuffer {0} [Size: {1}]", cBuffer.Name, cBuffer.Size).AppendLine();
-                                foreach (var parameter in cBuffer.Members)
-                                {
-                                    builder.AppendFormat("@C    {0} => {1}", parameter.RawName, parameter.KeyInfo.KeyName).AppendLine();
-                                }
-                            }
-                            builder.AppendLine("***************************");
-                        }
-
-                        if (bytecode.Reflection.ResourceBindings.Count > 0)
-                        {
-                            builder.AppendLine("******  Resources    ******");
-                            builder.AppendLine("***************************");
-                            foreach (var resource in bytecode.Reflection.ResourceBindings)
-                            {
-                                builder.AppendFormat("@R    {0} => {1} [Stage: {2}, Slot: ({3}-{4})]", resource.RawName, resource.KeyInfo.KeyName, resource.Stage, resource.SlotStart, resource.SlotStart + resource.SlotCount - 1).AppendLine();
-                            }
-                            builder.AppendLine("***************************");
-                        }
-
-                        if (bytecode.HashSources != null && bytecode.HashSources.Count > 0)
-                        {
-                            builder.AppendLine("*****     Sources     *****");
-                            builder.AppendLine("***************************");
-                            foreach (var hashSource in bytecode.HashSources)
-                            {
-                                builder.AppendFormat("@S    {0} => {1}", hashSource.Key, hashSource.Value).AppendLine();
-                            }
-                            builder.AppendLine("***************************");
-                        }
-
-                        if (bytecode.Stages.Length > 0)
-                        {
-                            builder.AppendLine("*****     Stages      *****");
-                            builder.AppendLine("***************************");
-                            builder.Append(stageStringBuilder);
-                            builder.AppendLine("***************************");
-                        }
-                        builder.AppendLine("*************************/");
-
-                        foreach (var stageShaderSpvBytecode in shaderStageSpvBytecodes)
-                        {
-                            builder.AppendLine("");
-                            builder.AppendLine("/*************************/");
-                            builder.AppendLine("//" + stageShaderSpvBytecode.Stage);
-                            builder.Append(stageShaderSpvBytecode.BytecodeHlslConversion);
-                        }
-
-                        var shaderSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_fullLogs" + ".hlsl");
-                        File.WriteAllText(shaderSourceFilename, builder.ToString());
-                    }
-#endif
-
-                    return new EffectBytecodeCompilerResult(bytecode, log);
-                } //end of compilation
-
-            }
-
-            //////Previous prototype: we can also manually parse xksl shaders and mix them
-            //////#ifdef XKSLANG_PROTOTYPE_OBSOLETE
-            //            if (CompileEffectUsingXkslang && fullEffectName == "Effect")
-            //            {
-            //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-            //                var logDir = Path.Combine(PlatformFolders.ApplicationBinaryDirectory, "log");
-            //                if (!Directory.Exists(logDir))
-            //                {
-            //                    Directory.CreateDirectory(logDir);
-            //                }
-            //#endif
-            //
-            //                //=====================================================================================================================================
-            //                //TEST loading and parsing the xksl shader
-            //                string shaderName = mixinTree.Name;
-            //                Int32[] effectSpxBytecode = null;
-            //                string effectSpxBytecode_AsciiText = null;
-            //
-            //                Int32[] mixinCompiledBytecode = null;
-            //                string mixinCompiledBytecode_AsciiText;
-            //
-            //                Int32[] spvBytecodeVS = null;
-            //                Int32[] spvBytecodePS = null;
-            //                string spvBytecodeVS_AsciiText = null;
-            //                string spvBytecodePS_AsciiText = null;
-            //                int hlslShaderModel = 40;
-            //                string shaderGlslVS = null;
-            //                string shaderGlslPS = null;
-            //                string shaderHlslVS = null;
-            //                string shaderHlslPS = null;
-            //
-            //                try
-            //                {
-            //                    XkslangDLLBindingClass.ShaderSourceManager = GetMixinParser().SourceManager;
-            //                    XkslangDLLBindingClass.ListShaderSourcesLoaded = new List<ShaderSourceManager.ShaderSourceWithHash>();
-            //
-            //                    bool success = true;
-            //
-            //                    //initialise xkslang
-            //                    success = XkslangDLLBindingClass.InitializeParser();
-            //                    if (!success) throw new Exception("Error initializing Xkslang");
-            //
-            //                    //convert the XKSL shader to SPX bytecode
-            //                    int bytecodeLength = 0;
-            //                    IntPtr pBytecodeBuffer = XkslangDLLBindingClass.ConvertXkslShaderToSPX(shaderName, null, null, XkslangDLLBindingClass.ShaderSourceLoaderCallback, out bytecodeLength);
-            //                    if (pBytecodeBuffer == IntPtr.Zero || bytecodeLength <= 0)
-            //                    {
-            //                        log.Error($"No Spx bytecode generated for effect [{fullEffectName}]");
-            //                        return new EffectBytecodeCompilerResult(null, log);
-            //                    }
-            //
-            //                    //copy the bytecode and free the object (allocated by the dll)
-            //                    effectSpxBytecode = new Int32[bytecodeLength];
-            //                    Marshal.Copy(pBytecodeBuffer, effectSpxBytecode, 0, bytecodeLength);
-            //                    Marshal.FreeHGlobal(pBytecodeBuffer);
-            //
-            //                    //=====================================================================================================================================
-            //                    //Optionnal: Query the shader name from the bytecode
-            //                    {
-            //                        int countShaders = 0;
-            //                        IntPtr pAllocShadersInfo = IntPtr.Zero;
-            //                        success = XkslangDLLBindingClass.GetBytecodeShadersInformation(effectSpxBytecode, effectSpxBytecode.Length, out pAllocShadersInfo, out countShaders);
-            //                        if (!success) throw new Exception("Failed to query the shader information from the bytecode");
-            //
-            //                        if (countShaders > 0 && pAllocShadersInfo != IntPtr.Zero)
-            //                        {
-            //                            int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.BytecodeShaderInformation));
-            //                            for (int i = 0; i < countShaders; i++)
-            //                            {
-            //                                XkslangDLLBindingClass.BytecodeShaderInformation bytecodeShader = (XkslangDLLBindingClass.BytecodeShaderInformation)Marshal.PtrToStructure(
-            //                                    new IntPtr(pAllocShadersInfo.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.BytecodeShaderInformation));
-            //
-            //                                string bytecodeShaderName = Marshal.PtrToStringAnsi(bytecodeShader.ShaderName);
-            //                                Marshal.FreeHGlobal(bytecodeShader.ShaderName);
-            //                            }
-            //                            Marshal.FreeHGlobal(pAllocShadersInfo); //delete the data allocated on the native code
-            //                        }
-            //                    }
-            //
-            //                    //=====================================================================================================================================
-            //                    //Optionnal: convert the bytecode to human readable ascii text
-            //                    {
-            //                        int asciiBufferLength = 0;
-            //                        IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(effectSpxBytecode, effectSpxBytecode.Length, out asciiBufferLength);
-            //                        if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the Spx bytecode into Ascii");
-            //
-            //                        Byte[] asciiByteArray = new Byte[asciiBufferLength];
-            //                        Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
-            //                        Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
-            //                        effectSpxBytecode_AsciiText = System.Text.Encoding.UTF8.GetString(asciiByteArray);
-            //                    }
-            //                }
-            //                catch (Exception e)
-            //                {
-            //                    string errorMessages = e.Message;
-            //
-            //                    //Check if we can get some error messages from xkslang DLL
-            //                    IntPtr pErrorMsgs = XkslangDLLBindingClass.GetErrorMessages();
-            //                    if (pErrorMsgs != IntPtr.Zero)
-            //                    {
-            //                        string xkslangErrorMsg = Marshal.PtrToStringAnsi(pErrorMsgs);
-            //                        if (xkslangErrorMsg != null && xkslangErrorMsg.Length > 0) errorMessages = errorMessages + '\n' + xkslangErrorMsg;
-            //                        Marshal.FreeHGlobal(pErrorMsgs);
-            //                    }
-            //
-            //                    string[] messages = errorMessages.Split('\n');
-            //                    foreach (string str in messages) if (str.Length > 0) Console.WriteLine(str);
-            //                    throw e;
-            //                }
-            //                finally
-            //                {
-            //                    XkslangDLLBindingClass.ReleaseParser();
-            //                }
-            //
-            //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-            //                //=====================================================================================================================================
-            //                //write the SPX ascii bytecodes on the disk
-            //                if (effectSpxBytecode_AsciiText != null)
-            //                {
-            //                    //var bytecodeId = ObjectId.FromBytes(Encoding.UTF8.GetBytes(spxAsciiBytecode));
-            //                    //var bytecodeSourceFilename = Path.Combine(strLogDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_" + bytecodeId + ".hr.spv");
-            //                    var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + ".hr.spv");
-            //
-            //                    lock (WriterLock) // protect write in case the same shader is created twice
-            //                    {
-            //                        // Write shader before generating to make sure that we are having a trace before compiling it (compiler may crash...etc.)
-            //                        //if (!File.Exists(bytecodeSourceFilename))
-            //                        {
-            //                            File.WriteAllText(bytecodeSourceFilename, effectSpxBytecode_AsciiText);
-            //                        }
-            //                    }
-            //                }
-            //#endif
-            //
-            //                EffectReflection xkslangEffectReflection = new EffectReflection();
-            //
-            //                //=====================================================================================================================================
-            //                //Mix the effect to generate the output stage SPV bytecode. Hardcoded for now: mix the effect shader class only, for PS and VS stages
-            //                UInt32 mixerHandleId = 0;
-            //                try
-            //                {
-            //                    if (!XkslangDLLBindingClass.InitializeMixer())
-            //                        throw new Exception("Failed to initialize the mixer");
-            //
-            //                    mixerHandleId = XkslangDLLBindingClass.CreateSpxShaderMixer();
-            //                    if (mixerHandleId == 0) throw new Exception("Failed to create a new spx mixer");
-            //
-            //                    bool success;
-            //                    success = XkslangDLLBindingClass.MixinShaders(mixerHandleId, shaderName, effectSpxBytecode, effectSpxBytecode.Length);
-            //                    if (!success) throw new Exception("Failed to mix the shader: " + shaderName);
-            //
-            //                    XkslangDLLBindingClass.OutputStageEntryPoint[] stageEntryPointArray = {
-            //                        new XkslangDLLBindingClass.OutputStageEntryPoint(XkslangDLLBindingClass.ShadingStageEnum.Vertex, "VSMain"),
-            //                        new XkslangDLLBindingClass.OutputStageEntryPoint(XkslangDLLBindingClass.ShadingStageEnum.Pixel, "PSMain")
-            //                    };
-            //
-            //                    success = XkslangDLLBindingClass.CompileMixer(mixerHandleId, stageEntryPointArray, stageEntryPointArray.Length);
-            //                    if (!success) throw new Exception("Failed to compile the shader: " + shaderName);
-            //
-            //                    //=====================================================================================================================================
-            //                    //get the mixin compiled bytecode
-            //                    {
-            //                        ////1st option: the dll allocate, copy and returns the buffer: caller needs to delete this buffer by calling "Marshal.FreeHGlobal"
-            //                        //int bytecodeLength = 0;
-            //                        //IntPtr pBytecodeBuffer = XkslangDLLBindingClass.GetMixerCompiledBytecode(mixerHandleId, out bytecodeLength);
-            //                        //if (pBytecodeBuffer == null || bytecodeLength <= 0) throw new Exception("Failed to get the mixin compiled bytecode");
-            //                        ////copy the bytecode and free the buffer allocated by the dll
-            //                        //mixinCompiledBytecode = new Int32[bytecodeLength];
-            //                        //Marshal.Copy(pBytecodeBuffer, mixinCompiledBytecode, 0, bytecodeLength);
-            //                        //Marshal.FreeHGlobal(pBytecodeBuffer);
-            //
-            //                        //2nd option: allocate the buffer on the caller side and ask the dll to fill it
-            //                        int bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSize(mixerHandleId);
-            //                        if (bytecodeLength <= 0) throw new Exception("Failed to get the mixer compiled bytecode size");
-            //                        mixinCompiledBytecode = new Int32[bytecodeLength];
-            //                        int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecode(mixerHandleId, mixinCompiledBytecode, mixinCompiledBytecode.Length);
-            //                        if (aLen != bytecodeLength) throw new Exception("Failed to get the mixer compiled bytecode");
-            //
-            //                        //Optionnal: convert the bytecode to human readable ascii text
-            //                        {
-            //                            int asciiBufferLength = 0;
-            //                            IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(mixinCompiledBytecode, mixinCompiledBytecode.Length, out asciiBufferLength);
-            //                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the bytecode to Ascii");
-            //
-            //                            Byte[] asciiByteArray = new Byte[asciiBufferLength];
-            //                            Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
-            //                            Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
-            //                            mixinCompiledBytecode_AsciiText = System.Text.Encoding.UTF8.GetString(asciiByteArray);
-            //                        }
-            //                    }
-            //
-            //                    {
-            //                        //test calling those functions
-            //                        Int32 countStages = XkslangDLLBindingClass.GetMixerCountCompiledStages(mixerHandleId);
-            //                        for (UInt32 stageNum = 0; stageNum < countStages; ++stageNum)
-            //                        {
-            //                            XkslangDLLBindingClass.ShadingStageEnum stage;
-            //                            int bytecodeLength = 0;
-            //                            IntPtr pBytecodeBuffer = XkslangDLLBindingClass.GetMixerCompiledBytecodeForStageNum(mixerHandleId, stageNum, out stage, out bytecodeLength);
-            //                            if (pBytecodeBuffer == null || bytecodeLength <= 0) throw new Exception("Failed to get the bytecode for VS stage");
-            //                            //copy the bytecode and free the buffer allocated by the dll
-            //                            Int32[] aBytecode = new Int32[bytecodeLength];
-            //                            Marshal.Copy(pBytecodeBuffer, aBytecode, 0, bytecodeLength);
-            //                            Marshal.FreeHGlobal(pBytecodeBuffer);
-            //
-            //                            bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSizeForStageNum(mixerHandleId, stageNum, out stage);
-            //                            if (bytecodeLength <= 0) throw new Exception("Failed to get the bytecode size for VS");
-            //                            aBytecode = new Int32[bytecodeLength];
-            //                            int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecodeForStageNum(mixerHandleId, stageNum, out stage, aBytecode, aBytecode.Length);
-            //                            if (aLen != bytecodeLength) throw new Exception("Failed to get the bytecode for VS");
-            //                        }
-            //                    }
-            //
-            //                    //=====================================================================================================================================
-            //                    //get the VS SPIRV bytecode
-            //                    {
-            //                        ////1st option: the dll allocate, copy and returns the buffer: caller needs to delete this buffer by calling "Marshal.FreeHGlobal"
-            //                        //int bytecodeLength = 0;
-            //                        //IntPtr pBytecodeBuffer = XkslangDLLBindingClass.GetMixerCompiledBytecodeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Vertex, out bytecodeLength);
-            //                        //if (pBytecodeBuffer == null || bytecodeLength <= 0) throw new Exception("Failed to get the bytecode for VS stage");
-            //                        ////copy the bytecode and free the buffer allocated by the dll
-            //                        //spvBytecodeVS = new Int32[bytecodeLength];
-            //                        //Marshal.Copy(pBytecodeBuffer, spvBytecodeVS, 0, bytecodeLength);
-            //                        //Marshal.FreeHGlobal(pBytecodeBuffer);
-            //
-            //                        //2nd option: allocate the buffer on the caller side and ask the dll to fill it
-            //                        int bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSizeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Vertex);
-            //                        if (bytecodeLength <= 0) throw new Exception("Failed to get the bytecode size for VS");
-            //                        spvBytecodeVS = new Int32[bytecodeLength];
-            //                        int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecodeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Vertex, spvBytecodeVS, spvBytecodeVS.Length);
-            //                        if (aLen != bytecodeLength) throw new Exception("Failed to get the bytecode for VS");
-            //
-            //                        //Optionnal: convert the bytecode to human readable ascii text
-            //                        {
-            //                            int asciiBufferLength = 0;
-            //                            IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(spvBytecodeVS, spvBytecodeVS.Length, out asciiBufferLength);
-            //                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the bytecode to Ascii");
-            //
-            //                            Byte[] asciiByteArray = new Byte[asciiBufferLength];
-            //                            Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
-            //                            Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
-            //                            spvBytecodeVS_AsciiText = System.Text.Encoding.UTF8.GetString(asciiByteArray);
-            //                        }
-            //
-            //                        //convert the bytecode to GLSL
-            //                        {
-            //                            int bufferLen = 0;
-            //                            IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToGlsl(spvBytecodeVS, spvBytecodeVS.Length, out bufferLen);
-            //                            if (pBuffer == null || bufferLen <= 0) throw new Exception("Failed to convert the VS bytecode to GLSL");
-            //
-            //                            Byte[] byteArray = new Byte[bufferLen];
-            //                            Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
-            //                            Marshal.FreeHGlobal(pBuffer);
-            //                            shaderGlslVS = System.Text.Encoding.UTF8.GetString(byteArray);
-            //                        }
-            //
-            //                        //convert the bytecode to HLSL
-            //                        {
-            //                            int bufferLen = 0;
-            //                            IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToHlsl(spvBytecodeVS, spvBytecodeVS.Length, hlslShaderModel, out bufferLen);
-            //                            if (pBuffer == IntPtr.Zero || bufferLen <= 0) throw new Exception("Failed to convert the VS bytecode to HLSL");
-            //
-            //                            Byte[] byteArray = new Byte[bufferLen];
-            //                            Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
-            //                            Marshal.FreeHGlobal(pBuffer);
-            //                            shaderHlslVS = System.Text.Encoding.UTF8.GetString(byteArray);
-            //                        }
-            //                    }
-            //
-            //                    //=====================================================================================================================================
-            //                    //get the PS SPIRV bytecode
-            //                    {
-            //                        ////1st option: the dll allocate, copy and returns the buffer: caller needs to delete this buffer by calling "Marshal.FreeHGlobal"
-            //                        //int bytecodeLength = 0;
-            //                        //IntPtr pBytecodeBuffer = XkslangDLLBindingClass.GetMixerCompiledBytecodeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Pixel, out bytecodeLength);
-            //                        //if (pBytecodeBuffer == null || bytecodeLength <= 0) throw new Exception("Failed to get the bytecode for PS stage");
-            //                        ////copy the bytecode and free the object (allocated by the dll)
-            //                        //spvBytecodePS = new Int32[bytecodeLength];
-            //                        //Marshal.Copy(pBytecodeBuffer, spvBytecodePS, 0, bytecodeLength);
-            //                        //Marshal.FreeHGlobal(pBytecodeBuffer);
-            //
-            //                        //2nd option: allocate the buffer on the caller side and ask the dll to fill it
-            //                        int bytecodeLength = XkslangDLLBindingClass.GetMixerCompiledBytecodeSizeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Pixel);
-            //                        if (bytecodeLength <= 0) throw new Exception("Failed to get the bytecode size for PS");
-            //                        spvBytecodePS = new Int32[bytecodeLength];
-            //                        int aLen = XkslangDLLBindingClass.CopyMixerCompiledBytecodeForStage(mixerHandleId, XkslangDLLBindingClass.ShadingStageEnum.Pixel, spvBytecodePS, spvBytecodePS.Length);
-            //                        if (aLen != bytecodeLength) throw new Exception("Failed to get the bytecode for PS");
-            //
-            //                        //Optionnal: convert the bytecode to human readable ascii text
-            //                        {
-            //                            int asciiBufferLength = 0;
-            //                            IntPtr pAsciiBytecodeBuffer = XkslangDLLBindingClass.ConvertBytecodeToAsciiText(spvBytecodePS, spvBytecodePS.Length, out asciiBufferLength);
-            //                            if (pAsciiBytecodeBuffer == IntPtr.Zero || asciiBufferLength <= 0) throw new Exception("Failed to convert the PS bytecode to Ascii");
-            //
-            //                            Byte[] asciiByteArray = new Byte[asciiBufferLength];
-            //                            Marshal.Copy(pAsciiBytecodeBuffer, asciiByteArray, 0, asciiBufferLength);
-            //                            Marshal.FreeHGlobal(pAsciiBytecodeBuffer);
-            //                            spvBytecodePS_AsciiText = System.Text.Encoding.UTF8.GetString(asciiByteArray);
-            //                        }
-            //
-            //                        //convert the bytecode to GLSL
-            //                        {
-            //                            int bufferLen = 0;
-            //                            IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToGlsl(spvBytecodePS, spvBytecodePS.Length, out bufferLen);
-            //                            if (pBuffer == null || bufferLen <= 0) throw new Exception("Failed to convert the PS bytecode to GLSL");
-            //
-            //                            Byte[] byteArray = new Byte[bufferLen];
-            //                            Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
-            //                            Marshal.FreeHGlobal(pBuffer);
-            //                            shaderGlslPS = System.Text.Encoding.UTF8.GetString(byteArray);
-            //                        }
-            //
-            //                        //convert the bytecode to HLSL
-            //                        {
-            //                            int bufferLen = 0;
-            //                            IntPtr pBuffer = XkslangDLLBindingClass.ConvertBytecodeToHlsl(spvBytecodePS, spvBytecodePS.Length, hlslShaderModel, out bufferLen);
-            //                            if (pBuffer == IntPtr.Zero || bufferLen <= 0) throw new Exception("Failed to convert the PS bytecode to HLSL");
-            //
-            //                            Byte[] byteArray = new Byte[bufferLen];
-            //                            Marshal.Copy(pBuffer, byteArray, 0, bufferLen);
-            //                            Marshal.FreeHGlobal(pBuffer);
-            //                            shaderHlslPS = System.Text.Encoding.UTF8.GetString(byteArray);
-            //                        }
-            //                    }
-            //
-            //                    //Query and build the EffectReflection data
-            //                    {
-            //                        int countConstantBuffers = 0;
-            //                        IntPtr pAllocsConstantBuffers = IntPtr.Zero;
-            //                        int countResourceBindings = 0;
-            //                        IntPtr pAllocsResourceBindings = IntPtr.Zero;
-            //                        int countInputAttributes = 0;
-            //                        IntPtr pAllocsInputAttributes = IntPtr.Zero;
-            //
-            //                        success = XkslangDLLBindingClass.GetMixerEffectReflectionData(mixerHandleId,
-            //                            out pAllocsConstantBuffers, out countConstantBuffers,
-            //                            out pAllocsResourceBindings, out countResourceBindings,
-            //                            out pAllocsInputAttributes, out countInputAttributes);
-            //                        if (!success) throw new Exception("Failed to get the Effect Reflection data");
-            //
-            //                        //Process the ResourceBindings
-            //                        if (countResourceBindings > 0 && pAllocsResourceBindings != IntPtr.Zero)
-            //                        {
-            //                            int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
-            //                            XkslangDLLBindingClass.EffectResourceBindingDescriptionData effectResourceBinding;
-            //                            for (int i = 0; i < countResourceBindings; i++)
-            //                            {
-            //                                effectResourceBinding = (XkslangDLLBindingClass.EffectResourceBindingDescriptionData)Marshal.PtrToStructure(
-            //                                    new IntPtr(pAllocsResourceBindings.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.EffectResourceBindingDescriptionData));
-            //
-            //                                string keyName = Marshal.PtrToStringAnsi(effectResourceBinding.KeyName);
-            //                                string rawName = Marshal.PtrToStringAnsi(effectResourceBinding.RawName);
-            //                                var binding = new EffectResourceBindingDescription()
-            //                                {
-            //                                    Stage = ShaderStage.None, //XkslangDLLBindingClass.ConvertShadingStageEnum(effectResourceBinding.Stage), (this will be set by ShaderCompiler)
-            //                                    Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(effectResourceBinding.Class),
-            //                                    Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(effectResourceBinding.Type),
-            //                                    RawName = rawName,
-            //                                    ResourceGroup = rawName,
-            //                                    KeyInfo =
-            //                                    {
-            //                                        KeyName = keyName,
-            //                                    },
-            //                                };
-            //                                xkslangEffectReflection.ResourceBindings.Add(binding);
-            //
-            //                                Marshal.FreeHGlobal(effectResourceBinding.KeyName);
-            //                                Marshal.FreeHGlobal(effectResourceBinding.RawName);
-            //                            }
-            //
-            //                            //delete the data allocated on the native code
-            //                            Marshal.FreeHGlobal(pAllocsResourceBindings);
-            //                        }
-            //
-            //                        //Process the InputAttributes
-            //                        if (countInputAttributes > 0 && pAllocsInputAttributes != IntPtr.Zero)
-            //                        {
-            //                            int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
-            //                            XkslangDLLBindingClass.ShaderInputAttributeDescriptionData shaderInputAttribute;
-            //                            for (int i = 0; i < countInputAttributes; i++)
-            //                            {
-            //                                shaderInputAttribute = (XkslangDLLBindingClass.ShaderInputAttributeDescriptionData)Marshal.PtrToStructure(
-            //                                    new IntPtr(pAllocsInputAttributes.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.ShaderInputAttributeDescriptionData));
-            //
-            //                                var inputAttribute = new ShaderInputAttributeDescription()
-            //                                {
-            //                                    SemanticName = Marshal.PtrToStringAnsi(shaderInputAttribute.SemanticName),
-            //                                    SemanticIndex = shaderInputAttribute.SemanticIndex,
-            //                                };
-            //                                xkslangEffectReflection.InputAttributes.Add(inputAttribute);
-            //
-            //                                Marshal.FreeHGlobal(shaderInputAttribute.SemanticName);
-            //                            }
-            //
-            //                            //delete the data allocated on the native code
-            //                            Marshal.FreeHGlobal(pAllocsInputAttributes);
-            //                        }
-            //
-            //                        //Process the ConstantBuffers
-            //                        if (countConstantBuffers > 0 && pAllocsConstantBuffers != IntPtr.Zero)
-            //                        {
-            //                            int structSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
-            //                            for (int i = 0; i < countConstantBuffers; i++)
-            //                            {
-            //                                //read the cbuffer data
-            //                                XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData constantBufferData;
-            //                                constantBufferData = (XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData)Marshal.PtrToStructure(
-            //                                    new IntPtr(pAllocsConstantBuffers.ToInt32() + (structSize * i)), typeof(XkslangDLLBindingClass.ConstantBufferReflectionDescriptionData));
-            //
-            //                                //process the cbuffer members
-            //                                EffectValueDescription[] cbufferMembers = null;
-            //                                if (constantBufferData.CountMembers > 0)
-            //                                {
-            //                                    cbufferMembers = new EffectValueDescription[constantBufferData.CountMembers];
-            //
-            //                                    //read the member data
-            //                                    int memberStructSize = Marshal.SizeOf(typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
-            //                                    for (int m = 0; m < constantBufferData.CountMembers; ++m)
-            //                                    {
-            //                                        XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData memberData;
-            //                                        memberData = (XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData)Marshal.PtrToStructure(
-            //                                            new IntPtr(constantBufferData.Members.ToInt32() + (memberStructSize * m)), typeof(XkslangDLLBindingClass.ConstantBufferMemberReflectionDescriptionData));
-            //
-            //                                        string keyName = Marshal.PtrToStringAnsi(memberData.KeyName);
-            //                                        string rawName = Marshal.PtrToStringAnsi(memberData.RawName);
-            //                                        cbufferMembers[m] = new EffectValueDescription()
-            //                                        {
-            //                                            KeyInfo =
-            //                                            {
-            //                                                KeyName = keyName,
-            //                                            },
-            //                                            RawName = rawName,
-            //                                            Offset = memberData.Offset,
-            //                                            Size = memberData.Size,
-            //                                            Type = new EffectTypeDescription()
-            //                                            {
-            //                                                Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(memberData.Class),
-            //                                                Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(memberData.Type),
-            //                                                RowCount = memberData.RowCount,
-            //                                                ColumnCount = memberData.ColumnCount,
-            //                                                Elements = memberData.ArrayElements,
-            //                                                ElementSize = memberData.Size,
-            //                                                Name = rawName,
-            //                                                Members = null,  //we have memberData.CountMembers, but not the members data yet
-            //                                            },
-            //                                        };
-            //
-            //                                        Marshal.FreeHGlobal(memberData.KeyName);
-            //                                        Marshal.FreeHGlobal(memberData.RawName);
-            //                                    }
-            //
-            //                                    Marshal.FreeHGlobal(constantBufferData.Members);
-            //                                }
-            //
-            //                                //create the cbuffer
-            //                                string cbufferName = Marshal.PtrToStringAnsi(constantBufferData.CbufferName);
-            //                                EffectConstantBufferDescription constantBuffer = new EffectConstantBufferDescription()
-            //                                {
-            //                                    Name = cbufferName,
-            //                                    Size = constantBufferData.Size,
-            //                                    Type = ConstantBufferType.ConstantBuffer,
-            //                                    Members = cbufferMembers,
-            //                                };
-            //                                xkslangEffectReflection.ConstantBuffers.Add(constantBuffer);
-            //
-            //                                Marshal.FreeHGlobal(constantBufferData.CbufferName);
-            //                            }
-            //
-            //                            Marshal.FreeHGlobal(pAllocsConstantBuffers);
-            //                        }
-            //
-            //                    }  //end of: //Query and build the EffectReflection data
-            //                }
-            //                catch (Exception e)
-            //                {
-            //                    string errorMessages = e.Message;
-            //
-            //                    IntPtr pErrorMsgs = XkslangDLLBindingClass.GetErrorMessages();
-            //                    if (pErrorMsgs != IntPtr.Zero)
-            //                    {
-            //                        string xkslangErrorMsg = Marshal.PtrToStringAnsi(pErrorMsgs);
-            //                        if (xkslangErrorMsg != null && xkslangErrorMsg.Length > 0) errorMessages = errorMessages + '\n' + xkslangErrorMsg;
-            //                        Marshal.FreeHGlobal(pErrorMsgs);
-            //                    }
-            //
-            //                    string[] messages = errorMessages.Split('\n');
-            //                    foreach (string str in messages) if (str.Length > 0) Console.WriteLine(str);
-            //                    throw e;
-            //                }
-            //                finally
-            //                {
-            //                    if (mixerHandleId > 0) XkslangDLLBindingClass.ReleaseSpxShaderMixer(mixerHandleId); //release the mixer handle
-            //                    XkslangDLLBindingClass.ReleaseMixer();
-            //                }
-            //
-            //                //Write all generated shaders on the disk
-            //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-            //                {
-            //                    //write the stages SPV ascii and shaders on the disk
-            //                    if (mixinCompiledBytecode_AsciiText != null)
-            //                    {
-            //                        var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_compiled_final.hr.spv");
-            //                        lock (WriterLock)
-            //                        {
-            //                            File.WriteAllText(bytecodeSourceFilename, mixinCompiledBytecode_AsciiText);
-            //                        }
-            //                    }
-            //
-            //                    if (spvBytecodeVS_AsciiText != null)
-            //                    {
-            //                        var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_compiled_VS.hr.spv");
-            //                        lock (WriterLock)
-            //                        {
-            //                            File.WriteAllText(bytecodeSourceFilename, spvBytecodeVS_AsciiText);
-            //                        }
-            //                    }
-            //                    if (spvBytecodePS_AsciiText != null)
-            //                    {
-            //                        var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_compiled_PS.hr.spv");
-            //                        lock (WriterLock)
-            //                        {
-            //                            File.WriteAllText(bytecodeSourceFilename, spvBytecodePS_AsciiText);
-            //                        }
-            //                    }
-            //                    if (shaderGlslVS != null)
-            //                    {
-            //                        var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_VS.glsl");
-            //                        lock (WriterLock)
-            //                        {
-            //                            File.WriteAllText(bytecodeSourceFilename, shaderGlslVS);
-            //                        }
-            //                    }
-            //                    if (shaderGlslPS != null)
-            //                    {
-            //                        var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_PS.glsl");
-            //                        lock (WriterLock)
-            //                        {
-            //                            File.WriteAllText(bytecodeSourceFilename, shaderGlslPS);
-            //                        }
-            //                    }
-            //                    if (shaderHlslVS != null)
-            //                    {
-            //                        var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_VS.hlsl");
-            //                        lock (WriterLock)
-            //                        {
-            //                            File.WriteAllText(bytecodeSourceFilename, shaderHlslVS);
-            //                        }
-            //                    }
-            //                    if (shaderHlslPS != null)
-            //                    {
-            //                        var bytecodeSourceFilename = Path.Combine(logDir, "shader_" + mixinTree.Name.Replace('.', '_') + "_PS.hlsl");
-            //                        lock (WriterLock)
-            //                        {
-            //                            File.WriteAllText(bytecodeSourceFilename, shaderHlslPS);
-            //                        }
-            //                    }
-            //                }
-            //#endif
-            //
-            //                //=====================================================================================================
-            //                //Compile the generated HLSL shaders
-            //                {
-            //                    var shaderStageBytecodes = new List<ShaderBytecode>();
-            //
-            //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-            //                    var stageStringBuilder = new StringBuilder();
-            //#endif
-            //
-            //                    Dictionary<ShaderStage, string> entryPoints = new Dictionary<ShaderStage, string>();
-            //                    entryPoints.Add(ShaderStage.Vertex, "main");
-            //                    entryPoints.Add(ShaderStage.Pixel, "main");
-            //                    IShaderCompiler d3dcompiler = new Direct3D.ShaderCompiler();
-            //                    foreach (var stageBinding in entryPoints)
-            //                    {
-            //                        string shaderSource = (stageBinding.Key == ShaderStage.Vertex) ? shaderHlslVS : shaderHlslPS;
-            //                        var result = d3dcompiler.Compile(shaderSource, stageBinding.Value, stageBinding.Key, effectParameters, xkslangEffectReflection, null);
-            //                        result.CopyTo(log);
-            //
-            //                        if (result.HasErrors)
-            //                        {
-            //                            continue;
-            //                        }
-            //
-            //                        // -------------------------------------------------------
-            //                        // Append bytecode id to shader log
-            //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-            //                        stageStringBuilder.AppendLine("@G    {0} => {1}".ToFormat(stageBinding.Key, result.Bytecode.Id));
-            //                        if (result.DisassembleText != null)
-            //                        {
-            //                            stageStringBuilder.Append(result.DisassembleText);
-            //                        }
-            //#endif
-            //                        // -------------------------------------------------------
-            //
-            //                        shaderStageBytecodes.Add(result.Bytecode);
-            //
-            //                        // When this is a compute shader, there is no need to scan other stages
-            //                        if (stageBinding.Key == ShaderStage.Compute)
-            //                            break;
-            //                    }
-            //
-            //                    //Get the list of hashSources loaded
-            //                    HashSourceCollection hashSources = null;
-            //                    if (XkslangDLLBindingClass.ListShaderSourcesLoaded != null && XkslangDLLBindingClass.ListShaderSourcesLoaded.Count > 0)
-            //                    {
-            //                        hashSources = new HashSourceCollection();
-            //                        foreach (var shaderLoaded in XkslangDLLBindingClass.ListShaderSourcesLoaded)
-            //                        {
-            //                            hashSources[shaderLoaded.ShaderName] = shaderLoaded.Hash;
-            //                        }
-            //                    }
-            //                    var bytecode = new EffectBytecode { Reflection = xkslangEffectReflection, HashSources = hashSources };
-            //
-            //                    // Remove unused reflection data, as it is entirely resolved at compile time.
-            //                    CleanupReflection(bytecode.Reflection);
-            //                    bytecode.Stages = shaderStageBytecodes.ToArray();
-            //
-            //#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-            //                    lock (WriterLock) // protect write in case the same shader is created twice
-            //                    {
-            //                        var builder = new StringBuilder();
-            //                        builder.AppendLine("/**************************");
-            //                        builder.AppendLine("***** Compiler Parameters *****");
-            //                        builder.AppendLine("***************************");
-            //                        builder.Append("@P EffectName: ");
-            //                        builder.AppendLine(fullEffectName ?? "");
-            //                        builder.Append(compilerParameters?.ToStringPermutationsDetailed());
-            //                        builder.AppendLine("***************************");
-            //
-            //                        if (bytecode.Reflection.ConstantBuffers.Count > 0)
-            //                        {
-            //                            builder.AppendLine("****  ConstantBuffers  ****");
-            //                            builder.AppendLine("***************************");
-            //                            foreach (var cBuffer in bytecode.Reflection.ConstantBuffers)
-            //                            {
-            //                                builder.AppendFormat("cbuffer {0} [Size: {1}]", cBuffer.Name, cBuffer.Size).AppendLine();
-            //                                foreach (var parameter in cBuffer.Members)
-            //                                {
-            //                                    builder.AppendFormat("@C    {0} => {1}", parameter.RawName, parameter.KeyInfo.KeyName).AppendLine();
-            //                                }
-            //                            }
-            //                            builder.AppendLine("***************************");
-            //                        }
-            //
-            //                        if (bytecode.Reflection.ResourceBindings.Count > 0)
-            //                        {
-            //                            builder.AppendLine("******  Resources    ******");
-            //                            builder.AppendLine("***************************");
-            //                            foreach (var resource in bytecode.Reflection.ResourceBindings)
-            //                            {
-            //                                builder.AppendFormat("@R    {0} => {1} [Stage: {2}, Slot: ({3}-{4})]", resource.RawName, resource.KeyInfo.KeyName, resource.Stage, resource.SlotStart, resource.SlotStart + resource.SlotCount - 1).AppendLine();
-            //                            }
-            //                            builder.AppendLine("***************************");
-            //                        }
-            //
-            //                        if (bytecode.HashSources != null && bytecode.HashSources.Count > 0)
-            //                        {
-            //                            builder.AppendLine("*****     Sources     *****");
-            //                            builder.AppendLine("***************************");
-            //                            foreach (var hashSource in bytecode.HashSources)
-            //                            {
-            //                                builder.AppendFormat("@S    {0} => {1}", hashSource.Key, hashSource.Value).AppendLine();
-            //                            }
-            //                            builder.AppendLine("***************************");
-            //                        }
-            //
-            //                        if (bytecode.Stages.Length > 0)
-            //                        {
-            //                            builder.AppendLine("*****     Stages      *****");
-            //                            builder.AppendLine("***************************");
-            //                            builder.Append(stageStringBuilder);
-            //                            builder.AppendLine("***************************");
-            //                        }
-            //                        builder.AppendLine("*************************/");
-            //
-            //                        builder.AppendLine("");
-            //                        builder.AppendLine("/*************************/");
-            //                        builder.AppendLine("//Vertex Stage");
-            //                        builder.Append(shaderHlslVS);
-            //
-            //                        builder.AppendLine("");
-            //                        builder.AppendLine("/*************************/");
-            //                        builder.AppendLine("//Pixel Stage");
-            //                        builder.Append(shaderHlslPS);
-            //
-            //                        var shaderSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_fullLogs" + ".hlsl");
-            //                        File.WriteAllText(shaderSourceFilename, builder.ToString());
-            //                    }
-            //#endif
-            //
-            //                    return new EffectBytecodeCompilerResult(bytecode, log);
-            //                } //end of compilation
-            //
-            //            }  //end of: CompileEffectUsingXkslang
-            //////#endif //XKSLANG_PROTOTYPE_OBSOLETE
-
-
+            //=====================================================================================================
+            //Compile the generated HLSL shaders
             {
-                // Load D3D compiler dll
-                // Note: No lock, it's probably fine if it gets called from multiple threads at the same time.
-                if (Platform.IsWindowsDesktop && !d3dCompilerLoaded)
-                {
-                    NativeLibrary.PreloadLibrary("d3dcompiler_47.dll");
-                    d3dCompilerLoaded = true;
-                }
-
-                var shaderMixinSource = mixinTree;
-
-                // Make a copy of shaderMixinSource. Use deep clone since shaderMixinSource can be altered during compilation (e.g. macros)
-                var shaderMixinSourceCopy = new ShaderMixinSource();
-                shaderMixinSourceCopy.DeepCloneFrom(shaderMixinSource);
-                shaderMixinSource = shaderMixinSourceCopy;
-
-                // Generate platform-specific macros
-                switch (effectParameters.Platform)
-                {
-                    case GraphicsPlatform.Direct3D11:
-                        shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D", 1);
-                        shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D11", 1);
-                        break;
-                    case GraphicsPlatform.Direct3D12:
-                        shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D", 1);
-                        shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D12", 1);
-                        break;
-                    case GraphicsPlatform.OpenGL:
-                        shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_OPENGL", 1);
-                        shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_OPENGLCORE", 1);
-                        break;
-                    case GraphicsPlatform.OpenGLES:
-                        shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_OPENGL", 1);
-                        shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_OPENGLES", 1);
-                        break;
-                    case GraphicsPlatform.Vulkan:
-                        shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_VULKAN", 1);
-                        break;
-                    default:
-                        throw new NotSupportedException();
-                }
-
-                // Generate profile-specific macros
-                shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_PROFILE", (int)effectParameters.Profile);
-                shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_9_1", (int)GraphicsProfile.Level_9_1);
-                shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_9_2", (int)GraphicsProfile.Level_9_2);
-                shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_9_3", (int)GraphicsProfile.Level_9_3);
-                shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_10_0", (int)GraphicsProfile.Level_10_0);
-                shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_10_1", (int)GraphicsProfile.Level_10_1);
-                shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_11_0", (int)GraphicsProfile.Level_11_0);
-                shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_11_1", (int)GraphicsProfile.Level_11_1);
-                shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_11_2", (int)GraphicsProfile.Level_11_2);
-
-                // In .xksl, class has been renamed to shader to avoid ambiguities with HLSL
-                shaderMixinSource.AddMacro("class", "shader");
-
-                var parsingResult = GetMixinParser().Parse(shaderMixinSource, shaderMixinSource.Macros.ToArray());
-
-                // Copy log from parser results to output
-                CopyLogs(parsingResult, log);
-
-                // Return directly if there are any errors
-                if (parsingResult.HasErrors)
-                {
-                    return new EffectBytecodeCompilerResult(null, log);
-                }
-
-                // Convert the AST to HLSL
-                var writer = new SiliconStudio.Shaders.Writer.Hlsl.HlslWriter
-                {
-                    EnablePreprocessorLine = false // Allow to output links to original pdxsl via #line pragmas
-                };
-                writer.Visit(parsingResult.Shader);
-                var shaderSourceText = writer.Text;
-
-                if (string.IsNullOrEmpty(shaderSourceText))
-                {
-                    log.Error($"No code generated for effect [{fullEffectName}]");
-                    return new EffectBytecodeCompilerResult(null, log);
-                }
-
-                // -------------------------------------------------------
-                // Save shader log
-                // TODO: TEMP code to allow debugging generated shaders on Windows Desktop
-#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-                var shaderId = ObjectId.FromBytes(Encoding.UTF8.GetBytes(shaderSourceText));
-
-                var logDir = Path.Combine(PlatformFolders.ApplicationBinaryDirectory, "log");
-                if (!Directory.Exists(logDir))
-                {
-                    Directory.CreateDirectory(logDir);
-                }
-                var shaderSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_" + shaderId + ".hlsl");
-                lock (WriterLock) // protect write in case the same shader is created twice
-                {
-                    // Write shader before generating to make sure that we are having a trace before compiling it (compiler may crash...etc.)
-                    if (!File.Exists(shaderSourceFilename))
-                    {
-                        File.WriteAllText(shaderSourceFilename, shaderSourceText);
-                    }
-                }
-#else
-                string shaderSourceFilename = null;
-#endif
-                // -------------------------------------------------------
-                var bytecode = new EffectBytecode { Reflection = parsingResult.Reflection, HashSources = parsingResult.HashSources };
-
-                // Select the correct backend compiler
-                IShaderCompiler compiler;
-                switch (effectParameters.Platform)
-                {
-#if SILICONSTUDIO_PLATFORM_WINDOWS
-                    case GraphicsPlatform.Direct3D11:
-                    case GraphicsPlatform.Direct3D12:
-                        compiler = new Direct3D.ShaderCompiler();
-                        break;
-#endif
-                    case GraphicsPlatform.OpenGL:
-                    case GraphicsPlatform.OpenGLES:
-                    case GraphicsPlatform.Vulkan:
-                        // get the number of render target outputs
-                        var rtOutputs = 0;
-                        var psOutput = parsingResult.Shader.Declarations.OfType<StructType>().FirstOrDefault(x => x.Name.Text == "PS_OUTPUT");
-                        if (psOutput != null)
-                        {
-                            foreach (var rto in psOutput.Fields)
-                            {
-                                var sem = rto.Qualifiers.OfType<Semantic>().FirstOrDefault();
-                                if (sem != null)
-                                {
-                                    // special case SV_Target
-                                    if (rtOutputs == 0 && sem.Name.Text == "SV_Target")
-                                    {
-                                        rtOutputs = 1;
-                                        break;
-                                    }
-                                    for (var i = rtOutputs; i < 8; ++i)
-                                    {
-                                        if (sem.Name.Text == ("SV_Target" + i))
-                                        {
-                                            rtOutputs = i + 1;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        compiler = new OpenGL.ShaderCompiler(rtOutputs);
-                        break;
-                    default:
-                        throw new NotSupportedException();
-                }
-
                 var shaderStageBytecodes = new List<ShaderBytecode>();
 
 #if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
                 var stageStringBuilder = new StringBuilder();
 #endif
-                // if the shader (non-compute) does not have a pixel shader, we should add it for OpenGL and OpenGL ES.
-                if ((effectParameters.Platform == GraphicsPlatform.OpenGL || effectParameters.Platform == GraphicsPlatform.OpenGLES) && !parsingResult.EntryPoints.ContainsKey(ShaderStage.Pixel) && !parsingResult.EntryPoints.ContainsKey(ShaderStage.Compute))
-                {
-                    parsingResult.EntryPoints.Add(ShaderStage.Pixel, null);
-                }
 
-                foreach (var stageBinding in parsingResult.EntryPoints)
+                //TODO: check with other compilers !
+                IShaderCompiler d3dcompiler = new Direct3D.ShaderCompiler();
+
+                foreach (var stageShaderSpvBytecode in shaderStageSpvBytecodes)
                 {
-                    // Compile
-                    // TODO: We could compile stages in different threads to improve compiler throughput?
-                    var result = compiler.Compile(shaderSourceText, stageBinding.Value, stageBinding.Key, effectParameters, bytecode.Reflection, shaderSourceFilename);
+                    string shaderSource = stageShaderSpvBytecode.BytecodeHlslConversion;
+
+                    string entryPoint = "main";
+                    ShaderStage stage = stageShaderSpvBytecode.Stage;
+                    var result = d3dcompiler.Compile(shaderSource, entryPoint, stage, effectParameters, xkslangEffectReflection, null);
                     result.CopyTo(log);
 
                     if (result.HasErrors)
@@ -2370,7 +1396,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     // -------------------------------------------------------
                     // Append bytecode id to shader log
 #if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
-                    stageStringBuilder.AppendLine("@G    {0} => {1}".ToFormat(stageBinding.Key, result.Bytecode.Id));
+                    stageStringBuilder.AppendLine("@G    {0} => {1}".ToFormat(stage, result.Bytecode.Id));
                     if (result.DisassembleText != null)
                     {
                         stageStringBuilder.Append(result.DisassembleText);
@@ -2381,20 +1407,31 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     shaderStageBytecodes.Add(result.Bytecode);
 
                     // When this is a compute shader, there is no need to scan other stages
-                    if (stageBinding.Key == ShaderStage.Compute)
+                    if (stage == ShaderStage.Compute)
                         break;
                 }
 
-                // Remove unused reflection data, as it is entirely resolved at compile time.
-                CleanupReflection(bytecode.Reflection);
+                var bytecode = new EffectBytecode { Reflection = xkslangEffectReflection, HashSources = hashSources };
+                CleanupReflection(bytecode.Reflection);  // Remove unused reflection data, as it is entirely resolved at compile time.
                 bytecode.Stages = shaderStageBytecodes.ToArray();
-
-                //bytecode.Reflection.ConstantBuffers = xkslangEffectReflection.ConstantBuffers;
 
 #if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
                 lock (WriterLock) // protect write in case the same shader is created twice
                 {
                     var builder = new StringBuilder();
+
+                    if (log.HasErrors)
+                    {
+                        builder.AppendLine("/**************************");
+                        builder.AppendLine("***** Compilation Errors *****");
+                        builder.AppendLine("***************************");
+                        foreach (var error in log.Messages)
+                        {
+                            builder.AppendLine(error.Text);
+                        }
+                        builder.AppendLine("***************************");
+                    }
+
                     builder.AppendLine("/**************************");
                     builder.AppendLine("***** Compiler Parameters *****");
                     builder.AppendLine("***************************");
@@ -2429,7 +1466,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         builder.AppendLine("***************************");
                     }
 
-                    if (bytecode.HashSources.Count > 0)
+                    if (bytecode.HashSources != null && bytecode.HashSources.Count > 0)
                     {
                         builder.AppendLine("*****     Sources     *****");
                         builder.AppendLine("***************************");
@@ -2449,15 +1486,310 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     }
                     builder.AppendLine("*************************/");
 
-                    // Re-append the shader with all informations
-                    builder.Append(shaderSourceText);
+                    foreach (var stageShaderSpvBytecode in shaderStageSpvBytecodes)
+                    {
+                        builder.AppendLine("");
+                        builder.AppendLine("/*************************/");
+                        builder.AppendLine("//" + stageShaderSpvBytecode.Stage);
+                        builder.Append(stageShaderSpvBytecode.BytecodeHlslConversion);
+                    }
 
+                    var shaderSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_" + xkfxSourceHash + "_fullLogs" + ".hlsl");
                     File.WriteAllText(shaderSourceFilename, builder.ToString());
                 }
 #endif
 
                 return new EffectBytecodeCompilerResult(bytecode, log);
+            } //end of compilation
+
+        }
+
+        //If true, we compile the mixin using xkslangDll library
+        public static readonly bool useXkslangShaderCompiler = true;
+
+        public override TaskOrResult<EffectBytecodeCompilerResult> Compile(ShaderMixinSource mixinTree, EffectCompilerParameters effectParameters, CompilerParameters compilerParameters)
+        {
+            var log = new LoggerResult();
+            var fullEffectName = mixinTree.Name;
+
+            if (useXkslangShaderCompiler)
+            {
+                try
+                {
+                    var result = CompileEffectWithXkslangApi(mixinTree, effectParameters, compilerParameters);
+                    return result;
+                }
+                catch(Exception)
+                {
+                    //temporary solution: do nothing for now, we fall back into the previous compiler
+                }
             }
+            
+            // Load D3D compiler dll
+            // Note: No lock, it's probably fine if it gets called from multiple threads at the same time.
+            if (Platform.IsWindowsDesktop && !d3dCompilerLoaded)
+            {
+                NativeLibrary.PreloadLibrary("d3dcompiler_47.dll");
+                d3dCompilerLoaded = true;
+            }
+
+            var shaderMixinSource = mixinTree;
+
+            // Make a copy of shaderMixinSource. Use deep clone since shaderMixinSource can be altered during compilation (e.g. macros)
+            var shaderMixinSourceCopy = new ShaderMixinSource();
+            shaderMixinSourceCopy.DeepCloneFrom(shaderMixinSource);
+            shaderMixinSource = shaderMixinSourceCopy;
+
+            // Generate platform-specific macros
+            switch (effectParameters.Platform)
+            {
+                case GraphicsPlatform.Direct3D11:
+                    shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D", 1);
+                    shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D11", 1);
+                    break;
+                case GraphicsPlatform.Direct3D12:
+                    shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D", 1);
+                    shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D12", 1);
+                    break;
+                case GraphicsPlatform.OpenGL:
+                    shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_OPENGL", 1);
+                    shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_OPENGLCORE", 1);
+                    break;
+                case GraphicsPlatform.OpenGLES:
+                    shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_OPENGL", 1);
+                    shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_OPENGLES", 1);
+                    break;
+                case GraphicsPlatform.Vulkan:
+                    shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_API_VULKAN", 1);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+
+            // Generate profile-specific macros
+            shaderMixinSource.AddMacro("SILICONSTUDIO_XENKO_GRAPHICS_PROFILE", (int)effectParameters.Profile);
+            shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_9_1", (int)GraphicsProfile.Level_9_1);
+            shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_9_2", (int)GraphicsProfile.Level_9_2);
+            shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_9_3", (int)GraphicsProfile.Level_9_3);
+            shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_10_0", (int)GraphicsProfile.Level_10_0);
+            shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_10_1", (int)GraphicsProfile.Level_10_1);
+            shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_11_0", (int)GraphicsProfile.Level_11_0);
+            shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_11_1", (int)GraphicsProfile.Level_11_1);
+            shaderMixinSource.AddMacro("GRAPHICS_PROFILE_LEVEL_11_2", (int)GraphicsProfile.Level_11_2);
+
+            // In .xksl, class has been renamed to shader to avoid ambiguities with HLSL
+            shaderMixinSource.AddMacro("class", "shader");
+
+            var parsingResult = GetMixinParser().Parse(shaderMixinSource, shaderMixinSource.Macros.ToArray());
+
+            // Copy log from parser results to output
+            CopyLogs(parsingResult, log);
+
+            // Return directly if there are any errors
+            if (parsingResult.HasErrors)
+            {
+                return new EffectBytecodeCompilerResult(null, log);
+            }
+
+            // Convert the AST to HLSL
+            var writer = new SiliconStudio.Shaders.Writer.Hlsl.HlslWriter
+            {
+                EnablePreprocessorLine = false // Allow to output links to original pdxsl via #line pragmas
+            };
+            writer.Visit(parsingResult.Shader);
+            var shaderSourceText = writer.Text;
+
+            if (string.IsNullOrEmpty(shaderSourceText))
+            {
+                log.Error($"No code generated for effect [{fullEffectName}]");
+                return new EffectBytecodeCompilerResult(null, log);
+            }
+
+            // -------------------------------------------------------
+            // Save shader log
+            // TODO: TEMP code to allow debugging generated shaders on Windows Desktop
+#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
+            var shaderId = ObjectId.FromBytes(Encoding.UTF8.GetBytes(shaderSourceText));
+
+            var logDir = Path.Combine(PlatformFolders.ApplicationBinaryDirectory, "log");
+            if (!Directory.Exists(logDir))
+            {
+                Directory.CreateDirectory(logDir);
+            }
+            var shaderSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_" + shaderId + ".hlsl");
+            lock (WriterLock) // protect write in case the same shader is created twice
+            {
+                // Write shader before generating to make sure that we are having a trace before compiling it (compiler may crash...etc.)
+                if (!File.Exists(shaderSourceFilename))
+                {
+                    File.WriteAllText(shaderSourceFilename, shaderSourceText);
+                }
+            }
+#else
+            string shaderSourceFilename = null;
+#endif
+            // -------------------------------------------------------
+            var bytecode = new EffectBytecode { Reflection = parsingResult.Reflection, HashSources = parsingResult.HashSources };
+
+            // Select the correct backend compiler
+            IShaderCompiler compiler;
+            switch (effectParameters.Platform)
+            {
+#if SILICONSTUDIO_PLATFORM_WINDOWS
+                case GraphicsPlatform.Direct3D11:
+                case GraphicsPlatform.Direct3D12:
+                    compiler = new Direct3D.ShaderCompiler();
+                    break;
+#endif
+                case GraphicsPlatform.OpenGL:
+                case GraphicsPlatform.OpenGLES:
+                case GraphicsPlatform.Vulkan:
+                    // get the number of render target outputs
+                    var rtOutputs = 0;
+                    var psOutput = parsingResult.Shader.Declarations.OfType<StructType>().FirstOrDefault(x => x.Name.Text == "PS_OUTPUT");
+                    if (psOutput != null)
+                    {
+                        foreach (var rto in psOutput.Fields)
+                        {
+                            var sem = rto.Qualifiers.OfType<Semantic>().FirstOrDefault();
+                            if (sem != null)
+                            {
+                                // special case SV_Target
+                                if (rtOutputs == 0 && sem.Name.Text == "SV_Target")
+                                {
+                                    rtOutputs = 1;
+                                    break;
+                                }
+                                for (var i = rtOutputs; i < 8; ++i)
+                                {
+                                    if (sem.Name.Text == ("SV_Target" + i))
+                                    {
+                                        rtOutputs = i + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    compiler = new OpenGL.ShaderCompiler(rtOutputs);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+
+            var shaderStageBytecodes = new List<ShaderBytecode>();
+
+#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
+            var stageStringBuilder = new StringBuilder();
+#endif
+            // if the shader (non-compute) does not have a pixel shader, we should add it for OpenGL and OpenGL ES.
+            if ((effectParameters.Platform == GraphicsPlatform.OpenGL || effectParameters.Platform == GraphicsPlatform.OpenGLES) && !parsingResult.EntryPoints.ContainsKey(ShaderStage.Pixel) && !parsingResult.EntryPoints.ContainsKey(ShaderStage.Compute))
+            {
+                parsingResult.EntryPoints.Add(ShaderStage.Pixel, null);
+            }
+
+            foreach (var stageBinding in parsingResult.EntryPoints)
+            {
+                // Compile
+                // TODO: We could compile stages in different threads to improve compiler throughput?
+                var result = compiler.Compile(shaderSourceText, stageBinding.Value, stageBinding.Key, effectParameters, bytecode.Reflection, shaderSourceFilename);
+                result.CopyTo(log);
+
+                if (result.HasErrors)
+                {
+                    continue;
+                }
+
+                // -------------------------------------------------------
+                // Append bytecode id to shader log
+#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
+                stageStringBuilder.AppendLine("@G    {0} => {1}".ToFormat(stageBinding.Key, result.Bytecode.Id));
+                if (result.DisassembleText != null)
+                {
+                    stageStringBuilder.Append(result.DisassembleText);
+                }
+#endif
+                // -------------------------------------------------------
+
+                shaderStageBytecodes.Add(result.Bytecode);
+
+                // When this is a compute shader, there is no need to scan other stages
+                if (stageBinding.Key == ShaderStage.Compute)
+                    break;
+            }
+
+            // Remove unused reflection data, as it is entirely resolved at compile time.
+            CleanupReflection(bytecode.Reflection);
+            bytecode.Stages = shaderStageBytecodes.ToArray();
+
+            //bytecode.Reflection.ConstantBuffers = xkslangEffectReflection.ConstantBuffers;
+
+#if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
+            lock (WriterLock) // protect write in case the same shader is created twice
+            {
+                var builder = new StringBuilder();
+                builder.AppendLine("/**************************");
+                builder.AppendLine("***** Compiler Parameters *****");
+                builder.AppendLine("***************************");
+                builder.Append("@P EffectName: ");
+                builder.AppendLine(fullEffectName ?? "");
+                builder.Append(compilerParameters?.ToStringPermutationsDetailed());
+                builder.AppendLine("***************************");
+
+                if (bytecode.Reflection.ConstantBuffers.Count > 0)
+                {
+                    builder.AppendLine("****  ConstantBuffers  ****");
+                    builder.AppendLine("***************************");
+                    foreach (var cBuffer in bytecode.Reflection.ConstantBuffers)
+                    {
+                        builder.AppendFormat("cbuffer {0} [Size: {1}]", cBuffer.Name, cBuffer.Size).AppendLine();
+                        foreach (var parameter in cBuffer.Members)
+                        {
+                            builder.AppendFormat("@C    {0} => {1}", parameter.RawName, parameter.KeyInfo.KeyName).AppendLine();
+                        }
+                    }
+                    builder.AppendLine("***************************");
+                }
+
+                if (bytecode.Reflection.ResourceBindings.Count > 0)
+                {
+                    builder.AppendLine("******  Resources    ******");
+                    builder.AppendLine("***************************");
+                    foreach (var resource in bytecode.Reflection.ResourceBindings)
+                    {
+                        builder.AppendFormat("@R    {0} => {1} [Stage: {2}, Slot: ({3}-{4})]", resource.RawName, resource.KeyInfo.KeyName, resource.Stage, resource.SlotStart, resource.SlotStart + resource.SlotCount - 1).AppendLine();
+                    }
+                    builder.AppendLine("***************************");
+                }
+
+                if (bytecode.HashSources.Count > 0)
+                {
+                    builder.AppendLine("*****     Sources     *****");
+                    builder.AppendLine("***************************");
+                    foreach (var hashSource in bytecode.HashSources)
+                    {
+                        builder.AppendFormat("@S    {0} => {1}", hashSource.Key, hashSource.Value).AppendLine();
+                    }
+                    builder.AppendLine("***************************");
+                }
+
+                if (bytecode.Stages.Length > 0)
+                {
+                    builder.AppendLine("*****     Stages      *****");
+                    builder.AppendLine("***************************");
+                    builder.Append(stageStringBuilder);
+                    builder.AppendLine("***************************");
+                }
+                builder.AppendLine("*************************/");
+
+                // Re-append the shader with all informations
+                builder.Append(shaderSourceText);
+
+                File.WriteAllText(shaderSourceFilename, builder.ToString());
+            }
+#endif
+
+            return new EffectBytecodeCompilerResult(bytecode, log);
         }
 
         private static void CopyLogs(SiliconStudio.Shaders.Utility.LoggerResult inputLog, LoggerResult outputLog)

@@ -1,0 +1,16 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+addResourcesLibrary "library"
+
+setDefine SILICON_STUDIO_MULTISAMPLE_COUNT "1"
+mixer _m
+_m.mixin( ShaderBase, ShadingBase, TransformationBase, NormalStream, TransformationWAndVP, NormalFromMesh, MaterialSurfacePixelStageCompositor )
+
+_m.addComposition( materialPixelStage = mixin(MaterialSurfaceArray[layers=[mixin(MaterialSurfaceSetStreamFromComputeColor<matEmissive,rgba>[computeColorSource=mixin(ComputeColorMultiply[color1=mixin(ComputeColorConstantColorLink<GridGizmoBase.GridColorKey>), color2=mixin(ComputeColorTextureScaledOffsetDynamicSampler<Texturing.Texture0,TEXCOORD0,Material.Sampler.i0,rgba,Material.TextureScale,Material.TextureOffset>)])]), mixin(MaterialSurfaceSetStreamFromComputeColor<matEmissiveIntensity,r>[computeColorSource=mixin(ComputeColorConstantFloatLink<Material.EmissiveIntensity>)]), mixin(MaterialSurfaceSetStreamFromComputeColor<matDiffuseSpecularAlphaBlend,r>[computeColorSource=mixin(ComputeColorConstantFloatLink<Material.DiffuseSpecularAlphaBlendValue>)]), mixin(MaterialSurfaceSetStreamFromComputeColor<matAlphaBlendColor,rgb>[computeColorSource=mixin(ComputeColorConstantColorLink<Material.AlphaBlendColorValue>)]), mixin(MaterialSurfaceEmissiveShading<true>), mixin(MaterialSurfaceDiffuseSpecularAlphaBlendColor)]]) )
+_m.addComposition( streamInitializerPixelStage = mixin({MaterialStream, MaterialPixelShadingStream}) )
+
+_m.compile()

@@ -247,7 +247,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
-    { "ShaderWithResources07", "ShaderWithResources07.xkfx" },  //SPIRV-Cross crash
+//////////////////////////{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },  //SPIRV-Cross crash
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
     
     //{ "testDependency01", "testDependency01.xkfx" },
@@ -315,7 +315,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
 
-    /////////////////{ "XenkoEditorForwardShadingEffect", "XenkoEditorForwardShadingEffect.xkfx" },   //SPIRV-Cross crash
+    //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },   //SPIRV-Cross crash
+    //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
+    { "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -2386,6 +2388,43 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                         outputStages.push_back(OutputStageBytecode(ShadingStageEnum(its->first), its->second));
                 }
 
+                if (outputStages.size() == 0)
+                {
+                    //Get the list of all methods from the mixer
+                    vector<MethodInfo> vecMethods;
+                    if (useXkslangDll)
+                    {
+                        xkslangDll::MethodData* p_methods = nullptr;
+                        int32_t countMethods = 0;
+                        if (!xkslangDll::GetMixerMethodsData(mixerTarget->mixerHandleId, &p_methods, &countMethods))
+                        { error("Failed to get the mixer list of methods"); success = false; }
+
+                        if (countMethods > 0 && p_methods != nullptr)
+                        {
+                            for (int32_t k = 0; k < countMethods; k++)
+                            {
+                                vecMethods.push_back(MethodInfo(
+                                    ConvertCharPtrToString(p_methods[k].Name),
+                                    ConvertCharPtrToString(p_methods[k].ShaderClassName),
+                                    p_methods[k].IsStage
+                                ));
+                                if (p_methods[k].Name != nullptr) GlobalFree((HGLOBAL)(p_methods[k].Name));
+                                if (p_methods[k].ShaderClassName != nullptr) GlobalFree((HGLOBAL)(p_methods[k].ShaderClassName));
+                            }
+                            GlobalFree(p_methods);
+                        }
+                    }
+                    else
+                    {
+                        if (!mixerTarget->mixer->GetListAllMethodsInfo(vecMethods, errorMsgs))
+                        { error("Failed to get the mixer list of methods"); success = false; }
+                    }
+
+                    //Retrieve the output stages from the methods
+                    if (!XkfxParser::GetOutputStagesEntryPointFromMethodsList(vecMethods, outputStages))
+                    { error("Failed to get the output stages entry point from the list of methods"); success = false; }
+                }
+
                 if (useXkslangDll)
                 {
                     success = CompileMixerUsingXkslangDll(effectName, mixerTarget, outputStages, errorMsgs);
@@ -2394,9 +2433,9 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 else
                 {
                     //Optionnal: get and display the list of all methods
-                    if (!displayListOfAllMethodsForTheMixer(mixerTarget->mixer)) {
-                        error("Failed to display the mixer list of compositions"); success = false;
-                    }
+                    //if (!displayListOfAllMethodsForTheMixer(mixerTarget->mixer)) {
+                    //    error("Failed to display the mixer list of compositions"); success = false;
+                    //}
 
                     //Optionnal: get and display all compositions before compiling
                     if (!displayListOfAllCompositionsForTheMixer(mixerTarget->mixer)) {

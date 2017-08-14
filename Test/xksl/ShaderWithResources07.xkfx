@@ -1,9 +1,8 @@
 convertAndLoad "ShaderWithResources07.xksl"
 
 mixer m
-m.mixin(ShaderA)
-m.mixin(ShaderB)
+m.mixin(ShaderMain)
 
-m.setStageEntryPoint(Vertex = "VSMain", Pixel = "PSMain")
+m.setStageEntryPoint(Pixel = "PSMain")
 
 m.compile

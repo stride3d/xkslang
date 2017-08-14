@@ -1,7 +1,7 @@
 //Activate some additionnal options with xkslang main test program
 //============================================
 setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
-setSampleTestOptions processSampleWithXkfxLibrary true
+//setSampleTestOptions processSampleWithXkfxLibrary true
 //============================================
 
 addResourcesLibrary "library"
@@ -15,5 +15,4 @@ _m.addComposition( environmentLights = [mixin(LightSimpleAmbient)] )
 _m.addComposition( materialPixelStage = mixin(MaterialSurfaceArray[layers=[mixin(MaterialSurfaceDiffuse[diffuseMap=mixin(ComputeColorConstantColorLink<GizmoUniformColorMaterial.GizmoColorKey>)]), mixin(MaterialSurfaceLightingAndShading[surfaces=[mixin(MaterialSurfaceShadingDiffuseLambert<false>)]])]]) )
 _m.addComposition( streamInitializerPixelStage = mixin({MaterialStream, MaterialPixelShadingStream}) )
 
-_m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 _m.compile()

@@ -1,0 +1,104 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerDraw [size: 416]
+@C    Transformation_World => Transformation.World
+@C    Transformation_WorldInverse => Transformation.WorldInverse
+@C    Transformation_WorldInverseTranspose => Transformation.WorldInverseTranspose
+@C    Transformation_WorldView => Transformation.WorldView
+@C    Transformation_WorldViewInverse => Transformation.WorldViewInverse
+@C    Transformation_WorldViewProjection => Transformation.WorldViewProjection
+@C    Transformation_WorldScale => Transformation.WorldScale
+@C    Transformation_EyeMS => Transformation.EyeMS
+ cbuffer PerView [size: 352]
+@C    Transformation_View => Transformation.View
+@C    Transformation_ViewInverse => Transformation.ViewInverse
+@C    Transformation_Projection => Transformation.Projection
+@C    Transformation_ProjectionInverse => Transformation.ProjectionInverse
+@C    Transformation_ViewProjection => Transformation.ViewProjection
+@C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
+@C    Transformation_Eye => Transformation.Eye
+ cbuffer PerFrame [size: 8]
+@C    Global_Time => Global.Time
+@C    Global_TimeStep => Global.TimeStep
+ cbuffer PerMaterial [size: 16]
+@C    o5S244C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor => Material.DiffuseValue
+***********************
+*****  Resources  *****
+***********************
+@C    PerDraw => PerDraw [Stage: Vertex]
+@C    PerView => PerView [Stage: Vertex]
+@C    PerView => PerView [Stage: Pixel]
+@C    PerFrame => PerFrame [Stage: Pixel]
+@C    PerMaterial => PerMaterial [Stage: Pixel]
+
+ConstantBuffers. Count=4
+ cbuffer: Name="PerDraw" Size=416 MembersCount=8
+  KeyName="Transformation.World" RawName="Transformation_World" LogicalGroup="" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldInverse" RawName="Transformation_WorldInverse" LogicalGroup="" Offset=64
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldInverseTranspose" RawName="Transformation_WorldInverseTranspose" LogicalGroup="" Offset=128
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldView" RawName="Transformation_WorldView" LogicalGroup="" Offset=192
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldViewInverse" RawName="Transformation_WorldViewInverse" LogicalGroup="" Offset=256
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldViewProjection" RawName="Transformation_WorldViewProjection" LogicalGroup="" Offset=320
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.WorldScale" RawName="Transformation_WorldScale" LogicalGroup="" Offset=384
+  Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  KeyName="Transformation.EyeMS" RawName="Transformation_EyeMS" LogicalGroup="" Offset=400
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ cbuffer: Name="PerView" Size=352 MembersCount=7
+  KeyName="Transformation.View" RawName="Transformation_View" LogicalGroup="" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ViewInverse" RawName="Transformation_ViewInverse" LogicalGroup="" Offset=64
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.Projection" RawName="Transformation_Projection" LogicalGroup="" Offset=128
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ProjectionInverse" RawName="Transformation_ProjectionInverse" LogicalGroup="" Offset=192
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ViewProjection" RawName="Transformation_ViewProjection" LogicalGroup="" Offset=256
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ProjScreenRay" RawName="Transformation_ProjScreenRay" LogicalGroup="" Offset=320
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Transformation.Eye" RawName="Transformation_Eye" LogicalGroup="" Offset=336
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ cbuffer: Name="PerFrame" Size=8 MembersCount=2
+  KeyName="Global.Time" RawName="Global_Time" LogicalGroup="" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Global.TimeStep" RawName="Global_TimeStep" LogicalGroup="" Offset=4
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ cbuffer: Name="PerMaterial" Size=16 MembersCount=1
+  KeyName="Material.DiffuseValue" RawName="o5S244C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
+  Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ResourceBindings. Count=5
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
+
+InputAttributes. Count=3
+ SemanticName="NORMAL" SemanticIndex=0
+ SemanticName="" SemanticIndex=0
+ SemanticName="POSITION" SemanticIndex=0

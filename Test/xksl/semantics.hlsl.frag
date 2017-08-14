@@ -1,32 +1,15 @@
 
-struct VS_INPUT
+Texture3D<uint2> LightClusters;
+Buffer<uint> LightIndices;
+Buffer<float4> PointLights;
+	
+void PSMain()
 {
-    float4 Pos : POSITION;
-    float4 Color : COLOR;
-};
-
-struct PS_INPUT
-{
-    float4 Pos : SV_POSITION;
-    float4 Color : COLOR;
-};
-
-
-void Compute(inout PS_INPUT output)
-{
-    output.Color = float4(1, 0, 0, 1);
+	int realLightIndex = LightIndices.Load(0);
+	float4 pointLight1 = PointLights.Load(realLightIndex * 2);
+	uint2 lightData = LightClusters.Load(int4(0, 1, 2, 3));
 }
 
-PS_INPUT main( VS_INPUT input )
-{
-    PS_INPUT output = (PS_INPUT)0;
-    output.Pos = input.Pos;
-    output.Color = input.Color;
-    
-    Compute(output);
-
-    return output;
-}
 
 //=========================================================================
 //Glslang: HLSL --> SPV conversion
