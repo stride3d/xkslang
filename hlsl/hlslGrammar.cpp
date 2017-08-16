@@ -5729,8 +5729,14 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
                     }
 
                     if (!IsShaderEqualOrSubClassOf(shaderBeingParsed, shaderOwningTheFunction)) {
-                        error(TString("invalid function call. Shader: ") + shaderBeingParsed->shaderFullName + TString(" is not related to shader: ") + shaderOwningTheFunction->shaderFullName);
+#ifdef XKSLANG_ENFORCE_NEW_XKSL_RULES
+                        error(TString("invalid non-static function call. Shader: ") + shaderBeingParsed->shaderFullName + TString(" is not related to shader: ") + shaderOwningTheFunction->shaderFullName);
                         return false;
+#else
+                        //set the method as static
+                        warning(TString("invalid non-static function call. Shader: ") + shaderBeingParsed->shaderFullName + TString(" is not related to shader: ") + shaderOwningTheFunction->shaderFullName);
+                        identifierLocation.method->getWritableType().getQualifier().isStatic = true;
+#endif
                     }
                 }
             }

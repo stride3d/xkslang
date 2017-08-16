@@ -1,0 +1,28 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerDraw [size: 64]
+@C    SpriteBase_MatrixTransform => SpriteBase.MatrixTransform
+***********************
+*****  Resources  *****
+***********************
+@C    PerDraw => PerDraw [Stage: Vertex]
+@C    Texturing_Texture0 => Texturing.Texture0 [Stage: Pixel]
+@C    Texturing_Sampler => Texturing.Sampler [Stage: Pixel]
+
+ConstantBuffers. Count=1
+ cbuffer: Name="PerDraw" Size=64 MembersCount=1
+  KeyName="SpriteBase.MatrixTransform" RawName="SpriteBase_MatrixTransform" LogicalGroup="" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+ResourceBindings. Count=3
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Texturing.Texture0" RawName="Texturing_Texture0" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="Texturing.Sampler" RawName="Texturing_Sampler" ResourceGroupName="" Class=Sampler Type=Sampler
+
+InputAttributes. Count=5
+ SemanticName="COLOR" SemanticIndex=0
+ SemanticName="COLOR" SemanticIndex=1
+ SemanticName="BATCH_SWIZZLE" SemanticIndex=0
+ SemanticName="POSITION" SemanticIndex=0
+ SemanticName="TEXCOORD" SemanticIndex=0

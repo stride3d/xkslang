@@ -1,29 +1,26 @@
 // Copyright (c) 2014-2017 Silicon Studio Corp. All rights reserved. (https://www.siliconstudio.co.jp)
 // See LICENSE.md for full license information.
-shader SpriteBase : ShaderBase, Texturing
+shader UIEffectShader<bool TSRgb> : ShaderBase, Texturing
 {
     // -------------------------------------
     // streams
     // -------------------------------------
     stage stream float4 Position : POSITION;
-
-    cbuffer PerDraw
-    {
-        // -------------------------------------
-        // uniforms
-        // -------------------------------------
-        // A general transformation matrix
-        stage float4x4 MatrixTransform;
-    }
-        
+    stage stream float4 Color : COLOR;
+    stage stream float Swizzle : BATCH_SWIZZLE;
+            
     // -------------------------------------
     // VertexShader
     // -------------------------------------
     stage override void VSMain()
     {
-        streams.ShadingPosition = mul(streams.Position, MatrixTransform);
+        streams.ShadingPosition = streams.Position;
+        if (TSRgb)
+        {
+            streams.Color = ColorUtility.ToLinear(streams.Color);
+        }
     }
-
+        
     // Shading of the sprite
     stage override void PSMain()
     {
@@ -32,6 +29,9 @@ shader SpriteBase : ShaderBase, Texturing
 
     stage float4 Shading()
     {
-        return Texture0.Sample(Sampler, streams.TexCoord);
+        float4 sampledColor = Texture0.Sample(Sampler, streams.TexCoord);
+        float4 swizzledColor = streams.Swizzle == 0? sampledColor: sampledColor.rrrr;
+
+        return swizzledColor * streams.Color;
     }
 };

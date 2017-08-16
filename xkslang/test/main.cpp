@@ -289,6 +289,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
+    { "PreviewTexture", "PreviewTexture.xkfx" },
     //{ "LuminanceLogShader", "LuminanceLogShader.xkfx" },
     //{ "GaussianBlurShader", "GaussianBlurShader.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
@@ -317,7 +318,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },   //SPIRV-Cross crash
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
-    { "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
+    //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
 };
 
 enum class ShaderLanguageEnum
