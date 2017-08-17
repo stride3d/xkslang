@@ -994,7 +994,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
 #if SILICONSTUDIO_PLATFORM_WINDOWS_DESKTOP
                 xkfxSourceHash = ObjectId.FromBytes(Encoding.UTF8.GetBytes(xkfxCommandLines)).ToString();
-
+                
                 //write the effect's command line on the disk
                 {
                     var effectFilename = Path.Combine(logDir, "effect_" + mixinTree.Name.Replace('.', '_') + "_" + xkfxSourceHash + ".xkfx");
@@ -1449,7 +1449,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                             builder.AppendFormat("cbuffer {0} [Size: {1}]", cBuffer.Name, cBuffer.Size).AppendLine();
                             foreach (var parameter in cBuffer.Members)
                             {
-                                builder.AppendFormat("@C    {0} => {1}", parameter.RawName, parameter.KeyInfo.KeyName).AppendLine();
+                                builder.AppendFormat("@C    {0} => {1}   [Class: {2}, Type: {3}]", parameter.RawName, parameter.KeyInfo.KeyName, parameter.Type.Class, parameter.Type.Type).AppendLine();
                             }
                         }
                         builder.AppendLine("***************************");
@@ -1461,7 +1461,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         builder.AppendLine("***************************");
                         foreach (var resource in bytecode.Reflection.ResourceBindings)
                         {
-                            builder.AppendFormat("@R    {0} => {1} [Stage: {2}, Slot: ({3}-{4})]", resource.RawName, resource.KeyInfo.KeyName, resource.Stage, resource.SlotStart, resource.SlotStart + resource.SlotCount - 1).AppendLine();
+                            builder.AppendFormat("@R    {0} => {1} [Stage: {2}, Slot: ({3}-{4}), Class: {5}, Type: {6}, ResourceGroup: {7}, LogicalGroup: {8}]", resource.RawName, resource.KeyInfo.KeyName, resource.Stage, resource.SlotStart, resource.SlotStart + resource.SlotCount - 1, resource.Class, resource.Type, resource.ResourceGroup, resource.LogicalGroup).AppendLine();
                         }
                         builder.AppendLine("***************************");
                     }
@@ -1494,17 +1494,22 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         builder.Append(stageShaderSpvBytecode.BytecodeHlslConversion);
                     }
 
-                    var shaderSourceFilename = Path.Combine(logDir, "shader_" + fullEffectName.Replace('.', '_') + "_" + xkfxSourceHash + "_fullLogs" + ".hlsl");
+                    var shaderSourceFilename = Path.Combine(logDir, "effect_" + fullEffectName.Replace('.', '_') + "_" + xkfxSourceHash + "_fullLogs" + ".hlsl");
                     File.WriteAllText(shaderSourceFilename, builder.ToString());
                 }
 #endif
+
+                //if (xkfxSourceHash == "0dd1fa9cd3574dc1d3f5745103419470")
+                //{
+                //    throw new Exception("PROUT PROUT");
+                //}
 
                 return new EffectBytecodeCompilerResult(bytecode, log);
             } //end of compilation
 
         }
 
-        //If true, we compile the mixin using xkslangDll library
+        //If true, we compile the effect using xkslangDll library
         public static readonly bool useXkslangShaderCompiler = true;
 
         public override TaskOrResult<EffectBytecodeCompilerResult> Compile(ShaderMixinSource mixinTree, EffectCompilerParameters effectParameters, CompilerParameters compilerParameters)
@@ -1745,7 +1750,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                         builder.AppendFormat("cbuffer {0} [Size: {1}]", cBuffer.Name, cBuffer.Size).AppendLine();
                         foreach (var parameter in cBuffer.Members)
                         {
-                            builder.AppendFormat("@C    {0} => {1}", parameter.RawName, parameter.KeyInfo.KeyName).AppendLine();
+                            builder.AppendFormat("@C    {0} => {1}   [Class: {2}, Type: {3}]", parameter.RawName, parameter.KeyInfo.KeyName, parameter.Type.Class, parameter.Type.Type).AppendLine();
                         }
                     }
                     builder.AppendLine("***************************");
@@ -1757,7 +1762,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                     builder.AppendLine("***************************");
                     foreach (var resource in bytecode.Reflection.ResourceBindings)
                     {
-                        builder.AppendFormat("@R    {0} => {1} [Stage: {2}, Slot: ({3}-{4})]", resource.RawName, resource.KeyInfo.KeyName, resource.Stage, resource.SlotStart, resource.SlotStart + resource.SlotCount - 1).AppendLine();
+                        builder.AppendFormat("@R    {0} => {1} [Stage: {2}, Slot: ({3}-{4}), Class: {5}, Type: {6}, ResourceGroup: {7}, LogicalGroup: {8}]", resource.RawName, resource.KeyInfo.KeyName, resource.Stage, resource.SlotStart, resource.SlotStart + resource.SlotCount - 1, resource.Class, resource.Type, resource.ResourceGroup, resource.LogicalGroup).AppendLine();
                     }
                     builder.AppendLine("***************************");
                 }
