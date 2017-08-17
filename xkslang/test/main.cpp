@@ -289,7 +289,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
-    { "PreviewTexture", "PreviewTexture.xkfx" },
+    //{ "PreviewTexture", "PreviewTexture.xkfx" },
     //{ "LuminanceLogShader", "LuminanceLogShader.xkfx" },
     //{ "GaussianBlurShader", "GaussianBlurShader.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
@@ -313,7 +313,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray02", "MaterialSurfaceArray02.xkfx" },
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "MaterialSurfacePixelStageCompositor", "MaterialSurfacePixelStageCompositor.xkfx" },
-    //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
+    { "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
 
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },   //SPIRV-Cross crash
@@ -2407,7 +2407,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                                 vecMethods.push_back(MethodInfo(
                                     ConvertCharPtrToString(p_methods[k].Name),
                                     ConvertCharPtrToString(p_methods[k].ShaderClassName),
-                                    p_methods[k].IsStage
+                                    p_methods[k].IsStage == 0? false: true
                                 ));
                                 if (p_methods[k].Name != nullptr) GlobalFree((HGLOBAL)(p_methods[k].Name));
                                 if (p_methods[k].ShaderClassName != nullptr) GlobalFree((HGLOBAL)(p_methods[k].ShaderClassName));

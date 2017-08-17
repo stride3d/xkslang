@@ -7,16 +7,17 @@ struct LightDirectional_DirectionalLightData
 struct VS_STREAMS
 {
     float4 ShadingPosition_id0;
-    float matBlend_id1;
-    float3 meshNormal_id2;
-    float4 meshTangent_id3;
-    float3 normalWS_id4;
-    float4 Position_id5;
-    float4 PositionWS_id6;
-    float DepthVS_id7;
-    float4 PositionH_id8;
-    float2 TexCoord_id9;
-    float matDisplacement_id10;
+    bool IsFrontFace_id1;
+    float matBlend_id2;
+    float3 meshNormal_id3;
+    float4 meshTangent_id4;
+    float3 normalWS_id5;
+    float4 Position_id6;
+    float4 PositionWS_id7;
+    float DepthVS_id8;
+    float4 PositionH_id9;
+    float2 TexCoord_id10;
+    float matDisplacement_id11;
 };
 
 cbuffer PerDraw
@@ -39,20 +40,20 @@ cbuffer PerView
     float4x4 Transformation_ViewProjection;
     float2 Transformation_ProjScreenRay;
     float4 Transformation_Eye;
-    float4 o0S450C0_LightDirectionalGroup__padding_PerView_Default;
-    LightDirectional_DirectionalLightData o0S450C0_LightDirectionalGroup_Lights[8];
-    int o0S450C0_DirectLightGroupPerView_LightCount;
-    float3 o1S435C0_LightSimpleAmbient_AmbientLight;
-    float4 o1S435C0_LightSimpleAmbient__padding_PerView_Lighting;
+    float4 o0S418C0_LightDirectionalGroup__padding_PerView_Default;
+    LightDirectional_DirectionalLightData o0S418C0_LightDirectionalGroup_Lights[8];
+    int o0S418C0_DirectLightGroupPerView_LightCount;
+    float3 o1S403C0_LightSimpleAmbient_AmbientLight;
+    float4 o1S403C0_LightSimpleAmbient__padding_PerView_Lighting;
 };
 cbuffer PerMaterial
 {
-    float o18S246C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat;
-    float4 o18S246C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
-    float o18S246C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
-    float2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
-    float2 o18S246C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
-    float o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat;
+    float o19S248C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat;
+    float4 o19S248C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
+    float o19S248C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
+    float2 o19S248C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
+    float2 o19S248C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
+    float o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_constantFloat;
 };
 cbuffer PerFrame
 {
@@ -60,11 +61,13 @@ cbuffer PerFrame
     float Global_TimeStep;
 };
 
+static bool VS_IN_IsFrontFace;
 static float3 VS_IN_meshNormal;
 static float4 VS_IN_meshTangent;
 static float4 VS_IN_Position;
 static float2 VS_IN_TexCoord;
 static float4 VS_OUT_ShadingPosition;
+static bool VS_OUT_IsFrontFace;
 static float3 VS_OUT_meshNormal;
 static float4 VS_OUT_meshTangent;
 static float4 VS_OUT_PositionWS;
@@ -72,6 +75,7 @@ static float2 VS_OUT_TexCoord;
 
 struct SPIRV_Cross_Input
 {
+    bool VS_IN_IsFrontFace : SV_IsFrontFace;
     float3 VS_IN_meshNormal : NORMAL;
     float4 VS_IN_meshTangent : TANGENT;
     float4 VS_IN_Position : POSITION;
@@ -81,6 +85,7 @@ struct SPIRV_Cross_Input
 struct SPIRV_Cross_Output
 {
     float4 VS_OUT_ShadingPosition : SV_Position;
+    bool VS_OUT_IsFrontFace : SV_IsFrontFace;
     float3 VS_OUT_meshNormal : NORMAL;
     float4 VS_OUT_meshTangent : TANGENT;
     float4 VS_OUT_PositionWS : POSITION_WS;
@@ -91,68 +96,68 @@ void ShaderBase_VSMain()
 {
 }
 
-void o26S34C1_IStreamInitializer_ResetStream()
+void o27S35C1_IStreamInitializer_ResetStream()
 {
 }
 
-void o26S34C1_MaterialStream_ResetStream(inout VS_STREAMS _streams)
+void o27S35C1_MaterialStream_ResetStream(inout VS_STREAMS _streams)
 {
-    o26S34C1_IStreamInitializer_ResetStream();
-    _streams.matBlend_id1 = 0.0f;
+    o27S35C1_IStreamInitializer_ResetStream();
+    _streams.matBlend_id2 = 0.0f;
 }
 
-void o26S34C1_MaterialDisplacementStream_ResetStream(inout VS_STREAMS _streams)
+void o27S35C1_MaterialDisplacementStream_ResetStream(inout VS_STREAMS _streams)
 {
-    o26S34C1_MaterialStream_ResetStream(_streams);
-    _streams.matDisplacement_id10 = 0.0f;
+    o27S35C1_MaterialStream_ResetStream(_streams);
+    _streams.matDisplacement_id11 = 0.0f;
 }
 
-float4 o24S34C0_o22S2C0_o21S2C0_o19S2C0_ComputeColorWave_5_0_01__0_03__Compute(VS_STREAMS _streams)
+float4 o25S35C0_o23S2C0_o22S2C0_o20S2C0_ComputeColorWave_5_0_01__0_03__Compute(VS_STREAMS _streams)
 {
-    float phase = length(_streams.TexCoord_id9 - float2(0.5f, 0.5f));
-    float _176 = sin((((phase + (Global_Time * (-0.02999999932944774627685546875f))) * 2.0f) * 3.1400001049041748046875f) * 5.0f) * 0.00999999977648258209228515625f;
-    return float4(_176, _176, _176, _176);
+    float phase = length(_streams.TexCoord_id10 - float2(0.5f, 0.5f));
+    float _177 = sin((((phase + (Global_Time * (-0.02999999932944774627685546875f))) * 2.0f) * 3.1400001049041748046875f) * 5.0f) * 0.00999999977648258209228515625f;
+    return float4(_177, _177, _177, _177);
 }
 
-float4 o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute()
+float4 o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute()
 {
-    return float4(o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat, o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat, o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat, o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_constantFloat);
+    return float4(o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_constantFloat, o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_constantFloat, o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_constantFloat, o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_constantFloat);
 }
 
-float4 o24S34C0_o22S2C0_o21S2C0_ComputeColorMultiply_Compute(VS_STREAMS _streams)
+float4 o25S35C0_o23S2C0_o22S2C0_ComputeColorMultiply_Compute(VS_STREAMS _streams)
 {
-    float4 tex1 = o24S34C0_o22S2C0_o21S2C0_o19S2C0_ComputeColorWave_5_0_01__0_03__Compute(_streams);
-    float4 tex2 = o24S34C0_o22S2C0_o21S2C0_o20S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute();
+    float4 tex1 = o25S35C0_o23S2C0_o22S2C0_o20S2C0_ComputeColorWave_5_0_01__0_03__Compute(_streams);
+    float4 tex2 = o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute();
     float4 mix1 = tex1 * tex2;
     return mix1;
 }
 
-void o24S34C0_o22S2C0_MaterialSurfaceSetStreamFromComputeColor_matDisplacement_r__Compute(inout VS_STREAMS _streams)
+void o25S35C0_o23S2C0_MaterialSurfaceSetStreamFromComputeColor_matDisplacement_r__Compute(inout VS_STREAMS _streams)
 {
-    _streams.matDisplacement_id10 = o24S34C0_o22S2C0_o21S2C0_ComputeColorMultiply_Compute(_streams).x;
+    _streams.matDisplacement_id11 = o25S35C0_o23S2C0_o22S2C0_ComputeColorMultiply_Compute(_streams).x;
 }
 
-void o24S34C0_o23S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(inout VS_STREAMS _streams)
+void o25S35C0_o24S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(inout VS_STREAMS _streams)
 {
-    float3 scaledNormal = _streams.meshNormal_id2;
+    float3 scaledNormal = _streams.meshNormal_id3;
     if (false)
     {
         scaledNormal *= Transformation_WorldScale;
     }
-    _streams.Position_id5 = float4(_streams.Position_id5.xyz + (scaledNormal * _streams.matDisplacement_id10), _streams.Position_id5.w);
+    _streams.Position_id6 = float4(_streams.Position_id6.xyz + (scaledNormal * _streams.matDisplacement_id11), _streams.Position_id6.w);
 }
 
-void o24S34C0_MaterialSurfaceArray_Compute(inout VS_STREAMS _streams)
+void o25S35C0_MaterialSurfaceArray_Compute(inout VS_STREAMS _streams)
 {
-    o24S34C0_o22S2C0_MaterialSurfaceSetStreamFromComputeColor_matDisplacement_r__Compute(_streams);
-    o24S34C0_o23S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(_streams);
+    o25S35C0_o23S2C0_MaterialSurfaceSetStreamFromComputeColor_matDisplacement_r__Compute(_streams);
+    o25S35C0_o24S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(_streams);
 }
 
 void MaterialSurfaceVertexStageCompositor_VSMain(inout VS_STREAMS _streams)
 {
     ShaderBase_VSMain();
-    o26S34C1_MaterialDisplacementStream_ResetStream(_streams);
-    o24S34C0_MaterialSurfaceArray_Compute(_streams);
+    o27S35C1_MaterialDisplacementStream_ResetStream(_streams);
+    o25S35C0_MaterialSurfaceArray_Compute(_streams);
 }
 
 void TransformationBase_PreTransformPosition()
@@ -162,7 +167,7 @@ void TransformationBase_PreTransformPosition()
 void TransformationWAndVP_PreTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PreTransformPosition();
-    _streams.PositionWS_id6 = mul(_streams.Position_id5, Transformation_World);
+    _streams.PositionWS_id7 = mul(_streams.Position_id6, Transformation_World);
 }
 
 void TransformationBase_TransformPosition()
@@ -181,10 +186,10 @@ float4 TransformationWAndVP_ComputeShadingPosition(float4 world)
 void TransformationWAndVP_PostTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PostTransformPosition();
-    float4 param = _streams.PositionWS_id6;
+    float4 param = _streams.PositionWS_id7;
     _streams.ShadingPosition_id0 = TransformationWAndVP_ComputeShadingPosition(param);
-    _streams.PositionH_id8 = _streams.ShadingPosition_id0;
-    _streams.DepthVS_id7 = _streams.ShadingPosition_id0.w;
+    _streams.PositionH_id9 = _streams.ShadingPosition_id0;
+    _streams.DepthVS_id8 = _streams.ShadingPosition_id0.w;
 }
 
 void TransformationBase_BaseTransformVS(inout VS_STREAMS _streams)
@@ -200,29 +205,32 @@ void TransformationBase_VSMain(inout VS_STREAMS _streams)
     TransformationBase_BaseTransformVS(_streams);
 }
 
-void NormalBase_GenerateNormal_VS(inout VS_STREAMS _streams)
+void NormalUpdate_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
-    _streams.normalWS_id4 = float3(0.0f, 0.0f, 0.0f);
+    _streams.normalWS_id5 = float3(0.0f, 0.0f, 0.0f);
 }
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f), 0.0f };
-    _streams.meshNormal_id2 = VS_IN_meshNormal;
-    _streams.meshTangent_id3 = VS_IN_meshTangent;
-    _streams.Position_id5 = VS_IN_Position;
-    _streams.TexCoord_id9 = VS_IN_TexCoord;
+    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), false, 0.0f, float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f), 0.0f };
+    _streams.IsFrontFace_id1 = VS_IN_IsFrontFace;
+    _streams.meshNormal_id3 = VS_IN_meshNormal;
+    _streams.meshTangent_id4 = VS_IN_meshTangent;
+    _streams.Position_id6 = VS_IN_Position;
+    _streams.TexCoord_id10 = VS_IN_TexCoord;
     TransformationBase_VSMain(_streams);
-    NormalBase_GenerateNormal_VS(_streams);
+    NormalUpdate_GenerateNormal_VS(_streams);
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
-    VS_OUT_meshNormal = _streams.meshNormal_id2;
-    VS_OUT_meshTangent = _streams.meshTangent_id3;
-    VS_OUT_PositionWS = _streams.PositionWS_id6;
-    VS_OUT_TexCoord = _streams.TexCoord_id9;
+    VS_OUT_IsFrontFace = _streams.IsFrontFace_id1;
+    VS_OUT_meshNormal = _streams.meshNormal_id3;
+    VS_OUT_meshTangent = _streams.meshTangent_id4;
+    VS_OUT_PositionWS = _streams.PositionWS_id7;
+    VS_OUT_TexCoord = _streams.TexCoord_id10;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
+    VS_IN_IsFrontFace = stage_input.VS_IN_IsFrontFace;
     VS_IN_meshNormal = stage_input.VS_IN_meshNormal;
     VS_IN_meshTangent = stage_input.VS_IN_meshTangent;
     VS_IN_Position = stage_input.VS_IN_Position;
@@ -230,6 +238,7 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_ShadingPosition = VS_OUT_ShadingPosition;
+    stage_output.VS_OUT_IsFrontFace = VS_OUT_IsFrontFace;
     stage_output.VS_OUT_meshNormal = VS_OUT_meshNormal;
     stage_output.VS_OUT_meshTangent = VS_OUT_meshTangent;
     stage_output.VS_OUT_PositionWS = VS_OUT_PositionWS;

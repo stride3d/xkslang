@@ -20,4 +20,3 @@ namespace SiliconStudio.Xenko.Rendering.Materials
         }
     };
 }
-
