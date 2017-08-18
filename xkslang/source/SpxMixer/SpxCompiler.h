@@ -997,6 +997,7 @@ public:
         Input = 1 << 0,
         Output = 1 << 1,
         PassThrough = 1 << 2,
+        StageExclusiveInput = 1 << 3,
     };
 
 public:
@@ -1012,6 +1013,9 @@ public:
         if (firstAccess == MemberFirstAccessEnum::Undefined) firstAccess = MemberFirstAccessEnum::WriteFirst;
     }
 
+    void SetAsStageExclusiveInput() {
+        stageIONeeded |= ((int)MemberIOEnum::StageExclusiveInput);
+    }
     void SetAsInput() {
         stageIONeeded |= ((int)MemberIOEnum::Input);
     }
@@ -1022,10 +1026,11 @@ public:
         stageIONeeded |= (((int)MemberIOEnum::Input) + ((int)MemberIOEnum::Output) + ((int)MemberIOEnum::PassThrough));
     }
 
-    bool IsNeededAsInput() const { return (stageIONeeded & ((int)MemberIOEnum::Input)) != 0; }
+    bool IsNeededAsInput() const { return ((stageIONeeded & ((int)MemberIOEnum::Input)) != 0) || ((stageIONeeded & ((int)MemberIOEnum::StageExclusiveInput)) != 0); }
     bool IsNeededAsOutput() const { return (stageIONeeded & ((int)MemberIOEnum::Output)) != 0; }
     bool IsNeededAsInputOrOutput() const { return stageIONeeded != 0; }
-    bool IsInputOnly() const { return (stageIONeeded == (int)MemberIOEnum::Input); }
+    bool IsInputOnly() const { return (stageIONeeded == (int)MemberIOEnum::Input) || (stageIONeeded == (int)MemberIOEnum::StageExclusiveInput); }
+    bool IsStageExclusiveInput() const { return (stageIONeeded == (int)MemberIOEnum::StageExclusiveInput); }
 
     //bool HasWriteAccess() { return (accessesNeeded & ((int)MemberAccessDetailsEnum::Write)); }
     bool IsWriteFirstStream() const { return firstAccess == MemberFirstAccessEnum::WriteFirst; }

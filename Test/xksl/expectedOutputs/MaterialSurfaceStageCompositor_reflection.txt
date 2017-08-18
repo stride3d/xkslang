@@ -1,0 +1,46 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerView [size: 352]
+@C    Transformation_View => Transformation.View
+@C    Transformation_ViewInverse => Transformation.ViewInverse
+@C    Transformation_Projection => Transformation.Projection
+@C    Transformation_ProjectionInverse => Transformation.ProjectionInverse
+@C    Transformation_ViewProjection => Transformation.ViewProjection
+@C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
+@C    Transformation_Eye => Transformation.Eye
+***********************
+*****  Resources  *****
+***********************
+@C    PerView => PerView [Stage: Pixel]
+
+ConstantBuffers. Count=1
+ cbuffer: Name="PerView" Size=352 MembersCount=7
+  KeyName="Transformation.View" RawName="Transformation_View" LogicalGroup="" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ViewInverse" RawName="Transformation_ViewInverse" LogicalGroup="" Offset=64
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.Projection" RawName="Transformation_Projection" LogicalGroup="" Offset=128
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ProjectionInverse" RawName="Transformation_ProjectionInverse" LogicalGroup="" Offset=192
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ViewProjection" RawName="Transformation_ViewProjection" LogicalGroup="" Offset=256
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="Transformation.ProjScreenRay" RawName="Transformation_ProjScreenRay" LogicalGroup="" Offset=320
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Transformation.Eye" RawName="Transformation_Eye" LogicalGroup="" Offset=336
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ResourceBindings. Count=1
+ Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+
+InputAttributes. Count=3
+ SemanticName="SV_Position" SemanticIndex=0
+ SemanticName="POSITION_WS" SemanticIndex=0
+ SemanticName="" SemanticIndex=0

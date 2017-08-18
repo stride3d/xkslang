@@ -104,11 +104,11 @@ uniform sampler2D SPIRV_Cross_CombinedDynamicTexture_TextureDynamicSampler_Sampl
 uniform sampler2D SPIRV_Cross_CombinedMaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUTTexturing_LinearSampler;
 
 layout(location = 0) in vec4 PS_IN_ShadingPosition;
-layout(location = 1) in bool PS_IN_IsFrontFace;
-layout(location = 2) in vec3 PS_IN_meshNormal;
-layout(location = 3) in vec4 PS_IN_meshTangent;
-layout(location = 4) in vec4 PS_IN_PositionWS;
-layout(location = 5) in vec2 PS_IN_TexCoord;
+layout(location = 1) in vec3 PS_IN_meshNormal;
+layout(location = 2) in vec4 PS_IN_meshTangent;
+layout(location = 3) in vec4 PS_IN_PositionWS;
+layout(location = 4) in vec2 PS_IN_TexCoord;
+layout(location = 5) in bool PS_IN_IsFrontFace;
 layout(location = 0) out vec4 PS_OUT_ColorTarget;
 
 void NormalUpdate_GenerateNormal_PS()
@@ -520,11 +520,11 @@ void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0), false, vec4(0.0), 0.0, vec3(0.0), vec4(0.0), vec3(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec4(0.0), 0.0, vec2(0.0), vec3(0.0), 0.0, vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), vec2(0.0));
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
     _streams.meshNormal_id4 = PS_IN_meshNormal;
     _streams.meshTangent_id5 = PS_IN_meshTangent;
     _streams.PositionWS_id8 = PS_IN_PositionWS;
     _streams.TexCoord_id45 = PS_IN_TexCoord;
+    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShadingBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;

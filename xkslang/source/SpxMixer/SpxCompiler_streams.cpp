@@ -881,7 +881,7 @@ bool SpxCompiler::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& 
     {
         XkslMixerOutputStage& outputStage = outputStages[iStage];
 
-        //Check special case's stream variables: some semantics are forced to be in the stage, even if not used
+        //Check special case's stream variables: some semantics are forced to be in the stage, even if not accessed at all
         if (outputStage.outputStage->stage == ShadingStageEnum::Pixel || outputStage.outputStage->stage == ShadingStageEnum::Geometry)
         {
             for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
@@ -909,7 +909,16 @@ bool SpxCompiler::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& 
             {
                 if (outputStage.listStreamVariablesAccessed[ivs].IsReadFirstStream())
                 {
-                    outputStage.listStreamVariablesAccessed[ivs].SetAsInput();
+                    //for PS: some semantics are exclusively inputed for the stage (not sent by the previous stage)
+                    if (globalListOfMergedStreamVariables.members[ivs].HasSemantic() &&
+                        ((globalListOfMergedStreamVariables.members[ivs].semantic == "SV_IsFrontFace") || (globalListOfMergedStreamVariables.members[ivs].semantic == "VFACE")))
+                    {
+                        outputStage.listStreamVariablesAccessed[ivs].SetAsStageExclusiveInput();
+                    }
+                    else
+                    {
+                        outputStage.listStreamVariablesAccessed[ivs].SetAsInput();
+                    }
                 }
                 else if (outputStage.listStreamVariablesAccessed[ivs].IsWriteFirstStream())
                 {
@@ -923,7 +932,7 @@ bool SpxCompiler::ValidateStagesStreamMembersFlow(vector<XkslMixerOutputStage>& 
 
             for (unsigned int ivs = 0; ivs < countStreamMembers; ++ivs)
             {
-                if (nextOutputStage.listStreamVariablesAccessed[ivs].IsNeededAsInput())
+                if (nextOutputStage.listStreamVariablesAccessed[ivs].IsNeededAsInput() && !nextOutputStage.listStreamVariablesAccessed[ivs].IsStageExclusiveInput())
                 {
                     //we set as output the stream needed by the next stage (the stage output not needed by the next stage are ignored)
                     //if the stage does not output some streams, we require them as input as well (as passthrough)
@@ -1287,6 +1296,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
         //===============================================================================
         //Find which members are needed for which IOs
         vector<unsigned int> vecStageInputMembersIndex;
+        vector<unsigned int> vecStageExclusiveInputMembersIndex; //we'll add the stage exclusive input at the end of the struct
         vector<unsigned int> vecStageOutputMembersIndex;
         vector<unsigned int> vecStageIOMembersIndex;
         for (unsigned int index = 0; index < stage.listStreamVariablesAccessed.size(); ++index)
@@ -1294,7 +1304,14 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             bool memberAdded = false;
             if (stage.listStreamVariablesAccessed[index].IsNeededAsInput())
             {
-                vecStageInputMembersIndex.push_back(index);
+                if (stage.listStreamVariablesAccessed[index].IsStageExclusiveInput())
+                {
+                    vecStageExclusiveInputMembersIndex.push_back(index);
+                }
+                else
+                {
+                    vecStageInputMembersIndex.push_back(index);
+                }
                 vecStageIOMembersIndex.push_back(index);
                 memberAdded = true;
             }
@@ -1329,6 +1346,12 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             else globalListOfMergedStreamVariables.members[index].tmpRemapToIOIndex = -1;
         }
         if (vecStageIOMembersIndex.size() == 0) continue;  //if the stage is not using any stream for input/output: no update needed for the stage
+
+        for (unsigned int k = 0; k < vecStageExclusiveInputMembersIndex.size(); k++)
+        {
+            //add the stage exclusive input at the end of the input stream buffer
+            vecStageInputMembersIndex.push_back(vecStageExclusiveInputMembersIndex[k]);
+        }
 
         //===============================================================================
         //Retrieve (and check validity of) the function declaration type

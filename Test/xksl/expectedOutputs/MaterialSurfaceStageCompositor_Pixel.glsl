@@ -30,11 +30,11 @@ void ShaderBase_PSMain()
 {
 }
 
-void o3S40C1_IStreamInitializer_ResetStream()
+void o3S41C1_IStreamInitializer_ResetStream()
 {
 }
 
-void o2S40C0_IMaterialSurface_Compute()
+void o2S41C0_IMaterialSurface_Compute()
 {
 }
 
@@ -42,8 +42,8 @@ vec4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 {
     _streams.viewWS_id2 = normalize(PerView_var.Transformation_Eye.xyz - _streams.PositionWS_id3.xyz);
     _streams.shadingColor_id4 = vec3(0.0);
-    o3S40C1_IStreamInitializer_ResetStream();
-    o2S40C0_IMaterialSurface_Compute();
+    o3S41C1_IStreamInitializer_ResetStream();
+    o2S41C0_IMaterialSurface_Compute();
     return vec4(_streams.shadingColor_id4, _streams.shadingColorAlpha_id5);
 }
 

@@ -9,17 +9,16 @@ struct LightDirectional_DirectionalLightData
 struct VS_STREAMS
 {
     vec4 ShadingPosition_id0;
-    bool IsFrontFace_id1;
-    float matBlend_id2;
-    vec3 meshNormal_id3;
-    vec4 meshTangent_id4;
-    vec3 normalWS_id5;
-    vec4 Position_id6;
-    vec4 PositionWS_id7;
-    float DepthVS_id8;
-    vec4 PositionH_id9;
-    vec2 TexCoord_id10;
-    float matDisplacement_id11;
+    float matBlend_id1;
+    vec3 meshNormal_id2;
+    vec4 meshTangent_id3;
+    vec3 normalWS_id4;
+    vec4 Position_id5;
+    vec4 PositionWS_id6;
+    float DepthVS_id7;
+    vec4 PositionH_id8;
+    vec2 TexCoord_id9;
+    float matDisplacement_id10;
 };
 
 layout(std140) uniform PerDraw
@@ -66,17 +65,15 @@ layout(std140) uniform PerFrame
     float Global_TimeStep;
 } PerFrame_var;
 
-layout(location = 0) in bool VS_IN_IsFrontFace;
-layout(location = 1) in vec3 VS_IN_meshNormal;
-layout(location = 2) in vec4 VS_IN_meshTangent;
-layout(location = 3) in vec4 VS_IN_Position;
-layout(location = 4) in vec2 VS_IN_TexCoord;
+layout(location = 0) in vec3 VS_IN_meshNormal;
+layout(location = 1) in vec4 VS_IN_meshTangent;
+layout(location = 2) in vec4 VS_IN_Position;
+layout(location = 3) in vec2 VS_IN_TexCoord;
 layout(location = 0) out vec4 VS_OUT_ShadingPosition;
-layout(location = 1) out bool VS_OUT_IsFrontFace;
-layout(location = 2) out vec3 VS_OUT_meshNormal;
-layout(location = 3) out vec4 VS_OUT_meshTangent;
-layout(location = 4) out vec4 VS_OUT_PositionWS;
-layout(location = 5) out vec2 VS_OUT_TexCoord;
+layout(location = 1) out vec3 VS_OUT_meshNormal;
+layout(location = 2) out vec4 VS_OUT_meshTangent;
+layout(location = 3) out vec4 VS_OUT_PositionWS;
+layout(location = 4) out vec2 VS_OUT_TexCoord;
 
 void ShaderBase_VSMain()
 {
@@ -89,18 +86,18 @@ void o27S35C1_IStreamInitializer_ResetStream()
 void o27S35C1_MaterialStream_ResetStream(inout VS_STREAMS _streams)
 {
     o27S35C1_IStreamInitializer_ResetStream();
-    _streams.matBlend_id2 = 0.0;
+    _streams.matBlend_id1 = 0.0;
 }
 
 void o27S35C1_MaterialDisplacementStream_ResetStream(inout VS_STREAMS _streams)
 {
     o27S35C1_MaterialStream_ResetStream(_streams);
-    _streams.matDisplacement_id11 = 0.0;
+    _streams.matDisplacement_id10 = 0.0;
 }
 
 vec4 o25S35C0_o23S2C0_o22S2C0_o20S2C0_ComputeColorWave_5_0_01__0_03__Compute(VS_STREAMS _streams)
 {
-    float phase = length(_streams.TexCoord_id10 - vec2(0.5));
+    float phase = length(_streams.TexCoord_id9 - vec2(0.5));
     return vec4(sin((((phase + (PerFrame_var.Global_Time * (-0.02999999932944774627685546875))) * 2.0) * 3.1400001049041748046875) * 5.0) * 0.00999999977648258209228515625);
 }
 
@@ -119,17 +116,17 @@ vec4 o25S35C0_o23S2C0_o22S2C0_ComputeColorMultiply_Compute(VS_STREAMS _streams)
 
 void o25S35C0_o23S2C0_MaterialSurfaceSetStreamFromComputeColor_matDisplacement_r__Compute(inout VS_STREAMS _streams)
 {
-    _streams.matDisplacement_id11 = o25S35C0_o23S2C0_o22S2C0_ComputeColorMultiply_Compute(_streams).x;
+    _streams.matDisplacement_id10 = o25S35C0_o23S2C0_o22S2C0_ComputeColorMultiply_Compute(_streams).x;
 }
 
 void o25S35C0_o24S2C0_MaterialSurfaceDisplacement_Position_meshNormal_false__Compute(inout VS_STREAMS _streams)
 {
-    vec3 scaledNormal = _streams.meshNormal_id3;
+    vec3 scaledNormal = _streams.meshNormal_id2;
     if (false)
     {
         scaledNormal *= PerDraw_var.Transformation_WorldScale;
     }
-    _streams.Position_id6 = vec4(_streams.Position_id6.xyz + (scaledNormal * _streams.matDisplacement_id11), _streams.Position_id6.w);
+    _streams.Position_id5 = vec4(_streams.Position_id5.xyz + (scaledNormal * _streams.matDisplacement_id10), _streams.Position_id5.w);
 }
 
 void o25S35C0_MaterialSurfaceArray_Compute(inout VS_STREAMS _streams)
@@ -152,7 +149,7 @@ void TransformationBase_PreTransformPosition()
 void TransformationWAndVP_PreTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PreTransformPosition();
-    _streams.PositionWS_id7 = PerDraw_var.Transformation_World * _streams.Position_id6;
+    _streams.PositionWS_id6 = PerDraw_var.Transformation_World * _streams.Position_id5;
 }
 
 void TransformationBase_TransformPosition()
@@ -171,10 +168,10 @@ vec4 TransformationWAndVP_ComputeShadingPosition(vec4 world)
 void TransformationWAndVP_PostTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PostTransformPosition();
-    vec4 param = _streams.PositionWS_id7;
+    vec4 param = _streams.PositionWS_id6;
     _streams.ShadingPosition_id0 = TransformationWAndVP_ComputeShadingPosition(param);
-    _streams.PositionH_id9 = _streams.ShadingPosition_id0;
-    _streams.DepthVS_id8 = _streams.ShadingPosition_id0.w;
+    _streams.PositionH_id8 = _streams.ShadingPosition_id0;
+    _streams.DepthVS_id7 = _streams.ShadingPosition_id0.w;
 }
 
 void TransformationBase_BaseTransformVS(inout VS_STREAMS _streams)
@@ -192,24 +189,22 @@ void TransformationBase_VSMain(inout VS_STREAMS _streams)
 
 void NormalUpdate_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
-    _streams.normalWS_id5 = vec3(0.0);
+    _streams.normalWS_id4 = vec3(0.0);
 }
 
 void main()
 {
-    VS_STREAMS _streams = VS_STREAMS(vec4(0.0), false, 0.0, vec3(0.0), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec4(0.0), vec2(0.0), 0.0);
-    _streams.IsFrontFace_id1 = VS_IN_IsFrontFace;
-    _streams.meshNormal_id3 = VS_IN_meshNormal;
-    _streams.meshTangent_id4 = VS_IN_meshTangent;
-    _streams.Position_id6 = VS_IN_Position;
-    _streams.TexCoord_id10 = VS_IN_TexCoord;
+    VS_STREAMS _streams = VS_STREAMS(vec4(0.0), 0.0, vec3(0.0), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec4(0.0), vec2(0.0), 0.0);
+    _streams.meshNormal_id2 = VS_IN_meshNormal;
+    _streams.meshTangent_id3 = VS_IN_meshTangent;
+    _streams.Position_id5 = VS_IN_Position;
+    _streams.TexCoord_id9 = VS_IN_TexCoord;
     TransformationBase_VSMain(_streams);
     NormalUpdate_GenerateNormal_VS(_streams);
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
-    VS_OUT_IsFrontFace = _streams.IsFrontFace_id1;
-    VS_OUT_meshNormal = _streams.meshNormal_id3;
-    VS_OUT_meshTangent = _streams.meshTangent_id4;
-    VS_OUT_PositionWS = _streams.PositionWS_id7;
-    VS_OUT_TexCoord = _streams.TexCoord_id10;
+    VS_OUT_meshNormal = _streams.meshNormal_id2;
+    VS_OUT_meshTangent = _streams.meshTangent_id3;
+    VS_OUT_PositionWS = _streams.PositionWS_id6;
+    VS_OUT_TexCoord = _streams.TexCoord_id9;
 }
 

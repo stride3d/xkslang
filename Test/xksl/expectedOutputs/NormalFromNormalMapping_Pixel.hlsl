@@ -28,11 +28,11 @@ struct SPIRV_Cross_Input
     float4 PS_IN_ShadingPosition : SV_Position;
 };
 
-void NormalBase_GenerateNormal_PS()
+void NormalUpdate_GenerateNormal_PS()
 {
 }
 
-float3x3 NormalStream_GetTangentMatrix(inout PS_STREAMS _streams)
+float3x3 NormalUpdate_GetTangentMatrix(inout PS_STREAMS _streams)
 {
     _streams.meshNormal_id0 = normalize(_streams.meshNormal_id0);
     float3 tangent = normalize(_streams.meshTangent_id1.xyz);
@@ -46,18 +46,18 @@ float3x3 NormalFromNormalMapping_GetTangentWorldTransform()
     return float3x3(float3(Transformation_WorldInverseTranspose[0].x, Transformation_WorldInverseTranspose[0].y, Transformation_WorldInverseTranspose[0].z), float3(Transformation_WorldInverseTranspose[1].x, Transformation_WorldInverseTranspose[1].y, Transformation_WorldInverseTranspose[1].z), float3(Transformation_WorldInverseTranspose[2].x, Transformation_WorldInverseTranspose[2].y, Transformation_WorldInverseTranspose[2].z));
 }
 
-void NormalStream_UpdateTangentToWorld(inout PS_STREAMS _streams)
+void NormalUpdate_UpdateTangentToWorld(inout PS_STREAMS _streams)
 {
-    float3x3 _65 = NormalStream_GetTangentMatrix(_streams);
-    float3x3 tangentMatrix = _65;
+    float3x3 _67 = NormalUpdate_GetTangentMatrix(_streams);
+    float3x3 tangentMatrix = _67;
     float3x3 tangentWorldTransform = NormalFromNormalMapping_GetTangentWorldTransform();
     _streams.tangentToWorld_id2 = mul(tangentMatrix, tangentWorldTransform);
 }
 
 void NormalFromNormalMapping_GenerateNormal_PS(inout PS_STREAMS _streams)
 {
-    NormalBase_GenerateNormal_PS();
-    NormalStream_UpdateTangentToWorld(_streams);
+    NormalUpdate_GenerateNormal_PS();
+    NormalUpdate_UpdateTangentToWorld(_streams);
 }
 
 void ShaderBase_PSMain()

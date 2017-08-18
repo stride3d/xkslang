@@ -23,11 +23,11 @@ layout(location = 0) in vec3 PS_IN_meshNormal;
 layout(location = 1) in vec4 PS_IN_meshTangent;
 layout(location = 2) in vec4 PS_IN_ShadingPosition;
 
-void NormalBase_GenerateNormal_PS()
+void NormalUpdate_GenerateNormal_PS()
 {
 }
 
-mat3 NormalStream_GetTangentMatrix(inout PS_STREAMS _streams)
+mat3 NormalUpdate_GetTangentMatrix(inout PS_STREAMS _streams)
 {
     _streams.meshNormal_id0 = normalize(_streams.meshNormal_id0);
     vec3 tangent = normalize(_streams.meshTangent_id1.xyz);
@@ -41,18 +41,18 @@ mat3 NormalFromNormalMapping_GetTangentWorldTransform()
     return mat3(vec3(PerDraw_var.Transformation_WorldInverseTranspose[0].x, PerDraw_var.Transformation_WorldInverseTranspose[0].y, PerDraw_var.Transformation_WorldInverseTranspose[0].z), vec3(PerDraw_var.Transformation_WorldInverseTranspose[1].x, PerDraw_var.Transformation_WorldInverseTranspose[1].y, PerDraw_var.Transformation_WorldInverseTranspose[1].z), vec3(PerDraw_var.Transformation_WorldInverseTranspose[2].x, PerDraw_var.Transformation_WorldInverseTranspose[2].y, PerDraw_var.Transformation_WorldInverseTranspose[2].z));
 }
 
-void NormalStream_UpdateTangentToWorld(inout PS_STREAMS _streams)
+void NormalUpdate_UpdateTangentToWorld(inout PS_STREAMS _streams)
 {
-    mat3 _65 = NormalStream_GetTangentMatrix(_streams);
-    mat3 tangentMatrix = _65;
+    mat3 _67 = NormalUpdate_GetTangentMatrix(_streams);
+    mat3 tangentMatrix = _67;
     mat3 tangentWorldTransform = NormalFromNormalMapping_GetTangentWorldTransform();
     _streams.tangentToWorld_id2 = tangentWorldTransform * tangentMatrix;
 }
 
 void NormalFromNormalMapping_GenerateNormal_PS(inout PS_STREAMS _streams)
 {
-    NormalBase_GenerateNormal_PS();
-    NormalStream_UpdateTangentToWorld(_streams);
+    NormalUpdate_GenerateNormal_PS();
+    NormalUpdate_UpdateTangentToWorld(_streams);
 }
 
 void ShaderBase_PSMain()

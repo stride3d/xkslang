@@ -157,8 +157,7 @@ ResourceBindings. Count=12
  Stage=Pixel KeyName="Material.DiffuseMap" RawName="DynamicTexture_Texture" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D
  Stage=Pixel KeyName="Texturing.LinearSampler" RawName="Texturing_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler
 
-InputAttributes. Count=5
- SemanticName="SV_IsFrontFace" SemanticIndex=0
+InputAttributes. Count=4
  SemanticName="NORMAL" SemanticIndex=0
  SemanticName="TANGENT" SemanticIndex=0
  SemanticName="POSITION" SemanticIndex=0

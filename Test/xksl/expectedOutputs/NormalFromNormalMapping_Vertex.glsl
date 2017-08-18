@@ -19,7 +19,7 @@ void ShaderBase_VSMain()
 {
 }
 
-void NormalBase_GenerateNormal_VS(inout VS_STREAMS _streams)
+void NormalUpdate_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
     _streams.normalWS_id2 = vec3(0.0);
 }
@@ -31,7 +31,7 @@ void main()
     _streams.meshTangent_id1 = VS_IN_meshTangent;
     _streams.ShadingPosition_id3 = VS_IN_ShadingPosition;
     ShaderBase_VSMain();
-    NormalBase_GenerateNormal_VS(_streams);
+    NormalUpdate_GenerateNormal_VS(_streams);
     VS_OUT_meshNormal = _streams.meshNormal_id0;
     VS_OUT_meshTangent = _streams.meshTangent_id1;
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id3;

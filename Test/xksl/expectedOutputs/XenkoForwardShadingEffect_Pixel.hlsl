@@ -100,21 +100,21 @@ Texture2D<float4> DynamicTexture_Texture;
 SamplerState Texturing_LinearSampler;
 
 static float4 PS_IN_ShadingPosition;
-static bool PS_IN_IsFrontFace;
 static float3 PS_IN_meshNormal;
 static float4 PS_IN_meshTangent;
 static float4 PS_IN_PositionWS;
 static float2 PS_IN_TexCoord;
+static bool PS_IN_IsFrontFace;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
     float4 PS_IN_ShadingPosition : SV_Position;
-    bool PS_IN_IsFrontFace : SV_IsFrontFace;
     float3 PS_IN_meshNormal : NORMAL;
     float4 PS_IN_meshTangent : TANGENT;
     float4 PS_IN_PositionWS : POSITION_WS;
     float2 PS_IN_TexCoord : TEXCOORD0;
+    bool PS_IN_IsFrontFace : SV_IsFrontFace;
 };
 
 struct SPIRV_Cross_Output
@@ -532,11 +532,11 @@ void frag_main()
 {
     PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), false, float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float2(0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f) };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
     _streams.meshNormal_id4 = PS_IN_meshNormal;
     _streams.meshTangent_id5 = PS_IN_meshTangent;
     _streams.PositionWS_id8 = PS_IN_PositionWS;
     _streams.TexCoord_id45 = PS_IN_TexCoord;
+    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShadingBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
@@ -545,11 +545,11 @@ void frag_main()
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
     PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
-    PS_IN_IsFrontFace = stage_input.PS_IN_IsFrontFace;
     PS_IN_meshNormal = stage_input.PS_IN_meshNormal;
     PS_IN_meshTangent = stage_input.PS_IN_meshTangent;
     PS_IN_PositionWS = stage_input.PS_IN_PositionWS;
     PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
+    PS_IN_IsFrontFace = stage_input.PS_IN_IsFrontFace;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;
