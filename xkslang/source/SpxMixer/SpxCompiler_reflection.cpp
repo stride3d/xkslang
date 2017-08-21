@@ -27,6 +27,10 @@ bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
+
             switch (opCode)
             {
                 case spv::OpEntryPoint:
@@ -94,6 +98,11 @@ bool SpxCompiler::GetInputAttributesFromBytecode(EffectReflection& effectReflect
 		{
 			unsigned int wordCount = asWordCount(start);
 			spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
+
 			switch (opCode)
 			{
 				case spv::OpLoad:
@@ -134,6 +143,10 @@ bool SpxCompiler::GetInputAttributesFromBytecode(EffectReflection& effectReflect
         {
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
 
             switch (opCode)
             {
@@ -360,6 +373,10 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
         {
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
 
             switch (opCode)
             {
@@ -735,6 +752,10 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     unsigned int wordCount = asWordCount(start);
                     spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+                    if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
+
                     switch (opCode)
                     {
                         case spv::OpMemberName:
@@ -839,6 +860,11 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                 {
                     unsigned int wordCount = asWordCount(start);
                     spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
+
                     switch (opCode)
                     {
                         case spv::OpLoad:

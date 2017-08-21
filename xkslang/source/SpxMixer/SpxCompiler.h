@@ -831,7 +831,7 @@ private:
 
     bool ValidateSpxBytecodeAndData();
     bool ValidateHeader();
-    bool ProcessBytecodeAndDataSanityCheck();
+    bool ProcessFullBytecodeAndDataSanityCheck();
 
     bool GetBytecodeReflectionData(EffectReflection& effectReflection);
 	bool GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);

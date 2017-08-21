@@ -13,7 +13,6 @@
 using namespace std;
 using namespace xkslang;
 
-
 bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const vector<ShaderToMergeData>& listShadersToMerge, string allInstancesPrefixToAdd)
 {
     //if (&bytecodeToMerge == this) {
@@ -55,19 +54,16 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         ShaderClassData* shaderToMerge = shaderToMergeData.shader;
 
         if (shaderToMerge->bytecodeSource != &bytecodeToMerge)
-        {
-            error(string("Shader: ") + shaderToMerge->GetName() + string(" does not belong to the source to merge"));
-            return false;
-        }
+            return error("Shader: " + shaderToMerge->GetName() + " does not belong to the source to merge");
+
         shaderToMerge->tmpClonedShader = nullptr;
         bool instantiateTheShader = shaderToMergeData.instantiateShader;
 
         //check that the shader does not already exist in the destination bytecode
         string shaderToMergeFinalName = shaderToMerge->GetName();
         if (instantiateTheShader) shaderToMergeFinalName = allInstancesPrefixToAdd + shaderToMergeFinalName;
-        if (this->GetShaderByName(shaderToMergeFinalName) != nullptr) {
-            return error(string("A shader already exists in destination bytecode with the name: ") + shaderToMergeFinalName);
-        }
+        if (this->GetShaderByName(shaderToMergeFinalName) != nullptr)
+            return error("A shader already exists in destination bytecode with the name: " + shaderToMergeFinalName);
 
         //=============================================================================================================
         //=============================================================================================================
@@ -81,9 +77,9 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
             VariableInstruction* variable = shaderTypeToMerge->variable;
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (finalRemapTable[type->GetId()] != spvUndefinedId) error(string("id: ") + to_string(type->GetId()) + string(" has already been remapped"));
-            if (finalRemapTable[pointerToType->GetId()] != spvUndefinedId) error(string("id: ") + to_string(pointerToType->GetId()) + string(" has already been remapped"));
-            if (finalRemapTable[variable->GetId()] != spvUndefinedId) error(string("id: ") + to_string(variable->GetId()) + string(" has already been remapped"));
+            if (finalRemapTable[type->GetId()] != spvUndefinedId) return error("id: " + to_string(type->GetId()) + " has already been remapped");
+            if (finalRemapTable[pointerToType->GetId()] != spvUndefinedId) return error("id: " + to_string(pointerToType->GetId()) + " has already been remapped");
+            if (finalRemapTable[variable->GetId()] != spvUndefinedId) return error("id: " + to_string(variable->GetId()) + " has already been remapped");
 #endif
 
             finalRemapTable[type->GetId()] = newId++;
@@ -106,7 +102,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
             const spv::Id resultId = shaderToMerge->GetId();
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (finalRemapTable[resultId] != spvUndefinedId) error(string("id: ") + to_string(resultId) + string(" has already been remapped"));
+            if (finalRemapTable[resultId] != spvUndefinedId) return error("id: " + to_string(resultId) + " has already been remapped");
 #endif
 
             finalRemapTable[resultId] = newId++;
@@ -154,6 +150,10 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                     unsigned int wordCount = bytecodeToMerge.asWordCount(start);
                     spv::Op opCode = bytecodeToMerge.asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+                    if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
                     unsigned word = start + 1;
 
                     // Read type and result ID from instruction desc table
@@ -165,7 +165,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                     {
                         spv::Id resultId = bytecodeToMerge.asId(word++);
 #ifdef XKSLANG_DEBUG_MODE
-                        if (finalRemapTable[resultId] != spvUndefinedId) error(string("id: ") + to_string(resultId) + string(" has already been remapped"));
+                        if (finalRemapTable[resultId] != spvUndefinedId) return error("id: " + to_string(resultId) + " has already been remapped");
 #endif
                         finalRemapTable[resultId] = newId++;
                     }
@@ -197,6 +197,10 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         {
             unsigned int wordCount = bytecodeToMerge.asWordCount(start);
             spv::Op opCode = bytecodeToMerge.asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
             switch (opCode)
             {
@@ -282,100 +286,101 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
             //Find the position in the code to merge where the unmapped IDs is defined
             ObjectInstructionBase* objectFromUnmappedId = bytecodeToMerge.GetObjectById(unmappedId);
-            if (objectFromUnmappedId == nullptr) return error(string("Merge shaders. No object is defined for the unmapped id: ") + to_string(unmappedId));
+            if (objectFromUnmappedId == nullptr)
+                return error("Merge shaders. No object is defined for the unmapped id: " + to_string(unmappedId));
 
             bool mappingResolved = false;
             bool mergeTypeOrConst = false;
             //uint32_t instructionPos = object->GetBytecodeStartPosition();
             switch (objectFromUnmappedId->GetKind())
             {
-            case ObjectInstructionTypeEnum::Const:
-            case ObjectInstructionTypeEnum::Type:
-            {
-                mergeTypeOrConst = true;
-
-                uint32_t typeHash = bytecodeToMerge.hashType(objectFromUnmappedId->GetBytecodeStartPosition());
-                auto hashTypePosIt = destinationBytecodeTypeHashMap.find(typeHash);
-                if (hashTypePosIt != destinationBytecodeTypeHashMap.end())
+                case ObjectInstructionTypeEnum::Const:
+                case ObjectInstructionTypeEnum::Type:
                 {
-                    spv::Id idOfSameTypeFromDestinationBytecode = hashTypePosIt->second.first;
+                    mergeTypeOrConst = true;
 
-                    if (idOfSameTypeFromDestinationBytecode == spvUndefinedId)
+                    uint32_t typeHash = bytecodeToMerge.hashType(objectFromUnmappedId->GetBytecodeStartPosition());
+                    auto hashTypePosIt = destinationBytecodeTypeHashMap.find(typeHash);
+                    if (hashTypePosIt != destinationBytecodeTypeHashMap.end())
                     {
-                        return error(string("Merge shaders. hashmap refers to an invalid Id"));
+                        spv::Id idOfSameTypeFromDestinationBytecode = hashTypePosIt->second.first;
+
+                        if (idOfSameTypeFromDestinationBytecode == spvUndefinedId)
+                            return error("Merge shaders. hashmap refers to an invalid Id");
+
+                        //The type already exists in the destination bytecode, we can simply remap to it
+                        mappingResolved = true;
+                        finalRemapTable[unmappedId] = idOfSameTypeFromDestinationBytecode;
+                    }
+                    break;
+                }
+
+                case ObjectInstructionTypeEnum::Variable:
+                {
+                    //this is a variable from destination bytecode, we retrieve its id in the destination bytecode using its declaration name
+                    VariableInstruction* variable = this->GetVariableByName(objectFromUnmappedId->GetName());
+                    if (variable == nullptr)
+                        return error("Merge shaders. No variable exists in destination bytecode with the name: " + objectFromUnmappedId->GetName());
+
+                    //remap the unmapped ID to the destination variable
+                    mappingResolved = true;
+                    finalRemapTable[unmappedId] = variable->GetId();
+                    break;
+                }
+
+                case ObjectInstructionTypeEnum::Function:
+                {
+                    //this is a function from destination bytecode, we retrieve its id in the destination bytecode using its declaration name and shader owner
+                    if (objectFromUnmappedId->GetShaderOwner() == nullptr)
+                        return error("The function does not have a shader owner: " + objectFromUnmappedId->GetName());
+
+                    ShaderClassData* shader = this->GetShaderByName(objectFromUnmappedId->GetShaderOwner()->GetName());
+                    if (shader == nullptr)
+                        return error("No shader exists in destination bytecode with the name: " + objectFromUnmappedId->GetShaderOwner()->GetName());
+                    FunctionInstruction* function = shader->GetFunctionByName(objectFromUnmappedId->GetName());
+                    if (function == nullptr)
+                        return error("Shader: " + shader->GetName() + " does not have a function named: " + objectFromUnmappedId->GetName());
+
+                    //remap the unmapped ID to the destination variable
+                    mappingResolved = true;
+                    finalRemapTable[unmappedId] = function->GetId();
+                    break;
+                }
+
+                case ObjectInstructionTypeEnum::Shader:
+                {
+                    //This is a shader from destination bytecode, we simply retrieve its Ids
+                    ShaderClassData* shader = this->GetShaderByName(objectFromUnmappedId->GetName());
+                    if (shader == nullptr)
+                        return error("Merge shaders. No shader exists in destination bytecode with the name: " + objectFromUnmappedId->GetName());
+
+                    //remap the unmapped ID to the destination variable
+                    mappingResolved = true;
+                    finalRemapTable[unmappedId] = shader->GetId();
+                    break;
+                }
+
+                case ObjectInstructionTypeEnum::HeaderProperty:
+                {
+                    //import an external lib if we don't already have it
+                    HeaderPropertyInstruction* hearderProp = this->GetHeaderPropertyInstructionByOpCodeAndName(objectFromUnmappedId->GetOpCode(), objectFromUnmappedId->GetName());
+                    if (hearderProp != nullptr)
+                        finalRemapTable[unmappedId] = hearderProp->GetId();
+                    else
+                    {
+                        bytecodeToMerge.CopyInstructionToVector(vecHeaderPropertiesToMerge, objectFromUnmappedId->GetBytecodeStartPosition());
+                        finalRemapTable[unmappedId] = newId++;
+                        listAllNewIdMerged[unmappedId] = true;
                     }
 
-                    //The type already exists in the destination bytecode, we can simply remap to it
                     mappingResolved = true;
-                    finalRemapTable[unmappedId] = idOfSameTypeFromDestinationBytecode;
+                    break;
                 }
-                break;
-            }
 
-            case ObjectInstructionTypeEnum::Variable:
-            {
-                //this is a variable from destination bytecode, we retrieve its id in the destination bytecode using its declaration name
-                VariableInstruction* variable = this->GetVariableByName(objectFromUnmappedId->GetName());
-                if (variable == nullptr)
-                    return error(string("Merge shaders. No variable exists in destination bytecode with the name: ") + objectFromUnmappedId->GetName());
-
-                //remap the unmapped ID to the destination variable
-                mappingResolved = true;
-                finalRemapTable[unmappedId] = variable->GetId();
-                break;
-            }
-
-            case ObjectInstructionTypeEnum::Function:
-            {
-                //this is a function from destination bytecode, we retrieve its id in the destination bytecode using its declaration name and shader owner
-                if (objectFromUnmappedId->GetShaderOwner() == nullptr)
-                    return error(string("The function does not have a shader owner: ") + objectFromUnmappedId->GetName());
-
-                ShaderClassData* shader = this->GetShaderByName(objectFromUnmappedId->GetShaderOwner()->GetName());
-                if (shader == nullptr)
-                    return error(string("No shader exists in destination bytecode with the name: ") + objectFromUnmappedId->GetShaderOwner()->GetName());
-                FunctionInstruction* function = shader->GetFunctionByName(objectFromUnmappedId->GetName());
-                if (function == nullptr)
-                    return error(string("Shader \"") + shader->GetName() + string("\" does not have a function named \"") + objectFromUnmappedId->GetName() + string("\""));
-
-                //remap the unmapped ID to the destination variable
-                mappingResolved = true;
-                finalRemapTable[unmappedId] = function->GetId();
-                break;
-            }
-
-            case ObjectInstructionTypeEnum::Shader:
-            {
-                //This is a shader from destination bytecode, we simply retrieve its Ids
-                ShaderClassData* shader = this->GetShaderByName(objectFromUnmappedId->GetName());
-                if (shader == nullptr)
-                    return error(string("Merge shaders. No shader exists in destination bytecode with the name: ") + objectFromUnmappedId->GetName());
-
-                //remap the unmapped ID to the destination variable
-                mappingResolved = true;
-                finalRemapTable[unmappedId] = shader->GetId();
-                break;
-            }
-
-            case ObjectInstructionTypeEnum::HeaderProperty:
-            {
-                //import an external lib if we don't already have it
-                HeaderPropertyInstruction* hearderProp = this->GetHeaderPropertyInstructionByOpCodeAndName(objectFromUnmappedId->GetOpCode(), objectFromUnmappedId->GetName());
-                if (hearderProp != nullptr)
-                    finalRemapTable[unmappedId] = hearderProp->GetId();
-                else
+                default:
                 {
-                    bytecodeToMerge.CopyInstructionToVector(vecHeaderPropertiesToMerge, objectFromUnmappedId->GetBytecodeStartPosition());
-                    finalRemapTable[unmappedId] = newId++;
-                    listAllNewIdMerged[unmappedId] = true;
+                    return error("Merge shaders. Invalid object. unable to remap unmapped id: " + to_string(unmappedId));
                 }
-
-                mappingResolved = true;
-                break;
-            }
-
-            default:
-                return error(string("Merge shaders. Invalid object. unable to remap unmapped id: ") + to_string(unmappedId));
             }
 
             if (mappingResolved)
@@ -402,7 +407,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                     {
                         const spv::Id anotherId = listIds[i];
 #ifdef XKSLANG_DEBUG_MODE
-                        if (anotherId == unmappedId) return error(string("anotherId == unmappedId: ") + to_string(anotherId) + string(". This should be impossible (bytecode is invalid)"));
+                        if (anotherId == unmappedId) return error("anotherId == unmappedId: " + to_string(anotherId) + ". This should be impossible (bytecode is invalid)");
 #endif
                         if (finalRemapTable[anotherId] == spvUndefinedId)
                         {
@@ -442,6 +447,10 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         {
             unsigned int wordCount = bytecodeToMerge.asWordCount(start);
             spv::Op opCode = bytecodeToMerge.asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
             switch (opCode)
             {
@@ -633,6 +642,10 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
             switch (opCode)
             {
                 case spv::OpDeclarationName:
@@ -664,18 +677,21 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
     //=============================================================================================================
     // merge all data in the destination bytecode
-    //merge functions
-    spv.insert(spv.begin() + posToInsertNewFunctions, vecFunctionsToMerge.begin(), vecFunctionsToMerge.end());
-    //Merge types and variables (we need to merge new types AFTER all previous types)
-    spv.insert(spv.begin() + posToInsertNewTypesAndConsts, vecTypesConstsAndVariablesToMerge.begin(), vecTypesConstsAndVariablesToMerge.end());
-    //Merge names and decorates
-    spv.insert(spv.begin() + posToInsertNewXkslDecorates, vecXkslDecoratesToMerge.begin(), vecXkslDecoratesToMerge.end());
-    spv.insert(spv.begin() + posToInsertNewNames, vecNamesAndDecorateToMerge.begin(), vecNamesAndDecorateToMerge.end());
-    //merge ext import
-    spv.insert(spv.begin() + posToInsertNewHeaderProrerties, vecHeaderPropertiesToMerge.begin(), vecHeaderPropertiesToMerge.end());
+    {
+        //merge functions
+        spv.insert(spv.begin() + posToInsertNewFunctions, vecFunctionsToMerge.begin(), vecFunctionsToMerge.end());
+        //Merge types and variables (we need to merge new types AFTER all previous types)
+        spv.insert(spv.begin() + posToInsertNewTypesAndConsts, vecTypesConstsAndVariablesToMerge.begin(), vecTypesConstsAndVariablesToMerge.end());
+        //Merge names and decorates
+        spv.insert(spv.begin() + posToInsertNewXkslDecorates, vecXkslDecoratesToMerge.begin(), vecXkslDecoratesToMerge.end());
+        spv.insert(spv.begin() + posToInsertNewNames, vecNamesAndDecorateToMerge.begin(), vecNamesAndDecorateToMerge.end());
+        //merge ext import
+        spv.insert(spv.begin() + posToInsertNewHeaderProrerties, vecHeaderPropertiesToMerge.begin(), vecHeaderPropertiesToMerge.end());
 
-    //destination bytecode has been updated: reupdate all maps
-    UpdateAllMaps();
+        //destination bytecode has been updated: reupdate all maps
+        if (!UpdateAllMaps())
+            return error("Failed to update all maps");
+    }
 
     //Set reference between shaders merged and the clone shaders from destination bytecode
     vector<ShaderClassData*> listMergedShaders;
@@ -684,7 +700,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         ShaderClassData* shaderToMerge = listShadersToMerge[is].shader;
         spv::Id clonedShaderId = finalRemapTable[shaderToMerge->GetId()];
         ShaderClassData* clonedShader = this->GetShaderById(clonedShaderId);
-        if (clonedShader == nullptr) return error(string("Cannot retrieve the merged shader: ") + to_string(clonedShaderId));
+        if (clonedShader == nullptr) return error("Cannot retrieve the merged shader: " + to_string(clonedShaderId));
         shaderToMerge->tmpClonedShader = clonedShader;
         listMergedShaders.push_back(clonedShader);
     }
@@ -696,8 +712,8 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         spv::Id functionOverridingId = finalRemapTable[listOverridenFunctionMergedToBeRemappedWithMergedFunctions[i].second];
         FunctionInstruction* functionOverriden = this->GetFunctionById(functionOverridenId);
         FunctionInstruction* functionOverriding = this->GetFunctionById(functionOverridingId);
-        if (functionOverriden == nullptr) return error(string("Cannot retrieve the merged function: ") + to_string(functionOverridenId));
-        if (functionOverriding == nullptr) return error(string("Cannot retrieve the merged function: ") + to_string(functionOverridingId));
+        if (functionOverriden == nullptr) return error("Cannot retrieve the merged function: " + to_string(functionOverridenId));
+        if (functionOverriding == nullptr) return error("Cannot retrieve the merged function: " + to_string(functionOverridingId));
         functionOverriden->SetOverridingFunction(functionOverriding);
     }
 

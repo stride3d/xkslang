@@ -242,7 +242,7 @@ bool SpxCompiler::ProcessBytecodeSanityCheck(const std::vector<uint32_t>& byteco
     return true;
 }
 
-bool SpxCompiler::ProcessBytecodeAndDataSanityCheck()
+bool SpxCompiler::ProcessFullBytecodeAndDataSanityCheck()
 {
     bool success = ProcessBytecodeSanityCheck(spv, errorMessages);
     if (!success) return error("Failed to process the bytecode sanity check");

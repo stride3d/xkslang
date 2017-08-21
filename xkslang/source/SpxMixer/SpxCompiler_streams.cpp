@@ -24,9 +24,10 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
     bool success = true;
 
     //Those variables will define the best positions in the bytecode to insert new stuff
-    unsigned int poslastMemberDecorationNameEnd = 0;
-    unsigned int poslastMemberXkslPropertiesEnd = 0;
-    unsigned int poslastTypeStreamDeclarationEnd = 0;
+    unsigned int poslastMemberDecorationName = 0;
+    unsigned int poslastMemberXkslProperties = 0;
+    unsigned int poslastTypeStreamDeclaration = 0;
+    unsigned int posLastConst = 0;
 
     //===================================================================================================================
     //===================================================================================================================
@@ -41,6 +42,10 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
             {
                 unsigned int wordCount = asWordCount(start);
                 spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
                 switch (opCode)
                 {
@@ -60,7 +65,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
 
                     case spv::OpMemberProperties:
                     {
-                        poslastMemberXkslPropertiesEnd = start + wordCount;
+                        poslastMemberXkslProperties = start;
 
                         const spv::Id typeId = asId(start + 1);
                         const unsigned int memberId = asLiteralValue(start + 2);
@@ -136,6 +141,10 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                 unsigned int wordCount = asWordCount(start);
                 spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) {error("Corrupted bytecode: wordCount is equals to 0"); break;}
+#endif
+
                 switch (opCode)
                 {
                     case spv::OpMemberName:
@@ -144,7 +153,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                         const spv::Id typeId = asId(start + 1);
                         const unsigned int memberId = asLiteralValue(start + 2);
                         TypeInstruction* type = GetTypeById(typeId);
-                        if (type == nullptr) { error(string("Cannot find the type for Id: ") + to_string(typeId)); break; }
+                        if (type == nullptr) { error("Cannot find the type for Id: " + to_string(typeId)); break; }
                         if (type->streamStructData == nullptr) break;  //type has not been detected as holding stream variables in the first pass
 
     #ifdef XKSLANG_DEBUG_MODE
@@ -153,14 +162,14 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
 
                         if (opCode == spv::OpMemberSemanticName)
                         {
-                            if (start > poslastMemberXkslPropertiesEnd) poslastMemberXkslPropertiesEnd = start + wordCount;
+                            if (start > poslastMemberXkslProperties) poslastMemberXkslProperties = start;
 
                             string semanticName = literalString(start + 3);
                             type->streamStructData->members[memberId].semantic = semanticName;
                         }
                         else if (opCode == spv::OpMemberName)
                         {
-                            poslastMemberDecorationNameEnd = start + wordCount;
+                            poslastMemberDecorationName = start;
 
                             string name = literalString(start + 3);
                             type->streamStructData->members[memberId].declarationName = name;
@@ -176,6 +185,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                         break;
                     }
                 }
+
                 start += wordCount;
             }
             if (errorMessages.size() > 0) success = false;
@@ -192,7 +202,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                 TypeInstruction* type = *itt;
 
                 unsigned int start = type->bytecodeStartPosition;
-                if (start > poslastTypeStreamDeclarationEnd) poslastTypeStreamDeclarationEnd = start + asWordCount(start);
+                if (start > poslastTypeStreamDeclaration) poslastTypeStreamDeclaration = start;
 
                 structMembersTypeList.clear();
                 if (!GetStructTypeMembersTypeIdList(type, structMembersTypeList)) {
@@ -321,7 +331,6 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
     vector<spv::Id> mapIndexesWithConstValueId;
     mapIndexesWithConstValueId.resize(listOfMergedStreamVariables.size(), spvUndefinedId);
     spv::Id idOpTypeIntS32 = spvUndefinedId;
-    unsigned int posLastConstEnd = 0;
     if (success)
     {
         for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
@@ -330,7 +339,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
             if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Const)
             {
                 ConstInstruction* constObject = dynamic_cast<ConstInstruction*>(obj);
-                if (constObject->bytecodeEndPosition > posLastConstEnd) posLastConstEnd = constObject->bytecodeEndPosition;
+                if (constObject->bytecodeEndPosition > posLastConst) posLastConst = constObject->bytecodeStartPosition;
 
                 if (constObject->isS32)
                 {
@@ -345,11 +354,17 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
         if (errorMessages.size() > 0) success = false;
     }
 
-    //vector containing the new bytecodes to add
-    vector<unsigned int> vecConstsToAdd;
-    vector<unsigned int> vecTypesToAdd;
-    vector<unsigned int> vecNamesAndDecorate;
-    vector<unsigned int> vecXkslMemberProperties;
+    //bytecode chunck containing the new bytecodes to add
+    BytecodeUpdateController bytecodeUpdateController;
+    BytecodeChunk* bytecodeChunkNewTypes = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, poslastTypeStreamDeclaration, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+    BytecodeChunk* bytecodeChunkNewConsts = GetOrCreateNewBytecodeChunckToInsert(bytecodeUpdateController, posLastConst, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+    BytecodeChunk* bytecodeChunkNewMemberXkslProperties = GetOrCreateNewBytecodeChunckToInsert(bytecodeUpdateController, poslastMemberXkslProperties, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+    BytecodeChunk* bytecodeChunkNewMemberNameAndDecoration = GetOrCreateNewBytecodeChunckToInsert(bytecodeUpdateController, poslastMemberDecorationName, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+    if (bytecodeChunkNewTypes == nullptr || bytecodeChunkNewConsts == nullptr || bytecodeChunkNewMemberXkslProperties == nullptr || bytecodeChunkNewMemberNameAndDecoration == nullptr)
+    {
+        error("Failed to create the bytecode chunck object");
+        success = false;
+    }
 
     //===================================================================================================================
     //===================================================================================================================
@@ -361,7 +376,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
             spv::Instruction typeInt32(newBoundId++, spv::NoType, spv::OpTypeInt);
             typeInt32.addImmediateOperand(32);
             typeInt32.addImmediateOperand(1);
-            typeInt32.dump(vecConstsToAdd);
+            typeInt32.dump(bytecodeChunkNewConsts->bytecode);
             idOpTypeIntS32 = typeInt32.getResultId();
         }
         for (unsigned int i = 0; i < mapIndexesWithConstValueId.size(); ++i)
@@ -370,7 +385,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
             {
                 spv::Instruction constant(newBoundId++, idOpTypeIntS32, spv::OpConstant);
                 constant.addImmediateOperand(i);
-                constant.dump(vecConstsToAdd);
+                constant.dump(bytecodeChunkNewConsts->bytecode);
                 mapIndexesWithConstValueId[i] = constant.getResultId();
             }
         }
@@ -399,43 +414,47 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
+
             switch (opCode)
             {
-            case spv::OpAccessChain:
-            {
-                spv::Id varId = asId(start + 3);
-#ifdef XKSLANG_DEBUG_MODE
-                if (varId < 0 || varId >= vectorVariableOfStreamBufferAccessToRemap.size()) { error("varId is out of bound"); break; }
-#endif
-                if (vectorVariableOfStreamBufferAccessToRemap[varId] != nullptr)
+                case spv::OpAccessChain:
                 {
-                    TypeInstruction* streamBufferType = vectorVariableOfStreamBufferAccessToRemap[varId];
-                    spv::Id accessChainFirstIndexConstId = asId(start + 4);
+                    spv::Id varId = asId(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                    if (varId < 0 || varId >= vectorVariableOfStreamBufferAccessToRemap.size()) { error("varId is out of bound"); break; }
+#endif
+                    if (vectorVariableOfStreamBufferAccessToRemap[varId] != nullptr)
+                    {
+                        TypeInstruction* streamBufferType = vectorVariableOfStreamBufferAccessToRemap[varId];
+                        spv::Id accessChainFirstIndexConstId = asId(start + 4);
 
-                    //according to specs: index is an OpConstant when indexing into a structure
-                    ConstInstruction* constObject = GetConstById(accessChainFirstIndexConstId);
-                    if (constObject == nullptr) { error(string("cannot get const object for Id: ") + to_string(accessChainFirstIndexConstId)); break; }
+                        //according to specs: index is an OpConstant when indexing into a structure
+                        ConstInstruction* constObject = GetConstById(accessChainFirstIndexConstId);
+                        if (constObject == nullptr) { error("cannot get const object for Id: " + to_string(accessChainFirstIndexConstId)); break; }
 
-                    int accessChainIndexValue32 = constObject->valueS32;
+                        int accessChainIndexValue32 = constObject->valueS32;
 #ifdef XKSLANG_DEBUG_MODE
-                    if (!constObject->isS32) { error("the const variable uses an invalid type. It should be intS32"); break; }
-                    if (accessChainIndexValue32 < 0 || accessChainIndexValue32 >= (int)streamBufferType->streamStructData->members.size()) { error("accessChainIndexValue32 is out of bound"); break; }
+                        if (!constObject->isS32) { error("the const variable uses an invalid type. It should be intS32"); break; }
+                        if (accessChainIndexValue32 < 0 || accessChainIndexValue32 >= (int)streamBufferType->streamStructData->members.size()) { error("accessChainIndexValue32 is out of bound"); break; }
 #endif
-                    int newAccessChainIndex = streamBufferType->streamStructData->members[accessChainIndexValue32].newStructMemberIndex;
+                        int newAccessChainIndex = streamBufferType->streamStructData->members[accessChainIndexValue32].newStructMemberIndex;
 #ifdef XKSLANG_DEBUG_MODE
-                    if (newAccessChainIndex < 0 || newAccessChainIndex >= (int)mapIndexesWithConstValueId.size()) { error("newAccessChainIndex is out of bound"); break; }
+                        if (newAccessChainIndex < 0 || newAccessChainIndex >= (int)mapIndexesWithConstValueId.size()) { error("newAccessChainIndex is out of bound"); break; }
 #endif
-                    spv::Id newAccessChainIndexConstId = mapIndexesWithConstValueId[newAccessChainIndex];
+                        spv::Id newAccessChainIndexConstId = mapIndexesWithConstValueId[newAccessChainIndex];
 #ifdef XKSLANG_DEBUG_MODE
-                    if (newAccessChainIndexConstId == spvUndefinedId) { error("invalid newAccessChainIndexConstId"); break; }
+                        if (newAccessChainIndexConstId == spvUndefinedId) { error("invalid newAccessChainIndexConstId"); break; }
 #endif
-                    //we remap the accessChain variable to our global stream variable
-                    setId(start + 3, streamVarStructTypeId);
-                    setId(start + 4, newAccessChainIndexConstId);
+                        //we remap the accessChain variable to our global stream variable
+                        setId(start + 3, streamVarStructTypeId);
+                        setId(start + 4, newAccessChainIndexConstId);
+                    }
+
+                    break;
                 }
-
-                break;
-            }
             }
             start += wordCount;
         }
@@ -451,28 +470,28 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                 const TypeStructMember& aStreamMember = listOfMergedStreamVariables[m];
                 streamStructType.addIdOperand(aStreamMember.memberTypeId);
             }
-            streamStructType.dump(vecTypesToAdd);
+            streamStructType.dump(bytecodeChunkNewTypes->bytecode);
 
             spv::Instruction streamStructName(spv::OpName);
             streamStructName.addIdOperand(streamStructType.getResultId());
             streamStructName.addStringOperand(globalStreamStructDefaultName.c_str());
-            streamStructName.dump(vecNamesAndDecorate);
+            streamStructName.dump(bytecodeChunkNewMemberNameAndDecoration->bytecode);
 
             //make the pointer
             spv::Instruction pointer(streamPointerStructTypeId, spv::NoType, spv::OpTypePointer);
             pointer.addImmediateOperand(spv::StorageClass::StorageClassPrivate);
             pointer.addIdOperand(streamStructType.getResultId());
-            pointer.dump(vecTypesToAdd);
+            pointer.dump(bytecodeChunkNewTypes->bytecode);
 
             //make the variable
             spv::Instruction variable(streamVarStructTypeId, pointer.getResultId(), spv::OpVariable);
             variable.addImmediateOperand(spv::StorageClass::StorageClassPrivate);
-            variable.dump(vecTypesToAdd);
+            variable.dump(bytecodeChunkNewTypes->bytecode);
 
             spv::Instruction variableName(spv::OpName);
             variableName.addIdOperand(variable.getResultId());
             variableName.addStringOperand(globalVarOnStreamStructDefaultName.c_str());
-            variableName.dump(vecNamesAndDecorate);
+            variableName.dump(bytecodeChunkNewMemberNameAndDecoration->bytecode);
 
             //Add the members info
             for (unsigned int memberIndex = 0; memberIndex < listOfMergedStreamVariables.size(); ++memberIndex)
@@ -491,7 +510,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                 //    memberName.addStringOperand((streamMember.declarationName + (streamMember.isStage ? string("_s") : string("_")) + to_string(memberIndex)).c_str());
                 //}
                 memberName.addStringOperand((streamMember.declarationName + (streamMember.isStage ? string("_s") : string("_")) + to_string(memberIndex)).c_str()); //use declaration name
-                memberName.dump(vecNamesAndDecorate);
+                memberName.dump(bytecodeChunkNewMemberNameAndDecoration->bytecode);
 #endif
 
                 //member decorate (builtin)
@@ -502,7 +521,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                 //    memberDecorateInstr.addImmediateOperand(memberIndex);
                 //    memberDecorateInstr.addImmediateOperand(spv::DecorationBuiltIn);
                 //    memberDecorateInstr.addImmediateOperand(streamMember.listBuiltInSemantics[smd]);
-                //    memberDecorateInstr.dump(vecNamesAndDecorate);
+                //    memberDecorateInstr.dump(bytecodeChunkNewMemberNameAndDecoration->bytecode);
                 //}
 
                 //member properties
@@ -511,7 +530,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                 memberProperties.addImmediateOperand(memberIndex);
                 memberProperties.addImmediateOperand(spv::PropertyStream);
                 if (streamMember.isStage) memberProperties.addImmediateOperand(spv::PropertyStage);
-                memberProperties.dump(vecXkslMemberProperties);
+                memberProperties.dump(bytecodeChunkNewMemberXkslProperties->bytecode);
 
                 //member semantic?
                 if (streamMember.HasSemantic())
@@ -520,34 +539,23 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                     memberSemantic.addIdOperand(streamStructType.getResultId());
                     memberSemantic.addImmediateOperand(memberIndex);
                     memberSemantic.addStringOperand(streamMember.semantic.c_str());
-                    memberSemantic.dump(vecXkslMemberProperties);
+                    memberSemantic.dump(bytecodeChunkNewMemberXkslProperties->bytecode);
                 }
-            }
-
-            //Add the types and dada into our bytecode
-            {
-                if (poslastMemberXkslPropertiesEnd > poslastTypeStreamDeclarationEnd) poslastMemberXkslPropertiesEnd = poslastTypeStreamDeclarationEnd;
-                if (poslastMemberDecorationNameEnd > poslastMemberXkslPropertiesEnd) poslastMemberDecorationNameEnd = poslastMemberXkslPropertiesEnd;
-                if (poslastMemberDecorationNameEnd == 0) poslastMemberDecorationNameEnd = poslastMemberXkslPropertiesEnd;
-                if (posLastConstEnd == 0) posLastConstEnd = poslastTypeStreamDeclarationEnd;
-
-                //=============================================================================================================
-                // add all data in the bytecode
-                //Merge types and variables (we need to merge new types AFTER all previous inserts)
-                spv.insert(spv.begin() + poslastTypeStreamDeclarationEnd, vecTypesToAdd.begin(), vecTypesToAdd.end());
-                //Merge consts
-                spv.insert(spv.begin() + posLastConstEnd, vecConstsToAdd.begin(), vecConstsToAdd.end());
-                //Merge properties
-                spv.insert(spv.begin() + poslastMemberXkslPropertiesEnd, vecXkslMemberProperties.begin(), vecXkslMemberProperties.end());
-                //Merge names and decorate
-                spv.insert(spv.begin() + poslastMemberDecorationNameEnd, vecNamesAndDecorate.begin(), vecNamesAndDecorate.end());
-
-                setBound(newBoundId);
             }
         }
 
-        //Update all maps
-        if (!UpdateAllMaps()) error("failed to update all maps");
+        //apply the new bytecode chuncks into our bytecode
+        {
+            //Update the bytecode with new chunks and values
+            setBound(newBoundId);
+
+            //apply the bytecode update controller
+            if (!ApplyBytecodeUpdateController(bytecodeUpdateController)) error("failed to update the bytecode update controller");
+
+            //bytecode has been updated: reupdate all maps
+            if (!UpdateAllMaps()) error("failed to update all maps");
+        }
+
         if (errorMessages.size() > 0) success = false;
     }
 
@@ -694,6 +702,10 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
                 unsigned int wordCount = asWordCount(start);
                 spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) return error("Invalid bytecode: wordCount is equals to 0");
+#endif
+
                 switch (opCode)
                 {
                     case spv::OpAccessChain:
@@ -709,12 +721,12 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
                             ConstInstruction* constObject = GetConstById(indexConstId);
                             if (constObject == nullptr) return error(string("cannot get const object for Id: ") + to_string(indexConstId));
                             int streamMemberIndex = constObject->valueS32;
-    #ifdef XKSLANG_DEBUG_MODE
+#ifdef XKSLANG_DEBUG_MODE
                             if (resultId >= vectorResultIdsAccessingAStreamVariable.size()) return error("resultId out of bound");
                             if (vectorResultIdsAccessingAStreamVariable[resultId] != -1) return error("resultId is already accessing a stream variable");
                             if (streamMemberIndex < 0 || streamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
                                 return error(string("streamMemberIndex is out of bound: ") + to_string(streamMemberIndex));
-    #endif
+#endif
                             anyStreamBeingAccessedByTheStage = true;
                             vectorResultIdsAccessingAStreamVariable[resultId] = streamMemberIndex;
                             isFunctionAccessingAStreamVariable = true;
@@ -800,26 +812,30 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
                     unsigned int wordCount = asWordCount(start);
                     spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+                    if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
                     switch (opCode)
                     {
-                    case spv::OpFunctionCall:
-                    case spv::OpFunctionCallBaseResolved:
-                    case spv::OpFunctionCallThroughStaticShaderClassCall:
-                    {
-                        spv::Id functionCalledId = asId(start + 3);
-                        FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
-                        if (anotherFunctionCalled->flag1 == 0)
+                        case spv::OpFunctionCall:
+                        case spv::OpFunctionCallBaseResolved:
+                        case spv::OpFunctionCallThroughStaticShaderClassCall:
                         {
-                            aFunctionCalled->currentPosInBytecode = start + wordCount;  //we will start again at the next function instruction
-                            vectorFunctionsToCheck.push_back(aFunctionCalled);
+                            spv::Id functionCalledId = asId(start + 3);
+                            FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+                            if (anotherFunctionCalled->flag1 == 0)
+                            {
+                                aFunctionCalled->currentPosInBytecode = start + wordCount;  //we will start again at the next function instruction
+                                vectorFunctionsToCheck.push_back(aFunctionCalled);
 
-                            //pile the function and go check it immediatly
-                            anotherFunctionCalled->flag1 = 1;
-                            vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
+                                //pile the function and go check it immediatly
+                                anotherFunctionCalled->flag1 = 1;
+                                vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
 
-                            start = end;  //to end the loop
-                        }
-                        break;
+                                start = end;  //to end the loop
+                            }
+                            break;
                     }
 
                     case spv::OpStore:
@@ -833,7 +849,7 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
                             int streamVariableindex = vectorResultIdsAccessingAStreamVariable[targetId];
 #ifdef XKSLANG_DEBUG_MODE
                             if (streamVariableindex < 0 || streamVariableindex >= (int)outputStage->listStreamVariablesAccessed.size())
-                                return error(string("stream variable index is out of bound. Id: ") + to_string(streamVariableindex));
+                                return error("stream variable index is out of bound. Id: " + to_string(streamVariableindex));
 #endif
                             if (opCode == spv::OpStore) outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessWrite();
                             else outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessRead();
@@ -1068,6 +1084,10 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
             //we'll insert the new names and decorates before the first name/decorate we find (we are certain to find at least one OpMemberProperties)
             switch (opCode)
             {
@@ -1121,6 +1141,10 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
         {
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
             switch (opCode)
             {
@@ -1837,6 +1861,10 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 unsigned int wordCount = asWordCount(start);
                 spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
                 switch (opCode)
                 {
                     case spv::OpAccessChain:
@@ -1850,7 +1878,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                             spv::Id indexConstId= asId(start + 4);
 
                             ConstInstruction* constObject = GetConstById(indexConstId);
-                            if (constObject == nullptr) return error(string("cannot get const object for Id: ") + to_string(indexConstId));
+                            if (constObject == nullptr) return error("cannot get const object for Id: " + to_string(indexConstId));
                             int globalStreamMemberIndex = constObject->valueS32;  //index of the member in the original global stream struct
 #ifdef XKSLANG_DEBUG_MODE
                             if (!constObject->isS32) return error("const object is not a valid S32");

@@ -212,6 +212,10 @@ int SpxCompiler::GetBytecodePositionForShaderCompositionDeclaration(ShaderCompos
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) {error("Corrupted bytecode: wordCount is equals to 0"); break;}
+#endif
+
         switch (opCode)
         {
             case spv::OpShaderCompositionDeclaration:
@@ -256,6 +260,10 @@ bool SpxCompiler::GetAllShaderInstancingPathItems()
     {
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
         switch (opCode)
         {
@@ -490,6 +498,10 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
             switch (opCode)
             {
                 case spv::OpFunctionCallThroughCompositionVariable:
@@ -585,6 +597,10 @@ bool SpxCompiler::GetAllShaderInstancesForComposition(const ShaderCompositionDec
     {
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
         switch (opCode)
         {
@@ -962,6 +978,10 @@ bool SpxCompiler::GetAllCompositionForEachLoops(vector<CompositionForEachLoopDat
     {
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
         switch (opCode)
         {

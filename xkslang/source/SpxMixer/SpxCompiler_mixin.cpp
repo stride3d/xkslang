@@ -364,7 +364,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
 
             break;
         }
-        if (!typeFound) return error(string("Failed to find the shaderType to remove: ") + shaderTypeToRemove->type->GetName());
+        if (!typeFound) return error("Failed to find the shaderType to remove: " + shaderTypeToRemove->type->GetName());
     }
 
     //remove all decorates related to the objects we removed
@@ -375,6 +375,10 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
         {
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
             switch (opCode)
             {
@@ -423,7 +427,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
 bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemove, vector<range_t>& vecStripRanges)
 {
     spv::Id shaderId = shaderToRemove->GetId();
-    if (GetShaderById(shaderId) != shaderToRemove) return error(string("Failed to find the shader to remove: ") + shaderToRemove->GetName());
+    if (GetShaderById(shaderId) != shaderToRemove) return error("Failed to find the shader to remove: " + shaderToRemove->GetName());
 
     vector<bool> listIdsRemoved;
     listIdsRemoved.resize(bound(), false);
@@ -441,7 +445,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
             break;
         }
     }
-    if (!shaderFound) return error(string("Failed to find the shader to remove: ") + shaderToRemove->GetName());
+    if (!shaderFound) return error("Failed to find the shader to remove: " + shaderToRemove->GetName());
 
     //remove all functions belonging to the shader
     {
@@ -465,7 +469,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
             }
         }
         if (countFunctionsRemoved != shaderToRemove->GetCountFunctions())
-            return error(string("Discrepancy between shader list of functions and list of all shader functions for shader: ") + shaderToRemove->GetName());
+            return error("Discrepancy between shader list of functions and list of all shader functions for shader: " + shaderToRemove->GetName());
     }
 
     //remove all types belonging to the shader
@@ -516,6 +520,10 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
         {
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
             switch (opCode)
             {
@@ -837,6 +845,10 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 			unsigned int wordCount = asWordCount(start);
 			spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
 			switch (opCode)
 			{
 				case spv::OpExtInstImport:
@@ -898,6 +910,10 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 			{
 				unsigned int wordCount = asWordCount(start);
 				spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
 				switch (opCode)
 				{
@@ -976,6 +992,11 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 				{
 					unsigned int wordCount = asWordCount(start);
 					spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
 					switch (opCode)
 					{
 						case spv::OpVariable:
@@ -1102,6 +1123,10 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 			unsigned int wordCount = asWordCount(start);
 			spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
 			switch (opCode)
 			{
 				case spv::OpTypeXlslShaderClass:
@@ -1157,6 +1182,10 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 		{
 			unsigned int wordCount = asWordCount(start);
 			spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
 			spv::Id id = spvUndefinedId;
 			if (isConstOp(opCode))
@@ -1337,6 +1366,10 @@ bool SpxCompiler::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputSta
                 unsigned int wordCount = asWordCount(start);
                 spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
                 switch (opCode)
                 {
                     case spv::OpFunctionCall:
@@ -1351,13 +1384,13 @@ bool SpxCompiler::RemoveAllUnusedShaders(vector<XkslMixerOutputStage>& outputSta
 
                     case spv::OpFunctionCallBaseUnresolved:
                     {
-                        error(string("An unresolved function base call has been found in function: ") + aFunctionCalled->GetFullName());
+                        error("An unresolved function base call has been found in function: " + aFunctionCalled->GetFullName());
                         break;
                     }
 
                     case spv::OpFunctionCallThroughCompositionVariable:
                     {
-                        error(string("An unresolved function call through composition has been found in function: ") + aFunctionCalled->GetFullName());
+                        error("An unresolved function call through composition has been found in function: " + aFunctionCalled->GetFullName());
                         break;
                     }
                 }
@@ -1447,6 +1480,10 @@ bool SpxCompiler::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
         switch (opCode)
         {
             case spv::OpFunctionCallBaseUnresolved:
@@ -1465,7 +1502,7 @@ bool SpxCompiler::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
                     }
                 }
                 else
-                    error(string("OpFunctionCallBaseUnresolved: targeted Id is not a known function. Id: ") + to_string(functionCalledId));
+                    error("OpFunctionCallBaseUnresolved: targeted Id is not a known function. Id: " + to_string(functionCalledId));
 
                 break;
             }
@@ -1501,6 +1538,10 @@ bool SpxCompiler::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
         switch (opCode)
         {
             // call to base function (OpFunctionCallBaseResolved, OpFunctionCallBaseUnresolved, OpFunctionCallThroughStaticShaderClassCall) are ignored
@@ -1511,7 +1552,7 @@ bool SpxCompiler::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
                 spv::Id functionCalledId = asId(start + 3);
 #ifdef XKSLANG_DEBUG_MODE
                 if (functionCalledId < 0 || functionCalledId >= vecFunctionIdBeingOverriden.size()){
-                    error(string("function call Id is out of bound. Id: ") + to_string(functionCalledId));
+                    error("function call Id is out of bound. Id: " + to_string(functionCalledId));
                     break;
                 }
 #endif
@@ -1641,6 +1682,10 @@ bool SpxCompiler::GetShadersFullDependencies(SpxCompiler* bytecodeSource, const 
                 unsigned int wordCount = bytecodeSource->asWordCount(start);
                 spv::Op opCode = bytecodeSource->asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) return bytecodeSource->error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
                 switch (opCode)
                 {
                     case spv::OpFunctionCall:
@@ -1652,7 +1697,7 @@ bool SpxCompiler::GetShadersFullDependencies(SpxCompiler* bytecodeSource, const 
                         spv::Id functionCalledId = bytecodeSource->asId(start + 3);
                         FunctionInstruction* functionCalled = bytecodeSource->GetFunctionById(functionCalledId);
                         if (functionCalled == nullptr) {
-                            return bytecodeSource->error(string("Failed to retrieve the function for Id: ") + to_string(functionCalledId));
+                            return bytecodeSource->error("Failed to retrieve the function for Id: " + to_string(functionCalledId));
                         }
 
                         ShaderClassData* functionShaderOwner = functionCalled->shaderOwner;
@@ -1811,6 +1856,11 @@ bool SpxCompiler::GetFunctionLabelInstructionPosition(FunctionInstruction* funct
     {
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
         switch (opCode)
         {
             case spv::OpLabel:
@@ -1839,6 +1889,11 @@ bool SpxCompiler::GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruct
     {
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
         countInstructions++;
         switch (opCode)
         {
@@ -1905,6 +1960,10 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
         switch (opCode)
         {
             case spv::OpEntryPoint:
@@ -1922,22 +1981,22 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             }
             case spv::OpFunctionCallThroughCompositionVariable:
             {
-                error(string("Found unresolved OpFunctionCallThroughCompositionVariable at: ") + to_string(start));
+                error("Found unresolved OpFunctionCallThroughCompositionVariable at: " + to_string(start));
                 break;
             }
             case spv::OpFunctionCallBaseUnresolved:
             {
-                error(string("A function base call has an unresolved state at: ") + to_string(start));
+                error("A function base call has an unresolved state at: " + to_string(start));
                 break;
             }
             case spv::OpForEachCompositionStartLoop:
             {
-                error(string("A foreach start loop has not been processed at: ") + to_string(start));
+                error("A foreach start loop has not been processed at: " + to_string(start));
                 break;
             }
             case spv::OpForEachCompositionEndLoop:
             {
-                error(string("A foreach end loop has not been processed at: ") + to_string(start));
+                error("A foreach end loop has not been processed at: " + to_string(start));
                 break;
             }
             case spv::OpBelongsToShader:
@@ -2086,6 +2145,10 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
             //By default: copy memoryModel and external import (this might change later depending on the stage)
             switch (opCode)
             {
@@ -2141,6 +2204,10 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
             {
                 unsigned int wordCount = asWordCount(start);
                 spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
                 switch (opCode)
                 {
@@ -2260,6 +2327,10 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
         {
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
             //By default: copy memoryModel and external import (this might change later depending on the stage)
             switch (opCode)
@@ -2397,6 +2468,10 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
             switch (opCode)
             {
                 case spv::OpName:
@@ -2439,6 +2514,10 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
         {
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
             spv::Id resultId = spvUndefinedId;
             if (isConstOp(opCode))
@@ -2505,6 +2584,10 @@ bool SpxCompiler::GenerateBytecodeForStage(XkslMixerOutputStage& stage, vector<s
         {
             unsigned int wordCount = asWordCount(stageBytecode, start);
             spv::Op opCode = asOpCode(stageBytecode, start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
             switch (opCode)
             {
@@ -2579,6 +2662,10 @@ bool SpxCompiler::BuildConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHash
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
         spv::Id id = spvUndefinedId;
         if (isConstOp(opCode))
         {
@@ -2594,7 +2681,7 @@ bool SpxCompiler::BuildConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHash
             uint32_t hashval = hashType(start);
 
 #ifdef XKSLANG_DEBUG_MODE
-            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const. constId: " + to_string(id));
+            if (hashval == spirvbin_t::unused) return error("Failed to get the hashval for a const. constId: " + to_string(id));
 #endif
 
             //we don't mind if we have several candidates with the same hashType (several identical consts)
@@ -2619,6 +2706,10 @@ bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>&
     {
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
         spv::Id id = spvUndefinedId;
         if (opCode != spv::OpTypeXlslShaderClass)
@@ -2820,6 +2911,10 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
     {
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
         switch (opCode)
         {
@@ -3337,7 +3432,11 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
 
-        unsigned end = start + wordCount;
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
+        unsigned int instructionEnd = start + wordCount;
 
         //Fill idPosR map (used by hashType)
         unsigned word = start+1;
@@ -3368,17 +3467,17 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
         }
         else if (isConstOp(opCode))
         {
-            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Const, opCode, resultId, typeId, start, end));
+            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Const, opCode, resultId, typeId, start, instructionEnd));
         }
         else if (isTypeOp(opCode))
         {
             if (opCode == spv::OpTypeXlslShaderClass)
             {
-                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Shader, opCode, resultId, typeId, start, end));
+                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Shader, opCode, resultId, typeId, start, instructionEnd));
             }
             else
             {
-                ParsedObjectData data = ParsedObjectData(ObjectInstructionTypeEnum::Type, opCode, resultId, typeId, start, end);
+                ParsedObjectData data = ParsedObjectData(ObjectInstructionTypeEnum::Type, opCode, resultId, typeId, start, instructionEnd);
                 if (isPointerTypeOp(opCode))
                 {
                     spv::Id targetId = asId(start + 3);
@@ -3389,7 +3488,7 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
         }
         else if (isVariableOp(opCode))
         {
-            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Variable, opCode, resultId, typeId, start, end));
+            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Variable, opCode, resultId, typeId, start, instructionEnd));
         }
         else if (opCode == spv::Op::OpFunction)
         {
@@ -3403,12 +3502,12 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
         {
             if (fnStart == 0) { error("function end without function start"); break; }
             if (fnResId == spv::NoResult) { error("function has no result iD"); break; }
-            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Function, fnOpCode, fnResId, fnTypeId, fnStart, end));
+            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Function, fnOpCode, fnResId, fnTypeId, fnStart, instructionEnd));
             fnStart = 0;
         }
         else if (opCode == spv::Op::OpExtInstImport)
         {
-            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::HeaderProperty, opCode, resultId, typeId, start, end));
+            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::HeaderProperty, opCode, resultId, typeId, start, instructionEnd));
         }
 
         start += wordCount;
@@ -3511,6 +3610,10 @@ bool SpxCompiler::GetStartPositionOfAllMemberDecorateInstructions(vector<unsigne
         unsigned int wordCount = asWordCount(start);
         spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
         switch (opCode)
         {
             case spv::OpMemberDecorate:
@@ -3546,6 +3649,10 @@ bool SpxCompiler::GetListAllFunctionCallInstructions(vector<FunctionCallInstruct
         {
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
 
             switch (opCode)
             {

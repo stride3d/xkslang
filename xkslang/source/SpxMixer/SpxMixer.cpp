@@ -232,8 +232,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
         return error(messages, "Failed to apply all compositions to the bytecode");
     }
 
-    if (composedSpv != nullptr)
-        spxCompiler->CopyMixinBytecode(*composedSpv);
+    if (composedSpv != nullptr) spxCompiler->CopyMixinBytecode(*composedSpv);
 
     //===================================================================================================================
     // Process streams
@@ -247,8 +246,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
         return error(messages, "Fail to merge the streams");
     }
 
-    if (streamsMergeSpv != nullptr)
-        spxCompiler->CopyMixinBytecode(*streamsMergeSpv);
+    if (streamsMergeSpv != nullptr) spxCompiler->CopyMixinBytecode(*streamsMergeSpv);
 
     //===================================================================================================================
     // analyse the stream and cbuffers usage for each stage
@@ -322,7 +320,7 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
 
 #ifdef XKSLANG_DEBUG_MODE
     //Before final compilation step: do a full sanity check on the bytecode (useful in debug to help detecting problems earlier)
-    if (!spxCompiler->ProcessBytecodeAndDataSanityCheck())
+    if (!spxCompiler->ProcessFullBytecodeAndDataSanityCheck())
     {
         spxCompiler->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);

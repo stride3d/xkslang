@@ -99,6 +99,10 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             unsigned int wordCount = asWordCount(start);
             spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
+
             switch (opCode)
             {
                 case spv::OpName:
@@ -677,6 +681,10 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     {
                         unsigned int wordCount = asWordCount(start);
                         spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                        if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
 
                         switch (opCode)
                         {
@@ -1445,6 +1453,10 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 unsigned int wordCount = asWordCount(start);
                 spv::Op opCode = asOpCode(start);
 
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
+
                 switch (opCode)
                 {
                     case spv::OpAccessChain:
@@ -1462,7 +1474,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             spv::Id indexConstId = asId(start + 4);
 
                             ConstInstruction* constObject = GetConstById(indexConstId);
-                            if (constObject == nullptr) { error(string("cannot get const object for Id: ") + to_string(indexConstId)); break; }
+                            if (constObject == nullptr) { error("cannot get const object for Id: " + to_string(indexConstId)); break; }
                             int memberIndexInOriginalCbuffer = constObject->valueS32;
 
 #ifdef XKSLANG_DEBUG_MODE
@@ -1524,6 +1536,10 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             {
                 unsigned int wordCount = asWordCount(start);
                 spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
 
                 switch (opCode)
                 {
