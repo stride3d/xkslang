@@ -156,9 +156,9 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
                         if (type == nullptr) { error("Cannot find the type for Id: " + to_string(typeId)); break; }
                         if (type->streamStructData == nullptr) break;  //type has not been detected as holding stream variables in the first pass
 
-    #ifdef XKSLANG_DEBUG_MODE
+#ifdef XKSLANG_DEBUG_MODE
                         if (memberId >= type->streamStructData->members.size()) { error("Invalid member id"); break; }
-    #endif
+#endif
 
                         if (opCode == spv::OpMemberSemanticName)
                         {
@@ -232,20 +232,24 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
     }
 
 #ifdef XKSLANG_DEBUG_MODE
-    //debug: check that all streamStruct are valid
+    //check that all streamStruct are valid
     {
         for (auto itt = listAllShaderTypeHoldingStreamVariables.begin(); itt != listAllShaderTypeHoldingStreamVariables.end(); itt++)
         {
             TypeInstruction* type = *itt;
             if (type->streamStructData == nullptr) { error("streamStructData is null"); break; }
+
             for (auto itm = type->streamStructData->members.begin(); itm != type->streamStructData->members.end(); itm++)
             {
                 const TypeStructMember& member = *itm;
-                if (member.isStream == false || member.structMemberIndex == -1) { error("a steam member is invalid"); }
-#ifdef XKSLANG_ENFORCE_NEW_XKSL_RULES
-                if (member.HasSemantic() && member.isStage == false) { error("a steam member defines a semantic but is not a stage"); }
-#endif
-                if (member.memberTypeId == spvUndefinedId || member.memberTypeId == 0) { error("a steam member has an undefined type Id"); }
+                if (member.isStream == false || member.structMemberIndex == -1) { error("a steam member is invalid: " + member.GetDeclarationNameOrSemantic()); }
+
+///#ifdef XKSLANG_ENFORCE_NEW_XKSL_RULES
+///                if (member.HasSemantic() && member.isStage == false) { error("a steam member defines a semantic but is not a stage: " + member.GetDeclarationNameOrSemantic()); }
+///                if (member.isStage && !member.HasSemantic()) { error("a steam member is staged but has no semantic: " + member.GetDeclarationNameOrSemantic()); }
+///#endif
+
+                if (member.memberTypeId == spvUndefinedId || member.memberTypeId == 0) { error("a steam member has an undefined type Id: " + member.GetDeclarationNameOrSemantic()); }
             }
         }
         if (errorMessages.size() > 0) success = false;
@@ -1446,7 +1450,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 //add the variable info into the stage data
                 spv::Id stageVariableId = memberInputVariableInstr.getResultId();
                 streamMember.memberStageInputVariableId = stageVariableId;
-                XkslMixerOutputStage::OutputStageIOVariable stageVariable(stageVariableId, index, k, streamMember.semantic);
+                XkslMixerOutputStage::OutputStageIOVariable stageVariable(stageVariableId, index, k, streamMember.declarationName, streamMember.semantic);
                 stage.listStageInputVariableInfo.push_back(stageVariable);
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
@@ -1475,10 +1479,18 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             {
                 const XkslMixerOutputStage::OutputStageIOVariable& stageVariable = stage.listStageInputVariableInfo[k];
 
-                spv::Instruction inputVariableLocation(spv::OpSemanticName);
-                inputVariableLocation.addIdOperand(stageVariable.spvVariableId);
-                inputVariableLocation.addStringOperand(stageVariable.semanticName.c_str());
-                inputVariableLocation.dump(bytecodeNames->bytecode);
+                if (stageVariable.semanticName.size() > 0)
+                {
+                    spv::Instruction inputVariableLocation(spv::OpSemanticName);
+                    inputVariableLocation.addIdOperand(stageVariable.spvVariableId);
+                    inputVariableLocation.addStringOperand(stageVariable.semanticName.c_str());
+                    inputVariableLocation.dump(bytecodeNames->bytecode);
+                }
+                else
+                {
+                    //a stage input variable must have a semantic
+                    error("a stage input variable has no semantic: " + stageVariable.variableName);
+                }
             }
         } //end of: if (vecStageInputMembersIndex.size() > 0)
         
@@ -1504,7 +1516,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 //add the variable info into the stage data
                 spv::Id stageVariableId = memberOutputVariable.getResultId();
                 streamMember.memberStageOutputVariableId = stageVariableId;
-                XkslMixerOutputStage::OutputStageIOVariable stageVariable(stageVariableId, index, k, streamMember.semantic);
+                XkslMixerOutputStage::OutputStageIOVariable stageVariable(stageVariableId, index, k, streamMember.declarationName, streamMember.semantic);
                 stage.listStageOutputVariableInfo.push_back(stageVariable);
 
 #ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
@@ -1533,10 +1545,18 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             {
                 const XkslMixerOutputStage::OutputStageIOVariable& stageVariable = stage.listStageOutputVariableInfo[k];
 
-                spv::Instruction inputVariableLocation(spv::OpSemanticName);
-                inputVariableLocation.addIdOperand(stageVariable.spvVariableId);
-                inputVariableLocation.addStringOperand(stageVariable.semanticName.c_str());
-                inputVariableLocation.dump(bytecodeNames->bytecode);
+                if (stageVariable.semanticName.size() > 0)
+                {
+                    spv::Instruction inputVariableLocation(spv::OpSemanticName);
+                    inputVariableLocation.addIdOperand(stageVariable.spvVariableId);
+                    inputVariableLocation.addStringOperand(stageVariable.semanticName.c_str());
+                    inputVariableLocation.dump(bytecodeNames->bytecode);
+                }
+                else
+                {
+                    //a stage output variable must have a semantic
+                    error("a stage output variable has no semantic: " + stageVariable.variableName);
+                }
             }
         }
 
@@ -2018,30 +2038,31 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
     //bytecode has been updated: reupdate all maps
     if (!UpdateAllMaps()) error("failed to update all maps");
 
-#ifdef XKSLANG_DEBUG_MODE
-    //=============================================================================================================
-    //validity check: make sure that a stage input variables are compatible with the previous stage output variables
-    for (unsigned int iStage = 1; iStage < outputStages.size(); ++iStage)
-    {
-        XkslMixerOutputStage& stage = outputStages[iStage];
-        XkslMixerOutputStage& previousStage = outputStages[iStage - 1];
-
-        unsigned int stageCountInputVariables = (unsigned int)stage.listStageInputVariableInfo.size();
-        if (stageCountInputVariables != previousStage.listStageOutputVariableInfo.size())
-            return error("a stage has more input variables than the previous stage output variables");
-
-        for (unsigned int k = 0; k < stageCountInputVariables; ++k)
-        {
-            const XkslMixerOutputStage::OutputStageIOVariable& stageInputVariable = stage.listStageInputVariableInfo[k];
-            const XkslMixerOutputStage::OutputStageIOVariable& previousStageOutputVariable = previousStage.listStageOutputVariableInfo[k];
-
-            if (stageInputVariable.globalStreamMemberIndex != previousStageOutputVariable.globalStreamMemberIndex)
-                return error("a stage input variable does not match the previous stage's expected output variable");
-            if (stageInputVariable.locationNum != previousStageOutputVariable.locationNum)
-                return error("a stage input variable's location does not match the previous stage's output variable's expected location");
-        }
-    }
-#endif
+    //// Not valid anymore: we can have some stage exclusive inputs !!!!!!
+//#ifdef XKSLANG_DEBUG_MODE
+//    //=============================================================================================================
+//    //validity check: make sure that a stage input variables are compatible with the previous stage output variables
+//    for (unsigned int iStage = 1; iStage < outputStages.size(); ++iStage)
+//    {
+//        XkslMixerOutputStage& stage = outputStages[iStage];
+//        XkslMixerOutputStage& previousStage = outputStages[iStage - 1];
+//    
+//        unsigned int stageCountInputVariables = (unsigned int)stage.listStageInputVariableInfo.size();
+//        if (stageCountInputVariables != previousStage.listStageOutputVariableInfo.size())
+//            return error("a stage has more input variables than the previous stage output variables");
+//    
+//        for (unsigned int k = 0; k < stageCountInputVariables; ++k)
+//        {
+//            const XkslMixerOutputStage::OutputStageIOVariable& stageInputVariable = stage.listStageInputVariableInfo[k];
+//            const XkslMixerOutputStage::OutputStageIOVariable& previousStageOutputVariable = previousStage.listStageOutputVariableInfo[k];
+//    
+//            if (stageInputVariable.globalStreamMemberIndex != previousStageOutputVariable.globalStreamMemberIndex)
+//                return error("a stage input variable does not match the previous stage's expected output variable");
+//            if (stageInputVariable.locationNum != previousStageOutputVariable.locationNum)
+//                return error("a stage input variable's location does not match the previous stage's output variable's expected location");
+//        }
+//    }
+//#endif
 
     //=============================================================================================================
     if (errorMessages.size() > 0) return false;

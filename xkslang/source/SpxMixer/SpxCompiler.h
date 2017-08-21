@@ -1056,10 +1056,11 @@ public:
         spv::Id spvVariableId;
         int globalStreamMemberIndex;
         int locationNum;
+        std::string variableName;
         std::string semanticName;
 
-        OutputStageIOVariable(spv::Id spvVariableId, int globalStreamMemberIndex, int locationNum, std::string semanticName) :
-            spvVariableId(spvVariableId), globalStreamMemberIndex(globalStreamMemberIndex) , locationNum(locationNum), semanticName(semanticName){}
+        OutputStageIOVariable(spv::Id spvVariableId, int globalStreamMemberIndex, int locationNum, std::string variableName, std::string semanticName) :
+            spvVariableId(spvVariableId), globalStreamMemberIndex(globalStreamMemberIndex) , locationNum(locationNum), variableName(variableName), semanticName(semanticName){}
     };
 
     std::vector<OutputStageIOVariable> listStageInputVariableInfo;
