@@ -42,12 +42,12 @@ cbuffer PerView
 };
 cbuffer PerMaterial
 {
-    float4 o12S244C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
-    float o12S244C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
-    float o12S244C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat;
-    float2 o12S244C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale;
-    float2 o12S244C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset;
-    float4 o12S244C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor;
+    float4 o12S245C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
+    float o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
+    float o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat;
+    float2 o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale;
+    float2 o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset;
+    float4 o12S245C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor;
 };
 SamplerState DynamicSampler_Sampler;
 Texture2D<float4> DynamicTexture_Texture;
@@ -83,19 +83,19 @@ void ShaderBase_PSMain()
 {
 }
 
-void o13S244C1_IStreamInitializer_ResetStream()
+void o13S245C1_IStreamInitializer_ResetStream()
 {
 }
 
-void o13S244C1_MaterialStream_ResetStream(inout PS_STREAMS _streams)
+void o13S245C1_MaterialStream_ResetStream(inout PS_STREAMS _streams)
 {
-    o13S244C1_IStreamInitializer_ResetStream();
+    o13S245C1_IStreamInitializer_ResetStream();
     _streams.matBlend_id26 = 0.0f;
 }
 
-void o13S244C1_MaterialPixelStream_ResetStream(inout PS_STREAMS _streams)
+void o13S245C1_MaterialPixelStream_ResetStream(inout PS_STREAMS _streams)
 {
-    o13S244C1_MaterialStream_ResetStream(_streams);
+    o13S245C1_MaterialStream_ResetStream(_streams);
     _streams.matNormal_id4 = float3(0.0f, 0.0f, 1.0f);
     _streams.matColorBase_id5 = float4(0.0f, 0.0f, 0.0f, 0.0f);
     _streams.matDiffuse_id6 = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -114,69 +114,69 @@ void o13S244C1_MaterialPixelStream_ResetStream(inout PS_STREAMS _streams)
     _streams.matEmissiveIntensity_id16 = 0.0f;
     _streams.matDiffuseSpecularAlphaBlend_id17 = float2(1.0f, 1.0f);
     _streams.matAlphaBlendColor_id18 = float3(1.0f, 1.0f, 1.0f);
-    _streams.matAlphaDiscard_id19 = 0.0f;
+    _streams.matAlphaDiscard_id19 = 0.100000001490116119384765625f;
 }
 
-void o13S244C1_MaterialPixelShadingStream_ResetStream(inout PS_STREAMS _streams)
+void o13S245C1_MaterialPixelShadingStream_ResetStream(inout PS_STREAMS _streams)
 {
-    o13S244C1_MaterialPixelStream_ResetStream(_streams);
+    o13S245C1_MaterialPixelStream_ResetStream(_streams);
     _streams.shadingColorAlpha_id25 = 1.0f;
 }
 
-float4 o12S244C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_GridGizmoBase_GridColorKey__Compute()
+float4 o12S245C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_GridGizmoBase_GridColorKey__Compute()
 {
-    return o12S244C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor;
+    return o12S245C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor;
 }
 
-float4 o12S244C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_Texturing_Texture0_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__Compute(PS_STREAMS _streams)
+float4 o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_Texturing_Texture0_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__Compute(PS_STREAMS _streams)
 {
-    return DynamicTexture_Texture.Sample(DynamicSampler_Sampler, (_streams.TexCoord_id27 * o12S244C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale) + o12S244C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset);
+    return DynamicTexture_Texture.Sample(DynamicSampler_Sampler, (_streams.TexCoord_id27 * o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale) + o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset);
 }
 
-float4 o12S244C0_o3S2C0_o2S2C0_ComputeColorMultiply_Compute(PS_STREAMS _streams)
+float4 o12S245C0_o3S2C0_o2S2C0_ComputeColorMultiply_Compute(PS_STREAMS _streams)
 {
-    float4 tex1 = o12S244C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_GridGizmoBase_GridColorKey__Compute();
-    float4 tex2 = o12S244C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_Texturing_Texture0_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__Compute(_streams);
+    float4 tex1 = o12S245C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_GridGizmoBase_GridColorKey__Compute();
+    float4 tex2 = o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_Texturing_Texture0_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset__Compute(_streams);
     float4 mix1 = tex1 * tex2;
     return mix1;
 }
 
-void o12S244C0_o3S2C0_MaterialSurfaceSetStreamFromComputeColor_matEmissive_rgba__Compute(inout PS_STREAMS _streams)
+void o12S245C0_o3S2C0_MaterialSurfaceSetStreamFromComputeColor_matEmissive_rgba__Compute(inout PS_STREAMS _streams)
 {
-    _streams.matEmissive_id15 = o12S244C0_o3S2C0_o2S2C0_ComputeColorMultiply_Compute(_streams);
+    _streams.matEmissive_id15 = o12S245C0_o3S2C0_o2S2C0_ComputeColorMultiply_Compute(_streams);
 }
 
-float4 o12S244C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_Material_EmissiveIntensity__Compute()
+float4 o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_Material_EmissiveIntensity__Compute()
 {
-    return float4(o12S244C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat, o12S244C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat, o12S244C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat, o12S244C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat);
+    return float4(o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat, o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat, o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat, o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat);
 }
 
-void o12S244C0_o5S2C0_MaterialSurfaceSetStreamFromComputeColor_matEmissiveIntensity_r__Compute(inout PS_STREAMS _streams)
+void o12S245C0_o5S2C0_MaterialSurfaceSetStreamFromComputeColor_matEmissiveIntensity_r__Compute(inout PS_STREAMS _streams)
 {
-    _streams.matEmissiveIntensity_id16 = o12S244C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_Material_EmissiveIntensity__Compute().x;
+    _streams.matEmissiveIntensity_id16 = o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_Material_EmissiveIntensity__Compute().x;
 }
 
-float4 o12S244C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_DiffuseSpecularAlphaBlendValue__Compute()
+float4 o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_DiffuseSpecularAlphaBlendValue__Compute()
 {
-    return float4(o12S244C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, o12S244C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, o12S244C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, o12S244C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat);
+    return float4(o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat, o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat);
 }
 
-void o12S244C0_o7S2C0_MaterialSurfaceSetStreamFromComputeColor_matDiffuseSpecularAlphaBlend_r__Compute(inout PS_STREAMS _streams)
+void o12S245C0_o7S2C0_MaterialSurfaceSetStreamFromComputeColor_matDiffuseSpecularAlphaBlend_r__Compute(inout PS_STREAMS _streams)
 {
-    _streams.matDiffuseSpecularAlphaBlend_id17 = float2(o12S244C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_DiffuseSpecularAlphaBlendValue__Compute().xx);
+    _streams.matDiffuseSpecularAlphaBlend_id17 = float2(o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_Material_DiffuseSpecularAlphaBlendValue__Compute().xx);
 }
 
-float4 o12S244C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_Material_AlphaBlendColorValue__Compute()
+float4 o12S245C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_Material_AlphaBlendColorValue__Compute()
 {
-    return o12S244C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
+    return o12S245C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
 }
 
-void o12S244C0_o9S2C0_MaterialSurfaceSetStreamFromComputeColor_matAlphaBlendColor_rgb__Compute(inout PS_STREAMS _streams)
+void o12S245C0_o9S2C0_MaterialSurfaceSetStreamFromComputeColor_matAlphaBlendColor_rgb__Compute(inout PS_STREAMS _streams)
 {
-    _streams.matAlphaBlendColor_id18 = o12S244C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_Material_AlphaBlendColorValue__Compute().xyz;
+    _streams.matAlphaBlendColor_id18 = o12S245C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_Material_AlphaBlendColorValue__Compute().xyz;
 }
 
-void o12S244C0_o10S2C0_MaterialSurfaceEmissiveShading_true__Compute(inout PS_STREAMS _streams)
+void o12S245C0_o10S2C0_MaterialSurfaceEmissiveShading_true__Compute(inout PS_STREAMS _streams)
 {
     _streams.shadingColor_id24 += (_streams.matEmissive_id15.xyz * _streams.matEmissiveIntensity_id16);
     if (true)
@@ -185,35 +185,35 @@ void o12S244C0_o10S2C0_MaterialSurfaceEmissiveShading_true__Compute(inout PS_STR
     }
 }
 
-void o12S244C0_o11S2C0_MaterialSurfaceDiffuseSpecularAlphaBlendColor_Compute(inout PS_STREAMS _streams)
+void o12S245C0_o11S2C0_MaterialSurfaceDiffuseSpecularAlphaBlendColor_Compute(inout PS_STREAMS _streams)
 {
     _streams.shadingColorAlpha_id25 = lerp(0.0f, _streams.shadingColorAlpha_id25, _streams.matDiffuseSpecularAlphaBlend_id17.x);
 }
 
-void o12S244C0_MaterialSurfaceArray_Compute(inout PS_STREAMS _streams)
+void o12S245C0_MaterialSurfaceArray_Compute(inout PS_STREAMS _streams)
 {
-    o12S244C0_o3S2C0_MaterialSurfaceSetStreamFromComputeColor_matEmissive_rgba__Compute(_streams);
-    o12S244C0_o5S2C0_MaterialSurfaceSetStreamFromComputeColor_matEmissiveIntensity_r__Compute(_streams);
-    o12S244C0_o7S2C0_MaterialSurfaceSetStreamFromComputeColor_matDiffuseSpecularAlphaBlend_r__Compute(_streams);
-    o12S244C0_o9S2C0_MaterialSurfaceSetStreamFromComputeColor_matAlphaBlendColor_rgb__Compute(_streams);
-    o12S244C0_o10S2C0_MaterialSurfaceEmissiveShading_true__Compute(_streams);
-    o12S244C0_o11S2C0_MaterialSurfaceDiffuseSpecularAlphaBlendColor_Compute(_streams);
+    o12S245C0_o3S2C0_MaterialSurfaceSetStreamFromComputeColor_matEmissive_rgba__Compute(_streams);
+    o12S245C0_o5S2C0_MaterialSurfaceSetStreamFromComputeColor_matEmissiveIntensity_r__Compute(_streams);
+    o12S245C0_o7S2C0_MaterialSurfaceSetStreamFromComputeColor_matDiffuseSpecularAlphaBlend_r__Compute(_streams);
+    o12S245C0_o9S2C0_MaterialSurfaceSetStreamFromComputeColor_matAlphaBlendColor_rgb__Compute(_streams);
+    o12S245C0_o10S2C0_MaterialSurfaceEmissiveShading_true__Compute(_streams);
+    o12S245C0_o11S2C0_MaterialSurfaceDiffuseSpecularAlphaBlendColor_Compute(_streams);
 }
 
 float4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 {
     _streams.viewWS_id20 = normalize(Transformation_Eye.xyz - _streams.PositionWS_id3.xyz);
     _streams.shadingColor_id24 = float3(0.0f, 0.0f, 0.0f);
-    o13S244C1_MaterialPixelShadingStream_ResetStream(_streams);
-    o12S244C0_MaterialSurfaceArray_Compute(_streams);
+    o13S245C1_MaterialPixelShadingStream_ResetStream(_streams);
+    o12S245C0_MaterialSurfaceArray_Compute(_streams);
     return float4(_streams.shadingColor_id24, _streams.shadingColorAlpha_id25);
 }
 
 void ShadingBase_PSMain(inout PS_STREAMS _streams)
 {
     ShaderBase_PSMain();
-    float4 _12 = MaterialSurfacePixelStageCompositor_Shading(_streams);
-    _streams.ColorTarget_id1 = _12;
+    float4 _13 = MaterialSurfacePixelStageCompositor_Shading(_streams);
+    _streams.ColorTarget_id1 = _13;
 }
 
 void frag_main()

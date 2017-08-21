@@ -247,7 +247,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
     //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
-//////////////////////////{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },  //SPIRV-Cross crash
+    //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
     
     //{ "testDependency01", "testDependency01.xkfx" },
@@ -315,9 +315,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
 
-/////////////////{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },   //SPIRV-Cross crash
+    //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
-    //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
+    { "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
 };
 
 enum class ShaderLanguageEnum

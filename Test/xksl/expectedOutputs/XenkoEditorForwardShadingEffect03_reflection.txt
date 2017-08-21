@@ -22,7 +22,7 @@
 @C    Global_Time => Global.Time
 @C    Global_TimeStep => Global.TimeStep
  cbuffer PerMaterial [size: 16]
-@C    o5S244C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor => Material.DiffuseValue
+@C    o5S245C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor => Material.DiffuseValue
 ***********************
 *****  Resources  *****
 ***********************
@@ -88,7 +88,7 @@ ConstantBuffers. Count=4
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="PerMaterial" Size=16 MembersCount=1
-  KeyName="Material.DiffuseValue" RawName="o5S244C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
+  KeyName="Material.DiffuseValue" RawName="o5S245C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 ResourceBindings. Count=5

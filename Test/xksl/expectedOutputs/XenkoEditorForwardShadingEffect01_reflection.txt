@@ -10,7 +10,7 @@
 @C    Transformation_WorldViewProjection => Transformation.WorldViewProjection
 @C    Transformation_WorldScale => Transformation.WorldScale
 @C    Transformation_EyeMS => Transformation.EyeMS
- cbuffer PerView [size: 352]
+ cbuffer PerView [size: 720]
 @C    Transformation_View => Transformation.View
 @C    Transformation_ViewInverse => Transformation.ViewInverse
 @C    Transformation_Projection => Transformation.Projection
@@ -18,13 +18,21 @@
 @C    Transformation_ViewProjection => Transformation.ViewProjection
 @C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
 @C    Transformation_Eye => Transformation.Eye
- cbuffer PerMaterial [size: 64]
-@C    o12S245C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor => Material.AlphaBlendColorValue
-@C    o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat => Material.DiffuseSpecularAlphaBlendValue
-@C    o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat => Material.EmissiveIntensity
-@C    o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale => Material.TextureScale
-@C    o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset => Material.TextureOffset
-@C    o12S245C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor => GridGizmoBase.GridColorKey
+@C    o1S429C0_Camera_NearClipPlane => Camera.NearClipPlane
+@C    o1S429C0_Camera_FarClipPlane => Camera.FarClipPlane
+@C    o1S429C0_Camera_ZProjection => Camera.ZProjection
+@C    o1S429C0_Camera_ViewSize => Camera.ViewSize
+@C    o1S429C0_Camera_AspectRatio => Camera.AspectRatio
+@C    o0S429C0_LightDirectionalGroup__padding_PerView_Default => _padding_PerView_Default
+@C    o0S429C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups[0]
+@C    o0S429C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
+@C    o1S429C0_LightClustered_ClusterDepthScale => LightClustered.ClusterDepthScale
+@C    o1S429C0_LightClustered_ClusterDepthBias => LightClustered.ClusterDepthBias
+@C    o1S429C0_LightClustered_ClusterStride => LightClustered.ClusterStride
+@C    o3S414C0_LightSimpleAmbient_AmbientLight => LightSimpleAmbient.AmbientLight.environmentLights[0]
+@C    o3S414C0_LightSimpleAmbient__padding_PerView_Lighting => _padding_PerView_Lighting
+ cbuffer PerMaterial [size: 16]
+@C    o8S245C0_o5S2C0_o4S2C0_ComputeColorConstantColorLink_constantColor => GizmoUniformColorMaterial.GizmoColorKey
 ***********************
 *****  Resources  *****
 ***********************
@@ -32,8 +40,11 @@
 @C    PerView => PerView [Stage: Vertex]
 @C    PerView => PerView [Stage: Pixel]
 @C    PerMaterial => PerMaterial [Stage: Pixel]
-@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage: Pixel]
-@C    DynamicTexture_Texture => Texturing.Texture0 [Stage: Pixel]
+@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights [Stage: Pixel]
+@C    LightClustered_LightClusters => LightClustered.LightClusters [Stage: Pixel]
+@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Pixel]
+@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage: Pixel]
+@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Pixel]
 
 ConstantBuffers. Count=3
  cbuffer: Name="PerDraw" Size=416 MembersCount=8
@@ -61,7 +72,7 @@ ConstantBuffers. Count=3
   KeyName="Transformation.EyeMS" RawName="Transformation_EyeMS" LogicalGroup="" Offset=400
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
- cbuffer: Name="PerView" Size=352 MembersCount=7
+ cbuffer: Name="PerView" Size=720 MembersCount=20
   KeyName="Transformation.View" RawName="Transformation_View" LogicalGroup="" Offset=0
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
@@ -83,34 +94,67 @@ ConstantBuffers. Count=3
   KeyName="Transformation.Eye" RawName="Transformation_Eye" LogicalGroup="" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
- cbuffer: Name="PerMaterial" Size=64 MembersCount=6
-  KeyName="Material.AlphaBlendColorValue" RawName="o12S245C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
-  Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
-
-  KeyName="Material.DiffuseSpecularAlphaBlendValue" RawName="o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=16
+  KeyName="Camera.NearClipPlane" RawName="o1S429C0_Camera_NearClipPlane" LogicalGroup="" Offset=352
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Material.EmissiveIntensity" RawName="o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=20
+  KeyName="Camera.FarClipPlane" RawName="o1S429C0_Camera_FarClipPlane" LogicalGroup="" Offset=356
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Material.TextureScale" RawName="o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale" LogicalGroup="" Offset=24
+  KeyName="Camera.ZProjection" RawName="o1S429C0_Camera_ZProjection" LogicalGroup="" Offset=360
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="Material.TextureOffset" RawName="o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset" LogicalGroup="" Offset=32
+  KeyName="Camera.ViewSize" RawName="o1S429C0_Camera_ViewSize" LogicalGroup="" Offset=368
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="GridGizmoBase.GridColorKey" RawName="o12S245C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=48
+  KeyName="Camera.AspectRatio" RawName="o1S429C0_Camera_AspectRatio" LogicalGroup="" Offset=376
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="_padding_PerView_Default" RawName="o0S429C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="Default" Offset=384
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S429C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=400
+  Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
+   CountMembers=2
+   Name="DirectionWS" Offset=0
+   Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+   Name="Color" Offset=16
+   Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0]" RawName="o0S429C0_DirectLightGroupPerView_LightCount" LogicalGroup="Lighting" Offset=656
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="LightClustered.ClusterDepthScale" RawName="o1S429C0_LightClustered_ClusterDepthScale" LogicalGroup="Lighting" Offset=660
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="LightClustered.ClusterDepthBias" RawName="o1S429C0_LightClustered_ClusterDepthBias" LogicalGroup="Lighting" Offset=664
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="LightClustered.ClusterStride" RawName="o1S429C0_LightClustered_ClusterStride" LogicalGroup="Lighting" Offset=672
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0]" RawName="o3S414C0_LightSimpleAmbient_AmbientLight" LogicalGroup="Lighting" Offset=688
+  Class=Color Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  KeyName="_padding_PerView_Lighting" RawName="o3S414C0_LightSimpleAmbient__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=704
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+ cbuffer: Name="PerMaterial" Size=16 MembersCount=1
+  KeyName="GizmoUniformColorMaterial.GizmoColorKey" RawName="o8S245C0_o5S2C0_o4S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-ResourceBindings. Count=6
+ResourceBindings. Count=9
  Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler
- Stage=Pixel KeyName="Texturing.Texture0" RawName="DynamicTexture_Texture" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+ Stage=Pixel KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D
+ Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+ Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+ Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
 
-InputAttributes. Count=3
+InputAttributes. Count=4
  SemanticName="NORMAL" SemanticIndex=0
+ SemanticName="" SemanticIndex=0
  SemanticName="POSITION" SemanticIndex=0
- SemanticName="TEXCOORD" SemanticIndex=0
+ SemanticName="" SemanticIndex=0

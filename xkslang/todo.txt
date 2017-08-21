@@ -1,3 +1,7 @@
+* SPIRV-Cross crashes in some cases
+
+
+
 * enfore rules warning and update Xenka shaders accordingly
   
 * automatically copy the DLL when creating a new project
