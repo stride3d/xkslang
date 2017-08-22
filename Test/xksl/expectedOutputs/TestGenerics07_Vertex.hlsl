@@ -12,7 +12,7 @@ static int VS_IN_aStream;
 
 struct SPIRV_Cross_Input
 {
-    int VS_IN_aStream : TEXCOORD0;
+    int VS_IN_aStream : ASTREAM;
 };
 
 int ShaderBase_1__compute(VS_STREAMS _streams)

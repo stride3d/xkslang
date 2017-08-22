@@ -25,7 +25,7 @@ static int VS_OUT_aStream;
 
 struct SPIRV_Cross_Output
 {
-    int VS_OUT_aStream : TEXCOORD0;
+    int VS_OUT_aStream : ASTREAM;
 };
 
 void vert_main()

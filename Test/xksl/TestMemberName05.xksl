@@ -1,9 +1,9 @@
 
 shader ShaderMain<MemberName TStream>
 {
-	stage stream float4 aStream1;
-	stage stream float4 aStream2;
-	stage stream float4 outputStream;
+	stage stream float4 aStream1: ASTREAM1;
+	stage stream float4 aStream2: ASTREAM2;
+	stage stream float4 outputStream: OUTPUTSTREAM;
 	
 	float4 aCol;
 	

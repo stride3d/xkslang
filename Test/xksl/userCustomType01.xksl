@@ -7,7 +7,7 @@ shader ShaderMain
 		float3 Color;
 	};
 	
-	stage stream DirectionalLightData aStreamVar;
+	stage stream DirectionalLightData aStreamVar: ASTREAMVAR;
 	
 	stage void VSMain()
 	{

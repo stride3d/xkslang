@@ -7,7 +7,7 @@ static int VS_OUT_tabStream01[2];
 
 struct SPIRV_Cross_Output
 {
-    int VS_OUT_tabStream01[2] : TEXCOORD0;
+    int VS_OUT_tabStream01[2] : TABSTREAM01;
 };
 
 void vert_main()

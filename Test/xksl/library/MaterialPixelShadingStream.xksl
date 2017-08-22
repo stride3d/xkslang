@@ -5,22 +5,22 @@ namespace SiliconStudio.Xenko.Rendering.Materials
     shader MaterialPixelShadingStream : MaterialPixelStream, LightStream
     {
         // Output of shading a material surface
-        stage stream float3 shadingColor;
+        stage stream float3 shadingColor: SHADINGCOLOR;
 
         // Output of the shading color alpha
-        stage stream float  shadingColorAlpha;
+        stage stream float shadingColorAlpha: SHADINGCOLORALPHA;
 
         // Half vector (sum of normalWS + lightDirectionWS)
-        stage stream float3 H;
+        stage stream float3 H: H;
 
         // normal dot half vector
-        stage stream float NdotH;
+        stage stream float NdotH: NDOTH;
 
         // light dot half vector
-        stage stream float LdotH;
+        stage stream float LdotH: LDOTH;
 
         // view dot half vector
-        stage stream float VdotH;
+        stage stream float VdotH: VDOTH;
 
         override void ResetStream()
         {

@@ -71,9 +71,7 @@ struct SPIRV_Cross_Input
 {
     float4 PS_IN_ShadingPosition : SV_Position;
     float3 PS_IN_normalWS : NORMALWS;
-    float3 PS_IN_tangentToWorld_0 : TEXCOORD2;
-    float3 PS_IN_tangentToWorld_1 : TEXCOORD3;
-    float3 PS_IN_tangentToWorld_2 : TEXCOORD4;
+    float3x3 PS_IN_tangentToWorld : TANGENTTOWORLD;
     float4 PS_IN_PositionWS : POSITION_WS;
     bool PS_IN_IsFrontFace : SV_IsFrontFace;
 };

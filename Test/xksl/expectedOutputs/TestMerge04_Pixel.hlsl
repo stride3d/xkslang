@@ -18,8 +18,8 @@ static int PS_IN_sa1;
 
 struct SPIRV_Cross_Input
 {
-    float PS_IN_sbase1 : TEXCOORD0;
-    int PS_IN_sa1 : TEXCOORD1;
+    float PS_IN_sbase1 : SBASE1;
+    int PS_IN_sa1 : SA1;
 };
 
 void frag_main()

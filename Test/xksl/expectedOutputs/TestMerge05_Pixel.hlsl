@@ -12,7 +12,7 @@ static int PS_IN_sbase1;
 
 struct SPIRV_Cross_Input
 {
-    int PS_IN_sbase1 : TEXCOORD0;
+    int PS_IN_sbase1 : SBASE1;
 };
 
 int shaderA_Compute1(PS_STREAMS _streams)

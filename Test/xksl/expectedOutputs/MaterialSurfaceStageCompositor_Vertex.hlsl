@@ -16,14 +16,14 @@ struct SPIRV_Cross_Input
 {
     float4 VS_IN_ShadingPosition : SV_Position;
     float4 VS_IN_PositionWS : POSITION_WS;
-    float VS_IN_shadingColorAlpha : TEXCOORD2;
+    float VS_IN_shadingColorAlpha : SHADINGCOLORALPHA;
 };
 
 struct SPIRV_Cross_Output
 {
     float4 VS_OUT_ShadingPosition : SV_Position;
     float4 VS_OUT_PositionWS : POSITION_WS;
-    float VS_OUT_shadingColorAlpha : TEXCOORD2;
+    float VS_OUT_shadingColorAlpha : SHADINGCOLORALPHA;
 };
 
 void ShaderBase_VSMain()

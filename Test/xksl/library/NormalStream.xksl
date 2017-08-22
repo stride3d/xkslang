@@ -15,5 +15,5 @@ shader NormalStream
     stage stream float3 normalWS : NORMALWS;
 
     // The tangent to view matrix to transform a tangent normal vector to normal vector in viewspace
-    stage stream float3x3 tangentToWorld;
+    stage stream float3x3 tangentToWorld : TANGENTTOWORLD;
 };

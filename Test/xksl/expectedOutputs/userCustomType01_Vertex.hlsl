@@ -13,7 +13,7 @@ static ShaderMain_DirectionalLightData VS_OUT_aStreamVar;
 
 struct SPIRV_Cross_Output
 {
-    ShaderMain_DirectionalLightData VS_OUT_aStreamVar : TEXCOORD0;
+    ShaderMain_DirectionalLightData VS_OUT_aStreamVar : ASTREAMVAR;
 };
 
 void vert_main()

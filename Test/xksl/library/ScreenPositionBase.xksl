@@ -7,7 +7,7 @@
 shader ScreenPositionBase : ShaderBase
 {
     // The position in screen space
-    stage stream float4 ScreenPosition;
+    stage stream float4 ScreenPosition: SCREENPOSITION;
 
     stage override void VSMain()
     {

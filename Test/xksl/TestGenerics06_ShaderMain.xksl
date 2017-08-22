@@ -1,6 +1,6 @@
 shader ShaderMain<int G1, int G2> : ShaderBase<G2, (-G1 + G2 * 2)>
 {
-	stream int aStream;
+	stage stream int aStream: ASTREAM;
 	
 	int compute()
 	{

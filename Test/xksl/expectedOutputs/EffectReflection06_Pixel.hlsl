@@ -12,7 +12,7 @@ static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_aStream : TEXCOORD0;
+    float4 PS_IN_aStream : ASTREAM;
 };
 
 struct SPIRV_Cross_Output

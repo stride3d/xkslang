@@ -1,6 +1,6 @@
 shader ShaderBase<int offset>
 {
-	stream int aStream;
+	stage stream int aStream: ASTREAM;
 
 	cbuffer PreDraw
 	{

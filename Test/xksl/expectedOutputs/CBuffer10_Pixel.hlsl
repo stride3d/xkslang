@@ -14,7 +14,7 @@ static float PS_OUT_aStream3;
 
 struct SPIRV_Cross_Input
 {
-    float PS_IN_aStream2 : TEXCOORD0;
+    float PS_IN_aStream2 : ASTREAM2;
 };
 
 struct SPIRV_Cross_Output

@@ -8,7 +8,7 @@ static int PS_IN_tabStream01[2];
 
 struct SPIRV_Cross_Input
 {
-    int PS_IN_tabStream01[2] : TEXCOORD0;
+    int PS_IN_tabStream01[2] : TABSTREAM01;
 };
 
 void frag_main()

@@ -8,14 +8,14 @@ shader Base
 	
 	const int BaseConst = 2;
 	
-	stream float sbase1;
-	stream int sbase2;
+	stream float sbase1: SBASE1;
+	stream int sbase2: SBASE2;
 };
 
 shader shaderA : Base
 {
 	int Var0;
-	stream int sa1;
+	stream int sa1: SA1;
 	
 	const int aConst = 5;
 	

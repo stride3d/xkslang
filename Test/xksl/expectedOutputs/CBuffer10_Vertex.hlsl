@@ -20,7 +20,7 @@ struct SPIRV_Cross_Input
 
 struct SPIRV_Cross_Output
 {
-    float VS_OUT_aStream2 : TEXCOORD0;
+    float VS_OUT_aStream2 : ASTREAM2;
 };
 
 void vert_main()

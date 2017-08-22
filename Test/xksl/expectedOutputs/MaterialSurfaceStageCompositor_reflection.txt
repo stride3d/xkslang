@@ -43,4 +43,4 @@ ResourceBindings. Count=1
 InputAttributes. Count=3
  SemanticName="SV_Position" SemanticIndex=0
  SemanticName="POSITION_WS" SemanticIndex=0
- SemanticName="" SemanticIndex=0
+ SemanticName="SHADINGCOLORALPHA" SemanticIndex=0

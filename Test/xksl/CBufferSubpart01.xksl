@@ -1,6 +1,6 @@
 shader ShaderMain
 {
-	stream int aStream;
+	stage stream int aStream: ASTREAM;
 
 	cbuffer PerLighting.subpart3
     {

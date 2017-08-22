@@ -8,6 +8,6 @@ shader Base
 	
 	const int BaseConst = 2;
 	
-	stream float sbase1;
-	stream int sbase2;
+	stream float sbase1: SBASE1;
+	stream int sbase2: SBASE2;
 };

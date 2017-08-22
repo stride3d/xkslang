@@ -3,7 +3,7 @@
 shader Base
 {
 	int Var1;
-	stream int sbase1;
+	stream int sbase1: SBASE1;
 
 	int ComputeBase()
 	{

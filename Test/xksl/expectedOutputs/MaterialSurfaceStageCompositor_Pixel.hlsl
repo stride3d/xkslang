@@ -28,7 +28,7 @@ struct SPIRV_Cross_Input
 {
     float4 PS_IN_ShadingPosition : SV_Position;
     float4 PS_IN_PositionWS : POSITION_WS;
-    float PS_IN_shadingColorAlpha : TEXCOORD2;
+    float PS_IN_shadingColorAlpha : SHADINGCOLORALPHA;
 };
 
 struct SPIRV_Cross_Output

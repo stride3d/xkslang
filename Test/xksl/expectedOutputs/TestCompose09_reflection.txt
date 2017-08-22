@@ -24,7 +24,6 @@ ConstantBuffers. Count=1
 ResourceBindings. Count=1
  Stage=Pixel KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer
 
-InputAttributes. Count=3
- SemanticName="" SemanticIndex=0
- SemanticName="" SemanticIndex=0
- SemanticName="" SemanticIndex=0
+InputAttributes. Count=2
+ SemanticName="S" SemanticIndex=2
+ SemanticName="S" SemanticIndex=1

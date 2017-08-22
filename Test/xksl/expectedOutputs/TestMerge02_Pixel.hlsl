@@ -12,7 +12,7 @@ static int PS_IN_sa1;
 
 struct SPIRV_Cross_Input
 {
-    int PS_IN_sa1 : TEXCOORD0;
+    int PS_IN_sa1 : SA1;
 };
 
 void frag_main()

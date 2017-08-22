@@ -14,8 +14,8 @@ static float4 VS_OUT_outputStream;
 
 struct SPIRV_Cross_Output
 {
-    float4 VS_OUT_aStream1 : TEXCOORD0;
-    float4 VS_OUT_outputStream : TEXCOORD1;
+    float4 VS_OUT_aStream1 : ASTREAM1;
+    float4 VS_OUT_outputStream : OUTPUTSTREAM;
 };
 
 void ShaderMain_aStream1__Compute(inout VS_STREAMS _streams)

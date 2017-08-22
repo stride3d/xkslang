@@ -10,7 +10,7 @@ static float4 VS_OUT_aStream;
 
 struct SPIRV_Cross_Output
 {
-    float4 VS_OUT_aStream : TEXCOORD0;
+    float4 VS_OUT_aStream : ASTREAM;
 };
 
 void vert_main()

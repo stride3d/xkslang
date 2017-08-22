@@ -43,9 +43,7 @@ static float4 VS_OUT_PositionWS;
 struct SPIRV_Cross_Input
 {
     float3 VS_IN_meshNormal : NORMAL;
-    float3 VS_IN_tangentToWorld_0 : TEXCOORD1;
-    float3 VS_IN_tangentToWorld_1 : TEXCOORD2;
-    float3 VS_IN_tangentToWorld_2 : TEXCOORD3;
+    float3x3 VS_IN_tangentToWorld : TANGENTTOWORLD;
     float4 VS_IN_Position : POSITION;
 };
 
@@ -53,9 +51,7 @@ struct SPIRV_Cross_Output
 {
     float4 VS_OUT_ShadingPosition : SV_Position;
     float3 VS_OUT_normalWS : NORMALWS;
-    float3 VS_OUT_tangentToWorld_0 : TEXCOORD2;
-    float3 VS_OUT_tangentToWorld_1 : TEXCOORD3;
-    float3 VS_OUT_tangentToWorld_2 : TEXCOORD4;
+    float3x3 VS_OUT_tangentToWorld : TANGENTTOWORLD;
     float4 VS_OUT_PositionWS : POSITION_WS;
 };
 

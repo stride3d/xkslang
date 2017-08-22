@@ -3,18 +3,18 @@
 shader SubComp
 {
 	int var1;
-	stream int s1;
+	stage stream int s2: S2;
 	
 	int Compute()
 	{
-		return var1 + streams.s1;
+		return var1 + streams.s2;
 	}
 }
 
 shader Comp
 {
 	int var1;
-	stream int s1;
+	stage stream int s1: S1;
 	
 	compose SubComp sb;
 	

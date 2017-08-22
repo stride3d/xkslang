@@ -2,8 +2,8 @@
 shader ShaderMain
 {
 	#ifdef MACRO_01
-		stream int tabStream01[MACRO_02];
-		stream int tabStream02[MACRO_02];
+		stage stream int tabStream01[MACRO_02]: TABSTREAM01;
+		stage stream int tabStream02[MACRO_02]: TABSTREAM02;
 	#endif
 	
     cbuffer PerLighting

@@ -1,7 +1,7 @@
 shader ShaderMain
 {
 	stage stream float aStream1: STREAM1;
-	stream float aStream2;
+	stage stream float aStream2: ASTREAM2;
 	stage stream float aStream3: SV_Target0;
 
     cbuffer PerLighting
