@@ -287,6 +287,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
+    { "testStreamIO01", "testStreamIO01.xkfx"},
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },

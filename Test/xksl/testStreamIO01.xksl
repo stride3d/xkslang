@@ -1,0 +1,13 @@
+shader ShaderMain
+{
+	stage stream float3x3 tangentToWorld : TANGENTTOWORLD;
+	
+	stage void VSMain()
+	{
+	}
+	
+	stage void PSMain()
+	{
+		float3x3 v2 = streams.tangentToWorld;
+	}
+}

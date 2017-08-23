@@ -1,0 +1,6 @@
+convertAndLoad "testStreamIO01.xksl"
+
+mixer m
+m.mixin( ShaderMain )
+
+m.compile

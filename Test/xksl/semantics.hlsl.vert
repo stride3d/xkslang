@@ -1,12 +1,12 @@
 
 struct VS_Input
 {
-    float3x3 VS_IN_tangentToWorld : TANGENTTOWORLD;
+    float3x3 VS_IN_tangentToWorld : SEMANTIC01;
 };
 
 struct VS_Output
 {
-    float3x3 VS_OUT_tangentToWorld : TANGENTTOWORLD;
+    float3x3 VS_OUT_tangentToWorld : SEMANTIC02;
 };
 
 VS_Output main(VS_Input input)
