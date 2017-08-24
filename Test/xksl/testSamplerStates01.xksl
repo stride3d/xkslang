@@ -1,0 +1,81 @@
+shader ShaderMain
+{
+	stage stream float2 TexCoord : TEXCOORD0;
+	stage stream float4 ColorTarget : SV_Target0;
+	stage stream float2 aStream: ASTREAM;
+	
+	stage Texture2D Texture0;
+	
+	// Default sampler
+    stage SamplerState Sampler;
+
+    stage SamplerState PointSampler
+    {
+        Filter = MIN_MAG_MIP_POINT;
+    };
+
+    stage SamplerState LinearSampler
+    {
+        Filter = MIN_MAG_MIP_LINEAR;
+    };
+
+    stage SamplerState LinearBorderSampler
+    {
+        Filter = MIN_MAG_MIP_LINEAR;
+        AddressU = Border;
+        AddressV = Border;
+    };
+
+    stage SamplerComparisonState LinearClampCompareLessEqualSampler
+    {
+        Filter = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+        AddressU = Clamp;
+        AddressV = Clamp;
+        ComparisonFunc = LessEqual;
+
+    };
+
+    stage SamplerState AnisotropicSampler
+    {
+        Filter = ANISOTROPIC;
+    };
+
+    stage SamplerState AnisotropicRepeatSampler
+    {
+        Filter = ANISOTROPIC;
+        AddressU = Wrap;
+        AddressV = Wrap;
+        MaxAnisotropy = 16;
+    };
+
+    stage SamplerState PointRepeatSampler
+    {
+        Filter = MIN_MAG_MIP_POINT;
+        AddressU = Wrap;
+        AddressV = Wrap;
+    };
+
+    stage SamplerState LinearRepeatSampler
+    {
+        Filter = MIN_MAG_MIP_LINEAR;
+        AddressU = Wrap;
+        AddressV = Wrap;
+    };
+
+    stage SamplerState RepeatSampler
+    {
+        AddressU = Wrap;
+        AddressV = Wrap;
+    };
+	
+    void VSMain()
+    {
+		streams.aStream = streams.TexCoord.xy;
+    }
+	
+	void PSMain()
+    {
+		float2 uv2 = streams.aStream;
+        float4 color = Texture0.Sample(Sampler, uv2);
+    }
+};
