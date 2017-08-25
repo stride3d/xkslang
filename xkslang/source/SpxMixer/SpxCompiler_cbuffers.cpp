@@ -160,6 +160,24 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     break;
                 }
 
+                case spv::OpMemberSamplerStateDef:
+                {
+                    spv::Id id = asId(start + 1);
+                    if (mapUsedCbuffers[id] != nullptr)
+                    {
+                        CBufferTypeData* cbufferData = mapUsedCbuffers[id];
+
+                        unsigned int index = asLiteralValue(start + 2);
+#ifdef XKSLANG_DEBUG_MODE
+                        if (cbufferData->correspondingShaderType->type->GetId() != id) { error("Invalid instruction Id"); break; }
+                        if (index >= cbufferData->cbufferMembersData->countMembers()) { error("Invalid member index"); break; }
+#endif
+                        cbufferData->cbufferMembersData->members[index].samplerStateDestBytecodePos = start;
+
+                    }
+                    break;
+                }
+
                 /*case spv::OpMemberProperties:
                 {
                     const spv::Id id = asId(start + 1);
@@ -1229,14 +1247,22 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 }
 
                 //variable samplerState desc
-                /*if (memberToMoveOut.HasLinkName())
+                if (memberToMoveOut.HasSamplerStateDesc())
                 {
-                    //TOTO
-                    spv::Instruction memberNameInstr(spv::OpLinkName);
-                    memberNameInstr.addIdOperand(variable.getResultId());
-                    memberNameInstr.addStringOperand(memberToMoveOut.linkName.c_str());
-                    memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
-                }*/
+                    uint32_t samplerStateDescPos = memberToMoveOut.samplerStateDestBytecodePos;
+
+                    if (samplerStateDescPos >= spv.size()) { error("Invalid sampler state desc bytecode position"); break; }
+                    spv::Op op = asOpCode(samplerStateDescPos);
+                    int words = asWordCount(samplerStateDescPos);
+
+                    if (op != spv::Op::OpMemberSamplerStateDef || words <= 3) { error("Invalid sampler state desc OpCode"); break; }
+
+                    spv::Instruction samplerStateDesc(spv::OpSamplerStateDef);
+                    samplerStateDesc.addIdOperand(variable.getResultId());
+                    for (unsigned int ops = 3; ops < words; ops++)
+                        samplerStateDesc.addImmediateOperand(spv[samplerStateDescPos + ops]);
+                    samplerStateDesc.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }
 
                 //variable resourceGroupName (if any)
                 if (memberToMoveOut.HasResourceGroupName())

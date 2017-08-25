@@ -457,7 +457,7 @@ public:
             memberSize(-1), memberAlignment(-1), memberOffset(-1), matrixLayoutDecoration(-1), matrixStride(0), arrayStride(0),
             newStructTypeId(0), newStructVariableAccessTypeId(0), newStructMemberIndex(-1), tmpRemapToIOIndex(-1), memberPointerFunctionTypeId(-1),
             variableAccessTypeId(0), memberTypePointerInputId(0), memberTypePointerOutputId(0), memberStageInputVariableId(0), memberStageOutputVariableId(0),
-            isUsed(false), cbufferShaderOwner(nullptr) {}
+            isUsed(false), cbufferShaderOwner(nullptr), samplerStateDestBytecodePos(0) {}
 
         CBufferTypeData* cbufferOwner;    //the cbuffer holding the member
 
@@ -475,6 +475,7 @@ public:
         std::string resourceGroupName;
         std::string semantic;
         std::string attribute;
+        uint32_t samplerStateDestBytecodePos;
 
         //some stream member properties
         int memberPointerFunctionTypeId;  //id of the member's pointer type (TypePointer with Function storage class)
@@ -511,6 +512,7 @@ public:
         bool HasDeclarationName() const { return declarationName.size() > 0; }
         bool HasAttribute() const { return attribute.size() > 0; }
         bool HasLinkName() const { return linkName.size() > 0; }
+        bool HasSamplerStateDesc() const { return samplerStateDestBytecodePos > 0; }
         bool HasLogicalGroup() const { return logicalGroup.size() > 0; }
         bool HasResourceGroupName() const { return resourceGroupName.size() > 0; }
 
