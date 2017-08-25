@@ -994,6 +994,37 @@ void Builder::addMemberSemanticName(Id id, int num, const char* semantic)
     xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
 }
 
+void Builder::addMemberSamplerStateDefinition(Id id, int memberNum, int filter, int compareFunction, int addressU, int addressV, int addressW, int maxAnisotropy,
+    float minMipLevel, float maxMipLevel, float mipMapLevelOfDetailBias, float borderColor[4])
+{
+    union { float fl; unsigned int v; } u_minMipLevel, u_maxMipLevel, u_mipMapLevelOfDetailBias, u_r, u_g, u_b, u_a;
+    u_minMipLevel.fl = minMipLevel;
+    u_maxMipLevel.fl = maxMipLevel;
+    u_mipMapLevelOfDetailBias.fl = mipMapLevelOfDetailBias;
+    u_r.fl = borderColor[0];
+    u_g.fl = borderColor[1];
+    u_b.fl = borderColor[2];
+    u_a.fl = borderColor[3];
+
+    Instruction* dec = new Instruction(OpMemberSamplerStateDef);
+    dec->addIdOperand(id);
+    dec->addImmediateOperand(memberNum);
+    dec->addImmediateOperand(filter);
+    dec->addImmediateOperand(compareFunction);
+    dec->addImmediateOperand(addressU);
+    dec->addImmediateOperand(addressV);
+    dec->addImmediateOperand(addressW);
+    dec->addImmediateOperand(maxAnisotropy);
+    dec->addImmediateOperand(u_minMipLevel.v);
+    dec->addImmediateOperand(u_maxMipLevel.v);
+    dec->addImmediateOperand(u_mipMapLevelOfDetailBias.v);
+    dec->addImmediateOperand(u_r.v);
+    dec->addImmediateOperand(u_g.v);
+    dec->addImmediateOperand(u_b.v);
+    dec->addImmediateOperand(u_a.v);
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
+}
+
 void Builder::addCBufferProperties(Id id, int cbufferType, int cbufferStage, int countMembers, const char* subpartName)
 {
     Instruction* dec = new Instruction(OpCBufferProperties);

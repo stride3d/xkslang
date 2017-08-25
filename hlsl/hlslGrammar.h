@@ -101,6 +101,7 @@ namespace glslang {
         bool acceptControlDeclaration(TIntermNode*& node);
         bool acceptSamplerDeclarationDX9(TType&);
         bool acceptSamplerState();
+        bool acceptSamplerState(TSamplerStateDefinition*& samplerDef);
         bool acceptFullySpecifiedType(TType&);
         bool acceptFullySpecifiedType(TType&, TIntermNode*& nodeList);
         bool acceptQualifier(TQualifier&);
@@ -148,6 +149,8 @@ namespace glslang {
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
         bool acceptLiteral(TIntermTyped*&);
+        bool acceptLiteralFloatValue(float& value);
+        bool acceptLiteralIntValue(int& value);
         bool acceptSimpleStatement(TIntermNode*&);
         bool acceptCompoundStatement(TIntermNode*&);
         bool acceptScopedStatement(TIntermNode*&);

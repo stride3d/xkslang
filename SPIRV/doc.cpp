@@ -205,7 +205,51 @@ const char* StorageClassString(int StorageClass)
     }
 }
 
-const int DecorationCeiling = 45;
+const char* XkslSamplerStateFilterString(int v)
+{
+    switch (v)
+    {
+        case (SamplerStateTextureFilterEnum::ComparisonMinMagLinearMipPoint): return "ComparisonMinMagLinearMipPoint";
+        case (SamplerStateTextureFilterEnum::ComparisonPoint):                return "ComparisonPoint";
+        case (SamplerStateTextureFilterEnum::MinMagLinearMipPoint):           return "MinMagLinearMipPoint";
+        case (SamplerStateTextureFilterEnum::Linear):                         return "Linear";
+        case (SamplerStateTextureFilterEnum::Anisotropic):                    return "Anisotropic";
+        case (SamplerStateTextureFilterEnum::Point):                          return "Point";
+
+        default:  return "Bad";
+    }
+}
+
+const char* XkslSamplerStateCompareFunctionString(int v)
+{
+    switch (v)
+    {
+        case (SamplerStateCompareFunction::Never):        return "Never";
+        case (SamplerStateCompareFunction::Less):         return "Less";
+        case (SamplerStateCompareFunction::Equal):        return "Equal";
+        case (SamplerStateCompareFunction::LessEqual):    return "LessEqual";
+        case (SamplerStateCompareFunction::Greater):      return "Greater";
+        case (SamplerStateCompareFunction::NotEqual):     return "NotEqual";
+        case (SamplerStateCompareFunction::GreaterEqual): return "GreaterEqual";
+        case (SamplerStateCompareFunction::Always):       return "Always";
+
+        default:  return "Bad";
+    }
+}
+
+const char* XkslSamplerStateTextureAddressModeString(int v)
+{
+    switch (v)
+    {
+        case (SamplerStateTextureAddressMode::Wrap):       return "Wrap";
+        case (SamplerStateTextureAddressMode::Mirror):     return "Mirror";
+        case (SamplerStateTextureAddressMode::Clamp):      return "Clamp";
+        case (SamplerStateTextureAddressMode::Border):     return "Border";
+        case (SamplerStateTextureAddressMode::MirrorOnce): return "MirrorOnce";
+
+        default:  return "Bad";
+    }
+}
 
 const char* XkslPropertyString(int prop)
 {
@@ -234,6 +278,8 @@ const char* XkslPropertyString(int prop)
         default:  return "Bad";
     }
 }
+
+const int DecorationCeiling = 45;
 
 const char* DecorationString(int decoration)
 {
@@ -1247,7 +1293,9 @@ const char* OpcodeString(int op)
     case (OpSemanticName):                              return "OpSemanticName";
     case (OpCBufferProperties):                         return "OpCBufferProperties";
     case (OpGSMethodProperties):                        return "OpGSMethodProperties";
-
+    case (OpMemberSamplerStateDef):                     return "OpMemberSamplerStateDef";
+    case (OpSamplerStateDef):                           return "OpSamplerStateDef";
+        
     case (OpFunctionCallBaseUnresolved):                return "OpFunctionCallBaseUnres";
     case (OpFunctionCallBaseResolved):                  return "OpFunctionCallBaseRes";
     case (OpShaderCompositionDeclaration):              return "OpShaderCompositionDeclaration";
@@ -1411,6 +1459,8 @@ void Parameterize()
     InstructionDesc[OpCBufferProperties].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionStartLoop].setResultAndType(false, false);
     InstructionDesc[OpForEachCompositionEndLoop].setResultAndType(false, false);
+    InstructionDesc[OpMemberSamplerStateDef].setResultAndType(false, false);
+    InstructionDesc[OpSamplerStateDef].setResultAndType(false, false);
 
     InstructionDesc[OpFunctionCallBaseUnresolved].setResultAndType(true, true);
     InstructionDesc[OpFunctionCallBaseResolved].setResultAndType(true, true);
@@ -2006,6 +2056,37 @@ void Parameterize()
     InstructionDesc[OpCBufferProperties].operands.push(XkslShaderDataProperty, "'CbufferStage'");
     InstructionDesc[OpCBufferProperties].operands.push(OperandLiteralNumber, "'CountMembers'");
     InstructionDesc[OpCBufferProperties].operands.push(OperandLiteralString, "'Subpart name'");
+
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandLiteralNumber, "'Member'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(XkslSamplerStateFilter, "'filter'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(XkslSamplerStateCompareFunction, "'compare'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(XkslSamplerStateTextureAddressMode, "'addressU'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(XkslSamplerStateTextureAddressMode, "'addressV'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(XkslSamplerStateTextureAddressMode, "'addressW'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandLiteralNumber, "'maxAnisotropy'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandLiteralNumber, "'minMipLevel'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandLiteralNumber, "'maxMipLevel'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandLiteralNumber, "'mipMapLevelOfDetailBias'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandLiteralNumber, "'borderColorR'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandLiteralNumber, "'borderColorG'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandLiteralNumber, "'borderColorB'");
+    InstructionDesc[OpMemberSamplerStateDef].operands.push(OperandLiteralNumber, "'borderColorA'");
+
+    InstructionDesc[OpSamplerStateDef].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpSamplerStateDef].operands.push(XkslSamplerStateFilter, "'filter'");
+    InstructionDesc[OpSamplerStateDef].operands.push(XkslSamplerStateCompareFunction, "'compare'");
+    InstructionDesc[OpSamplerStateDef].operands.push(XkslSamplerStateTextureAddressMode, "'addressU'");
+    InstructionDesc[OpSamplerStateDef].operands.push(XkslSamplerStateTextureAddressMode, "'addressV'");
+    InstructionDesc[OpSamplerStateDef].operands.push(XkslSamplerStateTextureAddressMode, "'addressW'");
+    InstructionDesc[OpSamplerStateDef].operands.push(OperandLiteralNumber, "'maxAnisotropy'");
+    InstructionDesc[OpSamplerStateDef].operands.push(OperandLiteralNumber, "'minMipLevel'");
+    InstructionDesc[OpSamplerStateDef].operands.push(OperandLiteralNumber, "'maxMipLevel'");
+    InstructionDesc[OpSamplerStateDef].operands.push(OperandLiteralNumber, "'mipMapLevelOfDetailBias'");
+    InstructionDesc[OpSamplerStateDef].operands.push(OperandLiteralNumber, "'borderColorR'");
+    InstructionDesc[OpSamplerStateDef].operands.push(OperandLiteralNumber, "'borderColorG'");
+    InstructionDesc[OpSamplerStateDef].operands.push(OperandLiteralNumber, "'borderColorB'");
+    InstructionDesc[OpSamplerStateDef].operands.push(OperandLiteralNumber, "'borderColorA'");
 
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandId, "'Function'");
     InstructionDesc[OpFunctionCallBaseUnresolved].operands.push(OperandVariableIds, "'Argument 0', +\n'Argument 1', +\n...");

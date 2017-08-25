@@ -57,6 +57,8 @@
 
 #include "../xkslang/source/Common/xkslangDefine.h"
 
+#include "../SPIRV/spirv.hpp"
+
 namespace glslang {
 
 // Root entry point to this recursive decent parser.
@@ -698,6 +700,220 @@ bool HlslGrammar::acceptSamplerState()
 
     if (! acceptTokenClass(EHTokRightBrace))
         return false;
+
+    return true;
+}
+
+bool HlslGrammar::acceptSamplerState(TSamplerStateDefinition*& samplerDef)
+{
+    if (!acceptTokenClass(EHTokLeftBrace))
+        return true;
+
+    //create and set samplerState default values
+    samplerDef = new TSamplerStateDefinition;
+    samplerDef->Filter = (int)spv::SamplerStateTextureFilterEnum::Linear;
+    samplerDef->AddressU = (int)spv::SamplerStateTextureAddressMode::Clamp;
+    samplerDef->AddressV = (int)spv::SamplerStateTextureAddressMode::Clamp;
+    samplerDef->AddressW = (int)spv::SamplerStateTextureAddressMode::Clamp;
+    samplerDef->SetBorderColor(0.0, 0.0, 0.0, 0.0);
+    samplerDef->MaxAnisotropy = 16;
+    samplerDef->MinMipLevel = -(FLT_MAX);
+    samplerDef->MaxMipLevel = FLT_MAX;
+    samplerDef->MipMapLevelOfDetailBias = 0.0f;
+    samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::Never;
+
+    do {
+        // read state name
+        HlslToken state;
+        if (! acceptIdentifier(state))
+            break;  // end of list
+
+        // FXC accepts any case
+        TString stateName = *state.string;
+        //std::transform(stateName.begin(), stateName.end(), stateName.begin(), ::tolower);
+
+        if (! acceptTokenClass(EHTokAssign)) {
+            expected("sampler state: assign");
+            return false;
+        }
+
+        if (stateName == "Filter")
+        {
+            HlslToken filterMode;
+            if (!acceptIdentifier(filterMode)) {
+                expected("filter mode");
+                return false;
+            }
+            TString filter = *filterMode.string;
+
+            if (filter == "COMPARISON_MIN_MAG_LINEAR_MIP_POINT") {
+                samplerDef->Filter = (int)spv::SamplerStateTextureFilterEnum::ComparisonMinMagLinearMipPoint;
+            }
+            else if (filter == "COMPARISON_MIN_MAG_MIP_POINT") {
+                samplerDef->Filter = (int)spv::SamplerStateTextureFilterEnum::ComparisonPoint;
+            }
+            else if (filter == "MIN_MAG_LINEAR_MIP_POINT") {
+                samplerDef->Filter = (int)spv::SamplerStateTextureFilterEnum::MinMagLinearMipPoint;
+            }
+            else if (filter == "MIN_MAG_MIP_LINEAR") {
+                samplerDef->Filter = (int)spv::SamplerStateTextureFilterEnum::Linear;
+            }
+            else if (filter == "ANISOTROPIC") {
+                samplerDef->Filter = (int)spv::SamplerStateTextureFilterEnum::Anisotropic;
+            }
+            else if (filter == "MIN_MAG_MIP_POINT") {
+                samplerDef->Filter = (int)spv::SamplerStateTextureFilterEnum::Point;
+            }
+            else {
+                error("Unknown sampler filter: " + filter);
+                return false;
+            }
+        }
+        else if (stateName == "ComparisonFunc")
+        {
+            HlslToken comparisonFuncToken;
+            if (!acceptIdentifier(comparisonFuncToken)) {
+                expected("comparison function");
+                return false;
+            }
+            TString comparisonFunc = *comparisonFuncToken.string;
+
+            if (comparisonFunc == "Never") {
+                samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::Never;
+            }
+            else if (comparisonFunc == "Less") {
+                samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::Less;
+            }
+            else if (comparisonFunc == "Equal") {
+                samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::Equal;
+            }
+            else if (comparisonFunc == "LessEqual") {
+                samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::LessEqual;
+            }
+            else if (comparisonFunc == "Greater") {
+                samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::Greater;
+            }
+            else if (comparisonFunc == "NotEqual") {
+                samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::NotEqual;
+            }
+            else if (comparisonFunc == "GreaterEqual") {
+                samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::GreaterEqual;
+            }
+            else if (comparisonFunc == "Always") {
+                samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::Always;
+            }
+            else {
+                error("Unknown sampler comparison function: " + comparisonFunc);
+                return false;
+            }
+        }
+        else if (stateName == "AddressU" || stateName == "AddressV" || stateName == "AddressW")
+        {
+            HlslToken textureAddressModeToken;
+            if (!acceptIdentifier(textureAddressModeToken)) {
+                expected("address mode");
+                return false;
+            }
+            TString textureAddressMode = *textureAddressModeToken.string;
+
+            int textureAddressModeValue = 0;
+            if (textureAddressMode == "Wrap") {
+                textureAddressModeValue = (int)spv::SamplerStateTextureAddressMode::Wrap;
+            }
+            else if (textureAddressMode == "Mirror") {
+                textureAddressModeValue = (int)spv::SamplerStateTextureAddressMode::Mirror;
+            }
+            else if (textureAddressMode == "Clamp") {
+                textureAddressModeValue = (int)spv::SamplerStateTextureAddressMode::Clamp;
+            }
+            else if (textureAddressMode == "Border") {
+                textureAddressModeValue = (int)spv::SamplerStateTextureAddressMode::Border;
+            }
+            else if (textureAddressMode == "MirrorOnce") {
+                textureAddressModeValue = (int)spv::SamplerStateTextureAddressMode::MirrorOnce;
+            }
+            else {
+                error("Unknown sampler texture address mode: " + textureAddressMode);
+                return false;
+            }
+
+            if (stateName == "AddressU") samplerDef->AddressU = textureAddressModeValue;
+            else if (stateName == "AddressV") samplerDef->AddressV = textureAddressModeValue;
+            else samplerDef->AddressW = textureAddressModeValue;
+        }
+        else if (stateName == "BorderColor")
+        {
+            //format: BorderColor = (r,g,b,a);
+            float r, g, b, a;
+
+            if (!acceptTokenClass(EHTokLeftParen)) { expected("sampler state BorderColor: \"(\" missing"); return false; }
+
+            if (!acceptLiteralFloatValue(r)) { expected("sampler state BorderColor: r component missing"); return false; }
+            if (!acceptTokenClass(EHTokComma)) { expected("sampler state BorderColor: \",\" missing"); return false; }
+            if (!acceptLiteralFloatValue(g)) { expected("sampler state BorderColor: g component missing"); return false; }
+            if (!acceptTokenClass(EHTokComma)) { expected("sampler state BorderColor: \",\" missing"); return false; }
+            if (!acceptLiteralFloatValue(b)) { expected("sampler state BorderColor: b component missing"); return false; }
+            if (!acceptTokenClass(EHTokComma)) { expected("sampler state BorderColor: \",\" missing"); return false; }
+            if (!acceptLiteralFloatValue(a)) { expected("sampler state BorderColor: a component missing"); return false; }
+
+            if (!acceptTokenClass(EHTokRightParen)) { expected("sampler state BorderColor: \")\" missing"); return false; }
+
+            samplerDef->SetBorderColor(r, g, b, a);
+        }
+        else if (stateName == "MinLOD")
+        {
+            float value;
+            if (!acceptLiteralFloatValue(value)) {
+                expected("sampler state MinLOD value");
+                return false;
+            }
+            samplerDef->MinMipLevel = value;
+        }
+        else if (stateName == "MaxLOD")
+        {
+            float value;
+            if (!acceptLiteralFloatValue(value)) {
+                expected("sampler state MaxLOD value");
+                return false;
+            }
+            samplerDef->MaxMipLevel = value;
+        }
+        else if (stateName == "MipLODBias")
+        {
+            float value;
+            if (!acceptLiteralFloatValue(value)) {
+                expected("sampler state MipMapLevelOfDetailBias value");
+                return false;
+            }
+            samplerDef->MipMapLevelOfDetailBias = value;
+        }
+        else if (stateName == "MaxAnisotropy")
+        {
+            int value;
+            if (!acceptLiteralIntValue(value)) {
+                expected("sampler state MaxAnisotropy integer");
+                return false;
+            }
+
+            samplerDef->MaxAnisotropy = value;
+        }
+        else
+        {
+            error("unknown sample texture state: " + stateName);
+            return false;
+        }
+
+        // SEMICOLON
+        if (! acceptTokenClass(EHTokSemicolon)) {
+            expected("sampler state: semicolon");
+            return false;
+        }
+    } while (true);
+
+    if (! acceptTokenClass(EHTokRightBrace)) {
+        error("Invalid sampler state syntax");
+        return false;
+    }
 
     return true;
 }
@@ -3383,9 +3599,16 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                             }
 
                             // samplers accept immediate sampler state
-                            if (declaredType.getBasicType() == EbtSampler) {
-                                if (!acceptSamplerState())
+                            if (declaredType.getBasicType() == EbtSampler)
+                            {
+                                TSamplerStateDefinition* samplerDef = nullptr;
+                                if (!acceptSamplerState(samplerDef))
                                     return false;
+
+                                if (samplerDef != nullptr)
+                                {
+                                    declaredType.SetSamplerStateDef(samplerDef);
+                                }
                             }
 
                             TString userDefinedSemantic;
@@ -5842,6 +6065,60 @@ bool HlslGrammar::acceptArguments(TFunction* function, TIntermTyped*& arguments)
         expected(")");
         return false;
     }
+
+    return true;
+}
+
+bool HlslGrammar::acceptLiteralFloatValue(float& value)
+{
+    bool negativeSign = false;
+    if (acceptTokenClass(EHTokDash)) negativeSign = true;
+
+    switch (token.tokenClass) {
+        case EHTokIntConstant:
+            value = (float)token.i;
+            break;
+        case EHTokUintConstant:
+            value = (float)token.u;
+            break;
+        case EHTokFloatConstant:
+            value = (float)token.d;
+            break;
+        case EHTokDoubleConstant:
+            value = (float)token.d;
+            break;
+
+        default:
+            if (negativeSign) recedeToken();
+            return false;
+    }
+
+    if (negativeSign) value = -value;
+    advanceToken();
+
+    return true;
+}
+
+bool HlslGrammar::acceptLiteralIntValue(int& value)
+{
+    bool negativeSign = false;
+    if (acceptTokenClass(EHTokDash)) negativeSign = true;
+
+    switch (token.tokenClass) {
+        case EHTokIntConstant:
+            value = (int)token.i;
+            break;
+        case EHTokUintConstant:
+            value = (int)token.u;
+            break;
+
+        default:
+            if (negativeSign) recedeToken();
+            return false;
+    }
+
+    if (negativeSign) value = -value;
+    advanceToken();
 
     return true;
 }

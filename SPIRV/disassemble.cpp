@@ -110,6 +110,9 @@ protected:
     void outputTypeId(Id id);
     void outputId(Id id);
     void outputXkslShaderDataProperty(int propId);
+    void outputXkslSamplerStateFilter(int propId);
+    void outputXkslSamplerStateCompareFunction(int propId);
+    void outputXkslSamplerStateTextureAddressMode(int propId);
     void outputMask(OperandClass operandClass, unsigned mask);
     void disassembleImmediates(int numOperands);
     void disassembleIds(int numOperands);
@@ -276,6 +279,21 @@ void SpirvStream::outputTypeId(Id id)
 void SpirvStream::outputXkslShaderDataProperty(int propId)
 {
     out << XkslPropertyString(propId);
+}
+
+void SpirvStream::outputXkslSamplerStateFilter(int propId)
+{
+    out << XkslSamplerStateFilterString(propId);
+}
+
+void SpirvStream::outputXkslSamplerStateCompareFunction(int propId)
+{
+    out << XkslSamplerStateCompareFunctionString(propId);
+}
+
+void SpirvStream::outputXkslSamplerStateTextureAddressMode(int propId)
+{
+    out << XkslSamplerStateTextureAddressModeString(propId);
 }
 
 void SpirvStream::outputId(Id id)
@@ -542,6 +560,18 @@ void SpirvStream::disassembleInstruction(Id resultId, Id /*typeId*/, Op opCode, 
             return;
         case XkslShaderDataProperty:
             outputXkslShaderDataProperty(stream[word++]);
+            --numOperands;
+            break;
+        case spv::XkslSamplerStateFilter:
+            outputXkslSamplerStateFilter(stream[word++]);
+            --numOperands;
+            break;
+        case spv::XkslSamplerStateCompareFunction:
+            outputXkslSamplerStateCompareFunction(stream[word++]);
+            --numOperands;
+            break;
+        case spv::XkslSamplerStateTextureAddressMode:
+            outputXkslSamplerStateTextureAddressMode(stream[word++]);
             --numOperands;
             break;
         default:

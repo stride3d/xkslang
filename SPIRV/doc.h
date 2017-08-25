@@ -56,6 +56,9 @@ const char* ExecutionModeString(int);
 const char* StorageClassString(int);
 const char* DecorationString(int);
 const char* XkslPropertyString(int);
+const char* XkslSamplerStateFilterString(int);
+const char* XkslSamplerStateCompareFunctionString(int);
+const char* XkslSamplerStateTextureAddressModeString(int);
 const char* BuiltInString(int);
 const char* DimensionString(int);
 const char* SelectControlString(int);
@@ -161,6 +164,9 @@ enum OperandClass {
 
     XkslShaderDataProperty,
     XkslShaderDataProperties,
+    XkslSamplerStateFilter,
+    XkslSamplerStateCompareFunction,
+    XkslSamplerStateTextureAddressMode,
 
     OperandCount
 };

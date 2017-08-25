@@ -648,6 +648,9 @@ namespace spv {
             case spv::OperandKernelProfilingInfo:
             case spv::OperandCapability:
             case spv::XkslShaderDataProperty:
+            case spv::XkslSamplerStateFilter:
+            case spv::XkslSamplerStateCompareFunction:
+            case spv::XkslSamplerStateTextureAddressMode:
                 ++word;
                 break;
 

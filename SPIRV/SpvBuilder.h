@@ -250,6 +250,8 @@ public:
     void addMemberLinkAttribute(Id id, int num, const char* linkValue);
     void addMemberSemanticName(Id id, int num, const char* semantic);
     void addCBufferProperties(Id id, int cbufferType, int cbufferStage, int countMembers, const char* subpartName);
+    void addMemberSamplerStateDefinition(Id id, int memberNum, int filter, int compareFunction, int addressU, int addressV, int addressW, int maxAnisotropy,
+        float minMipLevel, float maxMipLevel, float mipMapLevelOfDetailBias, float borderColor[4]);
 
     // At the end of what block do the next create*() instructions go?
     void setBuildPoint(Block* bp) { buildPoint = bp; }

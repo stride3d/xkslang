@@ -1228,6 +1228,16 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
 
+                //variable samplerState desc
+                /*if (memberToMoveOut.HasLinkName())
+                {
+                    //TOTO
+                    spv::Instruction memberNameInstr(spv::OpLinkName);
+                    memberNameInstr.addIdOperand(variable.getResultId());
+                    memberNameInstr.addStringOperand(memberToMoveOut.linkName.c_str());
+                    memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }*/
+
                 //variable resourceGroupName (if any)
                 if (memberToMoveOut.HasResourceGroupName())
                 {

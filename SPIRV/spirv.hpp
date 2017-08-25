@@ -649,6 +649,34 @@ enum Capability {
     CapabilityMax = 0x7fffffff,
 };
 
+enum SamplerStateTextureFilterEnum {
+    ComparisonMinMagLinearMipPoint = 1,
+    ComparisonPoint = 2,
+    MinMagLinearMipPoint = 3,
+    Linear = 4,
+    Anisotropic = 5,
+    Point = 6,
+};
+
+enum SamplerStateCompareFunction {
+    Never = 1,
+    Less = 2,
+    Equal = 3,
+    LessEqual = 4,
+    Greater = 5,
+    NotEqual = 6,
+    GreaterEqual = 7,
+    Always = 8,
+};
+
+enum SamplerStateTextureAddressMode {
+    Wrap = 1,
+    Mirror = 2,
+    Clamp = 3,
+    Border = 4,
+    MirrorOnce = 5,
+};
+
 enum XkslPropertyEnum {
     PropertyStage = 1,              //member or method is a stage
     PropertyStream = 2,             //member or method is a stream
@@ -1010,6 +1038,8 @@ enum Op {
     OpSemanticName = 5614,                   //Record the semantic name of a type, as declared by the user
     OpCBufferProperties = 5615,              //Data defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts
     OpGSMethodProperties = 5616,             //Additonnal data for GS methods. GSInputType GSOuputType
+    OpMemberSamplerStateDef = 5617,          //Defines a member samplerState
+    OpSamplerStateDef = 5618,                //Defines a type samplerState
 
     OpForEachCompositionStartLoop = 5620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 56021,

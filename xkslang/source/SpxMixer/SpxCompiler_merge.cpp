@@ -540,6 +540,8 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpMemberSamplerStateDef:
+                case spv::OpSamplerStateDef:
                 {
                     const spv::Id id = bytecodeToMerge.asId(start + 1);
                     if (listAllNewIdMerged[id])
@@ -665,6 +667,8 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpMemberSamplerStateDef:
+                case spv::OpSamplerStateDef:
                 {
                     posToInsertNewNames = start;
                     start = end;

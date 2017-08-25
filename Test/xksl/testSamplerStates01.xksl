@@ -6,66 +6,18 @@ shader ShaderMain
 	
 	stage Texture2D Texture0;
 	
-	// Default sampler
-    stage SamplerState Sampler;
-
-    stage SamplerState PointSampler
-    {
-        Filter = MIN_MAG_MIP_POINT;
-    };
-
-    stage SamplerState LinearSampler
+    stage SamplerState SamplerDefault
     {
         Filter = MIN_MAG_MIP_LINEAR;
-    };
-
-    stage SamplerState LinearBorderSampler
-    {
-        Filter = MIN_MAG_MIP_LINEAR;
-        AddressU = Border;
-        AddressV = Border;
-    };
-
-    stage SamplerComparisonState LinearClampCompareLessEqualSampler
-    {
-        Filter = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
-        AddressU = Clamp;
+		ComparisonFunc = Never;
+		AddressU = Clamp;
         AddressV = Clamp;
-        ComparisonFunc = LessEqual;
-
-    };
-
-    stage SamplerState AnisotropicSampler
-    {
-        Filter = ANISOTROPIC;
-    };
-
-    stage SamplerState AnisotropicRepeatSampler
-    {
-        Filter = ANISOTROPIC;
-        AddressU = Wrap;
-        AddressV = Wrap;
-        MaxAnisotropy = 16;
-    };
-
-    stage SamplerState PointRepeatSampler
-    {
-        Filter = MIN_MAG_MIP_POINT;
-        AddressU = Wrap;
-        AddressV = Wrap;
-    };
-
-    stage SamplerState LinearRepeatSampler
-    {
-        Filter = MIN_MAG_MIP_LINEAR;
-        AddressU = Wrap;
-        AddressV = Wrap;
-    };
-
-    stage SamplerState RepeatSampler
-    {
-        AddressU = Wrap;
-        AddressV = Wrap;
+		AddressW = Clamp;
+		MaxAnisotropy = 16;
+		MinLOD = -3.402823466e+38F;
+		MaxLOD = 3.402823466e+38F;
+		MipLODBias = 0.0f;
+		BorderColor = (0.0, 0.0, 0.0, 0.0);
     };
 	
     void VSMain()
@@ -76,6 +28,6 @@ shader ShaderMain
 	void PSMain()
     {
 		float2 uv2 = streams.aStream;
-        float4 color = Texture0.Sample(Sampler, uv2);
+        float4 color = Texture0.Sample(SamplerDefault, uv2);
     }
 };

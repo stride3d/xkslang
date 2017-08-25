@@ -404,6 +404,8 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpMemberSamplerStateDef:
+                case spv::OpSamplerStateDef:
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
@@ -549,6 +551,8 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpMemberSamplerStateDef:
+                case spv::OpSamplerStateDef:
                 {
                     const spv::Id id = asId(start + 1);
                     if (listIdsRemoved[id]) stripInst(vecStripRanges, start, start + wordCount);
@@ -1151,6 +1155,8 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpMemberSamplerStateDef:
+                case spv::OpSamplerStateDef:
 				{
 					const spv::Id id = asId(start + 1);
 					if (listIdsUsed[id] == false) {
@@ -2011,6 +2017,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             case spv::OpMemberProperties:
             case spv::OpMemberSemanticName:
             case spv::OpCBufferProperties:
+            case spv::OpMemberSamplerStateDef:
             {
                 stripInst(vecStripRanges, start);
                 break;
@@ -2018,6 +2025,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
 
             //Keep the following SPX extensions:
             //case spv::OpSemanticName:
+            //case spv::OpSamplerStateDef:
             //case spv::OpMemberAttribute:
             //case spv::OpMemberLinkName:
             //case spv::OpMemberLogicalGroup:
@@ -4036,6 +4044,9 @@ bool SpxCompiler::remapAllInstructionIds(vector<uint32_t>& bytecode, unsigned in
         case spv::OperandKernelProfilingInfo:
         case spv::OperandCapability:
         case spv::XkslShaderDataProperty:
+        case spv::XkslSamplerStateFilter:
+        case spv::XkslSamplerStateCompareFunction:
+        case spv::XkslSamplerStateTextureAddressMode:
             ++word;
             break;
 
@@ -4345,6 +4356,9 @@ bool SpxCompiler::parseInstruction(const vector<uint32_t>& bytecode, unsigned in
             case spv::OperandKernelProfilingInfo:
             case spv::OperandCapability:
             case spv::XkslShaderDataProperty:
+            case spv::XkslSamplerStateFilter:
+            case spv::XkslSamplerStateCompareFunction:
+            case spv::XkslSamplerStateTextureAddressMode:
                 ++word;
                 break;
 
