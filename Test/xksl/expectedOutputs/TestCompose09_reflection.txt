@@ -27,3 +27,5 @@ ResourceBindings. Count=1
 InputAttributes. Count=2
  SemanticName="S" SemanticIndex=2
  SemanticName="S" SemanticIndex=1
+
+SamplerStates. Count=0

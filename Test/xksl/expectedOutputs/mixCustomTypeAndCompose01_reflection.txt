@@ -58,3 +58,5 @@ ResourceBindings. Count=1
  Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0
+
+SamplerStates. Count=0

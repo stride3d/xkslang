@@ -53,3 +53,5 @@ ResourceBindings. Count=4
  Stage=Pixel KeyName="PerLight" RawName="PerLight" ResourceGroupName="PerLight" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0
+
+SamplerStates. Count=0

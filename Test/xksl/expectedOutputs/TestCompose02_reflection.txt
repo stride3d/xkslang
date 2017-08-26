@@ -21,3 +21,5 @@ ResourceBindings. Count=1
  Stage=Pixel KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0
+
+SamplerStates. Count=0

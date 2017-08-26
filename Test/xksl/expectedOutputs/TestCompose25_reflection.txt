@@ -25,3 +25,5 @@ ResourceBindings. Count=1
  Stage=Vertex KeyName="PreView" RawName="PreView" ResourceGroupName="PreView" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0
+
+SamplerStates. Count=0

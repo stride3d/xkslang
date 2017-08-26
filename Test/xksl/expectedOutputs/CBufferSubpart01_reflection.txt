@@ -69,3 +69,5 @@ ResourceBindings. Count=1
  Stage=Vertex KeyName="PerLighting" RawName="PerLighting" ResourceGroupName="PerLighting" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0
+
+SamplerStates. Count=0

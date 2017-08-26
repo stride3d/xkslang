@@ -10,3 +10,5 @@ ResourceBindings. Count=0
 
 InputAttributes. Count=1
  SemanticName="CUSTOM_SEMANTIC" SemanticIndex=0
+
+SamplerStates. Count=0

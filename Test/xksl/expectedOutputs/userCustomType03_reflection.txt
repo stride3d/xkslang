@@ -22,3 +22,5 @@ ResourceBindings. Count=1
  Stage=Vertex KeyName="aCBuffer" RawName="aCBuffer" ResourceGroupName="aCBuffer" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0
+
+SamplerStates. Count=0

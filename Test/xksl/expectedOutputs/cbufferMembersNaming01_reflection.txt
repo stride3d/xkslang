@@ -121,3 +121,5 @@ ResourceBindings. Count=14
  Stage=Vertex KeyName="cbStageCompositionWithGeneric" RawName="cbStageCompositionWithGeneric" ResourceGroupName="cbStageCompositionWithGeneric" Class=ConstantBuffer Type=ConstantBuffer
 
 InputAttributes. Count=0
+
+SamplerStates. Count=0

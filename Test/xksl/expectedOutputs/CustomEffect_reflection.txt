@@ -51,3 +51,5 @@ ResourceBindings. Count=4
 InputAttributes. Count=2
  SemanticName="TEXCOORD" SemanticIndex=0
  SemanticName="POSITION" SemanticIndex=0
+
+SamplerStates. Count=0

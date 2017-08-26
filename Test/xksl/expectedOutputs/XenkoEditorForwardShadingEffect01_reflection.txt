@@ -158,3 +158,5 @@ InputAttributes. Count=4
  SemanticName="TANGENTTOWORLD" SemanticIndex=0
  SemanticName="POSITION" SemanticIndex=0
  SemanticName="SCREENPOSITION" SemanticIndex=0
+
+SamplerStates. Count=0

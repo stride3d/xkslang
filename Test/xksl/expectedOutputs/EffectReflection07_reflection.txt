@@ -31,3 +31,5 @@ ResourceBindings. Count=6
  Stage=Pixel KeyName="ShaderMain.Sampler0" RawName="ShaderMain_Sampler0" ResourceGroupName="ResourceGroup" Class=Sampler Type=Sampler
 
 InputAttributes. Count=0
+
+SamplerStates. Count=0

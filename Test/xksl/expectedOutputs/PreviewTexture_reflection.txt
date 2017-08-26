@@ -26,3 +26,5 @@ InputAttributes. Count=5
  SemanticName="BATCH_SWIZZLE" SemanticIndex=0
  SemanticName="POSITION" SemanticIndex=0
  SemanticName="TEXCOORD" SemanticIndex=0
+
+SamplerStates. Count=0
