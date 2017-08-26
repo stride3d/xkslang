@@ -183,6 +183,7 @@ bool SpxCompiler::GetInputAttributesFromBytecode(EffectReflection& effectReflect
 					break;
 				}
 
+                case spv::OpTypeFloat:
                 case spv::OpFunction:
                 case spv::OpTypeFunction:
                 {
@@ -313,7 +314,6 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 
                 cbufferData->cbufferMembersData = new TypeStructMemberArray();
                 cbufferData->cbufferMembersData->members.resize(cbufferData->cbufferCountMembers);
-                cbufferData->isUsed = true;
 
                 listAllCBuffers.push_back(cbufferData);
                 vectorCBuffersIds[type->GetId()] = cbufferData;
@@ -567,6 +567,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     break;
                 }
 
+                case spv::OpTypeFloat:
                 case spv::OpFunction:
                 case spv::OpTypeFunction:
                 {
@@ -782,6 +783,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                             break;
                         }
 
+                        case spv::OpTypeFloat:
                         case spv::OpFunction:
                         case spv::OpTypeFunction:
                         {
@@ -803,9 +805,13 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
     //Add ResourceBindings info in EffectReflection
     // Find which cbuffer is used by which output stage
     // Find which variable resource is used by which output stage
+    // Flag and store all samplerStates variable used by any stage (to create the SamplerStates list after)
     if (success)
     {
 		vector<EffectResourceBindingDescription> vecAllResourceBindings;
+        vector<VariableInstruction*> vecAllSamplerStatesVariable;
+        vecAllSamplerStatesVariable.resize(bound(), nullptr);
+        int countSamplerStatesVariables = 0;
 
         //we access the cbuffer through their variable (not their type): update the targeted IDs
         for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
@@ -822,14 +828,14 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
             FunctionInstruction* stageEntryFunction = listEntryPoints[iStage].entryFunction;
             ShadingStageEnum stage = listEntryPoints[iStage].stage;
 
-            //reset the cbuffer and resource variable flag (we insert a cbuffer once per stage)
+            //reset the cbuffer and resource variable isUsed flag (we insert a cbuffer once per stage)
             for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++) {
                 CBufferTypeData* cbufferData = *itcb;
-                cbufferData->tmpFlag = 0;
+                cbufferData->isUsed = false;
             }
             for (auto itv = listAllResourceVariables.begin(); itv != listAllResourceVariables.end(); itv++) {
                 VariableInstruction* variable = *itv;
-                variable->tmpFlag = 0;
+                variable->isUsed = false;
             }
 
             //Set all functions flag to 0 (to check a function only once)
@@ -875,9 +881,9 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                             if (vectorResourceVariablesId[idLoaded] != nullptr)
                             {
                                 VariableInstruction* variable = vectorResourceVariablesId[idLoaded];
-                                if (variable->tmpFlag == 0)
+                                if (variable->isUsed == false)
                                 {
-                                    variable->tmpFlag = 1;
+                                    variable->isUsed = true;
                                     countBindingsToAdd++;
                                 }
                             }
@@ -892,9 +898,9 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                             if (vectorCBuffersIds[structIdAccessed] != nullptr)
                             {
                                 CBufferTypeData* cbufferData = vectorCBuffersIds[structIdAccessed];
-                                if (cbufferData->tmpFlag == 0)
+                                if (cbufferData->isUsed == false)
                                 {
-                                    cbufferData->tmpFlag = 1;
+                                    cbufferData->isUsed = true;
                                     countBindingsToAdd++;
                                 }
                             }
@@ -933,7 +939,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
                     {
                         CBufferTypeData* cbufferData = *itcb;
-                        if (cbufferData->tmpFlag == 1)
+                        if (cbufferData->isUsed)
                         {
                             string cbufferRawName = getRawNameFromKeyName(cbufferData->cbufferName);
 
@@ -957,7 +963,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         if (!variableData->hasKeyName() || !variableData->hasRawName()) error("A variable is missing name information");
 #endif
 
-                        if (variable->tmpFlag == 1)
+                        if (variable->isUsed)
                         {
 							vecAllResourceBindings.push_back(
                                 EffectResourceBindingDescription(
@@ -968,6 +974,19 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                     variableData->variableTypeReflection.Class,
                                     variableData->variableTypeReflection.Type
                                 ));
+
+                            if (variableData->variableTypeReflection.Class == EffectParameterReflectionClass::Sampler)
+                            {
+                                unsigned int variableId = (unsigned int)variable->GetId();
+#ifdef XKSLANG_DEBUG_MODE
+                                if (variableId >= vecAllSamplerStatesVariable.size()) { error("Variable Id is out of bound"); break;}
+#endif
+                                if (vecAllSamplerStatesVariable[variableId] == nullptr)
+                                {
+                                    vecAllSamplerStatesVariable[variableId] = variable;
+                                    countSamplerStatesVariables++;
+                                }
+                            }
                         }
                     }
                 }
@@ -981,6 +1000,81 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 		{
             effectReflection.SetResourcesBindings(vecAllResourceBindings);
 		}
+
+        //Find the sample states description
+        if (success)
+        {
+            if (countSamplerStatesVariables > 0)
+            {
+                vector<EffectSamplerStateDescription> vecSamplerStates;
+
+                unsigned int start = header_size;
+                const unsigned int end = (unsigned int)spv.size();
+                while (start < end)
+                {
+                    unsigned int wordCount = asWordCount(start);
+                    spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); break; }
+#endif
+
+                    switch (opCode)
+                    {
+                        case spv::OpSamplerStateDef:
+                        {
+                            spv::Id id = asId(start + 1);
+#ifdef XKSLANG_DEBUG_MODE
+                            if (id >= (unsigned int)vecAllSamplerStatesVariable.size()) { error("Id out of bound: " + to_string(id)); break; }
+#endif
+                            if (vecAllSamplerStatesVariable[id] != nullptr)
+                            {
+                                VariableInstruction* variable = vecAllSamplerStatesVariable[id];
+
+                                if (wordCount != 15) { error("Invalid OpSamplerStateDef instruction wordcoun"); break; }
+                                
+                                union { float fl; unsigned int v; } u_minMipLevel, u_maxMipLevel, u_mipMapLevelOfDetailBias, u_r, u_g, u_b, u_a;
+
+                                ReflectionSamplerStateTextureFilterEnum filter    = (ReflectionSamplerStateTextureFilterEnum)asLiteralValue(start + 2);
+                                ReflectionSamplerStateCompareFunction compare     = (ReflectionSamplerStateCompareFunction)asLiteralValue(start + 3);
+                                ReflectionSamplerStateTextureAddressMode addressU = (ReflectionSamplerStateTextureAddressMode)asLiteralValue(start + 4);
+                                ReflectionSamplerStateTextureAddressMode addressV = (ReflectionSamplerStateTextureAddressMode)asLiteralValue(start + 5);
+                                ReflectionSamplerStateTextureAddressMode addressW = (ReflectionSamplerStateTextureAddressMode)asLiteralValue(start + 6);
+                                int maxAnisotropy           = asLiteralValue(start + 7);
+                                u_minMipLevel.v             = asLiteralValueUInt(start + 8);
+                                u_maxMipLevel.v             = asLiteralValueUInt(start + 9);
+                                u_mipMapLevelOfDetailBias.v = asLiteralValueUInt(start + 10);
+                                u_r.v = asLiteralValueUInt(start + 11);
+                                u_g.v = asLiteralValueUInt(start + 12);
+                                u_b.v = asLiteralValueUInt(start + 13);
+                                u_a.v = asLiteralValueUInt(start + 14);
+                                float borderColor[] = { u_r.fl, u_g.fl, u_b.fl, u_a.fl };
+
+                                vecSamplerStates.push_back(
+                                    EffectSamplerStateDescription(variable->variableData->variableKeyName,
+                                        filter, compare, addressU, addressV, addressW, maxAnisotropy, u_minMipLevel.fl, u_maxMipLevel.fl, u_mipMapLevelOfDetailBias.fl, borderColor)
+                                );
+                            }
+
+                            break;
+                        }
+
+                        case spv::OpTypeFloat:
+                        case spv::OpFunction:
+                        case spv::OpTypeFunction:
+                        {
+                            start = end;
+                            break;
+                        }
+                    }
+                    start += wordCount;
+                }
+
+                effectReflection.SetSamplerStates(vecSamplerStates);
+            }
+
+            if (errorMessages.size() > 0) { success = false; }
+        }
     }
 
 	//=========================================================================================================================

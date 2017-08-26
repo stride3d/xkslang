@@ -595,7 +595,8 @@ namespace xkslangDll
 	bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
 		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers, int32_t* constantBufferStructSize, int32_t* constantBufferMemberStructSize,
 		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings, int32_t* resourceBindingsStructSize,
-		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes, int32_t* inputAttributesStructSize)
+		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes, int32_t* inputAttributesStructSize,
+        EffectSamplerStatesDescriptionData** samplerStates, int32_t* countSamplerStates, int32_t* samplerStateStructSize)
 	{
 		errorMessages.clear();
 
@@ -734,6 +735,28 @@ namespace xkslangDll
 				*inputAttributes = nullptr;
 			}
 		}
+
+        //Sampler States
+        if (samplerStates != nullptr && countSamplerStates != nullptr)
+        {
+            *countSamplerStates = effectReflectionSrc.CountSamplerStates;
+            if (samplerStateStructSize != nullptr) *samplerStateStructSize = sizeof(EffectSamplerStatesDescriptionData);
+            if (effectReflectionSrc.CountSamplerStates > 0)
+            {
+                EffectSamplerStatesDescriptionData* arraySamplerStates =
+                    (EffectSamplerStatesDescriptionData*)GlobalAlloc(0, effectReflectionSrc.CountSamplerStates * sizeof(EffectSamplerStatesDescriptionData));
+                for (int k = 0; k < effectReflectionSrc.CountSamplerStates; ++k)
+                {
+                    const char* keyName = allocateAndCopyStringOnGlobalHeap(effectReflectionSrc.SamplerStates[k].KeyName.c_str());
+                    arraySamplerStates[k] = EffectSamplerStatesDescriptionData(keyName, effectReflectionSrc.SamplerStates[k]);
+                }
+                *samplerStates = arraySamplerStates;
+            }
+            else
+            {
+                *samplerStates = nullptr;
+            }
+        }
 
 		return true;
 	}

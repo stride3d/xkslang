@@ -649,6 +649,7 @@ enum Capability {
     CapabilityMax = 0x7fffffff,
 };
 
+//Warning: struct has to be identical to EffectReflection.h struct
 enum SamplerStateTextureFilterEnum {
     ComparisonMinMagLinearMipPoint = 1,
     ComparisonPoint = 2,
@@ -658,6 +659,7 @@ enum SamplerStateTextureFilterEnum {
     Point = 6,
 };
 
+//Warning: struct has to be identical to EffectReflection.h struct
 enum SamplerStateCompareFunction {
     Never = 1,
     Less = 2,
@@ -669,6 +671,7 @@ enum SamplerStateCompareFunction {
     Always = 8,
 };
 
+//Warning: struct has to be identical to EffectReflection.h struct
 enum SamplerStateTextureAddressMode {
     Wrap = 1,
     Mirror = 2,

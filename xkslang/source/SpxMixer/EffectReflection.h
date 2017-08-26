@@ -452,6 +452,41 @@ public:
 //=====================================================================================================================
 // Resource Binding
 //=====================================================================================================================
+
+//Warning: struct has to be identical to spirv.hpp struct
+enum class ReflectionSamplerStateTextureFilterEnum : int32_t
+{
+    ComparisonMinMagLinearMipPoint = 1,
+    ComparisonPoint = 2,
+    MinMagLinearMipPoint = 3,
+    Linear = 4,
+    Anisotropic = 5,
+    Point = 6,
+};
+
+//Warning: struct has to be identical to spirv.hpp struct
+enum class ReflectionSamplerStateCompareFunction : int32_t
+{
+    Never = 1,
+    Less = 2,
+    Equal = 3,
+    LessEqual = 4,
+    Greater = 5,
+    NotEqual = 6,
+    GreaterEqual = 7,
+    Always = 8,
+};
+
+//Warning: struct has to be identical to spirv.hpp struct
+enum class ReflectionSamplerStateTextureAddressMode : int32_t
+{
+    Wrap = 1,
+    Mirror = 2,
+    Clamp = 3,
+    Border = 4,
+    MirrorOnce = 5,
+};
+
 class EffectResourceBindingDescription
 {
 public:
@@ -464,10 +499,39 @@ public:
     EffectParameterReflectionType Type;
 
 public:
-	EffectResourceBindingDescription() {}
-	EffectResourceBindingDescription(ShadingStageEnum stage, const std::string& keyName, const std::string& rawName, const std::string& resourceGroupName,
+    EffectResourceBindingDescription() {}
+    EffectResourceBindingDescription(ShadingStageEnum stage, const std::string& keyName, const std::string& rawName, const std::string& resourceGroupName,
         EffectParameterReflectionClass c, EffectParameterReflectionType t)
-        : Stage(stage), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName), Class(c), Type(t){}
+        : Stage(stage), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName), Class(c), Type(t) {}
+};
+
+//=====================================================================================================================
+// SamplerState
+//=====================================================================================================================
+class EffectSamplerStateDescription
+{
+public:
+    std::string KeyName;
+    ReflectionSamplerStateTextureFilterEnum Filter;
+    ReflectionSamplerStateCompareFunction Compare;
+    ReflectionSamplerStateTextureAddressMode AddressU;
+    ReflectionSamplerStateTextureAddressMode AddressV;
+    ReflectionSamplerStateTextureAddressMode AddressW;
+    int MaxAnisotropy;
+    float MinMipLevel;
+    float MaxMipLevel;
+    float MipMapLevelOfDetailBias;
+    float BorderColor[4];
+
+public:
+    EffectSamplerStateDescription() {}
+    EffectSamplerStateDescription(const std::string& keyName, ReflectionSamplerStateTextureFilterEnum filter, ReflectionSamplerStateCompareFunction compare,
+        ReflectionSamplerStateTextureAddressMode addressU, ReflectionSamplerStateTextureAddressMode addressV, ReflectionSamplerStateTextureAddressMode addressW,
+        int maxAnisotropy, float minMipLevel, float maxMipLevel, float mipMapLevelOfDetailBias, float borderColor[4])
+        : KeyName(keyName), Filter(filter), Compare(compare), AddressU(addressU), AddressV(addressV), AddressW(addressW), MaxAnisotropy(maxAnisotropy),
+        MinMipLevel(minMipLevel), MaxMipLevel(maxMipLevel), MipMapLevelOfDetailBias(mipMapLevelOfDetailBias) {
+        for (int i = 0; i < 4; i++) BorderColor[i] = borderColor[i];
+    }
 };
 
 //=====================================================================================================================
@@ -499,18 +563,26 @@ public:
 	ShaderInputAttributeDescription* InputAttributes;
 	int CountInputAttributes;
 
+    EffectSamplerStateDescription* SamplerStates;
+    int CountSamplerStates;
+
 public:
-    EffectReflection() : ConstantBuffers(nullptr), CountConstantBuffers(0), ResourceBindings(nullptr), CountResourceBindings(0), InputAttributes(nullptr), CountInputAttributes(0) {}
+    EffectReflection() : ConstantBuffers(nullptr), CountConstantBuffers(0), ResourceBindings(nullptr), CountResourceBindings(0), InputAttributes(nullptr), CountInputAttributes(0),
+        SamplerStates(nullptr), CountSamplerStates(0) {}
 	virtual ~EffectReflection();
 
     void Clear();
 
+    static std::string GetEffectSamplerStateReflectionFilterLabel(ReflectionSamplerStateTextureFilterEnum filter);
+    static std::string GetEffectSamplerStateReflectionCompareLabel(ReflectionSamplerStateCompareFunction compare);
+    static std::string GetEffectSamplerStateReflectionTextureAddressModeLabel(ReflectionSamplerStateTextureAddressMode addressMode);
     static std::string GetEffectParameterReflectionClassLabel(EffectParameterReflectionClass parameterClass);
     static std::string GetEffectParameterReflectionTypeLabel(EffectParameterReflectionType parameterType);
     std::string Print();
 
     void SetResourcesBindings(const std::vector<EffectResourceBindingDescription>& bindings);
     void SetInputAttributes(const std::vector<ShaderInputAttributeDescription>& inputAttributes);
+    void SetSamplerStates(const std::vector<EffectSamplerStateDescription>& samplerStates);
 };
 
 }  // namespace xkslang

@@ -357,6 +357,7 @@ public:
     private:
         TypeInstruction* variableTo;
         int tmpFlag;
+        bool isUsed;
 
         VariableData* variableData; //temporarily used by some algo
 

@@ -1259,7 +1259,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                     spv::Instruction samplerStateDesc(spv::OpSamplerStateDef);
                     samplerStateDesc.addIdOperand(variable.getResultId());
-                    for (unsigned int ops = 3; ops < words; ops++)
+                    for (int ops = 3; ops < words; ops++)
                         samplerStateDesc.addImmediateOperand(spv[samplerStateDescPos + ops]);
                     samplerStateDesc.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }

@@ -134,6 +134,30 @@ namespace xkslangDll
 		ShaderInputAttributeDescriptionData(const char* semanticName, int semanticIndex) : SemanticName(semanticName), SemanticIndex(semanticIndex) {}
 	};
 
+    //struct containing a sampler state data (to be easily exchanged between native and managed apps)
+    struct EffectSamplerStatesDescriptionData
+    {
+    public:
+        const char* KeyName;
+        xkslang::ReflectionSamplerStateTextureFilterEnum Filter;
+        xkslang::ReflectionSamplerStateCompareFunction Compare;
+        xkslang::ReflectionSamplerStateTextureAddressMode AddressU;
+        xkslang::ReflectionSamplerStateTextureAddressMode AddressV;
+        xkslang::ReflectionSamplerStateTextureAddressMode AddressW;
+        int32_t MaxAnisotropy;
+        float MinMipLevel;
+        float MaxMipLevel;
+        float MipMapLevelOfDetailBias;
+        float BorderColor[4];
+
+        EffectSamplerStatesDescriptionData(const char* keyName, const xkslang::EffectSamplerStateDescription& e)
+            : KeyName(keyName), Filter(e.Filter), Compare(e.Compare), AddressU(e.AddressU), AddressV(e.AddressV), AddressW(e.AddressW), MaxAnisotropy(e.MaxAnisotropy),
+            MinMipLevel(e.MinMipLevel), MaxMipLevel(e.MaxMipLevel), MipMapLevelOfDetailBias(e.MipMapLevelOfDetailBias)
+        {
+            for (int i = 0; i < 4; i++) BorderColor[i] = e.BorderColor[i];
+        }
+    };
+
 	//=====================================================================================================================
 	//=====================================================================================================================
 	//Return the error messages after an operation failed
@@ -241,7 +265,8 @@ namespace xkslangDll
 	extern "C" __declspec(dllexport) bool GetMixerEffectReflectionData(uint32_t mixerHandleId,
 		ConstantBufferReflectionDescriptionData** constantBuffers, int32_t* countConstantBuffers, int32_t* constantBufferStructSize, int32_t* constantBufferMemberStructSize,
 		EffectResourceBindingDescriptionData** resourceBindings, int32_t* countResourceBindings, int32_t* resourceBindingsStructSize,
-		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes, int32_t* inputAttributesStructSize);
+		ShaderInputAttributeDescriptionData** inputAttributes, int32_t* countInputAttributes, int32_t* inputAttributesStructSize,
+        EffectSamplerStatesDescriptionData** samplerStates, int32_t* countSamplerStates, int32_t* samplerStateStructSize);
 }
 
 

@@ -35,6 +35,30 @@ void EffectReflection::Clear()
 		InputAttributes = nullptr;
 	}
 	CountInputAttributes = 0;
+
+    if (SamplerStates != nullptr) {
+        delete[] SamplerStates;
+        SamplerStates = nullptr;
+    }
+    CountSamplerStates = 0;
+}
+
+void EffectReflection::SetSamplerStates(const std::vector<EffectSamplerStateDescription>& samplerStates)
+{
+    if (SamplerStates != nullptr) {
+        delete[] SamplerStates;
+        SamplerStates = nullptr;
+    }
+
+    CountSamplerStates = (int)samplerStates.size();
+    if (CountSamplerStates > 0)
+    {
+        SamplerStates = new EffectSamplerStateDescription[CountSamplerStates];
+        for (int k = 0; k < CountSamplerStates; k++)
+        {
+            SamplerStates[k] = samplerStates[k];
+        }
+    }
 }
 
 void EffectReflection::SetResourcesBindings(const vector<EffectResourceBindingDescription>& bindings)
@@ -273,7 +297,66 @@ string EffectReflection::Print()
 		stream << " SemanticName=\"" << ia.SemanticName << "\" SemanticIndex=" << ia.SemanticIndex << endl;
 	}
 
+    stream << endl;
+    stream << "SamplerStates. Count=" << CountSamplerStates << endl;
+    for (int i = 0; i < CountSamplerStates; ++i)
+    {
+        EffectSamplerStateDescription& ss = SamplerStates[i];
+        stream << " KeyName=\"" << ss.KeyName << "\""
+            << " Filter=" << EffectReflection::GetEffectSamplerStateReflectionFilterLabel(ss.Filter)
+            << " Compare=" << EffectReflection::GetEffectSamplerStateReflectionCompareLabel(ss.Compare)
+            << " AddressU=" << GetEffectSamplerStateReflectionTextureAddressModeLabel(ss.AddressU)
+            << " AddressV=" << GetEffectSamplerStateReflectionTextureAddressModeLabel(ss.AddressV)
+            << " AddressW=" << GetEffectSamplerStateReflectionTextureAddressModeLabel(ss.AddressW)
+            << " MaxAnisotropy=" << ss.MaxAnisotropy
+            << " MinMipLevel=" << ss.MinMipLevel << " MaxMipLevel=" << ss.MaxMipLevel << " MipMapLevelOfDetailBias=" << ss.MipMapLevelOfDetailBias
+            << " BorderColor=(" << ss.BorderColor[0] << ", " << ss.BorderColor[1] << ", " << ss.BorderColor[2] << ", " << ss.BorderColor[3] << ")" << endl;
+    }
+
     return stream.str();
+}
+
+string EffectReflection::GetEffectSamplerStateReflectionFilterLabel(ReflectionSamplerStateTextureFilterEnum filter)
+{
+    switch (filter)
+    {
+        case xkslang::ReflectionSamplerStateTextureFilterEnum::ComparisonMinMagLinearMipPoint: return "ComparisonMinMagLinearMipPoint";
+        case xkslang::ReflectionSamplerStateTextureFilterEnum::ComparisonPoint:                return "ComparisonPoint";
+        case xkslang::ReflectionSamplerStateTextureFilterEnum::MinMagLinearMipPoint:           return "MinMagLinearMipPoint";
+        case xkslang::ReflectionSamplerStateTextureFilterEnum::Linear:                         return "Linear";
+        case xkslang::ReflectionSamplerStateTextureFilterEnum::Anisotropic:                    return "Anisotropic";
+        case xkslang::ReflectionSamplerStateTextureFilterEnum::Point:                          return "Point";
+        default: return "Unknown";
+    }
+}
+
+string EffectReflection::GetEffectSamplerStateReflectionCompareLabel(ReflectionSamplerStateCompareFunction compare)
+{
+    switch (compare)
+    {
+        case xkslang::ReflectionSamplerStateCompareFunction::Never:        return "Never";
+        case xkslang::ReflectionSamplerStateCompareFunction::Less:         return "Less";
+        case xkslang::ReflectionSamplerStateCompareFunction::Equal:        return "Equal";
+        case xkslang::ReflectionSamplerStateCompareFunction::LessEqual:    return "LessEqual";
+        case xkslang::ReflectionSamplerStateCompareFunction::Greater:      return "Greater";
+        case xkslang::ReflectionSamplerStateCompareFunction::NotEqual:     return "NotEqual";
+        case xkslang::ReflectionSamplerStateCompareFunction::GreaterEqual: return "GreaterEqual";
+        case xkslang::ReflectionSamplerStateCompareFunction::Always:       return "Always";
+        default: return "Unknown";
+    }
+}
+
+string EffectReflection::GetEffectSamplerStateReflectionTextureAddressModeLabel(ReflectionSamplerStateTextureAddressMode addressMode)
+{
+    switch (addressMode)
+    {
+        case xkslang::ReflectionSamplerStateTextureAddressMode::Wrap:       return "Wrap";
+        case xkslang::ReflectionSamplerStateTextureAddressMode::Mirror:     return "Mirror";
+        case xkslang::ReflectionSamplerStateTextureAddressMode::Clamp:      return "Clamp";
+        case xkslang::ReflectionSamplerStateTextureAddressMode::Border:     return "Border";
+        case xkslang::ReflectionSamplerStateTextureAddressMode::MirrorOnce: return "MirrorOnce";
+        default: return "Unknown";
+    }
 }
 
 string EffectReflection::GetEffectParameterReflectionClassLabel(EffectParameterReflectionClass parameterClass)
