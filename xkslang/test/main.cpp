@@ -287,15 +287,16 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
-    //{ "testStreamIO01", "testStreamIO01.xkfx"},
+////////////////////{ "testStreamIO01", "testStreamIO01.xkfx"},  //Invalid SPIRV-Cross output!!! (matrix unroll)
 
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
     //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
+    //{ "testSamplerStates03", "testSamplerStates03.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
     //{ "LuminanceLogShader", "LuminanceLogShader.xkfx" },
-    { "ImageScalerShader", "ImageScalerShader.xkfx" },
+    //{ "ImageScalerShader", "ImageScalerShader.xkfx" },
     //{ "GaussianBlurShader", "GaussianBlurShader.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },
@@ -321,7 +322,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
 
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
-/////////////{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },  //Invalid SPIRV-Cross HLSL conversion (stage stream IO float3x3 unrolled)
+    { "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
 };
 

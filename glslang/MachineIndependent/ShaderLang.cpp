@@ -2084,7 +2084,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                 TString* cbufferSubpartName = member.type->getCbufferSubpartName();
 
                 {
-                    //CBuffer (either named or unnamed)
+                    //process CBuffers (named and unamed)
                     if (isUnnamedBuffer)
                     {
                         //XKSL Rules: an unnamed CBuffer/RGroup is treated as if each members are part of the global CBuffer/RGroup

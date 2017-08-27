@@ -4172,6 +4172,19 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
                 if (arraySizes)
                     typeList->back().type->newArraySizes(*arraySizes);
 
+                // XKSL extensions: samplers accept immediate sampler state (or default one)
+                if (member.type->getBasicType() == EbtSampler && member.type->getSampler().sampler)
+                {
+                    TSamplerStateDefinition* samplerDef = nullptr;
+                    if (!acceptSamplerState(samplerDef))
+                        return false;
+
+                    if (samplerDef != nullptr)
+                    {
+                        member.type->SetSamplerStateDef(samplerDef);
+                    }
+                }
+
                 acceptPostDecls(member.type->getQualifier());
 
                 // EQUAL assignment_expression

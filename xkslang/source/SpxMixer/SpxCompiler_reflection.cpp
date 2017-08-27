@@ -64,7 +64,7 @@ bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
 
     bool success;
     success = GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(effectReflection, listEntryPoints);
-    if (!success) return error("Failed to get the CBuffer and ResourcesBinding reflection data from the bytecode");
+    if (!success) return error("Failed to get the CBuffers, ResourcesBindings and SamplerStates reflection data from the bytecode");
 
 	success = GetInputAttributesFromBytecode(effectReflection, listEntryPoints);
 	if (!success) return error("Failed to get the Input Attributes reflection data from the bytecode");
@@ -809,9 +809,9 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
     if (success)
     {
 		vector<EffectResourceBindingDescription> vecAllResourceBindings;
-        vector<VariableInstruction*> vecAllSamplerStatesVariable;
-        vecAllSamplerStatesVariable.resize(bound(), nullptr);
-        int countSamplerStatesVariables = 0;
+        vector<VariableInstruction*> vecAllSamplerStateVariablesPerId;
+        vecAllSamplerStateVariablesPerId.resize(bound(), nullptr);
+        vector<VariableInstruction*> vecAllSamplerStateVariables;
 
         //we access the cbuffer through their variable (not their type): update the targeted IDs
         for (auto itcb = listAllCBuffers.begin(); itcb != listAllCBuffers.end(); itcb++)
@@ -979,12 +979,12 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                             {
                                 unsigned int variableId = (unsigned int)variable->GetId();
 #ifdef XKSLANG_DEBUG_MODE
-                                if (variableId >= vecAllSamplerStatesVariable.size()) { error("Variable Id is out of bound"); break;}
+                                if (variableId >= vecAllSamplerStateVariablesPerId.size()) { error("Variable Id is out of bound"); break;}
 #endif
-                                if (vecAllSamplerStatesVariable[variableId] == nullptr)
+                                if (vecAllSamplerStateVariablesPerId[variableId] == nullptr)
                                 {
-                                    vecAllSamplerStatesVariable[variableId] = variable;
-                                    countSamplerStatesVariables++;
+                                    vecAllSamplerStateVariablesPerId[variableId] = variable;
+                                    vecAllSamplerStateVariables.push_back(variable);
                                 }
                             }
                         }
@@ -1004,8 +1004,12 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
         //Find the sample states description
         if (success)
         {
-            if (countSamplerStatesVariables > 0)
+            if (vecAllSamplerStateVariables.size() > 0)
             {
+                for (auto its = vecAllSamplerStateVariables.begin(); its != vecAllSamplerStateVariables.end(); its++) {
+                    (*its)->tmpFlag = 0;
+                }
+
                 vector<EffectSamplerStateDescription> vecSamplerStates;
 
                 unsigned int start = header_size;
@@ -1025,11 +1029,16 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         {
                             spv::Id id = asId(start + 1);
 #ifdef XKSLANG_DEBUG_MODE
-                            if (id >= (unsigned int)vecAllSamplerStatesVariable.size()) { error("Id out of bound: " + to_string(id)); break; }
+                            if (id >= (unsigned int)vecAllSamplerStateVariablesPerId.size()) { error("Id out of bound: " + to_string(id)); break; }
 #endif
-                            if (vecAllSamplerStatesVariable[id] != nullptr)
+                            if (vecAllSamplerStateVariablesPerId[id] != nullptr)
                             {
-                                VariableInstruction* variable = vecAllSamplerStatesVariable[id];
+                                VariableInstruction* variable = vecAllSamplerStateVariablesPerId[id];
+
+                                if (variable->tmpFlag == 1) {
+                                    error("A SamplerState variable has a duplicated description: " + variable->variableData->variableKeyName); break;
+                                }
+                                variable->tmpFlag = 1;
 
                                 if (wordCount != 15) { error("Invalid OpSamplerStateDef instruction wordcoun"); break; }
                                 
@@ -1068,6 +1077,15 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         }
                     }
                     start += wordCount;
+                }
+
+                for (auto its = vecAllSamplerStateVariables.begin(); its != vecAllSamplerStateVariables.end(); its++)
+                {
+                    VariableInstruction* variable = *its;
+                    if (variable->tmpFlag == 0)
+                    {
+                        error("A used SamplerState is missing its description: " + variable->variableData->variableKeyName);
+                    }
                 }
 
                 effectReflection.SetSamplerStates(vecSamplerStates);

@@ -1,0 +1,25 @@
+shader ShaderMain<LinkType TSampler>
+{
+	stage stream float2 TexCoord : TEXCOORD0;
+	stage stream float4 ColorTarget : SV_Target0;
+	stage stream float2 aStream: ASTREAM;
+	
+	stage Texture2D Texture0;
+	
+	stage rgroup LocalResourceGroup
+    {
+        [Link("TSampler")]
+        SamplerState Sampler;
+    }
+	
+    void VSMain()
+    {
+		streams.aStream = streams.TexCoord.xy;
+    }
+	
+	void PSMain()
+    {
+		float2 uv2 = streams.aStream;
+        float4 color = Texture0.Sample(Sampler, uv2);
+    }
+};

@@ -1,0 +1,19 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+***********************
+*****  Resources  *****
+***********************
+@C    ShaderMain_Sampler => ALinkName [Stage: Pixel]
+@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage: Pixel]
+
+ConstantBuffers. Count=0
+ResourceBindings. Count=2
+ Stage=Pixel KeyName="ALinkName" RawName="ShaderMain_Sampler" ResourceGroupName="LocalResourceGroup" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.Texture0" RawName="ShaderMain_Texture0" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D
+
+InputAttributes. Count=1
+ SemanticName="TEXCOORD" SemanticIndex=0
+
+SamplerStates. Count=1
+ KeyName="ALinkName" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)

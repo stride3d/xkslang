@@ -2686,12 +2686,18 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
                     builder.addMemberSemanticName(spvType, member, glslangMember.getUserDefinedSemantic()->c_str());
                 }
 
-                if (glslangMember.GetSamplerStateDef() != nullptr)
+                if (glslangMember.getBasicType() == glslang::EbtSampler && glslangMember.getSampler().sampler)
                 {
-                    glslang::TSamplerStateDefinition *ps = glslangMember.GetSamplerStateDef();
-                    builder.addMemberSamplerStateDefinition(spvType, member,
-                        ps->Filter, ps->CompareFunction, ps->AddressU, ps->AddressV, ps->AddressW, ps->MaxAnisotropy,
-                        ps->MinMipLevel, ps->MaxMipLevel, ps->MipMapLevelOfDetailBias, ps->BorderColor);
+                    if (glslangMember.GetSamplerStateDef() != nullptr)
+                    {
+                        glslang::TSamplerStateDefinition *ps = glslangMember.GetSamplerStateDef();
+                        builder.addMemberSamplerStateDefinition(spvType, member,
+                            ps->Filter, ps->CompareFunction, ps->AddressU, ps->AddressV, ps->AddressW, ps->MaxAnisotropy,
+                            ps->MinMipLevel, ps->MaxMipLevel, ps->MipMapLevelOfDetailBias, ps->BorderColor);
+                    }
+                    else {
+                        if (logger) logger->error(std::string("A sampler type is missing its description: ") + (glslangMember.GetFieldNamePtr() != nullptr? glslangMember.GetFieldNamePtr()->c_str(): ""));
+                    }
                 }
                 
                 if (glslangMember.getMemberAttributeList() != nullptr)

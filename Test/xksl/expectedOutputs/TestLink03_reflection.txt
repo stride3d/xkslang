@@ -35,4 +35,5 @@ ResourceBindings. Count=3
 InputAttributes. Count=1
  SemanticName="S_INPUT" SemanticIndex=0
 
-SamplerStates. Count=0
+SamplerStates. Count=1
+ KeyName="Material.DiffuseSampler" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
