@@ -76,6 +76,16 @@ shader ShaderMain
 	void PSMain()
     {
 		float2 uv2 = streams.aStream;
-        float4 color = Texture0.Sample(Sampler, uv2);
+        float4 noSampler = Texture0.Sample(Sampler, uv2);
+		
+		float4 pointSampler = Texture0.Sample(PointSampler, uv2);
+		float4 linearSampler = Texture0.Sample(LinearSampler, uv2);
+		float4 linearBorderSampler = Texture0.Sample(LinearBorderSampler, uv2);
+		float4 linearClampCompareLessEqualSampler = Texture0.Sample(LinearClampCompareLessEqualSampler, uv2);
+		float4 anisotropicSampler = Texture0.Sample(AnisotropicSampler, uv2);
+		float4 anisotropicRepeatSampler = Texture0.Sample(AnisotropicRepeatSampler, uv2);
+		float4 pointRepeatSampler = Texture0.Sample(PointRepeatSampler, uv2);
+		float4 linearRepeatSampler = Texture0.Sample(LinearRepeatSampler, uv2);
+		float4 repeatSampler = Texture0.Sample(RepeatSampler, uv2);
     }
 };

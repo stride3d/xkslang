@@ -1,0 +1,45 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+***********************
+*****  Resources  *****
+***********************
+@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage: Pixel]
+@C    ShaderMain_Sampler => ShaderMain.Sampler [Stage: Pixel]
+@C    ShaderMain_PointSampler => ShaderMain.PointSampler [Stage: Pixel]
+@C    ShaderMain_LinearSampler => ShaderMain.LinearSampler [Stage: Pixel]
+@C    ShaderMain_LinearBorderSampler => ShaderMain.LinearBorderSampler [Stage: Pixel]
+@C    ShaderMain_LinearClampCompareLessEqualSampler => ShaderMain.LinearClampCompareLessEqualSampler [Stage: Pixel]
+@C    ShaderMain_AnisotropicSampler => ShaderMain.AnisotropicSampler [Stage: Pixel]
+@C    ShaderMain_AnisotropicRepeatSampler => ShaderMain.AnisotropicRepeatSampler [Stage: Pixel]
+@C    ShaderMain_PointRepeatSampler => ShaderMain.PointRepeatSampler [Stage: Pixel]
+@C    ShaderMain_LinearRepeatSampler => ShaderMain.LinearRepeatSampler [Stage: Pixel]
+@C    ShaderMain_RepeatSampler => ShaderMain.RepeatSampler [Stage: Pixel]
+
+ConstantBuffers. Count=0
+ResourceBindings. Count=11
+ Stage=Pixel KeyName="ShaderMain.Texture0" RawName="ShaderMain_Texture0" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="ShaderMain.Sampler" RawName="ShaderMain_Sampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.PointSampler" RawName="ShaderMain_PointSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.LinearSampler" RawName="ShaderMain_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.LinearBorderSampler" RawName="ShaderMain_LinearBorderSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.LinearClampCompareLessEqualSampler" RawName="ShaderMain_LinearClampCompareLessEqualSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.AnisotropicSampler" RawName="ShaderMain_AnisotropicSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.AnisotropicRepeatSampler" RawName="ShaderMain_AnisotropicRepeatSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.PointRepeatSampler" RawName="ShaderMain_PointRepeatSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.LinearRepeatSampler" RawName="ShaderMain_LinearRepeatSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Pixel KeyName="ShaderMain.RepeatSampler" RawName="ShaderMain_RepeatSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+
+InputAttributes. Count=1
+ SemanticName="TEXCOORD" SemanticIndex=0
+
+SamplerStates. Count=9
+ KeyName="ShaderMain.PointSampler" Filter=Point Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+ KeyName="ShaderMain.LinearSampler" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+ KeyName="ShaderMain.LinearBorderSampler" Filter=Linear Compare=Never AddressU=Border AddressV=Border AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+ KeyName="ShaderMain.LinearClampCompareLessEqualSampler" Filter=ComparisonMinMagLinearMipPoint Compare=LessEqual AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+ KeyName="ShaderMain.AnisotropicSampler" Filter=Anisotropic Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+ KeyName="ShaderMain.AnisotropicRepeatSampler" Filter=Anisotropic Compare=Never AddressU=Wrap AddressV=Wrap AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+ KeyName="ShaderMain.PointRepeatSampler" Filter=Point Compare=Never AddressU=Wrap AddressV=Wrap AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+ KeyName="ShaderMain.LinearRepeatSampler" Filter=Linear Compare=Never AddressU=Wrap AddressV=Wrap AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+ KeyName="ShaderMain.RepeatSampler" Filter=Linear Compare=Never AddressU=Wrap AddressV=Wrap AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
