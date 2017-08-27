@@ -1,13 +1,9 @@
 ***************************
 ****  ConstantBuffers  ****
 ***************************
- cbuffer Globals [size: 28]
-@C    Effect_Center => Effect.Center
-@C    Effect_Frequency => Effect.Frequency
-@C    Effect_Phase => Effect.Phase
-@C    Effect_Spread => Effect.Spread
-@C    Effect_Amplitude => Effect.Amplitude
-@C    Effect_InvAspectRatio => Effect.InvAspectRatio
+ cbuffer Globals [size: 20]
+@C    ImageScalerShader_Color => ImageScalerShader.Color
+@C    ImageScalerShader_IsOnlyChannelRed => ImageScalerShader.IsOnlyChannelRed
  cbuffer PerDraw [size: 64]
 @C    SpriteBase_MatrixTransform => SpriteBase.MatrixTransform
 ***********************
@@ -19,23 +15,11 @@
 @C    Texturing_Sampler => Texturing.Sampler [Stage: Pixel]
 
 ConstantBuffers. Count=2
- cbuffer: Name="Globals" Size=28 MembersCount=6
-  KeyName="Effect.Center" RawName="Effect_Center" LogicalGroup="" Offset=0
-  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+ cbuffer: Name="Globals" Size=20 MembersCount=2
+  KeyName="ImageScalerShader.Color" RawName="ImageScalerShader_Color" LogicalGroup="" Offset=0
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="Effect.Frequency" RawName="Effect_Frequency" LogicalGroup="" Offset=8
-  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
-
-  KeyName="Effect.Phase" RawName="Effect_Phase" LogicalGroup="" Offset=12
-  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
-
-  KeyName="Effect.Spread" RawName="Effect_Spread" LogicalGroup="" Offset=16
-  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
-
-  KeyName="Effect.Amplitude" RawName="Effect_Amplitude" LogicalGroup="" Offset=20
-  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
-
-  KeyName="Effect.InvAspectRatio" RawName="Effect_InvAspectRatio" LogicalGroup="" Offset=24
+  KeyName="ImageScalerShader.IsOnlyChannelRed" RawName="ImageScalerShader_IsOnlyChannelRed" LogicalGroup="" Offset=16
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
  cbuffer: Name="PerDraw" Size=64 MembersCount=1
@@ -49,8 +33,8 @@ ResourceBindings. Count=4
  Stage=Pixel KeyName="Texturing.Sampler" RawName="Texturing_Sampler" ResourceGroupName="" Class=Sampler Type=Sampler
 
 InputAttributes. Count=2
- SemanticName="TEXCOORD" SemanticIndex=0
  SemanticName="POSITION" SemanticIndex=0
+ SemanticName="TEXCOORD" SemanticIndex=0
 
 SamplerStates. Count=1
  KeyName="Texturing.Sampler" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)

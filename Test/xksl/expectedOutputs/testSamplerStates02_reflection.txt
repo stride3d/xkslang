@@ -33,7 +33,8 @@ ResourceBindings. Count=11
 InputAttributes. Count=1
  SemanticName="TEXCOORD" SemanticIndex=0
 
-SamplerStates. Count=9
+SamplerStates. Count=10
+ KeyName="ShaderMain.Sampler" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
  KeyName="ShaderMain.PointSampler" Filter=Point Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
  KeyName="ShaderMain.LinearSampler" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
  KeyName="ShaderMain.LinearBorderSampler" Filter=Linear Compare=Never AddressU=Border AddressV=Border AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)

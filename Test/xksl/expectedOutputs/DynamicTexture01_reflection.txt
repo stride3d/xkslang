@@ -18,4 +18,5 @@ ResourceBindings. Count=4
 
 InputAttributes. Count=0
 
-SamplerStates. Count=0
+SamplerStates. Count=1
+ KeyName="ShaderMain.Sampler1" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)

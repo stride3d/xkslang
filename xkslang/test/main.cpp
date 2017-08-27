@@ -290,11 +290,12 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testStreamIO01", "testStreamIO01.xkfx"},
 
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
-    { "testSamplerStates02", "testSamplerStates02.xkfx" },
+    //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
     //{ "LuminanceLogShader", "LuminanceLogShader.xkfx" },
+    { "ImageScalerShader", "ImageScalerShader.xkfx" },
     //{ "GaussianBlurShader", "GaussianBlurShader.xkfx" },
     //{ "CustomEffect", "CustomEffect.xkfx" },
     //{ "BackgroundShader", "BackgroundShader.xkfx" },

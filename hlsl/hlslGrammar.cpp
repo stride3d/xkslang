@@ -706,10 +706,7 @@ bool HlslGrammar::acceptSamplerState()
 
 bool HlslGrammar::acceptSamplerState(TSamplerStateDefinition*& samplerDef)
 {
-    if (!acceptTokenClass(EHTokLeftBrace))
-        return true;
-
-    //create and set samplerState default values
+    //create a default sampler state
     samplerDef = new TSamplerStateDefinition;
     samplerDef->Filter = (int)spv::SamplerStateTextureFilterEnum::Linear;
     samplerDef->AddressU = (int)spv::SamplerStateTextureAddressMode::Clamp;
@@ -721,6 +718,9 @@ bool HlslGrammar::acceptSamplerState(TSamplerStateDefinition*& samplerDef)
     samplerDef->MaxMipLevel = FLT_MAX;
     samplerDef->MipMapLevelOfDetailBias = 0.0f;
     samplerDef->CompareFunction = (int)spv::SamplerStateCompareFunction::Never;
+
+    if (!acceptTokenClass(EHTokLeftBrace))
+        return true;
 
     do {
         // read state name
@@ -3599,7 +3599,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                             }
 
                             // samplers accept immediate sampler state
-                            if (declaredType.getBasicType() == EbtSampler)
+                            if (declaredType.getBasicType() == EbtSampler && declaredType.getSampler().sampler)
                             {
                                 TSamplerStateDefinition* samplerDef = nullptr;
                                 if (!acceptSamplerState(samplerDef))
