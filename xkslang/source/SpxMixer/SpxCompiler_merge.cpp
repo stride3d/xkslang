@@ -768,15 +768,15 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                                         {
                                             if (aMergedFunction->IsOverriden())
                                             {
-
+                                                return error("PROUT PROUT");
                                             }
                                             else if (anExistingFunction->IsOverriden())
                                             {
-
+                                                aMergedFunction->SetOverridingFunction(anExistingFunction);
                                             }
                                             else
                                             {
-                                                //aMergedFunction->SetOverridingFunction(anExistingFunction);
+                                                aMergedFunction->SetOverridingFunction(anExistingFunction);
                                             }
                                         }
                                     }

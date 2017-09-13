@@ -288,9 +288,11 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 ////////////////////{ "testStreamIO01", "testStreamIO01.xkfx"},  //Invalid SPIRV-Cross output!!! (matrix unroll)
-    { "methodOverride01", "methodOverride01.xkfx" },
+    //{ "methodOverride01", "methodOverride01.xkfx" },
+    //{ "methodOverride02", "methodOverride02.xkfx" },
+    //{ "methodOverride03", "methodOverride03.xkfx" },
+    { "methodOverride04", "methodOverride04.xkfx" },
 
-///////////////////////////////////////////try stage method overriding non-stage method
 ///////////////////////////////////////////try composition overriding the base shader
 
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
@@ -325,7 +327,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
 
-///////////////////////////////////////{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
+    //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
 };
@@ -618,7 +620,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                                 std::cout << "expected output:" << endl << glslExpectedOutput;
                                 std::cout << "output:" << endl << glslConvertedOutput;
 #endif
-                                std::cout << " Glsl output and expected output are different !!!" << endl;
+                                std::cout << " ==== Warning: Glsl output and expected output are different ====" << endl;
 
                                 someExpectedOutputsDifferent = true;
 
@@ -676,7 +678,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                                 std::cout << "expected output:" << endl << hlslExpectedOutput;
                                 std::cout << "output:" << endl << hlslConvertedOutput;
 #endif
-                                std::cout << " Hlsl output and expected output are different !!!" << endl;
+                                std::cout << " ==== Warning: Hlsl output and expected output are different ====" << endl;
                                 someExpectedOutputsDifferent = true;
 
                                 //copy the invalid output in the folder
@@ -725,7 +727,7 @@ static bool OutputAndCheckOutputStagesCompiledBytecode(const string& effectName,
                     std::cout << "expected output:" << endl << reflectionExpectedOutput;
                     std::cout << "output:" << endl << reflectionLatestOutput;
 #endif
-                    std::cout << " Reflection: output and expected output are different !!!" << endl;
+                    std::cout << " ==== Warning: Reflection: output and expected output are different ====" << endl;
                     someExpectedOutputsDifferent = true;
 
                     //copy the invalid output in the folder

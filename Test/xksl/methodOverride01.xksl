@@ -1,3 +1,6 @@
+//Both ShaderMain and ShaderCompose inherits from ShaderBase, which has a stage method
+//At the end they will all refers to the same method
+
 shader ShaderBase
 {
 	float varBase;

@@ -1525,15 +1525,30 @@ bool SpxCompiler::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
     if (status != SpxRemapperStatusEnum::MixinBeingCompiled_Initialized) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_OverridingMethodsProcessed;
 
+    //reset flag
+    for (auto itfn = vecAllFunctions.begin(); itfn != vecAllFunctions.end(); itfn++) (*itfn)->flag1 = 0;
+
     vector<FunctionInstruction*> vecFunctionIdBeingOverriden;
     vecFunctionIdBeingOverriden.resize(bound(), nullptr);
     bool anyOverridingFunction = false;
+    int currentFlag = 0; //used to detect circular chain between overriding functions
     for (auto itfn = vecAllFunctions.begin(); itfn != vecAllFunctions.end(); itfn++)
     {
         FunctionInstruction* function = *itfn;
         if (function->GetOverridingFunction() != nullptr)
         {
-            vecFunctionIdBeingOverriden[function->GetResultId()] = function->GetOverridingFunction();
+            FunctionInstruction* overridingFunction = function->GetOverridingFunction();
+            currentFlag++;
+            overridingFunction->flag1 = currentFlag;
+
+            while (overridingFunction->GetOverridingFunction() != nullptr)
+            {
+                overridingFunction = overridingFunction->GetOverridingFunction();
+                if (overridingFunction->flag1 == currentFlag) return error("Circular chain detected within overriding function links");
+                overridingFunction->flag1 = currentFlag;
+            }
+
+            vecFunctionIdBeingOverriden[function->GetResultId()] = overridingFunction;
             anyOverridingFunction = true;
         }
     }
@@ -1834,6 +1849,14 @@ bool SpxCompiler::UpdateOverridingFunctions(vector<ShaderClassData*>& listShader
                     if (overringFunctionName == aFunction->GetMangledName())
                     {
                         //Got a function to be overriden !
+
+                        //Both functions must have the same attributes / qualifier (such as stage)
+                        if (aFunction->isStage != overridingFunction->isStage)
+                        {
+                            if (overridingFunction->isStage) return error("A stage method is overriding an unstage method: " + overringFunctionName);
+                            else return error("An unstage method is overriding a stage method: " + overringFunctionName);
+                        }
+
                         aFunction->SetOverridingFunction(overridingFunction);
                     }
                 }
