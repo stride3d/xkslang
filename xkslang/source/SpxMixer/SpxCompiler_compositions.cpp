@@ -301,7 +301,7 @@ bool SpxCompiler::GetAllShaderInstancingPathItems()
 
 bool SpxCompiler::ApplyCompositionInstancesToBytecode()
 {
-    //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_OverridingMethodsProcessed) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_CompositionInstancesProcessed;
 
     //===================================================================================================================

@@ -40,6 +40,7 @@ enum class SpxRemapperStatusEnum
 
     //define the order of compilation processes
     MixinBeingCompiled_Initialized,
+    MixinBeingCompiled_OverridingMethodsProcessed,
     MixinBeingCompiled_CompositionInstancesProcessed,
     MixinBeingCompiled_StreamsAndCBuffersAnalysed,
     MixinBeingCompiled_StreamReadyForReschuffling,
@@ -390,6 +391,7 @@ public:
 
         const std::string& GetMangledName() const { return GetName(); }
         const std::string& GetFullName() const { return fullName; }
+        bool IsOverriden() { return overridenBy != nullptr; }
         void SetOverridingFunction(FunctionInstruction* function) { overridenBy = function; }
         FunctionInstruction* GetOverridingFunction() const { return overridenBy; }
         void SetFullName(const std::string& str) { fullName = str; }
@@ -841,8 +843,6 @@ private:
 	bool GetInputAttributesFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
     std::pair<std::string, int> ParseSemanticNameAndIndex(const std::string& semanticBaseName);
 
-    bool ProcessOverrideAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
-
     bool ApplyCompositionInstancesToBytecode();
     bool InitializeCompilationProcess(std::vector<XkslMixerOutputStage>& outputStages);
     bool MergeStreamMembers(TypeStructMemberArray& globalListOfMergedStreamVariables);
@@ -894,7 +894,8 @@ private:
     ObjectInstructionBase* CreateAndAddNewObjectFor(ParsedObjectData& parsedData);
     bool DecorateObjects(std::vector<bool>& vectorIdsToDecorate);
 
-    bool UpdateOverridenFunctionMap(std::vector<ShaderClassData*>& listShadersMerged);
+    bool UpdateOverridingFunctionsAfterMixingNewShaders(std::vector<ShaderClassData*>& listNewShaders);
+    bool UpdateOverridingFunctions(std::vector<ShaderClassData*>& listShadersMerged);
     bool UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions();
     bool UpdateFunctionCallsHavingUnresolvedBaseAccessor();
 
