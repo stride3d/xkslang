@@ -669,15 +669,15 @@ bool SpxCompiler::MixWithShadersFromBytecode(const SpxBytecode& sourceBytecode, 
         listShadersMerged.push_back(shaderMerged);
     }
 
-    if (!ProcessOverrideAfterMixingNewShaders(listShadersMerged))
+    if (!UpdateOverridingFunctionsAfterMixingNewShaders(listShadersMerged))
     {
-        return error("Failed to process overrides after mixin new shaders");
+        return error("Failed to update the overriding functions after having mixed some new shaders");
     }
     status = SpxRemapperStatusEnum::WaitingForMixin;
     return true;
 }
 
-bool SpxCompiler::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassData*>& listNewShaders)
+bool SpxCompiler::UpdateOverridingFunctionsAfterMixingNewShaders(vector<ShaderClassData*>& listNewShaders)
 {
     if (!ValidateSpxBytecodeAndData())
     {
@@ -688,23 +688,23 @@ bool SpxCompiler::ProcessOverrideAfterMixingNewShaders(vector<ShaderClassData*>&
     //=============================================================================================================
     // Deal with base and overrides function
 
-    //BEFORE checking for overrides, we first deal with base function calls
+    //BEFORE checking for overrides, we first deal with unresolved base function calls
     if (!UpdateFunctionCallsHavingUnresolvedBaseAccessor())
     {
         return error("Updating function calls to base target failed");
     }
 
     //Update the list of overriding methods
-    if (!UpdateOverridenFunctionMap(listNewShaders))
+    if (!UpdateOverridingFunctions(listNewShaders))
     {
         return error("Updating overriding functions failed");
     }
 
-    //target function to the overring functions
-    if (!UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions())
+    //retarget the call to OpFunction instruction according to the overriding functions
+    /*if (!UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions())
     {
         return error("Remapping overriding functions failed");
-    }
+    }*/
 
     if (errorMessages.size() > 0) return false;
     return true;
@@ -1522,6 +1522,9 @@ bool SpxCompiler::UpdateFunctionCallsHavingUnresolvedBaseAccessor()
 
 bool SpxCompiler::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
 {
+    if (status != SpxRemapperStatusEnum::MixinBeingCompiled_Initialized) return error("Invalid remapper status");
+    status = SpxRemapperStatusEnum::MixinBeingCompiled_OverridingMethodsProcessed;
+
     vector<FunctionInstruction*> vecFunctionIdBeingOverriden;
     vecFunctionIdBeingOverriden.resize(bound(), nullptr);
     bool anyOverridingFunction = false;
@@ -1785,7 +1788,7 @@ static bool shaderLevelSortFunction(SpxCompiler::ShaderClassData* sa, SpxCompile
     return (sa->level < sb->level);
 }
 
-bool SpxCompiler::UpdateOverridenFunctionMap(vector<ShaderClassData*>& listShadersMerged)
+bool SpxCompiler::UpdateOverridingFunctions(vector<ShaderClassData*>& listShadersMerged)
 {
     if (listShadersMerged.size() == 0) return true;
 

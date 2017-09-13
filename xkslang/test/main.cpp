@@ -288,6 +288,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
 ////////////////////{ "testStreamIO01", "testStreamIO01.xkfx"},  //Invalid SPIRV-Cross output!!! (matrix unroll)
+    { "methodOverride01", "methodOverride01.xkfx" },
+
+///////////////////////////////////////////try stage method overriding non-stage method
+///////////////////////////////////////////try composition overriding the base shader
 
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
     //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
@@ -321,8 +325,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
 
-    //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
-    { "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
+///////////////////////////////////////{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
+    //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
 };
 

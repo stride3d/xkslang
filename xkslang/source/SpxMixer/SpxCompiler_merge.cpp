@@ -721,9 +721,72 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         functionOverriden->SetOverridingFunction(functionOverriding);
     }
 
+    //stage compositions from same base class share the same instances: check if we can link some
     if (!CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOnes(listMergedShaders))
     {
         return error("Fail to override or conflicts detected with new compositions");
+    }
+
+    //check if some staged methods coming from the same base class has been overriden (and if so it will override the other ones)
+    {
+        vector<ShaderClassData*> listExistingShaders;
+        
+        //Reset all shaders flag and get the list of existing shaders
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) (*itsh)->flag1 = 0;
+        for (auto itsh = listMergedShaders.begin(); itsh != listMergedShaders.end(); itsh++) (*itsh)->flag1 = 1;
+        for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+            ShaderClassData* shader = *itsh;
+            if (shader->flag1 == 0) listExistingShaders.push_back(shader);
+        }
+
+        unsigned int countNewShaders = listMergedShaders.size();
+        unsigned int countExistingShaders = listExistingShaders.size();
+        if (countNewShaders > 0 && countExistingShaders > 0)
+        {
+            for (unsigned int k0 = 0; k0 < countNewShaders; k0++)
+            {
+                ShaderClassData* aNewShader = listMergedShaders[k0];
+
+                for (unsigned int k1 = 0; k1 < countExistingShaders; k1++)
+                {
+                    ShaderClassData* anExistingShader = listExistingShaders[k1];
+
+                    if (aNewShader->shaderOriginalBaseName == anExistingShader->shaderOriginalBaseName)
+                    {
+                        //same base shader: we check we have any based methods with the same name
+                        for (unsigned int cf1 = 0; cf1 < aNewShader->GetCountFunctions(); cf1++)
+                        {
+                            FunctionInstruction* aMergedFunction = aNewShader->functionsList[cf1];
+                            if (aMergedFunction->IsStage())
+                            {
+                                for (unsigned int cf2 = 0; cf2 < anExistingShader->GetCountFunctions(); cf2++)
+                                {
+                                    FunctionInstruction* anExistingFunction = anExistingShader->functionsList[cf2];
+                                    if (anExistingFunction->IsStage())
+                                    {
+                                        if (anExistingFunction->name == aMergedFunction->name)
+                                        {
+                                            if (aMergedFunction->IsOverriden())
+                                            {
+
+                                            }
+                                            else if (anExistingFunction->IsOverriden())
+                                            {
+
+                                            }
+                                            else
+                                            {
+                                                //aMergedFunction->SetOverridingFunction(anExistingFunction);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (errorMessages.size() > 0) return false;

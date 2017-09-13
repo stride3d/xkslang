@@ -222,6 +222,17 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     }
 
     //===================================================================================================================
+    // Update overriding methods
+    //===================================================================================================================
+    //retarget the call to OpFunction instruction according to the overriding functions
+    if (!spxCompiler->UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions())
+    {
+        spxCompiler->copyMessagesTo(messages);
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
+        return error(messages, "Remapping overriding functions failed");
+    }
+
+    //===================================================================================================================
     // Process compositions
     //===================================================================================================================
     // apply all composition instances
