@@ -766,16 +766,33 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                                     {
                                         if (anExistingFunction->name == aMergedFunction->name)
                                         {
+                                            //We have 2 stage functions with the same name, coming from the same shader: we merge (override) them
                                             if (aMergedFunction->IsOverriden())
                                             {
-                                                return error("PROUT PROUT");
+                                                FunctionInstruction* newOverridingFunction = aMergedFunction->GetOverridingFunction();
+                                                if (anExistingFunction->IsOverriden())
+                                                {
+                                                    FunctionInstruction* previousTarget = anExistingFunction->GetOverridingFunction();
+                                                    for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++)
+                                                    {
+                                                        FunctionInstruction* aFunction = *itf;
+                                                        if (aFunction->GetOverridingFunction() == previousTarget) aFunction->SetOverridingFunction(newOverridingFunction);
+                                                    }
+                                                    previousTarget->SetOverridingFunction(newOverridingFunction);
+                                                }
+                                                else
+                                                {
+                                                    anExistingFunction->SetOverridingFunction(newOverridingFunction);
+                                                }
                                             }
                                             else if (anExistingFunction->IsOverriden())
                                             {
-                                                aMergedFunction->SetOverridingFunction(anExistingFunction);
+                                                FunctionInstruction* newOverridingFunction = anExistingFunction->GetOverridingFunction();
+                                                aMergedFunction->SetOverridingFunction(newOverridingFunction);
                                             }
                                             else
                                             {
+                                                //we simply override the merged function with the existing one
                                                 aMergedFunction->SetOverridingFunction(anExistingFunction);
                                             }
                                         }

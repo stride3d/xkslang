@@ -291,9 +291,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "methodOverride01", "methodOverride01.xkfx" },
     //{ "methodOverride02", "methodOverride02.xkfx" },
     //{ "methodOverride03", "methodOverride03.xkfx" },
-    { "methodOverride04", "methodOverride04.xkfx" },
-
-///////////////////////////////////////////try composition overriding the base shader
+    //{ "methodOverride04", "methodOverride04.xkfx" },
+    { "methodOverride05", "methodOverride05.xkfx" },
 
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
     //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
