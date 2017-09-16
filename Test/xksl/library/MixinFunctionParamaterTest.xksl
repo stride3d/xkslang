@@ -1,0 +1,8 @@
+// Copyright (c) 2014-2017 Silicon Studio Corp. All rights reserved. (https://www.siliconstudio.co.jp)
+// See LICENSE.md for full license information.
+shader MixinFunctionParamaterTest
+{
+    abstract ExternMixin test0();
+
+    abstract void test1(ExternMixin ext);
+};

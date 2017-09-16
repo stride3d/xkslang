@@ -728,6 +728,8 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     }
 
     //check if some staged methods coming from the same base class has been overriden (and if so it will override the other ones)
+    gdfgdfgdf;
+    if (false)
     {
         vector<ShaderClassData*> listExistingShaders;
         

@@ -1,0 +1,11 @@
+// Copyright (c) 2014-2017 Silicon Studio Corp. All rights reserved. (https://www.siliconstudio.co.jp)
+// See LICENSE.md for full license information.
+shader ExternMixin
+{
+    float externMember = 1.0f;
+    
+    void externFunc()
+    {
+        float a = 0.0f;
+    }
+};

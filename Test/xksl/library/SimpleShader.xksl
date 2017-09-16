@@ -1,0 +1,18 @@
+// Copyright (c) 2014-2017 Silicon Studio Corp. All rights reserved. (https://www.siliconstudio.co.jp)
+// See LICENSE.md for full license information.
+shader SimpleShader : ShaderBase, Texturing
+{
+    stage stream float2 Position : POSITION;
+
+    stage float4 TestColor;
+
+    stage override void VSMain() 
+    {
+        streams.ShadingPosition = float4(streams.Position, 0.0f, 1.0f);
+    }
+
+    stage override void PSMain() 
+    {
+        streams.ColorTarget = TestColor;
+    }
+};

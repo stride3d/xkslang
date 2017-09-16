@@ -1,0 +1,22 @@
+// Copyright (c) 2014-2017 Silicon Studio Corp. All rights reserved. (https://www.siliconstudio.co.jp)
+// See LICENSE.md for full license information.
+namespace SiliconStudio.Xenko.Graphics.Tests
+{
+    shader CustomShader : SpriteBase
+    {
+        // factor used by CustomEffect
+        stage float SwitchEffectLevel;
+
+        cbuffer PerPass
+        {
+            [Link("MyCustomShader.ColorFactor2")]
+            stage float4 ColorFactor2;
+        };
+
+        // Shading of the sprite with dual texturing
+        stage override float4 Shading()
+        {
+            return base.Shading() * ColorFactor2;
+        }
+    };
+}

@@ -1531,22 +1531,22 @@ bool SpxCompiler::UpdateOpFunctionCallTargetsInstructionsToOverridingFunctions()
     vector<FunctionInstruction*> vecFunctionIdBeingOverriden;
     vecFunctionIdBeingOverriden.resize(bound(), nullptr);
     bool anyOverridingFunction = false;
-    int currentFlag = 0; //used to detect circular chain between overriding functions
+    //int currentFlag = 0; //used to detect circular chain between overriding functions
     for (auto itfn = vecAllFunctions.begin(); itfn != vecAllFunctions.end(); itfn++)
     {
         FunctionInstruction* function = *itfn;
-        if (function->GetOverridingFunction() != nullptr)
+        if (function->GetOverridingFunction() != nullptr && function->GetOverridingFunction() != function)
         {
             FunctionInstruction* overridingFunction = function->GetOverridingFunction();
-            currentFlag++;
+            /*currentFlag++;
             overridingFunction->flag1 = currentFlag;
 
-            while (overridingFunction->GetOverridingFunction() != nullptr)
+            while (overridingFunction->GetOverridingFunction() != nullptr && overridingFunction->GetOverridingFunction() != overridingFunction)
             {
                 overridingFunction = overridingFunction->GetOverridingFunction();
                 if (overridingFunction->flag1 == currentFlag) return error("Circular chain detected within overriding function links");
                 overridingFunction->flag1 = currentFlag;
-            }
+            }*/
 
             vecFunctionIdBeingOverriden[function->GetResultId()] = overridingFunction;
             anyOverridingFunction = true;

@@ -1,0 +1,16 @@
+// Copyright (c) 2014-2017 Silicon Studio Corp. All rights reserved. (https://www.siliconstudio.co.jp)
+// See LICENSE.md for full license information.
+shader BasicMixin
+{
+    float myFloat = 0.2f;
+    stage float3 myPosition : register(b);
+    stream float2 screenPosition : register(vs, b);
+    
+    abstract void myFunc();
+    float myFunc2()
+    {
+        var a = myFloat;
+        return a;
+    }
+    abstract stage void myFunc3();
+};

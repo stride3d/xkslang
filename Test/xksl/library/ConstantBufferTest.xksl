@@ -1,0 +1,22 @@
+// Copyright (c) 2014-2017 Silicon Studio Corp. All rights reserved. (https://www.siliconstudio.co.jp)
+// See LICENSE.md for full license information.
+shader ConstantBufferTest
+{
+    cbuffer PerVertex
+    {
+        float a;
+        float c;
+    };
+
+    cbuffer PerVertex
+    {
+        float b;
+    };
+
+    cbuffer PerPixel
+    {
+        float d;
+    };
+
+    float e;
+};
