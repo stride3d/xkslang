@@ -3,6 +3,6 @@ convertAndLoad "methodOverride05.xksl"
 
 mixer m
 m.mixin( ShaderMainX )
-m.addComposition( comp1 = mixin(ShaderComposeX) )
+m.addComposition( comp1 = mixin(ShaderComposeAY), comp2 = mixin(ShaderComposeBY) )
 
 m.compile

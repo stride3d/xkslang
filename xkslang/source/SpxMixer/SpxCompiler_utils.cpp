@@ -280,3 +280,32 @@ bool SpxCompiler::ValidateSpxBytecodeAndData()
 
     return true;
 }
+
+void SpxCompiler::GetShaderFamilyTree(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)
+{
+    shaderFamilyTree.clear();
+
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) (*itsh)->flag = 0;
+
+    vector<ShaderClassData*> children;
+    vector<ShaderClassData*> listShaderToValidate;
+    listShaderToValidate.push_back(shaderFromFamily);
+    while (listShaderToValidate.size() > 0)
+    {
+        ShaderClassData* aShader = listShaderToValidate.back();
+        listShaderToValidate.pop_back();
+
+        if (aShader->flag != 0) continue;  //the shader has already been added
+        shaderFamilyTree.push_back(aShader);
+        aShader->flag = 1;
+
+        //Add all parents
+        for (auto itsh = aShader->parentsList.begin(); itsh != aShader->parentsList.end(); itsh++)
+            listShaderToValidate.push_back(*itsh);
+
+        //Add all children
+        GetShaderChildrenList(aShader, children);
+        for (auto itsh = children.begin(); itsh != children.end(); itsh++)
+            listShaderToValidate.push_back(*itsh);
+    }
+}

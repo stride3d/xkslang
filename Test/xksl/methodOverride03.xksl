@@ -1,8 +1,18 @@
-shader ShaderBase
+shader ShaderSubBase
+{
+	float varSubBase;
+	
+	stage float Compute()
+	{
+		return varSubBase;
+	}
+};
+
+shader ShaderBase: ShaderSubBase
 {
 	float varBase;
 	
-	stage float Compute()
+	stage override float Compute()
 	{
 		return varBase;
 	}
@@ -26,16 +36,6 @@ shader ShaderMain: ShaderBase
     }
 };
 
-shader ShaderCompose: ShaderBase
-{
-	float varCompose;
-	
-	float ComputeComp()
-	{
-		return varCompose + Compute();
-	}
-};
-
 shader ShaderMainX: ShaderMain
 {
 	float varMainX;
@@ -43,5 +43,16 @@ shader ShaderMainX: ShaderMain
 	stage override float Compute()
 	{
 		return varMainX;
+	}
+};
+
+
+shader ShaderCompose: ShaderBase
+{
+	float varCompose;
+	
+	float ComputeComp()
+	{
+		return varCompose + Compute();
 	}
 };

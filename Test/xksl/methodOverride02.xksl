@@ -1,20 +1,20 @@
-shader ShaderBase
+shader ShaderSubBase
 {
-	float varBase;
+	float varSubBase;
 	
 	stage float Compute()
 	{
-		return varBase;
+		return varSubBase;
 	}
 };
 
-shader ShaderCompose: ShaderBase
+shader ShaderBase: ShaderSubBase
 {
-	float varCompose;
+	float varBase;
 	
-	float ComputeComp()
+	stage override float Compute()
 	{
-		return varCompose + Compute();
+		return varBase;
 	}
 };
 
@@ -36,3 +36,12 @@ shader ShaderMain: ShaderBase
     }
 };
 
+shader ShaderCompose: ShaderBase
+{
+	float varCompose;
+	
+	float ComputeComp()
+	{
+		return varCompose + Compute();
+	}
+};

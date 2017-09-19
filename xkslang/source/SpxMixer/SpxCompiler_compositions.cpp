@@ -193,10 +193,191 @@ bool SpxCompiler::AddCompositionInstance(const string& shaderName, const string&
         if (!UpdateAllMaps()) return error("Failed to update all maps");
     }
 
+    //After we instantiate some shaders: we merge the base methods and remap calls to base method
+    if (!MergeStageMethodsAndRemapBaseCallForInstantiatedShaders(listShadersMerged))
+        return error("failed to merge staged methods and remap calls to base functions");
+
     //===================================================================================================================
-    //Add done
+    //All done
     if (errorMessages.size() > 0) return false;
     status = SpxRemapperStatusEnum::WaitingForMixin;
+    return true;
+}
+
+bool SpxCompiler::MergeStageMethodsAndRemapBaseCallForInstantiatedShaders(const vector<ShaderClassData*>& listInstantiatedShaders)
+{
+    vector<ShaderClassData*> listExistingShaders;
+
+    //Reset all shaders flag and get the list of existing shaders
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) (*itsh)->flag1 = 0;
+    for (auto itsh = listInstantiatedShaders.begin(); itsh != listInstantiatedShaders.end(); itsh++) (*itsh)->flag1 = 1;
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
+        ShaderClassData* shader = *itsh;
+        if (shader->flag1 == 0) listExistingShaders.push_back(shader);
+    }
+
+    map<FunctionInstruction*, FunctionInstruction*> listDuplicatedStageMethods;
+
+    //========================================================================================
+    //========================================================================================
+    //We first find the duplicated stage methods (same base shader + stage method + same method base name)
+    unsigned int countInstantiatedShaders = listInstantiatedShaders.size();
+    unsigned int countExistingShaders = listExistingShaders.size();
+    if (countInstantiatedShaders > 0 && countExistingShaders > 0)
+    {
+        for (unsigned int k0 = 0; k0 < countInstantiatedShaders; k0++)
+        {
+            ShaderClassData* instantiateShader = listInstantiatedShaders[k0];
+
+            for (unsigned int k1 = 0; k1 < countExistingShaders; k1++)
+            {
+                ShaderClassData* anExistingShader = listExistingShaders[k1];
+
+                if (instantiateShader->shaderOriginalBaseName == anExistingShader->shaderOriginalBaseName)
+                {
+                    k1 = countExistingShaders; //we don't look into the other exising shaders, the 1st one found is fine
+
+                    //same base shader: we check if we have any staged methods with the same name
+                    for (unsigned int cf1 = 0; cf1 < instantiateShader->GetCountFunctions(); cf1++)
+                    {
+                        FunctionInstruction* anInstantiatedFunction = instantiateShader->functionsList[cf1];
+                        if (anInstantiatedFunction->IsStage())
+                        {
+                            for (unsigned int cf2 = 0; cf2 < anExistingShader->GetCountFunctions(); cf2++)
+                            {
+                                FunctionInstruction* anExistingFunction = anExistingShader->functionsList[cf2];
+                                if (anExistingFunction->IsStage())
+                                {
+                                    if (anExistingFunction->name == anInstantiatedFunction->name)
+                                    {
+                                        listDuplicatedStageMethods[anInstantiatedFunction] = anExistingFunction;
+
+                                        //same base shader + same stage method: we redirect (merge) the method onto the original method (or their overriding one)
+                                        //FunctionInstruction* newOverridingFunction = anExistingFunction;
+                                        //if (anExistingFunction->IsOverriden()) newOverridingFunction = anExistingFunction->GetOverridingFunction();
+                                        //anInstantiatedFunction->SetOverridingFunction(newOverridingFunction);
+
+                                        /*
+                                        //We have 2 stage functions with the same name, coming from the same shader: we merge (override) them
+                                        if (anInstantiatedFunction->IsOverriden())
+                                        {
+                                            FunctionInstruction* newOverridingFunction = anInstantiatedFunction->GetOverridingFunction();
+                                            if (anExistingFunction->IsOverriden())
+                                            {
+                                                FunctionInstruction* previousTarget = anExistingFunction->GetOverridingFunction();
+                                                for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++)
+                                                {
+                                                    FunctionInstruction* aFunction = *itf;
+                                                    if (aFunction->GetOverridingFunction() == previousTarget) aFunction->SetOverridingFunction(newOverridingFunction);
+                                                }
+                                                previousTarget->SetOverridingFunction(newOverridingFunction);
+                                            }
+                                            else
+                                            {
+                                                anExistingFunction->SetOverridingFunction(newOverridingFunction);
+                                            }
+                                        }
+                                        else if (anExistingFunction->IsOverriden())
+                                        {
+                                            FunctionInstruction* newOverridingFunction = anExistingFunction->GetOverridingFunction();
+                                            anInstantiatedFunction->SetOverridingFunction(newOverridingFunction);
+                                        }
+                                        else
+                                        {
+                                            //we simply override the merged function with the existing one
+                                            anInstantiatedFunction->SetOverridingFunction(anExistingFunction);
+                                        }*/
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++) (*itf)->flag1 = 0;
+
+    //========================================================================================
+    //========================================================================================
+    //For each duplicated methods: we redirect (merge) the method onto the original stage method, or their overriding one
+    for (auto itm = listDuplicatedStageMethods.begin(); itm != listDuplicatedStageMethods.end(); itm++)
+    {
+        FunctionInstruction* duplicatedMethod = itm->first;
+        FunctionInstruction* originalMethod = itm->second;
+        duplicatedMethod->flag1 = 1;
+
+        FunctionInstruction* overridingTarget = originalMethod;
+        if (originalMethod->IsOverriden()) overridingTarget = originalMethod->GetOverridingFunction();
+        duplicatedMethod->SetOverridingFunction(overridingTarget);
+    }
+
+    //========================================================================================
+    //========================================================================================
+    //For each duplicated methods: we now build the shader family tree to check if they have been overriden by some other methods, and to rebuild the correct base connection
+    for (auto itm = listDuplicatedStageMethods.begin(); itm != listDuplicatedStageMethods.end(); itm++)
+    {
+        FunctionInstruction* duplicatedMethod = itm->first;
+        FunctionInstruction* originalMethod = itm->second;
+        if (duplicatedMethod->flag1 != 1) continue;  //the method has already been processed
+
+        const string& duplicatedMethodName = duplicatedMethod->name;
+        ShaderClassData* duplicatedMethodShaderOwner = duplicatedMethod->GetShaderOwner();
+
+        vector<ShaderClassData*> instantiatedShaderFamilyTree;
+        GetShaderFamilyTree(duplicatedMethodShaderOwner, instantiatedShaderFamilyTree);
+
+        vector<FunctionInstruction*> listNewOverridingMethodsFromInstantiatedShaders;
+        FunctionInstruction* finalNewOverridingMethods = nullptr;
+
+        //for each shader from the family tree: if the shader override the duplicated method but this method is not flagged as duplicated: then the method is overriding the stage method
+        for (auto itShaderFromTree = instantiatedShaderFamilyTree.begin(); itShaderFromTree != instantiatedShaderFamilyTree.end(); itShaderFromTree++)
+        {
+            ShaderClassData* instantiatedShaderFromFamily = *itShaderFromTree;
+            
+            FunctionInstruction* sameMethodFromFamily = instantiatedShaderFromFamily->GetFunctionByName(duplicatedMethodName);
+            
+            if (sameMethodFromFamily != nullptr && sameMethodFromFamily->isStage)
+            {
+                if (sameMethodFromFamily->flag1 == 0) //if the method was not among the duplicated ones
+                {
+                    if (!sameMethodFromFamily->HasOverrideAttribute())
+                        return error("A stage method is defined without the override attribute");
+
+                    listNewOverridingMethodsFromInstantiatedShaders.push_back(sameMethodFromFamily);
+
+                    FunctionInstruction* tmpFinalNewOverridingMethods = nullptr;
+                    if (sameMethodFromFamily->GetOverridingFunction() != nullptr) tmpFinalNewOverridingMethods = sameMethodFromFamily->GetOverridingFunction();
+                    else tmpFinalNewOverridingMethods = sameMethodFromFamily;
+
+                    if (finalNewOverridingMethods != nullptr && finalNewOverridingMethods != tmpFinalNewOverridingMethods)
+                        return error("A same overriden method from a shader family tree has different override target");
+
+                    finalNewOverridingMethods = tmpFinalNewOverridingMethods;
+                }
+                else
+                {
+                    sameMethodFromFamily->flag1 = 2; //flag the method so that we don't process it twice
+                }
+            }
+        }
+
+        if (listNewOverridingMethodsFromInstantiatedShaders.size())
+        {
+            //All methods overriden by the previous target will be retargeted to the new overriding method
+            FunctionInstruction* previousOverridingTarget = originalMethod;
+            if (originalMethod->GetOverridingFunction() != nullptr) previousOverridingTarget = originalMethod->GetOverridingFunction();
+
+            for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++)
+            {
+                FunctionInstruction* aFunction = *itf;
+                if (aFunction == previousOverridingTarget || aFunction->GetOverridingFunction() == previousOverridingTarget)
+                    aFunction->SetOverridingFunction(finalNewOverridingMethods);
+            }
+        }
+    }
+
     return true;
 }
 

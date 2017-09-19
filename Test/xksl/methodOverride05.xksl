@@ -1,8 +1,18 @@
-shader ShaderBase
+shader ShaderSubBase
+{
+	float varSubBase;
+	
+	stage float Compute()
+	{
+		return varSubBase;
+	}
+};
+
+shader ShaderBase: ShaderSubBase
 {
 	float varBase;
 	
-	stage float Compute()
+	stage override float Compute()
 	{
 		return varBase;
 	}
@@ -11,6 +21,7 @@ shader ShaderBase
 shader ShaderMain: ShaderBase
 {
 	compose ShaderCompose comp1;
+	compose ShaderCompose comp2;
 	
 	float varMain;
 	
@@ -23,17 +34,8 @@ shader ShaderMain: ShaderBase
     {
 		float f = Compute();
 		f += comp1.ComputeComp();
+		f += comp2.ComputeComp();
     }
-};
-
-shader ShaderCompose: ShaderBase
-{
-	float varCompose;
-	
-	float ComputeComp()
-	{
-		return varCompose + Compute();
-	}
 };
 
 shader ShaderMainX: ShaderMain
@@ -42,16 +44,58 @@ shader ShaderMainX: ShaderMain
 	
 	stage override float Compute()
 	{
-		return base.Compute() + varMainX;
+		return varMainX;
 	}
 };
 
-shader ShaderComposeX: ShaderCompose
+
+
+shader ShaderCompose: ShaderBase
 {
-	float varComposeX;
+	stage float varCompose;
+	
+	stage float ComputeComp()
+	{
+		return varCompose + Compute();
+	}
+};
+
+shader ShaderComposeAX: ShaderCompose
+{
+	float varComposeAX;
 	
 	stage override float Compute()
 	{
-		return base.Compute() + varComposeX;
+		return varComposeAX;
+	}
+};
+
+shader ShaderComposeAY: ShaderComposeAX
+{
+	float varComposeAY;
+	
+	stage override float Compute()
+	{
+		return varComposeAY;
+	}
+};
+
+shader ShaderComposeBX: ShaderCompose
+{
+	float varComposeBX;
+	
+	stage override float Compute()
+	{
+		return varComposeBX;
+	}
+};
+
+shader ShaderComposeBY: ShaderComposeBX
+{
+	float varComposeBY;
+	
+	stage override float Compute()
+	{
+		return varComposeBY;
 	}
 };

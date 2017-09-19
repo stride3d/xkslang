@@ -1,29 +1,24 @@
 cbuffer Globals
 {
-    float o0S15C0_ShaderCompose_varCompose;
-    float o0S15C0_ShaderBase_varBase;
-    float o0S15C0_ShaderComposeX_varComposeX;
+    float ShaderCompose_varCompose;
+    float o1S13C1_ShaderComposeBY_varComposeBY;
 };
 
-float o0S15C0_ShaderBase_Compute()
+float o1S13C1_ShaderComposeBY_Compute()
 {
-    return o0S15C0_ShaderBase_varBase;
+    return o1S13C1_ShaderComposeBY_varComposeBY;
 }
 
-float o0S15C0_ShaderComposeX_Compute()
+float ShaderCompose_ComputeComp()
 {
-    return o0S15C0_ShaderBase_Compute() + o0S15C0_ShaderComposeX_varComposeX;
-}
-
-float o0S15C0_ShaderCompose_ComputeComp()
-{
-    return o0S15C0_ShaderCompose_varCompose + o0S15C0_ShaderComposeX_Compute();
+    return ShaderCompose_varCompose + o1S13C1_ShaderComposeBY_Compute();
 }
 
 void vert_main()
 {
-    float f = o0S15C0_ShaderComposeX_Compute();
-    f += o0S15C0_ShaderCompose_ComputeComp();
+    float f = o1S13C1_ShaderComposeBY_Compute();
+    f += ShaderCompose_ComputeComp();
+    f += ShaderCompose_ComputeComp();
 }
 
 void main()

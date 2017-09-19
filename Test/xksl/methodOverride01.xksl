@@ -1,11 +1,21 @@
 //Both ShaderMain and ShaderCompose inherits from ShaderBase, which has a stage method
 //At the end they will all refers to the same method
 
-shader ShaderBase
+shader ShaderSubBase
+{
+	float varSubBase;
+	
+	stage float Compute()
+	{
+		return varSubBase;
+	}
+};
+
+shader ShaderBase: ShaderSubBase
 {
 	float varBase;
 	
-	stage float Compute()
+	stage override float Compute()
 	{
 		return varBase;
 	}

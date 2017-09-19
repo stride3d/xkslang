@@ -292,7 +292,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "methodOverride02", "methodOverride02.xkfx" },
     //{ "methodOverride03", "methodOverride03.xkfx" },
     //{ "methodOverride04", "methodOverride04.xkfx" },
-    //{ "methodOverride05", "methodOverride05.xkfx" },
+    { "methodOverride05", "methodOverride05.xkfx" },
 
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
     //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
@@ -326,7 +326,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
 
-    { "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
+    //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
 };
@@ -2480,9 +2480,9 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 else
                 {
                     //Optionnal: get and display the list of all methods
-                    //if (!displayListOfAllMethodsForTheMixer(mixerTarget->mixer)) {
-                    //    error("Failed to display the mixer list of compositions"); success = false;
-                    //}
+                    if (!displayListOfAllMethodsForTheMixer(mixerTarget->mixer)) {
+                        error("Failed to display the mixer list of compositions"); success = false;
+                    }
 
                     //Optionnal: get and display all compositions before compiling
                     if (!displayListOfAllCompositionsForTheMixer(mixerTarget->mixer)) {

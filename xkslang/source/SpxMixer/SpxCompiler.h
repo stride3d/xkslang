@@ -402,9 +402,10 @@ public:
         void ParsedStageAttribute() { isStage = true; }
         bool IsStage() { return isStage; }
 
-        void ParsedOverrideAttribute(){if (overrideAttributeState == OverrideAttributeStateEnum::Undefined) overrideAttributeState = OverrideAttributeStateEnum::Defined; }
+        void ParsedOverrideAttribute() { if (overrideAttributeState == OverrideAttributeStateEnum::Undefined) overrideAttributeState = OverrideAttributeStateEnum::Defined; }
         OverrideAttributeStateEnum GetOverrideAttributeState() const { return overrideAttributeState; }
         void SetOverrideAttributeState(OverrideAttributeStateEnum state) { overrideAttributeState = state; }
+        bool HasOverrideAttribute() { return (overrideAttributeState == OverrideAttributeStateEnum::Defined); }
 
     private:
         bool isStatic;
@@ -802,6 +803,7 @@ public:
     bool GetListAllCompositionsInfo(std::vector<ShaderCompositionInfo>& vecCompositionsInfo);
     bool GetListAllMethodsInfo(std::vector<MethodInfo>& vecMethodsInfo);
     bool AddCompositionInstance(const std::string& shaderName, const std::string& variableName, SpxCompiler* source);
+    bool MergeStageMethodsAndRemapBaseCallForInstantiatedShaders(const std::vector<ShaderClassData*>& listInstantiatedShaders);
     int GetBytecodePositionForShaderCompositionDeclaration(ShaderCompositionDeclaration* composition);
     bool GetAllShaderInstancingPathItems();
     ShaderCompositionDeclaration* GetShaderCompositionDeclarationForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
