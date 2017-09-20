@@ -292,7 +292,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "methodOverride02", "methodOverride02.xkfx" },
     //{ "methodOverride03", "methodOverride03.xkfx" },
     //{ "methodOverride04", "methodOverride04.xkfx" },
-    { "methodOverride05", "methodOverride05.xkfx" },
+    //{ "methodOverride05", "methodOverride05.xkfx" },
+    //{ "methodOverride06", "methodOverride06.xkfx" },
+    //{ "methodOverride07", "methodOverride07.xkfx" },
 
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
     //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
@@ -326,7 +328,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
 
-    //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
+    { "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
 };

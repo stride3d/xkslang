@@ -15,7 +15,7 @@ shader ShaderBase: ShaderSubBase
 {
 	float varBase;
 	
-	stage override float Compute()
+	stage float Compute()
 	{
 		return varBase;
 	}

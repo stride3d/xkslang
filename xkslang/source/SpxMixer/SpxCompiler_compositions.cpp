@@ -329,6 +329,7 @@ bool SpxCompiler::MergeStageMethodsAndRemapBaseCallForInstantiatedShaders(const 
         GetShaderFamilyTree(duplicatedMethodShaderOwner, instantiatedShaderFamilyTree);
 
         vector<FunctionInstruction*> listNewOverridingMethodsFromInstantiatedShaders;
+        vector<FunctionInstruction*> listDuplicatedOverridingMethodsFromInstantiatedShaders;
         FunctionInstruction* finalNewOverridingMethods = nullptr;
 
         //for each shader from the family tree: if the shader override the duplicated method but this method is not flagged as duplicated: then the method is overriding the stage method
@@ -340,17 +341,17 @@ bool SpxCompiler::MergeStageMethodsAndRemapBaseCallForInstantiatedShaders(const 
             
             if (sameMethodFromFamily != nullptr && sameMethodFromFamily->isStage)
             {
-                if (sameMethodFromFamily->flag1 == 0) //if the method was not among the duplicated ones
+                if (sameMethodFromFamily->flag1 == 0) //if 0: the method was not among the duplicated ones
                 {
                     if (!sameMethodFromFamily->HasOverrideAttribute())
                         return error("A stage method is defined without the override attribute");
 
                     listNewOverridingMethodsFromInstantiatedShaders.push_back(sameMethodFromFamily);
 
+                    //get the new overring method from the instanciated shaders
                     FunctionInstruction* tmpFinalNewOverridingMethods = nullptr;
                     if (sameMethodFromFamily->GetOverridingFunction() != nullptr) tmpFinalNewOverridingMethods = sameMethodFromFamily->GetOverridingFunction();
                     else tmpFinalNewOverridingMethods = sameMethodFromFamily;
-
                     if (finalNewOverridingMethods != nullptr && finalNewOverridingMethods != tmpFinalNewOverridingMethods)
                         return error("A same overriden method from a shader family tree has different override target");
 
@@ -358,14 +359,18 @@ bool SpxCompiler::MergeStageMethodsAndRemapBaseCallForInstantiatedShaders(const 
                 }
                 else
                 {
+                    listDuplicatedOverridingMethodsFromInstantiatedShaders.push_back(sameMethodFromFamily);
                     sameMethodFromFamily->flag1 = 2; //flag the method so that we don't process it twice
                 }
             }
         }
 
-        if (listNewOverridingMethodsFromInstantiatedShaders.size())
+        if (finalNewOverridingMethods != nullptr)
         {
-            //All methods overriden by the previous target will be retargeted to the new overriding method
+            //The shader instantiated through the composition override the original base method
+
+            //========================================================================================
+            //All methods overriden by the previous targets will be retargeted to the new overriding method from the instanciated shaders
             FunctionInstruction* previousOverridingTarget = originalMethod;
             if (originalMethod->GetOverridingFunction() != nullptr) previousOverridingTarget = originalMethod->GetOverridingFunction();
 
@@ -375,6 +380,57 @@ bool SpxCompiler::MergeStageMethodsAndRemapBaseCallForInstantiatedShaders(const 
                 if (aFunction == previousOverridingTarget || aFunction->GetOverridingFunction() == previousOverridingTarget)
                     aFunction->SetOverridingFunction(finalNewOverridingMethods);
             }
+
+            //========================================================================================
+            //Finally: if the new overriding methods have a "base" instructions: we redirect it to the overriding method from the previously existing shader
+            for (auto itf = listNewOverridingMethodsFromInstantiatedShaders.begin(); itf != listNewOverridingMethodsFromInstantiatedShaders.end(); itf++)
+            {
+                FunctionInstruction* aNewOverridingMethod = *itf;
+
+                unsigned int start = aNewOverridingMethod->GetBytecodeStartPosition();
+                const unsigned int end = aNewOverridingMethod->GetBytecodeEndPosition();
+                while (start < end)
+                {
+                    unsigned int wordCount = asWordCount(start);
+                    spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
+                    switch (opCode)
+                    {
+                        case spv::OpFunctionCallBaseResolved:
+                        case spv::OpFunctionCallBaseUnresolved:
+                        {
+                            spv::Id functionCallId = asId(start + 3);
+
+                            //Check if is is a call to a duplicated methods from the instantiated shaders
+                            bool redirectTheBaseFunctionCall = false;
+                            for (auto itf2 = listDuplicatedOverridingMethodsFromInstantiatedShaders.begin(); itf2 != listDuplicatedOverridingMethodsFromInstantiatedShaders.end(); itf2++)
+                            {
+                                spv::Id aFunctionId = (*itf2)->GetId();
+                                if (aFunctionId == functionCallId)
+                                {
+                                    redirectTheBaseFunctionCall = true;
+                                    break;
+                                }
+                            }
+
+                            if (redirectTheBaseFunctionCall)
+                            {
+                                spv::Id previousTargetId = previousOverridingTarget->GetId();
+                                setId(start + 3, previousTargetId);
+                            }
+
+                            break;
+                        }
+                    }
+
+                    start += wordCount;
+                }
+            }
+
         }
     }
 

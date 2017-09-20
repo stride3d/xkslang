@@ -1,0 +1,8 @@
+
+convertAndLoad "methodOverride06.xksl"
+
+mixer m
+m.mixin( ShaderMainX )
+m.addComposition( comp1 = mixin(ShaderComposeX2) )
+
+m.compile
