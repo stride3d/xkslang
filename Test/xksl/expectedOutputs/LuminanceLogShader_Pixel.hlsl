@@ -38,11 +38,7 @@ float4 LuminanceLogShader_Shading(PS_STREAMS _streams)
 {
     float3 color = Texturing_Texture0.Sample(Texturing_PointSampler, _streams.TexCoord_id0).xyz;
     float3 param = color;
-    float lum = LuminanceLogShader_GetLuminance(param);
-    if (lum < 0.001000000047497451305389404296875f)
-    {
-        lum = 0.001000000047497451305389404296875f;
-    }
+    float lum = max(0.001000000047497451305389404296875f, LuminanceLogShader_GetLuminance(param));
     return float4(log2(lum), 1.0f, 1.0f, 1.0f);
 }
 

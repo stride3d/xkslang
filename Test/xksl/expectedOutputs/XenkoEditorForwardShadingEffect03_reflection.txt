@@ -98,9 +98,8 @@ ResourceBindings. Count=5
  Stage=Pixel KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
 
-InputAttributes. Count=3
+InputAttributes. Count=2
  SemanticName="NORMAL" SemanticIndex=0
- SemanticName="TANGENTTOWORLD" SemanticIndex=0
  SemanticName="POSITION" SemanticIndex=0
 
 SamplerStates. Count=0

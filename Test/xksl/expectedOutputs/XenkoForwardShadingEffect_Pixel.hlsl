@@ -212,8 +212,8 @@ void o19S248C0_o3S2C0_MaterialSurfaceDiffuse_Compute(inout PS_STREAMS _streams)
 
 float2 o19S248C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(float x)
 {
-    float _735 = sqrt(1.0f + (x * x));
-    return float2(x, 1.0f) / float2(_735, _735);
+    float _744 = sqrt(1.0f + (x * x));
+    return float2(x, 1.0f) / float2(_744, _744);
 }
 
 float4 o19S248C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(PS_STREAMS _streams)
@@ -225,9 +225,9 @@ float4 o19S248C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(PS_ST
     float2 xz = o19S248C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(param);
     float param_1 = derivative;
     float2 xy = o19S248C0_o5S2C0_o4S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(param_1);
-    float2 _715 = (((xz.yx * sign(offset.x)) * (-xy.x)) * 0.5f) + float2(0.5f, 0.5f);
+    float2 _724 = (((xz.yx * sign(offset.x)) * (-xy.x)) * 0.5f) + float2(0.5f, 0.5f);
     float3 normal;
-    normal = float3(_715.x, _715.y, normal.z);
+    normal = float3(_724.x, _724.y, normal.z);
     normal.z = xy.y;
     return float4(normal, 1.0f);
 }
@@ -281,7 +281,7 @@ void o19S248C0_o11S2C0_MaterialSurfaceSetStreamFromComputeColor_matSpecularInten
     _streams.matSpecularIntensity_id14 = o19S248C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_Material_SpecularIntensityValue__Compute().x;
 }
 
-void o19S248C0_o18S2C0_NormalUpdate_UpdateNormalFromTangentSpace(inout PS_STREAMS _streams, float3 normalInTangentSpace)
+void NormalUpdate_UpdateNormalFromTangentSpace(inout PS_STREAMS _streams, float3 normalInTangentSpace)
 {
     _streams.normalWS_id6 = normalize(mul(normalInTangentSpace, _streams.tangentToWorld_id7));
 }
@@ -328,9 +328,9 @@ void o0S418C0_LightDirectionalGroup_8__PrepareDirectLightCore(inout PS_STREAMS _
     _streams.lightDirectionWS_id37 = -o0S418C0_LightDirectionalGroup_Lights[lightIndex].DirectionWS;
 }
 
-void o0S418C0_ShadowGroup_ComputeShadow(inout PS_STREAMS _streams, int lightIndex)
+float3 o0S418C0_ShadowGroup_ComputeShadow(float3 position, int lightIndex)
 {
-    _streams.shadowColor_id44 = float3(1.0f, 1.0f, 1.0f);
+    return float3(1.0f, 1.0f, 1.0f);
 }
 
 void o0S418C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int lightIndex)
@@ -338,12 +338,13 @@ void o0S418C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int
     int param = lightIndex;
     o0S418C0_LightDirectionalGroup_8__PrepareDirectLightCore(_streams, param);
     _streams.NdotL_id42 = max(dot(_streams.normalWS_id6, _streams.lightDirectionWS_id37), 9.9999997473787516355514526367188e-05f);
-    int param_1 = lightIndex;
-    o0S418C0_ShadowGroup_ComputeShadow(_streams, param_1);
+    float3 param_1 = _streams.PositionWS_id8.xyz;
+    int param_2 = lightIndex;
+    _streams.shadowColor_id44 = o0S418C0_ShadowGroup_ComputeShadow(param_1, param_2);
     _streams.lightColorNdotL_id39 = ((_streams.lightColor_id38 * _streams.shadowColor_id44) * _streams.NdotL_id42) * _streams.lightDirectAmbientOcclusion_id43;
 }
 
-void o19S248C0_o18S2C0_MaterialPixelShadingStream_PrepareMaterialPerDirectLight(inout PS_STREAMS _streams)
+void MaterialPixelShadingStream_PrepareMaterialPerDirectLight(inout PS_STREAMS _streams)
 {
     _streams.H_id32 = normalize(_streams.viewWS_id25 + _streams.lightDirectionWS_id37);
     _streams.NdotH_id33 = clamp(dot(_streams.normalWS_id6, _streams.H_id32), 0.0f, 1.0f);
@@ -407,7 +408,8 @@ float o19S248C0_o18S2C0_o17S2C0_o15S2C1_MaterialSpecularMicrofacetVisibilitySmit
 float o19S248C0_o18S2C0_o17S2C0_o16S2C2_BRDFMicrofacet_NormalDistributionGGX(float alphaR, float nDotH)
 {
     float alphaR2 = alphaR * alphaR;
-    return alphaR2 / (3.1415927410125732421875f * pow(max(((nDotH * nDotH) * (alphaR2 - 1.0f)) + 1.0f, 9.9999997473787516355514526367188e-05f), 2.0f));
+    float d = max(((nDotH * nDotH) * (alphaR2 - 1.0f)) + 1.0f, 9.9999997473787516355514526367188e-05f);
+    return alphaR2 / ((3.1415927410125732421875f * d) * d);
 }
 
 float o19S248C0_o18S2C0_o17S2C0_o16S2C2_MaterialSpecularMicrofacetNormalDistributionGGX_Compute(PS_STREAMS _streams)
@@ -471,7 +473,7 @@ float3 o19S248C0_o18S2C0_o17S2C0_MaterialSurfaceShadingSpecularMicrofacet_Comput
 void o19S248C0_o18S2C0_MaterialSurfaceLightingAndShading_Compute(inout PS_STREAMS _streams)
 {
     float3 param = _streams.matNormal_id9;
-    o19S248C0_o18S2C0_NormalUpdate_UpdateNormalFromTangentSpace(_streams, param);
+    NormalUpdate_UpdateNormalFromTangentSpace(_streams, param);
     if (!_streams.IsFrontFace_id1)
     {
         _streams.normalWS_id6 = -_streams.normalWS_id6;
@@ -490,7 +492,7 @@ void o19S248C0_o18S2C0_MaterialSurfaceLightingAndShading_Compute(inout PS_STREAM
         }
         int param_1 = i;
         o0S418C0_DirectLightGroup_PrepareDirectLight(_streams, param_1);
-        o19S248C0_o18S2C0_MaterialPixelShadingStream_PrepareMaterialPerDirectLight(_streams);
+        MaterialPixelShadingStream_PrepareMaterialPerDirectLight(_streams);
         directLightingContribution += o19S248C0_o18S2C0_o12S2C0_MaterialSurfaceShadingDiffuseLambert_true__ComputeDirectLightContribution(_streams);
         directLightingContribution += o19S248C0_o18S2C0_o17S2C0_MaterialSurfaceShadingSpecularMicrofacet_ComputeDirectLightContribution(_streams);
     }

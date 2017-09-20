@@ -153,10 +153,8 @@ ResourceBindings. Count=9
  Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
  Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
 
-InputAttributes. Count=4
+InputAttributes. Count=2
  SemanticName="NORMAL" SemanticIndex=0
- SemanticName="TANGENTTOWORLD" SemanticIndex=0
  SemanticName="POSITION" SemanticIndex=0
- SemanticName="SCREENPOSITION" SemanticIndex=0
 
 SamplerStates. Count=0

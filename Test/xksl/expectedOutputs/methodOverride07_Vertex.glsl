@@ -7,6 +7,9 @@ layout(std140) uniform Globals
     float o0S15C0_ShaderCompose_varCompose;
     float o0S15C0_ShaderComposeX2_varComposeX2;
     float o0S15C0_ShaderComposeX1_varComposeX1;
+    float o1S15C1_ShaderCompose_varCompose;
+    float o1S15C1_ShaderComposeY2_varComposeY2;
+    float o1S15C1_ShaderComposeY1_varComposeY1;
 } Globals_var;
 
 float ShaderMain_Compute()
@@ -29,14 +32,30 @@ float o0S15C0_ShaderComposeX2_Compute()
     return o0S15C0_ShaderComposeX1_Compute() + Globals_var.o0S15C0_ShaderComposeX2_varComposeX2;
 }
 
+float o1S15C1_ShaderComposeY1_Compute()
+{
+    return o0S15C0_ShaderComposeX2_Compute() + Globals_var.o1S15C1_ShaderComposeY1_varComposeY1;
+}
+
+float o1S15C1_ShaderComposeY2_Compute()
+{
+    return o1S15C1_ShaderComposeY1_Compute() + Globals_var.o1S15C1_ShaderComposeY2_varComposeY2;
+}
+
 float o0S15C0_ShaderCompose_ComputeComp()
 {
-    return Globals_var.o0S15C0_ShaderCompose_varCompose + o0S15C0_ShaderComposeX2_Compute();
+    return Globals_var.o0S15C0_ShaderCompose_varCompose + o1S15C1_ShaderComposeY2_Compute();
+}
+
+float o1S15C1_ShaderCompose_ComputeComp()
+{
+    return Globals_var.o1S15C1_ShaderCompose_varCompose + o1S15C1_ShaderComposeY2_Compute();
 }
 
 void main()
 {
-    float f = o0S15C0_ShaderComposeX2_Compute();
+    float f = o1S15C1_ShaderComposeY2_Compute();
     f += o0S15C0_ShaderCompose_ComputeComp();
+    f += o1S15C1_ShaderCompose_ComputeComp();
 }
 

@@ -3,11 +3,10 @@ struct VS_STREAMS
     float4 ShadingPosition_id0;
     float3 meshNormal_id1;
     float3 normalWS_id2;
-    float3x3 tangentToWorld_id3;
-    float4 Position_id4;
-    float4 PositionWS_id5;
-    float DepthVS_id6;
-    float4 PositionH_id7;
+    float4 Position_id3;
+    float4 PositionWS_id4;
+    float DepthVS_id5;
+    float4 PositionH_id6;
 };
 
 cbuffer PerDraw
@@ -33,17 +32,14 @@ cbuffer PerView
 };
 
 static float3 VS_IN_meshNormal;
-static float3x3 VS_IN_tangentToWorld;
 static float4 VS_IN_Position;
 static float4 VS_OUT_ShadingPosition;
 static float3 VS_OUT_normalWS;
-static float3x3 VS_OUT_tangentToWorld;
 static float4 VS_OUT_PositionWS;
 
 struct SPIRV_Cross_Input
 {
     float3 VS_IN_meshNormal : NORMAL;
-    float3x3 VS_IN_tangentToWorld : TANGENTTOWORLD;
     float4 VS_IN_Position : POSITION;
 };
 
@@ -51,7 +47,6 @@ struct SPIRV_Cross_Output
 {
     float4 VS_OUT_ShadingPosition : SV_Position;
     float3 VS_OUT_normalWS : NORMALWS;
-    float3x3 VS_OUT_tangentToWorld : TANGENTTOWORLD;
     float4 VS_OUT_PositionWS : POSITION_WS;
 };
 
@@ -66,7 +61,7 @@ void TransformationBase_PreTransformPosition()
 void TransformationWAndVP_PreTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PreTransformPosition();
-    _streams.PositionWS_id5 = mul(_streams.Position_id4, Transformation_World);
+    _streams.PositionWS_id4 = mul(_streams.Position_id3, Transformation_World);
 }
 
 void TransformationBase_TransformPosition()
@@ -85,10 +80,10 @@ float4 TransformationWAndVP_ComputeShadingPosition(float4 world)
 void TransformationWAndVP_PostTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PostTransformPosition();
-    float4 param = _streams.PositionWS_id5;
+    float4 param = _streams.PositionWS_id4;
     _streams.ShadingPosition_id0 = TransformationWAndVP_ComputeShadingPosition(param);
-    _streams.PositionH_id7 = _streams.ShadingPosition_id0;
-    _streams.DepthVS_id6 = _streams.ShadingPosition_id0.w;
+    _streams.PositionH_id6 = _streams.ShadingPosition_id0;
+    _streams.DepthVS_id5 = _streams.ShadingPosition_id0.w;
 }
 
 void TransformationBase_BaseTransformVS(inout VS_STREAMS _streams)
@@ -111,30 +106,24 @@ void NormalFromMesh_GenerateNormal_VS(inout VS_STREAMS _streams)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f) };
     _streams.meshNormal_id1 = VS_IN_meshNormal;
-    _streams.tangentToWorld_id3 = VS_IN_tangentToWorld;
-    _streams.Position_id4 = VS_IN_Position;
+    _streams.Position_id3 = VS_IN_Position;
     TransformationBase_VSMain(_streams);
     NormalFromMesh_GenerateNormal_VS(_streams);
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
     VS_OUT_normalWS = _streams.normalWS_id2;
-    VS_OUT_tangentToWorld = _streams.tangentToWorld_id3;
-    VS_OUT_PositionWS = _streams.PositionWS_id5;
+    VS_OUT_PositionWS = _streams.PositionWS_id4;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
     VS_IN_meshNormal = stage_input.VS_IN_meshNormal;
-    VS_IN_tangentToWorld[0] = stage_input.VS_IN_tangentToWorld_0;
-    VS_IN_tangentToWorld[1] = stage_input.VS_IN_tangentToWorld_1;
-    VS_IN_tangentToWorld[2] = stage_input.VS_IN_tangentToWorld_2;
     VS_IN_Position = stage_input.VS_IN_Position;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_ShadingPosition = VS_OUT_ShadingPosition;
     stage_output.VS_OUT_normalWS = VS_OUT_normalWS;
-    stage_output.VS_OUT_tangentToWorld = VS_OUT_tangentToWorld;
     stage_output.VS_OUT_PositionWS = VS_OUT_PositionWS;
     return stage_output;
 }

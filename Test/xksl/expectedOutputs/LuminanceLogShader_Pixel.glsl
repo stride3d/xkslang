@@ -28,11 +28,7 @@ vec4 LuminanceLogShader_Shading(PS_STREAMS _streams)
 {
     vec3 color = texture(SPIRV_Cross_CombinedTexturing_Texture0Texturing_PointSampler, _streams.TexCoord_id0).xyz;
     vec3 param = color;
-    float lum = LuminanceLogShader_GetLuminance(param);
-    if (lum < 0.001000000047497451305389404296875)
-    {
-        lum = 0.001000000047497451305389404296875;
-    }
+    float lum = max(0.001000000047497451305389404296875, LuminanceLogShader_GetLuminance(param));
     return vec4(log2(lum), 1.0, 1.0, 1.0);
 }
 
