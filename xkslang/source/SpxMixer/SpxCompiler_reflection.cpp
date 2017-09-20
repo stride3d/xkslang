@@ -69,6 +69,34 @@ bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
 	success = GetInputAttributesFromBytecode(effectReflection, listEntryPoints);
 	if (!success) return error("Failed to get the Input Attributes reflection data from the bytecode");
 
+#ifdef XKSLANG_DEBUG_MODE
+    ///Some Sanity check
+    int countStages = (int)(ShadingStageEnum::CountStages);
+    for (int s = 0; s < countStages; s++)
+    {
+        ShadingStageEnum stage = (ShadingStageEnum)(s);
+
+        //make sure that the resources bindings are unique per stage
+        map<string, bool> mapResourceBindingsKeyName;
+        map<string, bool> mapResourceBindingsRawName;
+        for (int i = 0; i < effectReflection.CountResourceBindings; i++)
+        {
+            const EffectResourceBindingDescription& rb = effectReflection.ResourceBindings[i];
+            if (rb.Stage == stage)
+            {
+                if (mapResourceBindingsKeyName.find(rb.KeyName) != mapResourceBindingsKeyName.end())
+                    error(GetShadingStageLabel(stage) + " stage: A resource binding already exist for the KeyName: " + rb.KeyName);
+                else mapResourceBindingsKeyName[rb.KeyName] = true;
+
+                if (mapResourceBindingsRawName.find(rb.RawName) != mapResourceBindingsRawName.end())
+                    error(GetShadingStageLabel(stage) + " stage: A resource binding already exist for the RawName: " + rb.RawName);
+                else mapResourceBindingsRawName[rb.RawName] = true;
+            }
+        }
+    }
+#endif
+
+    if (errorMessages.size() > 0) return false;
     return true;
 }
 

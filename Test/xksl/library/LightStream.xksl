@@ -17,7 +17,7 @@ namespace SiliconStudio.Xenko.Rendering.Lights
         // normal dot light
         stage stream float NdotL;
 
-        stage stream float  lightDirectAmbientOcclusion;
+        stage stream float lightDirectAmbientOcclusion: LIGHTDIRECTAMBIENTOCCLUSION;
 
         void ResetLightStream()
         {

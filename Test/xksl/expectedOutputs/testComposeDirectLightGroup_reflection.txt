@@ -1,0 +1,81 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerView [size: 328]
+@C    o1S2C0_Camera_NearClipPlane => Camera.NearClipPlane
+@C    o1S2C0_Camera_FarClipPlane => Camera.FarClipPlane
+@C    o1S2C0_Camera_ZProjection => Camera.ZProjection
+@C    o1S2C0_Camera_ViewSize => Camera.ViewSize
+@C    o1S2C0_Camera_AspectRatio => Camera.AspectRatio
+@C    o0S2C0_LightDirectionalGroup__padding_PerView_Default => _padding_PerView_Default
+@C    o0S2C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups[0]
+@C    o0S2C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
+@C    o1S2C0_LightClustered_ClusterDepthScale => LightClustered.ClusterDepthScale
+@C    o1S2C0_LightClustered_ClusterDepthBias => LightClustered.ClusterDepthBias
+@C    o1S2C0_LightClustered_ClusterStride => LightClustered.ClusterStride
+***********************
+*****  Resources  *****
+***********************
+@C    PerView => PerView [Stage: Vertex]
+@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights [Stage: Vertex]
+@C    LightClustered_LightClusters => LightClustered.LightClusters [Stage: Vertex]
+@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Vertex]
+@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage: Vertex]
+@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Vertex]
+
+ConstantBuffers. Count=1
+ cbuffer: Name="PerView" Size=328 MembersCount=11
+  KeyName="Camera.NearClipPlane" RawName="o1S2C0_Camera_NearClipPlane" LogicalGroup="" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Camera.FarClipPlane" RawName="o1S2C0_Camera_FarClipPlane" LogicalGroup="" Offset=4
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="Camera.ZProjection" RawName="o1S2C0_Camera_ZProjection" LogicalGroup="" Offset=8
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Camera.ViewSize" RawName="o1S2C0_Camera_ViewSize" LogicalGroup="" Offset=16
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="Camera.AspectRatio" RawName="o1S2C0_Camera_AspectRatio" LogicalGroup="" Offset=24
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="_padding_PerView_Default" RawName="o0S2C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="Default" Offset=32
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S2C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=48
+  Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
+   CountMembers=2
+   Name="DirectionWS" Offset=0
+   Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+   Name="Color" Offset=16
+   Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
+
+  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0]" RawName="o0S2C0_DirectLightGroupPerView_LightCount" LogicalGroup="Lighting" Offset=304
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="LightClustered.ClusterDepthScale" RawName="o1S2C0_LightClustered_ClusterDepthScale" LogicalGroup="Lighting" Offset=308
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="LightClustered.ClusterDepthBias" RawName="o1S2C0_LightClustered_ClusterDepthBias" LogicalGroup="Lighting" Offset=312
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="LightClustered.ClusterStride" RawName="o1S2C0_LightClustered_ClusterStride" LogicalGroup="Lighting" Offset=320
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+ResourceBindings. Count=6
+ Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+ Stage=Vertex KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D
+ Stage=Vertex KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+ Stage=Vertex KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+ Stage=Vertex KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+
+InputAttributes. Count=5
+ SemanticName="LIGHTDIRECTAMBIENTOCCLUSION" SemanticIndex=0
+ SemanticName="NORMALWS" SemanticIndex=0
+ SemanticName="POSITION_WS" SemanticIndex=0
+ SemanticName="SV_Position" SemanticIndex=0
+ SemanticName="SCREENPOSITION" SemanticIndex=0
+
+SamplerStates. Count=0

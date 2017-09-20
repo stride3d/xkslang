@@ -1,0 +1,29 @@
+
+shader ShaderMain
+{
+	stage compose DirectLightGroup directLightGroups[];
+	
+	stage void VSMain()
+	{
+		foreach(var lightGroup in directLightGroups)
+		{
+			lightGroup.PrepareDirectLights();
+
+			const int maxLightCount = lightGroup.GetMaxLightCount();
+			int count = lightGroup.GetLightCount();
+			
+			// [unroll] Don't unroll and let the driver handle it
+			for(int i = 0; i < maxLightCount; i++)
+			{
+				if (i >= count)
+				{
+					break;
+				}
+
+				// Compute the light color and direction
+				lightGroup.PrepareDirectLight(i);
+			}
+		}
+	}
+
+}

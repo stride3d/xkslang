@@ -1,0 +1,14 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+//============================================
+
+addResourcesLibrary "library"
+
+convertAndLoadRecursif "testComposeDirectLightGroup" ShaderMain
+
+mixer m
+m.mixin( ShaderMain )
+m.addComposition( directLightGroups = [mixin(LightDirectionalGroup<8>), mixin(LightClusteredPointGroup), mixin(LightClusteredSpotGroup)] )
+
+m.compile()

@@ -221,8 +221,8 @@ bool SpxCompiler::MergeStageMethodsAndRemapBaseCallForInstantiatedShaders(const 
     //========================================================================================
     //========================================================================================
     //We first find the duplicated stage methods (same base shader + stage method + same method base name)
-    unsigned int countInstantiatedShaders = listInstantiatedShaders.size();
-    unsigned int countExistingShaders = listExistingShaders.size();
+    unsigned int countInstantiatedShaders = (unsigned int)listInstantiatedShaders.size();
+    unsigned int countExistingShaders = (unsigned int)listExistingShaders.size();
     if (countInstantiatedShaders > 0 && countExistingShaders > 0)
     {
         for (unsigned int k0 = 0; k0 < countInstantiatedShaders; k0++)

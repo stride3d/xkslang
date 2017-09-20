@@ -785,11 +785,36 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             // We set the resource as: shaderOwnerName.originalName (this will be its id keyName)
                             memberToMerge.declarationName = cbufferToMerge->shaderOwner->GetShaderOriginalBaseName() + "." + memberToMerge.declarationName;
 
-                            if (cbufferToMerge->isDefine) memberToMerge.resourceGroupName = cbufferToMerge->cbufferName;
+                            //We check if the resource has to be merge with an existing one
+                            int mergeResourceWithResourceId = -1;
+                            for (unsigned int pr = 0; pr < (unsigned int)listResourcesNewAccessVariables.size(); pr++)
+                            {
+                                TypeStructMember& anotherResource = listResourcesNewAccessVariables[pr];
+                                if (memberToMerge.declarationName == anotherResource.declarationName)
+                                {
+                                    if (!memberToMerge.isStage) {
+                                        error("The resource: " + memberToMerge.declarationName + " is used several time but is not declared with stage qualifier");
+                                        break;
+                                    }
+                                    else {
+                                        mergeResourceWithResourceId = anotherResource.variableAccessTypeId;
+                                        break;
+                                    }
+                                }
+                            }
 
-                            memberToMerge.variableAccessTypeId = newBoundId++; //id of the new variable we'll create
+                            if (mergeResourceWithResourceId != -1)
+                            {
+                                error("PROUT PROUT");
+                            }
+                            else
+                            {
+                                if (cbufferToMerge->isDefine) memberToMerge.resourceGroupName = cbufferToMerge->cbufferName;
 
-                            listResourcesNewAccessVariables.push_back(memberToMerge);
+                                memberToMerge.variableAccessTypeId = newBoundId++; //id of the new variable we'll create
+
+                                listResourcesNewAccessVariables.push_back(memberToMerge);
+                            }
                         }
                         else
                         {
