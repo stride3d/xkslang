@@ -501,6 +501,7 @@ public:
 
         bool isUsed; //in some case we need to know which members are actually used or not
         bool isResourceType;
+        bool isResourceMergedWithAnotherMember;
 
         //temporary variables used to remap members to others
         spv::Id newStructTypeId;

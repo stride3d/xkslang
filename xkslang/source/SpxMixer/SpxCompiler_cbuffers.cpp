@@ -781,6 +781,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             memberToMerge.newStructMemberIndex = -1;
                             memberToMerge.newStructTypeId = 0;
                             memberToMerge.newStructVariableAccessTypeId = 0;
+                            memberToMerge.isStage = isMemberStaged;
 
                             // We set the resource as: shaderOwnerName.originalName (this will be its id keyName)
                             memberToMerge.declarationName = cbufferToMerge->shaderOwner->GetShaderOriginalBaseName() + "." + memberToMerge.declarationName;
@@ -792,29 +793,36 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                 TypeStructMember& anotherResource = listResourcesNewAccessVariables[pr];
                                 if (memberToMerge.declarationName == anotherResource.declarationName)
                                 {
-                                    if (!memberToMerge.isStage) {
-                                        error("The resource: " + memberToMerge.declarationName + " is used several time but is not declared with stage qualifier");
+                                    //check that they have the stage qualifier
+                                    if (!memberToMerge.isStage || !anotherResource.isStage) {
+                                        error("The resource: " + memberToMerge.declarationName + " is found several times but is not declared with stage qualifier");
                                         break;
                                     }
-                                    else {
-                                        mergeResourceWithResourceId = anotherResource.variableAccessTypeId;
+
+                                    //check that the 2 resources have the same type
+                                    if (memberToMerge.memberType != anotherResource.memberType) {
+                                        error("2 resources have an identical name but a different type: " + memberToMerge.declarationName);
                                         break;
                                     }
+
+                                    mergeResourceWithResourceId = anotherResource.variableAccessTypeId;
+                                    break;
                                 }
                             }
 
                             if (mergeResourceWithResourceId != -1)
                             {
-                                error("PROUT PROUT");
+                                memberToMerge.variableAccessTypeId = mergeResourceWithResourceId;
+                                memberToMerge.isResourceMergedWithAnotherMember = true;
                             }
                             else
                             {
                                 if (cbufferToMerge->isDefine) memberToMerge.resourceGroupName = cbufferToMerge->cbufferName;
-
                                 memberToMerge.variableAccessTypeId = newBoundId++; //id of the new variable we'll create
-
-                                listResourcesNewAccessVariables.push_back(memberToMerge);
+                                memberToMerge.isResourceMergedWithAnotherMember = false;
                             }
+
+                            listResourcesNewAccessVariables.push_back(memberToMerge);
                         }
                         else
                         {
@@ -1209,8 +1217,9 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             // 11:            51      OpLoad 10
 
             TypeStructMember& memberToMoveOut = *itrav;
-            TypeInstruction* resourceType = memberToMoveOut.memberType;
+            if (memberToMoveOut.isResourceMergedWithAnotherMember) continue;
 
+            TypeInstruction* resourceType = memberToMoveOut.memberType;
             TypeInstruction* resourcePointerType = GetTypePointingTo(resourceType);
             VariableInstruction* resourceVariable = GetVariablePointingTo(resourcePointerType);
             if (resourceVariable != nullptr) { error("a variable already exists for the resource type"); break; }

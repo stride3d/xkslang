@@ -1,0 +1,15 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+***********************
+*****  Resources  *****
+***********************
+@C    ShaderComp_LightClusters => ShaderComp.LightClusters [Stage: Vertex]
+
+ConstantBuffers. Count=0
+ResourceBindings. Count=1
+ Stage=Vertex KeyName="ShaderComp.LightClusters" RawName="ShaderComp_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D
+
+InputAttributes. Count=0
+
+SamplerStates. Count=0

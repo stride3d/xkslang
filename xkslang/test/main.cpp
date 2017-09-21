@@ -249,6 +249,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
+    //{ "ShaderWithResources09", "ShaderWithResources09.xkfx" },
     
     //{ "testDependency01", "testDependency01.xkfx" },
     //{ "testDependency02", "testDependency02.xkfx" },

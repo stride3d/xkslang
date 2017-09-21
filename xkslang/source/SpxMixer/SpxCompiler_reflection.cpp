@@ -69,6 +69,7 @@ bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
 	success = GetInputAttributesFromBytecode(effectReflection, listEntryPoints);
 	if (!success) return error("Failed to get the Input Attributes reflection data from the bytecode");
 
+/*
 #ifdef XKSLANG_DEBUG_MODE
     ///Some Sanity check
     int countStages = (int)(ShadingStageEnum::CountStages);
@@ -95,6 +96,7 @@ bool SpxCompiler::GetBytecodeReflectionData(EffectReflection& effectReflection)
         }
     }
 #endif
+*/
 
     if (errorMessages.size() > 0) return false;
     return true;

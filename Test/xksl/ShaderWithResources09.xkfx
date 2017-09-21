@@ -1,0 +1,6 @@
+convertAndLoad "ShaderWithResources09.xksl"
+
+mixer m
+m.mixin( ShaderMain )
+m.addComposition( comp1=mixin(ShaderComp), comp2=mixin(ShaderComp) )
+m.compile()

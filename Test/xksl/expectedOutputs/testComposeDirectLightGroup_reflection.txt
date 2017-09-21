@@ -21,7 +21,6 @@
 @C    LightClustered_LightClusters => LightClustered.LightClusters [Stage: Vertex]
 @C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Vertex]
 @C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage: Vertex]
-@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Vertex]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerView" Size=328 MembersCount=11
@@ -63,13 +62,12 @@ ConstantBuffers. Count=1
   KeyName="LightClustered.ClusterStride" RawName="o1S2C0_LightClustered_ClusterStride" LogicalGroup="Lighting" Offset=320
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-ResourceBindings. Count=6
+ResourceBindings. Count=5
  Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Vertex KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
  Stage=Vertex KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D
  Stage=Vertex KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
  Stage=Vertex KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
- Stage=Vertex KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
 
 InputAttributes. Count=5
  SemanticName="LIGHTDIRECTAMBIENTOCCLUSION" SemanticIndex=0

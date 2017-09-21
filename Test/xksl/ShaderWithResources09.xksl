@@ -1,0 +1,26 @@
+shader ShaderComp
+{
+	stage rgroup PerView.Lighting
+	{
+		Texture3D<uint2> LightClusters;
+		Buffer<uint> LightIndices;
+	}
+	
+	void Compute()
+	{
+		float2 uv2 = float2(0.5, 0.5);
+		uint2 lightData = LightClusters.Load(int4(uv2, 0, 0));
+	}
+}
+
+shader ShaderMain
+{
+	compose ShaderComp comp1;
+	compose ShaderComp comp2;
+	
+	void VSMain()
+	{
+		comp1.Compute();
+		comp2.Compute();
+	}
+}

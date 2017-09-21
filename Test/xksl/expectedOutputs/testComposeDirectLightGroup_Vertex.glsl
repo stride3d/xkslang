@@ -56,7 +56,6 @@ layout(std140) uniform PerView
 uniform samplerBuffer LightClusteredPointGroup_PointLights;
 uniform usamplerBuffer LightClustered_LightIndices;
 uniform samplerBuffer LightClusteredSpotGroup_SpotLights;
-uniform usamplerBuffer LightClustered_LightIndices_1;
 
 layout(location = 0) in float VS_IN_lightDirectAmbientOcclusion;
 layout(location = 1) in vec3 VS_IN_normalWS;
@@ -274,7 +273,7 @@ void o2S2C0_LightSpot_ProcessLight(inout VS_STREAMS _streams, LightSpot_SpotLigh
 
 void o2S2C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout VS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(texelFetch(LightClustered_LightIndices_1, _streams.lightIndex_id10).x);
+    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id10).x);
     _streams.lightIndex_id10++;
     vec4 spotLight1 = texelFetch(LightClusteredSpotGroup_SpotLights, realLightIndex * 4);
     vec4 spotLight2 = texelFetch(LightClusteredSpotGroup_SpotLights, (realLightIndex * 4) + 1);
