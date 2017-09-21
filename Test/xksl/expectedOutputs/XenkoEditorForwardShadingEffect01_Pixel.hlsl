@@ -99,7 +99,6 @@ Buffer<float4> LightClusteredPointGroup_PointLights;
 Texture3D<uint4> LightClustered_LightClusters;
 Buffer<uint4> LightClustered_LightIndices;
 Buffer<float4> LightClusteredSpotGroup_SpotLights;
-Buffer<uint4> LightClustered_LightIndices_1;
 
 static float4 PS_IN_ShadingPosition;
 static float3 PS_IN_normalWS;
@@ -438,7 +437,7 @@ void o2S429C0_LightSpot_ProcessLight(inout PS_STREAMS _streams, LightSpot_SpotLi
 
 void o2S429C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(LightClustered_LightIndices_1.Load(_streams.lightIndex_id43).x);
+    int realLightIndex = int(LightClustered_LightIndices.Load(_streams.lightIndex_id43).x);
     _streams.lightIndex_id43++;
     float4 spotLight1 = LightClusteredSpotGroup_SpotLights.Load(realLightIndex * 4);
     float4 spotLight2 = LightClusteredSpotGroup_SpotLights.Load((realLightIndex * 4) + 1);

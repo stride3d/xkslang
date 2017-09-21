@@ -124,7 +124,6 @@ Buffer<float4> LightClusteredPointGroup_PointLights;
 Texture3D<uint4> LightClustered_LightClusters;
 Buffer<uint4> LightClustered_LightIndices;
 Buffer<float4> LightClusteredSpotGroup_SpotLights;
-Buffer<uint4> LightClustered_LightIndices_1;
 Texture2D<float4> MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT;
 SamplerState DynamicSampler_Sampler;
 Texture2D<float4> DynamicTexture_Texture;
@@ -635,7 +634,7 @@ void o2S418C0_LightSpot_ProcessLight(inout PS_STREAMS _streams, LightSpot_SpotLi
 
 void o2S418C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(LightClustered_LightIndices_1.Load(_streams.lightIndex_id46).x);
+    int realLightIndex = int(LightClustered_LightIndices.Load(_streams.lightIndex_id46).x);
     _streams.lightIndex_id46++;
     float4 spotLight1 = LightClusteredSpotGroup_SpotLights.Load(realLightIndex * 4);
     float4 spotLight2 = LightClusteredSpotGroup_SpotLights.Load((realLightIndex * 4) + 1);

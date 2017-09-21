@@ -44,7 +44,6 @@
 @C    LightClustered_LightClusters => LightClustered.LightClusters [Stage: Pixel]
 @C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Pixel]
 @C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage: Pixel]
-@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Pixel]
 
 ConstantBuffers. Count=3
  cbuffer: Name="PerDraw" Size=416 MembersCount=8
@@ -142,7 +141,7 @@ ConstantBuffers. Count=3
   KeyName="GizmoUniformColorMaterial.GizmoColorKey" RawName="o8S245C0_o5S2C0_o4S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-ResourceBindings. Count=9
+ResourceBindings. Count=8
  Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
@@ -151,7 +150,6 @@ ResourceBindings. Count=9
  Stage=Pixel KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D
  Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
  Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
- Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
 
 InputAttributes. Count=2
  SemanticName="NORMAL" SemanticIndex=0

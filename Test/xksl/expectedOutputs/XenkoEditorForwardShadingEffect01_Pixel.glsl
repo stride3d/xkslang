@@ -102,7 +102,6 @@ layout(std140) uniform PerMaterial
 uniform samplerBuffer LightClusteredPointGroup_PointLights;
 uniform usamplerBuffer LightClustered_LightIndices;
 uniform samplerBuffer LightClusteredSpotGroup_SpotLights;
-uniform usamplerBuffer LightClustered_LightIndices_1;
 
 layout(location = 0) in vec4 PS_IN_ShadingPosition;
 layout(location = 1) in vec3 PS_IN_normalWS;
@@ -427,7 +426,7 @@ void o2S429C0_LightSpot_ProcessLight(inout PS_STREAMS _streams, LightSpot_SpotLi
 
 void o2S429C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(texelFetch(LightClustered_LightIndices_1, _streams.lightIndex_id43).x);
+    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id43).x);
     _streams.lightIndex_id43++;
     vec4 spotLight1 = texelFetch(LightClusteredSpotGroup_SpotLights, realLightIndex * 4);
     vec4 spotLight2 = texelFetch(LightClusteredSpotGroup_SpotLights, (realLightIndex * 4) + 1);
