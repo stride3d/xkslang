@@ -1,0 +1,5 @@
+convertAndLoad "ShaderWithResources10.xksl"
+
+mixer m
+m.mixin( ShaderMain )
+m.compile()

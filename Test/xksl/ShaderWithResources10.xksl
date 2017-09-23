@@ -1,0 +1,22 @@
+
+shader ShaderMain
+{
+	stage stream int lightIndex: LIGHTINDEX;
+	
+	stage rgroup PerView.Lighting
+	{
+		Texture3D<uint2> LightClusters;
+		Buffer<uint> LightIndices;
+	}
+	
+	void VSMain()
+	{
+		PrepareDirectLightCore(0);
+	}
+	
+	void PrepareDirectLightCore(int lightIndexIgnored)
+	{
+		int realLightIndex = LightIndices.Load(streams.lightIndex);
+		streams.lightIndex++;
+	}
+}

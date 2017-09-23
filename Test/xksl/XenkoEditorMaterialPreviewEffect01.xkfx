@@ -1,0 +1,32 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+addResourcesLibrary "library"
+
+setDefine SILICON_STUDIO_RENDER_TARGET_COUNT "1"
+setDefine SILICON_STUDIO_MULTISAMPLE_COUNT "1"
+setDefine SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D "1"
+setDefine SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D11 "1"
+setDefine SILICONSTUDIO_XENKO_GRAPHICS_PROFILE "45056"
+setDefine GRAPHICS_PROFILE_LEVEL_9_1 "37120"
+setDefine GRAPHICS_PROFILE_LEVEL_9_2 "37376"
+setDefine GRAPHICS_PROFILE_LEVEL_9_3 "37632"
+setDefine GRAPHICS_PROFILE_LEVEL_10_0 "40960"
+setDefine GRAPHICS_PROFILE_LEVEL_10_1 "41216"
+setDefine GRAPHICS_PROFILE_LEVEL_11_0 "45056"
+setDefine GRAPHICS_PROFILE_LEVEL_11_1 "45312"
+setDefine GRAPHICS_PROFILE_LEVEL_11_2 "45568"
+mixer _m
+_m.mixin( ShaderBase, ShadingBase, MaterialSurfaceVertexStageCompositor, TransformationBase, NormalStream, TransformationWAndVP, NormalFromNormalMapping, MaterialSurfacePixelStageCompositor, SharedTextureCoordinate )
+
+_m.addComposition( directLightGroups = [mixin(LightDirectionalGroup<8>), mixin(LightClusteredPointGroup), mixin(LightClusteredSpotGroup)] )
+_m.addComposition( environmentLights = [mixin(LightSimpleAmbient)] )
+_m.addComposition( materialPixelStage = mixin(MaterialSurfaceArray[layers=[mixin(MaterialSurfaceDiffuse[diffuseMap=mixin(ComputeColorTextureScaledOffsetDynamicSampler<Material.DiffuseMap,TEXCOORD0,Material.Sampler.i0,rgba,Material.TextureScale,Material.TextureOffset>)]), mixin(MaterialSurfaceNormalMap<false,true>[normalMap=mixin(ComputeColorWaveNormal<5,0.1,-0.03>)]), mixin(MaterialSurfaceGlossinessMap<false>[glossinessMap=mixin(ComputeColorConstantFloatLink<Material.GlossinessValue>)]), mixin(MaterialSurfaceSetStreamFromComputeColor<matSpecular,rgb>[computeColorSource=mixin(ComputeColorConstantColorLink<Material.SpecularValue>)]), mixin(MaterialSurfaceSetStreamFromComputeColor<matSpecularIntensity,r>[computeColorSource=mixin(ComputeColorConstantFloatLink<Material.SpecularIntensityValue>)]), mixin(MaterialSurfaceLightingAndShading[surfaces=[mixin(MaterialSurfaceShadingDiffuseLambert<true>), mixin(MaterialSurfaceShadingSpecularMicrofacet[environmentFunction=mixin(MaterialSpecularMicrofacetEnvironmentGGXLUT), fresnelFunction=mixin(MaterialSpecularMicrofacetFresnelSchlick), geometricShadowingFunction=mixin(MaterialSpecularMicrofacetVisibilitySmithSchlickGGX), normalDistributionFunction=mixin(MaterialSpecularMicrofacetNormalDistributionGGX)])]])]]) )
+_m.addComposition( materialVertexStage = mixin(MaterialSurfaceArray[layers=[mixin(MaterialSurfaceSetStreamFromComputeColor<matDisplacement,r>[computeColorSource=mixin(ComputeColorMultiply[color1=mixin(ComputeColorWave<5,0.01,-0.03>), color2=mixin(ComputeColorConstantFloatLink<Material.DisplacementValue>)])]), mixin(MaterialSurfaceDisplacement<Position,meshNormal,false>)]]) )
+_m.addComposition( streamInitializerPixelStage = mixin({MaterialStream, MaterialPixelShadingStream}) )
+_m.addComposition( streamInitializerVertexStage = mixin({MaterialStream, MaterialDisplacementStream}) )
+
+_m.compile()

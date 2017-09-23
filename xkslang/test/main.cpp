@@ -250,6 +250,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
     //{ "ShaderWithResources09", "ShaderWithResources09.xkfx" },
+    { "ShaderWithResources10", "ShaderWithResources10.xkfx" },
     
     //{ "testDependency01", "testDependency01.xkfx" },
     //{ "testDependency02", "testDependency02.xkfx" },
@@ -328,12 +329,13 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
-    { "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
-
+    //{ "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
+    
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
+    //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
 };
 
 enum class ShaderLanguageEnum
