@@ -275,6 +275,9 @@ const char* XkslPropertyString(int prop)
         case (GSOutputLineStream):        return "GSOutputLineStream";
         case (GSOutputTriangleStream):    return "GSOutputTriangleStream";
 
+        case (ShaderTypeBase):            return "Base";
+        case (ShaderTypeInstance):        return "Instance";
+
         default:  return "Bad";
     }
 }

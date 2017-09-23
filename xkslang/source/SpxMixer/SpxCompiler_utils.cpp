@@ -281,6 +281,39 @@ bool SpxCompiler::ValidateSpxBytecodeAndData()
     return true;
 }
 
+bool SpxCompiler::CompareBytecodeInstructions(const vector<uint32_t>& bytecode1, unsigned int pos1, const vector<uint32_t>& bytecode2, unsigned int pos2)
+{
+    unsigned int countInstructions1 = asWordCount(bytecode1, pos1);
+    unsigned int countInstructions2 = asWordCount(bytecode2, pos2);
+    if (countInstructions1 != countInstructions2) return false;
+
+    spv::Op op1 = asOpCode(bytecode1, pos1);
+    spv::Op op2 = asOpCode(bytecode1, pos1);
+    if (op1 != op2) return false;
+
+    switch (op1)
+    {
+        case spv::OpTypeImage:
+        {
+            return (bytecode1[pos1 + 3] == bytecode2[pos2 + 3]   // dimensionality
+                 && bytecode1[pos1 + 4] == bytecode2[pos2 + 4]   // depth
+                 && bytecode1[pos1 + 5] == bytecode2[pos2 + 5]   // arrayed
+                 && bytecode1[pos1 + 6] == bytecode2[pos2 + 6]   // multisampled
+                 && bytecode1[pos1 + 7] == bytecode2[pos2 + 7]   // format
+            );
+        }
+    }
+
+    /*const uint32_t* p1 = &(bytecode1[pos1]);
+    const uint32_t* p2 = &(bytecode2[pos2]);
+    while (countInstructions1-- != 0)
+    {
+        if (*p1++ != *p2++) return false;
+    }*/
+
+    return true;
+}
+
 void SpxCompiler::GetShaderFamilyTree(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)
 {
     shaderFamilyTree.clear();

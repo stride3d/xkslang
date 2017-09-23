@@ -311,6 +311,14 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                         //The type already exists in the destination bytecode, we can simply remap to it
                         mappingResolved = true;
                         finalRemapTable[unmappedId] = idOfSameTypeFromDestinationBytecode;
+
+#ifdef XKSLANG_DEBUG_MODE
+                        gfkdlsjglfdjgjfsdlgjfldsgjlsdf;
+                        //hashType function is not 100% accurate: in debug mode we check that the instructions are identical
+                        if (!CompareBytecodeInstructions(this->spv, hashTypePosIt->second.second, bytecodeToMerge.spv, objectFromUnmappedId->GetBytecodeStartPosition()))
+                            return error("2 types or consts have the same hashtype but have different instructions");
+#endif
+
                     }
                     break;
                 }

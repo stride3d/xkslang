@@ -1,16 +1,30 @@
 
 shader ShaderMain
 {
+	stage stream uint2 lightData: LIGHTDATA;
 	stage stream int lightIndex: LIGHTINDEX;
+	stage stream float4 screenPosition: SCREENPOSITION;
+	
+	struct SpotLightDataInternal
+	{
+		float3 PositionWS;
+		float3 DirectionWS;
+		float3 AngleOffsetAndInvSquareRadius;
+		[Color]
+		float3 Color;
+	};
 	
 	stage rgroup PerView.Lighting
 	{
 		Texture3D<uint2> LightClusters;
 		Buffer<uint> LightIndices;
+		Buffer<float4> SpotLights;
 	}
-	
-	void VSMain()
+
+	void PSMain()
 	{
+		streams.lightData = uint2(0, 0);
+		streams.screenPosition = float4(1,2,3,4);
 		PrepareDirectLightCore(0);
 	}
 	
@@ -18,5 +32,19 @@ shader ShaderMain
 	{
 		int realLightIndex = LightIndices.Load(streams.lightIndex);
 		streams.lightIndex++;
+		
+		// Build SpotLightData
+		SpotLightDataInternal spotLight;
+		float4 spotLight1 = SpotLights.Load(realLightIndex * 4);
+		float4 spotLight2 = SpotLights.Load(realLightIndex * 4 + 1);
+		float4 spotLight3 = SpotLights.Load(realLightIndex * 4 + 2);
+		float4 spotLight4 = SpotLights.Load(realLightIndex * 4 + 3);
+		spotLight.PositionWS = spotLight1.xyz;
+		spotLight.DirectionWS = spotLight2.xyz;
+		spotLight.AngleOffsetAndInvSquareRadius = spotLight3.xyz;
+		spotLight.Color = spotLight4.xyz;
+
+		// Perform lighting
+		//ProcessLight(spotLight);
 	}
 }
