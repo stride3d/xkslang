@@ -1266,7 +1266,7 @@ namespace spv {
             return 30 + hashType(idPos(spv[typeStart+2])) * (spv[typeStart+3] - 1);
         case spv::OpTypeImage:
             return 120 + hashType(idPos(spv[typeStart+2])) +
-                spv[typeStart+3] +            // dimensionality
+                spv[typeStart+3] * 16 * 16 +  // dimensionality
                 spv[typeStart+4] * 8 * 16 +   // depth
                 spv[typeStart+5] * 4 * 16 +   // arrayed
                 spv[typeStart+6] * 2 * 16 +   // multisampled

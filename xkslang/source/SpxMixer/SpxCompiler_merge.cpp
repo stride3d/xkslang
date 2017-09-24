@@ -312,12 +312,41 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                         mappingResolved = true;
                         finalRemapTable[unmappedId] = idOfSameTypeFromDestinationBytecode;
 
-#ifdef XKSLANG_DEBUG_MODE
-                        gfkdlsjglfdjgjfsdlgjfldsgjlsdf;
+//#ifdef XKSLANG_DEBUG_MODE
                         //hashType function is not 100% accurate: in debug mode we check that the instructions are identical
-                        if (!CompareBytecodeInstructions(this->spv, hashTypePosIt->second.second, bytecodeToMerge.spv, objectFromUnmappedId->GetBytecodeStartPosition()))
-                            return error("2 types or consts have the same hashtype but have different instructions");
-#endif
+                        if (!CompareOpTypeConstInstructions(hashTypePosIt->second.second, bytecodeToMerge, objectFromUnmappedId->GetBytecodeStartPosition()))
+                        {
+                            /*uint32_t typeHash11 = this->hashType(hashTypePosIt->second.second);
+                            uint32_t typeHash22 = bytecodeToMerge.hashType(objectFromUnmappedId->GetBytecodeStartPosition());
+
+                            uint32_t toto1, toto2;
+                            {
+                                uint32_t typeStarta = hashTypePosIt->second.second;
+                                uint32_t f1a = 120;
+                                uint32_t f2a = hashType(idPos(this->spv[typeStarta + 2]));
+                                uint32_t f3a = this->spv[typeStarta + 3];            // dimensionality
+                                uint32_t f4a = this->spv[typeStarta + 4] * 8 * 16;   // depth
+                                uint32_t f5a = this->spv[typeStarta + 5] * 4 * 16;   // arrayed
+                                uint32_t f6a = this->spv[typeStarta + 6] * 2 * 16;   // multisampled
+                                uint32_t f7a = this->spv[typeStarta + 7] * 1 * 16;    // format
+                                toto1 = f1a + f2a + f3a + f4a + f5a + f6a + f7a;
+
+                                uint32_t typeStartb = objectFromUnmappedId->GetBytecodeStartPosition();
+                                uint32_t f1b = 120;
+                                uint32_t f2b = bytecodeToMerge.hashType(bytecodeToMerge.idPos(bytecodeToMerge.spv[typeStartb + 2]));
+                                uint32_t f3b = bytecodeToMerge.spv[typeStartb + 3];            // dimensionality
+                                uint32_t f4b = bytecodeToMerge.spv[typeStartb + 4] * 8 * 16;   // depth
+                                uint32_t f5b = bytecodeToMerge.spv[typeStartb + 5] * 4 * 16;   // arrayed
+                                uint32_t f6b = bytecodeToMerge.spv[typeStartb + 6] * 2 * 16;   // multisampled
+                                uint32_t f7b = bytecodeToMerge.spv[typeStartb + 7] * 1 * 16;    // format
+                                toto2 = f1b + f2b + f3b + f4b + f5b + f6b + f7b;
+
+                                int gfds = 45;
+                            }*/
+
+                            return error("2 types or consts have the same hashtype but different bytecode instructions");
+                        }
+//#endif
 
                     }
                     break;

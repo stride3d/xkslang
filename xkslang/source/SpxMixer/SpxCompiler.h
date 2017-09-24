@@ -911,7 +911,11 @@ private:
     BytecodePortionToRemove* AddPortionToRemove(BytecodeUpdateController& bytecodeUpdateController, unsigned int position, unsigned int count);
     bool ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController);
 
-    bool CompareBytecodeInstructions(const std::vector<uint32_t>& bytecode1, unsigned int pos1, const std::vector<uint32_t>& bytecode2, unsigned int pos2);
+    unsigned int SpxCompiler::idPosSafe(spv::Id id);
+    bool CompareOpTypeConstInstructions(unsigned int pos, SpxCompiler& spxBytecode2, unsigned int pos2);
+    static bool CompareBytecodeData(const std::vector<uint32_t>& bytecode1, unsigned int pos1, const std::vector<uint32_t>& bytecode2, unsigned int pos2,
+        unsigned int countWords, unsigned int start, unsigned int len);
+
     bool InitDefaultHeader();
     bool ComputeShadersLevel();
     bool HasAnyError() { return errorMessages.size() > 0; }

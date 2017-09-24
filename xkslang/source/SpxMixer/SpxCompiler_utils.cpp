@@ -281,37 +281,126 @@ bool SpxCompiler::ValidateSpxBytecodeAndData()
     return true;
 }
 
-bool SpxCompiler::CompareBytecodeInstructions(const vector<uint32_t>& bytecode1, unsigned int pos1, const vector<uint32_t>& bytecode2, unsigned int pos2)
+bool SpxCompiler::CompareBytecodeData(const vector<uint32_t>& bytecode1, unsigned int pos1, const vector<uint32_t>& bytecode2, unsigned int pos2, unsigned int countWords, unsigned int start, unsigned int len)
 {
-    unsigned int countInstructions1 = asWordCount(bytecode1, pos1);
-    unsigned int countInstructions2 = asWordCount(bytecode2, pos2);
-    if (countInstructions1 != countInstructions2) return false;
+    if (len == 0) return true;
 
-    spv::Op op1 = asOpCode(bytecode1, pos1);
-    spv::Op op2 = asOpCode(bytecode1, pos1);
-    if (op1 != op2) return false;
+#ifdef XKSLANG_DEBUG_MODE
+    unsigned int maxInc = start + len;
+    if (maxInc > countWords) return false;
+    if (pos1 + maxInc > bytecode1.size()) return false;
+    if (pos2 + maxInc > bytecode2.size()) return false;
+#endif
 
-    switch (op1)
-    {
-        case spv::OpTypeImage:
-        {
-            return (bytecode1[pos1 + 3] == bytecode2[pos2 + 3]   // dimensionality
-                 && bytecode1[pos1 + 4] == bytecode2[pos2 + 4]   // depth
-                 && bytecode1[pos1 + 5] == bytecode2[pos2 + 5]   // arrayed
-                 && bytecode1[pos1 + 6] == bytecode2[pos2 + 6]   // multisampled
-                 && bytecode1[pos1 + 7] == bytecode2[pos2 + 7]   // format
-            );
-        }
-    }
-
-    /*const uint32_t* p1 = &(bytecode1[pos1]);
-    const uint32_t* p2 = &(bytecode2[pos2]);
-    while (countInstructions1-- != 0)
+    const uint32_t* p1 = &(bytecode1[pos1 + start]);
+    const uint32_t* p2 = &(bytecode2[pos2 + start]);
+    while (len-- != 0)
     {
         if (*p1++ != *p2++) return false;
-    }*/
+    }
 
     return true;
+}
+
+unsigned int SpxCompiler::idPosSafe(spv::Id id)
+{
+    const auto tid_it = idPosR.find(id);
+    if (tid_it == idPosR.end())
+    {
+        error("ID not found: " + to_string(id));
+        return 0;
+    }
+
+    return tid_it->second;
+}
+
+bool SpxCompiler::CompareOpTypeConstInstructions(unsigned int pos, SpxCompiler& spxBytecode2, unsigned int pos2)
+{
+    unsigned int countWords = this->asWordCount(pos);
+    unsigned int countWords2 = spxBytecode2.asWordCount(pos2);
+    if (countWords != countWords2) return false;
+
+    spv::Op opCode = this->asOpCode(pos);
+    spv::Op op2 = spxBytecode2.asOpCode(pos2);
+    if (opCode != op2) return false;
+
+    switch (opCode)
+    {
+        case spv::OpTypeVoid:
+        case spv::OpTypeBool:
+        case spv::OpTypeSampler:
+        case spv::OpTypeXlslShaderClass:
+            if (countWords != 2) return false;
+            return true;
+
+        case spv::OpTypeInt:
+        case spv::OpTypeFloat:
+            return CompareBytecodeData(this->spv, pos, spxBytecode2.spv, pos2, countWords, 2, countWords - 2);
+
+        case spv::OpTypeVector:
+        case spv::OpTypeMatrix:
+        case spv::OpTypeImage: 
+        case spv::OpTypeArray:
+            return CompareOpTypeConstInstructions(this->idPosSafe(this->spv[pos + 2]), spxBytecode2, spxBytecode2.idPosSafe(spxBytecode2.spv[pos2 + 2]))
+                && CompareBytecodeData(this->spv, pos, spxBytecode2.spv, pos2, countWords, 3, countWords - 3);
+
+        case spv::OpTypeFunction:
+        {
+            for (unsigned int w = 2; w < countWords; ++w)
+                if (!CompareOpTypeConstInstructions(this->idPosSafe(this->spv[pos + w]), spxBytecode2, spxBytecode2.idPosSafe(spxBytecode2.spv[pos2 + w]))) return false;
+            return true;
+        }
+
+        case spv::OpTypeStruct:
+        {
+            for (unsigned int w = 2; w < countWords; ++w)
+                if (!CompareOpTypeConstInstructions(this->idPosSafe(this->spv[pos + w]), spxBytecode2, spxBytecode2.idPosSafe(spxBytecode2.spv[pos2 + w]))) return false;
+            return true;
+        }
+
+        case spv::OpConstantComposite:
+        {
+            if (!CompareOpTypeConstInstructions(this->idPosSafe(this->spv[pos + 1]), spxBytecode2, spxBytecode2.idPosSafe(spxBytecode2.spv[pos2 + 1]))) return false;
+            for (unsigned int w = 3; w < countWords; ++w)
+                if (!CompareOpTypeConstInstructions(this->idPosSafe(this->spv[pos + w]), spxBytecode2, spxBytecode2.idPosSafe(spxBytecode2.spv[pos2 + w]))) return false;
+            return true;
+        }
+
+        case spv::OpConstant:
+            return CompareOpTypeConstInstructions(this->idPosSafe(this->spv[pos + 1]), spxBytecode2, spxBytecode2.idPosSafe(spxBytecode2.spv[pos2 + 1]))
+                && CompareBytecodeData(this->spv, pos, spxBytecode2.spv, pos2, countWords, 3, countWords - 3);
+
+        case spv::OpTypeSampledImage:
+        case spv::OpTypeRuntimeArray:
+            if (countWords != 3) return false;
+            return CompareOpTypeConstInstructions(this->idPosSafe(this->spv[pos + 2]), spxBytecode2, spxBytecode2.idPosSafe(spxBytecode2.spv[pos2 + 2]));
+
+        case spv::OpTypeOpaque:
+            if (countWords != 3) return false;
+            return CompareBytecodeData(this->spv, pos, spxBytecode2.spv, pos2, countWords, 2, countWords - 2);
+
+        case spv::OpTypePointer:
+            if (countWords != 4) return false;
+            return CompareBytecodeData(this->spv, pos, spxBytecode2.spv, pos2, countWords, 2, 1)
+                && CompareOpTypeConstInstructions(this->idPosSafe(this->spv[pos + 3]), spxBytecode2, spxBytecode2.idPosSafe(spxBytecode2.spv[pos2 + 3]));
+
+        case spv::OpTypeEvent:
+        case spv::OpTypeDeviceEvent:
+        case spv::OpTypeReserveId:
+        case spv::OpTypeQueue:
+        case spv::OpTypePipe:
+        case spv::OpConstantNull:
+        case spv::OpConstantSampler:
+        case spv::OpConstantTrue:
+        case spv::OpConstantFalse:
+            if (countWords != 2) return false;
+            return true;
+
+        default:
+            return error(string("Invalid (or unprocessed) type or const OpCode: ") + spv::OpcodeString(opCode));
+    }
+
+    return false;
 }
 
 void SpxCompiler::GetShaderFamilyTree(ShaderClassData* shaderFromFamily, vector<ShaderClassData*>& shaderFamilyTree)

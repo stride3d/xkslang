@@ -250,7 +250,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
     //{ "ShaderWithResources09", "ShaderWithResources09.xkfx" },
-    
+    //{ "ShaderWithResources10", "ShaderWithResources10.xkfx" },
+
     //{ "testDependency01", "testDependency01.xkfx" },
     //{ "testDependency02", "testDependency02.xkfx" },
     //{ "testDependency03", "testDependency03.xkfx" },
@@ -335,9 +336,6 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
     { "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
-
-
-    { "ShaderWithResources10", "ShaderWithResources10.xkfx" },
 };
 
 enum class ShaderLanguageEnum
