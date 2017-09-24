@@ -190,7 +190,7 @@ ResourceBindings. Count=16
  Stage=Pixel KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
  Stage=Pixel KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
  Stage=Pixel KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D
- Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureCube
+ Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
  Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
  Stage=Pixel KeyName="MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT" RawName="MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D
  Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler

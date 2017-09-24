@@ -131,7 +131,7 @@ cbuffer PerFrame
 };
 Buffer<float4> LightClusteredPointGroup_PointLights;
 Texture3D<uint4> LightClustered_LightClusters;
-TextureCube<float4> LightClustered_LightIndices;
+Buffer<uint4> LightClustered_LightIndices;
 Buffer<float4> LightClusteredSpotGroup_SpotLights;
 Texture2D<float4> MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT;
 SamplerState DynamicSampler_Sampler;
@@ -530,9 +530,9 @@ void o1S418C0_LightPoint_ProcessLight(inout PS_STREAMS _streams, LightPoint_Poin
     float3 param_1 = _streams.PositionWS_id8.xyz;
     float3 lightVectorNorm;
     float3 param_2 = lightVectorNorm;
-    float _394 = o1S418C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
+    float _393 = o1S418C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
     lightVectorNorm = param_2;
-    float attenuation = _394;
+    float attenuation = _393;
     _streams.lightPositionWS_id36 = light.PositionWS;
     _streams.lightColor_id38 = light.Color * attenuation;
     _streams.lightDirectionWS_id37 = lightVectorNorm;
@@ -540,7 +540,7 @@ void o1S418C0_LightPoint_ProcessLight(inout PS_STREAMS _streams, LightPoint_Poin
 
 void o1S418C0_LightClusteredPointGroup_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(LightClustered_LightIndices.Load(int2(_streams.lightIndex_id56.xyz, _0)).x);
+    int realLightIndex = int(LightClustered_LightIndices.Load(_streams.lightIndex_id56).x);
     _streams.lightIndex_id56++;
     float4 pointLight1 = LightClusteredPointGroup_PointLights.Load(realLightIndex * 2);
     float4 pointLight2 = LightClusteredPointGroup_PointLights.Load((realLightIndex * 2) + 1);
@@ -643,7 +643,7 @@ void o2S418C0_LightSpot_ProcessLight(inout PS_STREAMS _streams, LightSpot_SpotLi
 
 void o2S418C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(LightClustered_LightIndices.Load(int2(_streams.lightIndex_id56.xyz, _0)).x);
+    int realLightIndex = int(LightClustered_LightIndices.Load(_streams.lightIndex_id56).x);
     _streams.lightIndex_id56++;
     float4 spotLight1 = LightClusteredSpotGroup_SpotLights.Load(realLightIndex * 4);
     float4 spotLight2 = LightClusteredSpotGroup_SpotLights.Load((realLightIndex * 4) + 1);

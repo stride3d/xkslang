@@ -391,9 +391,13 @@ bool SpxCompiler::CompareOpTypeConstInstructions(unsigned int pos, SpxCompiler& 
         case spv::OpTypePipe:
         case spv::OpConstantNull:
         case spv::OpConstantSampler:
+            if (countWords != 2) return false;
+            return true;
+
         case spv::OpConstantTrue:
         case spv::OpConstantFalse:
-            if (countWords != 2) return false;
+            if (!CompareOpTypeConstInstructions(this->idPosSafe(this->spv[pos + 1]), spxBytecode2, spxBytecode2.idPosSafe(spxBytecode2.spv[pos2 + 1]))) return false;
+            if (countWords != 3) return false;
             return true;
 
         default:

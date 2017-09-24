@@ -136,6 +136,7 @@ layout(std140) uniform PerFrame
 } PerFrame_var;
 
 uniform samplerBuffer LightClusteredPointGroup_PointLights;
+uniform usamplerBuffer LightClustered_LightIndices;
 uniform samplerBuffer LightClusteredSpotGroup_SpotLights;
 uniform sampler2D SPIRV_Cross_CombinedDynamicTexture_TextureDynamicSampler_Sampler;
 uniform sampler2D SPIRV_Cross_CombinedMaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUTTexturing_LinearSampler;
@@ -515,9 +516,9 @@ void o1S418C0_LightPoint_ProcessLight(inout PS_STREAMS _streams, LightPoint_Poin
     vec3 param_1 = _streams.PositionWS_id8.xyz;
     vec3 lightVectorNorm;
     vec3 param_2 = lightVectorNorm;
-    float _394 = o1S418C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
+    float _393 = o1S418C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
     lightVectorNorm = param_2;
-    float attenuation = _394;
+    float attenuation = _393;
     _streams.lightPositionWS_id36 = light.PositionWS;
     _streams.lightColor_id38 = light.Color * attenuation;
     _streams.lightDirectionWS_id37 = lightVectorNorm;
@@ -525,7 +526,7 @@ void o1S418C0_LightPoint_ProcessLight(inout PS_STREAMS _streams, LightPoint_Poin
 
 void o1S418C0_LightClusteredPointGroup_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id56.xyz).x);
+    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id56).x);
     _streams.lightIndex_id56++;
     vec4 pointLight1 = texelFetch(LightClusteredPointGroup_PointLights, realLightIndex * 2);
     vec4 pointLight2 = texelFetch(LightClusteredPointGroup_PointLights, (realLightIndex * 2) + 1);
@@ -628,7 +629,7 @@ void o2S418C0_LightSpot_ProcessLight(inout PS_STREAMS _streams, LightSpot_SpotLi
 
 void o2S418C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id56.xyz).x);
+    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id56).x);
     _streams.lightIndex_id56++;
     vec4 spotLight1 = texelFetch(LightClusteredSpotGroup_SpotLights, realLightIndex * 4);
     vec4 spotLight2 = texelFetch(LightClusteredSpotGroup_SpotLights, (realLightIndex * 4) + 1);
