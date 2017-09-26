@@ -3245,9 +3245,16 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
         // success on seeing the RIGHT_BRACE '}'
         if (peekTokenClass(EHTokRightBrace)) return true;
 
-        //any attributes?
+        ////any attributes?
         TFunctionDeclarator declarator;
-        acceptAttributes(declarator.attributes);
+        //acceptAttributes(declarator.attributes);
+
+        // xksl extensions: members can have attributes
+        TVector<TShaderMemberAttribute> memberAttributes;
+        if (!checkForXkslStructMemberAttribute(memberAttributes)) {
+            error("failed to check the struct member attribute");
+            return false;
+        }
 
         // typedef?
         if (peekTokenClass(EHTokTypedef)) {
@@ -3337,6 +3344,11 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
         
         if (this->shaderMethodOrMemberTypeCurrentlyParsed != nullptr) { error("Another shader's method or member type is currently being parsed"); return false; }
         this->shaderMethodOrMemberTypeCurrentlyParsed = &declaredType;
+
+        if (memberAttributes.size() > 0)
+        {
+            declaredType.SetMemberAttributes(&memberAttributes);
+        }
 
         const TString* identifierName = nullptr;
         bool acceptIdentifierAfterTypeDeclaration = true;
@@ -4134,7 +4146,7 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
             return false;
         }
 
-        if (memberAttributes.size())
+        if (memberAttributes.size() > 0)
         {
             memberType.SetMemberAttributes(&memberAttributes);
         }

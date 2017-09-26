@@ -1,8 +1,0 @@
-load "TestCBuffer01.xksl"
-
-mixer mixerMain
-mixerMain.mixin ShaderMain
-
-mixerMain.setStageEntryPoint Vertex "VSMain"
-mixerMain.setStageEntryPoint Pixel "PSMain"
-mixerMain.compile

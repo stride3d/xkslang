@@ -17,7 +17,7 @@
 ConstantBuffers. Count=2
  cbuffer: Name="Globals" Size=20 MembersCount=2
   KeyName="ImageScalerShader.Color" RawName="ImageScalerShader_Color" LogicalGroup="" Offset=0
-  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+  Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
   KeyName="ImageScalerShader.IsOnlyChannelRed" RawName="ImageScalerShader_IsOnlyChannelRed" LogicalGroup="" Offset=16
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1

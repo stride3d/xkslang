@@ -1,0 +1,25 @@
+namespace SiliconStudio.Xenko.Rendering.Images
+{
+    internal shader ShaderMain
+    {
+        [Color]
+        stage float4 Color;
+        stage float IsOnlyChannelRed;
+
+        // Shading of the sprite
+        stage float4 Shading()
+        {
+            float4 color = float4(0);
+            if (IsOnlyChannelRed != 0)
+            {
+                color = float4(color.rrr, 1);
+            }
+            return color * Color;
+        }
+		
+		void VSMain()
+		{
+			float4 f4 = Shading();
+		}
+    };
+}
