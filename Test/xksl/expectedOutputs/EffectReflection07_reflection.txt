@@ -7,12 +7,12 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    cb => cb [Stage: Vertex]
-@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage: Vertex]
-@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage: Vertex]
-@C    cb => cb [Stage: Pixel]
-@C    ShaderMain_CubeMap => ShaderMain.CubeMap [Stage: Pixel]
-@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage: Pixel]
+@C    cb => cb [Stage=Vertex, GroupName="cb", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage=Vertex, GroupName="ResourceGroup", Type=Texture2D, Class=ShaderResourceView]
+@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage=Vertex, GroupName="ResourceGroup", Type=Sampler, Class=Sampler]
+@C    cb => cb [Stage=Pixel, GroupName="cb", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    ShaderMain_CubeMap => ShaderMain.CubeMap [Stage=Pixel, GroupName="ResourceGroup", Type=TextureCube, Class=ShaderResourceView]
+@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage=Pixel, GroupName="ResourceGroup", Type=Sampler, Class=Sampler]
 
 ConstantBuffers. Count=1
  cbuffer: Name="cb" Size=24 MembersCount=2

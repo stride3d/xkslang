@@ -262,7 +262,11 @@ string EffectReflection::Print()
     for (int rb = 0; rb < CountResourceBindings; ++rb)
     {
         EffectResourceBindingDescription& resource = ResourceBindings[rb];
-        stream << "@C    " << resource.RawName << " => " << resource.KeyName << " [Stage: " << GetShadingStageLabel(resource.Stage) << "]" << endl;
+        stream << "@C    " << resource.RawName << " => " << resource.KeyName << " [Stage=" << GetShadingStageLabel(resource.Stage)
+            << ", GroupName=\"" << resource.ResourceGroupName << "\""
+            << ", Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(resource.Type)
+            << ", Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(resource.Class)
+            << "]" << endl;
     }
 
     stream << endl;

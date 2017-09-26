@@ -26,11 +26,11 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage: Vertex]
-@C    PerView => PerView [Stage: Vertex]
-@C    PerView => PerView [Stage: Pixel]
-@C    PerFrame => PerFrame [Stage: Pixel]
-@C    PerMaterial => PerMaterial [Stage: Pixel]
+@C    PerDraw => PerDraw [Stage=Vertex, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerView => PerView [Stage=Vertex, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerView => PerView [Stage=Pixel, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerFrame => PerFrame [Stage=Pixel, GroupName="PerFrame", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerMaterial => PerMaterial [Stage=Pixel, GroupName="PerMaterial", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=4
  cbuffer: Name="PerDraw" Size=416 MembersCount=8

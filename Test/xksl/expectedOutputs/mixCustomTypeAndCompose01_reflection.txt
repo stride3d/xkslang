@@ -15,7 +15,7 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerView => PerView [Stage: Vertex]
+@C    PerView => PerView [Stage=Vertex, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerView" Size=640 MembersCount=10

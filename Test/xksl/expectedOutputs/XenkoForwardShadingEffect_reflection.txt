@@ -36,18 +36,18 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage: Vertex]
-@C    PerView => PerView [Stage: Vertex]
-@C    PerMaterial => PerMaterial [Stage: Vertex]
-@C    PerFrame => PerFrame [Stage: Vertex]
-@C    PerDraw => PerDraw [Stage: Pixel]
-@C    PerView => PerView [Stage: Pixel]
-@C    PerMaterial => PerMaterial [Stage: Pixel]
-@C    PerFrame => PerFrame [Stage: Pixel]
-@C    MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT => MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT [Stage: Pixel]
-@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage: Pixel]
-@C    DynamicTexture_Texture => Material.DiffuseMap [Stage: Pixel]
-@C    Texturing_LinearSampler => Texturing.LinearSampler [Stage: Pixel]
+@C    PerDraw => PerDraw [Stage=Vertex, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerView => PerView [Stage=Vertex, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerMaterial => PerMaterial [Stage=Vertex, GroupName="PerMaterial", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerFrame => PerFrame [Stage=Vertex, GroupName="PerFrame", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerDraw => PerDraw [Stage=Pixel, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerView => PerView [Stage=Pixel, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerMaterial => PerMaterial [Stage=Pixel, GroupName="PerMaterial", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerFrame => PerFrame [Stage=Pixel, GroupName="PerFrame", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT => MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT [Stage=Pixel, GroupName="PerMaterial", Type=Texture2D, Class=ShaderResourceView]
+@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage=Pixel, GroupName="PerMaterial", Type=Sampler, Class=Sampler]
+@C    DynamicTexture_Texture => Material.DiffuseMap [Stage=Pixel, GroupName="PerMaterial", Type=Texture2D, Class=ShaderResourceView]
+@C    Texturing_LinearSampler => Texturing.LinearSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
 
 ConstantBuffers. Count=4
  cbuffer: Name="PerDraw" Size=416 MembersCount=8

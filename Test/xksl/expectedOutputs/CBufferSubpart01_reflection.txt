@@ -19,7 +19,7 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerLighting => PerLighting [Stage: Vertex]
+@C    PerLighting => PerLighting [Stage=Vertex, GroupName="PerLighting", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerLighting" Size=128 MembersCount=14

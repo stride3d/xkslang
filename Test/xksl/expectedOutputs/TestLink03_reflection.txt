@@ -9,9 +9,9 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerMaterial => PerMaterial [Stage: Vertex]
-@C    ShaderBase_Texture0 => Material.DiffuseMap [Stage: Vertex]
-@C    ShaderBase_Sampler0 => Material.DiffuseSampler [Stage: Vertex]
+@C    PerMaterial => PerMaterial [Stage=Vertex, GroupName="PerMaterial", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    ShaderBase_Texture0 => Material.DiffuseMap [Stage=Vertex, GroupName="LocalResourceGroup", Type=Texture2D, Class=ShaderResourceView]
+@C    ShaderBase_Sampler0 => Material.DiffuseSampler [Stage=Vertex, GroupName="LocalResourceGroup", Type=Sampler, Class=Sampler]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerMaterial" Size=56 MembersCount=4

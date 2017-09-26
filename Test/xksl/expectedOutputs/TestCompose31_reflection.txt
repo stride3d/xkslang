@@ -6,7 +6,7 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    cbComposition => cbComposition [Stage: Vertex]
+@C    cbComposition => cbComposition [Stage=Vertex, GroupName="cbComposition", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=1
  cbuffer: Name="cbComposition" Size=4 MembersCount=1

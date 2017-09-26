@@ -4,8 +4,8 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    ShaderMain_Sampler => ALinkName [Stage: Pixel]
-@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage: Pixel]
+@C    ShaderMain_Sampler => ALinkName [Stage=Pixel, GroupName="LocalResourceGroup", Type=Sampler, Class=Sampler]
+@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage=Pixel, GroupName="", Type=Texture2D, Class=ShaderResourceView]
 
 ConstantBuffers. Count=0
 ResourceBindings. Count=2

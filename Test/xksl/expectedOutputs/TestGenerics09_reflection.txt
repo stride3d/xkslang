@@ -7,7 +7,7 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerMaterial => PerMaterial [Stage: Pixel]
+@C    PerMaterial => PerMaterial [Stage=Pixel, GroupName="PerMaterial", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerMaterial" Size=16 MembersCount=2

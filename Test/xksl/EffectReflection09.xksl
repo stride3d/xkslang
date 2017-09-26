@@ -1,0 +1,29 @@
+shader ShaderMain
+{
+	rgroup PerView.Lighting
+	{
+		stage Texture3D<uint2> LightClusters;
+		stage Buffer<uint> LightIndices;
+	}
+	
+	rgroup PerView.Lighting
+	{
+		stage Buffer<float4> PointLights;
+	}
+	
+	rgroup PerView.Lighting
+	{
+		stage Buffer<float4> SpotLights;
+	}
+	
+	void VSMain()
+	{
+		float2 texCoord = float2(0);
+        uint2 lightData = LightClusters.Load(int4(texCoord, 0, 0));
+		
+		int realLightIndex = 1;
+		float4 pointLight1 = PointLights.Load(realLightIndex * 2);
+		float4 spotLight1 = SpotLights.Load(realLightIndex * 4);
+	}
+
+}

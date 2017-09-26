@@ -28,12 +28,12 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage: Vertex]
-@C    PerView => PerView [Stage: Vertex]
-@C    PerView => PerView [Stage: Pixel]
-@C    PerMaterial => PerMaterial [Stage: Pixel]
-@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage: Pixel]
-@C    DynamicTexture_Texture => Texturing.Texture0 [Stage: Pixel]
+@C    PerDraw => PerDraw [Stage=Vertex, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerView => PerView [Stage=Vertex, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerView => PerView [Stage=Pixel, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerMaterial => PerMaterial [Stage=Pixel, GroupName="PerMaterial", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage=Pixel, GroupName="PerMaterial", Type=Sampler, Class=Sampler]
+@C    DynamicTexture_Texture => Texturing.Texture0 [Stage=Pixel, GroupName="PerMaterial", Type=Texture2D, Class=ShaderResourceView]
 
 ConstantBuffers. Count=3
  cbuffer: Name="PerDraw" Size=416 MembersCount=8

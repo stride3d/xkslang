@@ -12,7 +12,7 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerView => PerView [Stage: Pixel]
+@C    PerView => PerView [Stage=Pixel, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerView" Size=352 MembersCount=7

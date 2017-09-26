@@ -4,7 +4,7 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    ShaderComp_LightClusters => ShaderComp.LightClusters [Stage: Vertex]
+@C    ShaderComp_LightClusters => ShaderComp.LightClusters [Stage=Vertex, GroupName="PerView", Type=Texture3D, Class=ShaderResourceView]
 
 ConstantBuffers. Count=0
 ResourceBindings. Count=1

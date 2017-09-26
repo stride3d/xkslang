@@ -4,17 +4,17 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage: Pixel]
-@C    ShaderMain_Sampler => ShaderMain.Sampler [Stage: Pixel]
-@C    ShaderMain_PointSampler => ShaderMain.PointSampler [Stage: Pixel]
-@C    ShaderMain_LinearSampler => ShaderMain.LinearSampler [Stage: Pixel]
-@C    ShaderMain_LinearBorderSampler => ShaderMain.LinearBorderSampler [Stage: Pixel]
-@C    ShaderMain_LinearClampCompareLessEqualSampler => ShaderMain.LinearClampCompareLessEqualSampler [Stage: Pixel]
-@C    ShaderMain_AnisotropicSampler => ShaderMain.AnisotropicSampler [Stage: Pixel]
-@C    ShaderMain_AnisotropicRepeatSampler => ShaderMain.AnisotropicRepeatSampler [Stage: Pixel]
-@C    ShaderMain_PointRepeatSampler => ShaderMain.PointRepeatSampler [Stage: Pixel]
-@C    ShaderMain_LinearRepeatSampler => ShaderMain.LinearRepeatSampler [Stage: Pixel]
-@C    ShaderMain_RepeatSampler => ShaderMain.RepeatSampler [Stage: Pixel]
+@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage=Pixel, GroupName="", Type=Texture2D, Class=ShaderResourceView]
+@C    ShaderMain_Sampler => ShaderMain.Sampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    ShaderMain_PointSampler => ShaderMain.PointSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    ShaderMain_LinearSampler => ShaderMain.LinearSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    ShaderMain_LinearBorderSampler => ShaderMain.LinearBorderSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    ShaderMain_LinearClampCompareLessEqualSampler => ShaderMain.LinearClampCompareLessEqualSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    ShaderMain_AnisotropicSampler => ShaderMain.AnisotropicSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    ShaderMain_AnisotropicRepeatSampler => ShaderMain.AnisotropicRepeatSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    ShaderMain_PointRepeatSampler => ShaderMain.PointRepeatSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    ShaderMain_LinearRepeatSampler => ShaderMain.LinearRepeatSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    ShaderMain_RepeatSampler => ShaderMain.RepeatSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
 
 ConstantBuffers. Count=0
 ResourceBindings. Count=11

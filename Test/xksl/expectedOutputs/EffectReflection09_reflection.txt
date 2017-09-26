@@ -1,0 +1,19 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+***********************
+*****  Resources  *****
+***********************
+@C    ShaderMain_LightClusters => ShaderMain.LightClusters [Stage=Vertex, GroupName="PerView", Type=Texture3D, Class=ShaderResourceView]
+@C    ShaderMain_PointLights => ShaderMain.PointLights [Stage=Vertex, GroupName="PerView", Type=TextureBuffer, Class=ShaderResourceView]
+@C    ShaderMain_SpotLights => ShaderMain.SpotLights [Stage=Vertex, GroupName="PerView", Type=TextureBuffer, Class=ShaderResourceView]
+
+ConstantBuffers. Count=0
+ResourceBindings. Count=3
+ Stage=Vertex KeyName="ShaderMain.LightClusters" RawName="ShaderMain_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D
+ Stage=Vertex KeyName="ShaderMain.PointLights" RawName="ShaderMain_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+ Stage=Vertex KeyName="ShaderMain.SpotLights" RawName="ShaderMain_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+
+InputAttributes. Count=0
+
+SamplerStates. Count=0

@@ -4,8 +4,8 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage: Pixel]
-@C    ShaderMain_SamplerDefault => ShaderMain.SamplerDefault [Stage: Pixel]
+@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage=Pixel, GroupName="", Type=Texture2D, Class=ShaderResourceView]
+@C    ShaderMain_SamplerDefault => ShaderMain.SamplerDefault [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
 
 ConstantBuffers. Count=0
 ResourceBindings. Count=2

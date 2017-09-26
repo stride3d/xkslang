@@ -13,7 +13,7 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    Globals => Globals [Stage: Pixel]
+@C    Globals => Globals [Stage=Pixel, GroupName="Globals", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=1
  cbuffer: Name="Globals" Size=32 MembersCount=8

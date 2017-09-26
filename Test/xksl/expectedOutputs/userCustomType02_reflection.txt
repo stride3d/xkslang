@@ -6,7 +6,7 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    aCBuffer => aCBuffer [Stage: Vertex]
+@C    aCBuffer => aCBuffer [Stage=Vertex, GroupName="aCBuffer", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=1
  cbuffer: Name="aCBuffer" Size=32 MembersCount=1

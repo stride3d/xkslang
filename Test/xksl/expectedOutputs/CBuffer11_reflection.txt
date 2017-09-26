@@ -14,10 +14,10 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage: Vertex]
-@C    PerLight => PerLight [Stage: Vertex]
-@C    PerDraw => PerDraw [Stage: Pixel]
-@C    PerLight => PerLight [Stage: Pixel]
+@C    PerDraw => PerDraw [Stage=Vertex, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerLight => PerLight [Stage=Vertex, GroupName="PerLight", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerDraw => PerDraw [Stage=Pixel, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerLight => PerLight [Stage=Pixel, GroupName="PerLight", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=2
  cbuffer: Name="PerDraw" Size=352 MembersCount=7

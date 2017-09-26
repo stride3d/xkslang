@@ -7,9 +7,9 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    UpdatedGroupName => UpdatedGroupName [Stage: Vertex]
-@C    ShaderMain_ShadowMapTexture => ShadowMap.Texture [Stage: Vertex]
-@C    ShaderMain_Sampler0 => ShadowMap.Sampler [Stage: Vertex]
+@C    UpdatedGroupName => UpdatedGroupName [Stage=Vertex, GroupName="UpdatedGroupName", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    ShaderMain_ShadowMapTexture => ShadowMap.Texture [Stage=Vertex, GroupName="UpdatedGroupName", Type=Texture2D, Class=ShaderResourceView]
+@C    ShaderMain_Sampler0 => ShadowMap.Sampler [Stage=Vertex, GroupName="UpdatedGroupName", Type=Sampler, Class=Sampler]
 
 ConstantBuffers. Count=1
  cbuffer: Name="UpdatedGroupName" Size=32 MembersCount=2

@@ -9,10 +9,10 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage: Vertex]
-@C    Globals => Globals [Stage: Pixel]
-@C    Texturing_Texture0 => Texturing.Texture0 [Stage: Pixel]
-@C    Texturing_LinearSampler => Texturing.LinearSampler [Stage: Pixel]
+@C    PerDraw => PerDraw [Stage=Vertex, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    Globals => Globals [Stage=Pixel, GroupName="Globals", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    Texturing_Texture0 => Texturing.Texture0 [Stage=Pixel, GroupName="", Type=Texture2D, Class=ShaderResourceView]
+@C    Texturing_LinearSampler => Texturing.LinearSampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
 
 ConstantBuffers. Count=2
  cbuffer: Name="Globals" Size=56 MembersCount=2

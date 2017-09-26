@@ -32,20 +32,20 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    cbUnstageGenericWithLink => cbUnstageGenericWithLink [Stage: Vertex]
-@C    cbStageGenericWithLink => cbStageGenericWithLink [Stage: Vertex]
-@C    cbUnstageGeneric => cbUnstageGeneric [Stage: Vertex]
-@C    cbStageGeneric => cbStageGeneric [Stage: Vertex]
-@C    cbUnstageLink => cbUnstageLink [Stage: Vertex]
-@C    cbStageLink => cbStageLink [Stage: Vertex]
-@C    cbUnstage => cbUnstage [Stage: Vertex]
-@C    cbStage => cbStage [Stage: Vertex]
-@C    cbUnstageComposition => cbUnstageComposition [Stage: Vertex]
-@C    cbStageComposition => cbStageComposition [Stage: Vertex]
-@C    cbUnstageCompositionLink => cbUnstageCompositionLink [Stage: Vertex]
-@C    cbStageCompositionLink => cbStageCompositionLink [Stage: Vertex]
-@C    cbUnstageCompositionWithGeneric => cbUnstageCompositionWithGeneric [Stage: Vertex]
-@C    cbStageCompositionWithGeneric => cbStageCompositionWithGeneric [Stage: Vertex]
+@C    cbUnstageGenericWithLink => cbUnstageGenericWithLink [Stage=Vertex, GroupName="cbUnstageGenericWithLink", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbStageGenericWithLink => cbStageGenericWithLink [Stage=Vertex, GroupName="cbStageGenericWithLink", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbUnstageGeneric => cbUnstageGeneric [Stage=Vertex, GroupName="cbUnstageGeneric", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbStageGeneric => cbStageGeneric [Stage=Vertex, GroupName="cbStageGeneric", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbUnstageLink => cbUnstageLink [Stage=Vertex, GroupName="cbUnstageLink", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbStageLink => cbStageLink [Stage=Vertex, GroupName="cbStageLink", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbUnstage => cbUnstage [Stage=Vertex, GroupName="cbUnstage", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbStage => cbStage [Stage=Vertex, GroupName="cbStage", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbUnstageComposition => cbUnstageComposition [Stage=Vertex, GroupName="cbUnstageComposition", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbStageComposition => cbStageComposition [Stage=Vertex, GroupName="cbStageComposition", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbUnstageCompositionLink => cbUnstageCompositionLink [Stage=Vertex, GroupName="cbUnstageCompositionLink", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbStageCompositionLink => cbStageCompositionLink [Stage=Vertex, GroupName="cbStageCompositionLink", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbUnstageCompositionWithGeneric => cbUnstageCompositionWithGeneric [Stage=Vertex, GroupName="cbUnstageCompositionWithGeneric", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    cbStageCompositionWithGeneric => cbStageCompositionWithGeneric [Stage=Vertex, GroupName="cbStageCompositionWithGeneric", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=14
  cbuffer: Name="cbUnstageGenericWithLink" Size=4 MembersCount=1

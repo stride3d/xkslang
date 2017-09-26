@@ -7,7 +7,7 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    PreView => PreView [Stage: Vertex]
+@C    PreView => PreView [Stage=Vertex, GroupName="PreView", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PreView" Size=8 MembersCount=2

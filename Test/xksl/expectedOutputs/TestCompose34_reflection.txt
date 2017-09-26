@@ -10,8 +10,8 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    Globals => Globals [Stage: Vertex]
-@C    Globals => Globals [Stage: Pixel]
+@C    Globals => Globals [Stage=Vertex, GroupName="Globals", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    Globals => Globals [Stage=Pixel, GroupName="Globals", Type=ConstantBuffer, Class=ConstantBuffer]
 
 ConstantBuffers. Count=1
  cbuffer: Name="Globals" Size=20 MembersCount=5
