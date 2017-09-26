@@ -33,17 +33,18 @@
 @C    o3S414C0_LightSimpleAmbient__padding_PerView_Lighting => _padding_PerView_Lighting
  cbuffer PerMaterial [size: 16]
 @C    o8S245C0_o5S2C0_o4S2C0_ComputeColorConstantColorLink_constantColor => GizmoUniformColorMaterial.GizmoColorKey
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage: Vertex]
-@C    PerView => PerView [Stage: Vertex]
-@C    PerView => PerView [Stage: Pixel]
-@C    PerMaterial => PerMaterial [Stage: Pixel]
-@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights [Stage: Pixel]
-@C    LightClustered_LightClusters => LightClustered.LightClusters [Stage: Pixel]
-@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Pixel]
-@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage: Pixel]
+@C    PerDraw => PerDraw [Stage=Vertex]
+@C    PerView => PerView [Stage=Vertex]
+@C    PerView => PerView [Stage=Pixel]
+@C    PerMaterial => PerMaterial [Stage=Pixel]
+@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights [Stage=Pixel]
+@C    LightClustered_LightClusters => LightClustered.LightClusters [Stage=Pixel]
+@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage=Pixel]
+@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage=Pixel]
 
 ConstantBuffers. Count=3
  cbuffer: Name="PerDraw" Size=416 MembersCount=8
@@ -141,15 +142,16 @@ ConstantBuffers. Count=3
   KeyName="GizmoUniformColorMaterial.GizmoColorKey" RawName="o8S245C0_o5S2C0_o4S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
+
 ResourceBindings. Count=8
- Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
- Stage=Pixel KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D
- Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
- Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
+ Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
+ Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
 
 InputAttributes. Count=2
  SemanticName="NORMAL" SemanticIndex=0

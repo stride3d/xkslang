@@ -41,25 +41,26 @@
  cbuffer PerFrame [size: 8]
 @C    Global_Time => Global.Time
 @C    Global_TimeStep => Global.TimeStep
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage: Vertex]
-@C    PerView => PerView [Stage: Vertex]
-@C    PerMaterial => PerMaterial [Stage: Vertex]
-@C    PerFrame => PerFrame [Stage: Vertex]
-@C    PerDraw => PerDraw [Stage: Pixel]
-@C    PerView => PerView [Stage: Pixel]
-@C    PerMaterial => PerMaterial [Stage: Pixel]
-@C    PerFrame => PerFrame [Stage: Pixel]
-@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights [Stage: Pixel]
-@C    LightClustered_LightClusters => LightClustered.LightClusters [Stage: Pixel]
-@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage: Pixel]
-@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage: Pixel]
-@C    MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT => MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT [Stage: Pixel]
-@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage: Pixel]
-@C    DynamicTexture_Texture => Material.DiffuseMap [Stage: Pixel]
-@C    Texturing_LinearSampler => Texturing.LinearSampler [Stage: Pixel]
+@C    PerDraw => PerDraw [Stage=Vertex]
+@C    PerView => PerView [Stage=Vertex]
+@C    PerMaterial => PerMaterial [Stage=Vertex]
+@C    PerFrame => PerFrame [Stage=Vertex]
+@C    PerDraw => PerDraw [Stage=Pixel]
+@C    PerView => PerView [Stage=Pixel]
+@C    PerMaterial => PerMaterial [Stage=Pixel]
+@C    PerFrame => PerFrame [Stage=Pixel]
+@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights [Stage=Pixel]
+@C    LightClustered_LightClusters => LightClustered.LightClusters [Stage=Pixel]
+@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage=Pixel]
+@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage=Pixel]
+@C    MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT => MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT [Stage=Pixel]
+@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage=Pixel]
+@C    DynamicTexture_Texture => Material.DiffuseMap [Stage=Pixel]
+@C    Texturing_LinearSampler => Texturing.LinearSampler [Stage=Pixel]
 
 ConstantBuffers. Count=4
  cbuffer: Name="PerDraw" Size=416 MembersCount=8
@@ -179,23 +180,24 @@ ConstantBuffers. Count=4
   KeyName="Global.TimeStep" RawName="Global_TimeStep" LogicalGroup="" Offset=4
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
+
 ResourceBindings. Count=16
- Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
- Stage=Pixel KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D
- Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
- Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer
- Stage=Pixel KeyName="MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT" RawName="MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D
- Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler
- Stage=Pixel KeyName="Material.DiffuseMap" RawName="DynamicTexture_Texture" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D
- Stage=Pixel KeyName="Texturing.LinearSampler" RawName="Texturing_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
+ Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
+ Stage=Vertex KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerFrame" LogicalGroup=""
+ Stage=Pixel KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
+ Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerFrame" LogicalGroup=""
+ Stage=Pixel KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT" RawName="MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="Material.DiffuseMap" RawName="DynamicTexture_Texture" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.LinearSampler" RawName="Texturing_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
 
 InputAttributes. Count=4
  SemanticName="NORMAL" SemanticIndex=0
