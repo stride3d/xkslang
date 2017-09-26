@@ -23,14 +23,15 @@
 @C    Global_TimeStep => Global.TimeStep
  cbuffer PerMaterial [size: 16]
 @C    o5S245C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor => Material.DiffuseValue
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage=Vertex, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    PerView => PerView [Stage=Vertex, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    PerView => PerView [Stage=Pixel, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    PerFrame => PerFrame [Stage=Pixel, GroupName="PerFrame", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    PerMaterial => PerMaterial [Stage=Pixel, GroupName="PerMaterial", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerDraw => PerDraw [Stage=Vertex]
+@C    PerView => PerView [Stage=Vertex]
+@C    PerView => PerView [Stage=Pixel]
+@C    PerFrame => PerFrame [Stage=Pixel]
+@C    PerMaterial => PerMaterial [Stage=Pixel]
 
 ConstantBuffers. Count=4
  cbuffer: Name="PerDraw" Size=416 MembersCount=8
@@ -91,12 +92,13 @@ ConstantBuffers. Count=4
   KeyName="Material.DiffuseValue" RawName="o5S245C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
+
 ResourceBindings. Count=5
- Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
+ Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
+ Stage=Pixel KeyName="PerFrame" RawName="PerFrame" ResourceGroupName="PerFrame" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerFrame" LogicalGroup=""
+ Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
 
 InputAttributes. Count=2
  SemanticName="NORMAL" SemanticIndex=0

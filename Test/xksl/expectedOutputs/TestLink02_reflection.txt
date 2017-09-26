@@ -6,12 +6,13 @@
 @C    ShaderMain_offset => Material.TextureOffset
 @C    ShaderMain_aCol => TColor
 @C    ShaderMain_uv2 => ShaderMain.uv2
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerMaterial => PerMaterial [Stage=Vertex, GroupName="PerMaterial", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    ShaderMain_Texture0 => Material.DiffuseMap [Stage=Vertex, GroupName="LocalResourceGroup", Type=Texture2D, Class=ShaderResourceView]
-@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage=Vertex, GroupName="LocalResourceGroup", Type=Sampler, Class=Sampler]
+@C    PerMaterial => PerMaterial [Stage=Vertex]
+@C    ShaderMain_Texture0 => Material.DiffuseMap [Stage=Vertex]
+@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage=Vertex]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerMaterial" Size=56 MembersCount=4
@@ -27,10 +28,11 @@ ConstantBuffers. Count=1
   KeyName="ShaderMain.uv2" RawName="ShaderMain_uv2" LogicalGroup="" Offset=48
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
+
 ResourceBindings. Count=3
- Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="Material.DiffuseMap" RawName="ShaderMain_Texture0" ResourceGroupName="LocalResourceGroup" Class=ShaderResourceView Type=Texture2D
- Stage=Vertex KeyName="ShaderMain.Sampler0" RawName="ShaderMain_Sampler0" ResourceGroupName="LocalResourceGroup" Class=Sampler Type=Sampler
+ Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
+ Stage=Vertex KeyName="Material.DiffuseMap" RawName="ShaderMain_Texture0" ResourceGroupName="LocalResourceGroup" Class=ShaderResourceView Type=Texture2D GroupName="LocalResourceGroup" LogicalGroup=""
+ Stage=Vertex KeyName="ShaderMain.Sampler0" RawName="ShaderMain_Sampler0" ResourceGroupName="LocalResourceGroup" Class=Sampler Type=Sampler GroupName="LocalResourceGroup" LogicalGroup=""
 
 InputAttributes. Count=1
  SemanticName="S_INPUT" SemanticIndex=0

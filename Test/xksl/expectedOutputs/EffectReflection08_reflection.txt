@@ -4,10 +4,11 @@
  cbuffer Globals [size: 20]
 @C    ShaderMain_Color => ShaderMain.Color
 @C    ShaderMain_IsOnlyChannelRed => ShaderMain.IsOnlyChannelRed
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    Globals => Globals [Stage=Vertex, GroupName="Globals", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    Globals => Globals [Stage=Vertex]
 
 ConstantBuffers. Count=1
  cbuffer: Name="Globals" Size=20 MembersCount=2
@@ -17,8 +18,9 @@ ConstantBuffers. Count=1
   KeyName="ShaderMain.IsOnlyChannelRed" RawName="ShaderMain_IsOnlyChannelRed" LogicalGroup="" Offset=16
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
+
 ResourceBindings. Count=1
- Stage=Vertex KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer GroupName="Globals" LogicalGroup=""
 
 InputAttributes. Count=0
 

@@ -450,6 +450,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     break;
                 }
 
+                case spv::OpLogicalGroupName:
                 case spv::OpResourceGroupName:
                 {
                     //apply to a resource variable
@@ -464,7 +465,11 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     {
                         VariableData* variableData = vectorResourceVariablesId[id]->variableData;
                         const string name = literalString(start + 2);
-                        variableData->SetVariableResourceGroupName(name);
+
+                        if (opCode == spv::OpLogicalGroupName)
+                            variableData->SetVariableLogicalGroupName(name);
+                        else
+                            variableData->SetVariableResourceGroupName(name);
                     }
                     break;
                 }
@@ -662,7 +667,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     if (member.HasLinkName()) memberReflection.KeyName = member.linkName;
                     else memberReflection.KeyName = memberDeclarationName;
                     memberReflection.RawName = getRawNameFromKeyName(memberDeclarationName);
-                    if (member.HasLogicalGroup()) memberReflection.LogicalGroup = member.logicalGroup;
+                    if (member.HasLogicalGroupName()) memberReflection.LogicalGroup = member.logicalGroup;
 
                     //get the member type object
                     spv::Id cbufferMemberTypeId = asId(posElemStart + mIndex);
@@ -979,6 +984,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                     cbufferData->cbufferName,
                                     cbufferRawName,
                                     cbufferRawName,
+                                    "",
                                     EffectParameterReflectionClass::ConstantBuffer,
                                     EffectParameterReflectionType::ConstantBuffer
                                 ));
@@ -1001,6 +1007,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                     variableData->variableKeyName,
                                     variableData->variableRawName,
                                     variableData->resourceGroupName,
+                                    variableData->logicalGroupName,
                                     variableData->variableTypeReflection.Class,
                                     variableData->variableTypeReflection.Type
                                 ));

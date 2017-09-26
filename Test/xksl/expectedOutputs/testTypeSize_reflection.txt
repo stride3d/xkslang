@@ -8,10 +8,11 @@
 @C    ShaderMain_s3_rm => ShaderMain.s3_rm
 @C    ShaderMain_s4 => ShaderMain.s4
 @C    ShaderMain_s6 => ShaderMain.s6
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    Globals => Globals [Stage=Pixel, GroupName="Globals", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    Globals => Globals [Stage=Pixel]
 
 ConstantBuffers. Count=1
  cbuffer: Name="Globals" Size=1248 MembersCount=6
@@ -109,8 +110,9 @@ ConstantBuffers. Count=1
     Name="b" Offset=32
     Class=Scalar Type=UInt Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
+
 ResourceBindings. Count=1
- Stage=Pixel KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer GroupName="Globals" LogicalGroup=""
 
 InputAttributes. Count=0
 

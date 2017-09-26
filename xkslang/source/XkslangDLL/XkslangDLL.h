@@ -119,9 +119,10 @@ namespace xkslangDll
 		const char* KeyName;
         const char* RawName;
         const char* ResourceGroupName;
+        const char* LogicalGroupName;
 
-		EffectResourceBindingDescriptionData(const xkslang::EffectResourceBindingDescription& e, const char* keyName, const char* rawName, const char* resourceGroupName)
-            : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName) {}
+		EffectResourceBindingDescriptionData(const xkslang::EffectResourceBindingDescription& e, const char* keyName, const char* rawName, const char* resourceGroupName, const char* logicalGroupName)
+            : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName), LogicalGroupName(logicalGroupName) {}
 	};
 
 	//struct containing an input attribute data (to be easily exchanged between native and managed apps)

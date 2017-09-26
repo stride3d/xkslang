@@ -256,17 +256,15 @@ string EffectReflection::Print()
             stream << "@C    " << member.RawName << " => " << member.KeyName << endl;
         }
     }
+
+    stream << endl;
     stream << "***********************" << endl;
     stream << "*****  Resources  *****" << endl;
     stream << "***********************" << endl;
     for (int rb = 0; rb < CountResourceBindings; ++rb)
     {
         EffectResourceBindingDescription& resource = ResourceBindings[rb];
-        stream << "@C    " << resource.RawName << " => " << resource.KeyName << " [Stage=" << GetShadingStageLabel(resource.Stage)
-            << ", GroupName=\"" << resource.ResourceGroupName << "\""
-            << ", Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(resource.Type)
-            << ", Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(resource.Class)
-            << "]" << endl;
+        stream << "@C    " << resource.RawName << " => " << resource.KeyName << " [Stage=" << GetShadingStageLabel(resource.Stage) << "]" << endl;
     }
 
     stream << endl;
@@ -283,6 +281,7 @@ string EffectReflection::Print()
         }
     }
 
+    stream << endl;
     stream << "ResourceBindings. Count=" << CountResourceBindings << endl;
     for (int rb = 0; rb < CountResourceBindings; ++rb)
     {
@@ -290,7 +289,10 @@ string EffectReflection::Print()
         stream << " Stage=" << GetShadingStageLabel(bindings.Stage) << " KeyName=\"" << bindings.KeyName << "\""
             << " RawName=\"" << bindings.RawName << "\"" << " ResourceGroupName=\"" << bindings.ResourceGroupName << "\""
             << " Class=" << EffectReflection::GetEffectParameterReflectionClassLabel(bindings.Class)
-            << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(bindings.Type) << endl;
+            << " Type=" << EffectReflection::GetEffectParameterReflectionTypeLabel(bindings.Type)
+            << " GroupName=\"" << bindings.ResourceGroupName << "\""
+            << " LogicalGroup=\"" << bindings.LogicalGroupName << "\""
+            << endl;
     }
 
 	stream << endl;

@@ -494,15 +494,16 @@ public:
     std::string KeyName;
     std::string RawName;
     std::string ResourceGroupName;
+    std::string LogicalGroupName;
 
     EffectParameterReflectionClass Class;
     EffectParameterReflectionType Type;
 
 public:
     EffectResourceBindingDescription() {}
-    EffectResourceBindingDescription(ShadingStageEnum stage, const std::string& keyName, const std::string& rawName, const std::string& resourceGroupName,
+    EffectResourceBindingDescription(ShadingStageEnum stage, const std::string& keyName, const std::string& rawName, const std::string& resourceGroupName, const std::string& logicalGroupName,
         EffectParameterReflectionClass c, EffectParameterReflectionType t)
-        : Stage(stage), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName), Class(c), Type(t) {}
+        : Stage(stage), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName), LogicalGroupName(logicalGroupName), Class(c), Type(t) {}
 };
 
 //=====================================================================================================================

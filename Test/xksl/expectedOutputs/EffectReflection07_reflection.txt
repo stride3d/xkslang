@@ -4,15 +4,16 @@
  cbuffer cb [size: 24]
 @C    ShaderMain_direction => ShaderMain.direction
 @C    ShaderMain_uv2 => ShaderMain.uv2
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    cb => cb [Stage=Vertex, GroupName="cb", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage=Vertex, GroupName="ResourceGroup", Type=Texture2D, Class=ShaderResourceView]
-@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage=Vertex, GroupName="ResourceGroup", Type=Sampler, Class=Sampler]
-@C    cb => cb [Stage=Pixel, GroupName="cb", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    ShaderMain_CubeMap => ShaderMain.CubeMap [Stage=Pixel, GroupName="ResourceGroup", Type=TextureCube, Class=ShaderResourceView]
-@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage=Pixel, GroupName="ResourceGroup", Type=Sampler, Class=Sampler]
+@C    cb => cb [Stage=Vertex]
+@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage=Vertex]
+@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage=Vertex]
+@C    cb => cb [Stage=Pixel]
+@C    ShaderMain_CubeMap => ShaderMain.CubeMap [Stage=Pixel]
+@C    ShaderMain_Sampler0 => ShaderMain.Sampler0 [Stage=Pixel]
 
 ConstantBuffers. Count=1
  cbuffer: Name="cb" Size=24 MembersCount=2
@@ -22,13 +23,14 @@ ConstantBuffers. Count=1
   KeyName="ShaderMain.uv2" RawName="ShaderMain_uv2" LogicalGroup="" Offset=16
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
+
 ResourceBindings. Count=6
- Stage=Vertex KeyName="cb" RawName="cb" ResourceGroupName="cb" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="ShaderMain.Texture0" RawName="ShaderMain_Texture0" ResourceGroupName="ResourceGroup" Class=ShaderResourceView Type=Texture2D
- Stage=Vertex KeyName="ShaderMain.Sampler0" RawName="ShaderMain_Sampler0" ResourceGroupName="ResourceGroup" Class=Sampler Type=Sampler
- Stage=Pixel KeyName="cb" RawName="cb" ResourceGroupName="cb" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="ShaderMain.CubeMap" RawName="ShaderMain_CubeMap" ResourceGroupName="ResourceGroup" Class=ShaderResourceView Type=TextureCube
- Stage=Pixel KeyName="ShaderMain.Sampler0" RawName="ShaderMain_Sampler0" ResourceGroupName="ResourceGroup" Class=Sampler Type=Sampler
+ Stage=Vertex KeyName="cb" RawName="cb" ResourceGroupName="cb" Class=ConstantBuffer Type=ConstantBuffer GroupName="cb" LogicalGroup=""
+ Stage=Vertex KeyName="ShaderMain.Texture0" RawName="ShaderMain_Texture0" ResourceGroupName="ResourceGroup" Class=ShaderResourceView Type=Texture2D GroupName="ResourceGroup" LogicalGroup=""
+ Stage=Vertex KeyName="ShaderMain.Sampler0" RawName="ShaderMain_Sampler0" ResourceGroupName="ResourceGroup" Class=Sampler Type=Sampler GroupName="ResourceGroup" LogicalGroup=""
+ Stage=Pixel KeyName="cb" RawName="cb" ResourceGroupName="cb" Class=ConstantBuffer Type=ConstantBuffer GroupName="cb" LogicalGroup=""
+ Stage=Pixel KeyName="ShaderMain.CubeMap" RawName="ShaderMain_CubeMap" ResourceGroupName="ResourceGroup" Class=ShaderResourceView Type=TextureCube GroupName="ResourceGroup" LogicalGroup=""
+ Stage=Pixel KeyName="ShaderMain.Sampler0" RawName="ShaderMain_Sampler0" ResourceGroupName="ResourceGroup" Class=Sampler Type=Sampler GroupName="ResourceGroup" LogicalGroup=""
 
 InputAttributes. Count=0
 

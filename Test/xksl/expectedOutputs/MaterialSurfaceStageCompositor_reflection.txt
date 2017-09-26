@@ -9,10 +9,11 @@
 @C    Transformation_ViewProjection => Transformation.ViewProjection
 @C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
 @C    Transformation_Eye => Transformation.Eye
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerView => PerView [Stage=Pixel, GroupName="PerView", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerView => PerView [Stage=Pixel]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerView" Size=352 MembersCount=7
@@ -37,8 +38,9 @@ ConstantBuffers. Count=1
   KeyName="Transformation.Eye" RawName="Transformation_Eye" LogicalGroup="" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
+
 ResourceBindings. Count=1
- Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
 
 InputAttributes. Count=3
  SemanticName="SV_Position" SemanticIndex=0

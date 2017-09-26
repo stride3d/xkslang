@@ -4,12 +4,13 @@
  cbuffer UpdatedGroupName [size: 32]
 @C    ShaderMain_ShadowMapTextureSize => ShadowMap.TextureSize
 @C    ShaderMain_ShadowMapTextureTexelSize => ShadowMap.TextureTexelSize
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    UpdatedGroupName => UpdatedGroupName [Stage=Vertex, GroupName="UpdatedGroupName", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    ShaderMain_ShadowMapTexture => ShadowMap.Texture [Stage=Vertex, GroupName="UpdatedGroupName", Type=Texture2D, Class=ShaderResourceView]
-@C    ShaderMain_Sampler0 => ShadowMap.Sampler [Stage=Vertex, GroupName="UpdatedGroupName", Type=Sampler, Class=Sampler]
+@C    UpdatedGroupName => UpdatedGroupName [Stage=Vertex]
+@C    ShaderMain_ShadowMapTexture => ShadowMap.Texture [Stage=Vertex]
+@C    ShaderMain_Sampler0 => ShadowMap.Sampler [Stage=Vertex]
 
 ConstantBuffers. Count=1
  cbuffer: Name="UpdatedGroupName" Size=32 MembersCount=2
@@ -19,10 +20,11 @@ ConstantBuffers. Count=1
   KeyName="ShadowMap.TextureTexelSize" RawName="ShaderMain_ShadowMapTextureTexelSize" LogicalGroup="" Offset=16
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
+
 ResourceBindings. Count=3
- Stage=Vertex KeyName="UpdatedGroupName" RawName="UpdatedGroupName" ResourceGroupName="UpdatedGroupName" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="ShadowMap.Texture" RawName="ShaderMain_ShadowMapTexture" ResourceGroupName="UpdatedGroupName" Class=ShaderResourceView Type=Texture2D
- Stage=Vertex KeyName="ShadowMap.Sampler" RawName="ShaderMain_Sampler0" ResourceGroupName="UpdatedGroupName" Class=Sampler Type=Sampler
+ Stage=Vertex KeyName="UpdatedGroupName" RawName="UpdatedGroupName" ResourceGroupName="UpdatedGroupName" Class=ConstantBuffer Type=ConstantBuffer GroupName="UpdatedGroupName" LogicalGroup=""
+ Stage=Vertex KeyName="ShadowMap.Texture" RawName="ShaderMain_ShadowMapTexture" ResourceGroupName="UpdatedGroupName" Class=ShaderResourceView Type=Texture2D GroupName="UpdatedGroupName" LogicalGroup=""
+ Stage=Vertex KeyName="ShadowMap.Sampler" RawName="ShaderMain_Sampler0" ResourceGroupName="UpdatedGroupName" Class=Sampler Type=Sampler GroupName="UpdatedGroupName" LogicalGroup=""
 
 InputAttributes. Count=1
  SemanticName="S_INPUT" SemanticIndex=0

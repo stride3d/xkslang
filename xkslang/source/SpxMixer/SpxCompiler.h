@@ -240,18 +240,22 @@ public:
         std::string variableRawName;
         std::string variableKeyName;
         std::string resourceGroupName;
+        std::string logicalGroupName;
 		std::string semanticName;
 		int semanticIndex;
         TypeReflectionDescription variableTypeReflection;
 
         VariableData() : semanticIndex(0) {}
 
-        bool hasKeyName() { return variableKeyName.size() > 0; }
-        bool hasRawName() { return variableRawName.size() > 0; }
-        bool hasResourceGroupName() { return resourceGroupName.size() > 0; }
+        bool hasKeyName() const { return variableKeyName.size() > 0; }
+        bool hasRawName() const { return variableRawName.size() > 0; }
+        bool hasResourceGroupName() const { return resourceGroupName.size() > 0; }
+        bool hasLogicalGroupName() const { return logicalGroupName.size() > 0; }
+
         void SetVariableRawName(const std::string& rawName) { variableRawName = rawName;}
         void SetVariableKeyName(const std::string& keyName) { variableKeyName = keyName; }
         void SetVariableResourceGroupName(const std::string& name) { resourceGroupName = name; }
+        void SetVariableLogicalGroupName(const std::string& name) { logicalGroupName = name; }
     };
 
     class CBufferTypeData
@@ -518,7 +522,7 @@ public:
         bool HasAttribute() const { return attribute.size() > 0; }
         bool HasLinkName() const { return linkName.size() > 0; }
         bool HasSamplerStateDesc() const { return samplerStateDestBytecodePos > 0; }
-        bool HasLogicalGroup() const { return logicalGroup.size() > 0; }
+        bool HasLogicalGroupName() const { return logicalGroup.size() > 0; }
         bool HasResourceGroupName() const { return resourceGroupName.size() > 0; }
 
         const std::string& GetSemanticOrDeclarationName() const { return HasSemantic()? semantic: declarationName; }

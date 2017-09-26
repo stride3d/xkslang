@@ -1287,6 +1287,7 @@ const char* OpcodeString(int op)
     case (OpMemberLogicalGroup):                        return "OpMemberLogicalGroup";
     case (OpLinkName):                                  return "OpLinkName";
     case (OpResourceGroupName):                         return "OpResourceGroupName";
+    case (OpLogicalGroupName):                          return "OpLogicalGroupName";
     case (OpShaderInheritance):                         return "OpShaderInheritance";
     case (OpBelongsToShader):                           return "OpBelongsToShader";
     case (OpMethodProperties):                          return "OpMethodProperties";
@@ -1448,6 +1449,7 @@ void Parameterize()
     InstructionDesc[OpMemberLogicalGroup].setResultAndType(false, false);
     InstructionDesc[OpLinkName].setResultAndType(false, false);
     InstructionDesc[OpResourceGroupName].setResultAndType(false, false);
+    InstructionDesc[OpLogicalGroupName].setResultAndType(false, false);
     InstructionDesc[OpShaderInheritance].setResultAndType(false, false);
     InstructionDesc[OpBelongsToShader].setResultAndType(false, false);
     InstructionDesc[OpShaderCompositionDeclaration].setResultAndType(false, false);
@@ -2053,6 +2055,9 @@ void Parameterize()
 
     InstructionDesc[OpResourceGroupName].operands.push(OperandId, "'Type'");
     InstructionDesc[OpResourceGroupName].operands.push(OperandLiteralString, "'ResourceGroupName'");
+
+    InstructionDesc[OpLogicalGroupName].operands.push(OperandId, "'Type'");
+    InstructionDesc[OpLogicalGroupName].operands.push(OperandLiteralString, "'LogicalGroupName'");
 
     InstructionDesc[OpCBufferProperties].operands.push(OperandId, "'Type'");
     InstructionDesc[OpCBufferProperties].operands.push(XkslShaderDataProperty, "'CbufferType'");

@@ -3,10 +3,11 @@
 ***************************
  cbuffer aCBuffer [size: 32]
 @C    ShaderMain_toto => ShaderMain.toto
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    aCBuffer => aCBuffer [Stage=Vertex, GroupName="aCBuffer", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    aCBuffer => aCBuffer [Stage=Vertex]
 
 ConstantBuffers. Count=1
  cbuffer: Name="aCBuffer" Size=32 MembersCount=1
@@ -18,8 +19,9 @@ ConstantBuffers. Count=1
    Name="Color" Offset=16
    Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
+
 ResourceBindings. Count=1
- Stage=Vertex KeyName="aCBuffer" RawName="aCBuffer" ResourceGroupName="aCBuffer" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="aCBuffer" RawName="aCBuffer" ResourceGroupName="aCBuffer" Class=ConstantBuffer Type=ConstantBuffer GroupName="aCBuffer" LogicalGroup=""
 
 InputAttributes. Count=0
 

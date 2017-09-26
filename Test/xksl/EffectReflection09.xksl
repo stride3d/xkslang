@@ -1,19 +1,19 @@
 shader ShaderMain
 {
-	rgroup PerView.Lighting
+	stage rgroup PerView.Lighting
 	{
-		stage Texture3D<uint2> LightClusters;
-		stage Buffer<uint> LightIndices;
+		Texture3D<uint2> LightClusters;
+		Buffer<uint> LightIndices;
 	}
 	
-	rgroup PerView.Lighting
+	stage rgroup PerView.Lighting
 	{
-		stage Buffer<float4> PointLights;
+		Buffer<float4> PointLights;
 	}
 	
-	rgroup PerView.Lighting
+	stage rgroup PerView.Lighting
 	{
-		stage Buffer<float4> SpotLights;
+		Buffer<float4> SpotLights;
 	}
 	
 	void VSMain()

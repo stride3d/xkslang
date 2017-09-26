@@ -1,11 +1,13 @@
 ***************************
 ****  ConstantBuffers  ****
 ***************************
+
 ***********************
 *****  Resources  *****
 ***********************
 
 ConstantBuffers. Count=0
+
 ResourceBindings. Count=0
 
 InputAttributes. Count=1

@@ -404,6 +404,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpLogicalGroupName:
                 case spv::OpMemberSamplerStateDef:
                 case spv::OpSamplerStateDef:
                 {
@@ -551,6 +552,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpLogicalGroupName:
                 case spv::OpMemberSamplerStateDef:
                 case spv::OpSamplerStateDef:
                 {
@@ -1155,6 +1157,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpLogicalGroupName:
                 case spv::OpMemberSamplerStateDef:
                 case spv::OpSamplerStateDef:
 				{
@@ -2028,6 +2031,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             //case spv::OpMemberLogicalGroup:
             //case spv::OpLinkName:
             //case spv::OpResourceGroupName:
+            //case spv::OpLogicalGroupName:
             //{
             //}
         }

@@ -11,13 +11,14 @@
 @C    Transform_EyeMS => Transform.EyeMS
  cbuffer PerLight [size: 16]
 @C    o0S2C0_ShaderComp_aFloat => ShaderComp.aFloat
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage=Vertex, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    PerLight => PerLight [Stage=Vertex, GroupName="PerLight", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    PerDraw => PerDraw [Stage=Pixel, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    PerLight => PerLight [Stage=Pixel, GroupName="PerLight", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerDraw => PerDraw [Stage=Vertex]
+@C    PerLight => PerLight [Stage=Vertex]
+@C    PerDraw => PerDraw [Stage=Pixel]
+@C    PerLight => PerLight [Stage=Pixel]
 
 ConstantBuffers. Count=2
  cbuffer: Name="PerDraw" Size=352 MembersCount=7
@@ -46,11 +47,12 @@ ConstantBuffers. Count=2
   KeyName="ShaderComp.aFloat" RawName="o0S2C0_ShaderComp_aFloat" LogicalGroup="" Offset=0
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
+
 ResourceBindings. Count=4
- Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Vertex KeyName="PerLight" RawName="PerLight" ResourceGroupName="PerLight" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="PerLight" RawName="PerLight" ResourceGroupName="PerLight" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Vertex KeyName="PerLight" RawName="PerLight" ResourceGroupName="PerLight" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerLight" LogicalGroup=""
+ Stage=Pixel KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Pixel KeyName="PerLight" RawName="PerLight" ResourceGroupName="PerLight" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerLight" LogicalGroup=""
 
 InputAttributes. Count=0
 

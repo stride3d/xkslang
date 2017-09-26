@@ -6,13 +6,14 @@
 @C    ImageScalerShader_IsOnlyChannelRed => ImageScalerShader.IsOnlyChannelRed
  cbuffer PerDraw [size: 64]
 @C    SpriteBase_MatrixTransform => SpriteBase.MatrixTransform
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerDraw => PerDraw [Stage=Vertex, GroupName="PerDraw", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    Globals => Globals [Stage=Pixel, GroupName="Globals", Type=ConstantBuffer, Class=ConstantBuffer]
-@C    Texturing_Texture0 => Texturing.Texture0 [Stage=Pixel, GroupName="", Type=Texture2D, Class=ShaderResourceView]
-@C    Texturing_Sampler => Texturing.Sampler [Stage=Pixel, GroupName="", Type=Sampler, Class=Sampler]
+@C    PerDraw => PerDraw [Stage=Vertex]
+@C    Globals => Globals [Stage=Pixel]
+@C    Texturing_Texture0 => Texturing.Texture0 [Stage=Pixel]
+@C    Texturing_Sampler => Texturing.Sampler [Stage=Pixel]
 
 ConstantBuffers. Count=2
  cbuffer: Name="Globals" Size=20 MembersCount=2
@@ -26,11 +27,12 @@ ConstantBuffers. Count=2
   KeyName="SpriteBase.MatrixTransform" RawName="SpriteBase_MatrixTransform" LogicalGroup="" Offset=0
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
+
 ResourceBindings. Count=4
- Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer
- Stage=Pixel KeyName="Texturing.Texture0" RawName="Texturing_Texture0" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D
- Stage=Pixel KeyName="Texturing.Sampler" RawName="Texturing_Sampler" ResourceGroupName="" Class=Sampler Type=Sampler
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Pixel KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer GroupName="Globals" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.Texture0" RawName="Texturing_Texture0" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D GroupName="" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.Sampler" RawName="Texturing_Sampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
 
 InputAttributes. Count=2
  SemanticName="POSITION" SemanticIndex=0

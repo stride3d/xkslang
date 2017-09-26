@@ -549,6 +549,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpLogicalGroupName:
                 case spv::OpMemberSamplerStateDef:
                 case spv::OpSamplerStateDef:
                 {
@@ -676,6 +677,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpMemberLogicalGroup:
                 case spv::OpLinkName:
                 case spv::OpResourceGroupName:
+                case spv::OpLogicalGroupName:
                 case spv::OpMemberSamplerStateDef:
                 case spv::OpSamplerStateDef:
                 {

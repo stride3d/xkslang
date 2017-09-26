@@ -1301,10 +1301,19 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 //variable resourceGroupName (if any)
                 if (memberToMoveOut.HasResourceGroupName())
                 {
-                    spv::Instruction memberNameInstr(spv::OpResourceGroupName);
-                    memberNameInstr.addIdOperand(variable.getResultId());
-                    memberNameInstr.addStringOperand(memberToMoveOut.resourceGroupName.c_str());
-                    memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                    spv::Instruction memberResourceGroupNameInstr(spv::OpResourceGroupName);
+                    memberResourceGroupNameInstr.addIdOperand(variable.getResultId());
+                    memberResourceGroupNameInstr.addStringOperand(memberToMoveOut.resourceGroupName.c_str());
+                    memberResourceGroupNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
+                }
+
+                //variable resourceGroupName (if any)
+                if (memberToMoveOut.HasLogicalGroupName())
+                {
+                    spv::Instruction memberLogicalGroupNameInstr(spv::OpLogicalGroupName);
+                    memberLogicalGroupNameInstr.addIdOperand(variable.getResultId());
+                    memberLogicalGroupNameInstr.addStringOperand(memberToMoveOut.logicalGroup.c_str());
+                    memberLogicalGroupNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
             }
         }
@@ -1438,7 +1447,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                     memberNameInstr.dump(bytecodeNewNamesAndDecocates->bytecode);
                 }
 
-                if (cbufferMember.HasLogicalGroup())
+                if (cbufferMember.HasLogicalGroupName())
                 {
                     spv::Instruction memberNameInstr(spv::OpMemberLogicalGroup);
                     memberNameInstr.addIdOperand(cbuffer->structTypeId);

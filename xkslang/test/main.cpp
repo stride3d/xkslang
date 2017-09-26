@@ -930,12 +930,14 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
                     string keyName = ConvertCharPtrToString(effectResourceBinding->KeyName);
                     string rawName = ConvertCharPtrToString(effectResourceBinding->RawName);
                     string resourceGroupName = ConvertCharPtrToString(effectResourceBinding->ResourceGroupName);
+                    string logicalGroupName = ConvertCharPtrToString(effectResourceBinding->LogicalGroupName);
                     EffectResourceBindingDescription binding
                     (
                         effectResourceBinding->Stage,
                         keyName,
                         rawName,
                         resourceGroupName,
+                        logicalGroupName,
                         effectResourceBinding->Class,
                         effectResourceBinding->Type
                     );
@@ -944,6 +946,7 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
                     if (effectResourceBinding->KeyName != nullptr) GlobalFree((HGLOBAL)effectResourceBinding->KeyName);
                     if (effectResourceBinding->RawName != nullptr) GlobalFree((HGLOBAL)effectResourceBinding->RawName);
                     if (effectResourceBinding->ResourceGroupName != nullptr) GlobalFree((HGLOBAL)effectResourceBinding->ResourceGroupName);
+                    if (effectResourceBinding->LogicalGroupName != nullptr) GlobalFree((HGLOBAL)effectResourceBinding->LogicalGroupName);
                 }
 
                 //delete the data allocated on the native code

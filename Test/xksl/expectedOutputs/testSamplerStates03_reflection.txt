@@ -1,16 +1,18 @@
 ***************************
 ****  ConstantBuffers  ****
 ***************************
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    ShaderMain_Sampler => ALinkName [Stage=Pixel, GroupName="LocalResourceGroup", Type=Sampler, Class=Sampler]
-@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage=Pixel, GroupName="", Type=Texture2D, Class=ShaderResourceView]
+@C    ShaderMain_Sampler => ALinkName [Stage=Pixel]
+@C    ShaderMain_Texture0 => ShaderMain.Texture0 [Stage=Pixel]
 
 ConstantBuffers. Count=0
+
 ResourceBindings. Count=2
- Stage=Pixel KeyName="ALinkName" RawName="ShaderMain_Sampler" ResourceGroupName="LocalResourceGroup" Class=Sampler Type=Sampler
- Stage=Pixel KeyName="ShaderMain.Texture0" RawName="ShaderMain_Texture0" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D
+ Stage=Pixel KeyName="ALinkName" RawName="ShaderMain_Sampler" ResourceGroupName="LocalResourceGroup" Class=Sampler Type=Sampler GroupName="LocalResourceGroup" LogicalGroup=""
+ Stage=Pixel KeyName="ShaderMain.Texture0" RawName="ShaderMain_Texture0" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D GroupName="" LogicalGroup=""
 
 InputAttributes. Count=1
  SemanticName="TEXCOORD" SemanticIndex=0

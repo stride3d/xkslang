@@ -16,10 +16,11 @@
 @C    ShaderMain_var5 => ShaderMain.var5
 @C    ShaderMain_var6 => ShaderMain.var6
 @C    ShaderMain__padding_PerLighting_subpart3 => _padding_PerLighting_subpart3
+
 ***********************
 *****  Resources  *****
 ***********************
-@C    PerLighting => PerLighting [Stage=Vertex, GroupName="PerLighting", Type=ConstantBuffer, Class=ConstantBuffer]
+@C    PerLighting => PerLighting [Stage=Vertex]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerLighting" Size=128 MembersCount=14
@@ -65,8 +66,9 @@ ConstantBuffers. Count=1
   KeyName="_padding_PerLighting_subpart3" RawName="ShaderMain__padding_PerLighting_subpart3" LogicalGroup="subpart3" Offset=112
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
+
 ResourceBindings. Count=1
- Stage=Vertex KeyName="PerLighting" RawName="PerLighting" ResourceGroupName="PerLighting" Class=ConstantBuffer Type=ConstantBuffer
+ Stage=Vertex KeyName="PerLighting" RawName="PerLighting" ResourceGroupName="PerLighting" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerLighting" LogicalGroup=""
 
 InputAttributes. Count=0
 
