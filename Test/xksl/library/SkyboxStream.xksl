@@ -4,7 +4,7 @@ namespace SiliconStudio.Xenko.Rendering.Skyboxes
 {
     shader SkyboxStream
     {
-        stage stream float3 skyboxViewDirection;
+        stage stream float3 skyboxViewDirection : SKYBOXVIEWDIRECTION;
     };
 }
 

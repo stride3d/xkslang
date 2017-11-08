@@ -1,0 +1,51 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer Globals [size: 208]
+@C    SkyboxShader_Intensity => SkyboxShader.Intensity
+@C    SkyboxShader_ProjectionInverse => SkyboxShader.ProjectionInverse
+@C    SkyboxShader_ViewInverse => SkyboxShader.ViewInverse
+@C    SkyboxShader_SkyMatrix => SkyboxShader.SkyMatrix
+ cbuffer PerDraw [size: 64]
+@C    SpriteBase_MatrixTransform => SpriteBase.MatrixTransform
+
+***********************
+*****  Resources  *****
+***********************
+@C    Globals => Globals [Stage=Vertex]
+@C    PerDraw => PerDraw [Stage=Vertex]
+@C    Globals => Globals [Stage=Pixel]
+@C    SkyboxShader_CubeMap => SkyboxShader.CubeMap [Stage=Pixel]
+@C    Texturing_LinearSampler => Texturing.LinearSampler [Stage=Pixel]
+
+ConstantBuffers. Count=2
+ cbuffer: Name="Globals" Size=208 MembersCount=4
+  KeyName="SkyboxShader.Intensity" RawName="SkyboxShader_Intensity" LogicalGroup="" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="SkyboxShader.ProjectionInverse" RawName="SkyboxShader_ProjectionInverse" LogicalGroup="" Offset=16
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="SkyboxShader.ViewInverse" RawName="SkyboxShader_ViewInverse" LogicalGroup="" Offset=80
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="SkyboxShader.SkyMatrix" RawName="SkyboxShader_SkyMatrix" LogicalGroup="" Offset=144
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+ cbuffer: Name="PerDraw" Size=64 MembersCount=1
+  KeyName="SpriteBase.MatrixTransform" RawName="SpriteBase_MatrixTransform" LogicalGroup="" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+
+ResourceBindings. Count=5
+ Stage=Vertex KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer GroupName="Globals" LogicalGroup=""
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Pixel KeyName="Globals" RawName="Globals" ResourceGroupName="Globals" Class=ConstantBuffer Type=ConstantBuffer GroupName="Globals" LogicalGroup=""
+ Stage=Pixel KeyName="SkyboxShader.CubeMap" RawName="SkyboxShader_CubeMap" ResourceGroupName="" Class=ShaderResourceView Type=TextureCube GroupName="" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.LinearSampler" RawName="Texturing_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
+
+InputAttributes. Count=1
+ SemanticName="POSITION" SemanticIndex=0
+
+SamplerStates. Count=1
+ KeyName="Texturing.LinearSampler" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)

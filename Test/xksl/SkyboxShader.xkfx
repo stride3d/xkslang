@@ -1,0 +1,10 @@
+addResourcesLibrary "library"
+
+//parsing
+convertAndLoadRecursif SkyboxShader
+
+//mixin
+mixer m
+m.mixin( SkyboxShader )
+
+m.compile
