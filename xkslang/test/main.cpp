@@ -268,7 +268,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection06", "EffectReflection06.xkfx" },
 	//{ "EffectReflection07", "EffectReflection07.xkfx" },
     //{ "EffectReflection08", "EffectReflection08.xkfx" },
-    { "EffectReflection09", "EffectReflection09.xkfx" },
+    //{ "EffectReflection09", "EffectReflection09.xkfx" },
     
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
     //{ "testTypeSize", "testTypeSize.xkfx" },
@@ -334,7 +334,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
     
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
-    //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
+    { "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },

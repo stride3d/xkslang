@@ -1,0 +1,39 @@
+// Copyright (c) 2014-2017 Silicon Studio Corp. All rights reserved. (https://www.siliconstudio.co.jp)
+// See LICENSE.md for full license information.
+shader SpriteEffectExtTexture : ShaderBase
+{
+    // Color used to tint the sprite
+    //[Color]
+    //stage float4 Color = float4(1,1,1,1);
+
+    //[ExternalOES]
+    stage Texture2D TextureExt0;    // DO NOT RENAME THIS VARIABLE! The ShaderCompiler specifically looks for "TextureExt0".
+    //stage Texture2DExternalOES TextureExt0;
+
+    stage SamplerState Sampler;
+
+    stage stream float2 TexCoord : TEXCOORD0;
+    stage stream float4 Position : POSITION;
+
+    /*cbuffer PerDraw
+    {
+        stage float4x4 MatrixTransform;
+    }*/
+
+    stage override void VSMain()
+    {
+        //streams.ShadingPosition = mul(streams.Position, MatrixTransform);
+        streams.ShadingPosition = streams.Position;
+    }
+
+    stage override void PSMain()
+    {
+        streams.ColorTarget = Shading();
+    }
+
+    stage float4 Shading()
+    {
+        //return TextureExt0.Sample(Sampler, streams.TexCoord) * Color;
+        return TextureExt0.Sample(Sampler, streams.TexCoord).rgba;
+    }
+};
