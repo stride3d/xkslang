@@ -10,7 +10,7 @@
 
 #include "Converter.h"
 
-#include "../source/SPIRV-Cross/spirv_cross.hpp"
+#include "../../../SPIRV-Cross/spirv_cross.hpp"
 
 using namespace std;
 using namespace xkslang;

@@ -24,7 +24,7 @@
 #include "../source/SpxMixer/SpxMixer.h"
 #include "../source/SpxMixer/EffectReflection.h"
 
-#include "../source/SPIRV-Cross/spirv_cross.hpp"
+#include "../../SPIRV-Cross/spirv_cross.hpp"
 
 //#include "vld.h"
 
