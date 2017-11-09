@@ -937,7 +937,8 @@ static bool CompileMixerUsingXkslangDll(string effectName, EffectMixerObject* mi
                         resourceGroupName,
                         logicalGroupName,
                         effectResourceBinding->Class,
-                        effectResourceBinding->Type
+                        effectResourceBinding->Type,
+                        effectResourceBinding->SlotCount
                     );
                     vecAllResourceBindings.push_back(binding);
 

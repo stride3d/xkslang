@@ -116,13 +116,14 @@ namespace xkslangDll
 		xkslang::ShadingStageEnum Stage;
 		xkslang::EffectParameterReflectionClass Class;
 		xkslang::EffectParameterReflectionType Type;
+		int32_t SlotCount;
 		const char* KeyName;
         const char* RawName;
         const char* ResourceGroupName;
         const char* LogicalGroupName;
 
 		EffectResourceBindingDescriptionData(const xkslang::EffectResourceBindingDescription& e, const char* keyName, const char* rawName, const char* resourceGroupName, const char* logicalGroupName)
-            : Stage(e.Stage), Class(e.Class), Type(e.Type), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName), LogicalGroupName(logicalGroupName) {}
+            : Stage(e.Stage), Class(e.Class), Type(e.Type), SlotCount(e.SlotCount), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName), LogicalGroupName(logicalGroupName) {}
 	};
 
 	//struct containing an input attribute data (to be easily exchanged between native and managed apps)
@@ -1138,6 +1139,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                     Stage = ShaderStage.None, //XkslangDLLBindingClass.ConvertShadingStageEnum(effectResourceBinding.Stage), (this will be set by ShaderCompiler)
                                     Class = XkslangDLLBindingClass.ConvertEffectParameterReflectionClassEnum(effectResourceBinding.Class),
                                     Type = XkslangDLLBindingClass.ConvertEffectParameterReflectionTypeEnum(effectResourceBinding.Type),
+                                    SlotCount = effectResourceBinding.SlotCount,
                                     RawName = rawName,
                                     ResourceGroup = resourceGroupName == null ? rawName : resourceGroupName,
                                     KeyInfo =

@@ -986,7 +986,8 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                     cbufferRawName,
                                     "",
                                     EffectParameterReflectionClass::ConstantBuffer,
-                                    EffectParameterReflectionType::ConstantBuffer
+                                    EffectParameterReflectionType::ConstantBuffer,
+                                    1
                                 ));
                         }
                     }
@@ -1009,7 +1010,8 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                                     variableData->resourceGroupName,
                                     variableData->logicalGroupName,
                                     variableData->variableTypeReflection.Class,
-                                    variableData->variableTypeReflection.Type
+                                    variableData->variableTypeReflection.Type,
+                                    std::max(variableData->variableTypeReflection.ArrayElements, 1) // non-array is 0, but we want 1
                                 ));
 
                             if (variableData->variableTypeReflection.Class == EffectParameterReflectionClass::Sampler)

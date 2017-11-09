@@ -498,12 +498,13 @@ public:
 
     EffectParameterReflectionClass Class;
     EffectParameterReflectionType Type;
+    int32_t SlotCount;
 
 public:
     EffectResourceBindingDescription() {}
     EffectResourceBindingDescription(ShadingStageEnum stage, const std::string& keyName, const std::string& rawName, const std::string& resourceGroupName, const std::string& logicalGroupName,
-        EffectParameterReflectionClass c, EffectParameterReflectionType t)
-        : Stage(stage), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName), LogicalGroupName(logicalGroupName), Class(c), Type(t) {}
+        EffectParameterReflectionClass c, EffectParameterReflectionType t, int slotCount)
+        : Stage(stage), KeyName(keyName), RawName(rawName), ResourceGroupName(resourceGroupName), LogicalGroupName(logicalGroupName), Class(c), Type(t), SlotCount(slotCount) {}
 };
 
 //=====================================================================================================================
