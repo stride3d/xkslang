@@ -72,7 +72,7 @@ public:
     virtual ~EffectMixerObject() { if (mixer != nullptr) delete mixer; }
 };
 
-static string inputDir = "glslang\\source\\Test\\xksl\\";
+static string inputDir = "..\\..\\..\\..\\..\\Test\\xksl\\";
 static string outputDir;
 static string finalResultOutputDir;
 static string expectedOutputDir;
@@ -406,13 +406,10 @@ static bool SetupTestDirectories()
     WCHAR fileName[MAX_PATH];
     int bytes = GetModuleFileName(NULL, fileName, MAX_PATH);
     wstring ws(fileName);
-    string fullName(ws.begin(), ws.end());
+    const size_t pos = ws.rfind(L'\\');
+    if (pos >= ws.size()) return false;
 
-    //WARNING: UNCLEAN AND HARDCODED FOR NOW!!
-    const size_t pos = fullName.find("glslang");
-    if (pos >= fullName.size()) return false;
-
-    string dir = fullName.substr(0, pos);
+    string dir(ws.begin(), ws.begin() + pos + 1);
     inputDir = dir + inputDir;
 
     outputDir = inputDir + string("outputs\\");
