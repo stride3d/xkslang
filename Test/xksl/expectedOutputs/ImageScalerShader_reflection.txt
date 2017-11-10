@@ -38,5 +38,4 @@ InputAttributes. Count=2
  SemanticName="POSITION" SemanticIndex=0
  SemanticName="TEXCOORD" SemanticIndex=0
 
-SamplerStates. Count=1
- KeyName="Texturing.Sampler" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+SamplerStates. Count=0

@@ -2695,9 +2695,6 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
                             ps->Filter, ps->CompareFunction, ps->AddressU, ps->AddressV, ps->AddressW, ps->MaxAnisotropy,
                             ps->MinMipLevel, ps->MaxMipLevel, ps->MipMapLevelOfDetailBias, ps->BorderColor);
                     }
-                    else {
-                        if (logger) logger->error(std::string("A sampler type is missing its description: ") + (glslangMember.GetFieldNamePtr() != nullptr? glslangMember.GetFieldNamePtr()->c_str(): ""));
-                    }
                 }
                 
                 if (glslangMember.getMemberAttributeList() != nullptr)

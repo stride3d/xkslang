@@ -1126,15 +1126,6 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                     start += wordCount;
                 }
 
-                for (auto its = vecAllSamplerStateVariables.begin(); its != vecAllSamplerStateVariables.end(); its++)
-                {
-                    VariableInstruction* variable = *its;
-                    if (variable->tmpFlag == 0)
-                    {
-                        error("A used SamplerState is missing its description: " + variable->variableData->variableKeyName);
-                    }
-                }
-
                 effectReflection.SetSamplerStates(vecSamplerStates);
             }
 
