@@ -553,6 +553,7 @@ namespace xkslangDll
     static void ConvertStructMemberToDllData(const TypeMemberReflectionDescription& structMemberSrc, ConstantBufferMemberReflectionDescriptionData& structMemberDst)
     {
         const char* memberName = allocateAndCopyStringOnGlobalHeap(structMemberSrc.Name.c_str());
+        const char* structName = allocateAndCopyStringOnGlobalHeap(structMemberSrc.Type.Name.c_str());
 
         structMemberDst.Set(
             structMemberSrc.Offset,
@@ -568,7 +569,8 @@ namespace xkslangDll
             structMemberSrc.Type.ArrayStride,
             structMemberSrc.Type.MatrixStride,
             structMemberSrc.Type.ArrayElements,
-            structMemberSrc.Type.CountMembers
+            structMemberSrc.Type.CountMembers,
+            structName
         );
 
         if (structMemberSrc.Type.Class == EffectParameterReflectionClass::Struct)
@@ -645,6 +647,7 @@ namespace xkslangDll
 						const char* memberKeyName = allocateAndCopyStringOnGlobalHeap(memberSrc.KeyName.c_str());
                         const char* memberRawName = allocateAndCopyStringOnGlobalHeap(memberSrc.RawName.c_str());
                         const char* logicalGroup = allocateAndCopyStringOnGlobalHeap(memberSrc.LogicalGroup.c_str());
+                        const char* structName = allocateAndCopyStringOnGlobalHeap(memberSrc.ReflectionType.Name.c_str());
 						membersInfo[m] = ConstantBufferMemberReflectionDescriptionData(
 							memberSrc.Offset,
                             memberKeyName,
@@ -655,6 +658,8 @@ namespace xkslangDll
 
                         if (memberSrc.ReflectionType.Class == EffectParameterReflectionClass::Struct)
                         {
+                            membersInfo[m].StructName = structName;
+
                             int structCountMembers = memberSrc.ReflectionType.CountMembers;
                             if (structCountMembers > 0 && memberSrc.ReflectionType.Members != nullptr)
                             {

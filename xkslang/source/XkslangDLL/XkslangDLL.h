@@ -51,14 +51,15 @@ namespace xkslangDll
 		int32_t MatrixStride;
 		int32_t CountMembers;
         ConstantBufferMemberReflectionDescriptionData* StructMembers;
+        const char* StructName;
 
 		ConstantBufferMemberReflectionDescriptionData(const int32_t offset, const char* keyName, const char* rawName, const char* logicalGroup, const xkslang::TypeReflectionDescription& t)
 			: Offset(offset), KeyName(keyName), RawName(rawName), LogicalGroup(logicalGroup),
               Class(t.Class), Type(t.Type), RowCount(t.RowCount), ColumnCount(t.ColumnCount), ArrayElements(t.ArrayElements), Size(t.Size),
-			  Alignment(t.Alignment), ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), CountMembers(t.CountMembers), StructMembers(nullptr) {}
+			  Alignment(t.Alignment), ArrayStride(t.ArrayStride), MatrixStride(t.MatrixStride), CountMembers(t.CountMembers), StructMembers(nullptr), StructName(nullptr) {}
 
         void Set(const int32_t offset, const char* keyName, const char* rawName, const char* logicalGroup, xkslang::EffectParameterReflectionClass c, xkslang::EffectParameterReflectionType t,
-            int countRow, int countColumn, int size, int alignment, int arrayStride, int matrixStride, int arrayElements, int countMembers)
+            int countRow, int countColumn, int size, int alignment, int arrayStride, int matrixStride, int arrayElements, int countMembers, const char* structName)
         {
             this->Offset = offset;
             this->KeyName = keyName;
@@ -75,6 +76,7 @@ namespace xkslangDll
             this->ArrayElements = arrayElements;
             this->CountMembers = countMembers;
             this->StructMembers = nullptr;
+            this->StructName = structName;
         }
 
         void SetMembersDetails(ConstantBufferMemberReflectionDescriptionData* structMembers, int countMembers)
@@ -512,6 +514,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
 
             public Int32 CountMembers;
             public IntPtr StructMembers;
+            public IntPtr StructName;
         }
 
         //ConstantBuffer struct
@@ -934,6 +937,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
             if (structMemberSrc.KeyName == null) return false;
 
             string structMemberName = Marshal.PtrToStringAnsi(structMemberSrc.KeyName);
+            string structName = Marshal.PtrToStringAnsi(structMemberSrc.StructName);
             structMemberDst.Name = structMemberName;
             structMemberDst.Offset = structMemberSrc.Offset;
             structMemberDst.Type = new EffectTypeDescription()
@@ -944,12 +948,13 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                 ColumnCount = structMemberSrc.ColumnCount,
                 Elements = structMemberSrc.ArrayElements,
                 ElementSize = structMemberSrc.Size,
-                Name = structMemberName,
+                Name = structName,
                 Members = null,
             };
 
             if (structMemberSrc.KeyName == null) { Marshal.FreeHGlobal(structMemberSrc.KeyName); }
             if (structMemberSrc.RawName == null) { Marshal.FreeHGlobal(structMemberSrc.RawName); }
+            if (structMemberSrc.StructName == null) { Marshal.FreeHGlobal(structMemberSrc.StructName); }
 
             if (structMemberSrc.CountMembers > 0)
             {
@@ -1218,6 +1223,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                         string keyName = Marshal.PtrToStringAnsi(memberData.KeyName);
                                         string rawName = Marshal.PtrToStringAnsi(memberData.RawName);
                                         string logicalGroup = Marshal.PtrToStringAnsi(memberData.LogicalGroup);
+                                        string structName = Marshal.PtrToStringAnsi(memberData.StructName);
 
                                         cbufferMembers[m] = new EffectValueDescription()
                                         {
@@ -1237,7 +1243,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                                 ColumnCount = memberData.ColumnCount,
                                                 Elements = memberData.ArrayElements,
                                                 ElementSize = memberData.Size,
-                                                Name = rawName,
+                                                Name = structName,
                                                 Members = null,  //will be set below
                                             },
                                         };
@@ -1245,6 +1251,7 @@ namespace SiliconStudio.Xenko.Shaders.Compiler
                                         if (memberData.KeyName != null) Marshal.FreeHGlobal(memberData.KeyName);
                                         if (memberData.RawName != null) Marshal.FreeHGlobal(memberData.RawName);
                                         if (memberData.LogicalGroup != null) Marshal.FreeHGlobal(memberData.LogicalGroup);
+                                        if (memberData.StructName != null) Marshal.FreeHGlobal(memberData.StructName);
 
                                         //if the cbuffer member is a struct, we analyse its struct members
                                         if (memberData.CountMembers > 0)

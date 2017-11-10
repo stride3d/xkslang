@@ -296,8 +296,11 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
     vector<CBufferTypeData*> vectorCBuffersIds;
     vector<VariableInstruction*> listAllResourceVariables;
     vector<VariableInstruction*> vectorResourceVariablesId;
+    vector<TypeInstruction*> structsId;
+    unordered_map<spv::Id, std::string> structNames;
     vectorCBuffersIds.resize(bound(), nullptr);
     vectorResourceVariablesId.resize(bound(), nullptr);
+    structsId.resize(bound(), nullptr);
 
     for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
     {
@@ -307,6 +310,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
         if (obj->GetKind() == ObjectInstructionTypeEnum::Type)
         {
             TypeInstruction* type = dynamic_cast<TypeInstruction*>(obj);
+            structsId[type->GetId()] = type;
             if (type->IsCBuffer())
             {
                 CBufferTypeData* cbufferData = type->GetCBufferData();
@@ -381,7 +385,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                 }
 
                 TypeReflectionDescription resourceTypeReflection;
-                if (!GetTypeReflectionDescription(variableType, false, nullptr, variable->variableData->variableTypeReflection, nullptr))
+                if (!GetTypeReflectionDescription(variableType, false, nullptr, variable->variableData->variableTypeReflection, nullptr, &structNames))
                 {
                     error("Failed to get the reflexon data for the resource type: " + to_string(variable->GetId()));
                     break;
@@ -427,6 +431,10 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         //By default: the name is the keyName, and we deduct the rawName from it, unless this keyName has been specified by an attribute
                         if (!variableData->hasKeyName()) variableData->SetVariableKeyName(name);
                         variableData->SetVariableRawName( getRawNameFromKeyName(name) );
+                    }
+                    else if (structsId[id] != nullptr)
+                    {
+                        structNames[id] = literalString(start + 2);
                     }
                     break;
                 }
@@ -688,7 +696,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
                         else { error("undefined matrix member layout"); break; }
                     }
 
-                    if (!GetTypeReflectionDescription(cbufferMemberType, isMatrixRowMajor, &(member.attribute), memberReflection.ReflectionType, &startPositionOfAllMemberDecorateInstructions))
+                    if (!GetTypeReflectionDescription(cbufferMemberType, isMatrixRowMajor, &(member.attribute), memberReflection.ReflectionType, &startPositionOfAllMemberDecorateInstructions, &structNames))
                     {
                         error("Failed to get the reflexon data for the cbuffer member: " + member.GetDeclarationNameOrSemantic());
                         break;

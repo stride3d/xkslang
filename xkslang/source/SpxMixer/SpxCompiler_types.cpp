@@ -317,7 +317,7 @@ bool SpxCompiler::GetTypeFloatVectorReflectionDescription(int floatWidth, int co
 
 //Rules are inspired from glslang TIntermediate::getBaseAlignment function
 bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, string* memberAttribute, TypeReflectionDescription& typeReflection,
-    const vector<unsigned int>* listStartPositionOfAllMemberDecorateInstructions, int iterationCounter)
+    const vector<unsigned int>* listStartPositionOfAllMemberDecorateInstructions, const std::unordered_map<spv::Id, std::string>* structNames, int iterationCounter)
 {
     if (iterationCounter > 10) return error("Too many recursive iterations (infinite type redirection in the bytecode?)");
 
@@ -334,6 +334,7 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
     //For struct members
     TypeMemberReflectionDescription* structMembers = nullptr;
     int countStructMembers = 0;
+    std::string structName;
 
     const spv::Op typeOpCode = type->GetOpCode();
     switch (typeOpCode)
@@ -454,7 +455,7 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
 #endif
 
             TypeReflectionDescription subElementReflection;
-            if (!GetTypeReflectionDescription(elemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, iterationCounter+1))
+            if (!GetTypeReflectionDescription(elemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, structNames, iterationCounter+1))
                 return error("Failed to get the reflection data for the vector sub-element type");
 
             if (!subElementReflection.isScalarType())
@@ -503,7 +504,7 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
 #endif
 
             TypeReflectionDescription subElementReflection;
-            if (!GetTypeReflectionDescription(elemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, iterationCounter + 1))
+            if (!GetTypeReflectionDescription(elemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, structNames, iterationCounter + 1))
                 return error("Failed to get the reflection data for the array element type");
             if (subElementReflection.ArrayElements != 0) return error("OpTypeArray: sub-element reflection type cannot be another array");
 
@@ -526,6 +527,7 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
                 //Array of struct: we recover the struct information
                 structMembers = subElementReflection.Members;
                 countStructMembers = subElementReflection.CountMembers;
+                structName = subElementReflection.Name;
 
                 //set the subelements members to null, otherwise the data will be deleted by its destructor
                 subElementReflection.Members = nullptr;
@@ -557,7 +559,7 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
 #endif
 
             TypeReflectionDescription subElementReflection;
-            if (!GetTypeReflectionDescription(elemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, iterationCounter + 1))
+            if (!GetTypeReflectionDescription(elemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, structNames, iterationCounter + 1))
                 return error("Failed to get the reflection data for the matrix's element type");
             int subElementSize = subElementReflection.Size;
             int subElementAlign = subElementReflection.Alignment;
@@ -613,6 +615,16 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
             countStructMembers = countMembers;
             structMembers = new TypeMemberReflectionDescription[countStructMembers];
 
+            // Struct name
+            if (structNames != nullptr)
+            {
+                auto nameIt = structNames->find(type->GetId());
+                if (nameIt != structNames->end())
+                {
+                    structName = nameIt->second;
+                }
+            }
+
             memberSize = 0;
             int maxAlignment = compilerSettings_useStd140Rules ? compilerSettings_baseAlignmentVec4Std140 : 0;
             unsigned int posElemStart = type->GetBytecodeStartPosition() + 2;
@@ -664,7 +676,7 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
                 }
 
                 TypeReflectionDescription& subElementReflection = structMember.Type;
-                if (!GetTypeReflectionDescription(structElemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, iterationCounter + 1))
+                if (!GetTypeReflectionDescription(structElemType, isRowMajor, memberAttribute, subElementReflection, listStartPositionOfAllMemberDecorateInstructions, structNames, iterationCounter + 1))
                 {
                     error("Failed to get the reflection data for the struct's member type");
                     break;
@@ -703,6 +715,10 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
     if (structMembers != nullptr)
     {
         typeReflection.SetStructMembers(structMembers, countStructMembers);
+    }
+    if (!structName.empty())
+    {
+        typeReflection.Name = structName;
     }
 
     return true;

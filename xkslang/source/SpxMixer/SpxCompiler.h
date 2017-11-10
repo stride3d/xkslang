@@ -876,7 +876,7 @@ private:
     bool GetTypeFloatReflectionDescription(int width, TypeReflectionDescription& typeReflection);
     bool GetTypeFloatVectorReflectionDescription(int floatWidth, int countElements, TypeReflectionDescription& typeReflection);
     bool GetTypeReflectionDescription(TypeInstruction* type, bool isRowMajor, std::string* memberAttribute, TypeReflectionDescription& typeReflection,
-        const std::vector<unsigned int>* listStartPositionOfAllMemberDecorateInstructions, int iterationCounter = 0);
+        const std::vector<unsigned int>* listStartPositionOfAllMemberDecorateInstructions, const std::unordered_map<spv::Id, std::string>* structNames, int iterationCounter = 0);
     bool GetIntegerConstTypeExpressionValue(ConstInstruction* constObject, int& constValue);
     spv::Id GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const std::vector<ConstInstruction*>& listAllConsts,
         std::vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter = 0);
