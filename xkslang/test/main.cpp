@@ -161,7 +161,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge12", "TestMerge12.xkfx" },
     //{ "TestMerge13", "TestMerge13.xkfx" },
 
-    { "TestConsts01", "TestConsts01.xkfx" },
+    //{ "TestConsts01", "TestConsts01.xkfx" },
+    { "TestConsts02", "TestConsts02.xkfx" },
     
     //{ "TestCompose02", "TestCompose02.xkfx" },
     //{ "TestCompose03", "TestCompose03.xkfx" },

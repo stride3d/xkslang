@@ -1,0 +1,13 @@
+shader ShaderMain<int TOrder>
+{    
+	static const int CoefficientsCount = TOrder * TOrder;
+
+	float anArray[CoefficientsCount];
+
+	void VSMain()
+	{
+		float toto = 0;
+		for (int i = 0; i < CoefficientsCount; ++i)
+			toto += anArray[i];
+	}
+}
