@@ -1,0 +1,10 @@
+addResourcesLibrary "library"
+
+//parsing
+convertAndLoadRecursif LambertianPrefilteringSHNoComputePass1<2>
+
+//mixin
+mixer m
+m.mixin( LambertianPrefilteringSHNoComputePass1 )
+
+m.compile

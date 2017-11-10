@@ -332,7 +332,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
     //{ "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
-    { "SkyboxShader", "SkyboxShader.xkfx" },
+    //{ "SkyboxShader", "SkyboxShader.xkfx" },
+
+    { "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
     
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },

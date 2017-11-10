@@ -4926,6 +4926,9 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     for (int p = 0; p < countParents; p++)
     {
         if (shader->listParents[p].parentShader == nullptr) {
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+                return nullptr; //not an error: the links between shaders are only done after this operation
+
             error("missing link to parent shader for:" + shaderName);
             return nullptr;
         }
@@ -4969,6 +4972,9 @@ bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* s
         {
             XkslShaderDefinition* parentShader = shader->listParents[p].parentShader;
             if (parentShader == nullptr) {
+                if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+                    return false; //not an error: the links between shaders are only done after this operation
+
                 error("missing link to parent shader for:" + shader->shaderBaseName);
                 return false;
             }
@@ -5045,6 +5051,9 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
         {
             XkslShaderDefinition* parentShader = shader->listParents[p].parentShader;
             if (parentShader == nullptr) {
+                if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+                    return identifierLocation; //not an error: the links between shaders are only done after this operation
+
                 error("missing link to parent shader for:" + shaderClassName);
                 return identifierLocation;
             }
@@ -5094,6 +5103,9 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
         for (unsigned int p = 0; p < countParents; p++)
         {
             if (shader->listParents[p].parentShader == nullptr) {
+                if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+                    return identifierLocation; //not an error: the links between shaders are only done after this operation
+
                 error("missing link to parent shader for:" + shaderClassName);
                 return identifierLocation;
             }
@@ -5174,6 +5186,9 @@ bool HlslGrammar::isIdentifierRecordedAsACompositionVariableName(TString* access
     for (int p = 0; p < countParents; p++)
     {
         if (shader->listParents[p].parentShader == nullptr) {
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+                return false; //not an error: the links between shaders are only done after this operation
+
             error("missing link to parent shader for:" + shader->shaderFullName);
             return false;
         }
@@ -5203,6 +5218,9 @@ bool HlslGrammar::IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslSh
     for (int p = 0; p < countParents; p++)
     {
         if (shader->listParents[p].parentShader == nullptr) {
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+                return false; //not an error: the links between shaders are only done after this operation
+
             error("missing link to parent shader for:" + shader->shaderFullName);
             return false;
         }
@@ -5289,6 +5307,9 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMembe
         for (int p = 0; p < countParents; p++)
         {
             if (shader->listParents[p].parentShader == nullptr) {
+                if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+                    return identifierLocation; //not an error: the links between shaders are only done after this operation
+
                 error("missing link to parent shader for:" + shader->shaderFullName);
                 return identifierLocation;
             }
@@ -5331,6 +5352,9 @@ TString* HlslGrammar::getCurrentShaderParentName(int index)
     assert(index >= 0 && index < (int)xkslShaderCurrentlyParsed->listParents.size());
 
     if (xkslShaderCurrentlyParsed->listParents[index].parentShader == nullptr) {
+        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+            return nullptr; //not an error: the links between shaders are only done after this operation
+
         error("missing link to parent shader for:" + xkslShaderCurrentlyParsed->shaderFullName);
         return nullptr;
     }
