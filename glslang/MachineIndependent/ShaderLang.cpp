@@ -3162,7 +3162,7 @@ static bool ParseXkslShaderRecursif(
     
     //==================================================================================================================
     //==================================================================================================================
-    //if some shader uses compositions: we check if the targeter composition shader exists, if not we recursively parse it
+    //if some shader uses compositions: we check if the targeted composition shader exists, if not we recursively parse it
     if (success)
     {
         previousProcessingOperation = currentProcessingOperation;

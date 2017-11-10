@@ -1,0 +1,9 @@
+shader ShaderMain<int TOrder>
+{    
+	static const int CoefficientsCount = TOrder * TOrder;
+
+	void VSMain()
+	{
+		float toto = CoefficientsCount;
+	}
+}

@@ -160,6 +160,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge11", "TestMerge11.xkfx" },
     //{ "TestMerge12", "TestMerge12.xkfx" },
     //{ "TestMerge13", "TestMerge13.xkfx" },
+
+    { "TestConsts01", "TestConsts01.xkfx" },
     
     //{ "TestCompose02", "TestCompose02.xkfx" },
     //{ "TestCompose03", "TestCompose03.xkfx" },
@@ -334,7 +336,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
     //{ "SkyboxShader", "SkyboxShader.xkfx" },
 
-    { "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
+//////////////////////{ "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
     
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
