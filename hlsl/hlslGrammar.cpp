@@ -3627,9 +3627,15 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
 
                         if (!addTheVariables)
                         {
-                            if (!advanceUntilToken(EHTokSemicolon, true)) {
-                                error("Error advancing until the end of the expression");
-                                return false;
+                            //we skip the member declaration
+                            if (declaredType.getBasicType() == EbtBlock) {
+                                //block declaration have no identifier (and doesn't necessary require a semicolon after the cbuffer declaration)
+                            }
+                            else {
+                                if (!advanceUntilToken(EHTokSemicolon, true)) {
+                                    error("Error advancing until the end of the expression");
+                                    return false;
+                                }
                             }
                         }
                         else

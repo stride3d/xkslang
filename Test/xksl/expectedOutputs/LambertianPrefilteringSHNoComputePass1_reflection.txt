@@ -1,0 +1,38 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer globalRGroup [size: 4]
+@C    LambertianPrefilteringSHNoComputePass1_CoefficientIndex => LambertianPrefilteringSHNoComputePass1.CoefficientIndex
+ cbuffer PerDraw [size: 64]
+@C    SpriteBase_MatrixTransform => SpriteBase.MatrixTransform
+
+***********************
+*****  Resources  *****
+***********************
+@C    PerDraw => PerDraw [Stage=Vertex]
+@C    globalRGroup => globalRGroup [Stage=Pixel]
+@C    LambertianPrefilteringSHNoComputePass1_RadianceMap => LambertianPrefilteringSHNoComputePass1.RadianceMap [Stage=Pixel]
+@C    Texturing_PointSampler => Texturing.PointSampler [Stage=Pixel]
+
+ConstantBuffers. Count=2
+ cbuffer: Name="globalRGroup" Size=4 MembersCount=1
+  KeyName="LambertianPrefilteringSHNoComputePass1.CoefficientIndex" RawName="LambertianPrefilteringSHNoComputePass1_CoefficientIndex" LogicalGroup="" Offset=0
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ cbuffer: Name="PerDraw" Size=64 MembersCount=1
+  KeyName="SpriteBase.MatrixTransform" RawName="SpriteBase_MatrixTransform" LogicalGroup="" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+
+ResourceBindings. Count=4
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Pixel KeyName="globalRGroup" RawName="globalRGroup" ResourceGroupName="globalRGroup" Class=ConstantBuffer Type=ConstantBuffer GroupName="globalRGroup" LogicalGroup=""
+ Stage=Pixel KeyName="LambertianPrefilteringSHNoComputePass1.RadianceMap" RawName="LambertianPrefilteringSHNoComputePass1_RadianceMap" ResourceGroupName="" Class=ShaderResourceView Type=TextureCube GroupName="" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.PointSampler" RawName="Texturing_PointSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
+
+InputAttributes. Count=2
+ SemanticName="TEXCOORD" SemanticIndex=0
+ SemanticName="POSITION" SemanticIndex=0
+
+SamplerStates. Count=1
+ KeyName="Texturing.PointSampler" Filter=Point Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)

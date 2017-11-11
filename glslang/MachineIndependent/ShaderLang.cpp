@@ -3309,7 +3309,7 @@ static bool ParseXkslShaderRecursif(
 
     //==================================================================================================================
     //==================================================================================================================
-    //Parse shader members and variables declaration only!
+    //Parse shader members and (non-const) variables declaration only!
     if (success)
     {
         previousProcessingOperation = currentProcessingOperation;
@@ -3519,7 +3519,7 @@ static bool ParseXkslShaderRecursif(
                             shaderNameToParse,
                             shaderData,
                             shaderMissingADependency,
-                            XkslShaderDefinition::ShaderParsingStatusEnum::UnresolvedConstsResolved, //have new shaders catch up until this process,
+                            XkslShaderDefinition::ShaderParsingStatusEnum::MembersAndMethodsDeclarationRegistered, //have new shaders catch up until this process,
                             parseContext,
                             ppContext,
                             infoSink,

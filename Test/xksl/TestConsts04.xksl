@@ -1,0 +1,18 @@
+shader ShaderBase
+{
+	cbuffer
+	{
+		int Var0;
+		int Var1;
+	}
+	const int BaseConst = 2;
+	stream float sbase1: SBASE1;
+};
+
+shader ShaderMain : ShaderBase
+{
+	void VSMain()
+	{
+		int i = streams.sbase1 + Var0 + Var1 + BaseConst;
+	}
+};
