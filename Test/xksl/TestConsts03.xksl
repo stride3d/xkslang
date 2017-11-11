@@ -1,7 +1,7 @@
 shader ShaderMain<int TOrder>
 {
 	static const int CoefficientsCount = TOrder * TOrder;
-	float anArray[TOrder * TOrder];
+	float anArray[CoefficientsCount];
 
 	void VSMain()
 	{

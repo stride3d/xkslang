@@ -1963,6 +1963,70 @@ static bool IsTypeValidForStream(const TBasicType& type)
     return true;
 }
 
+static bool ProcessConstsRegistrationForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, HlslParseContext* parseContext)
+{
+    //======================================================================================
+    // const declaration: create and add the new const
+    for (unsigned int i = 0; i < shader->listParsedMembers.size(); ++i)
+    {
+        XkslShaderDefinition::XkslShaderMember& member = shader->listParsedMembers[i];
+        //member.type->setUserIdentifierName(member.type->getFieldName().c_str()); //declaration name is the field name
+        member.type->setOwnerClassName(shader->shaderFullName.c_str());
+
+        bool isConst = member.type->getQualifier().storage == EvqConst;
+
+        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
+        bool canCreateVariable = true;
+        bool constIsResolved = false;
+
+        if (isConst)
+        {
+            if (member.resolvedDeclaredExpression == nullptr)
+            {
+                if (member.expressionTokensList == nullptr) {
+                    parseContext->infoSink.info.message(EPrefixWarning, (TString("Const member not initialized: ") + member.type->getFieldName()).c_str());
+                    canCreateVariable = false;
+                }
+            }
+            else
+            {
+                constIsResolved = true;
+            }
+
+            if (canCreateVariable)
+            {
+                //Create the const variable on global space
+                TString* variableName = NewPoolTString((TString("const_") + shader->shaderFullName + "_" + member.type->getFieldName()).c_str());
+                member.type->setFieldName(*variableName);
+
+                TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression, false);
+
+                TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
+                TVariable* constVariable = constVariableSymbol == nullptr ? nullptr : constVariableSymbol->getAsVariable();
+
+                if (constVariable == nullptr)
+                {
+                    return error(parseContext, "Failed to create const variable:" + *variableName);
+                }
+
+                if (constIsResolved)
+                    identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
+                else
+                    identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst, variableName, -1);
+
+                member.memberLocation = identifierLocation;
+                shader->listAllDeclaredMembers.push_back(member);
+            }
+        }
+        else
+        {
+            return error(parseContext, "Unexpected non-const variable: " + member.type->getFieldName());
+        }
+    }
+
+    return true;
+}
+
 static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, HlslParseContext* parseContext)
 {
     //======================================================================================
@@ -2018,42 +2082,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
 
         if (isConst)
         {
-            if (member.resolvedDeclaredExpression == nullptr)
-            {
-                if (member.expressionTokensList == nullptr) {
-                    parseContext->infoSink.info.message(EPrefixWarning, (TString("Const member not initialized: ") + member.type->getFieldName()).c_str());
-                    canCreateVariable = false;
-                }
-            }
-            else
-            {
-                constIsResolved = true;
-            }
-
-            if (canCreateVariable)
-            {
-                //Create the const variable on global space
-                TString* variableName = NewPoolTString((TString("const_") + shader->shaderFullName + "_" + member.type->getFieldName()).c_str());
-                member.type->setFieldName(*variableName);
-
-                TIntermNode* unusedNode = parseContext->declareVariable(member.loc, *variableName, *(member.type), member.resolvedDeclaredExpression, false);
-
-                TSymbol* constVariableSymbol = parseContext->symbolTable.find(*variableName);
-                TVariable* constVariable = constVariableSymbol == nullptr ? nullptr : constVariableSymbol->getAsVariable();
-
-                if (constVariable == nullptr)
-                {
-                    return error(parseContext, "Failed to create const variable:" + *variableName);
-                }
-
-                if (constIsResolved)
-                    identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::Const, variableName, -1);
-                else
-                    identifierLocation.SetMemberLocation(shader, member.type->getUserIdentifierName(), XkslShaderDefinition::MemberLocationTypeEnum::UnresolvedConst, variableName, -1);
-
-                member.memberLocation = identifierLocation;
-                shader->listAllDeclaredMembers.push_back(member);
-            }
+            //variable already processed in a previous process
         }
         else if (isStream)
         {
@@ -3130,6 +3159,154 @@ static bool ParseXkslShaderRecursif(
         if (processUntilOperation == currentProcessingOperation) return success;
     }
 
+
+
+    //==================================================================================================================
+    //==================================================================================================================
+    //Parse shader const variables only
+    if (success)
+    {
+        previousProcessingOperation = currentProcessingOperation;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::ConstMembersParsed;
+
+        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        {
+            XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
+
+            if (shader->parsingStatus == previousProcessingOperation)
+            {
+                shader->parsingStatus = currentProcessingOperation;
+
+                success = parseContext->parseXkslShaderConstVariables(shader, &shaderLibrary, ppContext);
+                if (!success)
+                {
+                    error(parseContext, "Failed to parse the shaders' members and method declaration for the shader: " + shader->shaderFullName);
+                    break;
+                }
+            }
+        }
+
+        if (processUntilOperation == currentProcessingOperation) return success;
+    }
+
+    //==================================================================================================================
+    //==================================================================================================================
+    //We finished parsing the shaders const declaration: we can now check and register them
+    if (success)
+    {
+        previousProcessingOperation = currentProcessingOperation;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::ConstsRegistered;
+
+        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        {
+            XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
+
+            if (shader->parsingStatus == previousProcessingOperation)
+            {
+                shader->parsingStatus = currentProcessingOperation;
+
+                success = ProcessConstsRegistrationForShader(shaderLibrary, shader, parseContext);
+
+                //success = ProcessDeclarationOfMembersAndMethodsForShader(shaderLibrary, shader, parseContext);
+                if (!success) {
+                    error(parseContext, "Failed to process the declaration of all shader members and methods for the shader: " + shader->shaderFullName);
+                    break;
+                }
+            }
+        }
+
+        if (processUntilOperation == currentProcessingOperation) return success;
+    }
+
+    //==================================================================================================================
+    //==================================================================================================================
+    //resolve all unresolved const members
+    if (success)
+    {
+        previousProcessingOperation = currentProcessingOperation;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::UnresolvedConstsResolved;
+
+        TString unknownIdentifier; //if we parse a missing shader (not recorded in the shader library), we can recursively parse it and add it to our library
+        bool keepLooping = true;
+        while (keepLooping)
+        {
+            keepLooping = false;
+            success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, parseContext, ppContext, unknownIdentifier);
+
+            if (!success)
+            {
+                if (unknownIdentifier.size() > 0)
+                {
+                    //unknown shader. If we have a callback function: query its data and then recursively parse it
+                    if (callbackRequestDataForShader != nullptr)
+                    {
+                        const std::string shaderNameToParse(unknownIdentifier.c_str());
+                        std::string shaderData;
+                        if (callbackRequestDataForShader == nullptr || callbackRequestDataForShader(shaderNameToParse, shaderData) == false)
+                        {
+                            error(parseContext, "unknwon identifier: " + unknownIdentifier);
+                            success = false;
+                        }
+                        else
+                        {
+                            success = ParseXkslShaderRecursif(
+                                shaderLibrary,
+                                shaderNameToParse,
+                                shaderData,
+                                nullptr,
+                                XkslShaderDefinition::ShaderParsingStatusEnum::MembersAndMethodsDeclarationRegistered, //have new shaders catch up until this process,
+                                parseContext,
+                                ppContext,
+                                infoSink,
+                                intermediate,
+                                resources,
+                                options,
+                                listGenericValues,
+                                listUserDefinedMacros,
+                                callbackRequestDataForShader);
+
+                            if (success)
+                            {
+                                if (GetShaderFromLibrary(shaderLibrary, unknownIdentifier, nullptr) == nullptr) {
+                                    error(parseContext, "Failed to get the missing shader after parsing the callback data: " + unknownIdentifier);
+                                    success = false;
+                                }
+                                else keepLooping = true;
+                            }
+                            else error(parseContext, "Failed to recursively parse the shader: " + unknownIdentifier);
+                        }
+                    }
+                    else
+                    {
+                        error(parseContext, "Unknown identifier: " + unknownIdentifier);
+                        success = false;
+                    }
+                }
+                else
+                {
+                    error(parseContext, "Failed to resolve all const members");
+                }
+            }
+        }
+
+        //Not doing anything, but done in order to keep with the same logic as every other parsing process
+        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        {
+            XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->parsingStatus == previousProcessingOperation)
+            {
+                shader->parsingStatus = currentProcessingOperation;
+            }
+        }
+
+        if (processUntilOperation == currentProcessingOperation) return success;
+    }
+
     //==================================================================================================================
     //==================================================================================================================
     //Parse shader members and variables declaration only!
@@ -3270,91 +3447,6 @@ static bool ParseXkslShaderRecursif(
                     error(parseContext, "Failed to process the declaration of all shader members and methods for the shader: " + shader->shaderFullName);
                     break;
                 }
-            }
-        }
-
-        if (processUntilOperation == currentProcessingOperation) return success;
-    }
-
-    //==================================================================================================================
-    //==================================================================================================================
-    //resolve all unresolved const members
-    if (success)
-    {
-        previousProcessingOperation = currentProcessingOperation;
-        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::UnresolvedConstsResolved;
-
-        TString unknownIdentifier; //if we parse a missing shader (not recorded in the shader library), we can recursively parse it and add it to our library
-        bool keepLooping = true;
-        while (keepLooping)
-        {
-            keepLooping = false;           
-            success = XkslShaderResolveAllUnresolvedConstMembers(shaderLibrary, parseContext, ppContext, unknownIdentifier);
-
-            if (!success)
-            {
-                if (unknownIdentifier.size() > 0)
-                {
-                    //unknown shader. If we have a callback function: query its data and then recursively parse it
-                    if (callbackRequestDataForShader != nullptr)
-                    {
-                        const std::string shaderNameToParse(unknownIdentifier.c_str());
-                        std::string shaderData;
-                        if (callbackRequestDataForShader == nullptr || callbackRequestDataForShader(shaderNameToParse, shaderData) == false)
-                        {
-                            error(parseContext, "unknwon identifier: " + unknownIdentifier);
-                            success = false;
-                        }
-                        else
-                        {
-                            success = ParseXkslShaderRecursif(
-                                shaderLibrary,
-                                shaderNameToParse,
-                                shaderData,
-                                nullptr,
-                                XkslShaderDefinition::ShaderParsingStatusEnum::MembersAndMethodsDeclarationRegistered, //have new shaders catch up until this process,
-                                parseContext,
-                                ppContext,
-                                infoSink,
-                                intermediate,
-                                resources,
-                                options,
-                                listGenericValues,
-                                listUserDefinedMacros,
-                                callbackRequestDataForShader);
-
-                            if (success)
-                            {
-                                if (GetShaderFromLibrary(shaderLibrary, unknownIdentifier, nullptr) == nullptr) {
-                                    error(parseContext, "Failed to get the missing shader after parsing the callback data: " + unknownIdentifier);
-                                    success = false;
-                                }
-                                else keepLooping = true;
-                            }
-                            else error(parseContext, "Failed to recursively parse the shader: " + unknownIdentifier);
-                        }
-                    }
-                    else
-                    {
-                        error(parseContext, "Unknown identifier: " + unknownIdentifier);
-                        success = false;
-                    }
-                }
-                else
-                {
-                    error(parseContext, "Failed to resolve all const members");
-                }
-            }
-        }
-
-        //Not doing anything, but done in order to keep with the same logic as every other parsing process
-        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
-        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
-        {
-            XkslShaderDefinition* shader = listShaderParsed[s];
-            if (shader->parsingStatus == previousProcessingOperation)
-            {
-                shader->parsingStatus = currentProcessingOperation;
             }
         }
 

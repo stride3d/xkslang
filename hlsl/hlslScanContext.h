@@ -105,10 +105,12 @@ public:
         GenericsResolved,
         ProcessedInheritance,
         CustomTypeDeclared,
+        ConstMembersParsed,
+        ConstsRegistered,
+        UnresolvedConstsResolved,
         MembersAndMethodsDeclarationParsed,
         ProcessedCompositions,
         MembersAndMethodsDeclarationRegistered,
-        UnresolvedConstsResolved,
         MethodsDefinitionParsed,
         ParsingCompleted
     };

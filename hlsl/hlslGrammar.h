@@ -50,6 +50,7 @@ namespace glslang {
         Undefined,
         ParseXkslShaderDeclarations,
         ParseXkslShaderNewTypesDefinition,
+        ParseXkslShaderConstVariables,
         ParseXkslShaderMembersAndMethodsDeclarations,
         ParseXkslShaderConstStatements,
         ParseXkslShaderMethodsDefinition,
@@ -72,6 +73,7 @@ namespace glslang {
 
         bool parseXKslShaderDeclaration(XkslShaderLibrary* shaderLibrary);
         bool parseXKslShaderNewTypesDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
+        bool parseXKslShaderConstVariables(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
         bool parseXKslShaderMembersAndMethodsDeclaration(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
         bool parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
         TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, bool errorWhenParsingUnidentifiedSymbol, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound);

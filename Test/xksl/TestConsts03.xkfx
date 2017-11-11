@@ -1,0 +1,6 @@
+convertAndLoad "TestConsts03.xksl" ShaderMain<5>
+
+mixer m
+m.mixin( ShaderMain )
+
+m.compile()
