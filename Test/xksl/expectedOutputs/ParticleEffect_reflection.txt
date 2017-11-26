@@ -1,0 +1,71 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerMaterial [size: 28]
+@C    ParticleBase_ColorScale => ParticleBase.ColorScale
+@C    ParticleBase_AlphaAdditive => ParticleBase.AlphaAdditive
+@C    ParticleBase_ZOffset => ParticleBase.ZOffset
+@C    ParticleBase_SoftEdgeInverseDistance => ParticleBase.SoftEdgeInverseDistance
+ cbuffer PerView [size: 224]
+@C    ParticleUtilities_ViewMatrix => ParticleUtilities.ViewMatrix
+@C    ParticleUtilities_ProjectionMatrix => ParticleUtilities.ProjectionMatrix
+@C    ParticleUtilities_ViewProjectionMatrix => ParticleUtilities.ViewProjectionMatrix
+@C    ParticleUtilities_ViewFrustum => ParticleUtilities.ViewFrustum
+@C    ParticleUtilities_Viewport => ParticleUtilities.Viewport
+
+***********************
+*****  Resources  *****
+***********************
+@C    PerMaterial => PerMaterial [Stage=Vertex]
+@C    PerView => PerView [Stage=Vertex]
+@C    PerMaterial => PerMaterial [Stage=Pixel]
+@C    PerView => PerView [Stage=Pixel]
+@C    DepthBase_DepthStencil => DepthBase.DepthStencil [Stage=Pixel]
+@C    Texturing_PointSampler => Texturing.PointSampler [Stage=Pixel]
+
+ConstantBuffers. Count=2
+ cbuffer: Name="PerMaterial" Size=28 MembersCount=4
+  KeyName="ParticleBase.ColorScale" RawName="ParticleBase_ColorScale" LogicalGroup="" Offset=0
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="ParticleBase.AlphaAdditive" RawName="ParticleBase_AlphaAdditive" LogicalGroup="" Offset=16
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ParticleBase.ZOffset" RawName="ParticleBase_ZOffset" LogicalGroup="" Offset=20
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ParticleBase.SoftEdgeInverseDistance" RawName="ParticleBase_SoftEdgeInverseDistance" LogicalGroup="" Offset=24
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ cbuffer: Name="PerView" Size=224 MembersCount=5
+  KeyName="ParticleUtilities.ViewMatrix" RawName="ParticleUtilities_ViewMatrix" LogicalGroup="" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="ParticleUtilities.ProjectionMatrix" RawName="ParticleUtilities_ProjectionMatrix" LogicalGroup="" Offset=64
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="ParticleUtilities.ViewProjectionMatrix" RawName="ParticleUtilities_ViewProjectionMatrix" LogicalGroup="" Offset=128
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+  KeyName="ParticleUtilities.ViewFrustum" RawName="ParticleUtilities_ViewFrustum" LogicalGroup="" Offset=192
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="ParticleUtilities.Viewport" RawName="ParticleUtilities_Viewport" LogicalGroup="" Offset=208
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+
+ResourceBindings. Count=6
+ Stage=Vertex KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
+ Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
+ Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
+ Stage=Pixel KeyName="DepthBase.DepthStencil" RawName="DepthBase_DepthStencil" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture2D GroupName="PerView" LogicalGroup="Depth"
+ Stage=Pixel KeyName="Texturing.PointSampler" RawName="Texturing_PointSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
+
+InputAttributes. Count=3
+ SemanticName="POSITION" SemanticIndex=0
+ SemanticName="TEXCOORD" SemanticIndex=0
+ SemanticName="COLOR" SemanticIndex=0
+
+SamplerStates. Count=1
+ KeyName="Texturing.PointSampler" Filter=Point Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)

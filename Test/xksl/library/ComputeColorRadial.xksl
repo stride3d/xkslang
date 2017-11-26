@@ -1,0 +1,17 @@
+shader ComputeColorRadial<float4 ColorCenter, float4 ColorEdge> : ComputeColor, Texturing
+{
+    override float4 Compute()
+    {
+        float radialDistance = length(streams.TexCoord - float2(0.5, 0.5)) * 2;
+
+        float4 unclamped = lerp(ColorCenter, ColorEdge, radialDistance);
+
+        // We want to allow the intensity to grow a lot, but cap the alpha to 1
+        float4 clamped = clamp(unclamped, float4(0, 0, 0, 0), float4(1000, 1000, 1000, 1));
+
+        // Remember that we use a premultiplied alpha pipeline so all color values should be premultiplied
+        clamped.rgb *= clamped.a;
+
+        return clamped;
+    }
+};

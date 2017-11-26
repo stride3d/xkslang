@@ -160,7 +160,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge11", "TestMerge11.xkfx" },
     //{ "TestMerge12", "TestMerge12.xkfx" },
     //{ "TestMerge13", "TestMerge13.xkfx" },
-
+    
     //{ "TestConsts01", "TestConsts01.xkfx" },
     //{ "TestConsts02", "TestConsts02.xkfx" },
     //{ "TestConsts03", "TestConsts03.xkfx" },
@@ -200,7 +200,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose32", "TestCompose32.xkfx" },
     //{ "TestCompose33", "TestCompose33.xkfx" },
     //{ "TestCompose34", "TestCompose34.xkfx" },
-
+    
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
     //{ "TestForEach02", "TestForEach02.xkfx" },
@@ -256,7 +256,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
     //{ "ShaderWithResources09", "ShaderWithResources09.xkfx" },
     //{ "ShaderWithResources10", "ShaderWithResources10.xkfx" },
-
+    
     //{ "testDependency01", "testDependency01.xkfx" },
     //{ "testDependency02", "testDependency02.xkfx" },
     //{ "testDependency03", "testDependency03.xkfx" },
@@ -304,11 +304,11 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "methodOverride05", "methodOverride05.xkfx" },
     //{ "methodOverride06", "methodOverride06.xkfx" },
     //{ "methodOverride07", "methodOverride07.xkfx" },
-
+    
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
     //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
     //{ "testSamplerStates03", "testSamplerStates03.xkfx" },
-
+    
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
     //{ "LuminanceLogShader", "LuminanceLogShader.xkfx" },
@@ -338,8 +338,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
     //{ "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
     //{ "SkyboxShader", "SkyboxShader.xkfx" },
-
-    { "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
+    //{ "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
+    //{ "ComputeColorRadial", "ComputeColorRadial.xkfx" },
+    { "ParticleEffect", "ParticleEffect.xkfx" },
     
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
@@ -1357,42 +1358,6 @@ static string GetStringForShadingStage(ShadingStageEnum stage)
     }
     return "";
 }
-
-static SpxBytecode* GetSpxBytecodeForShader(const string& shaderName, string& shaderFullName, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, bool canLookIfUnmangledNameMatch)
-{
-    auto it = mapShaderNameBytecode.find(shaderName);
-    if (it != mapShaderNameBytecode.end())
-    {
-        SpxBytecode* spxBytecode = it->second;
-        shaderFullName = it->first;
-        return spxBytecode;
-    }
-
-    if (canLookIfUnmangledNameMatch)
-    {
-        SpxBytecode* spxBytecode = nullptr;
-        for (auto it = mapShaderNameBytecode.begin(); it != mapShaderNameBytecode.end(); it++)
-        {
-            string anUnmangledShaderName = XkfxParser::GetUnmangledName(it->first);
-            if (anUnmangledShaderName == shaderName)
-            {
-                if (spxBytecode == nullptr)
-                {
-                    spxBytecode = it->second;
-                    shaderFullName = it->first;
-                }
-                else
-                {
-                    error("2 or more shaders match the unmangled shader name: " + anUnmangledShaderName);
-                    return nullptr;
-                }
-            }
-        }
-        return spxBytecode;
-    }
-    
-    return nullptr;
-}
     
 static bool RecordSPXShaderBytecode(string shaderFullName, SpxBytecode* spxBytecode, unordered_map<string, SpxBytecode*>& mapShaderNameBytecode)
 {
@@ -1829,7 +1794,16 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
             string shaderName = shaderDef.GetShaderNameWithGenerics();
             string shaderFullName;   //we can omit to specify the generics when mixin a shader, we will search the best match
 
-            SpxBytecode* shaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameBytecode, true);
+            SpxBytecode* shaderBytecode = nullptr;
+            {
+                vector<string> errorMsgs;
+                shaderBytecode = XkfxParser::GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameBytecode, true, errorMsgs);
+                if (errorMsgs.size() > 0) {
+                    for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
+                    return false;
+                }
+            }
+
             if (shaderBytecode == nullptr)
             {
                 if (xkfxOptions_automaticallyTryToLoadAndConvertUnknownMixinShader)
@@ -1841,7 +1815,12 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
 
                     if (!success) return error("Failed to recursively convert and load the shaders: " + shaderName);
 
-                    shaderBytecode = GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameBytecode, true);
+                    vector<string> errorMsgs;
+                    shaderBytecode = XkfxParser::GetSpxBytecodeForShader(shaderName, shaderFullName, mapShaderNameBytecode, true, errorMsgs);
+                    if (errorMsgs.size() > 0) {
+                        for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
+                        return false;
+                    }
                 }
 
                 if (shaderBytecode == nullptr) {

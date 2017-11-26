@@ -1,0 +1,27 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+addResourcesLibrary "library"
+
+//ParticleEffect
+setDefine UsesSoftEdge "0"
+setDefine SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D "1"
+setDefine SILICONSTUDIO_XENKO_GRAPHICS_API_DIRECT3D11 "1"
+setDefine SILICONSTUDIO_XENKO_GRAPHICS_PROFILE "37632"
+setDefine GRAPHICS_PROFILE_LEVEL_9_1 "37120"
+setDefine GRAPHICS_PROFILE_LEVEL_9_2 "37376"
+setDefine GRAPHICS_PROFILE_LEVEL_9_3 "37632"
+setDefine GRAPHICS_PROFILE_LEVEL_10_0 "40960"
+setDefine GRAPHICS_PROFILE_LEVEL_10_1 "41216"
+setDefine GRAPHICS_PROFILE_LEVEL_11_0 "45056"
+setDefine GRAPHICS_PROFILE_LEVEL_11_1 "45312"
+setDefine GRAPHICS_PROFILE_LEVEL_11_2 "45568"
+mixer _m
+_m.mixin( ParticleBase, ParticleComputeColorShader )
+
+_m.addComposition( baseColor = mixin(ComputeColorMultiply[color1=mixin(ComputeColorFromStream<COLOR0,rgba>), color2=mixin(ComputeColorRadial<float4(1.5, 0, 1.5, 1),float4(1.5, 1.5, 0, 0)>)]) )
+
+_m.compile()

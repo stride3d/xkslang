@@ -2599,56 +2599,94 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
             {
                 const TType& constType = expressionNodeConstantUnion->getType();
                 const TConstUnionArray& consts = expressionNodeConstantUnion->getConstArray();
-                if (constType.isArray() || constType.isMatrix() || constType.getStruct() || constType.getVectorSize() > 1) {
+                if (constType.isArray() || constType.isMatrix() || constType.getStruct()) {
                     return error(parseContext, "Unprocessed generic const type");
                 }
-                else if (consts.size() != 1) {
+                else if (consts.size() != 1 && !constType.isVector()) {
                     return error(parseContext, "Unprocessed generic const array size");
                 }
-                else {
-                    // we have a non-aggregate (scalar) constant
+
+                int vectorSize = constType.getVectorSize();
+                if (vectorSize != consts.size()) {
+                    return error(parseContext, "Inconsistent size between consts array size and const type vector size");
+                }
+
+                if (vectorSize > 1)
+                {
+                    switch (vectorSize)
+                    {
+                        case 2:
+                            constValueLabel = "float2(";
+                            break;
+                        case 3:
+                            constValueLabel = "float3(";
+                            break;
+                        case 4:
+                            constValueLabel = "float4(";
+                            break;
+                        default:
+                            return error(parseContext, TString("Invalid generic value vector size: ") + TString(std::to_string(vectorSize).c_str()));
+                    }
+                }
+
+                // we have a non-aggregate (scalar) constant
+                for (int k = 0; k < vectorSize; k++)
+                {
+                    std::string constElementValueLabel;
                     switch (constType.getBasicType())
                     {
                         case EbtInt:
-                            constValueLabel = std::to_string(consts[0].getIConst());
+                            constElementValueLabel = std::to_string(consts[k].getIConst());
                             break;
                         case EbtUint:
-                            constValueLabel = std::to_string(consts[0].getUConst());
+                            constElementValueLabel = std::to_string(consts[k].getUConst());
                             break;
                         case EbtInt64:
-                            constValueLabel = std::to_string(consts[0].getI64Const());
+                            constElementValueLabel = std::to_string(consts[k].getI64Const());
                             break;
                         case EbtUint64:
-                            constValueLabel = std::to_string(consts[0].getU64Const());
+                            constElementValueLabel = std::to_string(consts[k].getU64Const());
                             break;
 #ifdef AMD_EXTENSIONS
                         case EbtFloat16:
 #endif
                         case EbtDouble:
                         case EbtFloat:
-                            constValueLabel = std::to_string(consts[0].getDConst());
+                            constElementValueLabel = std::to_string(consts[k].getDConst());
                             {
                                 //format the string (remove unnessecary '0' at the end of the fraction part)
-                                size_t dotPos = constValueLabel.find_first_of('.');
+                                size_t dotPos = constElementValueLabel.find_first_of('.');
                                 if (dotPos != std::string::npos)
                                 {
-                                    size_t len = constValueLabel.size();
-                                    size_t lastPos = constValueLabel.find_last_not_of('0');
+                                    size_t len = constElementValueLabel.size();
+                                    size_t lastPos = constElementValueLabel.find_last_not_of('0');
                                     if (lastPos != std::string::npos)
                                     {
-                                        if (lastPos > dotPos) constValueLabel = constValueLabel.substr(0, lastPos + 1);
+                                        if (lastPos > dotPos) constElementValueLabel = constElementValueLabel.substr(0, lastPos + 1);
+                                        else constElementValueLabel = constElementValueLabel.substr(0, dotPos);
                                     }
                                 }
                             }
 
                             break;
                         case EbtBool:
-                            //constValueLabel = std::to_string(consts[0].getBConst());
-                            constValueLabel = consts[0].getBConst()? "true": "false";
+                            //constElementValueLabel = std::to_string(consts[k].getBConst());
+                            constElementValueLabel = consts[k].getBConst()? "true": "false";
                             break;
                         default:
                             return error(parseContext, "unprocessed generic const value type");
                             break;
+                    }
+
+                    if (vectorSize == 1)
+                    {
+                        constValueLabel = constElementValueLabel;
+                    }
+                    else
+                    {
+                        constValueLabel += constElementValueLabel;
+                        if (k == vectorSize - 1) constValueLabel += ')';
+                        else constValueLabel += ',';
                     }
                 }
             }

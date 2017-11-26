@@ -460,10 +460,60 @@ bool XkfxParser::SplitParametersString(const char* parameterStr, vector<string>&
 //===================================================================================================================================
 //===================================================================================================================================
 // Xkfx parsing management
+
+//Remove all spaces and tabs between the shader generics declaration
+//ShaderMain< 5, float4(1, 2, 3, 4)> --> ShaderMain<5,float4(1,2,3,4)>
+bool XkfxParser::NormalizeShaderName(const string& shaderName, string& normalizedShaderName, vector<string>& errorMsgs)
+{
+    size_t genericStartPos = shaderName.find_first_of('<');
+    if (genericStartPos == std::string::npos) {
+        normalizedShaderName = shaderName;
+        return true;
+    }
+
+    int len = shaderName.length();
+    normalizedShaderName = shaderName.substr(0, genericStartPos);
+    normalizedShaderName.reserve(len);
+    while (genericStartPos < len)
+    {
+        char c = shaderName[genericStartPos];
+        while (c == ' ' || c == '\t')
+        {
+            if (++genericStartPos == len)
+            {
+                error(errorMsgs, "Missing \">\" generics termination character");
+                return false;
+            }
+            c = shaderName[genericStartPos];
+        }
+
+        while (c != ',' && c != '>')
+        {
+            normalizedShaderName += c;
+            if (++genericStartPos == len)
+            {
+                error(errorMsgs, "Missing \">\" generics termination character");
+                return false;
+            }
+            c = shaderName[genericStartPos];
+        }
+        normalizedShaderName += c;
+        genericStartPos++;
+    }
+    return true;
+}
+
 SpxBytecode* XkfxParser::GetSpxBytecodeForShader(const string& shaderName, string& shaderFullName,
     unordered_map<string, SpxBytecode*>& mapShaderNameBytecode, bool canLookIfUnmangledNameMatch, vector<string>& errorMsgs)
 {
-    auto it = mapShaderNameBytecode.find(shaderName);
+    string shaderNameNormalized;
+    if (!NormalizeShaderName(shaderName, shaderNameNormalized, errorMsgs))
+    {
+        error(errorMsgs, "Failed to normalize the shader named: " + shaderName);
+        return nullptr;
+    }
+
+    auto it = mapShaderNameBytecode.find(shaderNameNormalized);
     if (it != mapShaderNameBytecode.end())
     {
         SpxBytecode* spxBytecode = it->second;
@@ -477,7 +527,7 @@ SpxBytecode* XkfxParser::GetSpxBytecodeForShader(const string& shaderName, strin
         for (auto it = mapShaderNameBytecode.begin(); it != mapShaderNameBytecode.end(); it++)
         {
             string anUnmangledShaderName = GetUnmangledName(it->first);
-            if (anUnmangledShaderName == shaderName)
+            if (anUnmangledShaderName == shaderNameNormalized)
             {
                 if (spxBytecode == nullptr)
                 {

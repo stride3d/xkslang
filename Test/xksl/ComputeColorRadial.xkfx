@@ -1,0 +1,12 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+setDefine UsesSoftEdge "0"
+
+addResourcesLibrary "library"
+
+mixer _m
+_m.mixin(ComputeColorRadial<float4(1.5, 0, 1.5, 1),float4(1.5, 1.5, 0, 0)>)

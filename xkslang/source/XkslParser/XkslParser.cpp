@@ -463,16 +463,47 @@ bool XkslParser::ParseStringWithShaderDefinitions(const char* strShadersWithGene
 
         if (hasGenerics)
         {
-            //generic values
+            //generic values: parse until we meet '>'
             while (true)
             {
                 pos = end + 1;
                 while (pos < len && (txt[pos] == ' ' || txt[pos] == '\t')) pos++;
                 if (pos == len) return false;
-
                 end = pos + 1;
-                while (end < len && txt[end] != '>' && txt[end] != ',') end++;
-                if (end == len) return false;
+
+                int countLeftParenthesis = 0;
+                bool endOfLoop = false;
+                while (!endOfLoop)
+                {
+                    if (end == len) return false;
+                    char c = txt[end];
+
+                    switch (c)
+                    {
+                        case '(':
+                        {
+                            countLeftParenthesis++;
+                            break;
+                        }
+                        case ')':
+                        {
+                            countLeftParenthesis--;
+                            break;
+                        }
+                        case '>':
+                        case ',':
+                        {
+                            if (countLeftParenthesis == 0)
+                            {
+                                endOfLoop = true;
+                            }
+                            break;
+                        }
+                    }
+
+                    if (endOfLoop) break;
+                    end++;
+                }
 
                 string aGenericValue = txt.substr(pos, end - pos);
                 aGenericValue = TrimString(aGenericValue, ' ');

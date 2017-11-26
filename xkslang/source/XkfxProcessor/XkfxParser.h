@@ -54,6 +54,7 @@ public:
     static bool SeparateAdotB(const std::string str, std::string& A, std::string& B);
     static std::string GetUnmangledName(const std::string& fullName);
 
+    static bool NormalizeShaderName(const std::string& shaderName, std::string& normalizedShaderName, std::vector<std::string>& errorMsgs);
     static xkslang::SpxBytecode* GetSpxBytecodeForShader(const std::string& shaderName, std::string& shaderFullName,
         std::unordered_map<std::string, xkslang::SpxBytecode*>& mapShaderNameBytecode, bool canLookIfUnmangledNameMatch, std::vector<std::string>& errorMsgs);
 };
