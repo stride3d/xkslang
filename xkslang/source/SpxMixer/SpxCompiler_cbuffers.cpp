@@ -1203,7 +1203,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
         for (auto itrav = listResourcesNewAccessVariables.begin(); itrav != listResourcesNewAccessVariables.end(); itrav++)
         {
             //for each resources: create the pointer type (if need), and the uniform access variable (to remove the cbuffer accessChain and directly load the variable)
-            //example: a texture created on global space would be access through variable id (19)
+            //example: a texture created on global space would be accessed through variable id (19)
             // 17:                    OpTypeImage 8(float)2D sampled format : Unknown
             // 18:                    OpTypePointer UniformConstant 17
             // 19(Texture0) : 18(ptr) OpVariable UniformConstant
@@ -1220,7 +1220,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
             if (memberToMoveOut.isResourceMergedWithAnotherMember) continue;
 
             TypeInstruction* resourceType = memberToMoveOut.memberType;
-            TypeInstruction* resourcePointerType = GetTypePointingTo(resourceType);
+            TypeInstruction* resourcePointerType = GetTypePointerPointingTo(spv::StorageClass::StorageClassUniformConstant, resourceType);
             VariableInstruction* resourceVariable = GetVariablePointingTo(resourcePointerType);
             if (resourceVariable != nullptr) { error("a variable already exists for the resource type"); break; }
 

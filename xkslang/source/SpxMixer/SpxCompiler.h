@@ -964,7 +964,8 @@ private:
     ConstInstruction* GetConstById(spv::Id id);
     VariableInstruction* GetVariableById(spv::Id id);
     VariableInstruction* GetVariableByName(const std::string& name);
-    TypeInstruction* GetTypePointingTo(TypeInstruction* targetType);
+    TypeInstruction* GetTypePointerPointingTo(TypeInstruction* targetType);
+    TypeInstruction* GetTypePointerPointingTo(spv::StorageClass storageType, TypeInstruction* targetType);
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
     HeaderPropertyInstruction* GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const std::string& name);
     ShaderCompositionDeclaration* GetCompositionDeclaration(spv::Id shaderId, int compositionId);

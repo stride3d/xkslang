@@ -3012,7 +3012,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                     {
                         //A type belongs to a shader, we fetch the necessary data
                         //A shader type is defined by: the type, a pointer type to it, and a variable to access it
-                        TypeInstruction* typePointer = GetTypePointingTo(type);
+                        TypeInstruction* typePointer = GetTypePointerPointingTo(type);
                         VariableInstruction* variable = GetVariablePointingTo(typePointer);
 
                         if (typePointer == nullptr) { error("cannot find the pointer type to the shader type: " + type->GetName()); break; }
@@ -3776,7 +3776,7 @@ SpxCompiler::VariableInstruction* SpxCompiler::GetVariableById(spv::Id id)
     return nullptr;
 }
 
-SpxCompiler::TypeInstruction* SpxCompiler::GetTypePointingTo(TypeInstruction* targetType)
+SpxCompiler::TypeInstruction* SpxCompiler::GetTypePointerPointingTo(spv::StorageClass storageType, TypeInstruction* targetType)
 {
     if (targetType == nullptr) return nullptr;
 
@@ -3789,6 +3789,39 @@ SpxCompiler::TypeInstruction* SpxCompiler::GetTypePointingTo(TypeInstruction* ta
             TypeInstruction* aType = dynamic_cast<TypeInstruction*>(obj);
             if (aType->GetTypePointed() == targetType)
             {
+#ifdef XKSLANG_DEBUG_MODE
+                if (aType->opCode != spv::OpTypePointer) error("A type pointing to another type must have an OpTypePointer opCode");
+#endif
+
+                spv::StorageClass pointerStorageClass = (spv::StorageClass)asLiteralValue(aType->GetBytecodeStartPosition() + 2);
+                if (pointerStorageClass == storageType)
+                {
+                    if (res != nullptr) error("found 2 types pointing to the same type");
+                    res = aType;
+                }
+            }
+        }
+    }
+    return res;
+}
+
+SpxCompiler::TypeInstruction* SpxCompiler::GetTypePointerPointingTo(TypeInstruction* targetType)
+{
+    if (targetType == nullptr) return nullptr;
+
+    TypeInstruction* res = nullptr;
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Type)
+        {
+            TypeInstruction* aType = dynamic_cast<TypeInstruction*>(obj);
+            if (aType->GetTypePointed() == targetType)
+            {
+#ifdef XKSLANG_DEBUG_MODE
+                if (aType->opCode != spv::OpTypePointer) error("A type pointing to another type must have an OpTypePointer opCode");
+#endif
+
                 if (res != nullptr) error("found 2 types pointing to the same type");
                 res = aType;
             }

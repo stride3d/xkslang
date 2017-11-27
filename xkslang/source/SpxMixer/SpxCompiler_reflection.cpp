@@ -337,7 +337,7 @@ bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(Ef
 #endif
 
                 cbufferData->cbufferTypeObject = type;
-                cbufferData->cbufferPointerTypeObject = GetTypePointingTo(type);
+                cbufferData->cbufferPointerTypeObject = GetTypePointerPointingTo(type);
                 cbufferData->cbufferVariableTypeObject = GetVariablePointingTo(cbufferData->cbufferPointerTypeObject);
                 if (cbufferData->cbufferVariableTypeObject == nullptr) { error("Failed to find the variable pointing to the cbuffer: " + to_string(type->GetId())); break; }
 

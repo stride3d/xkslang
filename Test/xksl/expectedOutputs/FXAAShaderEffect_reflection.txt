@@ -1,0 +1,38 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer globalRGroup [size: 8]
+@C    Texturing_Texture0TexelSize => Texturing.Texture0TexelSize
+ cbuffer PerDraw [size: 64]
+@C    SpriteBase_MatrixTransform => SpriteBase.MatrixTransform
+
+***********************
+*****  Resources  *****
+***********************
+@C    PerDraw => PerDraw [Stage=Vertex]
+@C    globalRGroup => globalRGroup [Stage=Pixel]
+@C    Texturing_Texture0 => Texturing.Texture0 [Stage=Pixel]
+@C    Texturing_LinearSampler => Texturing.LinearSampler [Stage=Pixel]
+
+ConstantBuffers. Count=2
+ cbuffer: Name="globalRGroup" Size=8 MembersCount=1
+  KeyName="Texturing.Texture0TexelSize" RawName="Texturing_Texture0TexelSize" LogicalGroup="" Offset=0
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+ cbuffer: Name="PerDraw" Size=64 MembersCount=1
+  KeyName="SpriteBase.MatrixTransform" RawName="SpriteBase_MatrixTransform" LogicalGroup="" Offset=0
+  Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
+
+
+ResourceBindings. Count=4
+ Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
+ Stage=Pixel KeyName="globalRGroup" RawName="globalRGroup" ResourceGroupName="globalRGroup" Class=ConstantBuffer Type=ConstantBuffer GroupName="globalRGroup" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.Texture0" RawName="Texturing_Texture0" ResourceGroupName="" Class=ShaderResourceView Type=Texture2D GroupName="" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.LinearSampler" RawName="Texturing_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
+
+InputAttributes. Count=2
+ SemanticName="TEXCOORD" SemanticIndex=0
+ SemanticName="POSITION" SemanticIndex=0
+
+SamplerStates. Count=1
+ KeyName="Texturing.LinearSampler" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
