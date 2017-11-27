@@ -344,7 +344,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
     //{ "ComputeColorRadial", "ComputeColorRadial.xkfx" },
     //{ "ParticleEffect", "ParticleEffect.xkfx" },
-    { "FXAAShaderEffect", "FXAAShaderEffect.xkfx" },  //currently crash with SPIRV-Cross
+    //{ "FXAAShaderEffect", "FXAAShaderEffect.xkfx" },
+    { "RadiancePrefilteringGGXNoCompute", "RadiancePrefilteringGGXNoCompute.xkfx" },
     
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
