@@ -1,0 +1,47 @@
+shader ShaderMain<int TOrder>
+{
+	static const int CoefficientsCount = TOrder * TOrder;
+	stage stream float SHBaseValues[CoefficientsCount] : SHBASEVALUES;
+
+	void VSMain()
+	{
+		int k = 0;
+		streams.SHBaseValues[0] =  k++;
+		if(TOrder>1)
+{
+            streams.SHBaseValues[1] = k++;
+            streams.SHBaseValues[2] = k++;
+            streams.SHBaseValues[3] = k++;
+                
+if(TOrder>2)
+{
+            streams.SHBaseValues[4] = k++;
+            streams.SHBaseValues[5] = k++;
+            streams.SHBaseValues[6] = k++;
+            streams.SHBaseValues[7] = k++;
+            streams.SHBaseValues[8] = k++;
+                    
+if(TOrder>3)
+{                 
+            streams.SHBaseValues[ 9] = k++;
+            streams.SHBaseValues[10] = k++;
+            streams.SHBaseValues[11] = k++;
+            streams.SHBaseValues[12] = k++;
+            streams.SHBaseValues[13] = k++;
+            streams.SHBaseValues[14] = k++;
+            streams.SHBaseValues[15] = k++;
+if(TOrder>4)
+{
+            streams.SHBaseValues[16] = k++;
+            streams.SHBaseValues[17] = k++;
+            streams.SHBaseValues[18] = k++;
+            streams.SHBaseValues[19] = k++;
+            streams.SHBaseValues[20] = k++;
+            streams.SHBaseValues[21] = k++;
+            streams.SHBaseValues[22] = k++;
+            streams.SHBaseValues[23] = k++;
+            streams.SHBaseValues[24] = k++;
+}}}}
+	}
+}
+

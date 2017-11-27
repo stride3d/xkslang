@@ -3253,7 +3253,14 @@ TIntermAggregate* HlslParseContext::handleSamplerTextureCombine(const TSourceLoc
         const auto textureShadowEntry = textureShadowVariant.find(texSymbol->getId());
 
         if (textureShadowEntry != textureShadowVariant.end())
-            newId = textureShadowEntry->second->get(shadowMode);
+        {
+            //XKSL extensions
+            //This will make the AST to create another symbol for the sampler, then it will make some conflicts later on in the mixer
+            //We likely don't need this if we're parsing a XKSL shader.... so we just pretend the sampler is a non-shadow one
+
+            //newId = textureShadowEntry->second->get(shadowMode);
+            newId = textureShadowEntry->second->get(false);
+        }
         else
             textureShadowVariant[texSymbol->getId()] = new tShadowTextureSymbols;
 

@@ -165,6 +165,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestConsts02", "TestConsts02.xkfx" },
     //{ "TestConsts03", "TestConsts03.xkfx" },
     //{ "TestConsts04", "TestConsts04.xkfx" },
+    //{ "TestConsts05", "TestConsts05.xkfx" },
     
     //{ "TestCompose02", "TestCompose02.xkfx" },
     //{ "TestCompose03", "TestCompose03.xkfx" },
@@ -306,7 +307,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "methodOverride07", "methodOverride07.xkfx" },
     
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
-    { "testSamplerStates02", "testSamplerStates02.xkfx" },
+    //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
     //{ "testSamplerStates03", "testSamplerStates03.xkfx" },
     //{ "testSamplerStates04", "testSamplerStates04.xkfx" },
     
@@ -339,7 +340,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
     //{ "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
     //{ "SkyboxShader", "SkyboxShader.xkfx" },
-////////////////////{ "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
+    //{ "SphericalHarmonicsBase", "SphericalHarmonicsBase.xkfx" },
+    //{ "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
     //{ "ComputeColorRadial", "ComputeColorRadial.xkfx" },
     //{ "ParticleEffect", "ParticleEffect.xkfx" },
 //////////////////////{ "FXAAShaderEffect", "FXAAShaderEffect.xkfx" },  //currently crash with SPIRV-Cross

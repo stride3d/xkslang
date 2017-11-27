@@ -58,7 +58,7 @@ public:
                    bool forwardCompatible, EShMessages messages)
         : infoSink(infoSink), version(version), profile(profile), language(language),
           spvVersion(spvVersion), forwardCompatible(forwardCompatible),
-          intermediate(interm), messages(messages), numErrors(0), currentScanner(0) { }
+          intermediate(interm), messages(messages), numErrors(0), currentScanner(0), parseXkslShaders(false){ }
     virtual ~TParseVersions() { }
     virtual void initializeExtensionBehavior();
     virtual void requireProfile(const TSourceLoc&, int queryProfiles, const char* featureDesc);
@@ -123,6 +123,8 @@ public:
     SpvVersion spvVersion;
     bool forwardCompatible;      // true if errors are to be given for use of deprecated features
     TIntermediate& intermediate; // helper for making and hooking up pieces of the parse tree
+    
+    bool parseXkslShaders;
 
 protected:
     TMap<TString, TExtensionBehavior> extensionBehavior;    // for each extension string, what its current behavior is set to

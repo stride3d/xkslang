@@ -3719,6 +3719,7 @@ static bool ParseXkslShaderFile(
     //=====================================================================================
     // Create ParseContext and ppContext
     HlslParseContext* parseContext = new HlslParseContext(symbolTable, *intermediate, parsingBuiltIns, version, profile, spvVersion, stage, infoSink, "", forwardCompatible, options);
+    parseContext->parseXkslShaders = true;
 
     TShader::ForbidIncluder includer;
     TPpContext ppContext(*parseContext, "", includer);

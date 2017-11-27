@@ -257,8 +257,12 @@ void TParseContextBase::checkIndex(const TSourceLoc& loc, const TType& type, int
         index = 0;
     } else if (type.isArray()) {
         if (type.isExplicitlySizedArray() && index >= type.getOuterArraySize()) {
-            error(loc, "", "[", "array index out of range '%d'", index);
-            index = type.getOuterArraySize() - 1;
+            if (this->parseXkslShaders == false)
+            {
+                //With XKSL shaders, we have some cases where this happens (but it's fine)
+                error(loc, "", "[", "array index out of range '%d'", index);
+                index = type.getOuterArraySize() - 1;
+            }
         }
     } else if (type.isVector()) {
         if (index >= type.getVectorSize()) {
