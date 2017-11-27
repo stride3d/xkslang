@@ -471,7 +471,7 @@ bool XkfxParser::NormalizeShaderName(const string& shaderName, string& normalize
         return true;
     }
 
-    int len = shaderName.length();
+    size_t len = shaderName.length();
     normalizedShaderName = shaderName.substr(0, genericStartPos);
     normalizedShaderName.reserve(len);
     while (genericStartPos < len)
