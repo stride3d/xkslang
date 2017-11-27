@@ -296,7 +296,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
-    { "testStreamIO01", "testStreamIO01.xkfx"},  //Invalid SPIRV-Cross output!!! (matrix unroll)
+    //{ "testStreamIO01", "testStreamIO01.xkfx"},
     //{ "methodOverride01", "methodOverride01.xkfx" },
     //{ "methodOverride02", "methodOverride02.xkfx" },
     //{ "methodOverride03", "methodOverride03.xkfx" },
@@ -341,7 +341,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
     //{ "ComputeColorRadial", "ComputeColorRadial.xkfx" },
     //{ "ParticleEffect", "ParticleEffect.xkfx" },
-////////////////////////{ "FXAAShaderEffect", "FXAAShaderEffect.xkfx" },  SPIRV-Cross FAILS
+//////////////////////{ "FXAAShaderEffect", "FXAAShaderEffect.xkfx" },  //currently crash with SPIRV-Cross
     
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
