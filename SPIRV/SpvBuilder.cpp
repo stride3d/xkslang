@@ -419,6 +419,8 @@ Id Builder::makeFunctionType(Id returnType, const std::vector<Id>& paramTypes)
 
 Id Builder::makeImageType(Id sampledType, Dim dim, bool depth, bool arrayed, bool ms, unsigned sampled, ImageFormat format)
 {
+    assert(sampled == 1 || sampled == 2);
+
     // try to find it
     Instruction* type;
     for (int t = 0; t < (int)groupedTypes[OpTypeImage].size(); ++t) {
@@ -450,27 +452,27 @@ Id Builder::makeImageType(Id sampledType, Dim dim, bool depth, bool arrayed, boo
     // deal with capabilities
     switch (dim) {
     case DimBuffer:
-        if (sampled)
+        if (sampled == 1)
             addCapability(CapabilitySampledBuffer);
         else
             addCapability(CapabilityImageBuffer);
         break;
     case Dim1D:
-        if (sampled)
+        if (sampled == 1)
             addCapability(CapabilitySampled1D);
         else
             addCapability(CapabilityImage1D);
         break;
     case DimCube:
         if (arrayed) {
-            if (sampled)
+            if (sampled == 1)
                 addCapability(CapabilitySampledCubeArray);
             else
                 addCapability(CapabilityImageCubeArray);
         }
         break;
     case DimRect:
-        if (sampled)
+        if (sampled == 1)
             addCapability(CapabilitySampledRect);
         else
             addCapability(CapabilityImageRect);
@@ -483,10 +485,14 @@ Id Builder::makeImageType(Id sampledType, Dim dim, bool depth, bool arrayed, boo
     }
 
     if (ms) {
-        if (arrayed)
-            addCapability(CapabilityImageMSArray);
-        if (! sampled)
-            addCapability(CapabilityStorageImageMultisample);
+        if (sampled == 2) {
+            // Images used with subpass data are not storage
+            // images, so don't require the capability for them.
+            if (dim != Dim::DimSubpassData)
+                addCapability(CapabilityStorageImageMultisample);
+            if (arrayed)
+                addCapability(CapabilityImageMSArray);
+        }
     }
 
     return type->getResultId();
@@ -2615,6 +2621,7 @@ void Builder::dump(std::vector<unsigned int>& out) const
 
     // Debug instructions
     dumpInstructions(out, strings);
+    dumpModuleProcesses(out);
     dumpSourceInstructions(out);
     for (int e = 0; e < (int)sourceExtensions.size(); ++e) {
         Instruction sourceExtInst(0, 0, OpSourceExtension);
@@ -2820,6 +2827,17 @@ void Builder::dumpInstructions(std::vector<unsigned int>& out, const std::vector
 {
     for (int i = 0; i < (int)instructions.size(); ++i) {
         instructions[i]->dump(out);
+    }
+}
+
+void Builder::dumpModuleProcesses(std::vector<unsigned int>& out) const
+{
+    for (int i = 0; i < (int)moduleProcesses.size(); ++i) {
+        // TODO: switch this out for the 1.1 headers
+        const spv::Op OpModuleProcessed = (spv::Op)330;
+        Instruction moduleProcessed(OpModuleProcessed);
+        moduleProcessed.addStringOperand(moduleProcesses[i]);
+        moduleProcessed.dump(out);
     }
 }
 

@@ -1,0 +1,31 @@
+shader ShaderMain
+{
+	stage stream float2 TexCoord : TEXCOORD0;
+	stage stream float4 ColorTarget : SV_Target0;
+	stage stream float2 aStream: ASTREAM;
+	
+	stage Texture2D Texture0;
+	
+    stage SamplerState Sampler01;
+    stage SamplerState Sampler02;
+    stage SamplerState Sampler03;
+    stage SamplerState Sampler04;
+    stage SamplerState Sampler05;
+	stage SamplerState Sampler06;
+    
+    void VSMain()
+    {
+		streams.aStream = streams.TexCoord.xy;
+    }
+	
+	void PSMain()
+    {
+		float2 uv2 = streams.aStream;
+        float4 f01 = Texture0.Sample(Sampler01, uv2);
+		float4 f02 = Texture0.Sample(Sampler02, uv2);
+		float4 f03 = Texture0.Sample(Sampler03, uv2);
+		float4 f04 = Texture0.Sample(Sampler04, uv2);
+		float4 f05 = Texture0.Sample(Sampler05, uv2);
+		float4 f06 = Texture0.Sample(Sampler06, uv2);
+    }
+};

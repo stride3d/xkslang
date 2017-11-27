@@ -68,15 +68,14 @@
 #endif
 
 //
-// Driver must call this first, once, before doing any other
-// compiler/linker operations.
+// Call before doing any other compiler/linker operations.
 //
 // (Call once per process, not once per thread.)
 //
 SH_IMPORT_EXPORT int ShInitialize();
 
 //
-// Driver should call this at process shutdown.
+// Call this at process shutdown to clean up memory.
 //
 SH_IMPORT_EXPORT int __fastcall ShFinalize();
 
@@ -305,7 +304,7 @@ SH_IMPORT_EXPORT int ShGetUniformLocation(const ShHandle uniformMap, const char*
 // Deferred-Lowering C++ Interface
 // -----------------------------------
 //
-// Below is a new alternate C++ interface that might potentially replace the above
+// Below is a new alternate C++ interface, which deprecates the above
 // opaque handle-based interface.
 //
 // The below is further designed to handle multiple compilation units per stage, where
@@ -338,6 +337,17 @@ bool InitializeProcess();
 
 // Call once per process to tear down everything
 void FinalizeProcess();
+
+// Resource type for IO resolver
+enum TResourceType {
+    EResSampler,
+    EResTexture,
+    EResImage,
+    EResUbo,
+    EResSsbo,
+    EResUav,
+    EResCount
+};
 
 //=============================================================================================================================
 //XKSL extensions
@@ -374,13 +384,18 @@ public:
     void setPreamble(const char* s) { preamble = s; }
     void setEntryPoint(const char* entryPoint);
     void setSourceEntryPoint(const char* sourceEntryPointName);
-    void setShiftSamplerBinding(unsigned int base);
-    void setShiftTextureBinding(unsigned int base);
-    void setShiftImageBinding(unsigned int base);
-    void setShiftUboBinding(unsigned int base);
-    void setShiftUavBinding(unsigned int base);
-    void setShiftCbufferBinding(unsigned int base); // synonym for setShiftUboBinding
-    void setShiftSsboBinding(unsigned int base);
+    void addProcesses(const std::vector<std::string>&);
+
+    // IO resolver binding data: see comments in ShaderLang.cpp
+    void setShiftBinding(TResourceType res, unsigned int base);
+    void setShiftSamplerBinding(unsigned int base);  // DEPRECATED: use setShiftBinding
+    void setShiftTextureBinding(unsigned int base);  // DEPRECATED: use setShiftBinding
+    void setShiftImageBinding(unsigned int base);    // DEPRECATED: use setShiftBinding
+    void setShiftUboBinding(unsigned int base);      // DEPRECATED: use setShiftBinding
+    void setShiftUavBinding(unsigned int base);      // DEPRECATED: use setShiftBinding
+    void setShiftCbufferBinding(unsigned int base);  // synonym for setShiftUboBinding
+    void setShiftSsboBinding(unsigned int base);     // DEPRECATED: use setShiftBinding
+    void setShiftBindingForSet(TResourceType res, unsigned int base, unsigned int set);
     void setResourceSetBinding(const std::vector<std::string>& base);
     void setAutoMapBindings(bool map);
     void setAutoMapLocations(bool map);
@@ -523,9 +538,8 @@ public:
 
     const char* getInfoLog();
     const char* getInfoDebugLog();
-
     EShLanguage getStage() const { return stage; }
-    TIntermediate* getIntermediate() { return intermediate; }
+    TIntermediate* getIntermediate() const { return intermediate; }
 
 protected:
     TPoolAllocator* pool;
@@ -564,9 +578,10 @@ class TIoMapper;
 
 // Allows to customize the binding layout after linking.
 // All used uniform variables will invoke at least validateBinding.
-// If validateBinding returned true then the other resolveBinding
-// and resolveSet are invoked to resolve the binding and descriptor
-// set index respectively.
+// If validateBinding returned true then the other resolveBinding,
+// resolveSet, and resolveLocation are invoked to resolve the binding
+// and descriptor set index respectively.
+//
 // Invocations happen in a particular order:
 // 1) all shader inputs
 // 2) all shader outputs
@@ -598,6 +613,9 @@ public:
   // Should return a value >= 0 if the current set should be overridden.
   // Return -1 if the current set (including no set) should be kept.
   virtual int resolveSet(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
+  // Should return a value >= 0 if the current location should be overridden.
+  // Return -1 if the current location (including no location) should be kept.
+  virtual int resolveUniformLocation(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;
   // Should return true if the resulting/current setup would be okay.
   // Basic idea is to do aliasing checks and reject invalid semantic names.
   virtual bool validateInOut(EShLanguage stage, const char* name, const TType& type, bool is_live) = 0;

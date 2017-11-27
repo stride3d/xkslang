@@ -7,5 +7,6 @@ TAGS
 build/
 Test/localResults/
 External/googletest
+External/spirv-tools
 Test/xksl/outputs
 Test/xksl/invalidOutputs

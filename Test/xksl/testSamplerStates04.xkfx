@@ -1,0 +1,6 @@
+convertAndLoad "testSamplerStates04.xksl"
+
+mixer m
+m.mixin( ShaderMain )
+
+m.compile

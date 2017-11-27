@@ -32,7 +32,6 @@ shader ShaderMain
         AddressU = Clamp;
         AddressV = Clamp;
         ComparisonFunc = LessEqual;
-
     };
 
     stage SamplerState AnisotropicSampler
@@ -76,16 +75,16 @@ shader ShaderMain
 	void PSMain()
     {
 		float2 uv2 = streams.aStream;
-        float4 noSampler = Texture0.Sample(Sampler, uv2);
+        float4 f_noSampler = Texture0.Sample(Sampler, uv2);
 		
-		float4 pointSampler = Texture0.Sample(PointSampler, uv2);
-		float4 linearSampler = Texture0.Sample(LinearSampler, uv2);
-		float4 linearBorderSampler = Texture0.Sample(LinearBorderSampler, uv2);
-		float4 linearClampCompareLessEqualSampler = Texture0.Sample(LinearClampCompareLessEqualSampler, uv2);
-		float4 anisotropicSampler = Texture0.Sample(AnisotropicSampler, uv2);
-		float4 anisotropicRepeatSampler = Texture0.Sample(AnisotropicRepeatSampler, uv2);
-		float4 pointRepeatSampler = Texture0.Sample(PointRepeatSampler, uv2);
-		float4 linearRepeatSampler = Texture0.Sample(LinearRepeatSampler, uv2);
-		float4 repeatSampler = Texture0.Sample(RepeatSampler, uv2);
+		float4 f_pointSampler = Texture0.Sample(PointSampler, uv2);
+		float4 f_linearSampler = Texture0.Sample(LinearSampler, uv2);
+		float4 f_linearBorderSampler = Texture0.Sample(LinearBorderSampler, uv2);
+		float4 f_linearClampCompareLessEqualSampler = Texture0.Sample(LinearClampCompareLessEqualSampler, uv2);
+		float4 f_anisotropicSampler = Texture0.Sample(AnisotropicSampler, uv2);
+		float4 f_anisotropicRepeatSampler = Texture0.Sample(AnisotropicRepeatSampler, uv2);
+		float4 f_pointRepeatSampler = Texture0.Sample(PointRepeatSampler, uv2);
+		float4 f_linearRepeatSampler = Texture0.Sample(LinearRepeatSampler, uv2);
+		float4 f_repeatSampler = Texture0.Sample(RepeatSampler, uv2);
     }
 };

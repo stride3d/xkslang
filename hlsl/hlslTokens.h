@@ -288,6 +288,8 @@ enum EHlslTokenClass {
     EHTokRWTexture2darray,
     EHTokRWTexture3d,
     EHTokRWBuffer,
+    EHTokSubpassInput,
+    EHTokSubpassInputMS,
 
     // Structure buffer variants
     EHTokAppendStructuredBuffer,
@@ -296,6 +298,7 @@ enum EHlslTokenClass {
     EHTokRWByteAddressBuffer,
     EHTokRWStructuredBuffer,
     EHTokStructuredBuffer,
+    EHTokTextureBuffer,
 
     // variable, user type, ...
     EHTokIdentifier,
