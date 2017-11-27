@@ -8,13 +8,13 @@ struct VS_STREAMS
 cbuffer Globals
 {
     float SkyboxShader_Intensity;
-    float4x4 SkyboxShader_ProjectionInverse;
-    float4x4 SkyboxShader_ViewInverse;
-    float4x4 SkyboxShader_SkyMatrix;
+    column_major float4x4 SkyboxShader_ProjectionInverse;
+    column_major float4x4 SkyboxShader_ViewInverse;
+    column_major float4x4 SkyboxShader_SkyMatrix;
 };
 cbuffer PerDraw
 {
-    float4x4 SpriteBase_MatrixTransform;
+    column_major float4x4 SpriteBase_MatrixTransform;
 };
 
 static float4 VS_IN_Position;

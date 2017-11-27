@@ -66,12 +66,12 @@ struct ShaderMain_StructBasicType
 
 cbuffer Globals
 {
-    ShaderMain_StructBasicType ShaderMain_s1;
-    ShaderMain_StructVector ShaderMain_s2;
-    ShaderMain_StructMatrix ShaderMain_s3;
-    ShaderMain_StructMatrixRowMajor ShaderMain_s3_rm;
-    ShaderMain_StructSimpleArray ShaderMain_s4;
-    ShaderMain_StructOfStruct ShaderMain_s6;
+    row_major ShaderMain_StructBasicType ShaderMain_s1;
+    row_major ShaderMain_StructVector ShaderMain_s2;
+    row_major ShaderMain_StructMatrix ShaderMain_s3;
+    row_major ShaderMain_StructMatrixRowMajor ShaderMain_s3_rm;
+    row_major ShaderMain_StructSimpleArray ShaderMain_s4;
+    row_major ShaderMain_StructOfStruct ShaderMain_s6;
 };
 
 void frag_main()

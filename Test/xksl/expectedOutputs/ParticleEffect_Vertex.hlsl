@@ -17,9 +17,9 @@ cbuffer PerMaterial
 };
 cbuffer PerView
 {
-    float4x4 ParticleUtilities_ViewMatrix;
-    float4x4 ParticleUtilities_ProjectionMatrix;
-    float4x4 ParticleUtilities_ViewProjectionMatrix;
+    column_major float4x4 ParticleUtilities_ViewMatrix;
+    column_major float4x4 ParticleUtilities_ProjectionMatrix;
+    column_major float4x4 ParticleUtilities_ViewProjectionMatrix;
     float4 ParticleUtilities_ViewFrustum;
     float4 ParticleUtilities_Viewport;
 };

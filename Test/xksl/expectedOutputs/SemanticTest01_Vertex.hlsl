@@ -6,7 +6,7 @@ struct VS_STREAMS
 
 cbuffer PerDraw
 {
-    float4x4 ShaderMain_MatrixTransform;
+    column_major float4x4 ShaderMain_MatrixTransform;
 };
 
 static float4 VS_IN_Position;

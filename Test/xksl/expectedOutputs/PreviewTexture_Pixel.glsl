@@ -26,8 +26,8 @@ vec4 SpriteBase_Shading(PS_STREAMS _streams)
 
 vec4 SpriteBatchShader_false__Shading(PS_STREAMS _streams)
 {
-    vec4 _5;
     vec4 swizzleColor;
+    vec4 _5;
     if (abs(_streams.Swizzle_id2 - 1.0) <= 0.100000001490116119384765625)
     {
         _5 = SpriteBase_Shading(_streams).xxxx;

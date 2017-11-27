@@ -8,11 +8,11 @@ struct PS_STREAMS
 
 cbuffer PerDraw
 {
-    float4x4 Transformation_WorldInverse;
-    float4x4 Transformation_WorldInverseTranspose;
-    float4x4 Transformation_WorldView;
-    float4x4 Transformation_WorldViewInverse;
-    float4x4 Transformation_WorldViewProjection;
+    column_major float4x4 Transformation_WorldInverse;
+    column_major float4x4 Transformation_WorldInverseTranspose;
+    column_major float4x4 Transformation_WorldView;
+    column_major float4x4 Transformation_WorldViewInverse;
+    column_major float4x4 Transformation_WorldViewProjection;
     float3 Transformation_WorldScale;
     float4 Transformation_EyeMS;
 };

@@ -6,9 +6,9 @@ struct VS_STREAMS
 
 cbuffer PerDraw
 {
-    float4x4 ShaderMain_MatrixTransform;
-    float4x3 ShaderMain_Matrix4_3;
-    float2x3 ShaderMain_Matrix2_3;
+    column_major float4x4 ShaderMain_MatrixTransform;
+    column_major float4x3 ShaderMain_Matrix4_3;
+    column_major float2x3 ShaderMain_Matrix2_3;
     float3 ShaderMain_ColorMatrix;
     float4 ShaderMain_ColorArray[2];
 };

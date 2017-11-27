@@ -7,7 +7,7 @@ struct VS_STREAMS
 
 cbuffer PerDraw
 {
-    float4x4 SpriteBase_MatrixTransform;
+    column_major float4x4 SpriteBase_MatrixTransform;
 };
 
 static float2 VS_IN_TexCoord;

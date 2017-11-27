@@ -11,22 +11,22 @@ struct VS_STREAMS
 
 cbuffer PerDraw
 {
-    float4x4 Transformation_World;
-    float4x4 Transformation_WorldInverse;
-    float4x4 Transformation_WorldInverseTranspose;
-    float4x4 Transformation_WorldView;
-    float4x4 Transformation_WorldViewInverse;
-    float4x4 Transformation_WorldViewProjection;
+    column_major float4x4 Transformation_World;
+    column_major float4x4 Transformation_WorldInverse;
+    column_major float4x4 Transformation_WorldInverseTranspose;
+    column_major float4x4 Transformation_WorldView;
+    column_major float4x4 Transformation_WorldViewInverse;
+    column_major float4x4 Transformation_WorldViewProjection;
     float3 Transformation_WorldScale;
     float4 Transformation_EyeMS;
 };
 cbuffer PerView
 {
-    float4x4 Transformation_View;
-    float4x4 Transformation_ViewInverse;
-    float4x4 Transformation_Projection;
-    float4x4 Transformation_ProjectionInverse;
-    float4x4 Transformation_ViewProjection;
+    column_major float4x4 Transformation_View;
+    column_major float4x4 Transformation_ViewInverse;
+    column_major float4x4 Transformation_Projection;
+    column_major float4x4 Transformation_ProjectionInverse;
+    column_major float4x4 Transformation_ViewProjection;
     float2 Transformation_ProjScreenRay;
     float4 Transformation_Eye;
 };

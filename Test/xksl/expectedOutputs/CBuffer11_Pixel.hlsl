@@ -1,10 +1,10 @@
 cbuffer PerDraw
 {
-    float4x4 Transform_WorldInverse;
-    float4x4 Transform_WorldInverseTranspose;
-    float4x4 Transform_WorldView;
-    float4x4 Transform_WorldViewInverse;
-    float4x4 Transform_WorldViewProjection;
+    column_major float4x4 Transform_WorldInverse;
+    column_major float4x4 Transform_WorldInverseTranspose;
+    column_major float4x4 Transform_WorldView;
+    column_major float4x4 Transform_WorldViewInverse;
+    column_major float4x4 Transform_WorldViewProjection;
     float3 Transform_WorldScale;
     float4 Transform_EyeMS;
 };

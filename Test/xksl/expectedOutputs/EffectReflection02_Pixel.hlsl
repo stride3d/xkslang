@@ -5,8 +5,8 @@ struct PS_STREAMS
 
 cbuffer PerDraw
 {
-    float2x3 ShaderMain_aMat23;
-    float2x3 ShaderMain_aMat23_rm;
+    column_major float2x3 ShaderMain_aMat23;
+    row_major float2x3 ShaderMain_aMat23_rm;
     float4 ShaderMain_Color;
 };
 

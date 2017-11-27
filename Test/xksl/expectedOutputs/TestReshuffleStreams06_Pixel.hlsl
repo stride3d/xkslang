@@ -71,10 +71,7 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     PS_IN_aF2 = stage_input.PS_IN_aF2;
     PS_IN_aToto1 = stage_input.PS_IN_aToto1;
     PS_IN_aTotoTab = stage_input.PS_IN_aTotoTab;
-    PS_IN_aMat44[0] = stage_input.PS_IN_aMat44_0;
-    PS_IN_aMat44[1] = stage_input.PS_IN_aMat44_1;
-    PS_IN_aMat44[2] = stage_input.PS_IN_aMat44_2;
-    PS_IN_aMat44[3] = stage_input.PS_IN_aMat44_3;
+    PS_IN_aMat44 = stage_input.PS_IN_aMat44;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_aF4 = PS_OUT_aF4;

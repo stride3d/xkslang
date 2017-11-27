@@ -1,6 +1,6 @@
 cbuffer PerDraw
 {
-    float4x4 ShaderMain_BlendMatrixArray[5];
+    column_major float4x4 ShaderMain_BlendMatrixArray[5];
 };
 
 float4x4 ShaderMain_GetBlendMatrix(int index)

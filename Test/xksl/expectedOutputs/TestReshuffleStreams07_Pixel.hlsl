@@ -19,7 +19,6 @@ void frag_main()
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_aMat23[0] = stage_input.PS_IN_aMat23_0;
-    PS_IN_aMat23[1] = stage_input.PS_IN_aMat23_1;
+    PS_IN_aMat23 = stage_input.PS_IN_aMat23;
     frag_main();
 }

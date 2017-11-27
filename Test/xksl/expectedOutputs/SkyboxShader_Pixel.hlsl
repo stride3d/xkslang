@@ -8,9 +8,9 @@ struct PS_STREAMS
 cbuffer Globals
 {
     float SkyboxShader_Intensity;
-    float4x4 SkyboxShader_ProjectionInverse;
-    float4x4 SkyboxShader_ViewInverse;
-    float4x4 SkyboxShader_SkyMatrix;
+    column_major float4x4 SkyboxShader_ProjectionInverse;
+    column_major float4x4 SkyboxShader_ViewInverse;
+    column_major float4x4 SkyboxShader_SkyMatrix;
 };
 TextureCube<float4> SkyboxShader_CubeMap;
 SamplerState Texturing_LinearSampler;

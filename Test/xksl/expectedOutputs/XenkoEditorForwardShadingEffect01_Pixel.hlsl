@@ -70,11 +70,11 @@ struct PS_STREAMS
 
 cbuffer PerView
 {
-    float4x4 Transformation_View;
-    float4x4 Transformation_ViewInverse;
-    float4x4 Transformation_Projection;
-    float4x4 Transformation_ProjectionInverse;
-    float4x4 Transformation_ViewProjection;
+    column_major float4x4 Transformation_View;
+    column_major float4x4 Transformation_ViewInverse;
+    column_major float4x4 Transformation_Projection;
+    column_major float4x4 Transformation_ProjectionInverse;
+    column_major float4x4 Transformation_ViewProjection;
     float2 Transformation_ProjScreenRay;
     float4 Transformation_Eye;
     float o1S429C0_Camera_NearClipPlane;

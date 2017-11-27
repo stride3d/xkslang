@@ -6,11 +6,11 @@ struct LightDirectional_DirectionalLightData
 
 cbuffer PerView
 {
-    float4x4 ShaderMain_View;
-    float4x4 ShaderMain_ViewInverse;
-    float4x4 ShaderMain_Projection;
-    float4x4 ShaderMain_ProjectionInverse;
-    float4x4 ShaderMain_ViewProjection;
+    column_major float4x4 ShaderMain_View;
+    column_major float4x4 ShaderMain_ViewInverse;
+    column_major float4x4 ShaderMain_Projection;
+    column_major float4x4 ShaderMain_ProjectionInverse;
+    column_major float4x4 ShaderMain_ViewProjection;
     float2 ShaderMain_ProjScreenRay;
     float4 ShaderMain_Eye;
     float4 o0S5C0_LightDirectionalGroup__padding_PerView_Default;
