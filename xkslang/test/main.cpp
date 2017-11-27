@@ -296,7 +296,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
-////////////////////{ "testStreamIO01", "testStreamIO01.xkfx"},  //Invalid SPIRV-Cross output!!! (matrix unroll)
+    { "testStreamIO01", "testStreamIO01.xkfx"},  //Invalid SPIRV-Cross output!!! (matrix unroll)
     //{ "methodOverride01", "methodOverride01.xkfx" },
     //{ "methodOverride02", "methodOverride02.xkfx" },
     //{ "methodOverride03", "methodOverride03.xkfx" },

@@ -19,8 +19,6 @@ void frag_main()
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_tangentToWorld[0] = stage_input.PS_IN_tangentToWorld_0;
-    PS_IN_tangentToWorld[1] = stage_input.PS_IN_tangentToWorld_1;
-    PS_IN_tangentToWorld[2] = stage_input.PS_IN_tangentToWorld_2;
+    PS_IN_tangentToWorld = stage_input.PS_IN_tangentToWorld;
     frag_main();
 }
