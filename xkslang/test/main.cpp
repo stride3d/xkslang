@@ -310,7 +310,9 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
     //{ "testSamplerStates03", "testSamplerStates03.xkfx" },
     //{ "testSamplerStates04", "testSamplerStates04.xkfx" },
-    
+
+    { "functionsWithStreamsVariable01", "functionsWithStreamsVariable01.xkfx" },
+
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
     //{ "LuminanceLogShader", "LuminanceLogShader.xkfx" },
@@ -345,13 +347,15 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ComputeColorRadial", "ComputeColorRadial.xkfx" },
     //{ "ParticleEffect", "ParticleEffect.xkfx" },
     //{ "FXAAShaderEffect", "FXAAShaderEffect.xkfx" },
-    { "RadiancePrefilteringGGXNoCompute", "RadiancePrefilteringGGXNoCompute.xkfx" },
-    
+    //{ "RadiancePrefilteringGGXNoCompute", "RadiancePrefilteringGGXNoCompute.xkfx" },
+///////////////{ "IMaterialStreamBlend", "IMaterialStreamBlend.xkfx" },
+
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
+////////////////////{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
 };
 
 enum class ShaderLanguageEnum

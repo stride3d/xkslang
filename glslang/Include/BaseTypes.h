@@ -63,11 +63,13 @@ enum TBasicType {
     EbtStruct,
     EbtBlock,
 
-    EbtShaderClass,     //shader class type (XKSL language extension)
+    //XKSL language extension
+    EbtShaderClass,     //shader class type
     EbtUndefinedVar,    //xksl extensions: use of var keyword create an undefined type (resolved later)
     EbtLinkType,        //xksl extensions: a generic can be declared with a LinkType type
     EbtMemberNameType,  //xksl extensions: a generic can be declared with a MemberName type
     EbtSemanticType,    //xksl extensions: a generic can be declared with a Semantic type
+    EbtStreams,         //Streams type
 
     // HLSL types that live only temporarily.
     EbtString,

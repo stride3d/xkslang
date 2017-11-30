@@ -1822,7 +1822,16 @@ public:
         case EbtSampler:            return "sampler/image";
         case EbtStruct:             return "structure";
         case EbtBlock:              return "block";
-		case EbtShaderClass:        return "XkslShaderClass";
+		
+        case EbtShaderClass:        return "XkslShader";
+        case EbtUndefinedVar:       return "var";
+        case EbtLinkType:           return "LinkType";
+        case EbtMemberNameType:     return "MemberName";
+        case EbtSemanticType:       return "SemanticType";
+        case EbtStreams:            return "Streams";
+
+        case EbtString:             return "string";
+
         default:                    return "unknown type";
         }
     }

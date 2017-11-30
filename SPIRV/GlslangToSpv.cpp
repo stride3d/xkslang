@@ -2470,12 +2470,13 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
 
     case glslang::EbtUndefinedVar:
         {
-            logger->error(std::string("Failed to convert glslang to spv, a variable is undefined: ") + type.getTypeNameSafe().c_str());
+            logger->error(std::string("Failed to convert glslang to spv, a variable is undefined: ") + type.getBasicString());
             break;
         }
 
     default:
-        assert(0);
+        //assert(0);
+        logger->error(std::string("Failed to convert glslang to spv, a variable has an invalid type: ") + type.getBasicString());
         break;
     }
 

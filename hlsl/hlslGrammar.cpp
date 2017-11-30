@@ -2305,6 +2305,10 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         new(&type) TType(EbtSemanticType);
         break;
 
+    case EHTTokStreams:
+        new(&type) TType(EbtStreams);
+        break;
+
     case EHTokFloat:
         new(&type) TType(EbtFloat);
         break;
@@ -2949,6 +2953,7 @@ TString HlslGrammar::getLabelForTokenType(EHlslTokenClass tokenType)
         case EHTTokLinkType:        return "LinkType";
         case EHTTokMemberNameType:  return "MemberName";
         case EHTTokSemanticType:    return "Semantic";
+        case EHTTokStreams:         return "Streams";
     }
 
     return "";
@@ -3577,6 +3582,18 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     declaredType.setUserIdentifierName(function->getDeclaredMangledName().c_str());
                     function->getWritableType().shallowCopy(declaredType);
 
+                    bool functionIsUnresolvedUntilWeCallIt = false;
+                    int countParams = function->getParamCount();
+                    for (int k = 0; k < countParams; k++)
+                    {
+                        const TParameter& param = (*function)[k];
+                        if (param.type->getBasicType() == EbtStreams)
+                        {
+                            functionIsUnresolvedUntilWeCallIt = true;
+                        }
+                    }
+                    function->SetFunctionIsUnresolvedUntilWeCallIt(functionIsUnresolvedUntilWeCallIt);
+
                     //only record the method declaration
                     if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
                     {
@@ -3643,9 +3660,22 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                         }
                         shaderClassFunction->token = token;  //in case of the token was those from the function prototype
 
+                        bool canRecordFunctionDefinition = true;
+
+                        if (function->IsFunctionIsUnresolvedUntilWeCallIt())
+                        {
+                            //The function definition will be created in another step, depending who is calling it
+                            canRecordFunctionDefinition = false;
+                        }
+
                         if (shaderClassFunction->bodyNode != nullptr)
                         {
-                            //the shader method has already been processed (it already has a body), we can skip it
+                            //the function has already been processed (it already has a body), we can skip it
+                            canRecordFunctionDefinition = false;
+                        }
+
+                        if (!canRecordFunctionDefinition)
+                        {
                             advanceToken();
                             if (!advanceUntilEndOfBlock(EHTokRightBrace)) {
                                 error("Error parsing until end of function block");
@@ -3655,7 +3685,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                         else
                         {
                             //==============================================================================================================
-                            // start parsing a shader class method
+                            // start parsing a new shader method
                             if (listForeachArrayCompositionVariable.size() > 0) {
                                 error("shader: list of foreach array composition variable should be empty"); return false;
                             }

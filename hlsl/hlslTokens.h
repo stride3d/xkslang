@@ -318,6 +318,7 @@ enum EHlslTokenClass {
     EHTTokLinkType,
     EHTTokMemberNameType,
     EHTTokSemanticType,
+    EHTTokStreams,
 
     // constant
     EHTokFloatConstant,

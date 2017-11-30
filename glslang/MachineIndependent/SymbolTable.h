@@ -226,13 +226,13 @@ public:
     explicit TFunction(TOperator o) :
         TSymbol(0),
         op(o),
-        defined(false), prototyped(false), implicitThis(false), illegalImplicitThis(false), defaultParamCount(0) { }
+        defined(false), prototyped(false), implicitThis(false), illegalImplicitThis(false), defaultParamCount(0), functionIsUnresolvedUntilWeCallIt(false) { }
     TFunction(const TString *name, const TType& retType, TOperator tOp = EOpNull) :
         TSymbol(name),
         mangledName(*name + '('),
         declaredMangledName(*name + '('),
         op(tOp),
-        defined(false), prototyped(false), implicitThis(false), illegalImplicitThis(false), defaultParamCount(0)
+        defined(false), prototyped(false), implicitThis(false), illegalImplicitThis(false), defaultParamCount(0), functionIsUnresolvedUntilWeCallIt(false)
     {
         returnType.shallowCopy(retType);
         declaredBuiltIn = retType.getQualifier().builtIn;
@@ -242,7 +242,7 @@ public:
         mangledName(*className + '.' + *name + '('),
         declaredMangledName(*name + '('),
         op(tOp),
-        defined(false), prototyped(false), implicitThis(false), illegalImplicitThis(false), defaultParamCount(0)
+        defined(false), prototyped(false), implicitThis(false), illegalImplicitThis(false), defaultParamCount(0), functionIsUnresolvedUntilWeCallIt(false)
     {
         returnType.shallowCopy(retType);
         declaredBuiltIn = retType.getQualifier().builtIn;
@@ -323,6 +323,16 @@ public:
 
     virtual void dump(TInfoSink &infoSink) const override;
 
+    bool IsFunctionIsUnresolvedUntilWeCallIt()
+    {
+        return functionIsUnresolvedUntilWeCallIt;
+    }
+
+    void SetFunctionIsUnresolvedUntilWeCallIt(bool b)
+    {
+        functionIsUnresolvedUntilWeCallIt = b;
+    }
+
 protected:
     explicit TFunction(const TFunction&);
     TFunction& operator=(const TFunction&);
@@ -343,6 +353,9 @@ protected:
                                // This is important for a static member function that has member variables in scope,
                                // but is not allowed to use them, or see hidden symbols instead.
     int  defaultParamCount;
+
+    //XKSL extensions
+    bool functionIsUnresolvedUntilWeCallIt;
 };
 
 //
