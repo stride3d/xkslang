@@ -376,10 +376,10 @@ void HlslScanContext::fillInKeywordMap()
     //XKSL extensions: map keywords
     (*KeywordMap)["shader"]     =              EHTokShaderClass;
     (*KeywordMap)["var"]        =              EHTokVar;
-    (*KeywordMap)["LinkType"]   =              EHTTokLinkType;
-    (*KeywordMap)["MemberName"] =              EHTTokMemberNameType;
-    (*KeywordMap)["Semantic"]   =              EHTTokSemanticType;
-    (*KeywordMap)["Streams"]    =              EHTTokStreams;
+    (*KeywordMap)["LinkType"]   =              EHTokLinkType;
+    (*KeywordMap)["MemberName"] =              EHTokMemberNameType;
+    (*KeywordMap)["Semantic"]   =              EHTokSemanticType;
+    (*KeywordMap)["Streams"]    =              EHTokStreamsType;
     (*KeywordMap)["public"]     =              EHTokPublic;
     (*KeywordMap)["private"]    =              EHTokPrivate;
     (*KeywordMap)["protected"]  =              EHTokProtected;
@@ -609,10 +609,10 @@ TString HlslScanContext::convertTokenToString(const HlslToken& token)
 
         case EHTokShaderClass:        return "shader";
         case EHTokVar:                return "var";
-        case EHTTokLinkType:          return "LinkType";
-        case EHTTokMemberNameType:    return "MemberName";
-        case EHTTokSemanticType:      return "Semantic";
-        case EHTTokStreams:           return "Streams";
+        case EHTokLinkType:           return "LinkType";
+        case EHTokMemberNameType:     return "MemberName";
+        case EHTokSemanticType:       return "Semantic";
+        case EHTokStreamsType:        return "Streams";
 
         default: return "";
     }
@@ -1013,10 +1013,10 @@ EHlslTokenClass HlslScanContext::tokenizeIdentifier()
 
     case EHTokShaderClass:
     case EHTokVar:
-    case EHTTokLinkType:
-    case EHTTokMemberNameType:
-    case EHTTokSemanticType:
-    case EHTTokStreams:
+    case EHTokLinkType:
+    case EHTokMemberNameType:
+    case EHTokSemanticType:
+    case EHTokStreamsType:
         return keyword;
 
     case EHTokBoolConstant:

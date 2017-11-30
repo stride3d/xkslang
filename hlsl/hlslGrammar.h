@@ -95,7 +95,8 @@ namespace glslang {
         void warning(const char*);
         void warning(const TString&);
         bool acceptIdentifier(HlslToken&);
-        bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isACallThroughStaticShaderClassName, bool& isStreams, TShaderCompositionVariable& compositionTargeted);
+        bool acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isACallThroughStaticShaderClassName,
+            bool& isStreams, TShaderCompositionVariable& compositionTargeted, bool& isStreamsUsedAsAType);
         bool acceptShaderCustomType(const TString& shaderName, TType& type);
         bool acceptCompilationUnit();
         bool acceptDeclarationList(TIntermNode*&);
@@ -146,7 +147,8 @@ namespace glslang {
         bool acceptBinaryExpression(TIntermTyped*&, PrecedenceLevel);
         bool acceptUnaryExpression(TIntermTyped*&);
         bool acceptPostfixExpression(TIntermTyped*&);
-        bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessor, TShaderCompositionVariable& compositionTargeted);
+        bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessor,
+            TShaderCompositionVariable& compositionTargeted, bool& isStreamsUsedAsAType);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(const TSourceLoc&, TString& name, TIntermTyped*&, TIntermTyped* objectBase);
         bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);

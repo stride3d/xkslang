@@ -410,7 +410,8 @@ bool HlslGrammar::acceptShaderCustomType(const TString& shaderName, TType& type)
 }
 
 //Process class accessor: this, base, Knwon ClassName, composition variable name, ...
-bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isACallThroughStaticShaderClassName, bool& isStream, TShaderCompositionVariable& compositionTargeted)
+bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase, bool& isACallThroughStaticShaderClassName,
+    bool& isStream, TShaderCompositionVariable& compositionTargeted, bool& isStreamsUsedAsAType)
 {
     if (getCurrentShaderName() == nullptr) return false;
 
@@ -449,8 +450,20 @@ bool HlslGrammar::acceptClassReferenceAccessor(TString*& className, bool& isBase
                 return false;
             }
 
-            isStream = true;
+            //2 cases: if we have streams.XXX: then we're referring to a stream variable
+            //If we only have streams: we're declaring a Streams type
             advanceToken();
+            if (peekTokenClass(EHTokDot))
+            {
+                isStream = true;
+            }
+            else
+            {
+                recedeToken();
+                isStreamsUsedAsAType = true;
+                return false;
+            }
+
             break;
         }
 
@@ -2293,19 +2306,19 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         new(&type) TType(EbtUndefinedVar);
         break;
 
-    case EHTTokLinkType:
+    case EHTokLinkType:
         new(&type) TType(EbtLinkType);
         break;
 
-    case EHTTokMemberNameType:
+    case EHTokMemberNameType:
         new(&type) TType(EbtMemberNameType);
         break;
 
-    case EHTTokSemanticType:
+    case EHTokSemanticType:
         new(&type) TType(EbtSemanticType);
         break;
 
-    case EHTTokStreams:
+    case EHTokStreamsType:
         new(&type) TType(EbtStreams);
         break;
 
@@ -2950,10 +2963,10 @@ TString HlslGrammar::getLabelForTokenType(EHlslTokenClass tokenType)
         case EHTokDouble4x3:   return "double4x3";
         case EHTokDouble4x4:   return "double4x4";
         
-        case EHTTokLinkType:        return "LinkType";
-        case EHTTokMemberNameType:  return "MemberName";
-        case EHTTokSemanticType:    return "Semantic";
-        case EHTTokStreams:         return "Streams";
+        case EHTokLinkType:         return "LinkType";
+        case EHTokMemberNameType:   return "MemberName";
+        case EHTokSemanticType:     return "Semantic";
+        case EHTokStreamsType:      return "Streams";
     }
 
     return "";
@@ -5634,7 +5647,8 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
 {
     TShaderCompositionVariable composition;
     composition.shaderCompositionId = -1;
-    return acceptPostfixExpression(node, false, false, false, nullptr, composition);
+    bool isStreamsUsedAsAType = false;
+    return acceptPostfixExpression(node, false, false, false, nullptr, composition, isStreamsUsedAsAType);
 }
 
 // postfix_expression
@@ -5650,7 +5664,8 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
 //      | postfix_expression INC_OP
 //      | postfix_expression DEC_OP
 //
-bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessorName, TShaderCompositionVariable& compositionTargeted)
+bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessorName,
+    TShaderCompositionVariable& compositionTargeted, bool& isStreamsUsedAsAType)
 {
     // Not implemented as self-recursive:
     // The logical "right recursion" is done with a loop at the end
@@ -5684,23 +5699,41 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
     } else if (acceptConstructor(node)) {
         // constructor (nothing else to do yet)
     }
-    else if (acceptClassReferenceAccessor(classAccessorName, hasBaseAccessor, callThroughStaticShaderClassName, hasStreamAccessor, compositionTargeted))
+    else if (acceptClassReferenceAccessor(classAccessorName, hasBaseAccessor, callThroughStaticShaderClassName, hasStreamAccessor, compositionTargeted, isStreamsUsedAsAType))
     {
-        return acceptPostfixExpression(node, hasBaseAccessor, callThroughStaticShaderClassName, hasStreamAccessor, classAccessorName, compositionTargeted);
+        return acceptPostfixExpression(node, hasBaseAccessor, callThroughStaticShaderClassName, hasStreamAccessor, classAccessorName, compositionTargeted, isStreamsUsedAsAType);
     }
-    else if (acceptIdentifier(idToken))
+    else if (isStreamsUsedAsAType || acceptIdentifier(idToken))
     {
-        // user-type, namespace name, variable, or function name
-        TString* fullName = idToken.string;
-        while (acceptTokenClass(EHTokColonColon)) {
-            // user-type or namespace name
-            fullName = NewPoolTString(fullName->c_str());
-            fullName->append(parseContext.scopeMangler);
-            if (acceptIdentifier(idToken))
-                fullName->append(*idToken.string);
-            else {
-                expected("identifier after ::");
-                return false;
+        TString* identifierName = nullptr;
+        if (isStreamsUsedAsAType)
+        {
+            if (!peekTokenClass(EHTokStreams)) {
+                expected("streams keyword"); return false;
+            }
+            advanceToken();
+
+            //We create the corresponding Streams type
+        }
+        else
+        {
+            // user-type, namespace name, variable, or function name
+            identifierName = idToken.string;
+
+            if (identifierName == nullptr) {
+                error("identifier name is missing"); return false;
+            }
+
+            while (acceptTokenClass(EHTokColonColon)) {
+                // user-type or namespace name
+                identifierName = NewPoolTString(identifierName->c_str());
+                identifierName->append(parseContext.scopeMangler);
+                if (acceptIdentifier(idToken))
+                    identifierName->append(*idToken.string);
+                else {
+                    expected("identifier after ::");
+                    return false;
+                }
             }
         }
 
@@ -5710,7 +5743,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             if (referenceShaderName == nullptr)
             {
                 //we're not parsing a shader: normal hlsl procedure
-                node = parseContext.handleVariable(idToken.loc, fullName);
+                node = parseContext.handleVariable(idToken.loc, identifierName);
             }
             else
             {
@@ -5931,11 +5964,20 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
         }
         else 
         {
+            //we're parsing a method
+            if (isStreamsUsedAsAType) {
+                error("We cannot have a funtion call after streams identifier"); return false;
+            }
+
+            if (identifierName == nullptr) {
+                error("Function identifier name is missing"); return false;
+            }
+
             TString* referenceShaderName = getCurrentShaderName();
             if (referenceShaderName == nullptr)
             {
                 //we're not parsing a shader: normal hlsl procedure
-                if (acceptFunctionCall(idToken.loc, *fullName, node, nullptr)) {
+                if (acceptFunctionCall(idToken.loc, *identifierName, node, nullptr)) {
                     // function_call (nothing else to do yet)
                 }
                 else {
@@ -5974,7 +6016,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                 else
                 {
                     //the symbol is known and there is no class accessor, this is a call to a normal function (not belonging to a class)
-                    if (acceptFunctionCall(idToken.loc, *fullName, node, nullptr)) {
+                    if (acceptFunctionCall(idToken.loc, *identifierName, node, nullptr)) {
                         // function_call (nothing else to do yet)
                     }
                     else {
