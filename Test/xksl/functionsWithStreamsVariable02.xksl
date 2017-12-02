@@ -1,30 +1,22 @@
 
 shader ShaderMain
 {
-	/*struct aStruct
-	{
-		int i1;
-		int i2;
-	}; */
+	stage stream float4 s1: S1;
+	stage stream float4 s2: S2;
 
 	void VSMain()
 	{
-		/*int i1 = 5;
-		int i2 = 6;
-		struct
+		//int i1 = 5;
+		//int i2 = 6;
+		/*struct
 		{
 			int i1;
 			int i2;
-		} a = {i1, i2};
-	
-		struct
-		{
-			int i1;
-			int i3;
-			int i4;
-		} b = {i2, i1};*/
+		} a = {0, 1};*/
 	
 		Streams s1 = streams;
+		//int ii = 0; int ij; struct {int i1; int i2;} a = { ii, ij };
 		//Streams s2 = s1 = streams;
 	}
 }
+

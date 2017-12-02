@@ -1207,6 +1207,8 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                         parseContext.growGlobalUniformBlock(idToken.loc, variableType, *fullName);
                     } else {
 
+                        bool recordDeclaration = true;
+
                         //XKSL extensions:
                         //if we have an assignment expression involving "Streams" types, we replace the types by their actual meaning
                         if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
@@ -1246,12 +1248,15 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
 
                                         //Create the list of tokens for our replacement expression
                                         TVector<HlslToken> listTokens;
-                                        TString expression = "struct{int i1; int i2;} a = { 0, 1 };";
+                                        TString expression = "struct {float4 s1; float4 s2;} aTOTO = { streams.s1, streams.s2 };";
                                         getListTokensForExpression(expression, listTokens);
                                         if (listTokens.size() == 0) { error("Failed to create the list of tokens for the Streams expression"); return false; }
                                         
-                                        //Insert those tokens in the parser, as temporary
-                                        if (!insertTemporaryListOfTokensToParse(listTokens)) { error("Failed to insert the list of tokens for the Streams expression"); return false; }
+                                        recordDeclaration = false;
+
+                                        if (!insertListOfTokensAtCurrentPosition(listTokens)) {
+                                            error("Failed to insert the list of tokens for the Streams expression"); return false;
+                                        }
                                     }
                                     else
                                     {
@@ -1268,13 +1273,15 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                             }
                         }
 
-
-                        // Declare the variable and add any initializer code to the AST.
-                        // The top-level node is always made into an aggregate, as that's
-                        // historically how the AST has been.
-                        initializers = intermediate.growAggregate(initializers,
-                            parseContext.declareVariable(idToken.loc, *fullName, variableType, expressionNode),
-                            idToken.loc);
+                        if (recordDeclaration)
+                        {
+                            // Declare the variable and add any initializer code to the AST.
+                            // The top-level node is always made into an aggregate, as that's
+                            // historically how the AST has been.
+                            initializers = intermediate.growAggregate(initializers,
+                                parseContext.declareVariable(idToken.loc, *fullName, variableType, expressionNode),
+                                idToken.loc);
+                        }
                     }
                 }
             }
@@ -2357,7 +2364,9 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
                 if (acceptShaderCustomType(shader->shaderFullName, type))
                     return true;
             }
-            if (!recedeToTokenIndex(tokenIndex)) error("Failed to recede to token index");
+            if (!recedeToTokenIndex(tokenIndex)) {
+                error("Failed to recede to token index");
+            }
         }
         return false;
 

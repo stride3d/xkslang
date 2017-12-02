@@ -56,8 +56,9 @@ namespace glslang {
         bool advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks);
         bool advanceUntilEndOfTokenList();
 
+        bool insertListOfTokensAtCurrentPosition(const TVector<HlslToken>& listTokens);
+
         void getListTokensForExpression(const TString& expression, TVector<HlslToken>& listTokens);
-        bool insertTemporaryListOfTokensToParse(const TVector<HlslToken>& listTokens);
 
         int getTokenCurrentIndex();
         HlslToken getTokenAtIndex(int index);
@@ -117,9 +118,6 @@ namespace glslang {
         int tokenBufferPos;
         void pushTokenBuffer(const HlslToken&);
         HlslToken popTokenBuffer();
-
-        //We can have a temporary list of tokens to parse that will be treated in priority, regarless of the current token buffer or expression
-        TVector<HlslToken> tokensTemporaryListToParse;
     };
 
 } // end namespace glslang
