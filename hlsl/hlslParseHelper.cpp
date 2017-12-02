@@ -158,7 +158,7 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);
-    grammar.importListParsedToken(expressionTokensList, countTokens);
+    if (!grammar.importListParsedToken(expressionTokensList, countTokens)) return nullptr;
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
     TIntermTyped* expressionNode = grammar.parseXkslShaderAssignmentExpression(shaderLibrary, currentShader, errorWhenParsingUnidentifiedSymbol, nullptr);
@@ -240,7 +240,7 @@ bool HlslParseContext::parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* 
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);
-    grammar.importListParsedToken(expressionTokensList, countTokens);
+    if (!grammar.importListParsedToken(expressionTokensList, countTokens)) return false;
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
@@ -274,7 +274,7 @@ bool HlslParseContext::parseXkslShaderConstVariables(XkslShaderDefinition* shade
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);
-    grammar.importListParsedToken(expressionTokensList, countTokens);
+    if (!grammar.importListParsedToken(expressionTokensList, countTokens)) return false;
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
@@ -308,7 +308,7 @@ bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefi
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);
-    grammar.importListParsedToken(expressionTokensList, countTokens);
+    if (!grammar.importListParsedToken(expressionTokensList, countTokens)) return false;
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
@@ -342,7 +342,7 @@ bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderDefinition* sh
 
     HlslScanContext scanContext(*this, ppContext);
     HlslGrammar grammar(scanContext, *this);
-    grammar.importListParsedToken(expressionTokensList, countTokens);
+    if (!grammar.importListParsedToken(expressionTokensList, countTokens)) return false;
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 

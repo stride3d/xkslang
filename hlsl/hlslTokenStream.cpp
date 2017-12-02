@@ -54,9 +54,10 @@ namespace glslang {
 		return tokenBuffer[tokenBufferPos];
 	}
 
-
     bool HlslTokenStream::advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks)
     {
+        if (tokensTemporaryListToParse.size() > 0) return false; //this operation is not allowed while parsing a temporary token stream
+
         if (tokenBufferPos == -1) advanceToken();
 
         for (unsigned int i = 0; i<tokList.size(); ++i)
@@ -101,17 +102,22 @@ namespace glslang {
         return advanceUntilFirstTokenFromList(listTokens, jumpOverBlocks);
     }
 
-    void HlslTokenStream::advanceUntilEndOfTokenList()
+    bool HlslTokenStream::advanceUntilEndOfTokenList()
     {
+        if (tokensTemporaryListToParse.size() > 0) return false; //this operation is not allowed while parsing a temporary token stream
+
         while (token.tokenClass != EHTokNone)
         {
             advanceToken();
         }
+        return true;
     }
 
     //Advance the token until we reach the end of the block
     bool HlslTokenStream::advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken)
     {
+        if (tokensTemporaryListToParse.size() > 0) return false; //this operation is not allowed while parsing a temporary token stream
+
         while (true)
         {
             if (token.tokenClass == endOfBlockToken)
@@ -149,8 +155,10 @@ namespace glslang {
         return false;
     }
 
-    void HlslTokenStream::importListParsedToken(HlslToken* expressionTokensList, int countTokens)
+    bool HlslTokenStream::importListParsedToken(HlslToken* expressionTokensList, int countTokens)
     {
+        if (tokensTemporaryListToParse.size() > 0) return false; //this operation is not allowed while parsing a temporary token stream
+
         if (tokenBufferPos == tokenBuffer.size())
         {
             pushTokenBuffer(token);
@@ -161,6 +169,8 @@ namespace glslang {
         {
             tokenBuffer.push_back(*expressionTokensList++);
         }
+
+        return true;
     }
 
     bool HlslTokenStream::getListPreviouslyParsedToken(HlslToken tokenStart, HlslToken tokenEnd, TVector<HlslToken>& listTokens)
@@ -192,31 +202,6 @@ namespace glslang {
 
         return true;
     }
-
-    //bool HlslTokenStream::recedeToLastTokenClass(EHlslTokenClass tok)
-    //{
-    //    if (token.tokenClass == tok) return true;
-
-    //    int tokenIndex = -1;
-    //    for (int i = tokenBufferPos - 1; i >= 0; i--)
-    //    {
-    //        if (tokenBuffer[i].tokenClass == tok)
-    //        {
-    //            tokenIndex = i;
-    //            break;
-    //        }
-    //    }
-    //    if (tokenIndex == -1) return false;
-
-    //    if (tokenBufferPos == tokenBuffer.size())
-    //    {
-    //        //save current token at the end of buffer, so that we can push it back
-    //        pushTokenBuffer(token);
-    //    }
-    //    tokenBufferPos = tokenIndex;
-    //    token = tokenBuffer[tokenBufferPos];
-    //    return true;
-    //}
 
     int HlslTokenStream::getTokenCurrentIndex()
     {
@@ -250,6 +235,8 @@ namespace glslang {
 
     bool HlslTokenStream::recedeToTokenIndex(int index)
     {
+        if (tokensTemporaryListToParse.size() > 0) return false; //receding is not allowed while parsing a temporary token stream
+
         if (index < 0) index = 0;
         if (tokenBufferPos <= index) return true;
         
@@ -265,6 +252,8 @@ namespace glslang {
 
 	bool HlslTokenStream::recedeToToken(HlslToken tok)
 	{
+        if (tokensTemporaryListToParse.size() > 0) return false; //receding is not allowed while parsing a temporary token stream
+
 		if (token.IsEqualsToToken(tok)) return true;
 
 		//find the token in our list of accepted token
@@ -302,11 +291,9 @@ namespace glslang {
         return true;
     }
 
-    void HlslTokenStream::pushTokenStream(const TVector<HlslToken>* tokens)
+    bool HlslTokenStream::pushTokenStream(const TVector<HlslToken>* tokens)
     {
-        // not yet setup to interrupt a stream that has been receded
-        // and not yet reconsumed
-        //assert(preTokenStackSize == 0);
+        if (tokensTemporaryListToParse.size() > 0) return false; //this operation is not allowed while parsing a temporary token stream
 
         // save current state
         currentTokenStack.push_back(token);
@@ -317,15 +304,40 @@ namespace glslang {
         // start position at first token:
         token = (*tokens)[0];
         tokenPosition.push_back(0);
+
+        return true;
     }
 
     // Undo pushTokenStream(), see above
-    void HlslTokenStream::popTokenStream()
+    bool HlslTokenStream::popTokenStream()
     {
+        if (tokensTemporaryListToParse.size() > 0) return false; //this operation is not allowed while parsing a temporary token stream
+
         tokenStreamStack.pop_back();
         tokenPosition.pop_back();
         token = currentTokenStack.back();
         currentTokenStack.pop_back();
+
+        return true;
+    }
+
+    void HlslTokenStream::getListTokensForExpression(const TString& expression, TVector<HlslToken>& listTokens)
+    {
+        scanner.tokenizeExpression(expression, listTokens);
+    }
+
+    bool HlslTokenStream::insertTemporaryListOfTokensToParse(const TVector<HlslToken>& listTokens)
+    {
+        if (tokensTemporaryListToParse.size() > 0) return false;
+
+        int count = (int)listTokens.size();
+        tokensTemporaryListToParse.reserve(count);
+        for (int i = count - 1; i >= 0; i--)
+        {
+            tokensTemporaryListToParse.push_back(listTokens[i]);
+        }
+
+        return true;
     }
 
 	// Load 'token' with the next token in the stream of tokens.
@@ -354,6 +366,7 @@ namespace glslang {
 
 	bool HlslTokenStream::recedeToken()
 	{
+        if (tokensTemporaryListToParse.size() > 0) return false; //this operation is not allowed while parsing a temporary token stream
 		if (tokenBufferPos == 0) return false;
 
 		if (tokenBufferPos == tokenBuffer.size())

@@ -1,23 +1,30 @@
-shader IShaderBlend
-{
-	float Compute(Streams fromStream)
-	{
-	}
-};
 
-shader ShaderMaterialBlend: IShaderBlend
+shader ShaderMain
 {
-	override float Compute(Streams fromStream)
+	/*struct aStruct
 	{
-		fromStream.aFloat = 0.1;
-	}
-};
+		int i1;
+		int i2;
+	}; */
 
-shader ShaderMain: ShaderMaterialBlend
-{
 	void VSMain()
 	{
-		Streams backup = streams;
-		//streams = backup; ??
+		/*int i1 = 5;
+		int i2 = 6;
+		struct
+		{
+			int i1;
+			int i2;
+		} a = {i1, i2};
+	
+		struct
+		{
+			int i1;
+			int i3;
+			int i4;
+		} b = {i2, i1};*/
+	
+		Streams s1 = streams;
+		//Streams s2 = s1 = streams;
 	}
 }

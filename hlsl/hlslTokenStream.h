@@ -54,7 +54,10 @@ namespace glslang {
         bool advanceUntilEndOfBlock(EHlslTokenClass endOfBlockToken);
         bool advanceUntilToken(EHlslTokenClass tok, bool jumpOverBlocks);
         bool advanceUntilFirstTokenFromList(const TVector<EHlslTokenClass>& tokList, bool jumpOverBlocks);
-        void advanceUntilEndOfTokenList();
+        bool advanceUntilEndOfTokenList();
+
+        void getListTokensForExpression(const TString& expression, TVector<HlslToken>& listTokens);
+        bool insertTemporaryListOfTokensToParse(const TVector<HlslToken>& listTokens);
 
         int getTokenCurrentIndex();
         HlslToken getTokenAtIndex(int index);
@@ -65,7 +68,7 @@ namespace glslang {
         bool recedeToTokenIndex(int index);
         bool recedeToToken(HlslToken tok);
         bool getListPreviouslyParsedToken(HlslToken tokenStart, HlslToken tokenEnd, TVector<HlslToken>& listTokens);
-        void importListParsedToken(HlslToken* expressionTokensList, int countTokens);
+        bool importListParsedToken(HlslToken* expressionTokensList, int countTokens);
 
         bool acceptIdentifierTokenClass(TString& identiferName);
         bool acceptTokenClass(EHlslTokenClass);
@@ -73,8 +76,8 @@ namespace glslang {
         bool peekTokenClass(EHlslTokenClass) const;
         glslang::TBuiltInVariable mapSemantic(const char* upperCase) { return scanner.mapSemantic(upperCase); }
 
-        void pushTokenStream(const TVector<HlslToken>* tokens);
-        void popTokenStream();
+        bool pushTokenStream(const TVector<HlslToken>* tokens);
+        bool popTokenStream();
 
     protected:
         HlslToken token;                  // the token we are currently looking at, but have not yet accepted
@@ -114,6 +117,9 @@ namespace glslang {
         int tokenBufferPos;
         void pushTokenBuffer(const HlslToken&);
         HlslToken popTokenBuffer();
+
+        //We can have a temporary list of tokens to parse that will be treated in priority, regarless of the current token buffer or expression
+        TVector<HlslToken> tokensTemporaryListToParse;
     };
 
 } // end namespace glslang

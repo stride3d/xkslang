@@ -226,6 +226,27 @@ public:
         inputStack.pop_back();
     }
 
+    int getCountInputs()
+    {
+        return (int)inputStack.size();
+    }
+
+    tInput* getInput(int i)
+    {
+        return inputStack[i];
+    }
+
+    void addInput(tInput* in)
+    {
+        inputStack.push_back(in);
+    }
+
+    //Ccear the list without deleting the inputs: it's the responsibility of the caller to get them and delete them
+    void emptyInputsListUnsafe()
+    {
+        inputStack.clear();
+    }
+
     //
     // From PpTokens.cpp
     //

@@ -1,3 +1,29 @@
+shader ShaderBase
+{
+	Streams compute()
+	{
+		Streams s1;
+		return s1;
+		/*Streams s2;
+		s1 = s2;
+		Streams s1 = streams;*/
+	}
+}
+
+shader ShaderMain: ShaderBase
+{
+	void VSMain()
+	{
+		Streams s1;
+		compute();
+		/*Streams s2;
+		s1 = s2;
+		Streams s1 = streams;*/
+	}
+}
+
+
+
 shader IShaderBlend
 {
 	float Compute(Streams fromStream)
@@ -17,6 +43,7 @@ shader ShaderMain: ShaderMaterialBlend
 {
 	void VSMain()
 	{
+		Streams backup = streams;
 		float toto = Compute(streams);
 	}
 }

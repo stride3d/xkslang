@@ -416,6 +416,17 @@ public:
     TShaderMemberAttribute(const TString& name, const TString& value) : attributeName(name), attributeValue(value) {}
 };
 
+class TStreamsTypeProperties
+{
+public:
+    bool IsUndefined;
+    bool IsFromStreamsKeyword;
+    TString ShaderStreamsOwner;
+
+    TStreamsTypeProperties() : IsUndefined(true) {}
+    TStreamsTypeProperties(const TString& shaderStreamsOwner, bool fromStreamsKeyword) : IsUndefined(false), ShaderStreamsOwner(shaderStreamsOwner), IsFromStreamsKeyword(fromStreamsKeyword) {}
+};
+
 class TSamplerStateDefinition
 {
 public:
@@ -1250,7 +1261,7 @@ public:
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
                             ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), baseName(nullptr), cbufferSubpartName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
-                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr)
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr), streamsTypeProperties(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1263,7 +1274,7 @@ public:
                             basicType(t), vectorSize(vs), matrixCols(mc), matrixRows(mr), vector1(isVector && vs == 1),
                             arraySizes(nullptr), structure(nullptr), fieldName(nullptr), typeName(nullptr),
                             ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), baseName(nullptr), cbufferSubpartName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
-                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr)
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr), streamsTypeProperties(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1278,7 +1289,7 @@ public:
                             vectorSize(p.vectorSize), matrixCols(p.matrixCols), matrixRows(p.matrixRows), vector1(false),
                             arraySizes(p.arraySizes), structure(nullptr), fieldName(nullptr), typeName(nullptr),
                             ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), baseName(nullptr), cbufferSubpartName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
-                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr)
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr), streamsTypeProperties(nullptr)
                             {
                                 if (basicType == EbtSampler)
                                     sampler = p.sampler;
@@ -1295,7 +1306,7 @@ public:
         basicType(EbtSampler), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
         arraySizes(as), structure(nullptr), fieldName(nullptr), typeName(nullptr), sampler(sampler),
         ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), baseName(nullptr), cbufferSubpartName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
-        compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr)
+        compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr), streamsTypeProperties(nullptr)
     {
         qualifier.clear();
         qualifier.storage = q;
@@ -1344,7 +1355,7 @@ public:
                             basicType(EbtStruct), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             arraySizes(nullptr), structure(userDef), fieldName(nullptr),
                             ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), baseName(nullptr), cbufferSubpartName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
-                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr)
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr), streamsTypeProperties(nullptr)
                             {
                                 sampler.clear();
                                 qualifier.clear();
@@ -1355,7 +1366,7 @@ public:
                             basicType(EbtBlock), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
                             qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
                             ownerClassName(nullptr), parentsName(nullptr), userIdentifierName(nullptr), baseName(nullptr), cbufferSubpartName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
-                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr)
+                            compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr), streamsTypeProperties(nullptr)
                             {
                                 sampler.clear();
                                 typeName = NewPoolTString(n.c_str());
@@ -1366,7 +1377,7 @@ public:
 		basicType(EbtShaderClass), vectorSize(1), matrixCols(0), matrixRows(0), vector1(false),
 		qualifier(q), arraySizes(nullptr), structure(userDef), fieldName(nullptr),
         ownerClassName(nullptr), parentsName(parentsName), userIdentifierName(nullptr), baseName(nullptr), cbufferSubpartName(nullptr), userDefinedSemantic(nullptr), memberAttributeList(nullptr),
-        compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr)
+        compositionsList(nullptr), typeDefinitionExpression(nullptr), cbufferType(0), isTypeDefinedByShader(false), shaderCountGenerics(0), samplerStateDef(nullptr), streamsTypeProperties(nullptr)
 	{
 		sampler.clear();
 		typeName = NewPoolTString(n.c_str());
@@ -1403,6 +1414,7 @@ public:
         isTypeDefinedByShader = copyOf.isTypeDefinedByShader;
         shaderCountGenerics = copyOf.shaderCountGenerics;
         samplerStateDef = copyOf.samplerStateDef;
+        streamsTypeProperties = copyOf.streamsTypeProperties;
     }
 
     // Make complete copy of the whole type graph rooted at 'copyOf'.
@@ -1455,6 +1467,12 @@ public:
         {
             samplerStateDef = new TSamplerStateDefinition;
             *samplerStateDef = *copyOf.samplerStateDef;
+        }
+
+        if (copyOf.streamsTypeProperties != nullptr)
+        {
+            streamsTypeProperties = new TStreamsTypeProperties;
+            *streamsTypeProperties = *copyOf.streamsTypeProperties;
         }
     }
 
@@ -1552,6 +1570,7 @@ public:
     }
 
     virtual void SetSamplerStateDef(TSamplerStateDefinition* samplerState) { samplerStateDef = samplerState; }
+    virtual void SetStreamsTypeProperties(TStreamsTypeProperties* streamsTypeProp) { streamsTypeProperties = streamsTypeProp; }
     virtual void SetShaderCountGenerics(int i) { shaderCountGenerics = i; }
     virtual void SetTypeAsDefinedByShader(bool b) { isTypeDefinedByShader = b; }
     virtual void SetCbufferType(int cbType){cbufferType = cbType;}
@@ -1601,6 +1620,7 @@ public:
     const TVector<TShaderMemberAttribute>* getMemberAttributeList() const { return memberAttributeList; }
 
     TSamplerStateDefinition* GetSamplerStateDef() const { return samplerStateDef; }
+    TStreamsTypeProperties* GetStreamsTypeProperties() const { return streamsTypeProperties; }
     int GetShaderCountGenerics() const { return shaderCountGenerics; }
     bool IsTypeDefinedByShader() const { return isTypeDefinedByShader; }
     int GetCbufferType() const { return cbufferType; }
@@ -2288,6 +2308,7 @@ protected:
     TVector<TShaderCompositionVariable>* compositionsList;  // nullptr unless a shaderclass declaring compositions (can it be shared among type?)
     TVector<TShaderMemberAttribute>* memberAttributeList;
     TSamplerStateDefinition* samplerStateDef;
+    TStreamsTypeProperties* streamsTypeProperties;
 };
 
 } // end namespace glslang

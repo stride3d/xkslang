@@ -174,6 +174,9 @@ namespace glslang {
         bool acceptPostDecls(TQualifier&, TString* userDefinedSemantic = nullptr);
         bool acceptDefaultParameterDeclaration(const TType&, TIntermTyped*&);
 
+        static int GetUniqueIndex();
+        static int uniqueIndex;
+
         bool captureBlockTokens(TVector<HlslToken>& tokens);
         const char* getTypeString(EHlslTokenClass tokenClass) const;
 

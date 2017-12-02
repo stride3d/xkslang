@@ -106,7 +106,11 @@ TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary
             //not necessary an error, we just cannot resolved the assignment expression yet
             expressionNode = nullptr;
 
-            advanceUntilEndOfTokenList(); //we clear the remaining tokens
+            if (!advanceUntilEndOfTokenList())
+            {
+                error("failed to advance until the end of the token list");
+                return nullptr;
+            }
         }
     }
 
@@ -1202,6 +1206,69 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                         // this isn't really an individual variable, but a member of the $Global buffer
                         parseContext.growGlobalUniformBlock(idToken.loc, variableType, *fullName);
                     } else {
+
+                        //XKSL extensions:
+                        //if we have an assignment expression involving "Streams" types, we replace the types by their actual meaning
+                        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
+                        {
+                            ////TOTO
+                            TType* leftStreamType = nullptr;
+                            TType* rightStreamType = nullptr;
+                            if (variableType.getBasicType() == EbtStreams)
+                            {
+                                leftStreamType = &variableType;
+                            }
+                            TIntermSymbol* intermSymbol = expressionNode == nullptr? nullptr: expressionNode->getAsSymbolNode();
+                            if (intermSymbol != nullptr && intermSymbol->getBasicType() == EbtStreams)
+                            {
+                                rightStreamType = &(intermSymbol->getWritableType());
+                            }
+
+                            if (leftStreamType != nullptr || rightStreamType != nullptr)
+                            {
+                                if (leftStreamType != nullptr && rightStreamType != nullptr)
+                                {
+                                    TStreamsTypeProperties* leftStreamsProperties = leftStreamType->GetStreamsTypeProperties();
+                                    TStreamsTypeProperties* rightStreamsProperties = rightStreamType->GetStreamsTypeProperties();
+
+                                    if (leftStreamsProperties == nullptr && rightStreamsProperties == nullptr)
+                                    {
+                                        //assignment between 2 undefined Streams type: this is an error
+                                        //Example: Streams s1; Streams s2; s2 = s1;
+                                        error("We cannot have an assignment between 2 undefined Streams");
+                                        return false;
+                                    }
+                                    else if (leftStreamsProperties == nullptr && rightStreamsProperties != nullptr)
+                                    {
+                                        //Assign a defined Stream type to an undefined Stream type
+                                        //Example: Streams s1 = streams;
+                                        //We replace the expression by an expression such like: struct { type1 aStream1; type2 aStream2 } s1 = { streams.aStream1, streams.aStream2 };
+
+                                        //Create the list of tokens for our replacement expression
+                                        TVector<HlslToken> listTokens;
+                                        TString expression = "struct{int i1; int i2;} a = { 0, 1 };";
+                                        getListTokensForExpression(expression, listTokens);
+                                        if (listTokens.size() == 0) { error("Failed to create the list of tokens for the Streams expression"); return false; }
+                                        
+                                        //Insert those tokens in the parser, as temporary
+                                        if (!insertTemporaryListOfTokensToParse(listTokens)) { error("Failed to insert the list of tokens for the Streams expression"); return false; }
+                                    }
+                                    else
+                                    {
+                                        error("Unprocessed Streams assignment");
+                                        return false;
+                                    }
+
+                                }
+                                else
+                                {
+                                    error("Unprocessed Streams assignment");
+                                    return false;
+                                }
+                            }
+                        }
+
+
                         // Declare the variable and add any initializer code to the AST.
                         // The top-level node is always made into an aggregate, as that's
                         // historically how the AST has been.
@@ -3931,7 +3998,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                 {
                     if (identifierName == nullptr)
                     {
-                        //if identifier is null: we're defining a new type ("struct Toto { };")
+                        //if identifier is null: we're defining a new type ("struct aStruct { };")
                         //add a new type definition into the shader
 
                         if (declaredType.getBasicType() != EbtStruct)
@@ -4159,10 +4226,10 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
     bool deferredSuccess = true;
     for (int b = 0; b < (int)functionDeclarators.size() && deferredSuccess; ++b) {
         // parse body
-        pushTokenStream(functionDeclarators[b].body);
+        if (!pushTokenStream(functionDeclarators[b].body)) error("Failed to call pushTokenStream function");
         if (! acceptFunctionBody(functionDeclarators[b], nodeList))
             deferredSuccess = false;
-        popTokenStream();
+        if (!popTokenStream()) error("Failed to call popTokenStream function");
     }
     parseContext.popThisScope();
     parseContext.popNamespace();
@@ -5651,6 +5718,12 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
     return acceptPostfixExpression(node, false, false, false, nullptr, composition, isStreamsUsedAsAType);
 }
 
+int HlslGrammar::uniqueIndex = 0;
+int HlslGrammar::GetUniqueIndex()
+{
+    return uniqueIndex++;
+}
+
 // postfix_expression
 //      : LEFT_PAREN expression RIGHT_PAREN
 //      | literal
@@ -5705,7 +5778,8 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
     }
     else if (isStreamsUsedAsAType || acceptIdentifier(idToken))
     {
-        TString* identifierName = nullptr;
+        TString* memberFullName = nullptr;
+        TString* memberName = nullptr;
         if (isStreamsUsedAsAType)
         {
             if (!peekTokenClass(EHTokStreams)) {
@@ -5717,43 +5791,71 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
         }
         else
         {
-            // user-type, namespace name, variable, or function name
-            identifierName = idToken.string;
-
-            if (identifierName == nullptr) {
-                error("identifier name is missing"); return false;
+            memberFullName = idToken.string;
+            if (memberFullName == nullptr) {
+                error("member name is missing"); return false;
             }
 
+            //The identifier name can be composed
             while (acceptTokenClass(EHTokColonColon)) {
                 // user-type or namespace name
-                identifierName = NewPoolTString(identifierName->c_str());
-                identifierName->append(parseContext.scopeMangler);
+                memberFullName = NewPoolTString(memberFullName->c_str());
+                memberFullName->append(parseContext.scopeMangler);
                 if (acceptIdentifier(idToken))
-                    identifierName->append(*idToken.string);
+                    memberFullName->append(*idToken.string);
                 else {
                     expected("identifier after ::");
                     return false;
                 }
             }
+
+            memberName = idToken.string;
         }
 
         if (! peekTokenClass(EHTokLeftParen))
         {
+            //we're parsing a variable
             TString* referenceShaderName = getCurrentShaderName();
             if (referenceShaderName == nullptr)
             {
-                //we're not parsing a shader: normal hlsl procedure
-                node = parseContext.handleVariable(idToken.loc, identifierName);
+                //we're not parsing a shader, normal hlsl procedure
+                node = parseContext.handleVariable(idToken.loc, memberFullName);
             }
             else
             {
+                //look if the symbol already exists in our symbol table
                 TSymbol* symbol = nullptr;
-                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition && !hasBaseAccessor && !callThroughStaticShaderClassName)
+                if (!isStreamsUsedAsAType && classAccessorName == nullptr && !hasStreamAccessor && !hasComposition && !hasBaseAccessor && !callThroughStaticShaderClassName)
                 {
                     symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
                 }
                 
-                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition || hasBaseAccessor || callThroughStaticShaderClassName)
+                if (isStreamsUsedAsAType)
+                {
+                    //TOTO
+
+                    //We create a temporary Streams type and will have the "streams" keyword refers to it
+                    TString* temporaryStreamVariableName = NewPoolTString( (TString("_tmpVar_Streams_") + std::to_string(GetUniqueIndex()).c_str()).c_str() );
+
+                    symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
+                    if (symbol != nullptr) {
+                        error("The temporary variable already exists in the symbol table");
+                        return false;
+                    }
+
+                    TString accessorClassName = classAccessorName == nullptr ? *referenceShaderName : *classAccessorName;
+
+                    //Create and setup the "Streams" type and variable
+                    TType* temporaryStreamType = new TType(EbtStreams);
+                    temporaryStreamType->getQualifier().storage = EvqTemporary;
+                    temporaryStreamType->SetStreamsTypeProperties( new TStreamsTypeProperties(accessorClassName, true) );
+
+                    parseContext.declareVariable(idToken.loc, *temporaryStreamVariableName, *temporaryStreamType, nullptr);
+
+                    memberName = temporaryStreamVariableName;
+                }
+
+                if (!isStreamsUsedAsAType && (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition || hasBaseAccessor || callThroughStaticShaderClassName))
                 {
                     if (hasComposition) {
                         //maybe we can authorize this later?
@@ -5777,29 +5879,30 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     }
 
                     {
-                        TString memberName = *(idToken.string);
-
                         //XKSL extensions: a shader can override the memberName with a "MemberName" generic
                         if (this->xkslShaderCurrentlyParsed != nullptr)
                         {
-                            unsigned int countGenerics = (unsigned int)(this->xkslShaderCurrentlyParsed->listGenerics.size());
-                            for (unsigned int c = 0; c < countGenerics; c++)
+                            if (memberName != nullptr)
                             {
-                                const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
-                                if (aGeneric.type->getBasicType() == EbtMemberNameType)
+                                unsigned int countGenerics = (unsigned int)(this->xkslShaderCurrentlyParsed->listGenerics.size());
+                                for (unsigned int c = 0; c < countGenerics; c++)
                                 {
-                                    const TString& genericName = *(aGeneric.type->getUserIdentifierName());
-                                    if (genericName == memberName)
+                                    const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
+                                    if (aGeneric.type->getBasicType() == EbtMemberNameType)
                                     {
-                                        memberName = aGeneric.expressionConstValue;
-                                        break;
+                                        const TString& genericName = *(aGeneric.type->getUserIdentifierName());
+                                        if (genericName == *memberName)
+                                        {
+                                            memberName = NewPoolTString( aGeneric.expressionConstValue.c_str() );
+                                            break;
+                                        }
                                     }
                                 }
                             }
                         }
 
                         //we look if the identifier is a shader's member
-                        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, hasStreamAccessor, memberName, hasBaseAccessor);
+                        XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMember(accessorClassName, hasStreamAccessor, *memberName, hasBaseAccessor);
 
                         if (!identifierLocation.isMember())
                         {
@@ -5812,14 +5915,14 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
 
                             if (throwAnError)
                             {
-                                error( (TString("Member: \"") + memberName + TString("\" not found in the class (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
+                                error( (TString("Member: \"") + (*memberName) + TString("\" not found in the class (or its parents): \"") + accessorClassName + TString("\"")).c_str() );
                             }
                             else
                             {
                                 //unknown identifier, but in some cases we can resolve it (for example if the identifier is an unknown class and we have the possibility to recursively query them)
                                 if (!hasAnyErrorToBeProcessedAtTheTop())
                                 {
-                                    setUnknownIdentifierToProcessAtTheTop(NewPoolTString(memberName.c_str()));
+                                    setUnknownIdentifierToProcessAtTheTop(NewPoolTString(memberName->c_str()));
                                 }
                             }
                             return false;
@@ -5918,7 +6021,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                             //Add accessor to the member struct
                             glslang::TSymbol* blockSymbol = parseContext.symbolTable.find(*blockSymbolName);
                             if (blockSymbol == nullptr || blockSymbol->getAsVariable() == nullptr) {
-                                error((TString("Cannot find valid struct symbol for Member: \"") + *idToken.string + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
+                                error((TString("Cannot find valid struct symbol for Member: \"") + *memberName + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
                                 return false;
                             }
 
@@ -5944,7 +6047,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                         {
                             glslang::TSymbol* variableSymbol = parseContext.symbolTable.find(*variableSymbolName);
                             if (variableSymbol == nullptr) {
-                                error((TString("Cannot find variable symbol: \"") + *idToken.string + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
+                                error((TString("Cannot find variable symbol: \"") + *memberName + TString("\" in shader (or its parents): \"") + accessorClassName + TString("\"")).c_str());
                                 return false;
                             }
 
@@ -5958,7 +6061,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                 }
                 else
                 {
-                    node = parseContext.handleVariable(idToken.loc, idToken.string);
+                    node = parseContext.handleVariable(idToken.loc, memberName);
                 }
             }
         }
@@ -5969,7 +6072,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                 error("We cannot have a funtion call after streams identifier"); return false;
             }
 
-            if (identifierName == nullptr) {
+            if (memberFullName == nullptr || memberName == nullptr) {
                 error("Function identifier name is missing"); return false;
             }
 
@@ -5977,7 +6080,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             if (referenceShaderName == nullptr)
             {
                 //we're not parsing a shader: normal hlsl procedure
-                if (acceptFunctionCall(idToken.loc, *identifierName, node, nullptr)) {
+                if (acceptFunctionCall(idToken.loc, *memberFullName, node, nullptr)) {
                     // function_call (nothing else to do yet)
                 }
                 else {
@@ -6016,7 +6119,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                 else
                 {
                     //the symbol is known and there is no class accessor, this is a call to a normal function (not belonging to a class)
-                    if (acceptFunctionCall(idToken.loc, *identifierName, node, nullptr)) {
+                    if (acceptFunctionCall(idToken.loc, *memberFullName, node, nullptr)) {
                         // function_call (nothing else to do yet)
                     }
                     else {

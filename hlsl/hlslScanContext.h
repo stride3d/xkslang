@@ -264,6 +264,7 @@ public:
     glslang::TBuiltInVariable mapSemantic(const char*);
     
     TString convertTokenToString(const HlslToken& token);
+    void tokenizeExpression(const TString& expression, TVector<HlslToken>& listTokens);
 
 protected:
     HlslScanContext(HlslScanContext&);
