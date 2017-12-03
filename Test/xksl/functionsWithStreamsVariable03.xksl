@@ -1,49 +1,22 @@
 shader ShaderBase
 {
-	Streams compute()
-	{
-		Streams s1;
-		return s1;
-		/*Streams s2;
-		s1 = s2;
-		Streams s1 = streams;*/
-	}
+	stage stream int b1: B1;
+	stage stream float b2 : B2;
 }
 
 shader ShaderMain: ShaderBase
 {
-	void VSMain()
-	{
-		Streams s1;
-		compute();
-		/*Streams s2;
-		s1 = s2;
-		Streams s1 = streams;*/
-	}
-}
+	stage stream float4 s1: S1;
+	stage stream float4 s2: S2;
 
-
-
-shader IShaderBlend
-{
-	float Compute(Streams fromStream)
-	{
-	}
-};
-
-shader ShaderMaterialBlend: IShaderBlend
-{
-	override float Compute(Streams fromStream)
-	{
-		fromStream.aFloat = 0.1;
-	}
-};
-
-shader ShaderMain: ShaderMaterialBlend
-{
 	void VSMain()
 	{
 		Streams backup = streams;
-		float toto = Compute(streams);
+		//int ii = 0; int ij; struct {int i1; int i2;} a = { ii, ij };
+		
+		//Streams s4, s5;
+		//Streams s2 = s1 = streams;
+		//Streams backup1 = streams, backup1 = streams;
+		//var backup3 = streams;
 	}
 }

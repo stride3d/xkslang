@@ -316,7 +316,13 @@ namespace glslang {
         while (countTokens > 0 && listTokens[countTokens - 1].tokenClass == EHTokNone) countTokens--;
         if (countTokens == 0) return true;
 
-        tokenBuffer.insert(tokenBuffer.begin() + tokenBufferPos + 1, listTokens.begin(), listTokens.begin() + countTokens);
+        int insertionIndex = tokenBufferPos + 1;
+        if (tokenBufferPos == tokenBuffer.size())
+        {
+            pushTokenBuffer(token);
+        }
+
+        tokenBuffer.insert(tokenBuffer.begin() + insertionIndex, listTokens.begin(), listTokens.begin() + countTokens);
 
         return true;
     }

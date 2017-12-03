@@ -103,6 +103,7 @@ namespace glslang {
         bool acceptDeclaration(TIntermNode*&);
         bool acceptControlDeclaration(TIntermNode*& node);
         bool acceptSamplerDeclarationDX9(TType&);
+        bool GetTypeDeclarationLabel(const TType& t, const TString& variableName, TString& typeDeclarationLabel);
         bool acceptSamplerState();
         bool acceptSamplerState(TSamplerStateDefinition*& samplerDef);
         bool acceptFullySpecifiedType(TType&);
@@ -193,6 +194,7 @@ namespace glslang {
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName, bool onlyLookInParentClasses);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassBestMatchingMethod(const TString& shaderClassName, TFunction* functionCall, bool onlyLookInParentClasses);
         bool getListShaderClassMethodsWithGivenName(XkslShaderDefinition* shader, const TString& methodName, TVector<const TShaderClassFunction*>& shaderMethodsList, bool onlyLookInParentClasses, bool recursivelyLookInParents);
+        bool GetListAllStreamsVariablesForTheShader(const TString& shaderClassName, bool addInheritedVariables, TVector<XkslShaderDefinition::XkslShaderMember*>& listStreamVariables);
         TType* getTypeDefinedByTheShaderOrItsParents(const TString& shaderName, const TString& typeName, int uniqueId = 0);
         bool IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslShaderDefinition* maybeParent);
         bool isRecordedAsAShaderName(const TString& name);

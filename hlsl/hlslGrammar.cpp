@@ -987,6 +987,20 @@ bool HlslGrammar::acceptSamplerDeclarationDX9(TType& /*type*/)
     return false;
 }
 
+bool HlslGrammar::GetTypeDeclarationLabel(const TType& type, const TString& variableName, TString& typeDeclarationLabel)
+{
+    typeDeclarationLabel = TType::getBasicString(type.getBasicType());
+
+    if (type.isVector()) typeDeclarationLabel += std::to_string(type.getVectorSize()).c_str();
+    else if (type.isMatrix()) typeDeclarationLabel += std::to_string(type.getMatrixCols()).c_str() + TString("x") + std::to_string(type.getMatrixRows()).c_str();
+
+    typeDeclarationLabel += " " + variableName;
+
+    if (type.isArray()) typeDeclarationLabel += TString("[") + std::to_string(type.getOuterArraySize()).c_str() + TString("]");
+
+    return true;
+}
+
 // declaration
 //      : attributes attributed_declaration
 //      | NAMESPACE IDENTIFIER LEFT_BRACE declaration_list RIGHT_BRACE
@@ -1207,10 +1221,12 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                         parseContext.growGlobalUniformBlock(idToken.loc, variableType, *fullName);
                     } else {
 
-                        bool recordDeclaration = true;
+                        bool acceptCurrentDeclaration = true;
 
+                        //=======================================================================================================
+                        //=======================================================================================================
                         //XKSL extensions:
-                        //if we have an assignment expression involving "Streams" types, we replace the types by their actual meaning
+                        //if we have an assignment expression involving "Streams" types, we immediatly replace the types by their actual meaning
                         if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
                         {
                             ////TOTO
@@ -1225,9 +1241,19 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                             {
                                 rightStreamType = &(intermSymbol->getWritableType());
                             }
+                            bool someStreamsTypeAreInvolved = (leftStreamType != nullptr || rightStreamType != nullptr);
 
-                            if (leftStreamType != nullptr || rightStreamType != nullptr)
+                            if (someStreamsTypeAreInvolved)
                             {
+                                acceptCurrentDeclaration = false;
+                                
+                                //For now we don't allow a sentence combining several instructions: this will conflict with the way we insert new instructions
+                                //Example: Streams s1 = streams, s2 = streams;
+                                if (!peekTokenClass(EHTokSemicolon)) {
+                                    error("An end of instruction token (;) is expected after a Streams expression");
+                                    return false;
+                                }
+
                                 if (leftStreamType != nullptr && rightStreamType != nullptr)
                                 {
                                     TStreamsTypeProperties* leftStreamsProperties = leftStreamType->GetStreamsTypeProperties();
@@ -1246,14 +1272,55 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                                         //Example: Streams s1 = streams;
                                         //We replace the expression by an expression such like: struct { type1 aStream1; type2 aStream2 } s1 = { streams.aStream1, streams.aStream2 };
 
-                                        //Create the list of tokens for our replacement expression
+                                        if (!rightStreamsProperties->IsFromStreamsKeyword || rightStreamsProperties->IsUndefined)
+                                        {
+                                            error("Unprocessed Streams assignment");
+                                            return false;
+                                        }
+
+                                        //Get all streams variables
+                                        TVector<XkslShaderDefinition::XkslShaderMember*> listStreamVariables;
+                                        if (!GetListAllStreamsVariablesForTheShader(rightStreamsProperties->ShaderStreamsOwner, true, listStreamVariables))
+                                        {
+                                            error("Failed to get the list of stream variables for the shader: " + rightStreamsProperties->ShaderStreamsOwner);
+                                            return false;
+                                        }
+
+                                        //Build the new assignment expression
+                                        TString expressionStructDef = "struct {";
+                                        TString expressionStructValue = " = {";
+                                        TString structName = *(idToken.string);
+                                        int countStreamVariables = (int)listStreamVariables.size();
+                                        for (int k = 0; k < countStreamVariables; k++)
+                                        {
+                                            XkslShaderDefinition::XkslShaderMember* streamMember = listStreamVariables[k];
+                                            const TString memberName = *(streamMember->memberLocation.memberName);
+                                            TString typeDeclarationLabel;
+                                            if (!GetTypeDeclarationLabel(*(streamMember->type), memberName, typeDeclarationLabel)) {
+                                                error("Failed to get the type declaration label for: " + memberName); return false;
+                                            }
+                                            expressionStructDef += typeDeclarationLabel;
+                                            expressionStructValue += "streams." + memberName;
+
+                                            if (k == countStreamVariables - 1)
+                                            {
+                                                expressionStructDef += ";} " + structName;
+                                                expressionStructValue += "};";
+                                            }
+                                            else
+                                            {
+                                                expressionStructDef += ";";
+                                                expressionStructValue += ",";
+                                            }
+                                        }
+
+                                        TString expression = expressionStructDef + expressionStructValue;
+
+                                        //Precompute the list of tokens for our new expression
                                         TVector<HlslToken> listTokens;
-                                        TString expression = "struct {float4 s1; float4 s2;} aTOTO = { streams.s1, streams.s2 };";
                                         getListTokensForExpression(expression, listTokens);
                                         if (listTokens.size() == 0) { error("Failed to create the list of tokens for the Streams expression"); return false; }
                                         
-                                        recordDeclaration = false;
-
                                         if (!insertListOfTokensAtCurrentPosition(listTokens)) {
                                             error("Failed to insert the list of tokens for the Streams expression"); return false;
                                         }
@@ -1272,8 +1339,10 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                                 }
                             }
                         }
+                        //=======================================================================================================
+                        //=======================================================================================================
 
-                        if (recordDeclaration)
+                        if (acceptCurrentDeclaration)
                         {
                             // Declare the variable and add any initializer code to the AST.
                             // The top-level node is always made into an aggregate, as that's
@@ -5402,6 +5471,47 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
     }
 
     return identifierLocation;
+}
+
+bool HlslGrammar::GetListAllStreamsVariablesForTheShader(const TString& shaderClassName, bool addInheritedVariables, TVector<XkslShaderDefinition::XkslShaderMember*>& listStreamVariables)
+{
+    XkslShaderDefinition* shader = getShaderClassDefinition(shaderClassName);
+    if (shader == nullptr) {
+        error(TString("undeclared class:") + shaderClassName); return false;
+    }
+    if (shader->isValid == false) {
+        error("invalid shader:" + shader->shaderFullName); return false;
+    }
+
+    int countMembers = (int)(shader->listAllDeclaredMembers.size());
+    for (int i = 0; i < countMembers; ++i)
+    {
+        if (shader->listAllDeclaredMembers[i].memberLocation.memberLocationType == XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer)
+        {
+            listStreamVariables.push_back( &(shader->listAllDeclaredMembers[i]) );
+        }
+    }
+
+    if (addInheritedVariables)
+    {
+        //method not found: we look in the parent classes
+        unsigned int countParents = (unsigned int)(shader->listParents.size());
+        for (unsigned int p = 0; p < countParents; p++)
+        {
+            if (shader->listParents[p].parentShader == nullptr) {
+                if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+                    return false; //not an error: the links between shaders are only done after this operation
+                error("missing link to parent shader for:" + shaderClassName);
+                return false;
+            }
+            if (shader->listParents[p].parentShader->isValid == false) continue;
+
+            TString& parentName = shader->listParents[p].parentShader->shaderFullName;
+            if (!GetListAllStreamsVariablesForTheShader(parentName, addInheritedVariables, listStreamVariables)) return false;
+        }
+    }
+
+    return true;
 }
 
 XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMethod(const TString& shaderClassName, const TString& methodName, bool onlyLookInParentClasses)

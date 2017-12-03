@@ -1,22 +1,16 @@
+shader ShaderBase
+{
+	stage stream int b1: B1;
+	stage stream float b2 : B2;
+}
 
-shader ShaderMain
+shader ShaderMain: ShaderBase
 {
 	stage stream float4 s1: S1;
 	stage stream float4 s2: S2;
 
 	void VSMain()
 	{
-		//int i1 = 5;
-		//int i2 = 6;
-		/*struct
-		{
-			int i1;
-			int i2;
-		} a = {0, 1};*/
-	
-		Streams s1 = streams;
-		//int ii = 0; int ij; struct {int i1; int i2;} a = { ii, ij };
-		//Streams s2 = s1 = streams;
+		Streams backup = streams;
 	}
 }
-
