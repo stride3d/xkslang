@@ -1120,6 +1120,9 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
         }
     }
 
+    //XKSL extension: the statement declaration can lead into inserting some new tokens
+    TVector<HlslToken> listNewTokensToAddAfterDeclarationIsCompleted;
+
     // declarator_list
     //    : declarator
     //         : identifier
@@ -1247,13 +1250,6 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                             {
                                 acceptCurrentDeclaration = false;
                                 
-                                //For now we don't allow a sentence combining several instructions: this will conflict with the way we insert new instructions
-                                //Example: Streams s1 = streams, s2 = streams;
-                                if (!peekTokenClass(EHTokSemicolon)) {
-                                    error("An end of instruction token (;) is expected after a Streams expression");
-                                    return false;
-                                }
-
                                 if (leftStreamType != nullptr && rightStreamType != nullptr)
                                 {
                                     TStreamsTypeProperties* leftStreamsProperties = leftStreamType->GetStreamsTypeProperties();
@@ -1317,13 +1313,12 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                                         TString expression = expressionStructDef + expressionStructValue;
 
                                         //Precompute the list of tokens for our new expression
-                                        TVector<HlslToken> listTokens;
-                                        getListTokensForExpression(expression, listTokens);
-                                        if (listTokens.size() == 0) { error("Failed to create the list of tokens for the Streams expression"); return false; }
-                                        
-                                        if (!insertListOfTokensAtCurrentPosition(listTokens)) {
-                                            error("Failed to insert the list of tokens for the Streams expression"); return false;
+                                        if (!getListTokensForExpression(expression, listNewTokensToAddAfterDeclarationIsCompleted)) {
+                                            error("Failed to create the list of tokens for the Streams expression"); return false;
                                         }
+                                        //We remove the termination token from the list
+                                        while (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0 && listNewTokensToAddAfterDeclarationIsCompleted.back().tokenClass == EHTokNone)
+                                            listNewTokensToAddAfterDeclarationIsCompleted.pop_back();
                                     }
                                     else
                                     {
@@ -1370,6 +1365,20 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
         nodeList = intermediate.growAggregate(nodeList, initializers);
     else
         nodeList = initializers;
+
+    //XKSL Extension
+    if (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0)
+    {
+        //New tokens are to be inserted BEFORE accepting the SemiColon token
+        if (!peekTokenClass(EHTokSemicolon)) {
+            error("An end of instruction token (;) is expected before we insert some new expression tokens");
+            return false;
+        }
+
+        if (!insertListOfTokensAtCurrentPosition(listNewTokensToAddAfterDeclarationIsCompleted)) {
+            error("Failed to insert the list of tokens for the Streams expression"); return false;
+        }
+    }
 
     // SEMICOLON
     if (! acceptTokenClass(EHTokSemicolon)) {

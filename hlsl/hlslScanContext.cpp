@@ -480,22 +480,23 @@ void HlslScanContext::deleteKeywordMap()
 
 void HlslScanContext::tokenizeExpression(const TString& expression, TVector<HlslToken>& listTokens)
 {
-    listTokens.clear();
     size_t expressionLen = expression.length();
     if (expressionLen == 0) return;
 
+    //backup the initial ppContext input
     TVector<TPpContext::tInput*> inputsBackup;
     const int countInputs = ppContext.getCountInputs();
     for (int i = 0; i < countInputs; ++i)
         inputsBackup.push_back(ppContext.getInput(i));
     ppContext.emptyInputsListUnsafe();
 
+    //set the nex expression as input
     const char* t_strings[] = { expression.c_str() };
     size_t t_length[] = { expressionLen };
     TInputScanner input(1, t_strings, t_length, nullptr, 0, 0);
     ppContext.setInput(input, false);
 
-    //Do Stuff
+    //tokenize the expression
     HlslToken token;
     do
     {
@@ -504,6 +505,7 @@ void HlslScanContext::tokenizeExpression(const TString& expression, TVector<Hlsl
     }
     while (token.tokenClass != EHTokNone);
 
+    //reset the initial input into the ppContext
     ppContext.clearAllInput();
     for (int i = 0; i < countInputs; ++i)
         ppContext.addInput(inputsBackup[i]);

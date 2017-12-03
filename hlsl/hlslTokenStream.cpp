@@ -305,15 +305,15 @@ namespace glslang {
         return true;
     }
 
-    void HlslTokenStream::getListTokensForExpression(const TString& expression, TVector<HlslToken>& listTokens)
+    bool HlslTokenStream::getListTokensForExpression(const TString& expression, TVector<HlslToken>& listTokens)
     {
         scanner.tokenizeExpression(expression, listTokens);
+        return true;
     }
 
     bool HlslTokenStream::insertListOfTokensAtCurrentPosition(const TVector<HlslToken>& listTokens)
     {
         int countTokens = (int)listTokens.size();
-        while (countTokens > 0 && listTokens[countTokens - 1].tokenClass == EHTokNone) countTokens--;
         if (countTokens == 0) return true;
 
         int insertionIndex = tokenBufferPos + 1;

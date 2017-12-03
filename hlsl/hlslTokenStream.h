@@ -58,7 +58,7 @@ namespace glslang {
 
         bool insertListOfTokensAtCurrentPosition(const TVector<HlslToken>& listTokens);
 
-        void getListTokensForExpression(const TString& expression, TVector<HlslToken>& listTokens);
+        bool getListTokensForExpression(const TString& expression, TVector<HlslToken>& listTokens);
 
         int getTokenCurrentIndex();
         HlslToken getTokenAtIndex(int index);

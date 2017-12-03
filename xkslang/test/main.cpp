@@ -312,7 +312,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testSamplerStates04", "testSamplerStates04.xkfx" },
 
     //{ "functionsWithStreamsVariable01", "functionsWithStreamsVariable01.xkfx" },
-    { "functionsWithStreamsVariable02", "functionsWithStreamsVariable02.xkfx" },
+    //{ "functionsWithStreamsVariable02", "functionsWithStreamsVariable02.xkfx" },
+    { "functionsWithStreamsVariable03", "functionsWithStreamsVariable03.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
