@@ -4460,6 +4460,12 @@ BytecodeChunk* SpxCompiler::GetOrCreateNewBytecodeChunckToInsert(BytecodeUpdateC
 BytecodeChunk* SpxCompiler::CreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType,
     unsigned int offset, bool returnExisintChunkInCaseOfConflict)
 {
+    if (instructionPos == 0)
+    {
+        error("Invalid instruction position for creating a new Bytecode Chunck");
+        return nullptr;
+    }
+
     //get the position where to insert the new bytecode chunck
     unsigned int instructionWordCount = asWordCount(instructionPos);
     unsigned int insertionPos;
@@ -4499,7 +4505,7 @@ BytecodeChunk* SpxCompiler::CreateNewBytecodeChunckToInsert(BytecodeUpdateContro
                 {
                     if (returnExisintChunkInCaseOfConflict) return &(*itListPos);
 
-                    error("conflict: We're adding 2 chuncks to the same instruction and same position");
+                    error("conflict: We're adding 2 chuncks with the same insertion type and at same position");
                     return nullptr;
                 }
                 else

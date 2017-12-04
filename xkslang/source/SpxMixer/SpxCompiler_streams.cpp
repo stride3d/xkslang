@@ -28,6 +28,7 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
     unsigned int poslastMemberXkslProperties = 0;
     unsigned int poslastTypeStreamDeclaration = 0;
     unsigned int posLastConst = 0;
+    unsigned int posFirstType = 0;
 
     //===================================================================================================================
     //===================================================================================================================
@@ -340,22 +341,33 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
         for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
         {
             ObjectInstructionBase* obj = *it;
-            if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Const)
+            if (obj != nullptr)
             {
-                ConstInstruction* constObject = dynamic_cast<ConstInstruction*>(obj);
-                if (constObject->bytecodeEndPosition > posLastConst) posLastConst = constObject->bytecodeStartPosition;
-
-                if (constObject->isS32)
+                if (obj->GetKind() == ObjectInstructionTypeEnum::Const)
                 {
-                    int constValueS32 = constObject->valueS32;
-                    if (constValueS32 >= 0 && constValueS32 < (int)mapIndexesWithConstValueId.size())
-                        mapIndexesWithConstValueId[constValueS32] = constObject->GetId();
-                    if (idOpTypeIntS32 == spvUndefinedId)
-                        idOpTypeIntS32 = constObject->GetTypeId();
+                    ConstInstruction* constObject = dynamic_cast<ConstInstruction*>(obj);
+                    if (constObject->bytecodeEndPosition > posLastConst) posLastConst = constObject->bytecodeStartPosition;
+
+                    if (constObject->isS32)
+                    {
+                        int constValueS32 = constObject->valueS32;
+                        if (constValueS32 >= 0 && constValueS32 < (int)mapIndexesWithConstValueId.size())
+                            mapIndexesWithConstValueId[constValueS32] = constObject->GetId();
+                        if (idOpTypeIntS32 == spvUndefinedId)
+                            idOpTypeIntS32 = constObject->GetTypeId();
+                    }
+                }
+                else if (obj->GetKind() == ObjectInstructionTypeEnum::Type)
+                {
+                    if (posFirstType == 0) posFirstType = obj->bytecodeStartPosition;
                 }
             }
         }
         if (errorMessages.size() > 0) success = false;
+
+        if (posLastConst == 0) {
+            posLastConst = posFirstType;
+        }
     }
 
     //bytecode chunck containing the new bytecodes to add
