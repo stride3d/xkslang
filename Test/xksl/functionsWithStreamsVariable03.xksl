@@ -6,9 +6,11 @@ shader ShaderMain
 
 	void VSMain()
 	{
-		Streams backup1 = streams, backup2 = streams;
+		//Streams s1;
+		//Streams backup1 = streams, backup2 = streams;
+		//Streams backup3 = backup1;
 		
-		//Streams s4, s5;
+		
 		//Streams s2 = s1 = streams;
 		//Streams backup1 = streams, backup1 = streams;
 		//var backup3 = streams;
