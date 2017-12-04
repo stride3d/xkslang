@@ -181,8 +181,19 @@ public:
         ShaderIdentifierLocation memberLocation;   //How can we access to the member after we parsed its declaration
     };
 
+    //Contain the details about the shader "Stream" and streams type.
+    class StreamTypeInformation
+    {
+    public:
+        TType* StreamStructureType;
+        TString StreamStructDeclarationName;
+        TString StreamStructAssignmentExpression;
+
+        StreamTypeInformation(): StreamStructureType(nullptr) {}
+    };
+
 public:
-    XkslShaderDefinition() : parsingStatus(ShaderParsingStatusEnum::Undefined), tmpFlag(0), isValid(true), shaderUniqueId(-1){}
+    XkslShaderDefinition() : parsingStatus(ShaderParsingStatusEnum::Undefined), tmpFlag(0), isValid(true), shaderUniqueId(-1) {}
 
     bool isValid;
     TSourceLoc location;  //location where the shader is declared in the file (for logs)
@@ -198,6 +209,7 @@ public:
 
     TVector<TShaderCompositionVariable> listCompositions;  //list of compositions declared in the shader
 
+    StreamTypeInformation streamsTypeInfo;
     TVector<XkslShaderMember> listCustomTypes; //list of new types declared by the shader (such like struct definition)
     TVector<XkslShaderMember> listParsedMembers;  //list of members read by the parser
     TVector<XkslShaderMember> listAllDeclaredMembers;  //list of members after being declared

@@ -1,6 +1,6 @@
 #version 450
 
-struct _17
+struct ShaderMain__streamsStruct
 {
     vec4 s1;
     vec4 s2;
@@ -28,6 +28,6 @@ void main()
     _streams.s2_id1 = VS_IN_s2;
     _streams.b1_id2 = VS_IN_b1;
     _streams.b2_id3 = VS_IN_b2;
-    _17 backup = _17(_streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3);
+    ShaderMain__streamsStruct backup = ShaderMain__streamsStruct(_streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3);
 }
 

@@ -1,4 +1,4 @@
-struct _17
+struct ShaderMain__streamsStruct
 {
     float4 s1;
     float4 s2;
@@ -34,7 +34,7 @@ void vert_main()
     _streams.s2_id1 = VS_IN_s2;
     _streams.b1_id2 = VS_IN_b1;
     _streams.b2_id3 = VS_IN_b2;
-    _17 backup = { _streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3 };
+    ShaderMain__streamsStruct backup = { _streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3 };
 }
 
 void main(SPIRV_Cross_Input stage_input)

@@ -1385,6 +1385,20 @@ public:
 
     virtual ~TType() {}
 
+    void shallowCopyBase(const TType& copyOf)
+    {
+        basicType = copyOf.basicType;
+        sampler = copyOf.sampler;
+        qualifier = copyOf.qualifier;
+        vectorSize = copyOf.vectorSize;
+        matrixCols = copyOf.matrixCols;
+        matrixRows = copyOf.matrixRows;
+        vector1 = copyOf.vector1;
+        arraySizes = copyOf.arraySizes;  // copying the pointer only, not the contents
+        structure = copyOf.structure;
+        fieldName = copyOf.fieldName;
+    }
+
     // Not for use across pool pops; it will cause multiple instances of TType to point to the same information.
     // This only works if that information (like a structure's list of types) does not change and
     // the instances are sharing the same pool.
