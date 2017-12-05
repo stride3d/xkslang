@@ -1253,7 +1253,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                                 TString structName = *(idToken.string);
                                 TString expressionStructDef = currentShader->streamsTypeInfo.StreamStructDeclarationName + TString(" ") + structName;
 
-                                TString expression = "";
+                                TString replacementExpression = "";
                                 if (leftStreamType != nullptr)
                                 {
                                     bool isUndefinedStreamType = leftStreamType->GetStreamsTypeProperties() == nullptr || leftStreamType->GetStreamsTypeProperties()->IsUndefined;
@@ -1261,17 +1261,17 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                                     if (isUndefinedStreamType)
                                     {
                                         //replace the "Stream" declaration by its corresponding struct type
-                                        expression += expressionStructDef;
+                                        replacementExpression += expressionStructDef;
                                     }
                                     else
                                     {
-                                        error("Unprocessed Streams declaration");
+                                        error("Unprocessed Streams declaration (1)");
                                         return false;
                                     }
                                 }
                                 else
                                 {
-                                    error("Unprocessed Streams declaration");
+                                    error("Unprocessed Streams declaration (2)");
                                     return false;
                                 }
 
@@ -1281,13 +1281,13 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
 
                                     if (isUndefinedStreamType || !rightStreamType->GetStreamsTypeProperties()->IsFromStreamsKeyword)
                                     {
-                                        error("Unprocessed Streams declaration");
+                                        error("Unprocessed Streams declaration (3)");
                                         return false;
                                     }
                                     else
                                     {
                                         //replace the "Stream" declaration by its corresponding struct type
-                                        expression += TString(" = ") + currentShader->streamsTypeInfo.StreamStructAssignmentExpression;
+                                        replacementExpression += TString(" = ") + currentShader->streamsTypeInfo.StreamStructAssignmentExpression;
                                     }
                                 }
                                 else if (rightIntermSymbol != nullptr)
@@ -1296,11 +1296,11 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                                     {
                                         //we have an declaration such like: "Streams backup3 = backup1;"
                                         //We convert the left Stream to a struct and assign it with the initial right struct
-                                        expression += TString(" = ") + rightIntermSymbol->getName();
+                                        replacementExpression += TString(" = ") + rightIntermSymbol->getName();
                                     }
                                     else
                                     {
-                                        error("Unprocessed Streams declaration");
+                                        error("Unprocessed Streams declaration: rightIntermSymbol has an invalid type");
                                         return false;
                                     }
                                 }
@@ -1309,11 +1309,11 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                                     //We have a Stream declaration without assignment: do nothing else
                                 }
 
-                                expression += ";";
+                                replacementExpression += ";";
 
                                 //Precompute the list of tokens for our new expression
-                                if (!getListTokensForExpression(expression, listNewTokensToAddAfterDeclarationIsCompleted)) {
-                                    error("Failed to create the list of tokens for the Streams expression"); return false;
+                                if (!getListTokensForExpression(replacementExpression, listNewTokensToAddAfterDeclarationIsCompleted)) {
+                                    error("Failed to create the list of tokens for the Streams declaration expression"); return false;
                                 }
                                 //We remove the termination token from the list
                                 while (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0 && listNewTokensToAddAfterDeclarationIsCompleted.back().tokenClass == EHTokNone)
@@ -1362,7 +1362,8 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
         }
 
         if (!insertListOfTokensAtCurrentPosition(listNewTokensToAddAfterDeclarationIsCompleted)) {
-            error("Failed to insert the list of tokens for the Streams expression"); return false;
+            error("Failed to insert the list of tokens for the Streams expression");
+            return false;
         }
     }
 
@@ -5083,13 +5084,70 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
         bool anyStreamsTypeAreInvolved = (leftStreamType != nullptr || rightStreamType != nullptr);
         if (anyStreamsTypeAreInvolved)
         {
-            //we process here the assignment aStreamVar = streams (where aStreamVar is declared with a Streams type)
+            XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
+            if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
+            TString replacementExpression = "";
+
             if (!peekTokenClass(EHTokSemicolon))
             {
                 error("; expected after a stream assignment");
                 return false;
             }
 
+            if (leftStreamType == nullptr && rightStreamType != nullptr)
+            {
+                if (rightStreamType->GetStreamsTypeProperties() == nullptr || rightStreamType->GetStreamsTypeProperties()->IsFromStreamsKeyword)
+                {
+                    //we process here the assignment aStreamVar = streams (where aStreamVar has normally been declared with a Streams type)
+                    //We replace it by: "StreamStruct _tmpStreamX = {streams values}; symbolName = _tmpStreamX;"
+                    if (leftIntermSymbol == nullptr || leftIntermSymbol->getBasicType() != EbtStruct)
+                    {
+                        error("Invalid Streams assignment expression: Left symbol is missing or has an invalid type");
+                        return false;
+                    }
+                    TString tmpStreamVariableName = TString("_tmpStreamsVar_") + TString(std::to_string(GetUniqueIndex()).c_str());
+                    replacementExpression =
+                        currentShader->streamsTypeInfo.StreamStructDeclarationName + TString(" ") + tmpStreamVariableName   //StreamStruct _tmpStreamX
+                        + TString(" = ") + currentShader->streamsTypeInfo.StreamStructAssignmentExpression + TString("; ")  // = {streams values};
+                        + leftIntermSymbol->getName() + TString(" = ") + tmpStreamVariableName + TString(";");              //symbolName = _tmpStreamX;
+                }
+                else
+                {
+                    error("Unprocessed Streams assignment expression (1)");
+                    return false;
+                }
+            }
+            else
+            {
+                error("Unprocessed Streams assignment expression (2)");
+                return false;
+            }
+
+            //Precompute the list of tokens for our new expression
+            TVector<HlslToken> listNewTokensToAddAfterDeclarationIsCompleted;
+            if (!getListTokensForExpression(replacementExpression, listNewTokensToAddAfterDeclarationIsCompleted)) {
+                error("Failed to create the list of tokens for the Streams assignment expression"); return false;
+            }
+
+            //We remove the termination token from the list
+            while (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0 && listNewTokensToAddAfterDeclarationIsCompleted.back().tokenClass == EHTokNone)
+                listNewTokensToAddAfterDeclarationIsCompleted.pop_back();
+
+            if (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0)
+            {
+                //New tokens are to be inserted BEFORE accepting the SemiColon token
+                if (!peekTokenClass(EHTokSemicolon)) {
+                    error("An end of instruction token (;) is expected before we insert some new expression tokens");
+                    return false;
+                }
+
+                if (!insertListOfTokensAtCurrentPosition(listNewTokensToAddAfterDeclarationIsCompleted)) {
+                    error("Failed to insert the list of tokens for the Streams expression");
+                    return false;
+                }
+            }
+
+            //We return directly, without processing the initial assignment expression
             return true;
         }
     }
@@ -5941,7 +5999,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     //TOTO
 
                     //We create a temporary Streams type and will have the "streams" keyword refers to it
-                    TString* temporaryStreamVariableName = NewPoolTString( (TString("_tmpVar_Streams_") + std::to_string(GetUniqueIndex()).c_str()).c_str() );
+                    TString* temporaryStreamVariableName = NewPoolTString( (TString("_tmpStreamsVar_") + std::to_string(GetUniqueIndex()).c_str()).c_str() );
                     symbol = parseContext.lookIfSymbolExistInSymbolTable(temporaryStreamVariableName);
                     if (symbol != nullptr) {
                         error("The temporary variable already exists in the symbol table");

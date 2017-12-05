@@ -7,14 +7,12 @@ shader ShaderMain
 	void VSMain()
 	{
 		Streams s1 = streams;
-		Streams s2, s3 = s1, s4, s5, s6;
+		Streams s2, s3 = s1, s4, s5, s6 = streams;
 		s2 = s3;
-		//
-		//s4 = streams;
-
-		//Streams s4 = s2 = streams;
+		s4 = streams;
+		Streams s7 = s2 = streams;
 		
-		//streams struct empty?
+		//streams when shader set no stream?
 		
 		//Streams backup1 = streams, backup2 = streams;
 		//Streams backup3 = backup1;
