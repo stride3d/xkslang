@@ -6056,7 +6056,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     //Create and setup the "Streams" type and variable
                     TType* temporaryStreamType = new TType(EbtStreams);
                     temporaryStreamType->getQualifier().storage = EvqTemporary;
-                    temporaryStreamType->SetStreamsTypeProperties( new TStreamsTypeProperties(accessorClassName, true) );
+                    temporaryStreamType->SetStreamsTypeProperties( new TStreamsTypeProperties(accessorClassName, true, false) );
 
                     parseContext.declareVariable(idToken.loc, *temporaryStreamVariableName, *temporaryStreamType, nullptr);
 
@@ -6511,8 +6511,10 @@ bool HlslGrammar::acceptXkslShaderComposition(TShaderCompositionVariable& compos
 bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName,
     TShaderCompositionVariable* compositionTargeted, HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
 {
+    TString* functionBaseName = idToken.string;
+
     // arguments
-    TFunction* functionCall = new TFunction(idToken.string, TType(EbtVoid));
+    TFunction* functionCall = new TFunction(functionBaseName, TType(EbtVoid));
     TIntermTyped* arguments = nullptr;
 
     // methods have an implicit first argument of the calling object.
@@ -6538,6 +6540,28 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
     {
         //we keep looking if we can match another method by casting some of the function parameters
         identifierLocation = findShaderClassBestMatchingMethod(nameOfShaderOwningTheFunction, functionCall, onlyLookInParentClasses);
+    }
+
+    if (!identifierLocation.isMethod())
+    {
+        //If we did not find any matching method, we look if we are calling a method using a "Streams" parameter
+        //If so: we will need to find which method we're refering to, then build the method for this streams
+        bool isAnyParametersAStreamsType = false;
+        int countParams = functionCall->getParamCount();
+        for (int k = 0; k < countParams; k++)
+        {
+            const TParameter& param = (*functionCall)[k];
+            if (param.type->GetStreamsTypeProperties() != nullptr && param.type->GetStreamsTypeProperties()->IsStreamsType)
+            {
+                isAnyParametersAStreamsType = true;
+            }
+        }
+
+        if (isAnyParametersAStreamsType)
+        {
+            error("PROUT PROUT function call with Stream type");
+            return false;
+        }
     }
 
     if (identifierLocation.isMethod())

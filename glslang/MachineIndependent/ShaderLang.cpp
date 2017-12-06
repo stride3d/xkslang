@@ -2583,6 +2583,7 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
 
             TType* streamsStructType = new TType(streamsStructMemberList, streamsStructName);   //struct type
             streamsStructType->getQualifier().storage = EvqTemporary;
+            streamsStructType->SetStreamsTypeProperties(new TStreamsTypeProperties(shader->shaderFullName, false, true));
 
             streamsStructType->setUserIdentifierName(streamsStructName.c_str());
             TString* newTypeName = NewPoolTString((shader->shaderFullName + "_" + streamsStructName).c_str());

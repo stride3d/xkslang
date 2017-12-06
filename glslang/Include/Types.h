@@ -421,10 +421,12 @@ class TStreamsTypeProperties
 public:
     bool IsUndefined;
     bool IsFromStreamsKeyword;
+    bool IsStreamsType;
     TString ShaderStreamsOwner;
 
     TStreamsTypeProperties() : IsUndefined(true) {}
-    TStreamsTypeProperties(const TString& shaderStreamsOwner, bool fromStreamsKeyword) : IsUndefined(false), ShaderStreamsOwner(shaderStreamsOwner), IsFromStreamsKeyword(fromStreamsKeyword) {}
+    TStreamsTypeProperties(const TString& shaderStreamsOwner, bool isFromStreamsKeyword, bool isStreamsType)
+        : IsUndefined(false), ShaderStreamsOwner(shaderStreamsOwner), IsFromStreamsKeyword(isFromStreamsKeyword), IsStreamsType(isStreamsType){}
 };
 
 class TSamplerStateDefinition
