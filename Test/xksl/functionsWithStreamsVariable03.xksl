@@ -12,8 +12,10 @@ shader ShaderMain
 		s4 = streams;
 		s5 = s2 = streams;
 
-		//streams = s1;
-
+		streams;
+		streams = s1;
+		
+		//streams = streams;
 		//var backup = streams;
 		//Streams backup = base.streams;
 		

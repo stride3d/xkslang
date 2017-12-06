@@ -5098,23 +5098,49 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
             {
                 if (rightStreamType->GetStreamsTypeProperties() == nullptr || rightStreamType->GetStreamsTypeProperties()->IsFromStreamsKeyword)
                 {
-                    //we process here the assignment aStreamVar = streams (where aStreamVar has normally been declared with a Streams type)
+                    //we process here the assignment "aStreamVar = streams" (where aStreamVar has normally been declared with a Streams type)
                     //We replace it by: "StreamStruct _tmpStreamX = {streams values}; symbolName = _tmpStreamX;"
                     if (leftIntermSymbol == nullptr || leftIntermSymbol->getBasicType() != EbtStruct)
                     {
                         error("Invalid Streams assignment expression: Left symbol is missing or has an invalid type");
                         return false;
                     }
+
+                    //Limitation: multiple assignment expression such like: "s5 = s2 = streams;" will not work correctly
+                    //The assignments would be done from left to right instead of right to left
+                    //Due to the fact that we're skipping the current expression and rediffer it to the next instructions.
                     TString tmpStreamVariableName = TString("_tmpStreamsVar_") + TString(std::to_string(GetUniqueIndex()).c_str());
                     replacementExpression =
-                        currentShader->streamsTypeInfo.StreamStructDeclarationName + TString(" ") + tmpStreamVariableName   //StreamStruct _tmpStreamX
-                        + TString(" = ") + currentShader->streamsTypeInfo.StreamStructAssignmentExpression + TString("; ")  // = {streams values};
-                        + leftIntermSymbol->getName() + TString(" = ") + tmpStreamVariableName + TString(";");              //symbolName = _tmpStreamX;
+                        currentShader->streamsTypeInfo.StreamStructDeclarationName + " " + tmpStreamVariableName    //StreamStruct _tmpStreamX
+                        + " = " + currentShader->streamsTypeInfo.StreamStructAssignmentExpression + "; "            // = {streams values};
+                        + leftIntermSymbol->getName() + " = " + tmpStreamVariableName + ";";                        //symbolName = _tmpStreamX;
                 }
                 else
                 {
                     error("Unprocessed Streams assignment expression (1)");
                     return false;
+                }
+            }
+            else if (leftStreamType != nullptr && rightStreamType == nullptr)
+            {
+                //we process here the assignment "streams = aStreamVar" (where aStreamVar has normally been declared with a Streams type)
+                if (rightIntermSymbol == nullptr || rightIntermSymbol->getBasicType() != EbtStruct)
+                {
+                    error("Invalid \"streams = symbol\" assignment expression: right symbol is missing or has an invalid type");
+                    return false;
+                }
+                if (leftStreamType->GetStreamsTypeProperties() == nullptr || leftStreamType->GetStreamsTypeProperties()->IsFromStreamsKeyword == false)
+                {
+                    error("Invalid \"streams = symbol\" assignment expression: left Stream variable has missing or invalid properties");
+                    return false;
+                }
+
+                TString structNamePlusDot = rightIntermSymbol->getName() + ".";
+                int countStreamVariables = currentShader->streamsTypeInfo.GetCountStreamVariables();
+                for (int m = 0; m < countStreamVariables; ++m)
+                {
+                    const TString& memberName = currentShader->streamsTypeInfo.GetStreamVariableName(m);
+                    replacementExpression += "streams." + memberName + " = " + structNamePlusDot + memberName + ";";
                 }
             }
             else
@@ -5123,27 +5149,30 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
                 return false;
             }
 
-            //Precompute the list of tokens for our new expression
-            TVector<HlslToken> listNewTokensToAddAfterDeclarationIsCompleted;
-            if (!getListTokensForExpression(replacementExpression, listNewTokensToAddAfterDeclarationIsCompleted)) {
-                error("Failed to create the list of tokens for the Streams assignment expression"); return false;
-            }
-
-            //We remove the termination token from the list
-            while (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0 && listNewTokensToAddAfterDeclarationIsCompleted.back().tokenClass == EHTokNone)
-                listNewTokensToAddAfterDeclarationIsCompleted.pop_back();
-
-            if (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0)
+            if (replacementExpression.size() > 0)
             {
-                //New tokens are to be inserted BEFORE accepting the SemiColon token
-                if (!peekTokenClass(EHTokSemicolon)) {
-                    error("An end of instruction token (;) is expected before we insert some new expression tokens");
-                    return false;
+                //Precompute the list of tokens for our new expression
+                TVector<HlslToken> listNewTokensToAddAfterDeclarationIsCompleted;
+                if (!getListTokensForExpression(replacementExpression, listNewTokensToAddAfterDeclarationIsCompleted)) {
+                    error("Failed to create the list of tokens for the Streams assignment expression"); return false;
                 }
 
-                if (!insertListOfTokensAtCurrentPosition(listNewTokensToAddAfterDeclarationIsCompleted)) {
-                    error("Failed to insert the list of tokens for the Streams expression");
-                    return false;
+                //We remove the termination token from the list
+                while (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0 && listNewTokensToAddAfterDeclarationIsCompleted.back().tokenClass == EHTokNone)
+                    listNewTokensToAddAfterDeclarationIsCompleted.pop_back();
+
+                if (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0)
+                {
+                    //New tokens are to be inserted BEFORE accepting the SemiColon token
+                    if (!peekTokenClass(EHTokSemicolon)) {
+                        error("An end of instruction token (;) is expected before we insert some new expression tokens");
+                        return false;
+                    }
+
+                    if (!insertListOfTokensAtCurrentPosition(listNewTokensToAddAfterDeclarationIsCompleted)) {
+                        error("Failed to insert the list of tokens for the Streams expression");
+                        return false;
+                    }
                 }
             }
 

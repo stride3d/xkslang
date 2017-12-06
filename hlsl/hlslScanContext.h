@@ -190,6 +190,17 @@ public:
         TString StreamStructAssignmentExpression;
 
         StreamTypeInformation(): StreamStructureType(nullptr) {}
+
+        int GetCountStreamVariables()
+        {
+            if (StreamStructureType->getStruct() == nullptr) return -1;
+            return (int)StreamStructureType->getStruct()->size() - 1; //-1 because of the unused member
+        }
+
+        const TString& GetStreamVariableName(int index)
+        {
+            return StreamStructureType->getStruct()->at(index).type->getFieldName();
+        }
     };
 
 public:
