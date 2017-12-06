@@ -2,6 +2,9 @@ shader ShaderBase
 {
 	stage stream int b1: B1;
 	stage stream float b2 : B2;
+	
+	//Invalid function's return type
+	//Streams compute() {}
 }
 
 shader ShaderMain: ShaderBase

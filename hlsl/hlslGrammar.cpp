@@ -3742,6 +3742,13 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     declaredType.setUserIdentifierName(function->getDeclaredMangledName().c_str());
                     function->getWritableType().shallowCopy(declaredType);
 
+                    //Check the function parameters and return type
+                    if (function->getType().getBasicType() == EbtStreams || function->getType().getBasicType() == EbtUndefinedVar)
+                    {
+                        error("The function has an invalid return type: " + function->getName());
+                        return false;
+                    }
+
                     bool functionIsUnresolvedUntilWeCallIt = false;
                     int countParams = function->getParamCount();
                     for (int k = 0; k < countParams; k++)
