@@ -1232,7 +1232,6 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                         //if we have a declaration (with or without assignment) involving "Streams" types, we override and replace the expression and its Stream types by their actual meaning
                         if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
                         {
-                            //TOTO
                             TType* leftStreamType = nullptr;
                             TType* rightStreamType = nullptr;
                             if (variableType.getBasicType() == EbtStreams) leftStreamType = &variableType;
@@ -1242,6 +1241,13 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                             bool anyStreamsTypeAreInvolved = (leftStreamType != nullptr || rightStreamType != nullptr);
                             if (anyStreamsTypeAreInvolved)
                             {
+                                //special case where the expression involves "Streams" type and we declared the left type with the "var" keyword
+                                if (leftStreamType == nullptr && variableType.getBasicType() == EbtUndefinedVar)
+                                {
+                                    variableType.setBasicType(EbtStreams);
+                                    leftStreamType = &variableType;
+                                }
+
                                 //We will replace the current declaration by a new one
                                 acceptCurrentDeclaration = false;
 
@@ -5036,7 +5042,6 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
     if (rightNode != nullptr && node != nullptr && node->getType().getBasicType() == EbtUndefinedVar)
     {
         const TType& variableNewType = rightNode->getType();
-
         TIntermSymbol* variableSymbolNode = node->getAsSymbolNode();
         if (variableSymbolNode == nullptr) {
             parseContext.error(loc, "An unknown var type has been parsed without generating a symbol node", "", "");
@@ -5073,7 +5078,6 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
     //if we have an assignment expression involving "Streams" types, we replace the types by their actual meaning
     if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
     {
-        //TOTO
         TType* leftStreamType = nullptr;
         TType* rightStreamType = nullptr;
         TIntermSymbol* leftIntermSymbol = node == nullptr ? nullptr : node->getAsSymbolNode();
@@ -5145,6 +5149,8 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
             }
             else
             {
+                //The only case this can happens is when the left variable was defined with "var" keyword, then assign from a "streams"
+                //We don't process this case for now
                 error("Unprocessed Streams assignment expression (2)");
                 return false;
             }
@@ -6025,7 +6031,10 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                 
                 if (isStreamsUsedAsAType)
                 {
-                    //TOTO
+                    if (hasBaseAccessor) {
+                        error("base.streams is not permitted");
+                        return false;
+                    }
 
                     //We create a temporary Streams type and will have the "streams" keyword refers to it
                     TString* temporaryStreamVariableName = NewPoolTString( (TString("_tmpStreamsVar_") + std::to_string(GetUniqueIndex()).c_str()).c_str() );

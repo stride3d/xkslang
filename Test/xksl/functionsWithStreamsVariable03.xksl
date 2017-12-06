@@ -1,5 +1,10 @@
+shader ShaderBase
+{
+	stage stream int b1: B1;
+	stage stream float b2 : B2;
+}
 
-shader ShaderMain
+shader ShaderMain: ShaderBase
 {
 	stage stream float4 s1: S1;
 	stage stream float4 s2: S2;
@@ -10,16 +15,17 @@ shader ShaderMain
 		Streams s2, s3 = s1, s4, s5, s6 = streams;
 		s2 = s3;
 		s4 = streams;
-		s5 = s2 = streams;
-
+		s5 = s2 = streams;  //warning: assignment order goes from left to right!
 		streams;
 		streams = s1;
 		
-		//streams = streams;
-		//var backup = streams;
-		//Streams backup = base.streams;
+		var backup1 = streams;
+		var backup2 = backup1, backup3, backup4;
+		backup3 = backup2;
 		
-		//Streams backup1 = streams, backup1 = streams;
-		//var backup3 = streams;
+		///will throw an error
+		//streams = streams; //invalid
+		//backup4 = streams; //unprocessed for now (when the variable was defined with the "var keyword)
+		//Streams as = base.streams;  //not permitted
 	}
 }

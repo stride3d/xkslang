@@ -1645,6 +1645,8 @@ public:
     virtual const TSampler& getSampler() const { return sampler; }
     virtual TSampler& getSampler() { return sampler; }
 
+    virtual void setBasicType(TBasicType bt) { basicType = bt; }
+
     virtual       TQualifier& getQualifier()       { return qualifier; }
     virtual const TQualifier& getQualifier() const { return qualifier; }
     virtual       void setQualifier(const TQualifier& q) { qualifier = q; }
