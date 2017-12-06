@@ -10,13 +10,10 @@ shader ShaderMain
 		Streams s2, s3 = s1, s4, s5, s6 = streams;
 		s2 = s3;
 		s4 = streams;
-		Streams s7 = s2 = streams;
-		
-		//streams when shader set no stream?
-		
-		//Streams backup1 = streams, backup2 = streams;
-		//Streams backup3 = backup1;
-				
+		s5 = s2 = streams;
+
+		//streams = s1;
+
 		//var backup = streams;
 		//Streams backup = base.streams;
 		

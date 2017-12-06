@@ -2545,6 +2545,8 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
             return false;
         }
 
+        TSourceLoc loc; loc.init();
+
         //if (listStreamVariables.size() > 0)
         {
             TTypeList* streamsStructMemberList = new TTypeList();
@@ -2558,9 +2560,8 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                 XkslShaderDefinition::XkslShaderMember* streamMember = listStreamVariables[i];
 
                 const TString& memberName = *(streamMember->memberLocation.memberName);
-                streamStructAssignmentExpression += "streams." + memberName;
-                if (i < countStreamVariables - 1) streamStructAssignmentExpression += ",";
-                    
+                streamStructAssignmentExpression += "streams." + memberName + ", ";
+
                 //Only keep the base attributes
                 TType* memberType = new TType(EbtVoid);
                 memberType->shallowCopyBase(*(streamMember->type));
@@ -2569,9 +2570,17 @@ static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& sh
                 TTypeLoc typeLoc = { memberType, streamMember->loc };
                 streamsStructMemberList->push_back(typeLoc);
             }
-            streamStructAssignmentExpression += "}";
 
-            TSourceLoc loc; loc.init();
+            //We add an unused member at the end of the struct: to allow the case where there is no Streams variables within the shader
+            {
+                TType* unusedMemberType = new TType(EbtInt);
+                unusedMemberType->setFieldName("_unused");
+                TTypeLoc typeLoc = { unusedMemberType, loc };
+                streamsStructMemberList->push_back(typeLoc);
+
+                streamStructAssignmentExpression += "0}";
+            }
+
             TType* streamsStructType = new TType(streamsStructMemberList, streamsStructName);   //struct type
             streamsStructType->getQualifier().storage = EvqTemporary;
 

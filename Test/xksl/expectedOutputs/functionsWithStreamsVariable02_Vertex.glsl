@@ -6,6 +6,7 @@ struct ShaderMain__streamsStruct
     vec4 s2;
     int b1;
     float b2;
+    int _unused;
 };
 
 struct VS_STREAMS
@@ -28,6 +29,6 @@ void main()
     _streams.s2_id1 = VS_IN_s2;
     _streams.b1_id2 = VS_IN_b1;
     _streams.b2_id3 = VS_IN_b2;
-    ShaderMain__streamsStruct backup = ShaderMain__streamsStruct(_streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3);
+    ShaderMain__streamsStruct backup = ShaderMain__streamsStruct(_streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0);
 }
 
