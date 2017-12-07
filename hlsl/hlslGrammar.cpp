@@ -3685,22 +3685,33 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
         }
 
         const TString* identifierName = nullptr;
-        bool acceptIdentifierAfterTypeDeclaration = true;
+        bool canAcceptIdentifierAfterTypeDeclaration = true;
         if (declaredType.getBasicType() == EbtBlock)
         {
             //XKSL extension: cbuffer declaration, no identifier needed after the block declaration
             //with xksl, a cbuffer does not require ";" after its declaration, so accepting an identifier after the cbuffer declaration would create some confusions
-            acceptIdentifierAfterTypeDeclaration = false;
+            canAcceptIdentifierAfterTypeDeclaration = false;
             identifierName = &(declaredType.getTypeName());
         }
 
-        if (acceptIdentifierAfterTypeDeclaration)
+        if (canAcceptIdentifierAfterTypeDeclaration)
         {
             // get the Identifier (variable name)
-            HlslToken idToken = token;
-            if (acceptIdentifier(idToken))
+            HlslToken idToken;
+            if (peekTokenClass(EHTokIdentifier)) //acceptIdentifier is too tolerant (can accept type as identifier, we just accept real identifier)
             {
-                identifierName = idToken.string;
+                if (acceptIdentifier(idToken))
+                {
+                    identifierName = idToken.string;
+                }
+            }
+            else
+            {
+                if (!peekTokenClass(EHTokSemicolon))
+                {
+                    error("The type has no identifier name and no \";\" symbol: " + declaredType.getTypeNameSafe());
+                    return false;
+                }
             }
         }
         
@@ -4846,9 +4857,6 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
         if (currentShader->streamsTypeInfo.StreamStructureType == nullptr) { error("Missing the shader streams structure type info"); return false; }
 
         type->shallowCopy(*(currentShader->streamsTypeInfo.StreamStructureType));
-
-        error("PROUT PROUT");
-        return false;
     }
 
     TParameter param = { idToken.string, type, defaultValue };
