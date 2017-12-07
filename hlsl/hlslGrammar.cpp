@@ -4810,9 +4810,13 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
     //if a parameter has the Streams type, we change it to its corresponding stream struct type
     if (type->getBasicType() == EbtStreams)
     {
-        int dsgf = 5454;
+        XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
+        if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
+        if (currentShader->streamsTypeInfo.StreamStructureType == nullptr) { error("Missing the shader streams structure type info"); return false; }
 
-        parseContext.error(token.loc, "PROUT PROUT", "", "");
+        type->shallowCopy(*(currentShader->streamsTypeInfo.StreamStructureType));
+
+        error("PROUT PROUT");
         return false;
     }
 
