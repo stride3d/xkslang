@@ -67,7 +67,7 @@ namespace glslang {
             xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined),
             xkslShaderToParse(nullptr), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr),
             dependencyUniqueCounter(0), unknownIdentifierToProcessAtTheTop(nullptr), throwErrorWhenParsingUnidentifiedSymbol(true), shaderWhereMembersCanBeFound(nullptr),
-            typeIdentifiers(false) { }
+            typeIdentifiers(false), uniqueIndex(0) { }
         virtual ~HlslGrammar() { }
 
         bool parse();
@@ -177,8 +177,8 @@ namespace glslang {
         bool acceptPostDecls(TQualifier&, TString* userDefinedSemantic = nullptr);
         bool acceptDefaultParameterDeclaration(const TType&, TIntermTyped*&);
 
-        static int GetUniqueIndex();
-        static int uniqueIndex;
+        int uniqueIndex;
+        int GetUniqueIndex();
 
         bool captureBlockTokens(TVector<HlslToken>& tokens);
         const char* getTypeString(EHlslTokenClass tokenClass) const;

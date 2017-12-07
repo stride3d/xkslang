@@ -5971,7 +5971,6 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node)
     return acceptPostfixExpression(node, false, false, false, nullptr, composition, isStreamsUsedAsAType);
 }
 
-int HlslGrammar::uniqueIndex = 0;
 int HlslGrammar::GetUniqueIndex()
 {
     return uniqueIndex++;

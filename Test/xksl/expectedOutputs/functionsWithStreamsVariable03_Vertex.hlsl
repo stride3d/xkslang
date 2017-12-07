@@ -19,6 +19,10 @@ static float4 VS_IN_s1;
 static float4 VS_IN_s2;
 static int VS_IN_b1;
 static float VS_IN_b2;
+static float4 VS_OUT_s1;
+static float4 VS_OUT_s2;
+static int VS_OUT_b1;
+static float VS_OUT_b2;
 
 struct SPIRV_Cross_Input
 {
@@ -26,6 +30,14 @@ struct SPIRV_Cross_Input
     float4 VS_IN_s2 : S2;
     int VS_IN_b1 : B1;
     float VS_IN_b2 : B2;
+};
+
+struct SPIRV_Cross_Output
+{
+    float4 VS_OUT_s1 : S1;
+    float4 VS_OUT_s2 : S2;
+    int VS_OUT_b1 : B1;
+    float VS_OUT_b2 : B2;
 };
 
 void vert_main()
@@ -56,13 +68,23 @@ void vert_main()
     backup2.b2 = backup1.b2;
     backup2._unused = backup1._unused;
     ShaderMain__streamsStruct backup3 = backup2;
+    VS_OUT_s1 = _streams.s1_id0;
+    VS_OUT_s2 = _streams.s2_id1;
+    VS_OUT_b1 = _streams.b1_id2;
+    VS_OUT_b2 = _streams.b2_id3;
 }
 
-void main(SPIRV_Cross_Input stage_input)
+SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
     VS_IN_s1 = stage_input.VS_IN_s1;
     VS_IN_s2 = stage_input.VS_IN_s2;
     VS_IN_b1 = stage_input.VS_IN_b1;
     VS_IN_b2 = stage_input.VS_IN_b2;
     vert_main();
+    SPIRV_Cross_Output stage_output;
+    stage_output.VS_OUT_s1 = VS_OUT_s1;
+    stage_output.VS_OUT_s2 = VS_OUT_s2;
+    stage_output.VS_OUT_b1 = VS_OUT_b1;
+    stage_output.VS_OUT_b2 = VS_OUT_b2;
+    return stage_output;
 }

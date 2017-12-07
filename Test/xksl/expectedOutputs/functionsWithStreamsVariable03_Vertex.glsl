@@ -21,6 +21,10 @@ layout(location = 0) in vec4 VS_IN_s1;
 layout(location = 1) in vec4 VS_IN_s2;
 layout(location = 2) in int VS_IN_b1;
 layout(location = 3) in float VS_IN_b2;
+layout(location = 0) out vec4 VS_OUT_s1;
+layout(location = 1) out vec4 VS_OUT_s2;
+layout(location = 2) out int VS_OUT_b1;
+layout(location = 3) out float VS_OUT_b2;
 
 void main()
 {
@@ -50,5 +54,9 @@ void main()
     backup2.b2 = backup1.b2;
     backup2._unused = backup1._unused;
     ShaderMain__streamsStruct backup3 = backup2;
+    VS_OUT_s1 = _streams.s1_id0;
+    VS_OUT_s2 = _streams.s2_id1;
+    VS_OUT_b1 = _streams.b1_id2;
+    VS_OUT_b2 = _streams.b2_id3;
 }
 
