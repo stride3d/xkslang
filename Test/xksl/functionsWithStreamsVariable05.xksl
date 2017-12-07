@@ -1,26 +1,16 @@
 
-shader IShaderBlend
+shader ShaderMain
 {
-	float Compute(Streams fromStream)
+	stage stream float4 s1: S1;
+	
+	void Compute(Streams fromStream)
 	{
+		int toto = 5;
 	}
-};
-
-shader ShaderMaterialBlend: IShaderBlend
-{
-	override float Compute(Streams fromStream)
-	{
-		fromStream.aFloat = 0.1;
-	}
-};
-
-shader ShaderMain: ShaderMaterialBlend
-{
+	
 	void VSMain()
 	{
 		Streams backup = streams;
-		float toto = Compute(backup);
-		
-		//float toto = Compute(streams);
+		//Compute(backup);
 	}
 }

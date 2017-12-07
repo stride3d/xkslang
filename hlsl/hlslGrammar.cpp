@@ -3532,6 +3532,7 @@ bool HlslGrammar::validateShaderDeclaredType(const TType& type)
         case EbtLinkType:
         case EbtMemberNameType:
         case EbtSemanticType:
+        case EbtStreams:
             error("a shader member or method has an invalid type: " + type.getTypeNameSafe());
             return false;
     }
@@ -3742,14 +3743,15 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     declaredType.setUserIdentifierName(function->getDeclaredMangledName().c_str());
                     function->getWritableType().shallowCopy(declaredType);
 
-                    //Check the function parameters and return type
+                    //Check the function's return type
                     if (function->getType().getBasicType() == EbtStreams || function->getType().getBasicType() == EbtUndefinedVar)
                     {
                         error("The function has an invalid return type: " + function->getName());
                         return false;
                     }
 
-                    bool functionIsUnresolvedUntilWeCallIt = false;
+                    //Check the function parameters: if a parameter has the Streams type, we change it to its corresponding stream struct type
+                    /*bool functionIsUnresolvedUntilWeCallIt = false;
                     int countParams = function->getParamCount();
                     for (int k = 0; k < countParams; k++)
                     {
@@ -3759,7 +3761,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                             functionIsUnresolvedUntilWeCallIt = true;
                         }
                     }
-                    function->SetFunctionIsUnresolvedUntilWeCallIt(functionIsUnresolvedUntilWeCallIt);
+                    function->SetFunctionIsUnresolvedUntilWeCallIt(functionIsUnresolvedUntilWeCallIt);*/
 
                     //only record the method declaration
                     if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
@@ -4802,6 +4804,15 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
     // If any prior parameters have default values, all the parameters after that must as well.
     if (defaultValue == nullptr && function.getDefaultParamCount() > 0) {
         parseContext.error(idToken.loc, "invalid parameter after default value parameters", idToken.string->c_str(), "");
+        return false;
+    }
+
+    //if a parameter has the Streams type, we change it to its corresponding stream struct type
+    if (type->getBasicType() == EbtStreams)
+    {
+        int dsgf = 5454;
+
+        parseContext.error(token.loc, "PROUT PROUT", "", "");
         return false;
     }
 
