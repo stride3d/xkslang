@@ -1,0 +1,26 @@
+
+shader IShaderBlend
+{
+	float Compute(Streams fromStream)
+	{
+	}
+};
+
+shader ShaderMaterialBlend: IShaderBlend
+{
+	override float Compute(Streams fromStream)
+	{
+		fromStream.aFloat = 0.1;
+	}
+};
+
+shader ShaderMain: ShaderMaterialBlend
+{
+	void VSMain()
+	{
+		Streams backup = streams;
+		float toto = Compute(backup);
+		
+		//float toto = Compute(streams);
+	}
+}

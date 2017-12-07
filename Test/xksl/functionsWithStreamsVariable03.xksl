@@ -26,9 +26,6 @@ shader ShaderMain: ShaderBase
 		var backup2 = backup1, backup3, backup4;
 		backup3 = backup2;
 		
-		///will throw an error
-		//streams = streams; //invalid
-		//backup4 = streams; //unprocessed for now (when the variable was defined with the "var keyword)
-		//Streams as = base.streams;  //not permitted
+		//backup4 = streams; //unprocessed for now (if the variable was defined with the "var keyword)
 	}
 }

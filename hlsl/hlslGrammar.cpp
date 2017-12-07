@@ -6559,6 +6559,9 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
 
         if (isAnyParametersAStreamsType)
         {
+            //TOTO
+            //do we really need: functionIsUnresolvedUntilWeCallIt ?
+
             error("PROUT PROUT function call with Stream type");
             return false;
         }

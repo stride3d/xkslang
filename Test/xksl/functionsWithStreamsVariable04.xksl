@@ -1,24 +1,28 @@
-
-shader IShaderBlend
+shader IShaderComp
 {
-	float Compute(Streams fromStream)
-	{
-	}
-};
+	stage stream float4 c1: C1;
+}
 
-shader ShaderMaterialBlend: IShaderBlend
+shader ShaderBase
 {
-	override float Compute(Streams fromStream)
-	{
-		fromStream.aFloat = 0.1;
-	}
-};
+	stage stream float4 b1: B1;
+}
 
-shader ShaderMain: ShaderMaterialBlend
+shader ShaderMain: ShaderBase
 {
+	stage stream float4 s1: S1;
+
+	compose IShaderComp aComp;
+	
 	void VSMain()
 	{
-		Streams backup = streams;
-		float toto = Compute(backup);
+		Streams s1 = streams;
+		Streams s2;
+		s2 = streams;
+		
+		//Not implemented yet (not relevant)
+		//Streams b1 = base.streams;
+		//Streams b2;
+		//b2 = base.streams;
 	}
 }
