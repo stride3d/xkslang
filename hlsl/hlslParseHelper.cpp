@@ -290,7 +290,7 @@ bool HlslParseContext::parseXkslShaderConstVariables(XkslShaderDefinition* shade
     return numErrors == 0;
 }
 
-bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
+bool HlslParseContext::parseXkslShaderMembersDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
 {
     //reparse the list of token previously parsed
     TVector<HlslToken>& tokenList = shader->listTokens;
@@ -313,7 +313,41 @@ bool HlslParseContext::parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefi
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
     bool res = false;
-    res = grammar.parseXKslShaderMembersAndMethodsDeclaration(shaderLibrary, shader);
+    res = grammar.parseXKslShaderMembersDeclaration(shaderLibrary, shader);
+
+    //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
+    while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
+        symbolTable.pop(nullptr);
+    }
+
+    if (!res) return false;
+    return numErrors == 0;
+}
+
+bool HlslParseContext::parseXkslShaderMethodsDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
+{
+    //reparse the list of token previously parsed
+    TVector<HlslToken>& tokenList = shader->listTokens;
+    if (tokenList.size() == 0) return true;
+
+    const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
+    TInputScanner emptyInput(1, emptyString, emptyStringLen, nullptr, 0, 0);
+
+    currentScanner = &emptyInput;
+    ppContext.clearAllInput();
+    ppContext.setInput(emptyInput, true);
+
+    HlslToken* expressionTokensList = &(tokenList[0]);
+    int countTokens = (int)(tokenList.size());
+
+    HlslScanContext scanContext(*this, ppContext);
+    HlslGrammar grammar(scanContext, *this);
+    if (!grammar.importListParsedToken(expressionTokensList, countTokens)) return false;
+
+    int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
+
+    bool res = false;
+    res = grammar.parseXKslShaderMethodsDeclaration(shaderLibrary, shader);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {

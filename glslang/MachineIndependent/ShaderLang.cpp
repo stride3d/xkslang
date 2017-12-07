@@ -2087,21 +2087,8 @@ static bool GetListAllStreamsVariablesForTheShader(HlslParseContext* parseContex
     return true;
 }
 
-static bool ProcessDeclarationOfMembersAndMethodsForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, HlslParseContext* parseContext)
+static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, HlslParseContext* parseContext)
 {
-    //======================================================================================
-    //Method declaration: add the shader methods prototype in the table of symbol
-    for (unsigned int i = 0; i < shader->listMethods.size(); ++i)
-    {
-        TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
-        parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
-    }
-
-    ////number to make sure we don't have name collisions
-    //int totalNumberOfBlocksDeclared = 0;
-    //for (unsigned int s = 0; s < shaderLibrary.listShaders.size(); s++)
-    //    totalNumberOfBlocksDeclared += shaderLibrary.listShaders[s]->listDeclaredBlockNames.size();
-
     //======================================================================================
     // Members declaration: create and add the new shader structs
 
@@ -3385,7 +3372,6 @@ static bool ParseXkslShaderRecursif(
 
                 success = ProcessConstsRegistrationForShader(shaderLibrary, shader, parseContext);
 
-                //success = ProcessDeclarationOfMembersAndMethodsForShader(shaderLibrary, shader, parseContext);
                 if (!success) {
                     error(parseContext, "Failed to process the declaration of all shader members and methods for the shader: " + shader->shaderFullName);
                     break;
@@ -3432,7 +3418,7 @@ static bool ParseXkslShaderRecursif(
                                 shaderNameToParse,
                                 shaderData,
                                 nullptr,
-                                XkslShaderDefinition::ShaderParsingStatusEnum::MembersAndMethodsDeclarationRegistered, //have new shaders catch up until this process,
+                                XkslShaderDefinition::ShaderParsingStatusEnum::MembersDeclarationRegistered, //have new shaders catch up until this process,
                                 parseContext,
                                 ppContext,
                                 infoSink,
@@ -3487,7 +3473,7 @@ static bool ParseXkslShaderRecursif(
     if (success)
     {
         previousProcessingOperation = currentProcessingOperation;
-        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::MembersAndMethodsDeclarationParsed;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::MembersDeclarationParsed;
 
         TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
         for (unsigned int s = 0; s < listShaderParsed.size(); s++)
@@ -3499,10 +3485,10 @@ static bool ParseXkslShaderRecursif(
             {
                 shader->parsingStatus = currentProcessingOperation;
 
-                success = parseContext->parseXkslShaderMembersAndMethodDeclaration(shader, &shaderLibrary, ppContext);
+                success = parseContext->parseXkslShaderMembersDeclaration(shader, &shaderLibrary, ppContext);
                 if (!success)
                 {
-                    error(parseContext, "Failed to parse the shaders' members and method declaration for the shader: " + shader->shaderFullName);
+                    error(parseContext, "Failed to parse the shaders' members declaration for the shader: " + shader->shaderFullName);
                     break;
                 }
             }
@@ -3600,11 +3586,11 @@ static bool ParseXkslShaderRecursif(
 
     //==================================================================================================================
     //==================================================================================================================
-    //We finished parsing the shaders declaration: we can now add all function prototypes in the list of symbols, and create all members structs
+    //We finished parsing the members declaration: we can now add all function prototypes in the list of symbols, and create all members structs
     if (success)
     {
         previousProcessingOperation = currentProcessingOperation;
-        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::MembersAndMethodsDeclarationRegistered;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::MembersDeclarationRegistered;
 
         TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
         for (unsigned int s = 0; s < listShaderParsed.size(); s++)
@@ -3616,10 +3602,48 @@ static bool ParseXkslShaderRecursif(
             {
                 shader->parsingStatus = currentProcessingOperation;
 
-                success = ProcessDeclarationOfMembersAndMethodsForShader(shaderLibrary, shader, parseContext);
+                success = ProcessDeclarationOfMembersForShader(shaderLibrary, shader, parseContext);
                 if (!success) {
                     error(parseContext, "Failed to process the declaration of all shader members and methods for the shader: " + shader->shaderFullName);
                     break;
+                }
+            }
+        }
+
+        if (processUntilOperation == currentProcessingOperation) return success;
+    }
+
+    //==================================================================================================================
+    //==================================================================================================================
+    //Parse the shader methods declaration only
+    if (success)
+    {
+        previousProcessingOperation = currentProcessingOperation;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::MethodsDeclarationParsed;
+
+        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        {
+            XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
+
+            if (shader->parsingStatus == previousProcessingOperation)
+            {
+                shader->parsingStatus = currentProcessingOperation;
+
+                success = parseContext->parseXkslShaderMethodsDeclaration(shader, &shaderLibrary, ppContext);
+                if (!success)
+                {
+                    error(parseContext, "Failed to parse the shaders' methods declaration for the shader: " + shader->shaderFullName);
+                    break;
+                }
+
+                //======================================================================================
+                //Method declaration: add the shader methods prototype in the table of symbol
+                for (unsigned int i = 0; i < shader->listMethods.size(); ++i)
+                {
+                    TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
+                    parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
                 }
             }
         }
@@ -3693,7 +3717,7 @@ static bool ParseXkslShaderRecursif(
                             shaderNameToParse,
                             shaderData,
                             shaderMissingADependency,
-                            XkslShaderDefinition::ShaderParsingStatusEnum::MembersAndMethodsDeclarationRegistered, //have new shaders catch up until this process,
+                            XkslShaderDefinition::ShaderParsingStatusEnum::MethodsDeclarationParsed, //have new shaders catch up until this process,
                             parseContext,
                             ppContext,
                             infoSink,

@@ -108,9 +108,10 @@ public:
         ConstMembersParsed,
         ConstsRegistered,
         UnresolvedConstsResolved,
-        MembersAndMethodsDeclarationParsed,
+        MembersDeclarationParsed,
         ProcessedCompositions,
-        MembersAndMethodsDeclarationRegistered,
+        MembersDeclarationRegistered,
+        MethodsDeclarationParsed,
         MethodsDefinitionParsed,
         ParsingCompleted
     };

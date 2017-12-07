@@ -62,7 +62,8 @@ public:
     bool parseXkslShaderDeclaration(const char* xkslShaderData, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderNewTypesDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderConstVariables(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
-    bool parseXkslShaderMembersAndMethodDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
+    bool parseXkslShaderMembersDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
+    bool parseXkslShaderMethodsDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&, TString& unknownIdentifier);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
         TPpContext&, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier, bool errorWhenParsingUnidentifiedSymbol);
