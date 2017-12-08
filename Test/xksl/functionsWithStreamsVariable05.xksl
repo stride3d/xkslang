@@ -1,22 +1,15 @@
-
 shader ShaderMain
 {
 	stage stream float matBlend: MATBLEND;
-	
-	struct TOTO
-	{
-		float matBlend;
-	};
-	
-	float Compute(TOTO fromStream)
+
+	float Compute(Streams fromStream)
 	{
 		return fromStream.matBlend;
 	}
 	
 	void VSMain()
 	{
-		//Streams backup = streams;
-		TOTO backup = {1};
+		Streams backup = streams;
 		float f = Compute(backup);
 	}
 }

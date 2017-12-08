@@ -4810,6 +4810,16 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
     if (! acceptFullySpecifiedType(*type))
         return false;
 
+    //if a parameter has the Streams type, we change it to its corresponding stream struct type
+    if (type->getBasicType() == EbtStreams)
+    {
+        XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
+        if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
+        if (currentShader->streamsTypeInfo.StreamStructureType == nullptr) { error("Missing the shader streams structure type info"); return false; }
+
+        type->shallowCopy(*(currentShader->streamsTypeInfo.StreamStructureType));
+    }
+
     parseContext.transferTypeAttributes(attributes, *type);
         
     if (type->getBasicType() == EbtUndefinedVar)
@@ -4847,16 +4857,6 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
     if (defaultValue == nullptr && function.getDefaultParamCount() > 0) {
         parseContext.error(idToken.loc, "invalid parameter after default value parameters", idToken.string->c_str(), "");
         return false;
-    }
-
-    //if a parameter has the Streams type, we change it to its corresponding stream struct type
-    if (type->getBasicType() == EbtStreams)
-    {
-        XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
-        if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
-        if (currentShader->streamsTypeInfo.StreamStructureType == nullptr) { error("Missing the shader streams structure type info"); return false; }
-
-        type->shallowCopy(*(currentShader->streamsTypeInfo.StreamStructureType));
     }
 
     TParameter param = { idToken.string, type, defaultValue };
