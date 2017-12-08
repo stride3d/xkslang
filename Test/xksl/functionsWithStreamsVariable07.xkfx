@@ -1,0 +1,5 @@
+convertAndLoad "functionsWithStreamsVariable07.xksl"
+
+mixer _m
+_m.mixin( ShaderMain )
+_m.compile()

@@ -358,6 +358,53 @@ bool HlslParseContext::parseXkslShaderMethodsDeclaration(XkslShaderDefinition* s
     return numErrors == 0;
 }
 
+bool HlslParseContext::parseXkslShaderMethodDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TShaderClassFunction* shaderMethod, TPpContext& ppContext, TString& unknownIdentifier)
+{
+    //Parse a single shader method body
+    TVector<HlslToken>& tokenList = shader->listTokens;
+    if (tokenList.size() == 0) return true;
+
+    const char* emptyString[] = { "" }; size_t emptyStringLen[] = { 0 };
+    TInputScanner emptyInput(1, emptyString, emptyStringLen, nullptr, 0, 0);
+
+    currentScanner = &emptyInput;
+    ppContext.clearAllInput();
+    ppContext.setInput(emptyInput, true);
+
+    if (shaderMethod->tokenBodyEndIndex >= (int)tokenList.size() || shaderMethod->tokenBodyStartIndex >= shaderMethod->tokenBodyEndIndex)
+        return false;
+
+    HlslToken* startToken = &(tokenList[shaderMethod->tokenBodyStartIndex]);
+    int countTokens = shaderMethod->tokenBodyEndIndex - shaderMethod->tokenBodyStartIndex + 1;
+
+    HlslScanContext scanContext(*this, ppContext);
+    HlslGrammar grammar(scanContext, *this);
+    if (!grammar.importListParsedToken(startToken, countTokens)) return false;
+
+    int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
+
+    bool res = false;
+    res = grammar.parseXKslShaderMethodDefinition(shaderLibrary, shader, shaderMethod);
+
+    //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
+    while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
+        symbolTable.pop(nullptr);
+    }
+
+    unknownIdentifier = "";
+    if (grammar.hasAnyErrorToBeProcessedAtTheTop())
+    {
+        const char* pUnknownIdentifier = grammar.getUnknownIdentifier();
+        if (pUnknownIdentifier != nullptr)
+        {
+            unknownIdentifier = TString(pUnknownIdentifier);
+        }
+    }
+
+    if (!res) return false;
+    return numErrors == 0;
+}
+
 bool HlslParseContext::parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TString& unknownIdentifier)
 {
     //reparse the list of token previously parsed

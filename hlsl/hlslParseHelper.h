@@ -46,6 +46,7 @@ namespace glslang {
 class TAttributeMap; // forward declare
 class TFunctionDeclarator;
 class XkslShaderDefinition;
+class TShaderClassFunction;
 class XkslShaderLibrary;
 struct HlslToken;
 
@@ -65,6 +66,7 @@ public:
     bool parseXkslShaderMembersDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderMethodsDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&);
     bool parseXkslShaderMethodsDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext&, TString& unknownIdentifier);
+    bool parseXkslShaderMethodDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TShaderClassFunction* shaderMethod, TPpContext&, TString& unknownIdentifier);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
         TPpContext&, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier, bool errorWhenParsingUnidentifiedSymbol);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,

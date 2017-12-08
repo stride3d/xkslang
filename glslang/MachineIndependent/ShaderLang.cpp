@@ -2987,6 +2987,23 @@ static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibra
     return nullptr;
 }
 
+static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TString& unknownIdentifier)
+{
+    unsigned int countMethods = (unsigned int)shader->listMethods.size();
+    for (unsigned int i = 0; i < countMethods; ++i)
+    {
+        TShaderClassFunction* shaderMethod = &(shader->listMethods[i]);
+        if (shaderMethod->bodyNode == nullptr)
+        {
+            //The method body has not already been parsed
+            bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext, unknownIdentifier);
+            if (!success) return false;
+        }
+    }
+
+    return true;
+}
+
 static bool ParseXkslShaderRecursif(
     XkslShaderLibrary& shaderLibrary,
     const std::string& xkslShaderFileName,
@@ -3643,7 +3660,7 @@ static bool ParseXkslShaderRecursif(
                 for (unsigned int i = 0; i < shader->listMethods.size(); ++i)
                 {
                     TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
-                    parseContext->handleFunctionDeclarator(shaderFunction.token.loc, *(shaderFunction.function), true /*prototype*/);
+                    parseContext->handleFunctionDeclarator(shaderFunction.tokenBodyStart.loc, *(shaderFunction.function), true /*prototype*/);
                 }
             }
         }
@@ -3675,7 +3692,7 @@ static bool ParseXkslShaderRecursif(
 
                 if (shader->parsingStatus == previousProcessingOperation)
                 {
-                    success = parseContext->parseXkslShaderMethodsDefinition(shader, &shaderLibrary, ppContext, unknownIdentifier);
+                    success = parseShaderMethodsDefinition(parseContext, shader, &shaderLibrary, ppContext, unknownIdentifier);
                     if (success)
                     {
                         shader->parsingStatus = currentProcessingOperation;

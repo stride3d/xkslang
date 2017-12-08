@@ -248,6 +248,67 @@ bool HlslGrammar::parseXKslShaderMethodsDeclaration(XkslShaderLibrary* shaderLib
     return true;
 }
 
+bool HlslGrammar::parseXKslShaderMethodDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse, TShaderClassFunction* shaderMethod)
+{
+    //root entry point for parsing xksl shader definition
+    if (xkslShaderCurrentlyParsed != nullptr || xkslShaderLibrary != nullptr || this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined)
+    {
+        error("an xksl shader is or have already being parsed");
+        return false;
+    }
+
+    ResetShaderLibraryFlag();
+    this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition;  //Tell the parser to parse shader method definition
+    this->throwErrorWhenParsingUnidentifiedSymbol = false;
+    this->xkslShaderLibrary = shaderLibrary;
+    this->xkslShaderToParse = shaderToParse;
+    this->xkslShaderCurrentlyParsed = shaderToParse;
+    this->functionCurrentlyParsed = shaderMethod->function;
+    TFunctionDeclarator declarator;
+    declarator.function = shaderMethod->function;
+
+    advanceToken();
+
+    TIntermNode* nodeList = nullptr;
+    if (!acceptFunctionDefinition(declarator, nodeList, nullptr))
+    {
+        this->functionCurrentlyParsed = nullptr;
+
+        if (this->hasAnyErrorToBeProcessedAtTheTop())
+        {
+            //failed due to an unknown identifier. Just return false, the error will be processed later.
+
+            //unset the function, in the case of we wanna try to parse its definition again later on
+            if (!parseContext.unsetFunctionDefinition(declarator.loc, *declarator.function))
+            {
+                this->resetErrorsToBeProcessedAtTheTop();
+                error("Failed to unset the function definition");
+                return false;
+            }
+        }
+        else
+        {
+            error("Failed to parse the method definition: " + shaderMethod->function->getMangledName());
+        }
+
+        return false;
+    }
+    this->functionCurrentlyParsed = nullptr;
+
+    if (listForeachArrayCompositionVariable.size() > 0) {
+        error("shader: list of foreach array composition variable should be empty"); return false;
+    }
+
+    if (nodeList == nullptr)
+    {
+        error("The method node is null after having parsed its body");
+        return false;
+    }
+
+    shaderMethod->bodyNode = nodeList;
+    return true;
+}
+
 bool HlslGrammar::parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse)
 {
     //root entry point for parsing xksl shader definition
@@ -3490,7 +3551,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
     return true;
 }
 
-bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TFunction& function, TVector<TShaderClassFunction>& functionList)
+bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList, TFunction& function, int tokenBodyStartIndex, int tokenBodyEndIndex)
 {
     if (shader == nullptr)
     {
@@ -3513,14 +3574,23 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader
 
     bool functionAlreadyDeclared = (index != -1);
 
+    HlslToken tokenFunctionStart = getTokenAtIndex(tokenBodyStartIndex);
+    if (tokenFunctionStart.tokenClass != EHTokLeftBrace)
+    {
+        error("Invalid function token start");
+        return false;
+    }
+
     //Function declaration
     if (!functionAlreadyDeclared)
     {
         TShaderClassFunction shaderFunction;
         shaderFunction.shader = shader;
         shaderFunction.function = &function;
-        shaderFunction.token = token;
+        shaderFunction.tokenBodyStart = tokenFunctionStart;
         shaderFunction.bodyNode = nullptr;
+        shaderFunction.tokenBodyStartIndex = tokenBodyStartIndex;
+        shaderFunction.tokenBodyEndIndex = tokenBodyEndIndex;
 
         functionList.push_back(shaderFunction);
     }
@@ -3576,7 +3646,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
         // some extra SEMI_COLON?
         while (acceptTokenClass(EHTokSemicolon)) {}
 
-        // success on seeing the RIGHT_BRACE '}'
+        // success on seeing the RIGHT_BRACE '}': end of shader definition
         if (peekTokenClass(EHTokRightBrace)) return true;
 
         ////any attributes?
@@ -3807,25 +3877,32 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     //only record the method declaration
                     if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
                     {
-                        //function definition: but we add the function prototype only
-                        if (!addShaderClassFunctionDeclaration(shader, *function, *listMethodDeclaration)) return false;
+                        int tokenFunctionBodyStartIndex = getTokenCurrentIndex();
 
                         advanceToken();
                         if (!advanceUntilEndOfBlock(EHTokRightBrace)) {
                             error("Error parsing until end of function block");
                             return false;
                         }
+
+                        int tokenFunctionBodyEndIndex = getTokenCurrentIndex() - 1;
+
+                        //function definition: we add the function definition into our shader
+                        if (!addShaderClassFunctionDeclaration(shader, *listMethodDeclaration, *function, tokenFunctionBodyStartIndex, tokenFunctionBodyEndIndex)) return false;
                     }
                     else
                     {
-                        //add the function prototype
-                        if (!addShaderClassFunctionDeclaration(shader, *function, *listMethodDeclaration)) return false;
+                        error("A function prototype is not allowed in a shader declaration: " + function->getName());
+                        return false;
                     }
                 }
                 break;
 
                 case XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition:
                 {
+                    error("This code is obsolete: you should call parseXKslShaderMethodDefinition instead");
+                    return false;
+
                     TString shaderBaseName = shader->shaderFullName;
                     /*TString shaderBaseName = shader->shaderBaseName;
                     if (shader->GetCountGenerics() > 0)
@@ -3868,7 +3945,6 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                             error("failed to retrieve the function in the shader list of declared functions");
                             return false;
                         }
-                        shaderClassFunction->token = token;  //in case of the token was those from the function prototype
 
                         bool canRecordFunctionDefinition = true;
 
@@ -6512,25 +6588,25 @@ bool HlslGrammar::acceptConstructor(TIntermTyped*& node)
 
         // arguments
         TIntermTyped* arguments = nullptr;
-        if (! acceptArguments(constructorFunction, arguments)) {
-        
-            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition ||
-                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstVariables ||
-                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersDeclarations ||
-                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDeclarations ||
-                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
-                return false; //return false but it's not necessary an error: the expression can be resolved later
+if (!acceptArguments(constructorFunction, arguments)) {
 
-            // It's possible this is a type keyword used as an identifier.  Put the token back
-            // for later use.
-            recedeToken();
-            return false;
-        }
+    if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition ||
+        this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstVariables ||
+        this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersDeclarations ||
+        this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDeclarations ||
+        this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+        return false; //return false but it's not necessary an error: the expression can be resolved later
 
-        // hook it up
-        node = parseContext.handleFunctionCall(arguments->getLoc(), constructorFunction, arguments);
+    // It's possible this is a type keyword used as an identifier.  Put the token back
+    // for later use.
+    recedeToken();
+    return false;
+}
 
-        return node != nullptr;
+// hook it up
+node = parseContext.handleFunctionCall(arguments->getLoc(), constructorFunction, arguments);
+
+return node != nullptr;
     }
 
     return false;
@@ -6581,7 +6657,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
 
     if (!acceptArguments(functionCall, arguments))
         return false;
-    
+
     TString nameOfShaderOwningTheFunction = functionClassAccessorName;
     if (compositionTargeted != nullptr)
     {
@@ -6603,25 +6679,37 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
     if (!identifierLocation.isMethod())
     {
         //If we did not find any matching method, we look if we are calling a method using a "Streams" parameter
-        //If so: we will need to find which method we're refering to, then build the method for this streams
-        bool isAnyParametersAStreamsType = false;
+        //If so: we find the best matching method and convert the Streams type to match it
         int countParams = functionCall->getParamCount();
         for (int k = 0; k < countParams; k++)
         {
             const TParameter& param = (*functionCall)[k];
-            if (param.type->GetStreamsTypeProperties() != nullptr && param.type->GetStreamsTypeProperties()->IsStreamsType)
+            if (param.type->getBasicType() == EbtStreams)
             {
-                isAnyParametersAStreamsType = true;
+                if (param.type->GetStreamsTypeProperties() != nullptr && param.type->GetStreamsTypeProperties()->IsFromStreamsKeyword)
+                {
+                    //we are calling the function using at least one "stream" keyword as a parameters.
+                    //We create and assign a variable with the stream struct, and then will reprocess the function call
+
+                    XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
+                    if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
+
+                    TString replacementExpression = "";
+                    TString tmpStreamVariableName = TString("_tmpStreamsVar_") + TString(std::to_string(GetUniqueIndex()).c_str());
+                    replacementExpression =
+                        currentShader->streamsTypeInfo.StreamStructDeclarationName + " " + tmpStreamVariableName    //StreamStruct _tmpStreamX
+                        + " = " + currentShader->streamsTypeInfo.StreamStructAssignmentExpression + ";";            // = {streams values};
+                    int gfdsljg = 45325435;
+
+                    error("Unprocessed Streams type in a function call");
+                    return false;
+                }
+                else
+                {
+                    error("Unprocessed Streams type in a function call");
+                    return false;
+                }
             }
-        }
-
-        if (isAnyParametersAStreamsType)
-        {
-            //TOTO
-            //do we really need: functionIsUnresolvedUntilWeCallIt ?
-
-            error("PROUT PROUT function call with Stream type");
-            return false;
         }
     }
 

@@ -78,6 +78,7 @@ namespace glslang {
         bool parseXKslShaderMembersDeclaration(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
         bool parseXKslShaderMethodsDeclaration(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
         bool parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
+        bool parseXKslShaderMethodDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse, TShaderClassFunction* shaderMethod);
         TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, bool errorWhenParsingUnidentifiedSymbol, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound);
 
         void setUnknownIdentifierToProcessAtTheTop(TString* unknownIdentifier) { unknownIdentifierToProcessAtTheTop = unknownIdentifier; }
@@ -137,7 +138,7 @@ namespace glslang {
         bool checkShaderGenericValuesExpression(TVector<TString*>& listGenericValues);
         bool parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration);
         bool validateShaderDeclaredType(const TType& type);
-        bool addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TFunction& function, TVector<TShaderClassFunction>& functionList);
+        bool addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList, TFunction& function, int tokenBodyStartIndex, int tokenBodyEndIndex);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);
         bool acceptFunctionDefinition(TFunctionDeclarator&, TIntermNode*& nodeList, TVector<HlslToken>* deferredTokens);
@@ -154,7 +155,8 @@ namespace glslang {
             TShaderCompositionVariable& compositionTargeted, bool& isStreamsUsedAsAType);
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(const TSourceLoc&, TString& name, TIntermTyped*&, TIntermTyped* objectBase);
-        bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted, HlslToken, TIntermTyped*&, TIntermTyped* base);
+        bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted,
+            HlslToken, TIntermTyped*&, TIntermTyped* base);
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
         bool acceptLiteral(TIntermTyped*&);

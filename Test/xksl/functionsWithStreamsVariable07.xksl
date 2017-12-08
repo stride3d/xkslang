@@ -29,6 +29,16 @@ shader IMaterialStreamBlend : MaterialStream, MaterialPixelStream
 
 shader ShaderMain: IMaterialStreamBlend
 {
+	stage stream float aNewStreamVariable;
+
+	override void Compute(Streams fromStream)
+	{
+		var middleNormal = fromStream.matNormal + streams.matNormal;
+		streams.matNormal =  streams.matBlend < 0.5 ? 
+			  lerp(fromStream.matNormal, middleNormal, streams.matBlend / 0.5)
+			: lerp(middleNormal, streams.matNormal, (streams.matBlend - 0.5) * 2);
+	}
+	
 	void VSMain()
 	{
 		int toto = 0;

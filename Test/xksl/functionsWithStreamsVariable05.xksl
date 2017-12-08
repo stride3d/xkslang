@@ -11,5 +11,6 @@ shader ShaderMain
 	{
 		Streams backup = streams;
 		float f = Compute(backup);
+		//float f2 = Compute(streams);
 	}
 }

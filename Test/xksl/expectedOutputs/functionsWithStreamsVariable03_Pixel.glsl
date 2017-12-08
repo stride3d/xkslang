@@ -33,7 +33,7 @@ void main()
     ShaderMain__streamsStruct s3 = s1;
     ShaderMain__streamsStruct s6 = ShaderMain__streamsStruct(_streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0);
     ShaderMain__streamsStruct s2 = s3;
-    ShaderMain__streamsStruct _tmpStreamsVar_12 = ShaderMain__streamsStruct(_streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0);
-    ShaderMain__streamsStruct s4 = _tmpStreamsVar_12;
+    ShaderMain__streamsStruct _tmpStreamsVar_3 = ShaderMain__streamsStruct(_streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0);
+    ShaderMain__streamsStruct s4 = _tmpStreamsVar_3;
 }
 
