@@ -148,7 +148,7 @@ public:
         TString* memberName;
 
         //for methods
-        TFunction* method;
+        TShaderClassFunction* method;
 
         ShaderIdentifierLocation(): shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1), method(nullptr), memberName(nullptr){}
 
@@ -166,7 +166,7 @@ public:
             this->memberIndex = index;
         }
 
-        void SetMethodLocation(XkslShaderDefinition* shader, TFunction* method)
+        void SetMethodLocation(XkslShaderDefinition* shader, TShaderClassFunction* method)
         {
             this->identifierType = ShaderIdentifierTypeEnum::Method;
             this->shader = shader;

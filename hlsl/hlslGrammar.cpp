@@ -5632,7 +5632,7 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     return nullptr;
 }
 
-bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* shader, const TString& methodName, TVector<const TShaderClassFunction*>& shaderMethodsList, bool onlyLookInParentClasses, bool recursivelyLookInParents)
+bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* shader, const TString& methodName, TVector<TShaderClassFunction*>& shaderMethodsList, bool onlyLookInParentClasses, bool recursivelyLookInParents)
 {
     if (shader == nullptr || shader->isValid == false) {
         error("invalid or null shader");
@@ -5645,7 +5645,7 @@ bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* s
         unsigned int countMethods = (unsigned int)(shader->listMethods.size());
         for (unsigned int i = 0; i < countMethods; ++i)
         {
-            const TShaderClassFunction* aShaderMethod = &(shader->listMethods[i]);
+            TShaderClassFunction* aShaderMethod = &(shader->listMethods[i]);
             if (aShaderMethod->function->getName().compare(methodName) == 0)
             {
                 shaderMethodsList.push_back(aShaderMethod);
@@ -5695,7 +5695,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
 
     //Get the list of all potential candidates
     const TString& methodName = functionCall->getName();
-    TVector<const TShaderClassFunction*> shaderMethodsList;
+    TVector<TShaderClassFunction*> shaderMethodsList;
     bool recursivelyLookInParents = false; //if we take all methods from current shader + its parents: it can lead to ambigeous choices if some signature are similar
     if (!getListShaderClassMethodsWithGivenName(shader, methodName, shaderMethodsList, onlyLookInParentClasses, recursivelyLookInParents))
     {
@@ -5715,7 +5715,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
     if (bestMatch != nullptr)
     {
         //Got a matching function, find back the shader owning the function
-        const TShaderClassFunction* shaderClassFunction = nullptr;
+        TShaderClassFunction* shaderClassFunction = nullptr;
         for (unsigned int k = 0; k < countCandidates; k++)
         {
             if (shaderMethodsList[k]->function == bestMatch)
@@ -5729,7 +5729,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
             return identifierLocation;
         }
         
-        identifierLocation.SetMethodLocation(shaderClassFunction->shader, shaderClassFunction->function);
+        identifierLocation.SetMethodLocation(shaderClassFunction->shader, shaderClassFunction);
         return identifierLocation;
     }
 
@@ -5780,7 +5780,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
         {
             if (shader->listMethods[i].function->getDeclaredMangledName().compare(methodName) == 0)
             {
-                identifierLocation.SetMethodLocation(shader, shader->listMethods[i].function);
+                identifierLocation.SetMethodLocation(shader, &shader->listMethods[i]);
                 break;
             }
         }
@@ -6703,42 +6703,42 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         identifierLocation = findShaderClassBestMatchingMethod(nameOfShaderOwningTheFunction, functionCall, onlyLookInParentClasses);
     }
 
-    if (!identifierLocation.isMethod())
-    {
-        //If we did not find any matching method, we look if we are calling a method using a "Streams" parameter
-        //If so: we find the best matching method and convert the Streams type to match it
-        int countParams = functionCall->getParamCount();
-        for (int k = 0; k < countParams; k++)
-        {
-            const TParameter& param = (*functionCall)[k];
-            if (param.type->getBasicType() == EbtStreams)
-            {
-                if (param.type->GetStreamsTypeProperties() != nullptr && param.type->GetStreamsTypeProperties()->IsFromStreamsKeyword)
-                {
-                    //we are calling the function using at least one "stream" keyword as a parameters.
-                    //We create and assign a variable with the stream struct, and then will reprocess the function call
-
-                    XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
-                    if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
-
-                    TString replacementExpression = "";
-                    TString tmpStreamVariableName = TString("_tmpStreamsVar_") + TString(std::to_string(GetUniqueIndex()).c_str());
-                    replacementExpression =
-                        currentShader->streamsTypeInfo.StreamStructDeclarationName + " " + tmpStreamVariableName    //StreamStruct _tmpStreamX
-                        + " = " + currentShader->streamsTypeInfo.StreamStructAssignmentExpression + ";";            // = {streams values};
-                    int gfdsljg = 45325435;
-
-                    error("Unprocessed Streams type in a function call");
-                    return false;
-                }
-                else
-                {
-                    error("Unprocessed Streams type in a function call");
-                    return false;
-                }
-            }
-        }
-    }
+    //if (!identifierLocation.isMethod())
+    //{
+    //    //If we did not find any matching method, we look if we are calling a method using a "Streams" parameter
+    //    //If so: we find the best matching method and convert the Streams type to match it
+    //    int countParams = functionCall->getParamCount();
+    //    for (int k = 0; k < countParams; k++)
+    //    {
+    //        const TParameter& param = (*functionCall)[k];
+    //        if (param.type->getBasicType() == EbtStreams)
+    //        {
+    //            if (param.type->GetStreamsTypeProperties() != nullptr && param.type->GetStreamsTypeProperties()->IsFromStreamsKeyword)
+    //            {
+    //                //we are calling the function using at least one "stream" keyword as a parameters.
+    //                //We create and assign a variable with the stream struct, and then will reprocess the function call
+    //
+    //                XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
+    //                if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
+    //
+    //                TString replacementExpression = "";
+    //                TString tmpStreamVariableName = TString("_tmpStreamsVar_") + TString(std::to_string(GetUniqueIndex()).c_str());
+    //                replacementExpression =
+    //                    currentShader->streamsTypeInfo.StreamStructDeclarationName + " " + tmpStreamVariableName    //StreamStruct _tmpStreamX
+    //                    + " = " + currentShader->streamsTypeInfo.StreamStructAssignmentExpression + ";";            // = {streams values};
+    //                int gfdsljg = 45325435;
+    //
+    //                error("Unprocessed Streams type in a function call");
+    //                return false;
+    //            }
+    //            else
+    //            {
+    //                error("Unprocessed Streams type in a function call");
+    //                return false;
+    //            }
+    //        }
+    //    }
+    //}
 
     if (identifierLocation.isMethod())
     {
@@ -6783,9 +6783,9 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         if (currentFunctionBeingParsed->getType().getQualifier().isStatic)
         {
             //we're currently parsing a static method, we can only call another static method
-            if (!identifierLocation.method->getType().getQualifier().isStatic)
+            if (!identifierLocation.method->function->getType().getQualifier().isStatic)
             {
-                error(TString("A static method: " + currentFunctionBeingParsed->getName() + TString(" is calling a non-static method: ") + identifierLocation.method->getName()));
+                error(TString("A static method: " + currentFunctionBeingParsed->getName() + TString(" is calling a non-static method: ") + identifierLocation.method->function->getName()));
                 return false;
             }
         }
@@ -6793,7 +6793,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         {
             //otherwise: if we're calling a non-static method: the caller and called shaders have to be related (the child calling a parent method)
             //unless we call a method through a composition of course...
-            if (!identifierLocation.method->getType().getQualifier().isStatic)
+            if (!identifierLocation.method->function->getType().getQualifier().isStatic)
             {
                 if (compositionTargeted == nullptr)
                 {
@@ -6810,7 +6810,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
 #else
                         //set the method as static
                         warning(TString("invalid non-static function call. Shader: ") + shaderBeingParsed->shaderFullName + TString(" is not related to shader: ") + shaderOwningTheFunction->shaderFullName);
-                        identifierLocation.method->getWritableType().getQualifier().isStatic = true;
+                        identifierLocation.method->function->getWritableType().getQualifier().isStatic = true;
 #endif
                     }
                 }
@@ -6818,7 +6818,8 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         }
         //============================================================================
 
-        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method, arguments, callToFunctionThroughBaseAccessor, isACallThroughStaticShaderClassName, compositionTargeted);
+        identifierLocation.method->counterCountCallsToFunction++;
+        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method->function, arguments, callToFunctionThroughBaseAccessor, isACallThroughStaticShaderClassName, compositionTargeted);
     }
     else
     {
