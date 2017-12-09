@@ -2378,7 +2378,8 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
             globalBlockType.setUserIdentifierName("Globals");
             globalBlockType.setOwnerClassName(shader->shaderFullName.c_str());
 
-            parseContext->declareBlock(shader->location, globalBlockType, cbufferStageGlobalBlockVarName);
+            TSourceLoc loc; loc.init(); //default location
+            parseContext->declareBlock(loc, globalBlockType, cbufferStageGlobalBlockVarName);
             shader->listDeclaredBlockNames.push_back(cbufferStageGlobalBlockVarName);
 
             TSymbol* symbol = parseContext->symbolTable.find(*cbufferStageGlobalBlockVarName);
@@ -2412,7 +2413,8 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
             globalBlockType.setUserIdentifierName("Globals");
             globalBlockType.setOwnerClassName(shader->shaderFullName.c_str());
 
-            parseContext->declareBlock(shader->location, globalBlockType, cbufferUnstageGlobalBlockVarName);
+            TSourceLoc loc; loc.init(); //default location
+            parseContext->declareBlock(loc, globalBlockType, cbufferUnstageGlobalBlockVarName);
             shader->listDeclaredBlockNames.push_back(cbufferUnstageGlobalBlockVarName);
 
             TSymbol* symbol = parseContext->symbolTable.find(*cbufferUnstageGlobalBlockVarName);
@@ -2445,7 +2447,8 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
             globalBlockType.setUserIdentifierName("globalRGroup");  //set a default user identifier name (doesn't matter if there is any name conflict)
             globalBlockType.setOwnerClassName(shader->shaderFullName.c_str());
 
-            parseContext->declareBlock(shader->location, globalBlockType, rgroupStageGlobalBlockVarName);
+            TSourceLoc loc; loc.init(); //default location
+            parseContext->declareBlock(loc, globalBlockType, rgroupStageGlobalBlockVarName);
             shader->listDeclaredBlockNames.push_back(rgroupStageGlobalBlockVarName);
 
             TSymbol* symbol = parseContext->symbolTable.find(*rgroupStageGlobalBlockVarName);
@@ -2477,7 +2480,8 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
             globalBlockType.setUserIdentifierName("globalRGroup");  //set a default user identifier name (doesn't matter if there is any name conflict)
             globalBlockType.setOwnerClassName(shader->shaderFullName.c_str());
 
-            parseContext->declareBlock(shader->location, globalBlockType, rgroupUnstageGlobalBlockVarName);
+            TSourceLoc loc; loc.init(); //default location
+            parseContext->declareBlock(loc, globalBlockType, rgroupUnstageGlobalBlockVarName);
             shader->listDeclaredBlockNames.push_back(rgroupUnstageGlobalBlockVarName);
 
             TSymbol* symbol = parseContext->symbolTable.find(*rgroupUnstageGlobalBlockVarName);
@@ -2538,6 +2542,7 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
         {
             TTypeList* streamsStructMemberList = new TTypeList();
             TString streamsStructName = "_streamsStruct";  //this name will be used to access the type
+            TString streamStructGetterMethodName = "_getStreamsStructType";
 
             TString streamStructDeclarationName = streamsStructName;
             TString streamStructAssignmentExpression = "{";
@@ -2580,6 +2585,7 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
             shader->streamsTypeInfo.StreamStructureType = streamsStructType;
             shader->streamsTypeInfo.StreamStructDeclarationName = streamStructDeclarationName;
             shader->streamsTypeInfo.StreamStructAssignmentExpression = streamStructAssignmentExpression;
+            shader->streamsTypeInfo.StreamGetterMethodName = streamStructGetterMethodName;
 
             //Add the struct type into the shader list of custom types (so that the parser can directly refer to it)
             streamsStructType->SetTypeAsDefinedByShader(true);
@@ -2614,8 +2620,10 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
             }
             type->SetParentsName(&listParentsName);
         }
+
+        TSourceLoc loc; loc.init(); //default location
         type->SetCompositionsList(&shader->listCompositions);
-        parseContext->declareVariable(shader->location, shader->shaderFullName, *type, nullptr);
+        parseContext->declareVariable(loc, shader->shaderFullName, *type, nullptr);
 
         TSymbol* symbol = parseContext->symbolTable.find(shader->shaderFullName);
         if (symbol == nullptr || symbol->getAsVariable() == nullptr)
@@ -2819,9 +2827,10 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
             //========================================================================================================
             //Create the generic const variable on global space
             //Create the const variable on global space
+            TSourceLoc loc; loc.init(); //default location
             XkslShaderDefinition::XkslShaderMember member;
             member.shader = shader;
-            member.loc = shader->location;
+            member.loc = loc;
             member.type = genericAttribute.type;
             member.resolvedDeclaredExpression = expressionNode;
             member.memberLocation.memberLocationType = XkslShaderDefinition::MemberLocationTypeEnum::Const;
@@ -2987,13 +2996,45 @@ static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibra
     return nullptr;
 }
 
+static bool CreateAndAddTokensForShaderStreamTypeMethodGetter(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
+{
+    return parseContext->createAndAddTokensForShaderStreamTypeMethodGetter(shader, shaderLibrary, ppContext);
+}
+
+static bool processMethodsDeclarationForMethodsOnlyGeneratedIfUsedForShader(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
+{
+    unsigned int countMethods = (unsigned int)shader->listMethods.size();
+    for (unsigned int i = 0; i < countMethods; ++i)
+    {
+        TShaderClassFunction* shaderMethod = &(shader->listMethods[i]);
+        if (shaderMethod->bodyNode == nullptr && shaderMethod->onlyCreateFunctionBodyIfFunctionIsUsed)
+        {
+            //The method body has not already been parsed
+            if (shaderMethod->counterCountCallsToFunction > 0)
+            {
+                //The method has been called at least once
+                TString unknownIdentifier;
+                bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext, unknownIdentifier);
+                if (!success) return false;
+
+                if (unknownIdentifier.length() > 0)
+                {
+                    return error(parseContext, "Got an unexpected unknown identifier");
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TString& unknownIdentifier)
 {
     unsigned int countMethods = (unsigned int)shader->listMethods.size();
     for (unsigned int i = 0; i < countMethods; ++i)
     {
         TShaderClassFunction* shaderMethod = &(shader->listMethods[i]);
-        if (shaderMethod->bodyNode == nullptr)
+        if (shaderMethod->bodyNode == nullptr && !shaderMethod->onlyCreateFunctionBodyIfFunctionIsUsed)
         {
             //The method body has not already been parsed
             bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext, unknownIdentifier);
@@ -3648,6 +3689,14 @@ static bool ParseXkslShaderRecursif(
             {
                 shader->parsingStatus = currentProcessingOperation;
 
+                //Add into the shader the method returning the shader streams structure type
+                success = CreateAndAddTokensForShaderStreamTypeMethodGetter(parseContext, shader, &shaderLibrary, ppContext);
+                if (!success)
+                {
+                    error(parseContext, "Failed to create and add the shaders' method returning the shader streams structure type: " + shader->shaderFullName);
+                    break;
+                }
+
                 success = parseContext->parseXkslShaderMethodsDeclaration(shader, &shaderLibrary, ppContext);
                 if (!success)
                 {
@@ -3657,11 +3706,27 @@ static bool ParseXkslShaderRecursif(
 
                 //======================================================================================
                 //Method declaration: add the shader methods prototype in the table of symbol
+                bool streamAutoGeneratedFunctionFound = false;
                 for (unsigned int i = 0; i < shader->listMethods.size(); ++i)
                 {
                     TShaderClassFunction& shaderFunction = shader->listMethods.at(i);
+
+                    const TString& functionDeclareName = shaderFunction.function->getName();
+                    bool isAutoGeneratedMethod = functionDeclareName == shader->streamsTypeInfo.StreamGetterMethodName;
+                    if (isAutoGeneratedMethod)
+                    {
+                        streamAutoGeneratedFunctionFound = true;
+                        shaderFunction.onlyCreateFunctionBodyIfFunctionIsUsed = true;
+                    }
+
                     parseContext->handleFunctionDeclarator(shaderFunction.tokenBodyStart.loc, *(shaderFunction.function), true /*prototype*/);
                 }
+                if (!streamAutoGeneratedFunctionFound)
+                {
+                    error(parseContext, "Failed to find the Streams type auto-generated getter function for the shader: " + shader->shaderFullName);
+                    break;
+                }
+
             }
         }
 
@@ -3755,6 +3820,36 @@ static bool ParseXkslShaderRecursif(
                         }
                         else error(parseContext, "Failed to recursively parse the shader: " + unknownIdentifier);
                     }
+                }
+            }
+        }
+
+        if (processUntilOperation == currentProcessingOperation) return success;
+    }
+
+    //==================================================================================================================
+    //==================================================================================================================
+    //After parsing all "standard" shaders' method:
+    //we check if we need to add the definition for the methods flag with: onlyCreateFunctionBodyIfFunctionIsUsed
+    if (success)
+    {
+        previousProcessingOperation = currentProcessingOperation;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::AutoGeneratedMethodsDefinitionParsed;
+
+        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        {
+            XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
+
+            if (shader->parsingStatus == previousProcessingOperation)
+            {
+                shader->parsingStatus = currentProcessingOperation;
+
+                success = processMethodsDeclarationForMethodsOnlyGeneratedIfUsedForShader(parseContext, shader, &shaderLibrary, ppContext);
+                if (!success) {
+                    error(parseContext, "Failed to process the declaration of some methods flag with \"onlyCreateFunctionBodyIfFunctionIsUsed\", for the shader: " + shader->shaderFullName);
+                    break;
                 }
             }
         }

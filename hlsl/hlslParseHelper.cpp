@@ -146,6 +146,17 @@ TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLib
     return expressionNode;
 }
 
+bool HlslParseContext::createAndAddTokensForShaderStreamTypeMethodGetter(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext)
+{
+    HlslScanContext scanContext(*this, ppContext);
+    HlslGrammar grammar(scanContext, *this);
+
+    if (!grammar.createAndAddTokensForShaderStreamTypeMethodGetter(shaderLibrary, shader))
+        return false;
+
+    return true;
+}
+
 TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
     TPpContext& ppContext, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier, bool errorWhenParsingUnidentifiedSymbol)
 {

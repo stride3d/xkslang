@@ -69,6 +69,43 @@ bool HlslGrammar::parse()
     return acceptCompilationUnit();
 }
 
+bool HlslGrammar::createAndAddTokensForShaderStreamTypeMethodGetter(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shader)
+{
+    //create the method streams type getter expression 
+    TString expression =
+        shader->streamsTypeInfo.StreamStructDeclarationName + " " //structTypeName
+        + shader->streamsTypeInfo.StreamGetterMethodName + "(){"
+        + shader->streamsTypeInfo.StreamStructDeclarationName + " res=" + shader->streamsTypeInfo.StreamStructAssignmentExpression + ";return res;}";
+
+    TVector<HlslToken> expressionTokensList;
+    if (!getListTokensForExpression(expression, expressionTokensList))
+    {
+        error("For the create the list of tokens for the shader streams type method getter");
+        return false;
+    }
+    //We remove the termination token from the list
+    while (expressionTokensList.size() > 0 && expressionTokensList.back().tokenClass == EHTokNone)
+        expressionTokensList.pop_back();
+
+    //Find the token position where to insert the new method
+    //We expect the shader to have a list to tokens and the last token to be "}"
+    int positionToInsert = 0;
+    int shaderCountTokens = (int)shader->listTokens.size();
+    if (shaderCountTokens > 0 && shader->listTokens[shaderCountTokens - 1].tokenClass == EHTokRightBrace)
+    {
+        positionToInsert = shaderCountTokens - 1;
+    }
+    if (positionToInsert <= 0)
+    {
+        error("Failed to find the position where to insert the new method in the shader list of tokens");
+        return false;
+    }
+
+    shader->listTokens.insert(shader->listTokens.begin() + positionToInsert, expressionTokensList.begin(), expressionTokensList.end());
+
+    return true;
+}
+
 TIntermTyped* HlslGrammar::parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
     bool errorWhenParsingUnidentifiedSymbol, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound)
 {
@@ -3348,7 +3385,6 @@ bool HlslGrammar::acceptShaderClass(TType& type)
     TStorageQualifier storageQualifier = EvqTemporary;
 
     int tokenStart = getTokenCurrentIndex();
-
     if (!acceptTokenClass(EHTokShaderClass))
         return false;
 
@@ -3418,7 +3454,6 @@ bool HlslGrammar::acceptShaderClass(TType& type)
 
             //Create the new shader declaration
             XkslShaderDefinition* shaderDefinition = new XkslShaderDefinition();
-            shaderDefinition->location = token.loc;
             shaderDefinition->shaderBaseName = shaderName;
             shaderDefinition->shaderFullName = shaderName;
             unsigned int countGenerics = (unsigned int)(listGenericTypes.size());
@@ -3584,15 +3619,7 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader
     //Function declaration
     if (!functionAlreadyDeclared)
     {
-        TShaderClassFunction shaderFunction;
-        shaderFunction.shader = shader;
-        shaderFunction.function = &function;
-        shaderFunction.tokenBodyStart = tokenFunctionStart;
-        shaderFunction.bodyNode = nullptr;
-        shaderFunction.tokenBodyStartIndex = tokenBodyStartIndex;
-        shaderFunction.tokenBodyEndIndex = tokenBodyEndIndex;
-
-        functionList.push_back(shaderFunction);
+        functionList.push_back(TShaderClassFunction(shader, &function, tokenFunctionStart, nullptr, tokenBodyStartIndex, tokenBodyEndIndex));
     }
 
     return true;

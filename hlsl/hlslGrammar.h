@@ -80,6 +80,7 @@ namespace glslang {
         bool parseXKslShaderMethodsDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse);
         bool parseXKslShaderMethodDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse, TShaderClassFunction* shaderMethod);
         TIntermTyped* parseXkslShaderAssignmentExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, bool errorWhenParsingUnidentifiedSymbol, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound);
+        bool createAndAddTokensForShaderStreamTypeMethodGetter(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shader);
 
         void setUnknownIdentifierToProcessAtTheTop(TString* unknownIdentifier) { unknownIdentifierToProcessAtTheTop = unknownIdentifier; }
         const char* getUnknownIdentifier() { return unknownIdentifierToProcessAtTheTop == nullptr ? nullptr : unknownIdentifierToProcessAtTheTop->c_str(); }

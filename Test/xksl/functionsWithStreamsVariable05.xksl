@@ -12,5 +12,10 @@ shader ShaderMain
 		Streams backup = streams;
 		float f = Compute(backup);
 		//float f2 = Compute(streams);
+		
+		Streams f3 = _getStreamsStructType();
+		float f3f = f3.matBlend;
+		var f4 = _getStreamsStructType();
+		float f4f = f4.matBlend;
 	}
 }
