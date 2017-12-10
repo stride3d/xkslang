@@ -69,7 +69,7 @@ enum TBasicType {
     EbtLinkType,        //xksl extensions: a generic can be declared with a LinkType type
     EbtMemberNameType,  //xksl extensions: a generic can be declared with a MemberName type
     EbtSemanticType,    //xksl extensions: a generic can be declared with a Semantic type
-    EbtStreams,         //Streams type
+    //EbtStreams,         //Streams type
 
     // HLSL types that live only temporarily.
     EbtString,

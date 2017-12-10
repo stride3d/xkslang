@@ -1866,7 +1866,7 @@ public:
         case EbtLinkType:           return "LinkType";
         case EbtMemberNameType:     return "MemberName";
         case EbtSemanticType:       return "SemanticType";
-        case EbtStreams:            return "Streams";
+        //case EbtStreams:            return "Streams";
 
         case EbtString:             return "string";
 

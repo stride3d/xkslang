@@ -2474,12 +2474,12 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
             break;
         }
 
-    case glslang::EbtStreams:
-        {
-            //The variable is supposed to be unused: we create an id for it anyway for consistency purpose
-            spvType = builder.makeIntType(32);
-            break;
-        }
+    //case glslang::EbtStreams:
+    //    {
+    //        //The variable is supposed to be unused: we create an id for it anyway for consistency purpose
+    //        spvType = builder.makeIntType(32);
+    //        break;
+    //    }
 
     default:
         //assert(0);

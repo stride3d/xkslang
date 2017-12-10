@@ -2541,7 +2541,7 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
         //if (listStreamVariables.size() > 0)
         {
             TTypeList* streamsStructMemberList = new TTypeList();
-            TString streamsStructName = "_streamsStruct";  //this name will be used to access the type
+            TString streamsStructName = "Streams";  //this name will be used to access the type
             TString streamStructGetterMethodName = "_getStreamsStructType";
 
             TString streamStructDeclarationName = streamsStructName;

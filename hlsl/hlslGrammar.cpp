@@ -1351,6 +1351,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
 
                         bool acceptCurrentDeclaration = true;
 
+                        /*
                         //=======================================================================================================
                         //=======================================================================================================
                         //XKSL extensions:
@@ -1453,6 +1454,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                         }
                         //=======================================================================================================
                         //=======================================================================================================
+                        */
 
                         if (acceptCurrentDeclaration)
                         {
@@ -2591,9 +2593,9 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         new(&type) TType(EbtSemanticType);
         break;
 
-    case EHTokStreamsType:
+    /*case EHTokStreamsType:
         new(&type) TType(EbtStreams);
-        break;
+        break;*/
 
     case EHTokFloat:
         new(&type) TType(EbtFloat);
@@ -3239,7 +3241,7 @@ TString HlslGrammar::getLabelForTokenType(EHlslTokenClass tokenType)
         case EHTokLinkType:         return "LinkType";
         case EHTokMemberNameType:   return "MemberName";
         case EHTokSemanticType:     return "Semantic";
-        case EHTokStreamsType:      return "Streams";
+        //case EHTokStreamsType:      return "Streams";
     }
 
     return "";
@@ -3659,7 +3661,7 @@ bool HlslGrammar::validateShaderDeclaredType(const TType& type)
         case EbtLinkType:
         case EbtMemberNameType:
         case EbtSemanticType:
-        case EbtStreams:
+        //case EbtStreams:
             error("a shader member or method has an invalid type: " + type.getTypeNameSafe());
             return false;
     }
@@ -3883,7 +3885,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     function->getWritableType().shallowCopy(declaredType);
 
                     //Check the function's return type
-                    if (function->getType().getBasicType() == EbtStreams || function->getType().getBasicType() == EbtUndefinedVar)
+                    if (/*function->getType().getBasicType() == EbtStreams ||*/ function->getType().getBasicType() == EbtUndefinedVar)
                     {
                         error("The function has an invalid return type: " + function->getName());
                         return false;
@@ -4914,14 +4916,14 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
         return false;
 
     //if a parameter has the Streams type, we change it to its corresponding stream struct type
-    if (type->getBasicType() == EbtStreams)
+    /*if (type->getBasicType() == EbtStreams)
     {
         XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
         if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
         if (currentShader->streamsTypeInfo.StreamStructureType == nullptr) { error("Missing the shader streams structure type info"); return false; }
 
         type->shallowCopy(*(currentShader->streamsTypeInfo.StreamStructureType));
-    }
+    }*/
 
     parseContext.transferTypeAttributes(attributes, *type);
         
@@ -5238,6 +5240,7 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
     }
     //=======================================================================
 
+    /*
     //=======================================================================================================
     //=======================================================================================================
     //XKSL extensions:
@@ -5354,6 +5357,7 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
     }
     //=======================================================================================================
     //=======================================================================================================
+    */
 
     node = parseContext.handleAssign(loc, assignOp, node, rightNode);
     node = parseContext.handleLvalue(loc, "assign", node);
@@ -6155,20 +6159,20 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
         }
         else
         {
-            memberFullName = idToken.string;
-            if (memberFullName == nullptr) {
+            if (idToken.string == nullptr) {
                 error("member name is missing"); return false;
             }
+            memberFullName = idToken.string;
 
             //The identifier name can be composed
             while (acceptTokenClass(EHTokColonColon)) {
                 // user-type or namespace name
-                memberFullName = NewPoolTString(memberFullName->c_str());
+                memberFullName = NewPoolTString(memberFullName->c_str());  //create a new string: we don't want to update the token string
                 memberFullName->append(parseContext.scopeMangler);
                 if (acceptIdentifier(idToken))
                     memberFullName->append(*idToken.string);
                 else {
-                    expected("identifier after ::");
+                    error("missing identifier after \"::\" symbol");
                     return false;
                 }
             }
@@ -6176,7 +6180,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             memberName = idToken.string;
         }
 
-        if (! peekTokenClass(EHTokLeftParen))
+        if (!peekTokenClass(EHTokLeftParen) && !isStreamsUsedAsAType)
         {
             //we're parsing a variable
             TString* referenceShaderName = getCurrentShaderName();
@@ -6197,8 +6201,10 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     }
                 }
                 
-                if (isStreamsUsedAsAType)
+                /*if (isStreamsUsedAsAType)
                 {
+                    //we replace the "streams" keyword by a call to the auto-generated method: _getStreamsStructType()
+
                     if (hasBaseAccessor) {
                         error("base.streams is not permitted");
                         return false;
@@ -6222,9 +6228,9 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     parseContext.declareVariable(idToken.loc, *temporaryStreamVariableName, *temporaryStreamType, nullptr);
 
                     memberName = temporaryStreamVariableName;
-                }
+                }*/
 
-                if (!isStreamsUsedAsAType && (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition || hasBaseAccessor || callThroughStaticShaderClassName))
+                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition || hasBaseAccessor || callThroughStaticShaderClassName)
                 {
                     if (hasComposition) {
                         //maybe we can authorize this later?
@@ -6437,17 +6443,14 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
         else 
         {
             //we're parsing a method
-            if (isStreamsUsedAsAType) {
-                error("We cannot have a funtion call after streams identifier"); return false;
-            }
-
-            if (memberFullName == nullptr || memberName == nullptr) {
-                error("Function identifier name is missing"); return false;
-            }
 
             TString* referenceShaderName = getCurrentShaderName();
             if (referenceShaderName == nullptr)
             {
+                if (memberFullName == nullptr) {
+                    error("Function identifier name is missing"); return false;
+                }
+
                 //we're not parsing a shader: normal hlsl procedure
                 if (acceptFunctionCall(idToken.loc, *memberFullName, node, nullptr)) {
                     // function_call (nothing else to do yet)
@@ -6459,13 +6462,18 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             }
             else
             {
+                TString* functionBaseName = memberName;
+
                 TSymbol* symbol = nullptr;
-                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition && !hasBaseAccessor && !callThroughStaticShaderClassName)
+                if (classAccessorName == nullptr && !hasStreamAccessor && !hasComposition && !hasBaseAccessor && !callThroughStaticShaderClassName && !isStreamsUsedAsAType)
                 {
-                    symbol = parseContext.lookIfSymbolExistInSymbolTable(token.string);
+                    if (functionBaseName != nullptr)
+                    {
+                        symbol = parseContext.lookIfSymbolExistInSymbolTable(functionBaseName);
+                    }
                 }
 
-                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition || hasBaseAccessor || callThroughStaticShaderClassName)
+                if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition || hasBaseAccessor || callThroughStaticShaderClassName || isStreamsUsedAsAType)
                 {
                     //No known symbol or a class accessor: we look for the appropriate method in our xksl shader library
 
@@ -6477,11 +6485,37 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
 
                     TString accessorClassName = classAccessorName == nullptr ? *referenceShaderName : *classAccessorName;
                     TShaderCompositionVariable* pCompositionTargeted = hasComposition? &compositionTargeted: nullptr;
-                    if (acceptXkslFunctionCall(accessorClassName, hasBaseAccessor, callThroughStaticShaderClassName, pCompositionTargeted, idToken, node, nullptr)) {
+
+                    bool parenthesisRequiredAfterMethodName = true;
+                    if (isStreamsUsedAsAType)
+                    {
+                        error("PROUT PROUT");
+                        return false;
+
+                        //we replace the "streams" keyword by a call to the auto-generated method: _getStreamsStructType()
+                        XkslShaderDefinition* shader = getShaderClassDefinition(accessorClassName);
+                        if (shader == nullptr) {
+                            error(TString("shader not found when parsing a streams keyword: ") + accessorClassName);
+                            return false;
+                        }
+                        functionBaseName = NewPoolTString(shader->streamsTypeInfo.StreamGetterMethodName.c_str());
+                        parenthesisRequiredAfterMethodName = false;
+                    }
+
+                    if (functionBaseName == nullptr)
+                    {
+                        error("Missing the name of the function to call");
+                        return false;
+                    }
+
+                    if (acceptXkslFunctionCall(accessorClassName, hasBaseAccessor, callThroughStaticShaderClassName, pCompositionTargeted,
+                        functionBaseName, parenthesisRequiredAfterMethodName, idToken.loc, node, nullptr))
+                    {
                         // function_call (nothing else to do yet)
                     }
-                    else {
-                        expected("Xksl function call arguments");
+                    else
+                    {
+                        error(TString("Failed to call the shader method: ") + *memberName);
                         return false;
                     }
                 }
@@ -6670,13 +6704,11 @@ bool HlslGrammar::acceptXkslShaderComposition(TShaderCompositionVariable& compos
     return true;
 }
 
-bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName,
-    TShaderCompositionVariable* compositionTargeted, HlslToken idToken, TIntermTyped*& node, TIntermTyped* base)
+bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted,
+    TString* functionName, bool parenthesisRequiredAfterFunctionName, TSourceLoc& tokenLocation, TIntermTyped*& node, TIntermTyped* base)
 {
-    TString* functionBaseName = idToken.string;
-
     // arguments
-    TFunction* functionCall = new TFunction(functionBaseName, TType(EbtVoid));
+    TFunction* functionCall = new TFunction(functionName, TType(EbtVoid));
     TIntermTyped* arguments = nullptr;
 
     // methods have an implicit first argument of the calling object.
@@ -6820,13 +6852,13 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         //============================================================================
 
         identifierLocation.method->counterCountCallsToFunction++;
-        node = parseContext.handleFunctionCall(idToken.loc, identifierLocation.method->function, arguments, callToFunctionThroughBaseAccessor, isACallThroughStaticShaderClassName, compositionTargeted);
+        node = parseContext.handleFunctionCall(tokenLocation, identifierLocation.method->function, arguments, callToFunctionThroughBaseAccessor, isACallThroughStaticShaderClassName, compositionTargeted);
     }
     else
     {
         //function not found as a method from our shader library, so we look in the global list of method
         //could be a call to instrisic functions
-        node = parseContext.handleFunctionCall(idToken.loc, functionCall, arguments, false, nullptr);
+        node = parseContext.handleFunctionCall(tokenLocation, functionCall, arguments, false, nullptr);
     }
 
     return true;

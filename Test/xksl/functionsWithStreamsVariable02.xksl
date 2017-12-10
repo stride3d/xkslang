@@ -17,5 +17,7 @@ shader ShaderMain: ShaderBase
 	{
 		Streams unusedStreams;
 		Streams backup = streams;
+		
+		//Streams backup = _getStreamsStructType();
 	}
 }
