@@ -294,13 +294,14 @@ bool HlslGrammar::parseXKslShaderMethodDefinition(XkslShaderLibrary* shaderLibra
         return false;
     }
 
-    ResetShaderLibraryFlag();
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition;  //Tell the parser to parse shader method definition
     this->throwErrorWhenParsingUnidentifiedSymbol = false;
     this->xkslShaderLibrary = shaderLibrary;
     this->xkslShaderToParse = shaderToParse;
     this->xkslShaderCurrentlyParsed = shaderToParse;
     this->functionCurrentlyParsed = shaderMethod->function;
+    ResetShaderLibraryFlag();
+
     TFunctionDeclarator declarator;
     declarator.function = shaderMethod->function;
 
@@ -4234,19 +4235,18 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                         //if identifier is null: we're defining a new type ("struct aStruct { };")
                         //add a new type definition into the shader
 
-                        if (declaredType.getBasicType() != EbtStruct)
-                        {
-                            error("A shader defined a new type can only define a struct type");
-                            return false;
+                        if (declaredType.getBasicType() != EbtStruct) {
+                            error("A shader custom type must be a struct type"); return false;
+                        }
+                        if (declaredType.getTypeNamePtr() == nullptr) {
+                            error("A shader custom type has no name"); return false;
                         }
 
                         declaredType.SetTypeAsDefinedByShader(true);
-                        XkslShaderDefinition::XkslShaderMember shaderType;
-                        shaderType.shader = shader;
-                        shaderType.type = new TType(EbtVoid);
-                        shaderType.type->shallowCopy(declaredType);
-                        shaderType.loc = token.loc;
-                        shader->listCustomTypes.push_back(shaderType);
+                        TType* customType = new TType(EbtVoid);
+                        customType->shallowCopy(declaredType);
+                        const TString& customTypeName = *(declaredType.getTypeNamePtr());
+                        shader->listCustomTypes.push_back(XkslShaderDefinition::ShaderCustomTypeInformation(customTypeName, customType));
                     }
 
                     //we skip the member/type declaration
@@ -5605,9 +5605,9 @@ TType* HlslGrammar::getTypeDefinedByTheShaderOrItsParents(const TString& shaderN
     int countTypes = (int)(shader->listCustomTypes.size());
     for (int i = 0; i < countTypes; ++i)
     {
-        if (shader->listCustomTypes[i].type->getUserIdentifierName()->compare(typeName) == 0)
+        if (shader->listCustomTypes[i].customTypeName == typeName)
         {
-            return shader->listCustomTypes[i].type;
+            return shader->listCustomTypes[i].customType;
         }
     }
 
@@ -5927,7 +5927,8 @@ bool HlslGrammar::IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslSh
 void HlslGrammar::ResetShaderLibraryFlag()
 {
     dependencyUniqueCounter = 1;
-    if (xkslShaderLibrary == nullptr) return;
+    if (xkslShaderLibrary == nullptr) return error("Fails to reset flags: Shader library is null");
+
     for (unsigned int s = 0; s < xkslShaderLibrary->listShaders.size(); s++)
         xkslShaderLibrary->listShaders[s]->tmpFlag = 0;
 }

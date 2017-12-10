@@ -15,6 +15,7 @@ shader ShaderMain: ShaderBase
 	
 	void VSMain()
 	{
+		Streams unusedStreams;
 		Streams backup = streams;
 	}
 }

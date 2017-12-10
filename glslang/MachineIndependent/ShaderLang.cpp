@@ -2589,12 +2589,9 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
 
             //Add the struct type into the shader list of custom types (so that the parser can directly refer to it)
             streamsStructType->SetTypeAsDefinedByShader(true);
-            XkslShaderDefinition::XkslShaderMember shaderType;
-            shaderType.shader = nullptr;
-            shaderType.type = new TType(EbtVoid);
-            shaderType.type->shallowCopy(*streamsStructType);
-            shaderType.loc = loc;
-            shader->listCustomTypes.push_back(shaderType);
+            TType* customType = new TType(EbtVoid);
+            customType->shallowCopy(*streamsStructType);
+            shader->listCustomTypes.push_back(XkslShaderDefinition::ShaderCustomTypeInformation(streamsStructName, customType));
         }
     }
 
@@ -3353,7 +3350,7 @@ static bool ParseXkslShaderRecursif(
                     int countCustomTypes = (int)(shader->listCustomTypes.size());
                     for (int i = 0; i < countCustomTypes; ++i)
                     {
-                        TType* type = shader->listCustomTypes[i].type;
+                        TType* type = shader->listCustomTypes[i].customType;
 
                         const TString* typeName = type->getTypeNamePtr();
                         if (typeName == nullptr) {

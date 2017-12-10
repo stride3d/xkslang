@@ -200,6 +200,16 @@ public:
         ShaderIdentifierLocation memberLocation;   //How can we access to the member after we parsed its declaration
     };
 
+    class ShaderCustomTypeInformation
+    {
+    public:
+        TString customTypeName;
+        TType* customType;
+
+        ShaderCustomTypeInformation() : customType(nullptr) {}
+        ShaderCustomTypeInformation(const TString& name, TType* type) : customTypeName(name), customType(type) {}
+    };
+
     //Contain the details about the shader "Stream" and streams type.
     class StreamTypeInformation
     {
@@ -241,10 +251,10 @@ public:
     TVector<TShaderCompositionVariable> listCompositions;  //list of compositions declared in the shader
 
     StreamTypeInformation streamsTypeInfo;
-    TVector<XkslShaderMember> listCustomTypes; //list of new types declared by the shader (such like struct definition)
     TVector<XkslShaderMember> listParsedMembers;  //list of members read by the parser
     TVector<XkslShaderMember> listAllDeclaredMembers;  //list of members after being declared
     TVector<TString*> listDeclaredBlockNames;  //list of block (cbuffer) names declared by the shader
+    TVector<ShaderCustomTypeInformation> listCustomTypes; //list of new types declared by the shader (such like struct definition)
 
     TVector<TShaderClassFunction> listMethods;
 
