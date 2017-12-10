@@ -6477,8 +6477,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                 {
                     //No known symbol or a class accessor: we look for the appropriate method in our xksl shader library
 
-                    if (hasStreamAccessor)
-                    {
+                    if (hasStreamAccessor) {
                         error("streams accessor cannot be used in front of a method call");
                         return false;
                     }
@@ -6489,9 +6488,6 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     bool parenthesisRequiredAfterMethodName = true;
                     if (isStreamsUsedAsAType)
                     {
-                        error("PROUT PROUT");
-                        return false;
-
                         //we replace the "streams" keyword by a call to the auto-generated method: _getStreamsStructType()
                         XkslShaderDefinition* shader = getShaderClassDefinition(accessorClassName);
                         if (shader == nullptr) {
@@ -6502,8 +6498,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                         parenthesisRequiredAfterMethodName = false;
                     }
 
-                    if (functionBaseName == nullptr)
-                    {
+                    if (functionBaseName == nullptr) {
                         error("Missing the name of the function to call");
                         return false;
                     }
@@ -6715,8 +6710,11 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
     if (base != nullptr)
         parseContext.handleFunctionArgument(functionCall, arguments, base);
 
-    if (!acceptArguments(functionCall, arguments))
-        return false;
+    if (parenthesisRequiredAfterFunctionName)
+    {
+        if (!acceptArguments(functionCall, arguments))
+            return false;
+    }
 
     TString nameOfShaderOwningTheFunction = functionClassAccessorName;
     if (compositionTargeted != nullptr)
