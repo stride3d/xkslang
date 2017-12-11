@@ -695,7 +695,7 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
         //===================================================================================================================
         //===================================================================================================================
         //1st pass: go through the stage functions call graph and map all resultIds accessing a stream variable with the index of the stream variables being accessed
-        // a function using a stream variable will be owned/reserved by the stage calling it. If another stage calls the same function it will return an error
+        // a function using a stream variable will be owned/reserved by the stage calling it. If another stage calls the same function: we need to duplicate it for this other stage
         vector<int> vectorResultIdsAccessingAStreamVariable;
         vectorResultIdsAccessingAStreamVariable.resize(bound(), -1);
         bool anyStreamBeingAccessedByTheStage = false;

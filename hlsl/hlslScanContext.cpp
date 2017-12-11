@@ -495,6 +495,7 @@ void HlslScanContext::tokenizeExpression(const TString& expression, TVector<Hlsl
     size_t t_length[] = { expressionLen };
     TInputScanner input(1, t_strings, t_length, nullptr, 0, 0);
     ppContext.setInput(input, false);
+    parseContext.setScanner(&input);
 
     //tokenize the expression
     HlslToken token;
