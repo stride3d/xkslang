@@ -9,15 +9,13 @@ shader ShaderMain: ShaderBase
 	stage stream float4 s1: S1;
 	stage stream float4 s2: S2;
 
+	//Invalid declaration
+	//Streams invalidCBMember;
+	//stage stream Streams invalidStreamMember;
+	
 	void VSMain()
 	{
-		streams.s1 = float4(0,1,2,3);
-		streams.s2 = float4(4,5,6,7);
+		Streams unusedStreams;
 		Streams backup = streams;
-		
-		streams.s2 = float4(8,9,10,11);
-		
-		//streams = backup;
-		_setStreams(backup);
 	}
 }

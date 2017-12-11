@@ -215,9 +215,12 @@ public:
     {
     public:
         TType* StreamStructureType;
-        TString StreamStructDeclarationName;
+        TString StreamStructTypeName;
         TString StreamStructAssignmentExpression;
+        TString StreamStructToStreamsVariablesExpression;
+        TString StreamStructToStreamsVariables_StreamsVariableName;
         TString StreamGetterMethodName;
+        TString StreamSetterMethodName;
 
         StreamTypeInformation(): StreamStructureType(nullptr) {}
 

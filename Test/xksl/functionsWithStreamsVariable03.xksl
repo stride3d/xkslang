@@ -22,9 +22,9 @@ shader ShaderMain: ShaderBase
 		streams;
 		streams = s1;
 		
-		var backup1 = streams;
-		var backup2 = backup1, backup3, backup4;
-		backup3 = backup2;
+		/////var backup1 = streams;
+		/////var backup2 = backup1, backup3, backup4;
+		/////backup3 = backup2;
 		
 		//backup4 = streams; //unprocessed for now (if the variable was defined with the "var keyword)
 	}

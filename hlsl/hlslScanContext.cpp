@@ -501,6 +501,7 @@ void HlslScanContext::tokenizeExpression(const TString& expression, TVector<Hlsl
     do
     {
         tokenize(token);
+        token.loc.init();
         listTokens.push_back(token);
     }
     while (token.tokenClass != EHTokNone);
