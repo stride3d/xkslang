@@ -15,40 +15,59 @@ struct VS_STREAMS
     float b2_id3;
 };
 
-static float4 VS_IN_s1;
-static float4 VS_IN_s2;
 static int VS_IN_b1;
 static float VS_IN_b2;
+static float4 VS_OUT_s1;
+static float4 VS_OUT_s2;
 
 struct SPIRV_Cross_Input
 {
-    float4 VS_IN_s1 : S1;
-    float4 VS_IN_s2 : S2;
     int VS_IN_b1 : B1;
     float VS_IN_b2 : B2;
 };
 
-ShaderMain_Streams ShaderMain__getStreamsStructType(VS_STREAMS _streams)
+struct SPIRV_Cross_Output
+{
+    float4 VS_OUT_s1 : S1;
+    float4 VS_OUT_s2 : S2;
+};
+
+ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
 {
     ShaderMain_Streams res = { _streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0 };
     return res;
 }
 
+void ShaderMain__setStreams(inout VS_STREAMS _streams, ShaderMain_Streams _s)
+{
+    _streams.s1_id0 = _s.s1;
+    _streams.s2_id1 = _s.s2;
+    _streams.b1_id2 = _s.b1;
+    _streams.b2_id3 = _s.b2;
+}
+
 void vert_main()
 {
     VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0, 0.0f };
-    _streams.s1_id0 = VS_IN_s1;
-    _streams.s2_id1 = VS_IN_s2;
     _streams.b1_id2 = VS_IN_b1;
     _streams.b2_id3 = VS_IN_b2;
-    ShaderMain_Streams backup = ShaderMain__getStreamsStructType(_streams);
+    _streams.s1_id0 = float4(0.0f, 1.0f, 2.0f, 3.0f);
+    _streams.s2_id1 = float4(4.0f, 5.0f, 6.0f, 7.0f);
+    ShaderMain_Streams backup = ShaderMain__getStreams(_streams);
+    _streams.s2_id1 = float4(8.0f, 9.0f, 10.0f, 11.0f);
+    ShaderMain_Streams param = backup;
+    ShaderMain__setStreams(_streams, param);
+    VS_OUT_s1 = _streams.s1_id0;
+    VS_OUT_s2 = _streams.s2_id1;
 }
 
-void main(SPIRV_Cross_Input stage_input)
+SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_s1 = stage_input.VS_IN_s1;
-    VS_IN_s2 = stage_input.VS_IN_s2;
     VS_IN_b1 = stage_input.VS_IN_b1;
     VS_IN_b2 = stage_input.VS_IN_b2;
     vert_main();
+    SPIRV_Cross_Output stage_output;
+    stage_output.VS_OUT_s1 = VS_OUT_s1;
+    stage_output.VS_OUT_s2 = VS_OUT_s2;
+    return stage_output;
 }

@@ -6512,17 +6512,33 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     TString accessorClassName = classAccessorName == nullptr ? *referenceShaderName : *classAccessorName;
                     TShaderCompositionVariable* pCompositionTargeted = hasComposition? &compositionTargeted: nullptr;
 
-                    bool parenthesisRequiredAfterMethodName = true;
+                    bool parenthesisRequiredBetweenArguments = true;
+                    int countFunctionsParametersExpected = -1;
                     if (isStreamsUsedAsAType)
                     {
-                        //we replace the "streams" keyword by a call to the auto-generated method: _getStreamsStructType()
+                        //2 cases: we use the streams to get the variables value (example: backup = streams), if so we replace "streams" by a call to _getStreams() method
+                        //or we use it to set the streams variables value (example: streams = backup), if so we call _setStreams(backup) method.
+                        bool useGetMethod = true;
+                        if (acceptTokenClass(EHTokAssign)) useGetMethod = false;
+
                         XkslShaderDefinition* shader = getShaderClassDefinition(accessorClassName);
                         if (shader == nullptr) {
                             error(TString("shader not found when parsing a streams keyword: ") + accessorClassName);
                             return false;
                         }
-                        functionBaseName = NewPoolTString(shader->streamsTypeInfo.StreamGetterMethodName.c_str());
-                        parenthesisRequiredAfterMethodName = false;
+
+                        if (useGetMethod)
+                        {
+                            functionBaseName = NewPoolTString(shader->streamsTypeInfo.StreamGetterMethodName.c_str());
+                            parenthesisRequiredBetweenArguments = false;
+                            countFunctionsParametersExpected = 0;
+                        }
+                        else
+                        {
+                            functionBaseName = NewPoolTString(shader->streamsTypeInfo.StreamSetterMethodName.c_str());
+                            parenthesisRequiredBetweenArguments = false;
+                            countFunctionsParametersExpected = 1;
+                        }
                     }
 
                     if (functionBaseName == nullptr) {
@@ -6531,7 +6547,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     }
 
                     if (acceptXkslFunctionCall(accessorClassName, hasBaseAccessor, callThroughStaticShaderClassName, pCompositionTargeted,
-                        functionBaseName, parenthesisRequiredAfterMethodName, idToken.loc, node, nullptr))
+                        functionBaseName, parenthesisRequiredBetweenArguments, countFunctionsParametersExpected, idToken.loc, node, nullptr))
                     {
                         // function_call (nothing else to do yet)
                     }
@@ -6727,7 +6743,7 @@ bool HlslGrammar::acceptXkslShaderComposition(TShaderCompositionVariable& compos
 }
 
 bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted,
-    TString* functionName, bool parenthesisRequiredAfterFunctionName, TSourceLoc& tokenLocation, TIntermTyped*& node, TIntermTyped* base)
+    TString* functionName, bool parenthesisRequiredBetweenArguments, int countParametersExpected, TSourceLoc& tokenLocation, TIntermTyped*& node, TIntermTyped* base)
 {
     // arguments
     TFunction* functionCall = new TFunction(functionName, TType(EbtVoid));
@@ -6737,11 +6753,8 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
     if (base != nullptr)
         parseContext.handleFunctionArgument(functionCall, arguments, base);
 
-    if (parenthesisRequiredAfterFunctionName)
-    {
-        if (!acceptArguments(functionCall, arguments))
-            return false;
-    }
+    if (!acceptArguments(functionCall, arguments, parenthesisRequiredBetweenArguments, countParametersExpected))
+        return false;
 
     TString nameOfShaderOwningTheFunction = functionClassAccessorName;
     if (compositionTargeted != nullptr)
@@ -6942,16 +6955,28 @@ bool HlslGrammar::acceptFunctionCall(const TSourceLoc& loc, TString& name, TInte
 //
 bool HlslGrammar::acceptArguments(TFunction* function, TIntermTyped*& arguments)
 {
-    // LEFT_PAREN
-    if (! acceptTokenClass(EHTokLeftParen))
-        return false;
+    return acceptArguments(function, arguments, true, -1);
+}
 
-    // RIGHT_PAREN
-    if (acceptTokenClass(EHTokRightParen))
-        return true;
+bool HlslGrammar::acceptArguments(TFunction* function, TIntermTyped*& arguments, bool parenthesisRequiredBetweenArguments, int countParametersExpected)
+{
+    // LEFT_PAREN
+    if (parenthesisRequiredBetweenArguments)
+    {
+        if (! acceptTokenClass(EHTokLeftParen))
+            return false;
+
+        // RIGHT_PAREN
+        if (acceptTokenClass(EHTokRightParen))
+            return true;
+    }
+
+    int countParametersParsed = 0;
 
     // must now be at least one expression...
     do {
+        if (countParametersParsed == countParametersExpected) break;
+
         // expression
         TIntermTyped* arg;
         if (! acceptAssignmentExpression(arg))
@@ -6959,24 +6984,28 @@ bool HlslGrammar::acceptArguments(TFunction* function, TIntermTyped*& arguments)
 
         // hook it up
         parseContext.handleFunctionArgument(function, arguments, arg);
+        countParametersParsed++;
 
         // COMMA
         if (! acceptTokenClass(EHTokComma))
             break;
     } while (true);
 
-    // RIGHT_PAREN
-    if (! acceptTokenClass(EHTokRightParen)) {
+    if (parenthesisRequiredBetweenArguments)
+    {
+        // RIGHT_PAREN
+        if (! acceptTokenClass(EHTokRightParen)) {
 
-        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition ||
-            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstVariables ||
-            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersDeclarations ||
-            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDeclarations ||
-            this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
-            return false; //return false but it's not necessary an error: the expression can be resolved later
+            if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition ||
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstVariables ||
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMembersDeclarations ||
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDeclarations ||
+                this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderConstStatements)
+                return false; //return false but it's not necessary an error: the expression can be resolved later
 
-        expected(")");
-        return false;
+            expected(")");
+            return false;
+        }
     }
 
     return true;

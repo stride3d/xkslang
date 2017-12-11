@@ -157,9 +157,10 @@ namespace glslang {
         bool acceptConstructor(TIntermTyped*&);
         bool acceptFunctionCall(const TSourceLoc&, TString& name, TIntermTyped*&, TIntermTyped* objectBase);
         bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted,
-            TString* functionName, bool parenthesisRequiredAfterFunctionName, TSourceLoc& tokenLocation, TIntermTyped*&, TIntermTyped* base);
+            TString* functionName, bool parenthesisRequiredBetweenArguments, int countParametersExpected, TSourceLoc& tokenLocation, TIntermTyped*&, TIntermTyped* base);
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
+        bool acceptArguments(TFunction*, TIntermTyped*&, bool parenthesisRequiredBetweenArguments, int countParametersExpected);
         bool acceptLiteral(TIntermTyped*&);
         bool acceptLiteralFloatValue(float& value);
         bool acceptLiteralIntValue(int& value);
