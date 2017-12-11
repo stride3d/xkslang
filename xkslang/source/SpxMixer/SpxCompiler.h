@@ -862,6 +862,8 @@ private:
     bool GenerateBytecodeForAllStages(std::vector<XkslMixerOutputStage>& outputStages);
     bool ProcessCBuffers(std::vector<XkslMixerOutputStage>& outputStages);
 
+    FunctionInstruction* DuplicateFunctionBytecode(FunctionInstruction* functionToDuplicate);
+
     static bool IsResourceType(const spv::Op& opCode);
     static bool IsScalarType(const spv::Op& opCode);
     static bool IsVectorType(const spv::Op& opCode) { return opCode == spv::OpTypeVector; }

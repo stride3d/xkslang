@@ -1665,7 +1665,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     //apply all changes
     if (success)
     {
-        //add the new cbuffers into the bytecode
+        //set the new Ids bound
         setBound(newBoundId);
 
         //apply the bytecode update controller

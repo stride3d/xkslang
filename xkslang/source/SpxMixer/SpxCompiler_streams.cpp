@@ -792,6 +792,13 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
             {
                 if (aFunctionCalled->functionProcessingStreamForStage != ShadingStageEnum::Undefined)
                 {
+                    //The function is already used by another stage: we duplicate it
+                    FunctionInstruction* duplicatedFunction = DuplicateFunctionBytecode(aFunctionCalled);
+                    if (duplicatedFunction == nullptr)
+                    {
+                        return error("Failed to duplicate the function in the bytecode");
+                    }
+
                     return error(GetShadingStageLabel(aFunctionCalled->functionProcessingStreamForStage) + " and " + GetShadingStageLabel(outputStage->outputStage->stage)
                         + " stages are both calling a function accessing stream members. Function name: " + aFunctionCalled->GetFullName());
                 }

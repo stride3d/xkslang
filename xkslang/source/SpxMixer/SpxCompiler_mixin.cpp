@@ -317,6 +317,153 @@ SpxCompiler* SpxCompiler::Clone()
     return clonedSpxRemapper;
 }
 
+SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(FunctionInstruction* functionToDuplicate)
+{
+    if (functionToDuplicate == nullptr) { error("null parameter: function to duplicate"); return nullptr; }
+
+    spv::Id originalFunctionId = functionToDuplicate->GetId();
+    spv::Id duplicatedFunctionId = 0;
+
+    //Get the best position in the bytecode where we can insert the new function
+    int posToInsertNewFunction = functionToDuplicate->bytecodeEndPosition;
+    for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
+        FunctionInstruction* aFunction = *itsf;
+        if (aFunction->bytecodeEndPosition > posToInsertNewFunction)
+            posToInsertNewFunction = aFunction->bytecodeEndPosition;
+    }
+
+    BytecodeUpdateController bytecodeUpdateController;
+    BytecodeChunk* bytecodeDuplicatedFunction = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, posToInsertNewFunction, BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction);
+    vector<uint32_t>& duplicatedFunctionBytecode = bytecodeDuplicatedFunction->bytecode;
+
+    //Clone the function bytecode
+    duplicatedFunctionBytecode.insert(duplicatedFunctionBytecode.end(), spv.begin() + functionToDuplicate->bytecodeStartPosition, spv.begin() + functionToDuplicate->bytecodeEndPosition);
+
+    int maxId = bound();
+
+    //get the list of all resultIds to remapp from the function bytecode
+    {
+        vector<spv::Id> tableRemapId;
+        tableRemapId.resize(bound(), spvUndefinedId);
+        for (int k = 0; k < maxId; k++) tableRemapId[k] = k;
+
+        unsigned int start = 0;
+        const unsigned int end = (unsigned int)duplicatedFunctionBytecode.size();
+        while (start < end)
+        {
+            spv::Op opCode = spirvbin_t::opOpCode(duplicatedFunctionBytecode[start]);
+            unsigned int wordCount = spirvbin_t::opWordCount(duplicatedFunctionBytecode[start]);
+            unsigned int word = start + 1;
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) {error("Corrupted bytecode: wordCount is equals to 0"); return nullptr;}
+#endif
+
+            // any type?
+            if (spv::InstructionDesc[opCode].hasType()) {
+                word++;
+            }
+
+            // any result id to remap?
+            if (spv::InstructionDesc[opCode].hasResult()) {
+                spv::Id resultId = duplicatedFunctionBytecode[word];
+#ifdef XKSLANG_DEBUG_MODE
+                if (resultId < 0 || resultId >= tableRemapId.size()) {
+                    error(string("duplicating function: result id is out of bound. Id: ") + to_string(resultId));
+                    return nullptr;
+                }
+                if (tableRemapId[resultId] != resultId) {
+                    error(string("duplicating function: a same result Id has been used several times. Id: ") + to_string(resultId));
+                    return nullptr;
+                }
+#endif
+                tableRemapId[resultId] = maxId++;
+            }
+
+            start += wordCount;
+        }
+
+        //remap all result Ids from the duplicated function bytecode
+        if (!remapAllIds(duplicatedFunctionBytecode, 0, duplicatedFunctionBytecode.size(), tableRemapId)) {
+            error("remapAllIds failed on duplicatedBytecode");
+            return nullptr;
+        }
+
+        if (originalFunctionId >= tableRemapId.size() || tableRemapId[originalFunctionId] < tableRemapId.size()) {
+            error("duplicating function: cannot find the duplicated function id");
+            return nullptr;
+        }
+        duplicatedFunctionId = tableRemapId[originalFunctionId];
+    }
+
+    //Duplicate the function's name & decorate instructions
+    {
+        unsigned int start = header_size;
+        const unsigned int end = (unsigned int)spv.size();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) { error("Corrupted bytecode: wordCount is equals to 0"); return nullptr; }
+#endif
+
+            switch (opCode)
+            {
+                case spv::OpName:
+                case spv::OpDeclarationName:
+                case spv::OpMethodProperties:
+                case spv::OpGSMethodProperties:
+                {
+                    //We update the declaration name only for shader classes and for variables
+                    const spv::Id id = asId(start + 1);
+                    if (id == originalFunctionId)
+                    {
+                        BytecodeChunk* duplicatedInstruction = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, start, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+                        if (duplicatedInstruction == nullptr) { error("Failed to create a new bytecode chunck"); return nullptr; }
+                        vector<uint32_t>& duplicatedBytecode = duplicatedInstruction->bytecode;
+                        duplicatedBytecode.insert(duplicatedBytecode.end(), spv.begin() + start, spv.begin() + start + wordCount);
+                        duplicatedBytecode[1] = duplicatedFunctionId;
+                    }
+                    break;
+                }
+
+                case spv::OpBelongsToShader:
+                {
+                    //We update the declaration name only for shader classes and for variables
+                    const spv::Id id = asId(start + 2);
+                    if (id == originalFunctionId)
+                    {
+                        BytecodeChunk* duplicatedInstruction = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, start, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
+                        if (duplicatedInstruction == nullptr) { error("Failed to create a new bytecode chunck"); return nullptr; }
+                        vector<uint32_t>& duplicatedBytecode = duplicatedInstruction->bytecode;
+                        duplicatedBytecode.insert(duplicatedBytecode.end(), spv.begin() + start, spv.begin() + start + wordCount);
+                        duplicatedBytecode[2] = duplicatedFunctionId;
+                    }
+                    break;
+                }
+            }
+
+            start += wordCount;
+        }
+    }
+
+    //set the new Ids bound
+    setBound(maxId);
+
+    //apply the bytecode update controller
+    if (!ApplyBytecodeUpdateController(bytecodeUpdateController)) { error("failed to update the bytecode update controller"); return nullptr; }
+    ///spv.insert(spv.begin() + posToInsertNewFunction, duplicatedBytecode.begin(), duplicatedBytecode.end());
+
+    //bytecode has been updated: reupdate all maps
+    if (!UpdateAllMaps()) { error("Failed to update all maps"); return nullptr; }
+
+    FunctionInstruction* duplicatedFunction = GetFunctionById(duplicatedFunctionId);
+    if (duplicatedFunction == nullptr) { error("Failed to retrieve the duplicated function"); return nullptr; }
+    return duplicatedFunction;
+}
+
 bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderTypeToRemove, vector<range_t>& vecStripRanges)
 {
     ShaderClassData* shaderOwner = shaderTypeToRemove->shaderOwner;
@@ -2984,8 +3131,8 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 const spv::Id shaderId = asId(start + 1);
                 const spv::Id objectId = asId(start + 2);
 
-                if (shaderId >= vectorIdsToDecorate.size()) break;
-                if (!vectorIdsToDecorate[shaderId]) break;
+                if (objectId >= vectorIdsToDecorate.size()) break;
+                if (!vectorIdsToDecorate[objectId]) break;
 
                 ShaderClassData* shaderOwner = GetShaderById(shaderId);
                 if (shaderOwner == nullptr) { error("undeclared shader owner for Id: " + to_string(shaderId)); break; }
@@ -4460,14 +4607,14 @@ BytecodeChunk* SpxCompiler::GetOrCreateNewBytecodeChunckToInsert(BytecodeUpdateC
 BytecodeChunk* SpxCompiler::CreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType,
     unsigned int offset, bool returnExisintChunkInCaseOfConflict)
 {
-    if (instructionPos == 0)
+    if (instructionPos == 0 || instructionPos > spv.size())
     {
         error("Invalid instruction position for creating a new Bytecode Chunck");
         return nullptr;
     }
 
     //get the position where to insert the new bytecode chunck
-    unsigned int instructionWordCount = asWordCount(instructionPos);
+    unsigned int instructionWordCount = instructionPos == spv.size()? 0: asWordCount(instructionPos);
     unsigned int insertionPos;
     switch (insertionType)
     {

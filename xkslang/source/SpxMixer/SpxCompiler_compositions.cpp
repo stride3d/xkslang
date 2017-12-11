@@ -592,6 +592,10 @@ bool SpxCompiler::ApplyCompositionInstancesToBytecode()
                             unsigned int wordCount = spirvbin_t::opWordCount(foreachLoopBytecode[start]);
                             unsigned int word = start + 1;
                         
+#ifdef XKSLANG_DEBUG_MODE
+                            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
                             // any type?
                             if (spv::InstructionDesc[opCode].hasType()) {
                                 word++;
