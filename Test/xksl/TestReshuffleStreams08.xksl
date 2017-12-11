@@ -1,0 +1,21 @@
+//VS and PS stages both calls the same function which is using some streams variable
+//Mixer will need to duplicate the functions when reshuffling the streams variables
+shader ShaderMain
+{
+	stage stream float s1 : S1; 
+	
+	void CommonFunctionUsingStreams(float f)
+	{
+		streams.s1 = f;
+	}
+	
+	stage void VSMain() 
+    {
+		CommonFunctionUsingStreams(1);
+    }
+
+    stage void PSMain() 
+    {
+		CommonFunctionUsingStreams(2);
+    }
+}

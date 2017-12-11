@@ -221,6 +221,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
     //{ "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
     //{ "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
+    { "TestReshuffleStreams08", "TestReshuffleStreams08.xkfx" },
     
     //{ "TestGenerics01", "TestGenerics01.xkfx" },
     //{ "TestGenerics02", "TestGenerics02.xkfx" },
@@ -312,8 +313,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testSamplerStates04", "testSamplerStates04.xkfx" },
 
     //{ "functionsWithStreamsVariable01", "functionsWithStreamsVariable01.xkfx" },
-    { "functionsWithStreamsVariable02", "functionsWithStreamsVariable02.xkfx" },
-    ////{ "functionsWithStreamsVariable03", "functionsWithStreamsVariable03.xkfx" },
+    //{ "functionsWithStreamsVariable02", "functionsWithStreamsVariable02.xkfx" },
+    ///////////////{ "functionsWithStreamsVariable03", "functionsWithStreamsVariable03.xkfx" },
     //{ "functionsWithStreamsVariable04", "functionsWithStreamsVariable04.xkfx" },
     ////////{ "functionsWithStreamsVariable05", "functionsWithStreamsVariable05.xkfx" },
     //{ "functionsWithStreamsVariable06", "functionsWithStreamsVariable06.xkfx" },
