@@ -6,7 +6,7 @@ shader ShaderMain
 	
 	void CommonFunctionUsingStreams(float f)
 	{
-		//streams.s1 = f;
+		streams.s1 = f;
 	}
 	
 	stage void VSMain() 

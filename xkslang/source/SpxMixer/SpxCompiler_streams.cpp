@@ -866,26 +866,26 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
                                 start = end;  //to end the loop
                             }
                             break;
-                    }
-
-                    case spv::OpStore:
-                    case spv::OpLoad:
-                    {
-                        //is the stage storing (writing) into a stream variable?
-                        spv::Id targetId = (opCode == spv::OpStore) ? asId(start + 1) : asId(start + 3);
-                        if (vectorResultIdsAccessingAStreamVariable[targetId] != -1)
-                        {
-                            //cout << "write: " << globalListOfMergedStreamVariables.members[vectorResultIdsAccessingAStreamVariable[targetId]].declarationName << endl;
-                            int streamVariableindex = vectorResultIdsAccessingAStreamVariable[targetId];
-#ifdef XKSLANG_DEBUG_MODE
-                            if (streamVariableindex < 0 || streamVariableindex >= (int)outputStage->listStreamVariablesAccessed.size())
-                                return error("stream variable index is out of bound. Id: " + to_string(streamVariableindex));
-#endif
-                            if (opCode == spv::OpStore) outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessWrite();
-                            else outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessRead();
                         }
-                        break;
-                    }
+
+                        case spv::OpStore:
+                        case spv::OpLoad:
+                        {
+                            //is the stage storing (writing) into a stream variable?
+                            spv::Id targetId = (opCode == spv::OpStore) ? asId(start + 1) : asId(start + 3);
+                            if (vectorResultIdsAccessingAStreamVariable[targetId] != -1)
+                            {
+                                //cout << "write: " << globalListOfMergedStreamVariables.members[vectorResultIdsAccessingAStreamVariable[targetId]].declarationName << endl;
+                                int streamVariableindex = vectorResultIdsAccessingAStreamVariable[targetId];
+#ifdef XKSLANG_DEBUG_MODE
+                                if (streamVariableindex < 0 || streamVariableindex >= (int)outputStage->listStreamVariablesAccessed.size())
+                                    return error("stream variable index is out of bound. Id: " + to_string(streamVariableindex));
+#endif
+                                if (opCode == spv::OpStore) outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessWrite();
+                                else outputStage->listStreamVariablesAccessed[streamVariableindex].SetFirstAccessRead();
+                            }
+                            break;
+                        }
                     }
                     start += wordCount;
                 }
