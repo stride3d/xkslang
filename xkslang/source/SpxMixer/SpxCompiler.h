@@ -380,7 +380,9 @@ public:
         };
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
-            : ObjectInstructionBase(parsedData, name, source), isStatic(false), isStage(false), overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
+            : ObjectInstructionBase(parsedData, name, source), isStatic(false), isStage(false),
+            overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
+            isEntryPointFunctionForStage(ShadingStageEnum::Undefined),
             flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined),
             streamIOStructVariableResultId(0), streamIOStructConstantCompositeId(0), streamOutputStructVariableResultId(0), streamOutputStructConstantCompositeId(0) {}
         virtual ~FunctionInstruction() {}
@@ -390,6 +392,7 @@ public:
             obj->isStage = isStage;
             obj->overrideAttributeState = overrideAttributeState;
             obj->fullName = fullName;
+            obj->isEntryPointFunctionForStage = isEntryPointFunctionForStage;
             return obj;
         }
 
@@ -417,6 +420,9 @@ public:
         OverrideAttributeStateEnum overrideAttributeState;
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
         std::string fullName;  //name only use for debug purpose
+
+        //Tell if the function is an entry point for a specific stage
+        ShadingStageEnum isEntryPointFunctionForStage;
 
         //some variables used to help some algos
         int flag1;

@@ -768,6 +768,13 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
                         FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
                         if (anotherFunctionCalled->flag1 == 0) {
                             anotherFunctionCalled->flag1 = 1;
+
+                            //We cannot call another stage entry function
+                            if (anotherFunctionCalled->isEntryPointFunctionForStage != ShadingStageEnum::Undefined)
+                            {
+                                return error("The stage: " + GetShadingStageLabel(outputStage->outputStage->stage) + " is calling another stage entry function: " + aFunctionCalled->GetName());
+                            }
+
                             vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
                         }
                         break;

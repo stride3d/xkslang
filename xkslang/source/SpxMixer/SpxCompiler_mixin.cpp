@@ -899,9 +899,14 @@ bool SpxCompiler::InitializeCompilationProcess(vector<XkslMixerOutputStage>& out
     //For each output stages, we search the entryPoint function in the bytecode
     for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++)
     {
-        FunctionInstruction* entryFunction = GetShaderFunctionForEntryPoint(outputStages[iStage].outputStage->entryPointName);
-        if (entryFunction == nullptr) error(string("Entry point not found: ") + outputStages[iStage].outputStage->entryPointName);
-        outputStages[iStage].entryFunction = entryFunction;
+        XkslMixerOutputStage& outputStage = outputStages[iStage];
+        FunctionInstruction* entryFunction = GetShaderFunctionForEntryPoint(outputStage.outputStage->entryPointName);
+
+        if (entryFunction == nullptr) error(string("Entry point not found: ") + outputStage.outputStage->entryPointName);
+        if (entryFunction->isEntryPointFunctionForStage != ShadingStageEnum::Undefined) error("The entry point function is used by more than one stage. Function: " + entryFunction->GetName());
+
+        entryFunction->isEntryPointFunctionForStage = outputStage.outputStage->stage;
+        outputStage.entryFunction = entryFunction;
     }
     if (errorMessages.size() > 0) return false;
 
