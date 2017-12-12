@@ -383,7 +383,7 @@ public:
             : ObjectInstructionBase(parsedData, name, source), isStatic(false), isStage(false),
             overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
             isEntryPointFunctionForStage(ShadingStageEnum::Undefined),
-            flag1(0), currentPosInBytecode(0), functionProcessingStreamForStage(ShadingStageEnum::Undefined),
+            flag1(0), currentPosInBytecode(0), calledByTheStage(ShadingStageEnum::Undefined), isProcessingSomeStreamvariables(false),
             streamIOStructVariableResultId(0), streamIOStructConstantCompositeId(0), streamOutputStructVariableResultId(0), streamOutputStructConstantCompositeId(0) {}
         virtual ~FunctionInstruction() {}
         virtual ObjectInstructionBase* CloneBasicData() {
@@ -429,7 +429,8 @@ public:
         int currentPosInBytecode;
 
         //those variables are used when reshuffling stream members
-        ShadingStageEnum functionProcessingStreamForStage;  //when a stage calls a function using stream, the stage will reserves the function (another stage calling the function will return an error)
+        ShadingStageEnum calledByTheStage;
+        bool isProcessingSomeStreamvariables;
         spv::Id streamIOStructVariableResultId;        //the id of the IO stream struct function parameter
         spv::Id streamIOStructConstantCompositeId;     //the id of the IO stream struct constant composite
         spv::Id streamOutputStructVariableResultId;    //the id of the Output stream struct function parameter

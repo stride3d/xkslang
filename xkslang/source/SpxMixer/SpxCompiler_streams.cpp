@@ -640,7 +640,8 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
     //Set all functions stage reserve value to undefined
     for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
         FunctionInstruction* aFunction = *itsf;
-        aFunction->functionProcessingStreamForStage = ShadingStageEnum::Undefined;
+        aFunction->calledByTheStage = ShadingStageEnum::Undefined;
+        aFunction->isProcessingSomeStreamvariables = false;
     }
 
     //Get the IDs of all CBuffers variable access
@@ -667,6 +668,7 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
     for (unsigned int iStage = 0; iStage < outputStages.size(); iStage++)
     {
         XkslMixerOutputStage* outputStage = &(outputStages[iStage]);
+        ShadingStageEnum stageType = outputStage->outputStage->stage;
         if (outputStage->entryFunction == nullptr) return error("A stage entry point function is null.");
 
         //===================================================================================================================
@@ -677,7 +679,7 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
         for (unsigned int m = 0; m<globalListOfMergedStreamVariables.members.size(); ++m)
             outputStage->listStreamVariablesAccessed.push_back(MemberAccessDetails());  //by default: set an empty access for each stream variable
 
-                                                                                        //reset flag for all shader types
+        //reset flag for all shader types
         for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++) {
             ShaderClassData* shader = *itsh;
             for (auto it = shader->shaderTypesList.begin(); it != shader->shaderTypesList.end(); it++) {
@@ -695,10 +697,8 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
         //===================================================================================================================
         //===================================================================================================================
         //1st pass: go through the stage functions call graph and map all resultIds accessing a stream variable with the index of the stream variables being accessed
-        // a function using a stream variable will be owned/reserved by the stage calling it. If another stage calls the same function: we need to duplicate it for this other stage
         vector<int> vectorResultIdsAccessingAStreamVariable;
         vectorResultIdsAccessingAStreamVariable.resize(bound(), -1);
-        bool anyStreamBeingAccessedByTheStage = false;
 
         vector<FunctionInstruction*> vectorAllFunctionsCalledByTheStage;
         vector<FunctionInstruction*> vectorFunctionsToCheck;
@@ -743,7 +743,6 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
                             if (streamMemberIndex < 0 || streamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
                                 return error(string("streamMemberIndex is out of bound: ") + to_string(streamMemberIndex));
 #endif
-                            anyStreamBeingAccessedByTheStage = true;
                             vectorResultIdsAccessingAStreamVariable[resultId] = streamMemberIndex;
                             isFunctionAccessingAStreamVariable = true;
                         }
@@ -772,7 +771,7 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
                             //We cannot call another stage entry function
                             if (anotherFunctionCalled->isEntryPointFunctionForStage != ShadingStageEnum::Undefined)
                             {
-                                return error("The stage: " + GetShadingStageLabel(outputStage->outputStage->stage) + " is calling another stage entry function: " + aFunctionCalled->GetName());
+                                return error("The stage: " + GetShadingStageLabel(stageType) + " is calling another stage entry function: " + aFunctionCalled->GetName());
                             }
 
                             vectorFunctionsToCheck.push_back(anotherFunctionCalled); //we'll analyse the function later
@@ -797,7 +796,9 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
 
             if (isFunctionAccessingAStreamVariable)
             {
-                if (aFunctionCalled->functionProcessingStreamForStage != ShadingStageEnum::Undefined)
+                aFunctionCalled->isProcessingSomeStreamvariables = true;
+
+                /*if (aFunctionCalled->calledByTheStage != ShadingStageEnum::Undefined)
                 {
                     //The function is already used by another stage: we duplicate it
                     FunctionInstruction* duplicatedFunction = DuplicateFunctionBytecode(aFunctionCalled);
@@ -806,13 +807,43 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
                         return error("Failed to duplicate the function in the bytecode");
                     }
 
-                    return error(GetShadingStageLabel(aFunctionCalled->functionProcessingStreamForStage) + " and " + GetShadingStageLabel(outputStage->outputStage->stage)
+                    return error(GetShadingStageLabel(aFunctionCalled->calledByTheStage) + " and " + GetShadingStageLabel(stageType)
                         + " stages are both calling a function accessing stream members. Function name: " + aFunctionCalled->GetFullName());
                 }
 
-                aFunctionCalled->functionProcessingStreamForStage = outputStage->outputStage->stage;
-                outputStage->listFunctionsCalledAndAccessingStreamMembers.push_back(aFunctionCalled);
+                aFunctionCalled->calledByTheStage = stageType;
+                outputStage->listFunctionsCalledAndAccessingStreamMembers.push_back(aFunctionCalled);*/
             }
+        }
+
+        bool anyStreamBeingAccessedByTheStage = false;
+        
+        //===================================================================================================================
+        //For all functions called by the stage: we check if any function is using some streams variables
+        for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
+        {
+            FunctionInstruction* aFunctionCalled = *itf;
+            if (aFunctionCalled->isProcessingSomeStreamvariables)
+            {
+                anyStreamBeingAccessedByTheStage = true;
+
+                outputStage->listFunctionsCalledAndAccessingStreamMembers.push_back(aFunctionCalled);
+
+                if (aFunctionCalled->calledByTheStage != ShadingStageEnum::Undefined)
+                {
+                    //The function is already used by another stage: we duplicate it
+                    FunctionInstruction* duplicatedFunction = DuplicateFunctionBytecode(aFunctionCalled);
+                    if (duplicatedFunction == nullptr)
+                    {
+                        return error("Failed to duplicate the function in the bytecode");
+                    }
+
+                    return error(GetShadingStageLabel(aFunctionCalled->calledByTheStage) + " and " + GetShadingStageLabel(stageType)
+                        + " stages are both calling a function accessing stream members. Function name: " + aFunctionCalled->GetFullName());
+                }
+            }
+
+            aFunctionCalled->calledByTheStage = stageType;
         }
 
         if (anyStreamBeingAccessedByTheStage)
@@ -821,6 +852,8 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
             //===================================================================================================================
             // 2nd pass: go through all functions again to check all accesses to the stream variables
             // Here the order of functions called is important: if there is a function call we interrupt the current one to visit the called one first
+
+            //reset some stuff
             for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
             {
                 FunctionInstruction* aFunctionCalled = *itf;
@@ -1091,7 +1124,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
     //Reset some functions parameters needed for the algo
     for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
         FunctionInstruction* aFunction = *itsf;
-        aFunction->functionProcessingStreamForStage = ShadingStageEnum::Undefined;
+        aFunction->calledByTheStage = ShadingStageEnum::Undefined;
         aFunction->streamIOStructVariableResultId = 0;
         aFunction->streamIOStructConstantCompositeId = 0;
     }
@@ -1418,11 +1451,11 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
 #endif
 
         //make sure the stage entry function has not already been processed for a stream
-        if (entryFunction->functionProcessingStreamForStage != ShadingStageEnum::Undefined) {
+        if (entryFunction->calledByTheStage != ShadingStageEnum::Undefined) {
             return error(GetShadingStageLabel(shadingStageEnum) + " Stage entry function: " + entryFunction->GetFullName()
-                + " has already been processed for streams for another stage: " + GetShadingStageLabel(entryFunction->functionProcessingStreamForStage));
+                + " has already been processed for streams for another stage: " + GetShadingStageLabel(entryFunction->calledByTheStage));
         }
-        entryFunction->functionProcessingStreamForStage = shadingStageEnum;
+        entryFunction->calledByTheStage = shadingStageEnum;
 
         //find and check the function declaration type
         spv::Id entryFunctionDeclarationTypeId = asId(entryFunction->bytecodeStartPosition + 4);
@@ -1820,13 +1853,13 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 listFunctionToUpdateWithIOStreams.pop_back();
 
                 //Some Checks
-                if (functionAccessingStreams->functionProcessingStreamForStage == shadingStageEnum) continue;  //the function was already treated for the current stage
-                if (functionAccessingStreams->functionProcessingStreamForStage != ShadingStageEnum::Undefined)
+                if (functionAccessingStreams->calledByTheStage == shadingStageEnum) continue;  //the function was already treated for the current stage
+                if (functionAccessingStreams->calledByTheStage != ShadingStageEnum::Undefined)
                 {
-                    return error(GetShadingStageLabel(functionAccessingStreams->functionProcessingStreamForStage) + " and " + GetShadingStageLabel(shadingStageEnum)
+                    return error(GetShadingStageLabel(functionAccessingStreams->calledByTheStage) + " and " + GetShadingStageLabel(shadingStageEnum)
                         + " stages are both calling a function accessing stream members. Function name: " + functionAccessingStreams->GetFullName());
                 }
-                functionAccessingStreams->functionProcessingStreamForStage = shadingStageEnum; //Function is now reserved for the current stage (ie a function from another stage cannot call this one)
+                functionAccessingStreams->calledByTheStage = shadingStageEnum; //Function is now reserved for the current stage (ie a function from another stage cannot call this one)
                 listAllFunctionsUpdatedWithIOStreams.push_back(functionAccessingStreams);
 
                 //Update the function by adding the stream inout parameter
@@ -1884,7 +1917,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
 
                     if (aFunctionCall.functionCalled == functionAccessingStreams)
                     {
-                        if (aFunctionCall.functionCalling->functionProcessingStreamForStage == ShadingStageEnum::Undefined)
+                        if (aFunctionCall.functionCalling->calledByTheStage == ShadingStageEnum::Undefined)
                         {
                             listFunctionToUpdateWithIOStreams.push_back(aFunctionCall.functionCalling);
                         }
@@ -1960,7 +1993,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
         for (auto itf = listAllFunctionCallInstructions.begin(); itf != listAllFunctionCallInstructions.end(); itf++)
         {
             const FunctionCallInstructionData& aFunctionCall = *itf;
-            if (aFunctionCall.functionCalled->functionProcessingStreamForStage == shadingStageEnum)
+            if (aFunctionCall.functionCalled->calledByTheStage == shadingStageEnum)
             {
                 spv::Id functionCallStreamParameterIdToAdd = aFunctionCall.functionCalling->streamIOStructVariableResultId;
                 unsigned int functionCallInstructionWordCount = asWordCount(aFunctionCall.bytecodePos);
@@ -1968,7 +2001,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 //==================================================================
                 //do some checks
                 if (aFunctionCall.functionCalled == entryFunction) return error("The stage entry function cannot be called");
-                if (aFunctionCall.functionCalling->functionProcessingStreamForStage != shadingStageEnum)
+                if (aFunctionCall.functionCalling->calledByTheStage != shadingStageEnum)
                     return error("Cannot call a function having processed stream, if the calling function has not processed stream for the same stage");
 #ifdef XKSLANG_DEBUG_MODE
                 if (functionCallStreamParameterIdToAdd == 0)
