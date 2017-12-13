@@ -630,7 +630,9 @@ bool SpxCompiler::MergeStreamMembers(TypeStructMemberArray& globalListOfMergedSt
     return success;
 }
 
-bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
+//Check the stages accesses to streams and cbuffer variables
+//Duplicate functions if some are accessing streams variables while being used by several stages
+bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables)
 {
     //if (status != SpxRemapperStatusEnum::AAA) return error("Invalid remapper status");
     status = SpxRemapperStatusEnum::MixinBeingCompiled_StreamsAndCBuffersAnalysed;
@@ -694,8 +696,8 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
             aFunction->flag1 = 0;
         }
 
-        //===================================================================================================================
-        //===================================================================================================================
+        //============================================================================================================================================================
+        //============================================================================================================================================================
         //1st pass: go through the stage functions call graph and map all resultIds accessing a stream variable with the index of the stream variables being accessed
         vector<int> vectorResultIdsAccessingAStreamVariable;
         vectorResultIdsAccessingAStreamVariable.resize(bound(), -1);
@@ -797,53 +799,194 @@ bool SpxCompiler::AnalyseStreamsAndCBuffersAccessesForOutputStages(vector<XkslMi
             if (isFunctionAccessingAStreamVariable)
             {
                 aFunctionCalled->isProcessingSomeStreamvariables = true;
-
-                /*if (aFunctionCalled->calledByTheStage != ShadingStageEnum::Undefined)
-                {
-                    //The function is already used by another stage: we duplicate it
-                    FunctionInstruction* duplicatedFunction = DuplicateFunctionBytecode(aFunctionCalled);
-                    if (duplicatedFunction == nullptr)
-                    {
-                        return error("Failed to duplicate the function in the bytecode");
-                    }
-
-                    return error(GetShadingStageLabel(aFunctionCalled->calledByTheStage) + " and " + GetShadingStageLabel(stageType)
-                        + " stages are both calling a function accessing stream members. Function name: " + aFunctionCalled->GetFullName());
-                }
-
-                aFunctionCalled->calledByTheStage = stageType;
-                outputStage->listFunctionsCalledAndAccessingStreamMembers.push_back(aFunctionCalled);*/
             }
         }
 
-        bool anyStreamBeingAccessedByTheStage = false;
-        
-        //===================================================================================================================
-        //For all functions called by the stage: we check if any function is using some streams variables
+        vector<FunctionInstruction*> vectorStageFunctionsToDuplicate;
+
+        //============================================================================================================================================================
+        //============================================================================================================================================================
+        //Analyse the functions called by the stage: if some functions are using some streams variables, we check if we need to duplicate them, and duplicate the functions calling them
         for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
         {
             FunctionInstruction* aFunctionCalled = *itf;
             if (aFunctionCalled->isProcessingSomeStreamvariables)
             {
-                anyStreamBeingAccessedByTheStage = true;
-
-                outputStage->listFunctionsCalledAndAccessingStreamMembers.push_back(aFunctionCalled);
-
                 if (aFunctionCalled->calledByTheStage != ShadingStageEnum::Undefined)
                 {
-                    //The function is already used by another stage: we duplicate it
-                    FunctionInstruction* duplicatedFunction = DuplicateFunctionBytecode(aFunctionCalled);
-                    if (duplicatedFunction == nullptr)
+                    //the function accesses streams variables but is also used by another stage, so we need to duplicate it
+                    vectorStageFunctionsToDuplicate.push_back(aFunctionCalled);
+                }
+            }
+        }
+
+        //any functions to duplicate?
+        if (vectorStageFunctionsToDuplicate.size() > 0)
+        {
+            /*for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
+            {
+                FunctionInstruction* aFunctionCalled = *itf;
+                aFunctionCalled->flag1 = 0;
+            }*/
+
+            vector<FunctionInstruction*> finalListOfFunctionsToDuplicate;
+            vector<FunctionInstruction*> mapStageFunctionsToDuplicate;
+            mapStageFunctionsToDuplicate.resize(bound(), nullptr);
+
+            //For each stream function to duplicate: we check if the functions calling them are already used by another stage: if yes, we need to duplicate them as well (and so on)
+            while (vectorStageFunctionsToDuplicate.size() > 0)
+            {
+                FunctionInstruction* aFunctionToDuplicate = vectorStageFunctionsToDuplicate.back();
+                vectorStageFunctionsToDuplicate.pop_back();
+
+                spv::Id functionId = aFunctionToDuplicate->GetId();
+#ifdef XKSLANG_DEBUG_MODE
+                if (functionId >= mapStageFunctionsToDuplicate.size()) return error("The function id is out of bound");
+#endif
+                if (mapStageFunctionsToDuplicate[functionId] != nullptr) continue; //the function has already been checked
+                mapStageFunctionsToDuplicate[functionId] = aFunctionToDuplicate;
+                finalListOfFunctionsToDuplicate.push_back(aFunctionToDuplicate);
+
+                //Check which functions from the stage callstack is calling our function to be duplicated
+                for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
+                {
+                    FunctionInstruction* aFunctionToCheck = *itf;
+
+                    if (aFunctionToCheck->calledByTheStage == ShadingStageEnum::Undefined)
+                        continue;  //function is not called by any other stage: no need to duplicate the function for now, even if it's calling a function to be duplicated
+
+                    if (mapStageFunctionsToDuplicate[aFunctionToCheck->GetId()] != nullptr)
+                        continue; //the function is already set to be duplicated: no need to check it
+
+                    //is the function calling a function to duplicate?
+                    bool isTheFunctionCallingAFunctionToDuplicate = false;
                     {
-                        return error("Failed to duplicate the function in the bytecode");
+                        unsigned int start = aFunctionToCheck->currentPosInBytecode;
+                        const unsigned int end = aFunctionToCheck->bytecodeEndPosition;
+                        while (start < end)
+                        {
+                            unsigned int wordCount = asWordCount(start);
+                            spv::Op opCode = asOpCode(start);
+#ifdef XKSLANG_DEBUG_MODE
+                            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
+                            switch (opCode)
+                            {
+                                case spv::OpFunctionCall:
+                                case spv::OpFunctionCallBaseResolved:
+                                case spv::OpFunctionCallThroughStaticShaderClassCall:
+                                {
+                                    spv::Id functionCalledId = asId(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                                    if (functionCalledId >= mapStageFunctionsToDuplicate.size()) return error("The function id is out of bound");
+#endif
+                                    if (mapStageFunctionsToDuplicate[functionCalledId] != nullptr)
+                                    {
+                                        isTheFunctionCallingAFunctionToDuplicate = true;
+                                        start = end;
+                                    }
+                                    break;
+                                }
+                            }
+                            start += wordCount;
+                        }
                     }
 
-                    return error(GetShadingStageLabel(aFunctionCalled->calledByTheStage) + " and " + GetShadingStageLabel(stageType)
-                        + " stages are both calling a function accessing stream members. Function name: " + aFunctionCalled->GetFullName());
+                    if (isTheFunctionCallingAFunctionToDuplicate)
+                    {
+                        vectorStageFunctionsToDuplicate.push_back(aFunctionToCheck);
+                    }
                 }
             }
 
+            //duplicate all the functions set to be duplicated
+            for (auto itf = finalListOfFunctionsToDuplicate.begin(); itf != finalListOfFunctionsToDuplicate.end(); itf++)
+            {
+                FunctionInstruction* aFunctionToDuplicate = *itf;
+                spv::Id functionId = aFunctionToDuplicate->GetId();
+#ifdef XKSLANG_DEBUG_MODE
+                if (functionId >= mapStageFunctionsToDuplicate.size() || mapStageFunctionsToDuplicate[functionId] == nullptr)
+                    return error("Invalid function to duplicate id");
+#endif
+
+                FunctionInstruction* duplicatedFunction = DuplicateFunctionBytecode(aFunctionToDuplicate);
+                if (duplicatedFunction == nullptr)
+                    return error("Failed to duplicate the function in the bytecode: " + aFunctionToDuplicate->GetName());
+
+                duplicatedFunction->isProcessingSomeStreamvariables = aFunctionToDuplicate->isProcessingSomeStreamvariables;
+                mapStageFunctionsToDuplicate[functionId] = duplicatedFunction;
+            }
+
+            //we replace all function calls to the duplicated functions by calls to the duplicated ones
+            for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
+            {
+                FunctionInstruction* aStageFunction = *itf;
+                unsigned int start = aStageFunction->currentPosInBytecode;
+                const unsigned int end = aStageFunction->bytecodeEndPosition;
+                while (start < end)
+                {
+                    unsigned int wordCount = asWordCount(start);
+                    spv::Op opCode = asOpCode(start);
+#ifdef XKSLANG_DEBUG_MODE
+                    if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
+                    switch (opCode)
+                    {
+                        case spv::OpFunctionCall:
+                        case spv::OpFunctionCallBaseResolved:
+                        case spv::OpFunctionCallThroughStaticShaderClassCall:
+                        {
+                            spv::Id functionCalledId = asId(start + 3);
+#ifdef XKSLANG_DEBUG_MODE
+                            if (functionCalledId >= mapStageFunctionsToDuplicate.size()) return error("The function id is out of bound");
+#endif
+                            if (mapStageFunctionsToDuplicate[functionCalledId] != nullptr)
+                            {
+                                spv::Id functionCalledNewId = mapStageFunctionsToDuplicate[functionCalledId]->GetId();
+                                setId(start + 3, functionCalledNewId);
+                            }
+                            break;
+                        }
+                    }
+                    start += wordCount;
+                }
+            }
+
+            //We replace our stage functions by the duplicated ones
+            unsigned int countStageFunctions = (unsigned int)vectorAllFunctionsCalledByTheStage.size();
+            for (unsigned int k = 0; k < countStageFunctions; k++)
+            {
+                FunctionInstruction* aFunctionDuplicated = vectorAllFunctionsCalledByTheStage[k];
+                spv::Id functionId = aFunctionDuplicated->GetId();
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (functionId >= mapStageFunctionsToDuplicate.size()) return error("Invalid function duplicated id");
+#endif
+                if (mapStageFunctionsToDuplicate[functionId] != nullptr)
+                {
+                    FunctionInstruction* duplicatedFunction = mapStageFunctionsToDuplicate[functionId];
+#ifdef XKSLANG_DEBUG_MODE
+                    if (aFunctionDuplicated == duplicatedFunction) return error("The function to duplicate has not been remapped to its duplicated ones");
+#endif
+                    vectorAllFunctionsCalledByTheStage[k] = aFunctionDuplicated;
+                }
+            }
+        }
+
+        //Flag the functions used by the stage
+        bool anyStreamBeingAccessedByTheStage = false;
+        for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
+        {
+            FunctionInstruction* aFunctionCalled = *itf;
             aFunctionCalled->calledByTheStage = stageType;
+
+            if (aFunctionCalled->isProcessingSomeStreamvariables)
+            {
+                anyStreamBeingAccessedByTheStage = true;
+                outputStage->listFunctionsCalledAndAccessingStreamMembers.push_back(aFunctionCalled);
+            }
         }
 
         if (anyStreamBeingAccessedByTheStage)

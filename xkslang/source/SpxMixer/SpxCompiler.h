@@ -860,7 +860,7 @@ private:
     bool ApplyCompositionInstancesToBytecode();
     bool InitializeCompilationProcess(std::vector<XkslMixerOutputStage>& outputStages);
     bool MergeStreamMembers(TypeStructMemberArray& globalListOfMergedStreamVariables);
-    bool AnalyseStreamsAndCBuffersAccessesForOutputStages(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
+    bool InitializeStreamsAndCBuffersAccessesForOutputStages(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool ValidateStagesStreamMembersFlow(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool ReshuffleStreamVariables(std::vector<XkslMixerOutputStage>& outputStages, TypeStructMemberArray& globalListOfMergedStreamVariables);
     bool RemoveAllUnusedShaders(std::vector<XkslMixerOutputStage>& outputStages);

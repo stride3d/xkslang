@@ -260,8 +260,8 @@ bool SpxMixer::Compile(vector<OutputStageBytecode>& outputStages, vector<string>
     if (streamsMergeSpv != nullptr) spxCompiler->CopyMixinBytecode(*streamsMergeSpv);
 
     //===================================================================================================================
-    // analyse the stream and cbuffers usage for each stage
-    if (!spxCompiler->AnalyseStreamsAndCBuffersAccessesForOutputStages(vecMixerOutputStages, globalListOfMergedStreamVariables))
+    // init the stream and cbuffers usage for each stage
+    if (!spxCompiler->InitializeStreamsAndCBuffersAccessesForOutputStages(vecMixerOutputStages, globalListOfMergedStreamVariables))
     {
         spxCompiler->copyMessagesTo(messages);
         if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
