@@ -341,12 +341,13 @@ SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(Functio
 
     int maxId = bound();
 
-    //get the list of all resultIds to remapp from the function bytecode
-    {
-        vector<spv::Id> tableRemapId;
-        tableRemapId.resize(bound(), spvUndefinedId);
-        for (int k = 0; k < maxId; k++) tableRemapId[k] = k;
+    //Will store all remapped resultId from the duplicated function
+    vector<spv::Id> tableRemapId;
+    tableRemapId.resize(maxId, 0);
+    for (int k = 0; k < maxId; k++) tableRemapId[k] = k;
 
+    //get the list of all resultIds to remap from the function bytecode
+    {
         unsigned int start = 0;
         const unsigned int end = (unsigned int)duplicatedFunctionBytecode.size();
         while (start < end)
@@ -384,13 +385,14 @@ SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(Functio
         }
 
         //remap all result Ids from the duplicated function bytecode
-        if (!remapAllIds(duplicatedFunctionBytecode, 0, duplicatedFunctionBytecode.size(), tableRemapId)) {
+        if (!remapAllIds(duplicatedFunctionBytecode, 0, duplicatedFunctionBytecode.size(), tableRemapId))
+        {
             error("remapAllIds failed on duplicatedBytecode");
             return nullptr;
         }
 
         if (originalFunctionId >= tableRemapId.size() || tableRemapId[originalFunctionId] < tableRemapId.size()) {
-            error("duplicating function: cannot find the duplicated function id");
+            error("the original function id has not been correctly remapped");
             return nullptr;
         }
         duplicatedFunctionId = tableRemapId[originalFunctionId];
@@ -418,13 +420,17 @@ SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(Functio
                 {
                     //We update the declaration name only for shader classes and for variables
                     const spv::Id id = asId(start + 1);
-                    if (id == originalFunctionId)
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (id >= tableRemapId.size()) { error("OpInstruction id is out of bound"); return nullptr; }
+#endif
+                    if (tableRemapId[id] != id)
                     {
                         BytecodeChunk* duplicatedInstruction = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, start, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
                         if (duplicatedInstruction == nullptr) { error("Failed to create a new bytecode chunck"); return nullptr; }
                         vector<uint32_t>& duplicatedBytecode = duplicatedInstruction->bytecode;
                         duplicatedBytecode.insert(duplicatedBytecode.end(), spv.begin() + start, spv.begin() + start + wordCount);
-                        duplicatedBytecode[1] = duplicatedFunctionId;
+                        duplicatedBytecode[1] = tableRemapId[id];
                     }
                     break;
                 }
@@ -433,13 +439,17 @@ SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(Functio
                 {
                     //We update the declaration name only for shader classes and for variables
                     const spv::Id id = asId(start + 2);
-                    if (id == originalFunctionId)
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (id >= tableRemapId.size()) { error("OpInstruction id is out of bound"); return nullptr; }
+#endif
+                    if (tableRemapId[id] != id)
                     {
                         BytecodeChunk* duplicatedInstruction = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, start, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
                         if (duplicatedInstruction == nullptr) { error("Failed to create a new bytecode chunck"); return nullptr; }
                         vector<uint32_t>& duplicatedBytecode = duplicatedInstruction->bytecode;
                         duplicatedBytecode.insert(duplicatedBytecode.end(), spv.begin() + start, spv.begin() + start + wordCount);
-                        duplicatedBytecode[2] = duplicatedFunctionId;
+                        duplicatedBytecode[2] = tableRemapId[id];
                     }
                     break;
                 }
