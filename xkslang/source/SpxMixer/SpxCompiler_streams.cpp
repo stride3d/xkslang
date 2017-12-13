@@ -819,16 +819,12 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
                 }
             }
         }
-
+        
+        //==============================================================================================================
+        //==============================================================================================================
         //any functions to duplicate?
         if (vectorStageFunctionsToDuplicate.size() > 0)
         {
-            /*for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
-            {
-                FunctionInstruction* aFunctionCalled = *itf;
-                aFunctionCalled->flag1 = 0;
-            }*/
-
             vector<FunctionInstruction*> finalListOfFunctionsToDuplicate;
             vector<FunctionInstruction*> mapStageFunctionsToDuplicate;
             mapStageFunctionsToDuplicate.resize(bound(), nullptr);
@@ -861,7 +857,7 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
                     //is the function calling a function to duplicate?
                     bool isTheFunctionCallingAFunctionToDuplicate = false;
                     {
-                        unsigned int start = aFunctionToCheck->currentPosInBytecode;
+                        unsigned int start = aFunctionToCheck->bytecodeStartPosition;
                         const unsigned int end = aFunctionToCheck->bytecodeEndPosition;
                         while (start < end)
                         {
@@ -909,6 +905,8 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
                 if (functionId >= mapStageFunctionsToDuplicate.size() || mapStageFunctionsToDuplicate[functionId] == nullptr)
                     return error("Invalid function to duplicate id");
 #endif
+                if (aFunctionToDuplicate->isEntryPointFunctionForStage != ShadingStageEnum::Undefined)
+                    return error("A stage entry point function cannot be duplicated: " + aFunctionToDuplicate->GetName());
 
                 FunctionInstruction* duplicatedFunction = DuplicateFunctionBytecode(aFunctionToDuplicate);
                 if (duplicatedFunction == nullptr)
@@ -918,11 +916,55 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
                 mapStageFunctionsToDuplicate[functionId] = duplicatedFunction;
             }
 
+            //After having duplicated some functions: we update the list of resultId accessing a stream variable
+            vectorResultIdsAccessingAStreamVariable.resize(bound(), -1);
+            for (auto itf = finalListOfFunctionsToDuplicate.begin(); itf != finalListOfFunctionsToDuplicate.end(); itf++)
+            {
+                FunctionInstruction* aFunctionToDuplicate = *itf;
+                FunctionInstruction* duplicatedFunction = mapStageFunctionsToDuplicate[aFunctionToDuplicate->GetId()];
+
+                unsigned int start = duplicatedFunction->bytecodeStartPosition;
+                const unsigned int end = duplicatedFunction->bytecodeEndPosition;
+                while (start < end)
+                {
+                    unsigned int wordCount = asWordCount(start);
+                    spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+                    if (wordCount == 0) return error("Invalid bytecode: wordCount is equals to 0");
+#endif
+
+                    if (opCode == spv::OpAccessChain)
+                    {
+                        spv::Id structIdAccessed = asId(start + 3);
+
+                        //are we accessing the global stream buffer?
+                        if (structIdAccessed == globalStreamStructVariableId)
+                        {
+                            spv::Id resultId = asId(start + 2);
+                            spv::Id indexConstId = asId(start + 4);
+
+                            ConstInstruction* constObject = GetConstById(indexConstId);
+                            if (constObject == nullptr) return error(string("cannot get const object for Id: ") + to_string(indexConstId));
+                            int streamMemberIndex = constObject->valueS32;
+#ifdef XKSLANG_DEBUG_MODE
+                            if (resultId >= vectorResultIdsAccessingAStreamVariable.size()) return error("resultId out of bound");
+                            if (vectorResultIdsAccessingAStreamVariable[resultId] != -1) return error("resultId is already accessing a stream variable");
+                            if (streamMemberIndex < 0 || streamMemberIndex >= (int)globalListOfMergedStreamVariables.members.size())
+                                return error(string("streamMemberIndex is out of bound: ") + to_string(streamMemberIndex));
+#endif
+                            vectorResultIdsAccessingAStreamVariable[resultId] = streamMemberIndex;
+                        }
+                    }
+                    start += wordCount;
+                }
+            }
+
             //we replace all function calls to the duplicated functions by calls to the duplicated ones
             for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
             {
                 FunctionInstruction* aStageFunction = *itf;
-                unsigned int start = aStageFunction->currentPosInBytecode;
+                unsigned int start = aStageFunction->bytecodeStartPosition;
                 const unsigned int end = aStageFunction->bytecodeEndPosition;
                 while (start < end)
                 {
@@ -958,8 +1000,8 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
             unsigned int countStageFunctions = (unsigned int)vectorAllFunctionsCalledByTheStage.size();
             for (unsigned int k = 0; k < countStageFunctions; k++)
             {
-                FunctionInstruction* aFunctionDuplicated = vectorAllFunctionsCalledByTheStage[k];
-                spv::Id functionId = aFunctionDuplicated->GetId();
+                FunctionInstruction* aStageFunction = vectorAllFunctionsCalledByTheStage[k];
+                spv::Id functionId = aStageFunction->GetId();
 
 #ifdef XKSLANG_DEBUG_MODE
                 if (functionId >= mapStageFunctionsToDuplicate.size()) return error("Invalid function duplicated id");
@@ -968,14 +1010,16 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
                 {
                     FunctionInstruction* duplicatedFunction = mapStageFunctionsToDuplicate[functionId];
 #ifdef XKSLANG_DEBUG_MODE
-                    if (aFunctionDuplicated == duplicatedFunction) return error("The function to duplicate has not been remapped to its duplicated ones");
+                    if (aStageFunction == duplicatedFunction) return error("The function to duplicate has not been remapped to its duplicated ones");
 #endif
-                    vectorAllFunctionsCalledByTheStage[k] = aFunctionDuplicated;
+                    vectorAllFunctionsCalledByTheStage[k] = duplicatedFunction;
                 }
             }
         }
+        //==============================================================================================================
+        //==============================================================================================================
 
-        //Flag the functions used by the stage
+        //Flag the functions as used by the stage
         bool anyStreamBeingAccessedByTheStage = false;
         for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
         {
@@ -1000,7 +1044,7 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
             for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
             {
                 FunctionInstruction* aFunctionCalled = *itf;
-                aFunctionCalled->currentPosInBytecode = aFunctionCalled->bytecodeStartPosition;
+                aFunctionCalled->currentPosInBytecode = aFunctionCalled->bytecodeStartPosition;  //will be used to keep track of the function current position before investigating a function call
                 aFunctionCalled->flag1 = 0;
             }
 

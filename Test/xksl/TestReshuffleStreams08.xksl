@@ -3,19 +3,23 @@
 shader ShaderMain
 {
 	stage stream float s1 : S1; 
+	stage stream float s2 : S2; 
+	stage stream float s3 : S3; 
 	
 	void CommonFunctionUsingStreams(float f)
 	{
-		streams.s1 = f;
+		streams.s3 = f;
 	}
 	
 	stage void VSMain() 
     {
+		streams.s1 = 0;
 		CommonFunctionUsingStreams(1);
     }
 
     stage void PSMain() 
     {
+		streams.s2 = 0;
 		CommonFunctionUsingStreams(2);
     }
 }
