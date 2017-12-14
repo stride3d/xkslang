@@ -317,7 +317,7 @@ SpxCompiler* SpxCompiler::Clone()
     return clonedSpxRemapper;
 }
 
-SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(FunctionInstruction* functionToDuplicate)
+SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(FunctionInstruction* functionToDuplicate, const std::string& functionNameSuffix)
 {
     if (functionToDuplicate == nullptr) { error("null parameter: function to duplicate"); return nullptr; }
 
@@ -325,7 +325,7 @@ SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(Functio
     spv::Id duplicatedFunctionId = 0;
 
     //Get the best position in the bytecode where we can insert the new function
-    int posToInsertNewFunction = functionToDuplicate->bytecodeEndPosition;
+    unsigned int posToInsertNewFunction = functionToDuplicate->bytecodeEndPosition;
     for (auto itsf = vecAllFunctions.begin(); itsf != vecAllFunctions.end(); itsf++) {
         FunctionInstruction* aFunction = *itsf;
         if (aFunction->bytecodeEndPosition > posToInsertNewFunction)
@@ -426,11 +426,34 @@ SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(Functio
 #endif
                     if (tableRemapId[id] != id)
                     {
+                        spv::Id newId = tableRemapId[id];
+
                         BytecodeChunk* duplicatedInstruction = CreateNewBytecodeChunckToInsert(bytecodeUpdateController, start, BytecodeChunkInsertionTypeEnum::InsertAfterInstruction);
                         if (duplicatedInstruction == nullptr) { error("Failed to create a new bytecode chunck"); return nullptr; }
                         vector<uint32_t>& duplicatedBytecode = duplicatedInstruction->bytecode;
-                        duplicatedBytecode.insert(duplicatedBytecode.end(), spv.begin() + start, spv.begin() + start + wordCount);
-                        duplicatedBytecode[1] = tableRemapId[id];
+
+                        if (newId == duplicatedFunctionId && (opCode == spv::OpName || opCode == spv::OpDeclarationName) && functionNameSuffix.size() > 0)
+                        {
+                            string name = literalString(start + 2);
+
+                            //a function name is mangled with the parameters: we add the suffix after the function name but before the parameters
+                            size_t index = name.find_first_of('(');
+                            if (index != string::npos)
+                                name = name.substr(0, index) + functionNameSuffix + name.substr(index);
+                            else
+                                name = name + functionNameSuffix;
+
+                            //name of the duplicated function: we add the suffix
+                            spv::Instruction functionNameInstr(opCode);
+                            functionNameInstr.addIdOperand(newId);
+                            functionNameInstr.addStringOperand(name.c_str());
+                            functionNameInstr.dump(duplicatedBytecode);
+                        }
+                        else
+                        {
+                            duplicatedBytecode.insert(duplicatedBytecode.end(), spv.begin() + start, spv.begin() + start + wordCount);
+                            duplicatedBytecode[1] = newId;
+                        }
                     }
                     break;
                 }

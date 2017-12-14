@@ -897,6 +897,7 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
             }
 
             //duplicate all the functions set to be duplicated
+            string duplicatedNameSuffix = "_" + GetShadingStageLabelShort(stageType);
             for (auto itf = finalListOfFunctionsToDuplicate.begin(); itf != finalListOfFunctionsToDuplicate.end(); itf++)
             {
                 FunctionInstruction* aFunctionToDuplicate = *itf;
@@ -908,7 +909,7 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
                 if (aFunctionToDuplicate->isEntryPointFunctionForStage != ShadingStageEnum::Undefined)
                     return error("A stage entry point function cannot be duplicated: " + aFunctionToDuplicate->GetName());
 
-                FunctionInstruction* duplicatedFunction = DuplicateFunctionBytecode(aFunctionToDuplicate);
+                FunctionInstruction* duplicatedFunction = DuplicateFunctionBytecode(aFunctionToDuplicate, duplicatedNameSuffix);
                 if (duplicatedFunction == nullptr)
                     return error("Failed to duplicate the function in the bytecode: " + aFunctionToDuplicate->GetName());
 
