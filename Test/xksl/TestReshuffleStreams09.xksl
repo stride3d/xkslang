@@ -21,14 +21,13 @@ shader ShaderMain
 	
 	float FunctionUsingStreams()
 	{
-		//AnotherFunctionNotDoingAnything();
+		AnotherFunctionNotDoingAnything();
 		return streams.s4;
 	}
 	
-	/*
 	void AnotherFunctionNotDoingAnything()
 	{
-	}*/
+	}
 	
 	stage void VSMain() 
     {

@@ -961,7 +961,27 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
                 }
             }
 
-            //we replace all function calls to the duplicated functions by calls to the duplicated ones
+            //We replace our stage functions by the duplicated ones
+            unsigned int countStageFunctions = (unsigned int)vectorAllFunctionsCalledByTheStage.size();
+            for (unsigned int k = 0; k < countStageFunctions; k++)
+            {
+                FunctionInstruction* aStageFunction = vectorAllFunctionsCalledByTheStage[k];
+                spv::Id functionId = aStageFunction->GetId();
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (functionId >= mapStageFunctionsToDuplicate.size()) return error("Invalid function duplicated id");
+#endif
+                if (mapStageFunctionsToDuplicate[functionId] != nullptr)
+                {
+                    FunctionInstruction* duplicatedFunction = mapStageFunctionsToDuplicate[functionId];
+#ifdef XKSLANG_DEBUG_MODE
+                    if (aStageFunction == duplicatedFunction) return error("The function to duplicate has not been remapped to its duplicated ones");
+#endif
+                    vectorAllFunctionsCalledByTheStage[k] = duplicatedFunction;
+                }
+            }
+
+            //we replace all function calls to the functions duplicated, by calls to the duplicated ones
             for (auto itf = vectorAllFunctionsCalledByTheStage.begin(); itf != vectorAllFunctionsCalledByTheStage.end(); itf++)
             {
                 FunctionInstruction* aStageFunction = *itf;
@@ -994,26 +1014,6 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
                         }
                     }
                     start += wordCount;
-                }
-            }
-
-            //We replace our stage functions by the duplicated ones
-            unsigned int countStageFunctions = (unsigned int)vectorAllFunctionsCalledByTheStage.size();
-            for (unsigned int k = 0; k < countStageFunctions; k++)
-            {
-                FunctionInstruction* aStageFunction = vectorAllFunctionsCalledByTheStage[k];
-                spv::Id functionId = aStageFunction->GetId();
-
-#ifdef XKSLANG_DEBUG_MODE
-                if (functionId >= mapStageFunctionsToDuplicate.size()) return error("Invalid function duplicated id");
-#endif
-                if (mapStageFunctionsToDuplicate[functionId] != nullptr)
-                {
-                    FunctionInstruction* duplicatedFunction = mapStageFunctionsToDuplicate[functionId];
-#ifdef XKSLANG_DEBUG_MODE
-                    if (aStageFunction == duplicatedFunction) return error("The function to duplicate has not been remapped to its duplicated ones");
-#endif
-                    vectorAllFunctionsCalledByTheStage[k] = duplicatedFunction;
                 }
             }
         }
