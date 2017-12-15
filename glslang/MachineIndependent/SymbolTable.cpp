@@ -137,10 +137,6 @@ void TType::buildMangledName(TString& mangledName) const
         }
         break;
 
-    //case EbtStreams:
-    //    mangledName += "Streams";
-    //    break;
-
     default:
         break;
     }

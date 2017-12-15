@@ -15,25 +15,30 @@ shader ShaderMain: ShaderBase
 	void VSMain()
 	{
 		Streams s1 = streams;
-		Streams s2, s3 = s1, s4, s5, s6 = streams;
-		s2 = s3;
-		s4 = streams;
-		s5 = s2 = streams;  //warning: assignment order goes from left to right!
-		streams;
-		streams = s1;
+		var s2 = streams;
 		
-		/////var backup1 = streams;
-		/////var backup2 = backup1, backup3, backup4;
-		/////backup3 = backup2;
+		//Streams s1 = streams;
+		//Streams s2, s3 = s1, s4, s5, s6 = streams;
+		//s2 = s3;
+		//s4 = streams;
+		//s5 = s2 = streams;
+		//streams;
+		//streams = s1;
+		//
+		//var backup1 = streams;
+		//var backup2 = backup1, backup3, backup4;
+		//backup3 = backup2;
+		//streams = backup3;
 		
 		//backup4 = streams; //unprocessed for now (if the variable was defined with the "var keyword)
 	}
 	
-	void PSMain()
-	{
-		Streams s1 = streams;
-		Streams s2, s3 = s1, s4, s5, s6 = streams;
-		s2 = s3;
-		s4 = streams;
-	}
+	//void PSMain()
+	//{
+	//	Streams s1 = streams;
+	//	Streams s2, s3 = s1, s4, s5, s6 = streams;
+	//	s2 = s3;
+	//	s4 = streams;
+	//	streams = s4;
+	//}
 }

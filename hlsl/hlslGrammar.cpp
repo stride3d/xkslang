@@ -1375,123 +1375,12 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                         // this isn't really an individual variable, but a member of the $Global buffer
                         parseContext.growGlobalUniformBlock(idToken.loc, variableType, *fullName);
                     } else {
-
-                        bool acceptCurrentDeclaration = true;
-
-                        /*
-                        //=======================================================================================================
-                        //=======================================================================================================
-                        //XKSL extensions:
-                        //if we have a declaration (with or without assignment) involving "Streams" types, we override and replace the expression and its Stream types by their actual meaning
-                        if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
-                        {
-                            TType* leftStreamType = nullptr;
-                            TType* rightStreamType = nullptr;
-                            if (variableType.getBasicType() == EbtStreams) leftStreamType = &variableType;
-                            TIntermSymbol* rightIntermSymbol = expressionNode == nullptr? nullptr: expressionNode->getAsSymbolNode();
-                            if (rightIntermSymbol != nullptr && rightIntermSymbol->getBasicType() == EbtStreams) rightStreamType = &(rightIntermSymbol->getWritableType());
-
-                            bool anyStreamsTypeAreInvolved = (leftStreamType != nullptr || rightStreamType != nullptr);
-                            if (anyStreamsTypeAreInvolved)
-                            {
-                                //special case where the expression involves "Streams" type and we declared the left type with the "var" keyword
-                                if (leftStreamType == nullptr && variableType.getBasicType() == EbtUndefinedVar)
-                                {
-                                    variableType.setBasicType(EbtStreams);
-                                    leftStreamType = &variableType;
-                                }
-
-                                //We will replace the current declaration by a new one
-                                acceptCurrentDeclaration = false;
-
-                                //Get the shader list of stream variables
-                                XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
-                                if (currentShader == nullptr) {error("Failed to get the current shader"); return false; }
-
-                                //Build the struct definition and its assignment expression
-                                TString structName = *(idToken.string);
-                                TString expressionStructDef = currentShader->streamsTypeInfo.StreamStructDeclarationName + TString(" ") + structName;
-
-                                TString replacementExpression = "";
-                                if (leftStreamType != nullptr)
-                                {
-                                    bool isUndefinedStreamType = leftStreamType->GetStreamsTypeProperties() == nullptr || leftStreamType->GetStreamsTypeProperties()->IsUndefined;
-
-                                    if (isUndefinedStreamType)
-                                    {
-                                        //replace the "Stream" declaration by its corresponding struct type
-                                        replacementExpression += expressionStructDef;
-                                    }
-                                    else
-                                    {
-                                        error("Unprocessed Streams declaration (1)");
-                                        return false;
-                                    }
-                                }
-                                else
-                                {
-                                    error("Unprocessed Streams declaration (2)");
-                                    return false;
-                                }
-
-                                if (rightStreamType != nullptr)
-                                {
-                                    bool isUndefinedStreamType = rightStreamType->GetStreamsTypeProperties() == nullptr || rightStreamType->GetStreamsTypeProperties()->IsUndefined;
-
-                                    if (isUndefinedStreamType || !rightStreamType->GetStreamsTypeProperties()->IsFromStreamsKeyword)
-                                    {
-                                        error("Unprocessed Streams declaration (3)");
-                                        return false;
-                                    }
-                                    else
-                                    {
-                                        //replace the "Stream" declaration by its corresponding struct type
-                                        replacementExpression += TString(" = ") + currentShader->streamsTypeInfo.StreamStructAssignmentExpression;
-                                    }
-                                }
-                                else if (rightIntermSymbol != nullptr)
-                                {
-                                    if (rightIntermSymbol->getBasicType() == EbtStruct)
-                                    {
-                                        //we have an declaration such like: "Streams backup3 = backup1;"
-                                        //We convert the left Stream to a struct and assign it with the initial right struct
-                                        replacementExpression += TString(" = ") + rightIntermSymbol->getName();
-                                    }
-                                    else
-                                    {
-                                        error("Unprocessed Streams declaration: rightIntermSymbol has an invalid type");
-                                        return false;
-                                    }
-                                }
-                                else
-                                {
-                                    //We have a Stream declaration without assignment: do nothing else
-                                }
-
-                                replacementExpression += ";";
-
-                                //Precompute the list of tokens for our new expression
-                                if (!getListTokensForExpression(replacementExpression, listNewTokensToAddAfterDeclarationIsCompleted)) {
-                                    error("Failed to create the list of tokens for the Streams declaration expression"); return false;
-                                }
-                                //We remove the termination token from the list
-                                while (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0 && listNewTokensToAddAfterDeclarationIsCompleted.back().tokenClass == EHTokNone)
-                                    listNewTokensToAddAfterDeclarationIsCompleted.pop_back();
-                            }
-                        }
-                        //=======================================================================================================
-                        //=======================================================================================================
-                        */
-
-                        if (acceptCurrentDeclaration)
-                        {
-                            // Declare the variable and add any initializer code to the AST.
-                            // The top-level node is always made into an aggregate, as that's
-                            // historically how the AST has been.
-                            initializers = intermediate.growAggregate(initializers,
-                                parseContext.declareVariable(idToken.loc, *fullName, variableType, expressionNode),
-                                idToken.loc);
-                        }
+                        // Declare the variable and add any initializer code to the AST.
+                        // The top-level node is always made into an aggregate, as that's
+                        // historically how the AST has been.
+                        initializers = intermediate.growAggregate(initializers,
+                            parseContext.declareVariable(idToken.loc, *fullName, variableType, expressionNode),
+                            idToken.loc);
                     }
                 }
             }
@@ -2620,10 +2509,6 @@ bool HlslGrammar::acceptType(TType& type, TIntermNode*& nodeList)
         new(&type) TType(EbtSemanticType);
         break;
 
-    /*case EHTokStreamsType:
-        new(&type) TType(EbtStreams);
-        break;*/
-
     case EHTokFloat:
         new(&type) TType(EbtFloat);
         break;
@@ -3268,7 +3153,6 @@ TString HlslGrammar::getLabelForTokenType(EHlslTokenClass tokenType)
         case EHTokLinkType:         return "LinkType";
         case EHTokMemberNameType:   return "MemberName";
         case EHTokSemanticType:     return "Semantic";
-        //case EHTokStreamsType:      return "Streams";
     }
 
     return "";
@@ -3688,7 +3572,6 @@ bool HlslGrammar::validateShaderDeclaredType(const TType& type)
         case EbtLinkType:
         case EbtMemberNameType:
         case EbtSemanticType:
-        //case EbtStreams:
             error("a shader member or method has an invalid type: " + type.getTypeNameSafe());
             return false;
     }
@@ -3912,24 +3795,11 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     function->getWritableType().shallowCopy(declaredType);
 
                     //Check the function's return type
-                    if (/*function->getType().getBasicType() == EbtStreams ||*/ function->getType().getBasicType() == EbtUndefinedVar)
+                    if (function->getType().getBasicType() == EbtUndefinedVar)
                     {
                         error("The function has an invalid return type: " + function->getName());
                         return false;
                     }
-
-                    //Check the function parameters: if a parameter has the Streams type, we change it to its corresponding stream struct type
-                    /*bool functionIsUnresolvedUntilWeCallIt = false;
-                    int countParams = function->getParamCount();
-                    for (int k = 0; k < countParams; k++)
-                    {
-                        const TParameter& param = (*function)[k];
-                        if (param.type->getBasicType() == EbtStreams)
-                        {
-                            functionIsUnresolvedUntilWeCallIt = true;
-                        }
-                    }
-                    function->SetFunctionIsUnresolvedUntilWeCallIt(functionIsUnresolvedUntilWeCallIt);*/
 
                     //only record the method declaration
                     if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
@@ -4942,16 +4812,6 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
     if (! acceptFullySpecifiedType(*type))
         return false;
 
-    //if a parameter has the Streams type, we change it to its corresponding stream struct type
-    /*if (type->getBasicType() == EbtStreams)
-    {
-        XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
-        if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
-        if (currentShader->streamsTypeInfo.StreamStructureType == nullptr) { error("Missing the shader streams structure type info"); return false; }
-
-        type->shallowCopy(*(currentShader->streamsTypeInfo.StreamStructureType));
-    }*/
-
     parseContext.transferTypeAttributes(attributes, *type);
         
     if (type->getBasicType() == EbtUndefinedVar)
@@ -5266,125 +5126,6 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
         node->getWritableType().setQualifier(variableQualifier);
     }
     //=======================================================================
-
-    /*
-    //=======================================================================================================
-    //=======================================================================================================
-    //XKSL extensions:
-    //if we have an assignment expression involving "Streams" types, we replace the types by their actual meaning
-    if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition)
-    {
-        TType* leftStreamType = nullptr;
-        TType* rightStreamType = nullptr;
-        TIntermSymbol* leftIntermSymbol = node == nullptr ? nullptr : node->getAsSymbolNode();
-        TIntermSymbol* rightIntermSymbol = rightNode == nullptr ? nullptr : rightNode->getAsSymbolNode();
-        if (leftIntermSymbol != nullptr && leftIntermSymbol->getBasicType() == EbtStreams) leftStreamType = &(leftIntermSymbol->getWritableType());
-        if (rightIntermSymbol != nullptr && rightIntermSymbol->getBasicType() == EbtStreams) rightStreamType = &(rightIntermSymbol->getWritableType());
-
-        bool anyStreamsTypeAreInvolved = (leftStreamType != nullptr || rightStreamType != nullptr);
-        if (anyStreamsTypeAreInvolved)
-        {
-            XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
-            if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
-            TString replacementExpression = "";
-
-            if (!peekTokenClass(EHTokSemicolon))
-            {
-                error("; expected after a stream assignment");
-                return false;
-            }
-
-            if (leftStreamType == nullptr && rightStreamType != nullptr)
-            {
-                if (rightStreamType->GetStreamsTypeProperties() == nullptr || rightStreamType->GetStreamsTypeProperties()->IsFromStreamsKeyword)
-                {
-                    //we process here the assignment "aStreamVar = streams" (where aStreamVar has normally been declared with a Streams type)
-                    //We replace it by: "StreamStruct _tmpStreamX = {streams values}; symbolName = _tmpStreamX;"
-                    if (leftIntermSymbol == nullptr || leftIntermSymbol->getBasicType() != EbtStruct)
-                    {
-                        error("Invalid Streams assignment expression: Left symbol is missing or has an invalid type");
-                        return false;
-                    }
-
-                    //Limitation: multiple assignment expression such like: "s5 = s2 = streams;" will not work correctly
-                    //The assignments would be done from left to right instead of right to left
-                    //Due to the fact that we're skipping the current expression and rediffer it to the next instructions.
-                    TString tmpStreamVariableName = TString("_tmpStreamsVar_") + TString(std::to_string(GetUniqueIndex()).c_str());
-                    replacementExpression =
-                        currentShader->streamsTypeInfo.StreamStructDeclarationName + " " + tmpStreamVariableName    //StreamStruct _tmpStreamX
-                        + " = " + currentShader->streamsTypeInfo.StreamStructAssignmentExpression + "; "            // = {streams values};
-                        + leftIntermSymbol->getName() + " = " + tmpStreamVariableName + ";";                        //symbolName = _tmpStreamX;
-                }
-                else
-                {
-                    error("Unprocessed Streams assignment expression (1)");
-                    return false;
-                }
-            }
-            else if (leftStreamType != nullptr && rightStreamType == nullptr)
-            {
-                //we process here the assignment "streams = aStreamVar" (where aStreamVar has normally been declared with a Streams type)
-                if (rightIntermSymbol == nullptr || rightIntermSymbol->getBasicType() != EbtStruct)
-                {
-                    error("Invalid \"streams = symbol\" assignment expression: right symbol is missing or has an invalid type");
-                    return false;
-                }
-                if (leftStreamType->GetStreamsTypeProperties() == nullptr || leftStreamType->GetStreamsTypeProperties()->IsFromStreamsKeyword == false)
-                {
-                    error("Invalid \"streams = symbol\" assignment expression: left Stream variable has missing or invalid properties");
-                    return false;
-                }
-
-                TString structNamePlusDot = rightIntermSymbol->getName() + ".";
-                int countStreamVariables = currentShader->streamsTypeInfo.GetCountStreamVariables();
-                for (int m = 0; m < countStreamVariables; ++m)
-                {
-                    const TString& memberName = currentShader->streamsTypeInfo.GetStreamVariableName(m);
-                    replacementExpression += "streams." + memberName + " = " + structNamePlusDot + memberName + ";";
-                }
-            }
-            else
-            {
-                //The only case this can happens is when the left variable was defined with "var" keyword, then assign from a "streams"
-                //We don't process this case for now
-                error("Unprocessed Streams assignment expression (2)");
-                return false;
-            }
-
-            if (replacementExpression.size() > 0)
-            {
-                //Precompute the list of tokens for our new expression
-                TVector<HlslToken> listNewTokensToAddAfterDeclarationIsCompleted;
-                if (!getListTokensForExpression(replacementExpression, listNewTokensToAddAfterDeclarationIsCompleted)) {
-                    error("Failed to create the list of tokens for the Streams assignment expression"); return false;
-                }
-
-                //We remove the termination token from the list
-                while (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0 && listNewTokensToAddAfterDeclarationIsCompleted.back().tokenClass == EHTokNone)
-                    listNewTokensToAddAfterDeclarationIsCompleted.pop_back();
-
-                if (listNewTokensToAddAfterDeclarationIsCompleted.size() > 0)
-                {
-                    //New tokens are to be inserted BEFORE accepting the SemiColon token
-                    if (!peekTokenClass(EHTokSemicolon)) {
-                        error("An end of instruction token (;) is expected before we insert some new expression tokens");
-                        return false;
-                    }
-
-                    if (!insertListOfTokensAtCurrentPosition(listNewTokensToAddAfterDeclarationIsCompleted)) {
-                        error("Failed to insert the list of tokens for the Streams expression");
-                        return false;
-                    }
-                }
-            }
-
-            //We return directly, without processing the initial assignment expression
-            return true;
-        }
-    }
-    //=======================================================================================================
-    //=======================================================================================================
-    */
 
     node = parseContext.handleAssign(loc, assignOp, node, rightNode);
     node = parseContext.handleLvalue(loc, "assign", node);
@@ -6228,35 +5969,6 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     }
                 }
                 
-                /*if (isStreamsUsedAsAType)
-                {
-                    //we replace the "streams" keyword by a call to the auto-generated method: _getStreamsStructType()
-
-                    if (hasBaseAccessor) {
-                        error("base.streams is not permitted");
-                        return false;
-                    }
-
-                    //We create a temporary Streams type and will have the "streams" keyword refers to it
-                    TString* temporaryStreamVariableName = NewPoolTString( (TString("_tmpStreamsVar_") + std::to_string(GetUniqueIndex()).c_str()).c_str() );
-                    symbol = parseContext.lookIfSymbolExistInSymbolTable(temporaryStreamVariableName);
-                    if (symbol != nullptr) {
-                        error("The temporary variable already exists in the symbol table");
-                        return false;
-                    }
-
-                    TString accessorClassName = classAccessorName == nullptr ? *referenceShaderName : *classAccessorName;
-
-                    //Create and setup the "Streams" type and variable
-                    TType* temporaryStreamType = new TType(EbtStreams);
-                    temporaryStreamType->getQualifier().storage = EvqTemporary;
-                    temporaryStreamType->SetStreamsTypeProperties( new TStreamsTypeProperties(accessorClassName, true, false) );
-
-                    parseContext.declareVariable(idToken.loc, *temporaryStreamVariableName, *temporaryStreamType, nullptr);
-
-                    memberName = temporaryStreamVariableName;
-                }*/
-
                 if (symbol == nullptr || classAccessorName != nullptr || hasStreamAccessor || hasComposition || hasBaseAccessor || callThroughStaticShaderClassName)
                 {
                     if (hasComposition) {
@@ -6773,43 +6485,6 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         //we keep looking if we can match another method by casting some of the function parameters
         identifierLocation = findShaderClassBestMatchingMethod(nameOfShaderOwningTheFunction, functionCall, onlyLookInParentClasses);
     }
-
-    //if (!identifierLocation.isMethod())
-    //{
-    //    //If we did not find any matching method, we look if we are calling a method using a "Streams" parameter
-    //    //If so: we find the best matching method and convert the Streams type to match it
-    //    int countParams = functionCall->getParamCount();
-    //    for (int k = 0; k < countParams; k++)
-    //    {
-    //        const TParameter& param = (*functionCall)[k];
-    //        if (param.type->getBasicType() == EbtStreams)
-    //        {
-    //            if (param.type->GetStreamsTypeProperties() != nullptr && param.type->GetStreamsTypeProperties()->IsFromStreamsKeyword)
-    //            {
-    //                //we are calling the function using at least one "stream" keyword as a parameters.
-    //                //We create and assign a variable with the stream struct, and then will reprocess the function call
-    //
-    //                XkslShaderDefinition* currentShader = getShaderCurrentlyParsed();
-    //                if (currentShader == nullptr) { error("Failed to get the current shader"); return false; }
-    //
-    //                TString replacementExpression = "";
-    //                TString tmpStreamVariableName = TString("_tmpStreamsVar_") + TString(std::to_string(GetUniqueIndex()).c_str());
-    //                replacementExpression =
-    //                    currentShader->streamsTypeInfo.StreamStructDeclarationName + " " + tmpStreamVariableName    //StreamStruct _tmpStreamX
-    //                    + " = " + currentShader->streamsTypeInfo.StreamStructAssignmentExpression + ";";            // = {streams values};
-    //                int gfdsljg = 45325435;
-    //
-    //                error("Unprocessed Streams type in a function call");
-    //                return false;
-    //            }
-    //            else
-    //            {
-    //                error("Unprocessed Streams type in a function call");
-    //                return false;
-    //            }
-    //        }
-    //    }
-    //}
 
     if (identifierLocation.isMethod())
     {
