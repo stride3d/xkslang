@@ -1275,6 +1275,11 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
     //XKSL extension: the statement declaration can lead into inserting some new tokens
     TVector<HlslToken> listNewTokensToAddAfterDeclarationIsCompleted;
 
+    if (declaredType.getBasicType() == EbtUndefinedVar && declaredType.isImplicitlySizedArray()) {
+        error("An undefined \"var\" type cannot be an array");
+        return false;
+    }
+
     // declarator_list
     //    : declarator
     //         : identifier
@@ -1327,6 +1332,11 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
             TArraySizes* arraySizes = nullptr;
             acceptArraySpecifier(arraySizes);
 
+            if (declaredType.getBasicType() == EbtUndefinedVar && (arraySizes != nullptr || declaredType.isImplicitlySizedArray())) {
+                error("An undefined \"var\" type cannot be an array");
+                return false;
+            }
+
             // Fix arrayness in the variableType
             if (declaredType.isImplicitlySizedArray()) {
                 // Because "int[] a = int[2](...), b = int[3](...)" makes two arrays a and b
@@ -1359,6 +1369,18 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                     expected("initializer");
                     return false;
                 }
+
+                //=====================================================================================
+                //XKSL extensions: if the left-value variable was declared with the "var" keyword, and is directly assigned with an expression:
+                //we can set its type now, by copying the type from the right-value expression
+                if (variableType.getBasicType() == EbtUndefinedVar && expressionNode != nullptr)
+                {
+                    TBasicType bType = expressionNode->getBasicType();
+                    const TType& variableNewType = expressionNode->getType();
+                    declaredType.shallowCopy(variableNewType);
+                    variableType.shallowCopy(declaredType);
+                }
+                //=====================================================================================
             }
 
             // TODO: things scoped within an annotation need their own name space;
@@ -1378,6 +1400,7 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                         // Declare the variable and add any initializer code to the AST.
                         // The top-level node is always made into an aggregate, as that's
                         // historically how the AST has been.
+
                         initializers = intermediate.growAggregate(initializers,
                             parseContext.declareVariable(idToken.loc, *fullName, variableType, expressionNode),
                             idToken.loc);
@@ -4816,7 +4839,7 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
         
     if (type->getBasicType() == EbtUndefinedVar)
     {
-        parseContext.error(token.loc, (TString("A function cannot define a parameter as a \"var\" type. Function: ") + function.getDeclaredMangledName()).c_str(), "", "");
+        error("A function cannot define a parameter as a \"var\" type. Function: " + function.getDeclaredMangledName());
         return false;
     }
 
@@ -5099,7 +5122,7 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
         const TType& variableNewType = rightNode->getType();
         TIntermSymbol* variableSymbolNode = node->getAsSymbolNode();
         if (variableSymbolNode == nullptr) {
-            parseContext.error(loc, "An unknown var type has been parsed without generating a symbol node", "", "");
+            error("An undefined \"var\" type has been parsed without generating a symbol node");
             return false;
         }
         TString variableName = variableSymbolNode->getName();
@@ -5107,13 +5130,13 @@ bool HlslGrammar::acceptAssignmentExpression(TIntermTyped*& node)
         //Update the type of the variable recorded in the symbol table
         TSymbol* variableSymbol = parseContext.lookIfSymbolExistInSymbolTable(&variableName);
         if (variableSymbol == nullptr){
-            parseContext.error(loc, "An unknown var type has been parsed but we cannot retrieve its symbol from the symbol table", "", "");
+            error("An undefined \"var\" type has been parsed but we cannot retrieve its symbol from the symbol table");
             return false;
         }
 
         TVariable* variable = variableSymbol->getAsVariable();
         if (variableSymbol == nullptr) {
-            parseContext.error(loc, "An unknown var type has been parsed but we cannot retrieve its symbol from the symbol table", "", "");
+            error("An undefined \"var\" type has been parsed but we cannot retrieve its symbol from the symbol table");
             return false;
         }
 

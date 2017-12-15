@@ -1,4 +1,4 @@
-struct ShaderMain__streamsStruct
+struct ShaderMain_Streams
 {
     float4 s1;
     float4 s2;
@@ -28,6 +28,20 @@ struct SPIRV_Cross_Input
     float PS_IN_b2 : B2;
 };
 
+ShaderMain_Streams ShaderMain__getStreams_PS(PS_STREAMS _streams)
+{
+    ShaderMain_Streams res = { _streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0 };
+    return res;
+}
+
+void ShaderMain__setStreams_PS(inout PS_STREAMS _streams, ShaderMain_Streams _s)
+{
+    _streams.s1_id0 = _s.s1;
+    _streams.s2_id1 = _s.s2;
+    _streams.b1_id2 = _s.b1;
+    _streams.b2_id3 = _s.b2;
+}
+
 void frag_main()
 {
     PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0, 0.0f };
@@ -35,12 +49,13 @@ void frag_main()
     _streams.s2_id1 = PS_IN_s2;
     _streams.b1_id2 = PS_IN_b1;
     _streams.b2_id3 = PS_IN_b2;
-    ShaderMain__streamsStruct s1 = { _streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0 };
-    ShaderMain__streamsStruct s3 = s1;
-    ShaderMain__streamsStruct s6 = { _streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0 };
-    ShaderMain__streamsStruct s2 = s3;
-    ShaderMain__streamsStruct _tmpStreamsVar_3 = { _streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0 };
-    ShaderMain__streamsStruct s4 = _tmpStreamsVar_3;
+    ShaderMain_Streams s1 = ShaderMain__getStreams_PS(_streams);
+    ShaderMain_Streams s3 = s1;
+    ShaderMain_Streams s6 = ShaderMain__getStreams_PS(_streams);
+    ShaderMain_Streams s2 = s3;
+    ShaderMain_Streams s4 = ShaderMain__getStreams_PS(_streams);
+    ShaderMain_Streams param = s4;
+    ShaderMain__setStreams_PS(_streams, param);
 }
 
 void main(SPIRV_Cross_Input stage_input)
