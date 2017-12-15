@@ -9,11 +9,10 @@ shader ShaderMain
 	void CommonFunctionUsingStreams(float f, int i)
 	{
 		streams.s3 = f;
-		
 		if (i > 0)
 			CommonFunctionUsingStreams(f+i, 0);
 	}
-	
+
 	stage void VSMain() 
     {
 		streams.s1 = 0;

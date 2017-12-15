@@ -160,7 +160,7 @@ float o1S2C0_LightPoint_ComputeAttenuation(LightPoint_PointLightDataInternal lig
 {
     float3 lightVector = light.PositionWS - position;
     float lightVectorLength = length(lightVector);
-    lightVectorNorm = lightVector / float3(lightVectorLength, lightVectorLength, lightVectorLength);
+    lightVectorNorm = lightVector / lightVectorLength.xxx;
     float lightInvSquareRadius = light.InvSquareRadius;
     float3 param = lightVector;
     float param_1 = lightInvSquareRadius;
@@ -254,7 +254,7 @@ float o2S2C0_LightSpot_ComputeAttenuation(LightSpot_SpotLightDataInternal light,
 {
     float3 lightVector = light.PositionWS - position;
     float lightVectorLength = length(lightVector);
-    lightVectorNorm = lightVector / float3(lightVectorLength, lightVectorLength, lightVectorLength);
+    lightVectorNorm = lightVector / lightVectorLength.xxx;
     float3 lightAngleOffsetAndInvSquareRadius = light.AngleOffsetAndInvSquareRadius;
     float2 lightAngleAndOffset = lightAngleOffsetAndInvSquareRadius.xy;
     float lightInvSquareRadius = lightAngleOffsetAndInvSquareRadius.z;

@@ -42,7 +42,7 @@ void vert_main()
     VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
     _streams.Position_id2 = VS_IN_Position;
     SpriteBase_VSMain(_streams);
-    float4 screenPosition = _streams.ShadingPosition_id0 / float4(_streams.ShadingPosition_id0.w, _streams.ShadingPosition_id0.w, _streams.ShadingPosition_id0.w, _streams.ShadingPosition_id0.w);
+    float4 screenPosition = _streams.ShadingPosition_id0 / _streams.ShadingPosition_id0.w.xxxx;
     float4 position = float4(screenPosition.x, screenPosition.y, 1.0f, 1.0f);
     float3 directionVS = mul(position, SkyboxShader_ProjectionInverse).xyz;
     float3 directionWS = mul(float4(directionVS, 0.0f), SkyboxShader_ViewInverse).xyz;

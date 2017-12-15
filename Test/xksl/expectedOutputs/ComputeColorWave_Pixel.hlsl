@@ -18,9 +18,8 @@ struct SPIRV_Cross_Input
 
 float4 ComputeColorWave_1_2_3_645541__Compute(PS_STREAMS _streams)
 {
-    float phase = length(_streams.TexCoord_id0 - float2(0.5f, 0.5f));
-    float _19 = sin((((phase + (Global_Time * 3.6455414295196533203125f)) * 2.0f) * 3.1400001049041748046875f) * 1.0f) * 2.0f;
-    return float4(_19, _19, _19, _19);
+    float phase = length(_streams.TexCoord_id0 - 0.5f.xx);
+    return (sin((((phase + (Global_Time * 3.6455414295196533203125f)) * 2.0f) * 3.1400001049041748046875f) * 1.0f) * 2.0f).xxxx;
 }
 
 void frag_main()

@@ -260,9 +260,9 @@ float3 o8S245C0_o7S2C0_o6S2C0_MaterialSurfaceShadingDiffuseLambert_false__Comput
     float3 diffuseColor = _streams.matDiffuseVisible_id22;
     if (false)
     {
-        diffuseColor *= (float3(1.0f, 1.0f, 1.0f) - _streams.matSpecularVisible_id24);
+        diffuseColor *= (1.0f.xxx - _streams.matSpecularVisible_id24);
     }
-    return ((diffuseColor / float3(3.1415927410125732421875f, 3.1415927410125732421875f, 3.1415927410125732421875f)) * _streams.lightColorNdotL_id35) * _streams.matDiffuseSpecularAlphaBlend_id18.x;
+    return ((diffuseColor / 3.1415927410125732421875f.xxx) * _streams.lightColorNdotL_id35) * _streams.matDiffuseSpecularAlphaBlend_id18.x;
 }
 
 void o1S429C0_LightClustered_PrepareLightData(inout PS_STREAMS _streams)
@@ -311,7 +311,7 @@ float o1S429C0_LightPoint_ComputeAttenuation(LightPoint_PointLightDataInternal l
 {
     float3 lightVector = light.PositionWS - position;
     float lightVectorLength = length(lightVector);
-    lightVectorNorm = lightVector / float3(lightVectorLength, lightVectorLength, lightVectorLength);
+    lightVectorNorm = lightVector / lightVectorLength.xxx;
     float lightInvSquareRadius = light.InvSquareRadius;
     float3 param = lightVector;
     float param_1 = lightInvSquareRadius;
@@ -405,7 +405,7 @@ float o2S429C0_LightSpot_ComputeAttenuation(LightSpot_SpotLightDataInternal ligh
 {
     float3 lightVector = light.PositionWS - position;
     float lightVectorLength = length(lightVector);
-    lightVectorNorm = lightVector / float3(lightVectorLength, lightVectorLength, lightVectorLength);
+    lightVectorNorm = lightVector / lightVectorLength.xxx;
     float3 lightAngleOffsetAndInvSquareRadius = light.AngleOffsetAndInvSquareRadius;
     float2 lightAngleAndOffset = lightAngleOffsetAndInvSquareRadius.xy;
     float lightInvSquareRadius = lightAngleOffsetAndInvSquareRadius.z;
@@ -487,7 +487,7 @@ float3 o8S245C0_o7S2C0_o6S2C0_MaterialSurfaceShadingDiffuseLambert_false__Comput
     float3 diffuseColor = _streams.matDiffuseVisible_id22;
     if (false)
     {
-        diffuseColor *= (float3(1.0f, 1.0f, 1.0f) - _streams.matSpecularVisible_id24);
+        diffuseColor *= (1.0f.xxx - _streams.matSpecularVisible_id24);
     }
     return diffuseColor * _streams.envLightDiffuseColor_id36;
 }
@@ -592,7 +592,7 @@ void frag_main()
     _streams.PositionWS_id4 = PS_IN_PositionWS;
     _streams.ScreenPosition_id44 = PS_IN_ScreenPosition;
     _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
-    _streams.ScreenPosition_id44 /= float4(_streams.ScreenPosition_id44.w, _streams.ScreenPosition_id44.w, _streams.ScreenPosition_id44.w, _streams.ScreenPosition_id44.w);
+    _streams.ScreenPosition_id44 /= _streams.ScreenPosition_id44.w.xxxx;
     NormalBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
 }

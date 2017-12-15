@@ -45,8 +45,7 @@ cbuffer ReferenceCBuffer
 
 void vert_main()
 {
-    float _9 = float(ShaderMain__aInt);
-    float4 _10 = float4(_9, _9, _9, _9);
+    float4 _10 = float(ShaderMain__aInt).xxxx;
     float4x4 f44 = float4x4(ShaderMain_arrayA[0][0] + _10, ShaderMain_arrayA[0][1] + _10, ShaderMain_arrayA[0][2] + _10, ShaderMain_arrayA[0][3] + _10);
 }
 

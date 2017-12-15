@@ -23,20 +23,16 @@ struct SPIRV_Cross_Output
 
 int o0S5C0_Color_Compute(inout PS_STREAMS _streams, int i)
 {
-    float _33 = float(i);
-    _streams.aStreamBis_id3 = float4(_33, _33, _33, _33);
+    _streams.aStreamBis_id3 = float(i).xxxx;
     _streams.aStream1_id0 = i + _streams.aStream2_id1;
-    float _44 = float(i);
-    return int4(_streams.aStream3_id2 + float4(_44, _44, _44, _44)).x;
+    return int4(_streams.aStream3_id2 + float(i).xxxx).x;
 }
 
 int o1S5C0_Color_Compute(inout PS_STREAMS _streams, int i)
 {
-    float _53 = float(i);
-    _streams.aStreamBis_id3 = float4(_53, _53, _53, _53);
+    _streams.aStreamBis_id3 = float(i).xxxx;
     _streams.aStream1_id0 = i + _streams.aStream2_id1;
-    float _64 = float(i);
-    return int4(_streams.aStream3_id2 + float4(_64, _64, _64, _64)).x;
+    return int4(_streams.aStream3_id2 + float(i).xxxx).x;
 }
 
 void frag_main()
@@ -51,8 +47,7 @@ void frag_main()
     param = 1;
     int _72 = o1S5C0_Color_Compute(_streams, param);
     res += _72;
-    float _8 = float(res);
-    _streams.aStreamBis_id3 += float4(_8, _8, _8, _8);
+    _streams.aStreamBis_id3 += float(res).xxxx;
     int i = int4(_streams.aStreamBis_id3).x;
     PS_OUT_aStreamBis = _streams.aStreamBis_id3;
 }

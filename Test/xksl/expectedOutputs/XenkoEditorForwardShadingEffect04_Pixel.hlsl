@@ -244,20 +244,19 @@ void o21S248C0_o5S2C0_MaterialSurfaceDiffuse_Compute(inout PS_STREAMS _streams)
 
 float2 o21S248C0_o7S2C0_o6S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(float x)
 {
-    float _1254 = sqrt(1.0f + (x * x));
-    return float2(x, 1.0f) / float2(_1254, _1254);
+    return float2(x, 1.0f) / sqrt(1.0f + (x * x)).xx;
 }
 
 float4 o21S248C0_o7S2C0_o6S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(PS_STREAMS _streams)
 {
-    float2 offset = _streams.TexCoord_id48 - float2(0.5f, 0.5f);
+    float2 offset = _streams.TexCoord_id48 - 0.5f.xx;
     float phase = length(offset);
     float derivative = cos((((phase + (Global_Time * (-0.02999999932944774627685546875f))) * 2.0f) * 3.1400001049041748046875f) * 5.0f) * 0.100000001490116119384765625f;
     float param = offset.y / offset.x;
     float2 xz = o21S248C0_o7S2C0_o6S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(param);
     float param_1 = derivative;
     float2 xy = o21S248C0_o7S2C0_o6S2C0_ComputeColorWaveNormal_5_0_1__0_03__SincosOfAtan(param_1);
-    float2 _1234 = (((xz.yx * sign(offset.x)) * (-xy.x)) * 0.5f) + float2(0.5f, 0.5f);
+    float2 _1234 = (((xz.yx * sign(offset.x)) * (-xy.x)) * 0.5f) + 0.5f.xx;
     float3 normal;
     normal = float3(_1234.x, _1234.y, normal.z);
     normal.z = xy.y;
@@ -269,7 +268,7 @@ void o21S248C0_o7S2C0_MaterialSurfaceNormalMap_false_true__Compute(inout PS_STRE
     float4 normal = o21S248C0_o7S2C0_o6S2C0_ComputeColorWaveNormal_5_0_1__0_03__Compute(_streams);
     if (true)
     {
-        normal = (normal * 2.0f) - float4(1.0f, 1.0f, 1.0f, 1.0f);
+        normal = (normal * 2.0f) - 1.0f.xxxx;
     }
     if (false)
     {
@@ -389,9 +388,9 @@ float3 o21S248C0_o20S2C0_o14S2C0_MaterialSurfaceShadingDiffuseLambert_true__Comp
     float3 diffuseColor = _streams.matDiffuseVisible_id26;
     if (true)
     {
-        diffuseColor *= (float3(1.0f, 1.0f, 1.0f) - _streams.matSpecularVisible_id28);
+        diffuseColor *= (1.0f.xxx - _streams.matSpecularVisible_id28);
     }
-    return ((diffuseColor / float3(3.1415927410125732421875f, 3.1415927410125732421875f, 3.1415927410125732421875f)) * _streams.lightColorNdotL_id39) * _streams.matDiffuseSpecularAlphaBlend_id22.x;
+    return ((diffuseColor / 3.1415927410125732421875f.xxx) * _streams.lightColorNdotL_id39) * _streams.matDiffuseSpecularAlphaBlend_id22.x;
 }
 
 float3 o21S248C0_o20S2C0_o19S2C0_o16S2C0_BRDFMicrofacet_FresnelSchlick(float3 f0, float3 f90, float lOrVDotH)
@@ -458,7 +457,7 @@ float3 o21S248C0_o20S2C0_o19S2C0_MaterialSurfaceShadingSpecularMicrofacet_Comput
     float3 fresnel = o21S248C0_o20S2C0_o19S2C0_o16S2C0_MaterialSpecularMicrofacetFresnelSchlick_Compute(_streams, param);
     float geometricShadowing = o21S248C0_o20S2C0_o19S2C0_o17S2C1_MaterialSpecularMicrofacetVisibilitySmithSchlickGGX_Compute(_streams);
     float normalDistribution = o21S248C0_o20S2C0_o19S2C0_o18S2C2_MaterialSpecularMicrofacetNormalDistributionGGX_Compute(_streams);
-    float3 reflected = ((fresnel * geometricShadowing) * normalDistribution) / float3(4.0f, 4.0f, 4.0f);
+    float3 reflected = ((fresnel * geometricShadowing) * normalDistribution) / 4.0f.xxx;
     return (reflected * _streams.lightColorNdotL_id39) * _streams.matDiffuseSpecularAlphaBlend_id22.y;
 }
 
@@ -508,7 +507,7 @@ float o1S418C0_LightPoint_ComputeAttenuation(LightPoint_PointLightDataInternal l
 {
     float3 lightVector = light.PositionWS - position;
     float lightVectorLength = length(lightVector);
-    lightVectorNorm = lightVector / float3(lightVectorLength, lightVectorLength, lightVectorLength);
+    lightVectorNorm = lightVector / lightVectorLength.xxx;
     float lightInvSquareRadius = light.InvSquareRadius;
     float3 param = lightVector;
     float param_1 = lightInvSquareRadius;
@@ -602,7 +601,7 @@ float o2S418C0_LightSpot_ComputeAttenuation(LightSpot_SpotLightDataInternal ligh
 {
     float3 lightVector = light.PositionWS - position;
     float lightVectorLength = length(lightVector);
-    lightVectorNorm = lightVector / float3(lightVectorLength, lightVectorLength, lightVectorLength);
+    lightVectorNorm = lightVector / lightVectorLength.xxx;
     float3 lightAngleOffsetAndInvSquareRadius = light.AngleOffsetAndInvSquareRadius;
     float2 lightAngleAndOffset = lightAngleOffsetAndInvSquareRadius.xy;
     float lightInvSquareRadius = lightAngleOffsetAndInvSquareRadius.z;
@@ -684,7 +683,7 @@ float3 o21S248C0_o20S2C0_o14S2C0_MaterialSurfaceShadingDiffuseLambert_true__Comp
     float3 diffuseColor = _streams.matDiffuseVisible_id26;
     if (true)
     {
-        diffuseColor *= (float3(1.0f, 1.0f, 1.0f) - _streams.matSpecularVisible_id28);
+        diffuseColor *= (1.0f.xxx - _streams.matSpecularVisible_id28);
     }
     return diffuseColor * _streams.envLightDiffuseColor_id40;
 }
@@ -693,7 +692,7 @@ float3 o21S248C0_o20S2C0_o19S2C0_o15S2C3_MaterialSpecularMicrofacetEnvironmentGG
 {
     float glossiness = 1.0f - sqrt(alphaR);
     float4 environmentLightingDFG = MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT.SampleLevel(Texturing_LinearSampler, float2(glossiness, nDotV), 0.0f);
-    return (specularColor * environmentLightingDFG.x) + float3(environmentLightingDFG.y, environmentLightingDFG.y, environmentLightingDFG.y);
+    return (specularColor * environmentLightingDFG.x) + environmentLightingDFG.y.xxx;
 }
 
 float3 o21S248C0_o20S2C0_o19S2C0_MaterialSurfaceShadingSpecularMicrofacet_ComputeEnvironmentLightContribution(PS_STREAMS _streams)
@@ -815,7 +814,7 @@ void frag_main()
     _streams.ScreenPosition_id47 = PS_IN_ScreenPosition;
     _streams.TexCoord_id48 = PS_IN_TexCoord;
     _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
-    _streams.ScreenPosition_id47 /= float4(_streams.ScreenPosition_id47.w, _streams.ScreenPosition_id47.w, _streams.ScreenPosition_id47.w, _streams.ScreenPosition_id47.w);
+    _streams.ScreenPosition_id47 /= _streams.ScreenPosition_id47.w.xxxx;
     NormalBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
 }

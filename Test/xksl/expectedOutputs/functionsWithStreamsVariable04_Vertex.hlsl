@@ -1,4 +1,4 @@
-struct ShaderMain__streamsStruct
+struct ShaderMain_Streams
 {
     float4 s1;
     float4 b1;
@@ -20,14 +20,19 @@ struct SPIRV_Cross_Input
     float4 VS_IN_b1 : B1;
 };
 
+ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
+{
+    ShaderMain_Streams res = { _streams.s1_id0, _streams.b1_id1, 0 };
+    return res;
+}
+
 void vert_main()
 {
     VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
     _streams.s1_id0 = VS_IN_s1;
     _streams.b1_id1 = VS_IN_b1;
-    ShaderMain__streamsStruct s1 = { _streams.s1_id0, _streams.b1_id1, 0 };
-    ShaderMain__streamsStruct _tmpStreamsVar_2 = { _streams.s1_id0, _streams.b1_id1, 0 };
-    ShaderMain__streamsStruct s2 = _tmpStreamsVar_2;
+    ShaderMain_Streams s1 = ShaderMain__getStreams(_streams);
+    ShaderMain_Streams s2 = ShaderMain__getStreams(_streams);
 }
 
 void main(SPIRV_Cross_Input stage_input)

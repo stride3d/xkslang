@@ -111,7 +111,7 @@ void SphericalHarmonicsBase_2__EvaluateSHBases(inout PS_STREAMS _streams, float3
 float4 LambertianPrefilteringSHNoComputePass1_2__Shading(inout PS_STREAMS _streams)
 {
     float3 result = float3(0.0f, 0.0f, 0.0f);
-    float2 uv = (_streams.TexCoord_id0 * 2.0f) - float2(1.0f, 1.0f);
+    float2 uv = (_streams.TexCoord_id0 * 2.0f) - 1.0f.xx;
     float dist = 1.0f + dot(uv, uv);
     float weight = 4.0f / (sqrt(dist) * dist);
     for (int faceIndex = 0; faceIndex < 6; faceIndex++)

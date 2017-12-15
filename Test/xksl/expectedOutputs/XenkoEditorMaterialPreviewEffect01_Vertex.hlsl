@@ -120,9 +120,8 @@ void o29S35C1_MaterialDisplacementStream_ResetStream(inout VS_STREAMS _streams)
 
 float4 o27S35C0_o25S2C0_o24S2C0_o22S2C0_ComputeColorWave_5_0_01__0_03__Compute(VS_STREAMS _streams)
 {
-    float phase = length(_streams.TexCoord_id9 - float2(0.5f, 0.5f));
-    float _186 = sin((((phase + (Global_Time * (-0.02999999932944774627685546875f))) * 2.0f) * 3.1400001049041748046875f) * 5.0f) * 0.00999999977648258209228515625f;
-    return float4(_186, _186, _186, _186);
+    float phase = length(_streams.TexCoord_id9 - 0.5f.xx);
+    return (sin((((phase + (Global_Time * (-0.02999999932944774627685546875f))) * 2.0f) * 3.1400001049041748046875f) * 5.0f) * 0.00999999977648258209228515625f).xxxx;
 }
 
 float4 o27S35C0_o25S2C0_o24S2C0_o23S2C1_ComputeColorConstantFloatLink_Material_DisplacementValue__Compute()

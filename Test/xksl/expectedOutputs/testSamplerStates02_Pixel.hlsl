@@ -31,8 +31,7 @@ void frag_main()
     float4 f_pointSampler = ShaderMain_Texture0.Sample(ShaderMain_PointSampler, uv2);
     float4 f_linearSampler = ShaderMain_Texture0.Sample(ShaderMain_LinearSampler, uv2);
     float4 f_linearBorderSampler = ShaderMain_Texture0.Sample(ShaderMain_LinearBorderSampler, uv2);
-    float _42 = ShaderMain_Texture0.SampleCmp(ShaderMain_LinearClampCompareLessEqualSampler, uv2, uv2.y);
-    float4 f_linearClampCompareLessEqualSampler = float4(_42, _42, _42, _42);
+    float4 f_linearClampCompareLessEqualSampler = ShaderMain_Texture0.SampleCmp(ShaderMain_LinearClampCompareLessEqualSampler, uv2, uv2.y).xxxx;
     float4 f_anisotropicSampler = ShaderMain_Texture0.Sample(ShaderMain_AnisotropicSampler, uv2);
     float4 f_anisotropicRepeatSampler = ShaderMain_Texture0.Sample(ShaderMain_AnisotropicRepeatSampler, uv2);
     float4 f_pointRepeatSampler = ShaderMain_Texture0.Sample(ShaderMain_PointRepeatSampler, uv2);

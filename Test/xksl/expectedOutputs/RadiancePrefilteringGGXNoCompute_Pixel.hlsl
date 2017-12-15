@@ -32,7 +32,7 @@ struct SPIRV_Cross_Output
 
 float3 CubemapUtils_ConvertTexcoordsNoFlip(float2 inputTexcoord, int viewIndex)
 {
-    float2 position = (inputTexcoord * 2.0f) - float2(1.0f, 1.0f);
+    float2 position = (inputTexcoord * 2.0f) - 1.0f.xx;
     if (viewIndex == 0)
     {
         return float3(1.0f, -position.y, -position.x);
@@ -84,8 +84,7 @@ float3 ImportanceSamplingGGX_GetSample(float2 xi, float roughness, float3 N)
     H.x = SinTheta * cos(phi);
     H.y = SinTheta * sin(phi);
     H.z = CosTheta;
-    bool _190 = abs(N.z) < 0.999000012874603271484375f;
-    bool3 _191 = bool3(_190, _190, _190);
+    bool3 _191 = (abs(N.z) < 0.999000012874603271484375f).xxx;
     float3 UpVector = float3(_191.x ? float3(0.0f, 0.0f, 1.0f).x : float3(1.0f, 0.0f, 0.0f).x, _191.y ? float3(0.0f, 0.0f, 1.0f).y : float3(1.0f, 0.0f, 0.0f).y, _191.z ? float3(0.0f, 0.0f, 1.0f).z : float3(1.0f, 0.0f, 0.0f).z);
     float3 TangentX = normalize(cross(UpVector, N));
     float3 TangentY = cross(N, TangentX);
@@ -133,7 +132,7 @@ float4 RadiancePrefilteringGGXNoComputeShader_4__Shading(PS_STREAMS _streams)
         }
         prefilteredSample += float4(prefilteredColor, weight);
     }
-    return prefilteredSample / float4(prefilteredSample.w, prefilteredSample.w, prefilteredSample.w, prefilteredSample.w);
+    return prefilteredSample / prefilteredSample.w.xxxx;
 }
 
 void frag_main()

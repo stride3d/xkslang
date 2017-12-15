@@ -186,7 +186,7 @@ float3 o5S245C0_o4S2C0_o3S2C0_MaterialSurfaceShadingDiffuseLambert_false__Comput
     float3 diffuseColor = _streams.matDiffuseVisible_id22;
     if (false)
     {
-        diffuseColor *= (float3(1.0f, 1.0f, 1.0f) - _streams.matSpecularVisible_id24);
+        diffuseColor *= (1.0f.xxx - _streams.matSpecularVisible_id24);
     }
     return diffuseColor * _streams.envLightDiffuseColor_id32;
 }
@@ -229,7 +229,7 @@ float4 EffectCompiling_Shading(inout PS_STREAMS _streams)
     float factor = (sin(Global_Time * 6.0f) * 0.25f) + 0.25f;
     float4 reloadColor = float4(0.660000026226043701171875f, 1.0f, 0.25f, 1.0f);
     float4 _113 = MaterialSurfacePixelStageCompositor_Shading(_streams);
-    return lerp(_113, reloadColor, float4(factor, factor, factor, factor));
+    return lerp(_113, reloadColor, factor.xxxx);
 }
 
 void ShadingBase_PSMain(inout PS_STREAMS _streams)

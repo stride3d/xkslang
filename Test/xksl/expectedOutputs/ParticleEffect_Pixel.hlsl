@@ -54,13 +54,13 @@ float4 ParticleBase_Shading()
 
 float4 o2S302C0_o0S2C0_ComputeColorFromStream_COLOR0_rgba__Compute(PS_STREAMS _streams)
 {
-    return clamp(_streams.LocalColor_id5, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(1.0f, 1.0f, 1.0f, 1.0f));
+    return clamp(_streams.LocalColor_id5, 0.0f.xxxx, 1.0f.xxxx);
 }
 
 float4 o2S302C0_o1S2C1_ComputeColorRadial_float4(PS_STREAMS _streams)
 {
     float radialDistance = length(_streams.TexCoord_id4 - float2(0.5f, 0.5f)) * 2.0f;
-    float4 unclamped = lerp(float4(1.5f, 0.0f, 1.5f, 1.0f), float4(1.5f, 1.5f, 0.0f, 0.0f), float4(radialDistance, radialDistance, radialDistance, radialDistance));
+    float4 unclamped = lerp(float4(1.5f, 0.0f, 1.5f, 1.0f), float4(1.5f, 1.5f, 0.0f, 0.0f), radialDistance.xxxx);
     float4 clamped = clamp(unclamped, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(1000.0f, 1000.0f, 1000.0f, 1.0f));
     float3 _163 = clamped.xyz * clamped.w;
     clamped = float4(_163.x, _163.y, _163.z, clamped.w);
