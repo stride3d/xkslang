@@ -6509,6 +6509,16 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         identifierLocation = findShaderClassBestMatchingMethod(nameOfShaderOwningTheFunction, functionCall, onlyLookInParentClasses);
     }
 
+    if (!identifierLocation.isMethod())
+    {
+        if (callToFunctionThroughBaseAccessor)
+        {
+            //TODO: if we're calling a base method unsing Streams type, we can convert the stream from the current shader to the base shader
+            error("Base method not found for: " + methodMangledName);
+            return false;
+        }
+    }
+
     if (identifierLocation.isMethod())
     {
         //check if the function call is permitted!
@@ -6516,8 +6526,8 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         XkslShaderDefinition* shaderBeingParsed = getShaderCurrentlyParsed();
         if (currentFunctionBeingParsed == nullptr || shaderBeingParsed == nullptr){
             //Maybe we can have a method call while we're not parsing a function, to initialize consts variables?
-            if (currentFunctionBeingParsed == nullptr) error(TString("We should be parsing a method"));
-            if (shaderBeingParsed == nullptr) error(TString("We should be parsing a shader"));
+            if (currentFunctionBeingParsed == nullptr) error("We should be parsing a method");
+            if (shaderBeingParsed == nullptr) error("We should be parsing a shader");
             return false;
         }
 
@@ -6529,7 +6539,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
             if (currentFunctionBeingParsed->getType().getQualifier().isStatic)
             {
                 //static method can only access consts
-                error(TString("A static method: " + currentFunctionBeingParsed->getName() + TString(" is accessing a non-const variable: ") + compositionTargeted->variableName));
+                error("A static method: " + currentFunctionBeingParsed->getName() + " is accessing a non-const variable: " + compositionTargeted->variableName);
                 return false;
             }
             else
@@ -6537,13 +6547,12 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
                 //the function can access the composition only if the classes are related
                 XkslShaderDefinition* shaderOwningTheComposition = getShaderClassDefinition(functionClassAccessorName);
                 if (shaderOwningTheComposition == nullptr) {
-                    error(TString("undeclared class: ") + functionClassAccessorName);
+                    error("undeclared class: " + functionClassAccessorName);
                     return false;
                 }
 
                 if (!IsShaderEqualOrSubClassOf(shaderBeingParsed, shaderOwningTheComposition)) {
-                    error(TString("Shader: ") + shaderBeingParsed->shaderFullName + TString(" cannot access the composition: ") +
-                        shaderOwningTheComposition->shaderFullName + "." + compositionTargeted->variableName);
+                    error("Shader: " + shaderBeingParsed->shaderFullName + " cannot access the composition: " + shaderOwningTheComposition->shaderFullName + "." + compositionTargeted->variableName);
                     return false;
                 }
             }
@@ -6554,7 +6563,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
             //we're currently parsing a static method, we can only call another static method
             if (!identifierLocation.method->function->getType().getQualifier().isStatic)
             {
-                error(TString("A static method: " + currentFunctionBeingParsed->getName() + TString(" is calling a non-static method: ") + identifierLocation.method->function->getName()));
+                error("A static method: " + currentFunctionBeingParsed->getName() + " is calling a non-static method: " + identifierLocation.method->function->getName());
                 return false;
             }
         }
@@ -6568,17 +6577,17 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
                 {
                     XkslShaderDefinition* shaderOwningTheFunction = getShaderClassDefinition(nameOfShaderOwningTheFunction);
                     if (shaderOwningTheFunction == nullptr) {
-                        error(TString("undeclared class: ") + nameOfShaderOwningTheFunction);
+                        error("undeclared class: " + nameOfShaderOwningTheFunction);
                         return false;
                     }
 
                     if (!IsShaderEqualOrSubClassOf(shaderBeingParsed, shaderOwningTheFunction)) {
 #ifdef XKSLANG_ENFORCE_NEW_XKSL_RULES
-                        error(TString("invalid non-static function call. Shader: ") + shaderBeingParsed->shaderFullName + TString(" is not related to shader: ") + shaderOwningTheFunction->shaderFullName);
+                        error("invalid non-static function call. Shader: " + shaderBeingParsed->shaderFullName + " is not related to shader: " + shaderOwningTheFunction->shaderFullName);
                         return false;
 #else
                         //set the method as static
-                        warning(TString("invalid non-static function call. Shader: ") + shaderBeingParsed->shaderFullName + TString(" is not related to shader: ") + shaderOwningTheFunction->shaderFullName);
+                        warning("invalid non-static function call. Shader: " + shaderBeingParsed->shaderFullName + " is not related to shader: " + shaderOwningTheFunction->shaderFullName);
                         identifierLocation.method->function->getWritableType().getQualifier().isStatic = true;
 #endif
                     }

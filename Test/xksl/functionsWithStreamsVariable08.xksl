@@ -1,0 +1,26 @@
+
+shader IMaterialStreamBlend
+{
+	stage stream float matBlend: MATBLEND;
+	
+	void Compute(Streams fromStream)
+	{
+		streams.matBlend = 0.0f;
+	}
+}
+
+shader ShaderMain: IMaterialStreamBlend
+{
+	stage stream float3 matColor: MATCOLOR;
+
+	override void Compute(Streams fromStream)
+	{
+		streams.matColor = float3(0.0f, 0.1f, 0.2f);
+		base.Compute(fromStream);
+	}
+	
+	void VSMain()
+	{
+		Compute(streams);
+	}
+}
