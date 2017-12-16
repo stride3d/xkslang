@@ -152,9 +152,13 @@ public:
 
         ShaderIdentifierLocation(): shader(nullptr), identifierType(ShaderIdentifierTypeEnum::Unknown), memberIndex(-1), method(nullptr), memberName(nullptr){}
 
-        bool isUnknown() { return identifierType == ShaderIdentifierTypeEnum::Unknown; }
-        bool isMember() { return identifierType == ShaderIdentifierTypeEnum::Member; }
-        bool isMethod() { return identifierType == ShaderIdentifierTypeEnum::Method; }
+        bool isUnknown() const { return identifierType == ShaderIdentifierTypeEnum::Unknown; }
+        bool isMember() const { return identifierType == ShaderIdentifierTypeEnum::Member; }
+        bool isMethod() const { return identifierType == ShaderIdentifierTypeEnum::Method; }
+
+        bool isStreamMember() const { return identifierType == ShaderIdentifierTypeEnum::Member && memberLocationType == MemberLocationTypeEnum::StreamBuffer; }
+        bool isCBufferMember() const { return identifierType == ShaderIdentifierTypeEnum::Member && memberLocationType == MemberLocationTypeEnum::CBuffer; }
+        bool isConstMember() const { return identifierType == ShaderIdentifierTypeEnum::Member && memberLocationType == MemberLocationTypeEnum::Const; }
 
         void SetMemberLocation(XkslShaderDefinition* shader, TString* memberName, MemberLocationTypeEnum locationType, TString* symbolName, int index)
         {

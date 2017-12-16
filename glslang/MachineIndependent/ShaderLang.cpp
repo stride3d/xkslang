@@ -2057,12 +2057,45 @@ static bool ProcessConstsRegistrationForShader(XkslShaderLibrary& shaderLibrary,
 static bool GetListAllStreamsVariablesForTheShader(HlslParseContext* parseContext,
     XkslShaderDefinition* shader, bool addInheritedVariables, TVector<XkslShaderDefinition::XkslShaderMember*>& listStreamVariables)
 {
-    int countMembers = (int)(shader->listAllDeclaredMembers.size());
-    for (int i = 0; i < countMembers; ++i)
+    unsigned int countMembers = (unsigned int)(shader->listAllDeclaredMembers.size());
+    for (unsigned int m = 0; m < countMembers; ++m)
     {
-        if (shader->listAllDeclaredMembers[i].memberLocation.memberLocationType == XkslShaderDefinition::MemberLocationTypeEnum::StreamBuffer)
+        XkslShaderDefinition::XkslShaderMember& member = shader->listAllDeclaredMembers[m];
+        if (member.memberLocation.isStreamMember())
         {
-            listStreamVariables.push_back(&(shader->listAllDeclaredMembers[i]));
+            TString* memberName = member.type->getUserIdentifierName();
+            TString* memberSemantic = member.type->getUserDefinedSemantic();
+
+            //if the list contains a variable with the same name or same generic, and with a "stage" attribute. We merge (skip) them
+            bool variableAlreadyExist = false;
+            if (member.type->getQualifier().isStage)
+            {
+                unsigned int countStreamVariables = (unsigned int)(listStreamVariables.size());
+
+                for (unsigned int s = 0; s < countStreamVariables; ++s)
+                {
+                    XkslShaderDefinition::XkslShaderMember* streamVariable = listStreamVariables[s];
+                    if (!streamVariable->type->getQualifier().isStage) continue;
+
+                    TString* variableName = streamVariable->type->getUserIdentifierName();
+                    TString* variableSemantic = streamVariable->type->getUserDefinedSemantic();
+                    if (variableSemantic != nullptr && memberSemantic != nullptr && variableSemantic->compare(memberSemantic->c_str()) == 0)
+                    {
+                        variableAlreadyExist = true;
+                        break;
+                    }
+                    if (variableName->compare(memberName->c_str()) == 0)
+                    {
+                        variableAlreadyExist = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!variableAlreadyExist)
+            {
+                listStreamVariables.push_back(&member);
+            }
         }
     }
 
@@ -2526,7 +2559,7 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
         }
     }
 
-    //Create the shader streams struct type (used when using Streams type)
+    //Create the shader Streams struct type (used when using Streams type)
     {
         //Get the shader list of stream variables (plus its parents')
         TVector<XkslShaderDefinition::XkslShaderMember*> listStreamVariables;

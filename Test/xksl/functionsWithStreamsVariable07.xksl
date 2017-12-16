@@ -6,7 +6,7 @@ shader IStreamInitializer
 
 shader MaterialStream : IStreamInitializer
 {
-	stage stream float matBlend;
+	stage stream float matBlend: MATBLEND;
 	
 	override void ResetStream()
 	{
@@ -17,7 +17,7 @@ shader MaterialStream : IStreamInitializer
 
 shader MaterialPixelStream : MaterialStream
 {
-	stage stream float3 matNormal;
+	stage stream float3 matNormal: MATNORMAL;
 }
 
 shader IMaterialStreamBlend : MaterialStream, MaterialPixelStream
@@ -29,11 +29,11 @@ shader IMaterialStreamBlend : MaterialStream, MaterialPixelStream
 
 shader ShaderMain: IMaterialStreamBlend
 {
-	stage stream float aNewStreamVariable;
+	stage stream float3 matColor: MATCOLOR;
 
 	override void Compute(Streams fromStream)
 	{
-		var middleNormal = fromStream.matNormal + streams.matNormal;
+		var middleNormal = fromStream.matNormal + streams.matNormal + streams.matColor;
 		streams.matNormal =  streams.matBlend < 0.5 ? 
 			  lerp(fromStream.matNormal, middleNormal, streams.matBlend / 0.5)
 			: lerp(middleNormal, streams.matNormal, (streams.matBlend - 0.5) * 2);
@@ -41,6 +41,6 @@ shader ShaderMain: IMaterialStreamBlend
 	
 	void VSMain()
 	{
-		int toto = 0;
+		Compute(streams);
 	}
 }
