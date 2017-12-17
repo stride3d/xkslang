@@ -359,15 +359,16 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ParticleEffect", "ParticleEffect.xkfx" },
     //{ "FXAAShaderEffect", "FXAAShaderEffect.xkfx" },
     //{ "Hammersley", "Hammersley.xkfx" },
-    { "RadiancePrefilteringGGXNoCompute", "RadiancePrefilteringGGXNoCompute.xkfx" },
-///////////////{ "IMaterialStreamBlend", "IMaterialStreamBlend.xkfx" },
+    //{ "RadiancePrefilteringGGXNoCompute", "RadiancePrefilteringGGXNoCompute.xkfx" },
+    //{ "IMaterialStreamBlend", "IMaterialStreamBlend.xkfx" },
+    { "MaterialSurfaceStreamsBlend", "MaterialSurfaceStreamsBlend.xkfx" },
 
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
-////////////////////{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
+/////////////////{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
 };
 
 enum class ShaderLanguageEnum
