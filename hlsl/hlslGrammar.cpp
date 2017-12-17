@@ -1375,10 +1375,14 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                 //we can set its type now, by copying the type from the right-value expression
                 if (variableType.getBasicType() == EbtUndefinedVar && expressionNode != nullptr)
                 {
-                    TBasicType bType = expressionNode->getBasicType();
                     const TType& variableNewType = expressionNode->getType();
+
+                    //change the type, but keep the original qualifier
+                    TQualifier typeQualifier = declaredType.getQualifier();
                     declaredType.shallowCopy(variableNewType);
-                    variableType.shallowCopy(declaredType);
+                    variableType.shallowCopy(declaredType);                    
+                    declaredType.setQualifier(typeQualifier);
+                    variableType.setQualifier(typeQualifier);
                 }
                 //=====================================================================================
             }

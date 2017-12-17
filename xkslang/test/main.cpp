@@ -284,6 +284,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "namespaces01", "namespaces01.xkfx" },
     //{ "testMacro01", "testMacro01.xkfx" },
     //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
+    //{ "testVarKeyword02", "testVarKeyword02.xkfx" },
     //{ "userCustomType01", "userCustomType01.xkfx" },
     //{ "userCustomType02", "userCustomType02.xkfx" },
     //{ "userCustomType03", "userCustomType03.xkfx" },
@@ -357,6 +358,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ComputeColorRadial", "ComputeColorRadial.xkfx" },
     //{ "ParticleEffect", "ParticleEffect.xkfx" },
     //{ "FXAAShaderEffect", "FXAAShaderEffect.xkfx" },
+    //{ "Hammersley", "Hammersley.xkfx" },
     { "RadiancePrefilteringGGXNoCompute", "RadiancePrefilteringGGXNoCompute.xkfx" },
 ///////////////{ "IMaterialStreamBlend", "IMaterialStreamBlend.xkfx" },
 

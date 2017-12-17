@@ -1,0 +1,24 @@
+//Test parsing a shader using "var" keywords
+shader ShaderTest
+{
+    float2 GetSamplePlane(int k, int samplesCount)
+	{
+		var u = 0.0;
+		var p = 0.5;
+		for (int kk=k; kk; p*=0.5, kk>>=1)
+		{
+			if (kk & 1) // kk mod 2 == 1
+				u += p;
+		}
+
+		var v = (k + 0.5) / samplesCount;
+
+		return float2(u,v);
+	}
+	
+	void VSMain()
+	{
+		var toto = GetSamplePlane(5, 10);
+	}
+};
+
