@@ -3676,6 +3676,8 @@ static bool ParseXkslShaderRecursif(
                     else error(parseContext, "Failed to recursively parse the shader: " + shaderToParse);
                 }
             }
+
+            if (!success) break;
         }
 
         if (processUntilOperation == currentProcessingOperation) return success;

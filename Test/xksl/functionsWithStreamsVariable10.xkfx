@@ -1,0 +1,8 @@
+
+convertAndLoad "functionsWithStreamsVariable10.xksl"
+
+mixer _m
+_m.mixin( ShaderMain )
+
+m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+m.compile()

@@ -5557,7 +5557,8 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
     return identifierLocation;
 }
 
-XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMethod(const TString& shaderClassName, const TString& methodName, bool onlyLookInParentClasses)
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMethod(const TString& shaderClassName, const TString& methodCalledMangledName, bool onlyLookInParentClasses,
+    bool isFunctionCalledUsingStreamTypeParameters, const TString& methodCalledMangledNameWithStreamType)
 {
     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
 
@@ -5577,10 +5578,24 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
         unsigned int countMethods = (unsigned int)(shader->listMethods.size());
         for (unsigned int i = 0; i < countMethods; ++i)
         {
-            if (shader->listMethods[i].function->getDeclaredMangledName().compare(methodName) == 0)
+            TFunction* aFunction = shader->listMethods[i].function;
+            const TString& aFunctionMangledName = aFunction->getDeclaredMangledName();
+            if (aFunctionMangledName == methodCalledMangledName)
             {
                 identifierLocation.SetMethodLocation(shader, &shader->listMethods[i]);
                 break;
+            }
+            else
+            {
+                if (isFunctionCalledUsingStreamTypeParameters)
+                {
+                    TString aFunctionMangledNameWithStreamType = getFunctionDeclaredMangledNameWithStreamsType(aFunction);
+                    if (aFunctionMangledNameWithStreamType == methodCalledMangledNameWithStreamType)
+                    {
+                        identifierLocation.SetMethodLocation(shader, &shader->listMethods[i]);
+                        break;
+                    }
+                }
             }
         }
     }
@@ -5601,7 +5616,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
             if (shader->listParents[p].parentShader->isValid == false) continue;
             
             TString& parentName = shader->listParents[p].parentShader->shaderFullName;
-            identifierLocation = findShaderClassMethod(parentName, methodName, false);
+            identifierLocation = findShaderClassMethod(parentName, methodCalledMangledName, false, isFunctionCalledUsingStreamTypeParameters, methodCalledMangledNameWithStreamType);
             if (identifierLocation.isMethod()) return identifierLocation;
         }
     }
@@ -6481,6 +6496,26 @@ bool HlslGrammar::acceptXkslShaderComposition(TShaderCompositionVariable& compos
     return true;
 }
 
+TString HlslGrammar::getFunctionDeclaredMangledNameWithStreamsType(TFunction* function)
+{
+    TString mangledName = function->getName() + "(";
+    int paramsCount = function->getParamCount();
+    for (int i = 0; i < paramsCount; i++)
+    {
+        TParameter& param = (*function)[i];
+        if (param.type->IsStreamsType())
+        {
+            mangledName += "Streams;";
+        }
+        else
+        {
+            param.type->appendMangledName(mangledName);
+        }
+    }
+    
+    return mangledName;
+}
+
 bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted,
     TString* functionName, bool parenthesisRequiredBetweenArguments, int countParametersExpected, TSourceLoc& tokenLocation, TIntermTyped*& node, TIntermTyped* base)
 {
@@ -6502,29 +6537,58 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         nameOfShaderOwningTheFunction = compositionTargeted->shaderTypeName;
     }
 
+    //Do we call a function using the Streams type parameters?
+    bool isFunctionCalledUsingStreamTypeParameters = false;
+    TString methodCalledMangledNameWithStreamType;
+    for (int i = 0; i < functionCall->getParamCount(); i++)
+    {
+        TParameter& param = (*functionCall)[i];
+        if (param.type->IsStreamsType())
+        {
+            isFunctionCalledUsingStreamTypeParameters = true;
+            methodCalledMangledNameWithStreamType = getFunctionDeclaredMangledNameWithStreamsType(functionCall);
+            break;
+        }
+    }
+
     // We now have the method mangled name, find the corresponding method in the shader library
-    const TString& methodMangledName = functionCall->getDeclaredMangledName();
+    const TString& methodCalledMangledName = functionCall->getDeclaredMangledName();
     bool onlyLookInParentClasses = (callToFunctionThroughBaseAccessor == true);
-    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(nameOfShaderOwningTheFunction, methodMangledName, onlyLookInParentClasses);
+    XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(nameOfShaderOwningTheFunction, methodCalledMangledName,
+        onlyLookInParentClasses, isFunctionCalledUsingStreamTypeParameters, methodCalledMangledNameWithStreamType);
 
     if (!identifierLocation.isMethod())
     {
         //we keep looking if we can match another method by casting some of the function parameters
         identifierLocation = findShaderClassBestMatchingMethod(nameOfShaderOwningTheFunction, functionCall, onlyLookInParentClasses);
-    }
 
-    if (!identifierLocation.isMethod())
-    {
-        if (callToFunctionThroughBaseAccessor)
+        if (!identifierLocation.isMethod())
         {
-            //TODO: if we're calling a base method unsing Streams type, we can convert the stream from the current shader to the base shader
-            error("Base method not found for: " + methodMangledName);
-            return false;
+            if (callToFunctionThroughBaseAccessor)
+            {
+                error("Base method not found for: " + methodCalledMangledName);
+                return false;
+            }
         }
     }
 
     if (identifierLocation.isMethod())
     {
+        ///if (isFunctionCalledUsingStreamTypeParameters)
+        ///{
+        ///    bool needToConvertStreamsType = false;
+        ///    TFunction* functionCalled = identifierLocation.method->function;
+        ///    const TString& functionCalledMangledName = functionCalled->getDeclaredMangledName();
+        ///    if (functionCalledMangledName != methodCalledMangledName)
+        ///        needToConvertStreamsType = true;
+        ///
+        ///    if (needToConvertStreamsType)
+        ///    {
+        ///        //some Streams parameters need to be converted            
+        ///        error("PROUT PROUT"); return false;
+        ///    }
+        ///}
+
         //check if the function call is permitted!
         TFunction* currentFunctionBeingParsed = getFunctionCurrentlyParsed();
         XkslShaderDefinition* shaderBeingParsed = getShaderCurrentlyParsed();

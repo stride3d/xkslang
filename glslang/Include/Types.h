@@ -1587,6 +1587,7 @@ public:
 
     virtual void SetSamplerStateDef(TSamplerStateDefinition* samplerState) { samplerStateDef = samplerState; }
     virtual void SetStreamsTypeProperties(TStreamsTypeProperties* streamsTypeProp) { streamsTypeProperties = streamsTypeProp; }
+    virtual bool IsStreamsType() { return streamsTypeProperties != nullptr; }
     virtual void SetShaderCountGenerics(int i) { shaderCountGenerics = i; }
     virtual void SetTypeAsDefinedByShader(bool b) { isTypeDefinedByShader = b; }
     virtual void SetCbufferType(int cbType){cbufferType = cbType;}

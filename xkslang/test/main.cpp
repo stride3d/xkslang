@@ -323,6 +323,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsWithStreamsVariable06", "functionsWithStreamsVariable06.xkfx" },
     //{ "functionsWithStreamsVariable07", "functionsWithStreamsVariable07.xkfx" },
     /////////////////{ "functionsWithStreamsVariable08", "functionsWithStreamsVariable08.xkfx" },  //not implemented yet: a shader calling a base method using Stream type
+    { "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
+    ////////////////////{ "functionsWithStreamsVariable10", "functionsWithStreamsVariable10.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
@@ -361,7 +363,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "Hammersley", "Hammersley.xkfx" },
     //{ "RadiancePrefilteringGGXNoCompute", "RadiancePrefilteringGGXNoCompute.xkfx" },
     //{ "IMaterialStreamBlend", "IMaterialStreamBlend.xkfx" },
-    { "MaterialSurfaceStreamsBlend", "MaterialSurfaceStreamsBlend.xkfx" },
+/////////////////{ "MaterialSurfaceStreamsBlend", "MaterialSurfaceStreamsBlend.xkfx" },
 
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
