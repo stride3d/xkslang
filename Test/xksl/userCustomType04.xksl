@@ -1,0 +1,59 @@
+shader ShaderBase
+{
+	struct CustomStruct
+	{
+		float3 DirectionWS;
+	};
+}
+
+shader ShaderMain: ShaderBase
+{
+	struct CustomStruct
+	{
+		float3 DirectionWS;
+		float3 Color;
+	};
+
+	cbuffer aCBuffer
+	{
+		CustomStruct s1;
+	}
+	
+	CustomStruct GetMainStruct()
+	{
+		CustomStruct c1;
+		return c1;
+	}
+	
+	base.CustomStruct GetBaseStruct()
+	{
+		base.CustomStruct c1;
+		return c1;
+	}
+	
+	void aFunctionTakingMainStruct(CustomStruct c)
+	{
+	
+	}
+	
+	void aFunctionTakingBaseStruct(base.CustomStruct c)
+	{
+	
+	}
+	
+	base.CustomStruct ConvertStreamsToShaderBaseStreams(CustomStruct c)
+	{
+		base.CustomStruct c1 = {c.DirectionWS};
+		return c1;
+	}
+	
+	stage void VSMain()
+	{
+		CustomStruct c1 = GetMainStruct();
+		base.CustomStruct c2 = GetBaseStruct();
+		
+		aFunctionTakingMainStruct(c1);
+		aFunctionTakingBaseStruct(c2);
+		c2 = ConvertStreamsToShaderBaseStreams(c1);
+	}
+};
