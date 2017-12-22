@@ -19,15 +19,27 @@ shader ShaderMain: ShaderBase
 		CustomStruct s1;
 	}
 	
-	CustomStruct GetMainStruct()
+	CustomStruct GetMainStruct1()
 	{
 		CustomStruct c1;
 		return c1;
 	}
 	
-	base.CustomStruct GetBaseStruct()
+	ShaderMain.CustomStruct GetMainStruct2()
+	{
+		ShaderMain.CustomStruct c1;
+		return c1;
+	}
+	
+	base.CustomStruct GetBaseStruct1()
 	{
 		base.CustomStruct c1;
+		return c1;
+	}
+	
+	ShaderBase.CustomStruct GetBaseStruct2()
+	{
+		ShaderBase.CustomStruct c1;
 		return c1;
 	}
 	
@@ -49,11 +61,16 @@ shader ShaderMain: ShaderBase
 	
 	stage void VSMain()
 	{
-		CustomStruct c1 = GetMainStruct();
-		base.CustomStruct c2 = GetBaseStruct();
-		
+		CustomStruct c1 = GetMainStruct1();
+		ShaderMain.CustomStruct c2 = GetMainStruct2();
+		c1 = c2;
 		aFunctionTakingMainStruct(c1);
-		aFunctionTakingBaseStruct(c2);
-		c2 = ConvertStreamsToShaderBaseStreams(c1);
+		
+		base.CustomStruct c3 = GetBaseStruct1();
+		ShaderBase.CustomStruct c4 = GetBaseStruct2();
+		c3 = c4;
+		aFunctionTakingBaseStruct(c3);
+		
+		c3 = ConvertStreamsToShaderBaseStreams(c1);
 	}
 };

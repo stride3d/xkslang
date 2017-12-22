@@ -18,6 +18,12 @@ shader TestShaderMain: TestShaderBase
 		base.Compute(s);
 	}
 	
+	//base.Streams ConvertStreamsToShaderBaseStreams(Streams c)
+	//{
+	//	base.Streams s;
+	//	return s;
+	//}
+	
 	void VSMain()
 	{
 		Compute(streams);
