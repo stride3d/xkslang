@@ -369,7 +369,8 @@ bool HlslParseContext::parseXkslShaderMethodsDeclaration(XkslShaderDefinition* s
     return numErrors == 0;
 }
 
-bool HlslParseContext::parseXkslShaderMethodDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TShaderClassFunction* shaderMethod, TPpContext& ppContext, TString& unknownIdentifier)
+bool HlslParseContext::parseXkslShaderMethodDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TShaderClassFunction* shaderMethod, TPpContext& ppContext,
+    TString& unknownIdentifier, TString& streamsMissingConversionFunctionShaderOriginal, TString& streamsMissingConversionFunctionShaderTarget)
 {
     //Parse a single shader method body
     TVector<HlslToken>& tokenList = shader->listTokens;
@@ -409,6 +410,19 @@ bool HlslParseContext::parseXkslShaderMethodDefinition(XkslShaderDefinition* sha
         if (pUnknownIdentifier != nullptr)
         {
             unknownIdentifier = TString(pUnknownIdentifier);
+        }
+    }
+
+    streamsMissingConversionFunctionShaderOriginal = "";
+    streamsMissingConversionFunctionShaderTarget = "";
+    if (grammar.isMissingStreamsConversionFunction())
+    {
+        const char* pStreamsMissingConversionFunctionShaderOriginal = grammar.getStreamsMissingConversionFunctionShaderOriginal();
+        const char* pStreamsMissingConversionFunctionShaderTarget = grammar.getStreamsMissingConversionFunctionShaderTarget();
+        if (pStreamsMissingConversionFunctionShaderOriginal != nullptr && pStreamsMissingConversionFunctionShaderTarget != nullptr)
+        {
+            streamsMissingConversionFunctionShaderOriginal = TString(pStreamsMissingConversionFunctionShaderOriginal);
+            streamsMissingConversionFunctionShaderTarget = TString(pStreamsMissingConversionFunctionShaderTarget);
         }
     }
 

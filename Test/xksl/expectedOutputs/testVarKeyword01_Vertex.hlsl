@@ -12,7 +12,8 @@ struct SPIRV_Cross_Input
 
 float3x3 ShaderTest_GetTangentMatrix()
 {
-    return float3x3(float3(1.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f), float3(0.0f, 0.0f, 1.0f));
+    float3x3 tangent = float3x3(float3(1.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f), float3(0.0f, 0.0f, 1.0f));
+    return tangent;
 }
 
 void vert_main()

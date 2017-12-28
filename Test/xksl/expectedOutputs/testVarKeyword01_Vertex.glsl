@@ -9,7 +9,8 @@ layout(location = 0) in vec4 VS_IN_meshTangent;
 
 mat3 ShaderTest_GetTangentMatrix()
 {
-    return mat3(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(0.0, 0.0, 1.0));
+    mat3 tangent = mat3(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(0.0, 0.0, 1.0));
+    return tangent;
 }
 
 void main()

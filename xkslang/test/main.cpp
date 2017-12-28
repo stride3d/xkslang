@@ -288,7 +288,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "userCustomType01", "userCustomType01.xkfx" },
     //{ "userCustomType02", "userCustomType02.xkfx" },
     //{ "userCustomType03", "userCustomType03.xkfx" },
-    { "userCustomType04", "userCustomType04.xkfx" },
+    //{ "userCustomType04", "userCustomType04.xkfx" },
     //{ "TestLink01", "TestLink01.xkfx" },
     //{ "TestLink02", "TestLink02.xkfx" },
     //{ "TestLink03", "TestLink03.xkfx" },
@@ -324,7 +324,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsWithStreamsVariable06", "functionsWithStreamsVariable06.xkfx" },
     //{ "functionsWithStreamsVariable07", "functionsWithStreamsVariable07.xkfx" },
     /////////////////{ "functionsWithStreamsVariable08", "functionsWithStreamsVariable08.xkfx" },  //not implemented yet: a shader calling a base method using Stream type
-//{ "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
+    { "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
     ////////////////////{ "functionsWithStreamsVariable10", "functionsWithStreamsVariable10.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },

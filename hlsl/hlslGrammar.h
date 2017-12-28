@@ -67,6 +67,7 @@ namespace glslang {
             xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined),
             xkslShaderToParse(nullptr), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr),
             dependencyUniqueCounter(0), unknownIdentifierToProcessAtTheTop(nullptr), throwErrorWhenParsingUnidentifiedSymbol(true), shaderWhereMembersCanBeFound(nullptr),
+            streamsMissingConversionFunctionShaderOriginal(nullptr), streamsMissingConversionFunctionShaderTarget(nullptr),
             typeIdentifiers(false), uniqueIndex(0) { }
         virtual ~HlslGrammar() { }
 
@@ -87,6 +88,14 @@ namespace glslang {
         bool hasAnyErrorToBeProcessedAtTheTop() { return unknownIdentifierToProcessAtTheTop != nullptr; }
         void resetErrorsToBeProcessedAtTheTop() { unknownIdentifierToProcessAtTheTop = nullptr; }
         bool MustThrowAnErrorWhenParsingUnidentifiedSymbol() { return throwErrorWhenParsingUnidentifiedSymbol; }
+
+        const char* getStreamsMissingConversionFunctionShaderOriginal() { return streamsMissingConversionFunctionShaderOriginal == nullptr ? nullptr : streamsMissingConversionFunctionShaderOriginal->c_str(); }
+        const char* getStreamsMissingConversionFunctionShaderTarget() { return streamsMissingConversionFunctionShaderTarget == nullptr ? nullptr : streamsMissingConversionFunctionShaderTarget->c_str(); }
+        bool isMissingStreamsConversionFunction() { return streamsMissingConversionFunctionShaderOriginal != nullptr && streamsMissingConversionFunctionShaderTarget != nullptr; }
+        void setStreamsMissingConversionFunctionShaders(TString* shaderOriginal, TString* shaderTarget) {
+            streamsMissingConversionFunctionShaderOriginal = shaderOriginal;
+            streamsMissingConversionFunctionShaderTarget = shaderTarget;
+        }
 
     protected:
         HlslGrammar();
@@ -155,9 +164,10 @@ namespace glslang {
         bool acceptPostfixExpression(TIntermTyped*&, bool hasBaseAccessor, bool callThroughStaticShaderClassName, bool hasStreamAccessor, TString* classAccessor,
             TShaderCompositionVariable& compositionTargeted, bool& isStreamsUsedAsAType);
         bool acceptConstructor(TIntermTyped*&);
+        static TString GetShaderStreamsTypeConversionFunctionName(const TString& shaderStreamsType, const TString& shaderConvertedStreamsType);
         bool acceptFunctionCall(const TSourceLoc&, TString& name, TIntermTyped*&, TIntermTyped* objectBase);
         bool acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted,
-            TString* functionName, bool parenthesisRequiredBetweenArguments, int countParametersExpected, TSourceLoc& tokenLocation, TIntermTyped*&, TIntermTyped* base);
+            TString* functionName, bool parenthesisRequiredBetweenArguments, int countParametersExpected, TSourceLoc& tokenLocation, TIntermTyped*& node);
         TString getFunctionDeclaredMangledNameWithStreamsType(TFunction* function);
         bool acceptXkslShaderComposition(TShaderCompositionVariable&);
         bool acceptArguments(TFunction*, TIntermTyped*&);
@@ -200,6 +210,7 @@ namespace glslang {
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMember(const TString& shaderClassName, bool hasStreamAccessor, const TString& memberName, bool onlyLookInParentClasses, int uniqueId = 0);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodCalledMangledName, bool onlyLookInParentClasses,
             bool isFunctionCalledUsingStreamTypeParameters, const TString& methodCalledMangledNameWithStreamType);
+        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName, bool alsoLookInParentsClass);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassBestMatchingMethod(const TString& shaderClassName, TFunction* functionCall, bool onlyLookInParentClasses);
         bool getListShaderClassMethodsWithGivenName(XkslShaderDefinition* shader, const TString& methodName, TVector<TShaderClassFunction*>& shaderMethodsList, bool onlyLookInParentClasses, bool recursivelyLookInParents);
         TType* getTypeDefinedByTheShaderOrItsParents(const TString& shaderName, const TString& typeName, int uniqueId = 0);
@@ -227,6 +238,9 @@ namespace glslang {
         XkslShaderDefinition* shaderWhereMembersCanBeFound;   //in some very special cases (resolving generic expressions for example) we can look into children class when parsing an unidentified symbol
         bool throwErrorWhenParsingUnidentifiedSymbol;         //if false, an unknown identifier won't throw an error, but will be pass to higher level
         TString* unknownIdentifierToProcessAtTheTop;          //when the parser meets an unknown identifier, in some case we want to stop parsing withouth throwing an error, and check if we can process it at the top level
+        
+        TString* streamsMissingConversionFunctionShaderOriginal;
+        TString* streamsMissingConversionFunctionShaderTarget;
     };
 
 } // end namespace glslang

@@ -3053,12 +3053,20 @@ static bool processMethodsDeclarationForMethodsOnlyGeneratedIfUsedForShader(Hlsl
             {
                 //The method has been called at least once
                 TString unknownIdentifier;
-                bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext, unknownIdentifier);
+                TString streamsMissingConversionFunctionShaderOriginal;
+                TString streamsMissingConversionFunctionShaderTarget;
+                bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext,
+                    unknownIdentifier, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget);
                 if (!success) return false;
 
                 if (unknownIdentifier.length() > 0)
                 {
                     return error(parseContext, "Got an unexpected unknown identifier");
+                }
+
+                if (streamsMissingConversionFunctionShaderOriginal.length() > 0 || streamsMissingConversionFunctionShaderTarget.length() > 0)
+                {
+                    return error(parseContext, "Got an unexpected missing Streams function conversion");
                 }
             }
         }
@@ -3067,7 +3075,8 @@ static bool processMethodsDeclarationForMethodsOnlyGeneratedIfUsedForShader(Hlsl
     return true;
 }
 
-static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext, TString& unknownIdentifier)
+static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext,
+    TString& unknownIdentifier, TString& streamsMissingConversionFunctionShaderOriginal, TString& streamsMissingConversionFunctionShaderTarget)
 {
     unsigned int countMethods = (unsigned int)shader->listMethods.size();
     for (unsigned int i = 0; i < countMethods; ++i)
@@ -3076,7 +3085,8 @@ static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslSha
         if (shaderMethod->bodyNode == nullptr && !shaderMethod->onlyCreateFunctionBodyIfFunctionIsUsed)
         {
             //The method body has not already been parsed
-            bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext, unknownIdentifier);
+            bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext,
+                unknownIdentifier, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget);
             if (!success) return false;
         }
     }
@@ -3795,6 +3805,8 @@ static bool ParseXkslShaderRecursif(
         currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::MethodsDefinitionParsed;
 
         TString unknownIdentifier;
+        TString streamsMissingConversionFunctionShaderOriginal;
+        TString streamsMissingConversionFunctionShaderTarget;
         bool keepLooping = true;
         while (keepLooping)
         {
@@ -3810,7 +3822,7 @@ static bool ParseXkslShaderRecursif(
 
                 if (shader->parsingStatus == previousProcessingOperation)
                 {
-                    success = parseShaderMethodsDefinition(parseContext, shader, &shaderLibrary, ppContext, unknownIdentifier);
+                    success = parseShaderMethodsDefinition(parseContext, shader, &shaderLibrary, ppContext, unknownIdentifier, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget);
                     if (success)
                     {
                         shader->parsingStatus = currentProcessingOperation;
