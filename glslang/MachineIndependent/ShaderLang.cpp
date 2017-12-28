@@ -3807,12 +3807,15 @@ static bool ParseXkslShaderRecursif(
         TString unknownIdentifier;
         TString streamsMissingConversionFunctionShaderOriginal;
         TString streamsMissingConversionFunctionShaderTarget;
+        int counterMissingStreamsFunctionsSafetyBreak = 0;
+
         bool keepLooping = true;
         while (keepLooping)
         {
             keepLooping = false;
 
             bool checkIfUnknownIdentifierIsAShader = false;
+            bool generateAMissingStreamsConversionFunction = false;
             XkslShaderDefinition* shaderMissingADependency = nullptr;
             TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
             for (unsigned int s = 0; s < listShaderParsed.size(); s++)
@@ -3822,24 +3825,41 @@ static bool ParseXkslShaderRecursif(
 
                 if (shader->parsingStatus == previousProcessingOperation)
                 {
-                    success = parseShaderMethodsDefinition(parseContext, shader, &shaderLibrary, ppContext, unknownIdentifier, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget);
+                    success = parseShaderMethodsDefinition(parseContext, shader, &shaderLibrary, ppContext,
+                        unknownIdentifier, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget);
+
                     if (success)
                     {
                         shader->parsingStatus = currentProcessingOperation;
                     }
                     else
                     {
-                        if (unknownIdentifier.size() == 0 || callbackRequestDataForShader == nullptr)
-                        {
-                            error(parseContext, "Failed to parse the shader method definition for: " + shader->shaderFullName);
-                            if (unknownIdentifier.size() > 0) error(parseContext, "Unknown identifier: " + unknownIdentifier);
-                            checkIfUnknownIdentifierIsAShader = false;
-                        }
-                        else
+                        if (unknownIdentifier.size() > 0 && callbackRequestDataForShader != nullptr)
                         {
                             checkIfUnknownIdentifierIsAShader = true;
                             shaderMissingADependency = shader;
                         }
+                        else if (streamsMissingConversionFunctionShaderOriginal.size() > 0 && streamsMissingConversionFunctionShaderTarget.size() > 0)
+                        {
+                            counterMissingStreamsFunctionsSafetyBreak++;
+
+                            if (counterMissingStreamsFunctionsSafetyBreak > 20)
+                            {
+                                error(parseContext, "Safely break error after missing too many streams function conversion");
+                                success = false;
+                            }
+                            else
+                            {
+                                generateAMissingStreamsConversionFunction = true;
+                            }
+                        }
+                        else
+                        {
+                            error(parseContext, "Failed to parse the shader method definition for: " + shader->shaderFullName);
+                            if (unknownIdentifier.size() > 0) error(parseContext, "Unknown identifier: " + unknownIdentifier);
+                            success = false;
+                        }
+
                         break;
                     }
                 }
@@ -3886,6 +3906,12 @@ static bool ParseXkslShaderRecursif(
                         else error(parseContext, "Failed to recursively parse the shader: " + unknownIdentifier);
                     }
                 }
+            }
+            else if (generateAMissingStreamsConversionFunction)
+            {
+                dgdfgdfg;
+                int lkfsdjg = 54454;
+                keepLooping = true;
             }
         }
 
