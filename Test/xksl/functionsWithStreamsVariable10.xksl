@@ -1,10 +1,20 @@
 shader TestShaderBase
 {
-	stage stream float3 sBase: SBASE;
+	stage stream int sBase: SBASE;
 
 	void Compute(Streams s)
 	{
-		s.sBase = 2;
+		s.sBase = 1;
+	}
+	
+	void Compute(int i, Streams s)
+	{
+		s.sBase = i;
+	}
+	
+	void Compute(Streams s1, Streams s2)
+	{
+		s1.sBase = s2.sBase;
 	}
 }
 
@@ -14,23 +24,35 @@ shader TestShaderMain: TestShaderBase
 
 	override void Compute(Streams s)
 	{
-		s.sMain = 1;
+		s.sMain = 2;
 		base.Compute(s);
 	}
 	
-	/*override void Compute(int i, Streams s)
+	override void Compute(int i, Streams s)
 	{
-		s.sMain = 1;
-		base.Compute(s);
-	}*/
+		s.sMain = 3;
+		base.Compute(i, s);
+	}
+	
+	override void Compute(Streams s1, Streams s2)
+	{
+		s1.sMain = 4;
+		base.Compute(s1, s2);
+	}
 	
 	void VSMain()
 	{
+		var backup = streams;
 		Compute(streams);
+		Compute(1, streams);
+		Compute(streams, backup);
 	}
 	
 	void PSMain()
 	{
+		var backup = streams;
 		Compute(streams);
+		Compute(1, streams);
+		Compute(streams, backup);
 	}
 }

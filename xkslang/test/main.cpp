@@ -323,9 +323,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsWithStreamsVariable05", "functionsWithStreamsVariable05.xkfx" },
     //{ "functionsWithStreamsVariable06", "functionsWithStreamsVariable06.xkfx" },
     //{ "functionsWithStreamsVariable07", "functionsWithStreamsVariable07.xkfx" },
-    { "functionsWithStreamsVariable08", "functionsWithStreamsVariable08.xkfx" },
+    //{ "functionsWithStreamsVariable08", "functionsWithStreamsVariable08.xkfx" },
     //{ "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
-    ////////////////////{ "functionsWithStreamsVariable10", "functionsWithStreamsVariable10.xkfx" },
+    { "functionsWithStreamsVariable10", "functionsWithStreamsVariable10.xkfx" },
+    ////////////////////{ "functionsWithStreamsVariable11", "functionsWithStreamsVariable11.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
@@ -2501,15 +2502,18 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 }
                 else
                 {
+
+#ifdef OUTPUT_LIST_COMPOSITIONS_AFTER_EVERY_MIXIN_STEPS
                     //Optionnal: get and display the list of all methods
                     if (!displayListOfAllMethodsForTheMixer(mixerTarget->mixer)) {
-                        error("Failed to display the mixer list of compositions"); success = false;
+                        error("Failed to display the mixer list of methods"); success = false;
                     }
 
                     //Optionnal: get and display all compositions before compiling
                     if (!displayListOfAllCompositionsForTheMixer(mixerTarget->mixer)) {
                         error("Failed to display the mixer list of compositions"); success = false;
                     }
+#endif
 
                     success = CompileMixer(effectName, mixerTarget->mixer, outputStages, errorMsgs);
                     if (!success) error("Failed to compile the effect: " + effectName);
