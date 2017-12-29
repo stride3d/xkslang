@@ -1990,6 +1990,30 @@ static bool IsTypeValidForStream(const TBasicType& type)
     return true;
 }
 
+//Return a pointer to the shader definition for the input shaderName
+static XkslShaderDefinition* GetShaderDefinition(XkslShaderLibrary& shaderLibrary, const TString& shaderName)
+{
+    TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+    for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+    {
+        XkslShaderDefinition* shader = listShaderParsed[s];
+        if (shader->shaderFullName.compare(shaderName) == 0) return shader;
+    }
+    return nullptr;
+}
+
+static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibrary, const TString& shaderFullName, TString* genericsValue)
+{
+    TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+    for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+    {
+        XkslShaderDefinition* shader = listShaderParsed[s];
+        if (shader->shaderFullName == shaderFullName) return shader;
+    }
+
+    return nullptr;
+}
+
 static bool ProcessConstsRegistrationForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, HlslParseContext* parseContext)
 {
     //======================================================================================
@@ -2116,6 +2140,46 @@ static bool GetListAllStreamsVariablesForTheShader(HlslParseContext* parseContex
             if (!GetListAllStreamsVariablesForTheShader(parseContext, parentShader, addInheritedVariables, listStreamVariables)) return false;
         }
     }
+
+    return true;
+}
+
+static bool GenerateShaderStreamsConversionFunction(HlslParseContext* parseContext, TPpContext& ppContext,
+    XkslShaderLibrary& shaderLibrary, const TString& streamsNameShaderOriginal, const TString& streamsNameShaderTarget)
+{
+    XkslShaderDefinition* shaderOriginal = GetShaderDefinition(shaderLibrary, streamsNameShaderOriginal);
+    if (shaderOriginal == nullptr) return error(parseContext, "Shader not found in the library: " + streamsNameShaderOriginal);
+    XkslShaderDefinition* shaderTarget = GetShaderDefinition(shaderLibrary, streamsNameShaderTarget);
+    if (shaderTarget == nullptr) return error(parseContext, "Shader not found in the library: " + streamsNameShaderTarget);
+
+    //====================================================================
+    //Create the function instructions
+    TString functionName = HlslParseContext::GetShaderStreamsTypeConversionFunctionName(streamsNameShaderOriginal, streamsNameShaderTarget);
+    TString functionDeclaration = streamsNameShaderTarget + "." + shaderTarget->streamsTypeInfo.StreamStructTypeName + " " + functionName
+        + "(" + streamsNameShaderOriginal + "." + shaderOriginal->streamsTypeInfo.StreamStructTypeName + " s)";
+    TString functionExpression = functionDeclaration + "{" + streamsNameShaderTarget + ".Streams r = {";
+
+    const TTypeList* streamsMembers = shaderTarget->streamsTypeInfo.StreamStructureType->getStruct();
+    if (streamsMembers == nullptr)
+        return error(parseContext, "The shader has no streams members: " + streamsNameShaderTarget);
+    int countStreamVariables = (int)streamsMembers->size();
+    for (int i = 0; i < countStreamVariables; ++i)
+    {
+        TType* member = streamsMembers->at(i).type;
+        TString* memberNamePtr = member->GetFieldNamePtr();
+
+        if (memberNamePtr == nullptr)
+            return error(parseContext, "The shader has a streams member with no name: " + streamsNameShaderTarget);
+
+        TString& memberName = *memberNamePtr;
+        if (i == 0) functionExpression += "s." + memberName;
+        else functionExpression += ", s." + memberName;
+    }
+    functionExpression += "}; return r;}";
+
+    //====================================================================
+    //Parse and add the method
+    bool res = parseContext->parseXkslShaderMethodExpression(&shaderLibrary, shaderOriginal, ppContext, functionExpression);
 
     return true;
 }
@@ -3010,30 +3074,6 @@ static bool XkslShaderResolveAllUnresolvedConstMembers(XkslShaderLibrary& shader
     return true;
 }
 
-//Return a pointer to the shader definition for the input shaderName
-static XkslShaderDefinition* GetShaderDefinition(XkslShaderLibrary& shaderLibrary, const TString& shaderName)
-{
-    TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
-    for (unsigned int s = 0; s < listShaderParsed.size(); s++)
-    {
-        XkslShaderDefinition* shader = listShaderParsed[s];
-        if (shader->shaderFullName.compare(shaderName) == 0) return shader;
-    }
-    return nullptr;
-}
-
-static XkslShaderDefinition* GetShaderFromLibrary(XkslShaderLibrary& shaderLibrary, const TString& shaderFullName, TString* genericsValue)
-{
-    TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
-    for (unsigned int s = 0; s < listShaderParsed.size(); s++)
-    {
-        XkslShaderDefinition* shader = listShaderParsed[s];
-        if (shader->shaderFullName == shaderFullName) return shader;
-    }
-
-    return nullptr;
-}
-
 static bool CreateAndAddAutoGeneratedMethodsForShader(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext,
     TVector<TString>& listAutoGeneratedMethodName)
 {
@@ -3909,9 +3949,12 @@ static bool ParseXkslShaderRecursif(
             }
             else if (generateAMissingStreamsConversionFunction)
             {
-                dgdfgdfg;
-                int lkfsdjg = 54454;
-                keepLooping = true;
+                if (!GenerateShaderStreamsConversionFunction(parseContext, ppContext, shaderLibrary, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget))
+                {
+                    error(parseContext, "Failed to generate the shader streams conversion function from:" + streamsMissingConversionFunctionShaderOriginal + " to:" + streamsMissingConversionFunctionShaderTarget);
+                    keepLooping = false;
+                }
+                else keepLooping = true;
             }
         }
 

@@ -73,7 +73,9 @@ public:
         TPpContext&, HlslToken* expressionTokensList, int countTokens, TString& unknownIdentifier, bool errorWhenParsingUnidentifiedSymbol);
     TIntermTyped* parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader,
         TPpContext&, TString& expressionString, bool errorWhenParsingUnidentifiedSymbol, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound);
+    bool parseXkslShaderMethodExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext&, TString& expressionString);
     void parseXkslShaderFinalize();
+    static TString GetShaderStreamsTypeConversionFunctionName(const TString& shaderStreamsType, const TString& shaderConvertedStreamsType);
 
     void setLimits(const TBuiltInResource&) override;
     bool parseShaderStrings(TPpContext&, TInputScanner& input, bool versionWillBeError = false) override;

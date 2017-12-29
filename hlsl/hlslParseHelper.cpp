@@ -120,6 +120,37 @@ void HlslParseContext::setLimits(const TBuiltInResource& r)
     intermediate.setLimits(resources);
 }
 
+//Exemple: _ConvertShaderMainStreamsToShaderBaseStreams
+TString HlslParseContext::GetShaderStreamsTypeConversionFunctionName(const TString& shaderOriginalStreamsType, const TString& shaderTargetStreamsType)
+{
+    return "_Convert" + shaderOriginalStreamsType + "StreamsTo" + shaderTargetStreamsType + "Streams";
+}
+
+bool HlslParseContext::parseXkslShaderMethodExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext& ppContext, TString& expressionString)
+{
+    const char* stringsPtr[] = { expressionString.c_str() };
+    size_t stringsLen[] = { expressionString.size() };
+    TInputScanner input(1, stringsPtr, stringsLen, nullptr, 0, 0);
+
+    currentScanner = &input;
+    ppContext.clearAllInput();
+    ppContext.setInput(input, true);
+
+    HlslScanContext scanContext(*this, ppContext);
+    HlslGrammar grammar(scanContext, *this);
+
+    int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
+
+    bool b = grammar.parseXKslShaderMethodDeclarationAndDefinition(shaderLibrary, currentShader);
+
+    //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
+    while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
+        symbolTable.pop(nullptr);
+    }
+
+    return false;
+}
+
 TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext& ppContext, TString& expressionString,
     bool errorWhenParsingUnidentifiedSymbol, XkslShaderDefinition* shaderWhereSomeMembersCanBeFound)
 {

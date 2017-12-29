@@ -312,9 +312,45 @@ bool HlslGrammar::parseXKslShaderMethodsDeclaration(XkslShaderLibrary* shaderLib
     return true;
 }
 
+TShaderClassFunction* HlslGrammar::parseXKslShaderMethodDeclarationAndDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse)
+{
+    if (xkslShaderCurrentlyParsed != nullptr || xkslShaderLibrary != nullptr || this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined)
+    {
+        error("an xksl shader is or have already being parsed");
+        return nullptr;
+    }
+
+    this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDeclarations;
+    this->throwErrorWhenParsingUnidentifiedSymbol = true;
+    this->parseShaderSingleMethod = true;
+    this->xkslShaderLibrary = shaderLibrary;
+    this->xkslShaderToParse = shaderToParse;
+    this->xkslShaderCurrentlyParsed = shaderToParse;
+    this->functionCurrentlyParsed = nullptr;
+    ResetShaderLibraryFlag();
+
+    advanceToken();
+
+    //parse the method declaration
+    TVector<TShaderClassFunction> listMethodDeclaration;
+    bool success = parseShaderMembersAndMethods(shaderToParse, &listMethodDeclaration);
+
+    if (!success) {
+        error("Failed to parse the method declaration");
+        return nullptr;
+    }
+    if (listMethodDeclaration.size() != 1) {
+        error("Did not receive the method data after having parsed a new method declaration");
+        return nullptr;
+    }
+
+    //parse the method definition
+
+    return nullptr;
+}
+
 bool HlslGrammar::parseXKslShaderMethodDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse, TShaderClassFunction* shaderMethod)
 {
-    //root entry point for parsing xksl shader definition
     if (xkslShaderCurrentlyParsed != nullptr || xkslShaderLibrary != nullptr || this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined)
     {
         error("an xksl shader is or have already being parsed");
@@ -3767,6 +3803,11 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
         }
 
         bool isAFunctionDeclaration = peekTokenClass(EHTokLeftParen);
+        if (this->parseShaderSingleMethod && !isAFunctionDeclaration)
+        {
+            error("A method declaration is expected");
+            return false;
+        }
 
         if (isAFunctionDeclaration)
         {
@@ -4217,6 +4258,10 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
         }  //end member declaration
 
         this->shaderMethodOrMemberTypeCurrentlyParsed = nullptr;
+
+        if (this->parseShaderSingleMethod) {
+            return true; //we only want to parse a single method
+        }
 
     } while (true);
 }
@@ -6580,12 +6625,6 @@ TString HlslGrammar::getFunctionDeclaredMangledNameWithStreamsType(TFunction* fu
     return mangledName;
 }
 
-//Exemple: ConvertShaderMainStreamsToShaderBaseStreams
-TString HlslGrammar::GetShaderStreamsTypeConversionFunctionName(const TString& shaderStreamsType, const TString& shaderConvertedStreamsType)
-{
-    return "_Convert" + shaderStreamsType + "StreamsTo" + shaderConvertedStreamsType + "Streams";
-}
-
 bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, bool callToFunctionThroughBaseAccessor, bool isACallThroughStaticShaderClassName, TShaderCompositionVariable* compositionTargeted,
     TString* functionName, bool parenthesisRequiredBetweenArguments, int countParametersExpected, TSourceLoc& tokenLocation, TIntermTyped*& node)
 {
@@ -6766,7 +6805,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
                         if (needToConvertTheStreamParameter)
                         {
                             //name of the Streams conversion function
-                            TString conversionFunctionName = HlslGrammar::GetShaderStreamsTypeConversionFunctionName(shaderOwnerStreamParamPassed, shaderOwnerStreamParamTarget);
+                            TString conversionFunctionName = HlslParseContext::GetShaderStreamsTypeConversionFunctionName(shaderOwnerStreamParamPassed, shaderOwnerStreamParamTarget);
 
                             //===============================================================================================
                             //Check if the function exists
