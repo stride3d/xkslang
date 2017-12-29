@@ -323,8 +323,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsWithStreamsVariable05", "functionsWithStreamsVariable05.xkfx" },
     //{ "functionsWithStreamsVariable06", "functionsWithStreamsVariable06.xkfx" },
     //{ "functionsWithStreamsVariable07", "functionsWithStreamsVariable07.xkfx" },
-    /////////////////{ "functionsWithStreamsVariable08", "functionsWithStreamsVariable08.xkfx" },  //not implemented yet: a shader calling a base method using Stream type
-    { "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
+    { "functionsWithStreamsVariable08", "functionsWithStreamsVariable08.xkfx" },
+    //{ "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
     ////////////////////{ "functionsWithStreamsVariable10", "functionsWithStreamsVariable10.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
