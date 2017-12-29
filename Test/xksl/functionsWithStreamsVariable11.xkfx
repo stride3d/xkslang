@@ -1,8 +1,7 @@
 
 convertAndLoad "functionsWithStreamsVariable11.xksl"
 
-mixer _m
-_m.mixin( ShaderMain )
+mixer m
+m.mixin( TestShaderMain )
 
-m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
 m.compile()

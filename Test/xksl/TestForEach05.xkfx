@@ -1,0 +1,7 @@
+convertAndLoad "TestForEach05.xksl"
+
+mixer A
+A.mixin( ShaderA )
+
+A.addComposition( ShaderA.SubComputes = A )
+A.compile

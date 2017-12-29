@@ -12,7 +12,6 @@ shader TestShaderBase
 	void Compute(Streams s)
 	{
 		s.sBase = 2;
-		//s.sMain = 3; //parsing error: sMain is unknown
 	}
 }
 
@@ -30,17 +29,12 @@ shader TestShaderMain: TestShaderBase
 		var backup = streams;
 		foreach(var blendStep in blends)
 		{
-			blendStep.Compute(backup);
+			//blendStep.Compute(backup);
 		}
 	}
 	
 	void VSMain()
 	{
 		Compute(streams);
-	}
-	
-	void PSMain()
-	{
-		//Compute(streams);  //Fails with Xenko (a method using streams is called in both VS and PS stages)
 	}
 }

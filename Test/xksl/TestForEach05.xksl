@@ -1,0 +1,20 @@
+shader ComputeColor
+{
+	int Compute(int i)
+	{
+		return i;
+	}
+}
+
+shader ShaderA
+{
+	compose ComputeColor SubComputes[];
+	
+	void VSMain()
+	{
+		foreach(var subCompute in SubComputes)
+		{
+		}
+	}
+}
+
