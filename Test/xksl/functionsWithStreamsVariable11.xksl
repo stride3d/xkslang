@@ -1,3 +1,10 @@
+shader IShaderCompose
+{
+	void Compute()
+	{
+	}
+}
+
 shader TestShaderBase
 {
 	stage stream float3 sBase: SBASE;
@@ -5,6 +12,7 @@ shader TestShaderBase
 	void Compute(Streams s)
 	{
 		s.sBase = 2;
+		//s.sMain = 3; //parsing error: sMain is unknown
 	}
 }
 
@@ -12,17 +20,19 @@ shader TestShaderMain: TestShaderBase
 {
 	stage stream float3 sMain: SMAIN;
 
+	compose IShaderCompose blends[];
+	
 	override void Compute(Streams s)
 	{
 		s.sMain = 1;
 		base.Compute(s);
+		
+		var backup = streams;
+		foreach(var blendStep in blends)
+		{
+			blendStep.Compute(backup);
+		}
 	}
-	
-	/*override void Compute(int i, Streams s)
-	{
-		s.sMain = 1;
-		base.Compute(s);
-	}*/
 	
 	void VSMain()
 	{
@@ -31,6 +41,6 @@ shader TestShaderMain: TestShaderBase
 	
 	void PSMain()
 	{
-		Compute(streams);
+		//Compute(streams);  //Fails with Xenko (a method using streams is called in both VS and PS stages)
 	}
 }

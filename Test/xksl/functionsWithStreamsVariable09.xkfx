@@ -2,7 +2,7 @@
 convertAndLoad "functionsWithStreamsVariable09.xksl"
 
 mixer _m
-_m.mixin( ShaderMain )
+_m.mixin( TestShaderMain )
 
-m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
-m.compile()
+_m.setStageEntryPoint( Vertex="VSMain", Pixel="PSMain" )
+_m.compile()

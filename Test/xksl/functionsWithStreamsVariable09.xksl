@@ -1,14 +1,25 @@
-shader TestShaderBase
+shader TestShaderBaseA
 {
-	stage stream float3 sBase: SBASE;
+	stage stream float3 sBaseA: SBASEA;
 
 	void Compute(Streams s)
 	{
-		s.sBase = 2;
+		s.sBaseA = 1;
 	}
 }
 
-shader TestShaderMain: TestShaderBase
+shader TestShaderBaseB: TestShaderBaseA
+{
+	stage stream float3 sBaseB: SBASEB;
+
+	override void Compute(Streams s)
+	{
+		s.sBaseB = 2;
+		base.Compute(s);
+	}
+}
+
+shader TestShaderMain: TestShaderBaseB
 {
 	stage stream float3 sMain: SMAIN;
 
@@ -17,13 +28,7 @@ shader TestShaderMain: TestShaderBase
 		s.sMain = 1;
 		base.Compute(s);
 	}
-	
-	//base.Streams ConvertStreamsToShaderBaseStreams(Streams c)
-	//{
-	//	base.Streams s;
-	//	return s;
-	//}
-	
+
 	void VSMain()
 	{
 		Compute(streams);
@@ -31,6 +36,6 @@ shader TestShaderMain: TestShaderBase
 	
 	void PSMain()
 	{
-		//Compute(streams);  //Fails with Xenko (a method using streams is called in both VS and PS stages)
+		Compute(streams);
 	}
 }
