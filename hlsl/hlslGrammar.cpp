@@ -314,12 +314,6 @@ bool HlslGrammar::parseXKslShaderMethodsDeclaration(XkslShaderLibrary* shaderLib
 
 TShaderClassFunction* HlslGrammar::parseXKslShaderMethodDeclarationAndDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse)
 {
-    if (xkslShaderCurrentlyParsed != nullptr || xkslShaderLibrary != nullptr || this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined)
-    {
-        error("an xksl shader is or have already being parsed");
-        return nullptr;
-    }
-
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDeclarations;
     this->throwErrorWhenParsingUnidentifiedSymbol = true;
     this->parseShaderSingleMethod = true;
@@ -331,6 +325,7 @@ TShaderClassFunction* HlslGrammar::parseXKslShaderMethodDeclarationAndDefinition
 
     advanceToken();
 
+    //=================================================
     //parse the method declaration
     TVector<TShaderClassFunction> listMethodDeclaration;
     bool success = parseShaderMembersAndMethods(shaderToParse, &listMethodDeclaration);
@@ -344,19 +339,39 @@ TShaderClassFunction* HlslGrammar::parseXKslShaderMethodDeclarationAndDefinition
         return nullptr;
     }
 
-    //parse the method definition
+    //=================================================
+    //Add the new method into the shader's list of methods
+    shaderToParse->listMethods.push_back(listMethodDeclaration[0]);
+    TShaderClassFunction* shaderMethod = &(shaderToParse->listMethods.back());
 
-    return nullptr;
+    //Method declaration: add the shader methods prototype in the table of symbol
+    parseContext.handleFunctionDeclarator(shaderMethod->tokenBodyStart.loc, *(shaderMethod->function), true /*prototype*/);
+
+    //=================================================
+    //Recede to the method body definition
+    if (!recedeToTokenIndex(shaderMethod->tokenBodyStartIndex)) {
+        error("Failed to recede until method body start");
+        return nullptr;
+    }
+    if (!peekTokenClass(EHTokLeftBrace)) {
+        error("Invalid function token start");
+        return nullptr;
+    }
+
+    //=================================================
+    //parse the method definition
+    success = parseXKslShaderMethodDefinition(shaderLibrary, shaderToParse, shaderMethod);
+    if (!success)
+    {
+        error("Failed to parse the method definition");
+        return nullptr;
+    }
+
+    return shaderMethod;
 }
 
 bool HlslGrammar::parseXKslShaderMethodDefinition(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* shaderToParse, TShaderClassFunction* shaderMethod)
 {
-    if (xkslShaderCurrentlyParsed != nullptr || xkslShaderLibrary != nullptr || this->xkslShaderParsingOperation != XkslShaderParsingOperationEnum::Undefined)
-    {
-        error("an xksl shader is or have already being parsed");
-        return false;
-    }
-
     this->xkslShaderParsingOperation = XkslShaderParsingOperationEnum::ParseXkslShaderMethodsDefinition;  //Tell the parser to parse shader method definition
     this->throwErrorWhenParsingUnidentifiedSymbol = false;
     this->xkslShaderLibrary = shaderLibrary;
@@ -368,7 +383,15 @@ bool HlslGrammar::parseXKslShaderMethodDefinition(XkslShaderLibrary* shaderLibra
     TFunctionDeclarator declarator;
     declarator.function = shaderMethod->function;
 
-    advanceToken();
+    if (!peekTokenClass(EHTokLeftBrace))
+    {
+        advanceToken();
+        if (!peekTokenClass(EHTokLeftBrace))
+        {
+            error("Function body opening symbol ({) expected");
+            return false;
+        }
+    }
 
     TIntermNode* nodeList = nullptr;
     if (!acceptFunctionDefinition(declarator, nodeList, nullptr))
@@ -6689,85 +6712,6 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
             return false;
         }
 
-        //===============================================================================================
-        //===============================================================================================
-        //PROTOTYPE: change the function list of arguments
-        //TOTO PROUT
-        if (false)
-        {
-            TString *currentShadercName = getCurrentShaderName();
-            if (currentShadercName == nullptr) { error("No shader is being parsed"); return false; }
-
-            //===============================================================================================
-            //Get the function to call
-            TSourceLoc tokenLocation;
-            tokenLocation.init();
-
-            TString functionName = "toto";
-
-            XkslShaderDefinition::ShaderIdentifierLocation identifierLocation = findShaderClassMethod(*currentShadercName, functionName, true);
-            if (!identifierLocation.isMethod())
-            {
-                error("Failed to find the method named:" + functionName);
-                return false;
-            }
-            TFunction* functionToCall = identifierLocation.method->function;
-
-            //===============================================================================================
-            if (paramCount == 1)
-            {
-                for (int i = 0; i < paramCount; ++i)
-                {
-                    if (arguments == nullptr) {
-                        error("No argument nodes have been generated for the function call");
-                        return false;
-                    }
-
-                    if (paramCount == 1)
-                    {
-                        //Add a function call into the param node
-                        arguments = parseContext.handleFunctionCall(tokenLocation, functionToCall, arguments, false, false, nullptr);
-                        if (arguments == nullptr) {
-                            error("Fail to create a function call with the parameter argument node");
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        //Find the param node to update
-                        TIntermAggregate* aggNode = nullptr;
-                        aggNode = arguments->getAsAggregate();
-                        if (aggNode == nullptr) {
-                            error("Failed to get the interm aggregate from the function call parameter arguments");
-                            return false;
-                        }
-
-                        TIntermSequence& sequence = aggNode->getSequence();
-                        if (sequence.size() != paramCount) {
-                            error("Invalid aggregate node sequence count");
-                            return false;
-                        }
-                        TIntermTyped* paramNode = sequence[i]->getAsTyped();
-                        if (paramNode == nullptr) {
-                            error("Fail to get the parameter interm typed node from the arguments sequence");
-                            return false;
-                        }
-
-                        //Add a function call into the param node
-                        paramNode = parseContext.handleFunctionCall(tokenLocation, functionToCall, paramNode, false, false, nullptr);
-                        if (paramNode == nullptr) {
-                            error("Fail to create a function call with the parameter node");
-                            return false;
-                        }
-
-                        sequence[i] = paramNode;
-                    }
-                }
-            }
-        }
-        //===============================================================================================
-        //===============================================================================================
-
         //Process the function call when some Streams type are passed
         if (isFunctionCalledUsingStreamTypeParameters)
         {
@@ -6818,12 +6762,53 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
                             }
 
                             TFunction* functionToCall = identifierLocation.method->function;
-                            error("PROUT PROUT PROUT"); return false;
+
+                            //===============================================================================================
+                            //Add a function call into the param node
+
+                            TIntermTyped* newParameterNode = nullptr;
+                            if (paramCount == 1)
+                            {
+                                //update the parameter node with the conversion function call
+                                arguments = parseContext.handleFunctionCall(tokenLocation, functionToCall, arguments, false, false, nullptr);
+                                if (arguments == nullptr) {
+                                    error("Fail to create a function call with the parameter argument node");
+                                    return false;
+                                }
+                                newParameterNode = arguments;
+                            }
+                            else
+                            {
+                                //Find which argument parameter node to update
+                                TIntermAggregate* aggNode = nullptr;
+                                aggNode = arguments->getAsAggregate();
+                                if (aggNode == nullptr) {
+                                    error("Failed to get the interm aggregate from the function call parameter arguments");
+                                    return false;
+                                }
+                                TIntermSequence& sequence = aggNode->getSequence();
+                                if (sequence.size() != paramCount) {
+                                    error("Invalid aggregate node sequence count");
+                                    return false;
+                                }
+                                TIntermTyped* paramNode = sequence[i]->getAsTyped();
+                                if (paramNode == nullptr) {
+                                    error("Fail to get the parameter interm typed node from the arguments sequence");
+                                    return false;
+                                }
+
+                                //update the parameter node with the conversion function call
+                                paramNode = parseContext.handleFunctionCall(tokenLocation, functionToCall, paramNode, false, false, nullptr);
+                                if (paramNode == nullptr) {
+                                    error("Fail to create a function call with the parameter node");
+                                    return false;
+                                }
+                                sequence[i] = paramNode;
+                                newParameterNode = paramNode;
+                            }
                         }
                     }
                 }
-
-                error("PROUT PROUT"); return false;
             }
         }
 

@@ -141,14 +141,14 @@ bool HlslParseContext::parseXkslShaderMethodExpression(XkslShaderLibrary* shader
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
-    bool b = grammar.parseXKslShaderMethodDeclarationAndDefinition(shaderLibrary, currentShader);
+    bool success = grammar.parseXKslShaderMethodDeclarationAndDefinition(shaderLibrary, currentShader);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
         symbolTable.pop(nullptr);
     }
 
-    return false;
+    return success;
 }
 
 TIntermTyped* HlslParseContext::parseXkslExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext& ppContext, TString& expressionString,

@@ -2180,8 +2180,7 @@ static bool GenerateShaderStreamsConversionFunction(HlslParseContext* parseConte
     //====================================================================
     //Parse and add the method
     bool res = parseContext->parseXkslShaderMethodExpression(&shaderLibrary, shaderOriginal, ppContext, functionExpression);
-
-    return true;
+    return res;
 }
 
 static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, HlslParseContext* parseContext)
