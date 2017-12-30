@@ -2219,7 +2219,7 @@ static bool GenerateShaderStreamsConversionFunction(HlslParseContext* parseConte
         bool existingStream = false;
         for (int j = 0; j < countOriginStreamVariables; ++j)
         {
-            TType* memberFromOrigin = originStreamsMembers->at(i).type;
+            TType* memberFromOrigin = originStreamsMembers->at(j).type;
             TString* memberFromOriginNamePtr = memberFromOrigin->GetFieldNamePtr();
             if (memberFromOriginNamePtr == nullptr) return error(parseContext, "The origin shader has a streams member with no name: " + streamsNameShaderOrigin);
 
