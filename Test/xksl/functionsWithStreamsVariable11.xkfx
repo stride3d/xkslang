@@ -3,6 +3,6 @@ convertAndLoad "functionsWithStreamsVariable11.xksl"
 
 mixer m
 m.mixin( TestShaderMain )
-//m.addComposition( blends = mixin(TestIComposition) ) 
+m.addComposition( blends = mixin(TestIComposition) ) 
 
 m.compile()

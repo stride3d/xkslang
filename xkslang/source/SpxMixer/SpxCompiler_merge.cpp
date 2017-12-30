@@ -306,20 +306,24 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                         spv::Id idOfSameTypeFromDestinationBytecode = hashTypePosIt->second.first;
 
                         if (idOfSameTypeFromDestinationBytecode == spvUndefinedId)
-                            return error("Merge shaders. hashmap refers to an invalid Id");
-
-                        //The type already exists in the destination bytecode, we can simply remap to it
-                        mappingResolved = true;
-                        finalRemapTable[unmappedId] = idOfSameTypeFromDestinationBytecode;
+                        { 
+                            //Do nothing: we will copy the type
+                            //return error("Merge shaders. hashmap refers to an invalid Id");
+                        }
+                        else
+                        {
+                            //The type already exists in the destination bytecode, we can simply remap to it
+                            mappingResolved = true;
+                            finalRemapTable[unmappedId] = idOfSameTypeFromDestinationBytecode;
 
 //#ifdef XKSLANG_DEBUG_MODE
-                        //hashType function is not 100% accurate: we check that the instructions are identical
-                        if (!CompareOpTypeConstInstructions(hashTypePosIt->second.second, bytecodeToMerge, objectFromUnmappedId->GetBytecodeStartPosition()))
-                        {
-                            return error("2 types or consts have the same hashtype but different bytecode instructions");
-                        }
+                            //hashType function is not 100% accurate: we check that the instructions are identical
+                            if (!CompareOpTypeConstInstructions(hashTypePosIt->second.second, bytecodeToMerge, objectFromUnmappedId->GetBytecodeStartPosition()))
+                            {
+                                return error("2 types or consts have the same hashtype but different bytecode instructions");
+                            }
 //#endif
-
+                        }
                     }
                     break;
                 }

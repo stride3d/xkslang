@@ -43,6 +43,6 @@ shader TestShaderMain: TestShaderBase
 	
 	void PSMain()
 	{
-		//Compute(streams);
+		Compute(streams);
 	}
 }
