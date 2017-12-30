@@ -2078,9 +2078,12 @@ static bool ProcessConstsRegistrationForShader(XkslShaderLibrary& shaderLibrary,
     return true;
 }
 
-static bool GetListAllStreamsVariablesForTheShader(HlslParseContext* parseContext,
-    XkslShaderDefinition* shader, bool addInheritedVariables, TVector<XkslShaderDefinition::XkslShaderMember*>& listStreamVariables)
+static bool GetListAllStreamsVariablesForTheShaderRecursif(HlslParseContext* parseContext, XkslShaderLibrary& shaderLibrary,
+    XkslShaderDefinition* shader, TVector<XkslShaderDefinition::XkslShaderMember*>& listStreamVariables)
 {
+    if (shader->tmpFlag != 0) return true;
+    shader->tmpFlag = 1;
+
     unsigned int countMembers = (unsigned int)(shader->listAllDeclaredMembers.size());
     for (unsigned int m = 0; m < countMembers; ++m)
     {
@@ -2123,7 +2126,27 @@ static bool GetListAllStreamsVariablesForTheShader(HlslParseContext* parseContex
         }
     }
 
-    if (addInheritedVariables)
+    //Add the compositions shaders' streams
+    ///{
+    ///    unsigned int countCompositions = (unsigned int)(shader->listCompositions.size());
+    ///    for (unsigned int p = 0; p < countCompositions; p++)
+    ///    {
+    ///        TString& shaderCompositionName = shader->listCompositions[p].shaderTypeName;
+    ///        XkslShaderDefinition* shaderComposition = GetShaderDefinition(shaderLibrary, shaderCompositionName);
+    ///
+    ///        if (shaderComposition == nullptr)
+    ///        {
+    ///            error(parseContext, "Failed to find the composition shader:" + shaderCompositionName);
+    ///            return false;
+    ///        }
+    ///
+    ///        if (shaderComposition->tmpFlag != 0) continue;
+    ///        if (shaderComposition->isValid == false) continue;
+    ///        if (!GetListAllStreamsVariablesForTheShaderRecursif(parseContext, shaderLibrary, shaderComposition, listStreamVariables)) return false;
+    ///    }
+    ///}
+
+    //Add the inherited parents' streams
     {
         unsigned int countParents = (unsigned int)(shader->listParents.size());
         for (unsigned int p = 0; p < countParents; p++)
@@ -2136,50 +2159,89 @@ static bool GetListAllStreamsVariablesForTheShader(HlslParseContext* parseContex
                 return false;
             }
 
+            if (parentShader->tmpFlag != 0) continue;
             if (parentShader->isValid == false) continue;
-            if (!GetListAllStreamsVariablesForTheShader(parseContext, parentShader, addInheritedVariables, listStreamVariables)) return false;
+            if (!GetListAllStreamsVariablesForTheShaderRecursif(parseContext, shaderLibrary, parentShader, listStreamVariables)) return false;
         }
     }
 
     return true;
 }
 
-static bool GenerateShaderStreamsConversionFunction(HlslParseContext* parseContext, TPpContext& ppContext,
-    XkslShaderLibrary& shaderLibrary, const TString& streamsNameShaderOriginal, const TString& streamsNameShaderTarget)
+static bool GetListAllStreamsVariablesForTheShader(HlslParseContext* parseContext, XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader,
+    TVector<XkslShaderDefinition::XkslShaderMember*>& listStreamVariables)
 {
-    XkslShaderDefinition* shaderOriginal = GetShaderDefinition(shaderLibrary, streamsNameShaderOriginal);
-    if (shaderOriginal == nullptr) return error(parseContext, "Shader not found in the library: " + streamsNameShaderOriginal);
+    //Reset all shader flag
+    unsigned int countShaders = (unsigned int)shaderLibrary.listShaders.size();
+    for (unsigned int ks = 0; ks < countShaders; ks++)
+    {
+        XkslShaderDefinition* aShader = shaderLibrary.listShaders[ks];
+        aShader->tmpFlag = 0;
+    }
+
+    if (!GetListAllStreamsVariablesForTheShaderRecursif(parseContext, shaderLibrary, shader, listStreamVariables))
+        return false;
+
+    return true;
+}
+
+static bool GenerateShaderStreamsConversionFunction(HlslParseContext* parseContext, TPpContext& ppContext,
+    XkslShaderLibrary& shaderLibrary, const TString& streamsNameShaderOrigin, const TString& streamsNameShaderTarget)
+{
+    XkslShaderDefinition* shaderOrigin = GetShaderDefinition(shaderLibrary, streamsNameShaderOrigin);
+    if (shaderOrigin == nullptr) return error(parseContext, "Shader not found in the library: " + streamsNameShaderOrigin);
     XkslShaderDefinition* shaderTarget = GetShaderDefinition(shaderLibrary, streamsNameShaderTarget);
     if (shaderTarget == nullptr) return error(parseContext, "Shader not found in the library: " + streamsNameShaderTarget);
 
     //====================================================================
     //Create the function instructions
-    TString functionName = HlslParseContext::GetShaderStreamsTypeConversionFunctionName(streamsNameShaderOriginal, streamsNameShaderTarget);
+    TString functionName = HlslParseContext::GetShaderStreamsTypeConversionFunctionName(streamsNameShaderOrigin, streamsNameShaderTarget);
     TString functionDeclaration = streamsNameShaderTarget + "." + shaderTarget->streamsTypeInfo.StreamStructTypeName + " " + functionName
-        + "(" + streamsNameShaderOriginal + "." + shaderOriginal->streamsTypeInfo.StreamStructTypeName + " s)";
+        + "(" + streamsNameShaderOrigin + "." + shaderOrigin->streamsTypeInfo.StreamStructTypeName + " s)";
     TString functionExpression = functionDeclaration + "{" + streamsNameShaderTarget + ".Streams r = {";
 
-    const TTypeList* streamsMembers = shaderTarget->streamsTypeInfo.StreamStructureType->getStruct();
-    if (streamsMembers == nullptr)
-        return error(parseContext, "The shader has no streams members: " + streamsNameShaderTarget);
-    int countStreamVariables = (int)streamsMembers->size();
-    for (int i = 0; i < countStreamVariables; ++i)
+    const TTypeList* targetStreamsMembers = shaderTarget->streamsTypeInfo.StreamStructureType->getStruct();
+    if (targetStreamsMembers == nullptr) return error(parseContext, "The target shader has no streams members: " + streamsNameShaderTarget);
+    const TTypeList* originStreamsMembers = shaderOrigin->streamsTypeInfo.StreamStructureType->getStruct();
+    if (originStreamsMembers == nullptr) return error(parseContext, "The origin shader has no streams members: " + streamsNameShaderOrigin);
+
+    int countTargetStreamVariables = (int)targetStreamsMembers->size();
+    int countOriginStreamVariables = (int)originStreamsMembers->size();
+    for (int i = 0; i < countTargetStreamVariables; ++i)
     {
-        TType* member = streamsMembers->at(i).type;
+        TType* member = targetStreamsMembers->at(i).type;
         TString* memberNamePtr = member->GetFieldNamePtr();
 
-        if (memberNamePtr == nullptr)
-            return error(parseContext, "The shader has a streams member with no name: " + streamsNameShaderTarget);
-
+        if (memberNamePtr == nullptr) return error(parseContext, "The target shader has a streams member with no name: " + streamsNameShaderTarget);
         TString& memberName = *memberNamePtr;
-        if (i == 0) functionExpression += "s." + memberName;
-        else functionExpression += ", s." + memberName;
+
+        //Check that the member exists in the Origin shader
+        bool existingStream = false;
+        for (int j = 0; j < countOriginStreamVariables; ++j)
+        {
+            TType* memberFromOrigin = originStreamsMembers->at(i).type;
+            TString* memberFromOriginNamePtr = memberFromOrigin->GetFieldNamePtr();
+            if (memberFromOriginNamePtr == nullptr) return error(parseContext, "The origin shader has a streams member with no name: " + streamsNameShaderOrigin);
+
+            if (memberName == *memberFromOriginNamePtr)
+            {
+                existingStream = true;
+                break;
+            }
+        }
+
+        TString memberValue = existingStream?
+            ("s." + memberName):
+            "0"; //default value
+
+        if (i == 0) functionExpression += memberValue;
+        else functionExpression += ", " + memberValue;
     }
     functionExpression += "}; return r;}";
 
     //====================================================================
     //Parse and add the method
-    bool res = parseContext->parseXkslShaderMethodExpression(&shaderLibrary, shaderOriginal, ppContext, functionExpression);
+    bool res = parseContext->parseXkslShaderMethodExpression(&shaderLibrary, shaderOrigin, ppContext, functionExpression);
     return res;
 }
 
@@ -2626,7 +2688,7 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
     {
         //Get the shader list of stream variables (plus its parents')
         TVector<XkslShaderDefinition::XkslShaderMember*> listStreamVariables;
-        if (!GetListAllStreamsVariablesForTheShader(parseContext, shader, true, listStreamVariables))
+        if (!GetListAllStreamsVariablesForTheShader(parseContext, shaderLibrary, shader, listStreamVariables))
         {
             error(parseContext, "Failed to get the list of stream variables for the shader: " + shader->shaderFullName);
             return false;
@@ -3092,10 +3154,10 @@ static bool processMethodsDeclarationForMethodsOnlyGeneratedIfUsedForShader(Hlsl
             {
                 //The method has been called at least once
                 TString unknownIdentifier;
-                TString streamsMissingConversionFunctionShaderOriginal;
+                TString streamsMissingConversionFunctionShaderOrigin;
                 TString streamsMissingConversionFunctionShaderTarget;
                 bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext,
-                    unknownIdentifier, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget);
+                    unknownIdentifier, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget);
                 if (!success) return false;
 
                 if (unknownIdentifier.length() > 0)
@@ -3103,7 +3165,7 @@ static bool processMethodsDeclarationForMethodsOnlyGeneratedIfUsedForShader(Hlsl
                     return error(parseContext, "Got an unexpected unknown identifier");
                 }
 
-                if (streamsMissingConversionFunctionShaderOriginal.length() > 0 || streamsMissingConversionFunctionShaderTarget.length() > 0)
+                if (streamsMissingConversionFunctionShaderOrigin.length() > 0 || streamsMissingConversionFunctionShaderTarget.length() > 0)
                 {
                     return error(parseContext, "Got an unexpected missing Streams function conversion");
                 }
@@ -3115,7 +3177,7 @@ static bool processMethodsDeclarationForMethodsOnlyGeneratedIfUsedForShader(Hlsl
 }
 
 static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext,
-    TString& unknownIdentifier, TString& streamsMissingConversionFunctionShaderOriginal, TString& streamsMissingConversionFunctionShaderTarget)
+    TString& unknownIdentifier, TString& streamsMissingConversionFunctionShaderOrigin, TString& streamsMissingConversionFunctionShaderTarget)
 {
     unsigned int countMethods = (unsigned int)shader->listMethods.size();
     for (unsigned int i = 0; i < countMethods; ++i)
@@ -3125,7 +3187,7 @@ static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslSha
         {
             //The method body has not already been parsed
             bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext,
-                unknownIdentifier, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget);
+                unknownIdentifier, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget);
             if (!success) return false;
         }
     }
@@ -3844,7 +3906,7 @@ static bool ParseXkslShaderRecursif(
         currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::MethodsDefinitionParsed;
 
         TString unknownIdentifier;
-        TString streamsMissingConversionFunctionShaderOriginal;
+        TString streamsMissingConversionFunctionShaderOrigin;
         TString streamsMissingConversionFunctionShaderTarget;
         int counterMissingStreamsFunctionsSafetyBreak = 0;
 
@@ -3865,7 +3927,7 @@ static bool ParseXkslShaderRecursif(
                 if (shader->parsingStatus == previousProcessingOperation)
                 {
                     success = parseShaderMethodsDefinition(parseContext, shader, &shaderLibrary, ppContext,
-                        unknownIdentifier, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget);
+                        unknownIdentifier, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget);
 
                     if (success)
                     {
@@ -3878,7 +3940,7 @@ static bool ParseXkslShaderRecursif(
                             checkIfUnknownIdentifierIsAShader = true;
                             shaderMissingADependency = shader;
                         }
-                        else if (streamsMissingConversionFunctionShaderOriginal.size() > 0 && streamsMissingConversionFunctionShaderTarget.size() > 0)
+                        else if (streamsMissingConversionFunctionShaderOrigin.size() > 0 && streamsMissingConversionFunctionShaderTarget.size() > 0)
                         {
                             counterMissingStreamsFunctionsSafetyBreak++;
 
@@ -3948,9 +4010,9 @@ static bool ParseXkslShaderRecursif(
             }
             else if (generateAMissingStreamsConversionFunction)
             {
-                if (!GenerateShaderStreamsConversionFunction(parseContext, ppContext, shaderLibrary, streamsMissingConversionFunctionShaderOriginal, streamsMissingConversionFunctionShaderTarget))
+                if (!GenerateShaderStreamsConversionFunction(parseContext, ppContext, shaderLibrary, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget))
                 {
-                    error(parseContext, "Failed to generate the shader streams conversion function from:" + streamsMissingConversionFunctionShaderOriginal + " to:" + streamsMissingConversionFunctionShaderTarget);
+                    error(parseContext, "Failed to generate the shader streams conversion function from:" + streamsMissingConversionFunctionShaderOrigin + " to:" + streamsMissingConversionFunctionShaderTarget);
                     keepLooping = false;
                 }
                 else keepLooping = true;

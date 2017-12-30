@@ -400,7 +400,7 @@ bool HlslGrammar::parseXKslShaderMethodDefinition(XkslShaderLibrary* shaderLibra
 
         if (this->hasAnyErrorToBeProcessedAtTheTop() || this->isMissingStreamsConversionFunction())
         {
-            //failed due to an unknown identifier. Just return false, the error will be processed later.
+            //failed due to an unknown identifier or a missing streams conversion function. Just return false, the error will be processed later.
 
             //unset the function, in the case of we wanna try to parse its definition again later on
             if (!parseContext.unsetFunctionDefinition(declarator.loc, *declarator.function))
@@ -6435,7 +6435,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                     }
                     else
                     {
-                        //we return an error, unless we're missing a Streams conversion function
+                        //return an error, unless we're missing a Streams conversion function
                         if (isMissingStreamsConversionFunction()) {
                             return false;
                         }
@@ -7620,6 +7620,11 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement, const TAttri
 
         // foreach statement
         if (!acceptScopedStatement(statement)) {
+            //return an error, unless we're missing a Streams conversion function
+            if (isMissingStreamsConversionFunction()) {
+                return false;
+            }
+
             expected("foreach sub-statement");
             return false;
         }

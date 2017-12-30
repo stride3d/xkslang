@@ -67,7 +67,7 @@ namespace glslang {
             xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined),
             xkslShaderToParse(nullptr), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr),
             dependencyUniqueCounter(0), unknownIdentifierToProcessAtTheTop(nullptr), throwErrorWhenParsingUnidentifiedSymbol(true), shaderWhereMembersCanBeFound(nullptr),
-            parseShaderSingleMethod(false), streamsMissingConversionFunctionShaderOriginal(nullptr), streamsMissingConversionFunctionShaderTarget(nullptr),
+            parseShaderSingleMethod(false), streamsMissingConversionFunctionShaderOrigin(nullptr), streamsMissingConversionFunctionShaderTarget(nullptr),
             typeIdentifiers(false), uniqueIndex(0) { }
         virtual ~HlslGrammar() { }
 
@@ -90,11 +90,11 @@ namespace glslang {
         void resetErrorsToBeProcessedAtTheTop() { unknownIdentifierToProcessAtTheTop = nullptr; }
         bool MustThrowAnErrorWhenParsingUnidentifiedSymbol() { return throwErrorWhenParsingUnidentifiedSymbol; }
 
-        const char* getStreamsMissingConversionFunctionShaderOriginal() { return streamsMissingConversionFunctionShaderOriginal == nullptr ? nullptr : streamsMissingConversionFunctionShaderOriginal->c_str(); }
+        const char* getStreamsMissingConversionFunctionShaderOrigin() { return streamsMissingConversionFunctionShaderOrigin == nullptr ? nullptr : streamsMissingConversionFunctionShaderOrigin->c_str(); }
         const char* getStreamsMissingConversionFunctionShaderTarget() { return streamsMissingConversionFunctionShaderTarget == nullptr ? nullptr : streamsMissingConversionFunctionShaderTarget->c_str(); }
-        bool isMissingStreamsConversionFunction() { return streamsMissingConversionFunctionShaderOriginal != nullptr && streamsMissingConversionFunctionShaderTarget != nullptr; }
-        void setStreamsMissingConversionFunctionShaders(TString* shaderOriginal, TString* shaderTarget) {
-            streamsMissingConversionFunctionShaderOriginal = shaderOriginal;
+        bool isMissingStreamsConversionFunction() { return streamsMissingConversionFunctionShaderOrigin != nullptr && streamsMissingConversionFunctionShaderTarget != nullptr; }
+        void setStreamsMissingConversionFunctionShaders(TString* shaderOrigin, TString* shaderTarget) {
+            streamsMissingConversionFunctionShaderOrigin = shaderOrigin;
             streamsMissingConversionFunctionShaderTarget = shaderTarget;
         }
 
@@ -240,7 +240,7 @@ namespace glslang {
         TString* unknownIdentifierToProcessAtTheTop;          //when the parser meets an unknown identifier, in some case we want to stop parsing withouth throwing an error, and check if we can process it at the top level
         bool parseShaderSingleMethod;                         //Special case where we only parse a single, separated method (not encapsulated within a shader class)
 
-        TString* streamsMissingConversionFunctionShaderOriginal;
+        TString* streamsMissingConversionFunctionShaderOrigin;
         TString* streamsMissingConversionFunctionShaderTarget;
     };
 

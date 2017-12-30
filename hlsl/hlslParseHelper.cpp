@@ -121,9 +121,9 @@ void HlslParseContext::setLimits(const TBuiltInResource& r)
 }
 
 //Exemple: _ConvertShaderMainStreamsToShaderBaseStreams
-TString HlslParseContext::GetShaderStreamsTypeConversionFunctionName(const TString& shaderOriginalStreamsType, const TString& shaderTargetStreamsType)
+TString HlslParseContext::GetShaderStreamsTypeConversionFunctionName(const TString& shaderOriginStreamsType, const TString& shaderTargetStreamsType)
 {
-    return "_Convert" + shaderOriginalStreamsType + "StreamsTo" + shaderTargetStreamsType + "Streams";
+    return "_Convert" + shaderOriginStreamsType + "StreamsTo" + shaderTargetStreamsType + "Streams";
 }
 
 bool HlslParseContext::parseXkslShaderMethodExpression(XkslShaderLibrary* shaderLibrary, XkslShaderDefinition* currentShader, TPpContext& ppContext, TString& expressionString)
@@ -401,7 +401,7 @@ bool HlslParseContext::parseXkslShaderMethodsDeclaration(XkslShaderDefinition* s
 }
 
 bool HlslParseContext::parseXkslShaderMethodDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TShaderClassFunction* shaderMethod, TPpContext& ppContext,
-    TString& unknownIdentifier, TString& streamsMissingConversionFunctionShaderOriginal, TString& streamsMissingConversionFunctionShaderTarget)
+    TString& unknownIdentifier, TString& streamsMissingConversionFunctionShaderOrigin, TString& streamsMissingConversionFunctionShaderTarget)
 {
     //Parse a single shader method body
     TVector<HlslToken>& tokenList = shader->listTokens;
@@ -444,15 +444,15 @@ bool HlslParseContext::parseXkslShaderMethodDefinition(XkslShaderDefinition* sha
         }
     }
 
-    streamsMissingConversionFunctionShaderOriginal = "";
+    streamsMissingConversionFunctionShaderOrigin = "";
     streamsMissingConversionFunctionShaderTarget = "";
     if (grammar.isMissingStreamsConversionFunction())
     {
-        const char* pStreamsMissingConversionFunctionShaderOriginal = grammar.getStreamsMissingConversionFunctionShaderOriginal();
+        const char* pStreamsMissingConversionFunctionShaderOrigin = grammar.getStreamsMissingConversionFunctionShaderOrigin();
         const char* pStreamsMissingConversionFunctionShaderTarget = grammar.getStreamsMissingConversionFunctionShaderTarget();
-        if (pStreamsMissingConversionFunctionShaderOriginal != nullptr && pStreamsMissingConversionFunctionShaderTarget != nullptr)
+        if (pStreamsMissingConversionFunctionShaderOrigin != nullptr && pStreamsMissingConversionFunctionShaderTarget != nullptr)
         {
-            streamsMissingConversionFunctionShaderOriginal = TString(pStreamsMissingConversionFunctionShaderOriginal);
+            streamsMissingConversionFunctionShaderOrigin = TString(pStreamsMissingConversionFunctionShaderOrigin);
             streamsMissingConversionFunctionShaderTarget = TString(pStreamsMissingConversionFunctionShaderTarget);
         }
     }

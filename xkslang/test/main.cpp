@@ -207,7 +207,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestForEach02", "TestForEach02.xkfx" },
     //{ "TestForEach03", "TestForEach03.xkfx" },
     //{ "TestForEach04", "TestForEach04.xkfx" },
-    { "TestForEach05", "TestForEach05.xkfx" },
+    //{ "TestForEach05", "TestForEach05.xkfx" },
     //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
     //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
     //{ "TestForEachCompose03", "TestForEachCompose03.xkfx" },
@@ -327,7 +327,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsWithStreamsVariable08", "functionsWithStreamsVariable08.xkfx" },
     //{ "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
     //{ "functionsWithStreamsVariable10", "functionsWithStreamsVariable10.xkfx" },
-////////////////////////////{ "functionsWithStreamsVariable11", "functionsWithStreamsVariable11.xkfx" },
+    { "functionsWithStreamsVariable11", "functionsWithStreamsVariable11.xkfx" },
+    ///{ "functionsWithStreamsVariable12", "functionsWithStreamsVariable12.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },

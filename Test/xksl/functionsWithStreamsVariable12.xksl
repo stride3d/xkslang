@@ -8,7 +8,17 @@ shader TestIComposition
 	}
 };
 
-shader TestShaderMain
+shader TestShaderBase
+{
+	stage stream float3 sBase: SBASE;
+
+	void Compute(Streams s)
+	{
+		s.sBase = 1;
+	}
+}
+
+shader TestShaderMain: TestShaderBase
 {
 	stage stream float3 sMain: SMAIN;
 
@@ -17,6 +27,8 @@ shader TestShaderMain
 	override void Compute(Streams s)
 	{
 		s.sMain = 2;
+		base.Compute(s);
+		
 		var backup = streams;
 		foreach(var blendStep in blends)
 		{
@@ -27,5 +39,10 @@ shader TestShaderMain
 	void VSMain()
 	{
 		Compute(streams);
+	}
+	
+	void PSMain()
+	{
+		//Compute(streams);
 	}
 }
