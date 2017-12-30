@@ -2894,6 +2894,9 @@ bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>&
 
     //We build the hashmap table for all types and consts
     //except for OpTypeXlslShaderClass types: (this type is only informational, never used as a type or result)
+
+#ifdef BUILD_BY_PARSING_THE_BYTECODE
+    //Build the hasmmap by analysing the bytecode
     unsigned int start = header_size;
     const unsigned int end = (unsigned int)spv.size();
     while (start < end)
@@ -2918,7 +2921,7 @@ bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>&
             }
             else if (opCode == spv::OpFunction)
             {
-                break; //no more consts after this point
+                break; //no more type or consts after this point
             }
         }
 
@@ -2926,22 +2929,49 @@ bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>&
         {
             uint32_t hashval = hashType(start);
 
-#ifdef XKSLANG_DEBUG_MODE
-            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
-            if (mapHashPos.find(hashval) != mapHashPos.end())
-            {
-                // Warning: might cause some conflicts sometimes?
-                //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
-                id = spvUndefinedId;  //by precaution we invalidate the id: we cannot choose between them
-                //hashval = hashType(start);
-            }
-#endif
+            //We don't check for type collision for now (can have some side-effect to merge same structures with different names while having the same layout)
+///#ifdef XKSLANG_DEBUG_MODE
+///            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
+///            if (mapHashPos.find(hashval) != mapHashPos.end())
+///            {
+///                // Warning: might cause some conflicts sometimes?
+///                //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
+///                id = spvUndefinedId;  //by precaution we invalidate the id: we cannot choose between them
+///                //hashval = hashType(start);
+///            }
+///#endif
 
             mapHashPos[hashval] = pairIdPos(id, start);
         }
 
         start += wordCount;
     }
+#else
+    //Build the hasmmap by analysing our list of pre-built objects
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && (obj->GetKind() == ObjectInstructionTypeEnum::Const || obj->GetKind() == ObjectInstructionTypeEnum::Type))
+        {
+            const spv::Id id = obj->GetId();
+            const unsigned int start = obj->GetBytecodeStartPosition();
+            uint32_t hashval = hashType(start);
+
+            //We don't check for type collision for now (can have some side-effect to merge same structures with different names while having the same layout)
+///#ifdef XKSLANG_DEBUG_MODE
+            ///            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
+            ///            if (mapHashPos.find(hashval) != mapHashPos.end())
+            ///            {
+            ///                // Warning: might cause some conflicts sometimes?
+            ///                //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
+            ///                id = spvUndefinedId;  //by precaution we invalidate the id: we cannot choose between them
+            ///                //hashval = hashType(start);
+            ///            }
+///#endif
+            mapHashPos[hashval] = pairIdPos(id, start);
+        }
+    }
+#endif
 
     return true;
 }

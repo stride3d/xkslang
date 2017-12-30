@@ -307,8 +307,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
                         if (idOfSameTypeFromDestinationBytecode == spvUndefinedId)
                         { 
-                            //Do nothing: we will copy the type
-                            //return error("Merge shaders. hashmap refers to an invalid Id");
+                            return error("Merge shaders. hashmap refers to an invalid Id");
                         }
                         else
                         {
