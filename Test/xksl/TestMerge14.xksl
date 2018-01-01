@@ -1,0 +1,39 @@
+shader ShaderBase
+{
+	struct sBase1
+	{
+		int i;
+	};
+	
+	struct sBase2
+	{
+		int i;
+	};
+	
+	void ComputeBase(sBase1 s1, sBase2 s2)
+	{
+		int i = s1.i + s2.i;
+	}
+}
+
+shader ShaderA: ShaderBase
+{
+	struct sShaderA
+	{
+		int i;
+	};
+	
+	void Compute(sShaderA s)
+	{
+		sBase1 sb1 = {s.i};
+		sBase2 sb2 = {s.i};
+		ComputeBase(sb1, sb2);
+		int i = s.i;
+	}
+	
+	void VSMain()
+	{
+		sShaderA s = {1};
+		Compute(s);
+	}
+}

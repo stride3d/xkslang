@@ -1,0 +1,11 @@
+//Test merging shader types only (no function declaration)
+
+convertAndLoad "TestMerge14.xksl"
+
+mixer A
+A.mixin( ShaderBase )
+A.mixin( ShaderA )
+
+A.compile()
+
+

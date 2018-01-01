@@ -160,6 +160,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge11", "TestMerge11.xkfx" },
     //{ "TestMerge12", "TestMerge12.xkfx" },
     //{ "TestMerge13", "TestMerge13.xkfx" },
+    { "TestMerge14", "TestMerge14.xkfx" },
     
     //{ "TestConsts01", "TestConsts01.xkfx" },
     //{ "TestConsts02", "TestConsts02.xkfx" },
@@ -327,8 +328,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsWithStreamsVariable08", "functionsWithStreamsVariable08.xkfx" },
     //{ "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
     //{ "functionsWithStreamsVariable10", "functionsWithStreamsVariable10.xkfx" },
-    //{ "functionsWithStreamsVariable11", "functionsWithStreamsVariable11.xkfx" },
-    //{ "functionsWithStreamsVariable12", "functionsWithStreamsVariable12.xkfx" },
+////////////////////{ "functionsWithStreamsVariable11", "functionsWithStreamsVariable11.xkfx" },  put all customs type as q type belonging to a shader (and not have them to merge) ?
+////////////////////{ "functionsWithStreamsVariable12", "functionsWithStreamsVariable12.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
@@ -368,14 +369,14 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "RadiancePrefilteringGGXNoCompute", "RadiancePrefilteringGGXNoCompute.xkfx" },
     //{ "IMaterialStreamBlend", "IMaterialStreamBlend.xkfx" },
     //{ "MaterialSurfaceStreamsBlend", "MaterialSurfaceStreamsBlend.xkfx" },
-    { "MaterialStreamLinearBlend", "MaterialStreamLinearBlend.xkfx" },
+    //{ "MaterialStreamLinearBlend", "MaterialStreamLinearBlend.xkfx" },
     
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
-//////////////{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
+/////////////////////{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
 };
 
 enum class ShaderLanguageEnum
