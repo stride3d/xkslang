@@ -2684,83 +2684,6 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
         }
     }
 
-    //Create the shader Streams struct type (used when using Streams type)
-    {
-        //Get the shader list of stream variables (plus its parents')
-        TVector<XkslShaderDefinition::XkslShaderMember*> listStreamVariables;
-        if (!GetListAllStreamsVariablesForTheShader(parseContext, shaderLibrary, shader, listStreamVariables))
-        {
-            error(parseContext, "Failed to get the list of stream variables for the shader: " + shader->shaderFullName);
-            return false;
-        }
-
-        TSourceLoc loc; loc.init();
-
-        //if (listStreamVariables.size() > 0)
-        {
-            TTypeList* streamsStructMemberList = new TTypeList();
-            TString streamsStructName = "Streams";  //name of the generated streams struct custom-type (Streams keyword will then refer to this new type)
-            TString streamsGetMethodName = "_getStreams";  //name of the method returning the streams
-            TString streamsSetMethodName = "_setStreams";  //name of the method setting the streams
-            TString streamStructToStreamsVariables_StreamsVariableName = "_s";
-            TString streamsVariableNamePlusEqualPlusDot = TString("=") + streamStructToStreamsVariables_StreamsVariableName + ".";
-            
-            TString streamStructTypeName = streamsStructName;
-            TString streamStructAssignmentExpression = "{";
-            TString streamStructToStreamsVariablesExpression = "";
-            int countStreamVariables = (int)listStreamVariables.size();
-            for (int i = 0; i < countStreamVariables; ++i)
-            {
-                XkslShaderDefinition::XkslShaderMember* streamMember = listStreamVariables[i];
-
-                const TString& memberName = *(streamMember->memberLocation.memberName);
-                streamStructAssignmentExpression += "streams." + memberName + ", ";
-                streamStructToStreamsVariablesExpression += "streams." + memberName + streamsVariableNamePlusEqualPlusDot + memberName + ";";
-
-                //Only keep the type's base attributes
-                TType* memberType = new TType(EbtVoid);
-                memberType->shallowCopyBase(*(streamMember->type));
-                memberType->getQualifier().clear();
-
-                TTypeLoc typeLoc = { memberType, streamMember->loc };
-                streamsStructMemberList->push_back(typeLoc);
-            }
-
-            //We add an unused member at the end of the struct: to allow the case where there is no Streams variables within the shader
-            {
-                TType* unusedMemberType = new TType(EbtInt);
-                unusedMemberType->setFieldName("_unused");
-                TTypeLoc typeLoc = { unusedMemberType, loc };
-                streamsStructMemberList->push_back(typeLoc);
-
-                streamStructAssignmentExpression += "0}";
-            }
-
-            TType* streamsStructType = new TType(streamsStructMemberList, streamsStructName);   //struct type
-            streamsStructType->getQualifier().storage = EvqTemporary;
-            streamsStructType->SetStreamsTypeProperties(new TStreamsTypeProperties(shader->shaderFullName, false, true));
-
-            streamsStructType->setUserIdentifierName(streamsStructName.c_str());
-            TString* newTypeName = NewPoolTString((shader->shaderFullName + "_" + streamsStructName).c_str());
-            streamsStructType->setTypeName(newTypeName->c_str());
-
-            //Setup the stream structure information
-            shader->streamsTypeInfo.StreamStructureType = streamsStructType;
-            shader->streamsTypeInfo.StreamStructTypeName = streamStructTypeName;
-            shader->streamsTypeInfo.StreamStructAssignmentExpression = streamStructAssignmentExpression;
-            shader->streamsTypeInfo.StreamStructToStreamsVariablesExpression = streamStructToStreamsVariablesExpression;
-            shader->streamsTypeInfo.StreamStructToStreamsVariables_StreamsVariableName = streamStructToStreamsVariables_StreamsVariableName;
-            shader->streamsTypeInfo.StreamGetterMethodName = streamsGetMethodName;
-            shader->streamsTypeInfo.StreamSetterMethodName = streamsSetMethodName;
-
-            //Add the struct type into the shader list of custom types (so that the parser can directly refer to it)
-            streamsStructType->SetTypeAsDefinedByShader(true);
-            TType* customType = new TType(EbtVoid);
-            customType->shallowCopy(*streamsStructType);
-            shader->listCustomTypes.push_back(XkslShaderDefinition::ShaderCustomTypeInformation(streamsStructName, customType));
-        }
-    }
-
     //Add a shaderClass variable (EbtShaderClass type), so that it will belongs to the AST and we can add its properties into the SPIRX bytecode
     {
         TQualifier qualifier;
@@ -2795,6 +2718,87 @@ static bool ProcessDeclarationOfMembersForShader(XkslShaderLibrary& shaderLibrar
         }
     }
 
+    return true;
+}
+
+bool CreateStreamsStructAndMethodsForShader(XkslShaderLibrary& shaderLibrary, XkslShaderDefinition* shader, HlslParseContext* parseContext)
+{
+    ///Create the shader Streams struct type (used when using Streams type)
+
+    //Get the shader list of stream variables (plus its parents')
+    TVector<XkslShaderDefinition::XkslShaderMember*> listStreamVariables;
+    if (!GetListAllStreamsVariablesForTheShader(parseContext, shaderLibrary, shader, listStreamVariables))
+    {
+        error(parseContext, "Failed to get the list of stream variables for the shader: " + shader->shaderFullName);
+        return false;
+    }
+
+    TSourceLoc loc; loc.init();
+
+    //if (listStreamVariables.size() > 0)
+    {
+        TTypeList* streamsStructMemberList = new TTypeList();
+        TString streamsStructName = "Streams";  //name of the generated streams struct custom-type (Streams keyword will then refer to this new type)
+        TString streamsGetMethodName = "_getStreams";  //name of the method returning the streams
+        TString streamsSetMethodName = "_setStreams";  //name of the method setting the streams
+        TString streamStructToStreamsVariables_StreamsVariableName = "_s";
+        TString streamsVariableNamePlusEqualPlusDot = TString("=") + streamStructToStreamsVariables_StreamsVariableName + ".";
+
+        TString streamStructTypeName = streamsStructName;
+        TString streamStructAssignmentExpression = "{";
+        TString streamStructToStreamsVariablesExpression = "";
+        int countStreamVariables = (int)listStreamVariables.size();
+        for (int i = 0; i < countStreamVariables; ++i)
+        {
+            XkslShaderDefinition::XkslShaderMember* streamMember = listStreamVariables[i];
+
+            const TString& memberName = *(streamMember->memberLocation.memberName);
+            streamStructAssignmentExpression += "streams." + memberName + ", ";
+            streamStructToStreamsVariablesExpression += "streams." + memberName + streamsVariableNamePlusEqualPlusDot + memberName + ";";
+
+            //Only keep the type's base attributes
+            TType* memberType = new TType(EbtVoid);
+            memberType->shallowCopyBase(*(streamMember->type));
+            memberType->getQualifier().clear();
+
+            TTypeLoc typeLoc = { memberType, streamMember->loc };
+            streamsStructMemberList->push_back(typeLoc);
+        }
+
+        //We add an unused member at the end of the struct: to allow the case where there is no Streams variables within the shader
+        {
+            TType* unusedMemberType = new TType(EbtInt);
+            unusedMemberType->setFieldName("_unused");
+            TTypeLoc typeLoc = { unusedMemberType, loc };
+            streamsStructMemberList->push_back(typeLoc);
+
+            streamStructAssignmentExpression += "0}";
+        }
+
+        TType* streamsStructType = new TType(streamsStructMemberList, streamsStructName);   //struct type
+        streamsStructType->getQualifier().storage = EvqTemporary;
+        streamsStructType->SetStreamsTypeProperties(new TStreamsTypeProperties(shader->shaderFullName, false, true));
+
+        streamsStructType->setUserIdentifierName(streamsStructName.c_str());
+        TString* newTypeName = NewPoolTString((shader->shaderFullName + "_" + streamsStructName).c_str());
+        streamsStructType->setTypeName(newTypeName->c_str());
+
+        //Setup the stream structure information
+        shader->streamsTypeInfo.StreamStructureType = streamsStructType;
+        shader->streamsTypeInfo.StreamStructTypeName = streamStructTypeName;
+        shader->streamsTypeInfo.StreamStructAssignmentExpression = streamStructAssignmentExpression;
+        shader->streamsTypeInfo.StreamStructToStreamsVariablesExpression = streamStructToStreamsVariablesExpression;
+        shader->streamsTypeInfo.StreamStructToStreamsVariables_StreamsVariableName = streamStructToStreamsVariables_StreamsVariableName;
+        shader->streamsTypeInfo.StreamGetterMethodName = streamsGetMethodName;
+        shader->streamsTypeInfo.StreamSetterMethodName = streamsSetMethodName;
+
+        //Add the struct type into the shader list of custom types (so that the parser can directly refer to it)
+        streamsStructType->SetTypeAsDefinedByShader(true);
+        TType* customType = new TType(EbtVoid);
+        customType->shallowCopy(*streamsStructType);
+        shader->listCustomTypes.push_back(XkslShaderDefinition::ShaderCustomTypeInformation(streamsStructName, customType));
+    }
+    
     return true;
 }
 
@@ -3626,7 +3630,7 @@ static bool ParseXkslShaderRecursif(
                                 shaderNameToParse,
                                 shaderData,
                                 nullptr,
-                                XkslShaderDefinition::ShaderParsingStatusEnum::MembersDeclarationRegistered, //have new shaders catch up until this process,
+                                XkslShaderDefinition::ShaderParsingStatusEnum::ConstsRegistered, //have new shaders catch up until this process,
                                 parseContext,
                                 ppContext,
                                 infoSink,
@@ -3815,6 +3819,35 @@ static bool ParseXkslShaderRecursif(
                 success = ProcessDeclarationOfMembersForShader(shaderLibrary, shader, parseContext);
                 if (!success) {
                     error(parseContext, "Failed to process the declaration of all shader members and methods for the shader: " + shader->shaderFullName);
+                    break;
+                }
+            }
+        }
+
+        if (processUntilOperation == currentProcessingOperation) return success;
+    }
+
+    //==================================================================================================================
+    //==================================================================================================================
+    //Create the Streams struct and methods
+    if (success)
+    {
+        previousProcessingOperation = currentProcessingOperation;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::StreamsStructAndMethodsGenerated;
+
+        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        {
+            XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
+
+            if (shader->parsingStatus == previousProcessingOperation)
+            {
+                shader->parsingStatus = currentProcessingOperation;
+
+                success = CreateStreamsStructAndMethodsForShader(shaderLibrary, shader, parseContext);
+                if (!success) {
+                    error(parseContext, "Failed to create the Streams struct and methods for the shader: " + shader->shaderFullName);
                     break;
                 }
             }
