@@ -2825,7 +2825,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     //========================================================================================================
     // XKSL extensions: add info to all type defined within a shader
     {
-        if (!type.IsTypeDefinedByShader())
+        //if (!type.IsShaderCustomType())
         {
             if (type.getUserIdentifierName() != nullptr)
             {
@@ -2842,7 +2842,9 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
                         logger->error(std::string("The type shader owner has not been created: ") + shaderName);
                 }
                 else
+                {
                     builder.addBelongToShaderDecoration(fit->second, spvType);
+                }
             }
         }
     }
@@ -3345,7 +3347,9 @@ void TGlslangToSpvTraverser::makeFunctions(const glslang::TIntermSequence& glslF
                         logger->error(std::string("The function's shader owner has not been created: ") + shaderName);
                 }
                 else
+                {
                     builder.addBelongToShaderDecoration(fit->second, function->getId());
+                }
             }
             std::vector<int> vecAttributes;
             if (functionType.getQualifier().isStage){

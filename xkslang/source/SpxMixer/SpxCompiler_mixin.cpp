@@ -2953,21 +2953,28 @@ bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>&
         ObjectInstructionBase* obj = *it;
         if (obj != nullptr && (obj->GetKind() == ObjectInstructionTypeEnum::Const || obj->GetKind() == ObjectInstructionTypeEnum::Type))
         {
-            const spv::Id id = obj->GetId();
+            spv::Id id = obj->GetId();
             const unsigned int start = obj->GetBytecodeStartPosition();
             uint32_t hashval = hashType(start);
 
+            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
             //We don't check for type collision for now (can have some side-effect to merge same structures with different names while having the same layout)
-///#ifdef XKSLANG_DEBUG_MODE
-            ///            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
-            ///            if (mapHashPos.find(hashval) != mapHashPos.end())
-            ///            {
-            ///                // Warning: might cause some conflicts sometimes?
-            ///                //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
-            ///                id = spvUndefinedId;  //by precaution we invalidate the id: we cannot choose between them
-            ///                //hashval = hashType(start);
-            ///            }
-///#endif
+//#ifdef XKSLANG_DEBUG_MODE
+            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
+            if (mapHashPos.find(hashval) != mapHashPos.end())
+            {
+                // Warning: might cause some conflicts sometimes?
+                //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
+                id = spvUndefinedId;  //by precaution we invalidate the id: we cannot choose between them
+            }
+//#endif
             mapHashPos[hashval] = pairIdPos(id, start);
         }
     }
@@ -3232,6 +3239,17 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
                         if (typePointer == nullptr) { error("cannot find the pointer type to the shader type: " + type->GetName()); break; }
                         if (variable == nullptr) { error("cannot find the variable for shader type: " + type->GetName()); break; }
+
+                        //For Shader types: those are the only acceptable type's variable's storage class
+                        spv::StorageClass variableStorageClass = (spv::StorageClass)asLiteralValue(variable->GetBytecodeStartPosition() + 3);
+                        if (variableStorageClass != spv::StorageClass::StorageClassPrivate
+                            && variableStorageClass != spv::StorageClass::StorageClassUniform
+                            && variableStorageClass != spv::StorageClass::StorageClassUniformConstant)
+                        {
+                            error("The shader variable type has an invalid storage class for: " + type->GetName());
+                            break;
+                        }
+
 #ifdef XKSLANG_DEBUG_MODE
                         if (type->GetShaderOwner() != nullptr) { error("The type already has a shader owner: " + type->GetName()); break; }
                         if (typePointer->GetShaderOwner() != nullptr) { error("The typePointer already has a shader owner: " + typePointer->GetName()); break; }
@@ -3649,6 +3667,8 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
     spv::Id fnTypeId = spv::NoResult;
     spv::Op fnOpCode;
 
+    bool parseFunctionsInstructions = false;
+
     unsigned int start = header_size;
     const unsigned int end = (unsigned int)spv.size();
     while (start < end)
@@ -3673,49 +3693,59 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
             idPosR[resultId] = start;
         }
 
-        //if (opCode == spv::Op::OpName)
-        //{
-        //    const spv::Id target = asId(start + 1);
-        //    if (mapDeclarationName.find(target) == mapDeclarationName.end())
-        //    {
-        //        const string name = literalString(start + 2);
-        //        mapDeclarationName[target] = name;
-        //    }
-        //}
-        //else
-        if (opCode == spv::Op::OpDeclarationName)
+        if (!parseFunctionsInstructions)
         {
-            const spv::Id target = asId(start + 1);
-            const string  name = literalString(start + 2);
-            mapDeclarationName[target] = name;
-        }
-        else if (isConstOp(opCode))
-        {
-            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Const, opCode, resultId, typeId, start, instructionEnd));
-        }
-        else if (isTypeOp(opCode))
-        {
-            if (opCode == spv::OpTypeXlslShaderClass)
+            //if (opCode == spv::Op::OpName)
+            //{
+            //    const spv::Id target = asId(start + 1);
+            //    if (mapDeclarationName.find(target) == mapDeclarationName.end())
+            //    {
+            //        const string name = literalString(start + 2);
+            //        mapDeclarationName[target] = name;
+            //    }
+            //}
+            //else
+            if (opCode == spv::Op::OpDeclarationName)
             {
-                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Shader, opCode, resultId, typeId, start, instructionEnd));
+                const spv::Id target = asId(start + 1);
+                const string  name = literalString(start + 2);
+                mapDeclarationName[target] = name;
             }
-            else
+            else if (isConstOp(opCode))
             {
-                ParsedObjectData data = ParsedObjectData(ObjectInstructionTypeEnum::Type, opCode, resultId, typeId, start, instructionEnd);
-                if (isPointerTypeOp(opCode))
+                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Const, opCode, resultId, typeId, start, instructionEnd));
+            }
+            else if (isTypeOp(opCode))
+            {
+                if (opCode == spv::OpTypeXlslShaderClass)
                 {
-                    spv::Id targetId = asId(start + 3);
-                    data.SetTargetId(targetId);
+                    listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Shader, opCode, resultId, typeId, start, instructionEnd));
                 }
-                listParsedObjectsData.push_back(data);
+                else
+                {
+                    ParsedObjectData data = ParsedObjectData(ObjectInstructionTypeEnum::Type, opCode, resultId, typeId, start, instructionEnd);
+                    if (isPointerTypeOp(opCode))
+                    {
+                        spv::Id targetId = asId(start + 3);
+                        data.SetTargetId(targetId);
+                    }
+                    listParsedObjectsData.push_back(data);
+                }
+            }
+            else if (opCode == spv::Op::OpExtInstImport)
+            {
+                listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::HeaderProperty, opCode, resultId, typeId, start, instructionEnd));
             }
         }
-        else if (isVariableOp(opCode))
+
+        if (isVariableOp(opCode))
         {
             listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Variable, opCode, resultId, typeId, start, instructionEnd));
         }
-        else if (opCode == spv::Op::OpFunction)
+        if (opCode == spv::Op::OpFunction)
         {
+            parseFunctionsInstructions = true;
+
             if (fnStart != 0) { error("nested function found"); break; }
             fnStart = start;
             fnTypeId = typeId;
@@ -3728,10 +3758,6 @@ bool SpxCompiler::BuildDeclarationNameMapsAndObjectsDataList(vector<ParsedObject
             if (fnResId == spv::NoResult) { error("function has no result iD"); break; }
             listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::Function, fnOpCode, fnResId, fnTypeId, fnStart, instructionEnd));
             fnStart = 0;
-        }
-        else if (opCode == spv::Op::OpExtInstImport)
-        {
-            listParsedObjectsData.push_back(ParsedObjectData(ObjectInstructionTypeEnum::HeaderProperty, opCode, resultId, typeId, start, instructionEnd));
         }
 
         start += wordCount;
@@ -4013,6 +4039,11 @@ SpxCompiler::TypeInstruction* SpxCompiler::GetTypePointerPointingTo(spv::Storage
                 {
                     if (res != nullptr) error("found 2 types pointing to the same type");
                     res = aType;
+
+#ifndef XKSLANG_DEBUG_MODE
+                    //in release: immediatly return without checking for duplicata
+                    return res;
+#endif
                 }
             }
         }
@@ -4039,6 +4070,41 @@ SpxCompiler::TypeInstruction* SpxCompiler::GetTypePointerPointingTo(TypeInstruct
 
                 if (res != nullptr) error("found 2 types pointing to the same type");
                 res = aType;
+
+#ifndef XKSLANG_DEBUG_MODE
+                //in release: immediatly return without checking for duplicata
+                return res;
+#endif
+            }
+        }
+    }
+    return res;
+}
+
+SpxCompiler::VariableInstruction* SpxCompiler::GetVariablePointingTo(spv::StorageClass storageType, TypeInstruction* targetType)
+{
+    if (targetType == nullptr) return nullptr;
+
+    VariableInstruction* res = nullptr;
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable)
+        {
+            VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+            if (variable->GetTypePointed() == targetType)
+            {
+                spv::StorageClass pointerStorageClass = (spv::StorageClass)asLiteralValue(variable->GetBytecodeStartPosition() + 3);
+                if (pointerStorageClass == storageType)
+                {
+                    if (res != nullptr) error("found 2 variables pointing to the same type");
+                    res = variable;
+
+#ifndef XKSLANG_DEBUG_MODE
+                    //in release: immediatly return without checking for duplicata
+                    return res;
+#endif
+                }
             }
         }
     }
@@ -4060,6 +4126,11 @@ SpxCompiler::VariableInstruction* SpxCompiler::GetVariablePointingTo(TypeInstruc
             {
                 if (res != nullptr) error("found 2 variables pointing to the same type");
                 res = variable;
+
+#ifndef XKSLANG_DEBUG_MODE
+                //in release: immediatly return without checking for duplicata
+                return res;
+#endif
             }
         }
     }

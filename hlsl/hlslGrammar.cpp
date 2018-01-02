@@ -4232,7 +4232,7 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                             error("A shader custom type has no name"); return false;
                         }
 
-                        declaredType.SetTypeAsDefinedByShader(true);
+                        declaredType.SetIsShaderCustomType(true);
                         TType* customType = new TType(EbtVoid);
                         customType->shallowCopy(declaredType);
                         const TString& customTypeName = *(declaredType.getTypeNamePtr());

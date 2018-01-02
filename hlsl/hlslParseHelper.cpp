@@ -8860,7 +8860,7 @@ void HlslParseContext::declareBlock(const TSourceLoc& loc, TType& type, const TS
     if (type.getParentsName() != nullptr) blockType.SetParentsName(type.getParentsName());
     if (type.getCompositionsList() != nullptr) blockType.SetCompositionsList(type.getCompositionsList());
     blockType.SetCbufferType(type.GetCbufferType());
-    blockType.SetTypeAsDefinedByShader(type.IsTypeDefinedByShader());
+    blockType.SetIsShaderCustomType(type.IsShaderCustomType());
 
     // Add the variable, as anonymous or named instanceName.
     // Make an anonymous variable if no name was provided.

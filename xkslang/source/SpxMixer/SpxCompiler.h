@@ -976,6 +976,7 @@ private:
     TypeInstruction* GetTypePointerPointingTo(TypeInstruction* targetType);
     TypeInstruction* GetTypePointerPointingTo(spv::StorageClass storageType, TypeInstruction* targetType);
     VariableInstruction* GetVariablePointingTo(TypeInstruction* targetType);
+    VariableInstruction* GetVariablePointingTo(spv::StorageClass storageType, TypeInstruction* targetType);
     HeaderPropertyInstruction* GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const std::string& name);
     ShaderCompositionDeclaration* GetCompositionDeclaration(spv::Id shaderId, int compositionId);
     FunctionInstruction* GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const std::string& name);

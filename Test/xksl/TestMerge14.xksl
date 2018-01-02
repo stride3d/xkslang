@@ -1,5 +1,7 @@
 shader ShaderBase
 {
+	stage stream int streamBase: STREAMBASE;
+	
 	struct sBase1
 	{
 		int i;
@@ -12,12 +14,14 @@ shader ShaderBase
 	
 	void ComputeBase(sBase1 s1, sBase2 s2)
 	{
-		int i = s1.i + s2.i;
+		streams.streamBase = s1.i + s2.i;
 	}
 }
 
 shader ShaderA: ShaderBase
 {
+	stage stream int streamA: STREAMA;
+	
 	struct sShaderA
 	{
 		int i;
@@ -28,7 +32,8 @@ shader ShaderA: ShaderBase
 		sBase1 sb1 = {s.i};
 		sBase2 sb2 = {s.i};
 		ComputeBase(sb1, sb2);
-		int i = s.i;
+		
+		streams.streamA = 1;
 	}
 	
 	void VSMain()

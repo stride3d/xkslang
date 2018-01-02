@@ -2793,7 +2793,7 @@ bool CreateStreamsStructAndMethodsForShader(XkslShaderLibrary& shaderLibrary, Xk
         shader->streamsTypeInfo.StreamSetterMethodName = streamsSetMethodName;
 
         //Add the struct type into the shader list of custom types (so that the parser can directly refer to it)
-        streamsStructType->SetTypeAsDefinedByShader(true);
+        streamsStructType->SetIsShaderCustomType(true);
         TType* customType = new TType(EbtVoid);
         customType->shallowCopy(*streamsStructType);
         shader->listCustomTypes.push_back(XkslShaderDefinition::ShaderCustomTypeInformation(streamsStructName, customType));
@@ -3849,6 +3849,14 @@ static bool ParseXkslShaderRecursif(
                 if (!success) {
                     error(parseContext, "Failed to create the Streams struct and methods for the shader: " + shader->shaderFullName);
                     break;
+                }
+
+                //link all custom types with the shader that defined them
+                int countCustomTypes = (int)(shader->listCustomTypes.size());
+                for (int i = 0; i < countCustomTypes; ++i)
+                {
+                    TType* type = shader->listCustomTypes[i].customType;
+                    type->setOwnerClassName(shader->shaderFullName.c_str());
                 }
             }
         }
