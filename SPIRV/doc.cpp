@@ -1298,6 +1298,7 @@ const char* OpcodeString(int op)
     case (OpLogicalGroupName):                          return "OpLogicalGroupName";
     case (OpShaderInheritance):                         return "OpShaderInheritance";
     case (OpBelongsToShader):                           return "OpBelongsToShader";
+    case (OpShaderCustomType):                          return "OpShaderCustomType";
     case (OpMethodProperties):                          return "OpMethodProperties";
     case (OpMemberProperties):                          return "OpMemberProperties";
     case (OpMemberAttribute):                           return "OpMemberAttribute";
@@ -1460,6 +1461,7 @@ void Parameterize()
     InstructionDesc[OpLogicalGroupName].setResultAndType(false, false);
     InstructionDesc[OpShaderInheritance].setResultAndType(false, false);
     InstructionDesc[OpBelongsToShader].setResultAndType(false, false);
+    InstructionDesc[OpShaderCustomType].setResultAndType(false, false);
     InstructionDesc[OpShaderCompositionDeclaration].setResultAndType(false, false);
     InstructionDesc[OpShaderCompositionInstance].setResultAndType(false, false);
     InstructionDesc[OpShaderInstancingPathItem].setResultAndType(false, false);
@@ -2003,6 +2005,9 @@ void Parameterize()
     
     InstructionDesc[OpBelongsToShader].operands.push(OperandId, "'Shader'");
     InstructionDesc[OpBelongsToShader].operands.push(OperandId, "'Object'");
+
+    InstructionDesc[OpShaderCustomType].operands.push(OperandId, "'Shader'");
+    InstructionDesc[OpShaderCustomType].operands.push(OperandId, "'Object'");
     
     InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandId, "'ShaderOwnerId'");
     InstructionDesc[OpShaderCompositionDeclaration].operands.push(OperandLiteralNumber, "'CompNum'");

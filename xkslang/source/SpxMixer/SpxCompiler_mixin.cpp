@@ -573,6 +573,7 @@ bool SpxCompiler::RemoveShaderTypeFromBytecodeAndData(ShaderTypeData* shaderType
                 case spv::OpShaderCompositionInstance:
                 case spv::OpShaderInstancingPathItem:
                 case spv::OpBelongsToShader:
+                case spv::OpShaderCustomType:
                 case spv::OpMethodProperties:
                 case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
@@ -721,6 +722,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
                 case spv::OpShaderCompositionInstance:
                 case spv::OpShaderInstancingPathItem:
                 case spv::OpBelongsToShader:
+                case spv::OpShaderCustomType:
                 case spv::OpMethodProperties:
                 case spv::OpGSMethodProperties:
                 case spv::OpMemberProperties:
@@ -1331,6 +1333,7 @@ bool SpxCompiler::RemoveAllUnusedFunctionsAndMembers(vector<XkslMixerOutputStage
 				case spv::OpShaderCompositionInstance:
                 case spv::OpShaderInstancingPathItem:
 				case spv::OpBelongsToShader:
+                case spv::OpShaderCustomType:
 				case spv::OpMethodProperties:
 				case spv::OpGSMethodProperties:
 				case spv::OpMemberProperties:
@@ -2191,6 +2194,7 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
                 break;
             }
             case spv::OpBelongsToShader:
+            case spv::OpShaderCustomType:
             case spv::OpDeclarationName:
             case spv::OpTypeXlslShaderClass:
             case spv::OpShaderInheritance:
@@ -3199,6 +3203,11 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 if (!vectorIdsToDecorate[typeId]) break;
                 vectorInstructionsToProcessAtTheEnd.push_back(start);
                 break;
+            }
+
+            case spv::OpShaderCustomType:
+            {
+                error("PROUT PROUT Custom type"); return nullptr;
             }
 
             case spv::Op::OpBelongsToShader:

@@ -537,6 +537,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 }
 
                 case spv::OpBelongsToShader:
+                case spv::OpShaderCustomType:
                 case spv::OpShaderInheritance:
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
@@ -666,6 +667,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case spv::OpDeclarationName:
                 case spv::OpShaderInheritance:
                 case spv::OpBelongsToShader:
+                case spv::OpShaderCustomType:
                 case spv::OpShaderCompositionDeclaration:
                 case spv::OpShaderCompositionInstance:
                 case spv::OpShaderInstancingPathItem:

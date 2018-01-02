@@ -975,6 +975,14 @@ void Builder::addMemberName(Id id, int memberNumber, const char* string)
     names.push_back(std::unique_ptr<Instruction>(name));
 }
 
+void Builder::addShaderCustomTypeDecoration(Id shaderId, Id objectId)
+{
+    Instruction* dec = new Instruction(OpShaderCustomType);
+    dec->addIdOperand(shaderId);
+    dec->addIdOperand(objectId);
+    xkslDecorations.push_back(std::unique_ptr<Instruction>(dec));
+}
+
 void Builder::addBelongToShaderDecoration(Id shaderId, Id objectId)
 {
     Instruction* dec = new Instruction(OpBelongsToShader);

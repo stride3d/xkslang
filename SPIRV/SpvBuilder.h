@@ -241,6 +241,7 @@ public:
     void createForEachStartLoopLabel(Id shaderId, int compositionIndex);
     void createForEachEndLoopLabel();
     void addBelongToShaderDecoration(Id, Id);
+    void addShaderCustomTypeDecoration(Id, Id);
     void addDeclarationNameDecoration(Id, const char* name);
     void addShaderInheritanceDecoration(Id, std::vector<spv::Id>&);
     void addShaderCompositionDecoration(Id shaderId, int index, Id shaderTypeId, const char* variableName, bool isStage, bool isArray);

@@ -1050,6 +1050,7 @@ enum Op {
 
     OpForEachCompositionStartLoop = 5620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
     OpForEachCompositionEndLoop = 56021,
+    OpShaderCustomType = 56022,              //Defines a shader custom type
 
     OpFunctionCallBaseUnresolved = 5630,                 //an unresolved function call with base accessor
     OpFunctionCallBaseResolved = 5631,                   //a resolved function call with base accessor
