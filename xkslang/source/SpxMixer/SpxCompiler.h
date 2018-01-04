@@ -197,6 +197,8 @@ public:
         unsigned int bytecodeStartPosition;
         unsigned int bytecodeEndPosition;
 
+        int tmpFlag;
+
         friend class SpxCompiler;
     };
 
@@ -305,20 +307,25 @@ public:
     public:
         TypeInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : ObjectInstructionBase(parsedData, name, source),
-            arrayStride(0), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), isCBuffer(false), cbufferData(nullptr) {}
+            arrayStride(0), pointerTo(nullptr), streamStructData(nullptr), connectedShaderTypeData(nullptr), isCBuffer(false), cbufferData(nullptr), isShaderCustomType(false) {}
+
         virtual ~TypeInstruction() {
             if (cbufferData != nullptr) delete cbufferData;
         }
+
         virtual ObjectInstructionBase* CloneBasicData() {
             TypeInstruction* obj = new TypeInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->arrayStride = arrayStride;
             obj->isCBuffer = isCBuffer;
+            obj->isShaderCustomType = isShaderCustomType;
             if (cbufferData != nullptr) obj->cbufferData = cbufferData->Clone();
             return obj;
         }
 
         void SetTypePointed(TypeInstruction* type) { pointerTo = type; }
         TypeInstruction* GetTypePointed() const { return pointerTo; }
+
+        void SetIsShaderCustomType(bool b) { isShaderCustomType  = b; }
 
         void SetAsCBuffer() {isCBuffer = true;}
         void SetCBufferData(CBufferTypeData* data) {
@@ -336,10 +343,13 @@ public:
         ShaderTypeData* connectedShaderTypeData;
 
         bool IsCBuffer(){ return isCBuffer; }
+        bool IsShaderCustomType() { return isShaderCustomType; }
 
         //used if the type is a cbuffer struct
         bool isCBuffer;
         CBufferTypeData* cbufferData;
+
+        bool isShaderCustomType;
 
         friend class SpxCompiler;
     };
@@ -681,6 +691,7 @@ public:
         //std::string combinedCompositionPath;        //when a shader is instanciated through a composition: we record its composition path
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
+        std::vector<TypeInstruction*> shaderCustomTypesList;
         std::vector<FunctionInstruction*> functionsList;
 
         std::vector<ShaderCompositionDeclaration*> listCompositionDeclarations;
@@ -739,11 +750,21 @@ public:
         }
         unsigned int GetCountFunctions() { return (unsigned int)functionsList.size(); }
 
+        void AddShaderCustomType(TypeInstruction* type) {
+            shaderCustomTypesList.push_back(type);
+        }
+        bool HasCustomType(TypeInstruction* type) {
+            unsigned int count = (unsigned int)shaderCustomTypesList.size();
+            for (unsigned int i = 0; i<count; ++i) if (shaderCustomTypesList[i] == type) return true;
+            return false;
+        }
+
         void AddShaderType(ShaderTypeData* type) {
             shaderTypesList.push_back(type);
         }
         bool HasType(TypeInstruction* type) {
-            for (unsigned int i = 0; i<shaderTypesList.size(); ++i) if (shaderTypesList[i]->type == type) return true;
+            unsigned int count = (unsigned int)shaderTypesList.size();
+            for (unsigned int i = 0; i<count; ++i) if (shaderTypesList[i]->type == type) return true;
             return false;
         }
         ShaderTypeData* GetShaderTypeDataForType(TypeInstruction* type) {

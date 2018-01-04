@@ -28,6 +28,14 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         return error("Merge shaders. Error building type and const hashmap");
     }
 
+    //reset some stuff
+    for (auto ito = bytecodeToMerge.listAllObjects.begin(); ito != bytecodeToMerge.listAllObjects.end(); ito++)
+    {
+        ObjectInstructionBase* obj = *ito;
+        if (obj == nullptr) continue;
+        obj->tmpFlag = 0;
+    }
+
     //=============================================================================================================
     //=============================================================================================================
     //Merge all the shaders
@@ -47,6 +55,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     listAllNewIdMerged.resize(bytecodeToMerge.bound(), false);
     listIdsWhereToAddNamePrefix.resize(bytecodeToMerge.bound(), false);
     vector<pair<spv::Id, spv::Id>> listOverridenFunctionMergedToBeRemappedWithMergedFunctions;
+    bool anyCustomTypeMerged = false;
 
     for (unsigned int is = 0; is<listShadersToMerge.size(); ++is)
     {
@@ -67,8 +76,9 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
         //=============================================================================================================
         //=============================================================================================================
-        //merge all types and variables declared by the shader
-        for (unsigned int t = 0; t < shaderToMerge->shaderTypesList.size(); ++t)
+        //merge all cbuffer and streams buffer types plus variables declared by the shader
+        unsigned int countShaderTypes = (unsigned int)shaderToMerge->shaderTypesList.size();
+        for (unsigned int t = 0; t < countShaderTypes; ++t)
         {
             ShaderTypeData* shaderTypeToMerge = shaderToMerge->shaderTypesList[t];
 
@@ -94,6 +104,27 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 listIdsWhereToAddNamePrefix[type->GetId()] = true;
                 listIdsWhereToAddNamePrefix[pointerToType->GetId()] = true;
                 listIdsWhereToAddNamePrefix[variable->GetId()] = true;
+            }
+        }
+
+        //merge all shader custom types (struct): those shoudn't be merged with existing shader's custom type
+        unsigned int countShaderCustomTypes = (unsigned int)shaderToMerge->shaderCustomTypesList.size();
+        for (unsigned int t = 0; t < countShaderCustomTypes; ++t)
+        {
+            TypeInstruction* customType = shaderToMerge->shaderCustomTypesList[t];
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (finalRemapTable[customType->GetId()] != spvUndefinedId) return error("id: " + to_string(customType->GetId()) + " has already been remapped");
+#endif
+
+            anyCustomTypeMerged = true;
+            customType->tmpFlag = 1;
+            finalRemapTable[customType->GetId()] = newId++;
+            bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge, customType->GetBytecodeStartPosition());
+
+            //don't update the name of non-instantiated merged shaders
+            if (instantiateTheShader) {
+                listIdsWhereToAddNamePrefix[customType->GetId()] = true;
             }
         }
 
@@ -179,13 +210,36 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         }
     } //end shaderToMerge loop
 
+    //Add all function pointers to merged shader's custom types
+    if (anyCustomTypeMerged)
     {
-        //update listAllNewIdMerged table (this table defines the name and decorate to fetch and merge)
-        unsigned int len = (unsigned int)finalRemapTable.size();
-        for (unsigned int i = 0; i < len; ++i)
+        for (auto ito = bytecodeToMerge.listAllObjects.begin(); ito != bytecodeToMerge.listAllObjects.end(); ito++)
         {
-            if (finalRemapTable[i] != spvUndefinedId) listAllNewIdMerged[i] = true;
+            ObjectInstructionBase* obj = *ito;
+            if (obj == nullptr) continue;
+
+            if (obj->GetKind() == ObjectInstructionTypeEnum::Type)
+            {
+                TypeInstruction* aType = dynamic_cast<TypeInstruction*>(obj);
+                if (aType->pointerTo != nullptr && aType->pointerTo->tmpFlag == 1)
+                {
+                    //the type is a pointer pointing to a shader custom type
+#ifdef XKSLANG_DEBUG_MODE
+                    if (finalRemapTable[aType->GetId()] != spvUndefinedId) return error("pointer type id: " + to_string(aType->GetId()) + " has already been remapped");
+#endif
+
+                    finalRemapTable[aType->GetId()] = newId++;
+                    bytecodeToMerge.CopyInstructionToVector(vecTypesConstsAndVariablesToMerge, aType->GetBytecodeStartPosition());
+                }
+            }
         }
+    }
+        
+    //update listAllNewIdMerged table (this table defines the name and decorate to fetch and merge)
+    unsigned int len = (unsigned int)finalRemapTable.size();
+    for (unsigned int i = 0; i < len; ++i)
+    {
+        if (finalRemapTable[i] != spvUndefinedId) listAllNewIdMerged[i] = true;
     }
 
     //Populate vecNewShadersDecorationPossesingIds with some decorate instructions which might contains unmapped IDs
@@ -615,32 +669,32 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
         switch (obj->GetKind())
         {
-        case ObjectInstructionTypeEnum::HeaderProperty:
-            if (posToInsertNewHeaderProrerties < obj->GetBytecodeEndPosition())
-            {
-                posToInsertNewHeaderProrerties = obj->GetBytecodeEndPosition();
-                if (posToInsertNewTypesAndConsts < posToInsertNewHeaderProrerties) posToInsertNewTypesAndConsts = posToInsertNewHeaderProrerties;
-                if (posToInsertNewNamesAndXkslDecorates < posToInsertNewHeaderProrerties) posToInsertNewNamesAndXkslDecorates = posToInsertNewHeaderProrerties;
-            }
-            break;
-        case ObjectInstructionTypeEnum::Type:
-        case ObjectInstructionTypeEnum::Variable:
-        case ObjectInstructionTypeEnum::Shader:
-        case ObjectInstructionTypeEnum::Const:
-            if (firstType || posToInsertNewNamesAndXkslDecorates > obj->GetBytecodeStartPosition())
-            {
-                posToInsertNewNamesAndXkslDecorates = obj->GetBytecodeStartPosition();
-                if (posToInsertNewTypesAndConsts < posToInsertNewNamesAndXkslDecorates) posToInsertNewTypesAndConsts = posToInsertNewNamesAndXkslDecorates;
-            }
-            firstType = false;
-            break;
-        case ObjectInstructionTypeEnum::Function:
-            if (firstFunc || posToInsertNewTypesAndConsts > obj->GetBytecodeStartPosition())
-            {
-                posToInsertNewTypesAndConsts = obj->GetBytecodeStartPosition();
-            }
-            firstFunc = false;
-            break;
+            case ObjectInstructionTypeEnum::HeaderProperty:
+                if (posToInsertNewHeaderProrerties < obj->GetBytecodeEndPosition())
+                {
+                    posToInsertNewHeaderProrerties = obj->GetBytecodeEndPosition();
+                    if (posToInsertNewTypesAndConsts < posToInsertNewHeaderProrerties) posToInsertNewTypesAndConsts = posToInsertNewHeaderProrerties;
+                    if (posToInsertNewNamesAndXkslDecorates < posToInsertNewHeaderProrerties) posToInsertNewNamesAndXkslDecorates = posToInsertNewHeaderProrerties;
+                }
+                break;
+            case ObjectInstructionTypeEnum::Type:
+            case ObjectInstructionTypeEnum::Variable:
+            case ObjectInstructionTypeEnum::Shader:
+            case ObjectInstructionTypeEnum::Const:
+                if (firstType || posToInsertNewNamesAndXkslDecorates > obj->GetBytecodeStartPosition())
+                {
+                    posToInsertNewNamesAndXkslDecorates = obj->GetBytecodeStartPosition();
+                    if (posToInsertNewTypesAndConsts < posToInsertNewNamesAndXkslDecorates) posToInsertNewTypesAndConsts = posToInsertNewNamesAndXkslDecorates;
+                }
+                firstType = false;
+                break;
+            case ObjectInstructionTypeEnum::Function:
+                if (firstFunc || posToInsertNewTypesAndConsts > obj->GetBytecodeStartPosition())
+                {
+                    posToInsertNewTypesAndConsts = obj->GetBytecodeStartPosition();
+                }
+                firstFunc = false;
+                break;
         }
     }
     if (posToInsertNewTypesAndConsts > posToInsertNewFunctions) posToInsertNewTypesAndConsts = posToInsertNewFunctions;

@@ -426,7 +426,7 @@ namespace xkslangDll
 
         //proceed with the mixin
         vector<string> errorMsgs;
-        bool success = mixer->Mixin(spxBytecode, listShadersName, errorMsgs);
+        bool success = mixer->Mixin(spxBytecode, listShadersName, errorMsgs, nullptr);
         if (!success) {
             for (unsigned int k = 0; k < errorMsgs.size(); ++k) error(errorMsgs[k]);
         }

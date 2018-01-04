@@ -956,7 +956,7 @@ static bool MixinShaders(const char* mixinShadersInstructions, XkEffectMixerObje
         //=====================================================
         //Mixin the bytecode into the mixer
         {
-            success = mixerTarget->mixer->Mixin(*shaderBytecode, listShaderToMix, errorMsgs);
+            success = mixerTarget->mixer->Mixin(*shaderBytecode, listShaderToMix, errorMsgs, nullptr);
             if (!success) return error(errorMsgs, "Failed to a mix the shader: " + shaderFullName + " into mixer: " + mixerTarget->name);
         }
 

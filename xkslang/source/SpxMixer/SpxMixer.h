@@ -40,8 +40,8 @@ public:
     bool GetListAllMethodsInfo(std::vector<MethodInfo>& vecMethods, std::vector<std::string>& messages);
 
     //Mix shaders linked to shaderName
-    bool Mixin(const SpxBytecode& spirXBytecode, const std::string& shaderName, std::vector<std::string>& messages);
-    bool Mixin(const SpxBytecode& spirXBytecode, const std::vector<std::string>& shaders, std::vector<std::string>& messages);
+    bool Mixin(const SpxBytecode& spirXBytecode, const std::string& shaderName, std::vector<std::string>& messages, std::vector<uint32_t>* errorLatestSpv);
+    bool Mixin(const SpxBytecode& spirXBytecode, const std::vector<std::string>& shaders, std::vector<std::string>& messages, std::vector<uint32_t>* errorLatestSpv);
 
     bool AddCompositionInstance(const std::string& shaderName, const std::string& variableName, SpxMixer* mixerSource, std::vector<std::string>& messages);
 

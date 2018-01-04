@@ -83,14 +83,14 @@ bool SpxMixer::GetListAllShadersFromBytecode(SpxBytecode& spxBytecode, vector<st
     return true;
 }
 
-bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName, vector<string>& msgs)
+bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const string& shaderName, vector<string>& msgs, vector<uint32_t>* errorLatestSpv)
 {
     vector<string> shaders;
     shaders.push_back(shaderName);
-    return Mixin(spirXBytecode, shaders, msgs);
+    return Mixin(spirXBytecode, shaders, msgs, errorLatestSpv);
 }
 
-bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& shaders, vector<string>& msgs)
+bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& shaders, vector<string>& msgs, vector<uint32_t>* errorLatestSpv)
 {
     if (status != MixerStatusEnum::WaitingForMixin) return error(msgs, "The mixer has an invalid status");
     if (spxCompiler == nullptr) spxCompiler = new SpxCompiler();
@@ -98,6 +98,7 @@ bool SpxMixer::Mixin(const SpxBytecode& spirXBytecode, const vector<string>& sha
     if (!spxCompiler->MixWithShadersFromBytecode(spirXBytecode, shaders))
     {
         spxCompiler->copyMessagesTo(msgs);
+        if (errorLatestSpv != nullptr) spxCompiler->CopyMixinBytecode(*errorLatestSpv);
         return error(msgs, string("Fail to mix the shaders from bytecode: " + spirXBytecode.GetName()));
     }
 

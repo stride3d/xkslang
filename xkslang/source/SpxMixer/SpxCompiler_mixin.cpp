@@ -225,6 +225,13 @@ SpxCompiler* SpxCompiler::Clone()
                     clonedVariable->SetShaderOwner(clonedShader);
                     clonedShader->AddShaderType(clonedShaderType);
                 }
+                for (auto it = shader->shaderCustomTypesList.begin(); it != shader->shaderCustomTypesList.end(); it++)
+                {
+                    TypeInstruction* customType = *it;
+                    TypeInstruction* clonedCustomType = clonedSpxRemapper->GetTypeById(customType->GetId());
+                    clonedCustomType->SetShaderOwner(clonedShader);
+                    clonedShader->AddShaderCustomType(clonedCustomType);
+                }
                 break;
             }
         }
@@ -658,7 +665,8 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
 
     //remove all types belonging to the shader
     {
-        for (unsigned int t = 0; t < shaderToRemove->shaderTypesList.size(); ++t)
+        unsigned int countShaderTypes = (unsigned int)shaderToRemove->shaderTypesList.size();
+        for (unsigned int t = 0; t < countShaderTypes; ++t)
         {
             ShaderTypeData* shaderTypeToRemove = shaderToRemove->shaderTypesList[t];
 
@@ -681,6 +689,18 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
 
             stripInst(vecStripRanges, variable->GetBytecodeStartPosition(), variable->GetBytecodeEndPosition());
             id = variable->GetId();
+            delete listAllObjects[id];
+            listAllObjects[id] = nullptr;
+            listIdsRemoved[id] = true;
+        }
+
+        unsigned int countShaderCustomTypes = (unsigned int)shaderToRemove->shaderCustomTypesList.size();
+        for (unsigned int t = 0; t < countShaderCustomTypes; ++t)
+        {
+            TypeInstruction* shaderCustomTypeToRemove = shaderToRemove->shaderCustomTypesList[t];
+
+            stripInst(vecStripRanges, shaderCustomTypeToRemove->GetBytecodeStartPosition(), shaderCustomTypeToRemove->GetBytecodeEndPosition());
+            spv::Id id = shaderCustomTypeToRemove->GetId();
             delete listAllObjects[id];
             listAllObjects[id] = nullptr;
             listIdsRemoved[id] = true;
@@ -3207,7 +3227,33 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
 
             case spv::OpShaderCustomType:
             {
-                error("PROUT PROUT Custom type"); return nullptr;
+                //a type is defined as being a shader custom type
+                const spv::Id shaderId = asId(start + 1);
+                const spv::Id objectId = asId(start + 2);
+
+                if (objectId >= vectorIdsToDecorate.size()) break;
+                if (!vectorIdsToDecorate[objectId]) break;
+
+                ShaderClassData* shaderOwner = GetShaderById(shaderId);
+                if (shaderOwner == nullptr) { error("undeclared shader owner for Id: " + to_string(shaderId)); break; }
+
+                TypeInstruction* type = GetTypeById(objectId);
+                if (type != nullptr)
+                {
+#ifdef XKSLANG_DEBUG_MODE
+                    if (type->GetShaderOwner() != nullptr) { error("The custom type already has a shader owner: " + type->GetName()); break; }
+                    if (shaderOwner->HasCustomType(type)) { error("The shader: " + shaderOwner->GetName() + " already possesses the custom type: " + type->GetName()); break; }
+#endif
+                    type->SetShaderOwner(shaderOwner);
+                    type->SetIsShaderCustomType(true);
+                    shaderOwner->AddShaderCustomType(type);
+                }
+                else
+                {
+                    error("unprocessed OpShaderCustomType instruction, invalid objectId: " + to_string(objectId));
+                }
+
+                break;
             }
 
             case spv::Op::OpBelongsToShader:

@@ -1910,12 +1910,15 @@ static bool MixinShaders(const string& effectName, unordered_map<string, SpxByte
             {
                 vector<string> errorMsgs;
                 time_before = GetTickCount();
-                success = mixerTarget->mixer->Mixin(*shaderBytecode, listShaderToMix, errorMsgs);
+
+                std::vector<uint32_t> errorSpv;
+                success = mixerTarget->mixer->Mixin(*shaderBytecode, listShaderToMix, errorMsgs, &errorSpv);
                 time_after = GetTickCount();
 
                 if (!success)
                 {
                     for (unsigned int k = 0; k < errorMsgs.size(); k++) error(errorMsgs[k]);
+                    WriteBytecode(errorSpv, outputDir, effectName + "_op" + to_string(operationNum) + "_mixin_error.hr.spv", BytecodeFileFormat::Text);
                 }
             }
 
