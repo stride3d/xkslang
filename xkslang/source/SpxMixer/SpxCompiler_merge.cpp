@@ -44,7 +44,8 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     vector<uint32_t> vecNamesAndDecorateToMerge;
     vector<uint32_t> vecXkslDecoratesToMerge;
     vector<uint32_t> vecTypesConstsAndVariablesToMerge;
-    vector<uint32_t> vecFunctionsToMerge;
+    //vector<uint32_t> vecFunctionsTypeToMerge;
+    vector<uint32_t> vecFunctionsBodyBytecodeToMerge;
     vector<uint32_t> vecHeaderPropertiesToMerge;
 
     vector<spv::Id> finalRemapTable;
@@ -55,7 +56,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     listAllNewIdMerged.resize(bytecodeToMerge.bound(), false);
     listIdsWhereToAddNamePrefix.resize(bytecodeToMerge.bound(), false);
     vector<pair<spv::Id, spv::Id>> listOverridenFunctionMergedToBeRemappedWithMergedFunctions;
-    bool anyCustomTypeMerged = false;
+    //bool anyCustomTypeMerged = false;
 
     for (unsigned int is = 0; is<listShadersToMerge.size(); ++is)
     {
@@ -107,6 +108,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
             }
         }
 
+        /*
         //merge all shader custom types (struct): those shoudn't be merged with existing shader's custom type
         unsigned int countShaderCustomTypes = (unsigned int)shaderToMerge->shaderCustomTypesList.size();
         for (unsigned int t = 0; t < countShaderCustomTypes; ++t)
@@ -127,6 +129,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 listIdsWhereToAddNamePrefix[customType->GetId()] = true;
             }
         }
+        */
 
         //Add the shader type declaration
         {
@@ -172,6 +175,17 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 listOverridenFunctionMergedToBeRemappedWithMergedFunctions.push_back(pair<spv::Id, spv::Id>(functionToMerge->GetId(), functionToMerge->GetOverridingFunction()->GetId()));
             }
 
+            /*
+            //We merge the function type (if we let it be mixed below with existing types it can lead to generate invalid type dependency orders)
+            spv::Id functionTypeId = bytecodeToMerge.asId(functionToMerge->GetBytecodeStartPosition() + 4);
+            TypeInstruction* functionType = bytecodeToMerge.GetTypeById(functionTypeId);
+            if (functionType == nullptr) {
+                return error(string("Cannot find the function type id: ") + to_string(functionTypeId) + string(" for the function: ") + functionToMerge->GetName());
+            }
+            finalRemapTable[functionType->GetId()] = newId++;
+            bytecodeToMerge.CopyInstructionToVector(vecFunctionsTypeToMerge, functionType->GetBytecodeStartPosition());
+            */
+
             //For each instructions within the functions bytecode: Remap their results IDs
             {
                 unsigned int start = functionToMerge->GetBytecodeStartPosition();
@@ -206,11 +220,12 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
             }
 
             //Copy all bytecode instructions from the function
-            bytecodeToMerge.CopyInstructionToVector(vecFunctionsToMerge, functionToMerge->GetBytecodeStartPosition(), functionToMerge->GetBytecodeEndPosition());
+            bytecodeToMerge.CopyInstructionToVector(vecFunctionsBodyBytecodeToMerge, functionToMerge->GetBytecodeStartPosition(), functionToMerge->GetBytecodeEndPosition());
         }
     } //end shaderToMerge loop
 
-    //Add all function pointers to merged shader's custom types
+    /*
+    //Add all pointers type pointing to the merged shader's custom types
     if (anyCustomTypeMerged)
     {
         for (auto ito = bytecodeToMerge.listAllObjects.begin(); ito != bytecodeToMerge.listAllObjects.end(); ito++)
@@ -234,7 +249,11 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
             }
         }
     }
-        
+
+    //Add the function types at the end of the type, const and variables to merge
+    vecTypesConstsAndVariablesToMerge.insert(vecTypesConstsAndVariablesToMerge.end(), vecFunctionsTypeToMerge.begin(), vecFunctionsTypeToMerge.end());
+    */
+
     //update listAllNewIdMerged table (this table defines the name and decorate to fetch and merge)
     unsigned int len = (unsigned int)finalRemapTable.size();
     for (unsigned int i = 0; i < len; ++i)
@@ -291,7 +310,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         //Init by checking all types instructions for unmapped IDs
         vector<uint32_t> bytecodeToCheckForUnmappedIds;
         bytecodeToCheckForUnmappedIds.insert(bytecodeToCheckForUnmappedIds.end(), vecTypesConstsAndVariablesToMerge.begin(), vecTypesConstsAndVariablesToMerge.end());
-        bytecodeToCheckForUnmappedIds.insert(bytecodeToCheckForUnmappedIds.end(), vecFunctionsToMerge.begin(), vecFunctionsToMerge.end());
+        bytecodeToCheckForUnmappedIds.insert(bytecodeToCheckForUnmappedIds.end(), vecFunctionsBodyBytecodeToMerge.begin(), vecFunctionsBodyBytecodeToMerge.end());
         bytecodeToCheckForUnmappedIds.insert(bytecodeToCheckForUnmappedIds.end(), vecXkslDecorationsPossesingIds.begin(), vecXkslDecorationsPossesingIds.end());
         vector<pairIdPos> listUnmappedIdsToProcess;  //unmapped ids and their pos in the bytecode to merge
 
@@ -497,7 +516,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         }  //end while (listUnmappedIdsToProcess.size() > 0)
     }  //end block
 
-       //Add the extra types we merged at the beginning of our vec of type/const/variable
+    //Add the extra types we merged at the beginning of our vec of type/const/variable
     if (bytecodeWithExtraTypesToMerge.size() > 0)
     {
         vecTypesConstsAndVariablesToMerge.insert(vecTypesConstsAndVariablesToMerge.begin(), bytecodeWithExtraTypesToMerge.begin(), bytecodeWithExtraTypesToMerge.end());
@@ -638,17 +657,8 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         return error("remapAllIds failed on vecXkslDecoratesToMerge");
     if (!remapAllIds(vecNamesAndDecorateToMerge, 0, (unsigned int)vecNamesAndDecorateToMerge.size(), finalRemapTable))
         return error("remapAllIds failed on vecNamesAndDecorateToMerge");
-    if (!remapAllIds(vecFunctionsToMerge, 0, (unsigned int)vecFunctionsToMerge.size(), finalRemapTable))
-        return error("remapAllIds failed on vecFunctionsToMerge");
-    //vecFunctionsToMerge.processOnFullBytecode(
-    //    spx_inst_fn_nop,
-    //    [&](spv::Id& id)
-    //    {
-    //        spv::Id newId = finalRemapTable[id];
-    //        if (newId == spvUndefinedId) error(string("Invalid remapper Id: ") + to_string(id));
-    //        else id = newId;
-    //    }
-    //);
+    if (!remapAllIds(vecFunctionsBodyBytecodeToMerge, 0, (unsigned int)vecFunctionsBodyBytecodeToMerge.size(), finalRemapTable))
+        return error("remapAllIds failed on vecFunctionsBodyBytecodeToMerge");
 
     //=============================================================================================================
     //=============================================================================================================
@@ -753,7 +763,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
     // merge all data in the destination bytecode
     {
         //merge functions
-        spv.insert(spv.begin() + posToInsertNewFunctions, vecFunctionsToMerge.begin(), vecFunctionsToMerge.end());
+        spv.insert(spv.begin() + posToInsertNewFunctions, vecFunctionsBodyBytecodeToMerge.begin(), vecFunctionsBodyBytecodeToMerge.end());
         //Merge types and variables (we need to merge new types AFTER all previous types)
         spv.insert(spv.begin() + posToInsertNewTypesAndConsts, vecTypesConstsAndVariablesToMerge.begin(), vecTypesConstsAndVariablesToMerge.end());
         //Merge names and decorates

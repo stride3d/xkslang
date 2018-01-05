@@ -2827,7 +2827,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
     {
         if (type.IsShaderCustomType())
         {
-            if (type.getOwnerClassName() != nullptr)
+            /*if (type.getOwnerClassName() != nullptr)
             {
                 std::string shaderName(type.getOwnerClassName()->c_str());
                 auto fit = shaderClassMap.find(shaderName);
@@ -2845,7 +2845,7 @@ void TGlslangToSpvTraverser::decorateStructType(const glslang::TType& type,
             {
                 if (logger)
                     logger->error("A custom type is missing its shader owner name");
-            }
+            }*/
         }
         else
         {

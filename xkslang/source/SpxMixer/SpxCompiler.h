@@ -691,7 +691,7 @@ public:
         //std::string combinedCompositionPath;        //when a shader is instanciated through a composition: we record its composition path
         std::vector<ShaderClassData*> parentsList;
         std::vector<ShaderTypeData*> shaderTypesList;
-        std::vector<TypeInstruction*> shaderCustomTypesList;
+        //std::vector<TypeInstruction*> shaderCustomTypesList;
         std::vector<FunctionInstruction*> functionsList;
 
         std::vector<ShaderCompositionDeclaration*> listCompositionDeclarations;
@@ -750,14 +750,14 @@ public:
         }
         unsigned int GetCountFunctions() { return (unsigned int)functionsList.size(); }
 
-        void AddShaderCustomType(TypeInstruction* type) {
+        /*void AddShaderCustomType(TypeInstruction* type) {
             shaderCustomTypesList.push_back(type);
         }
         bool HasCustomType(TypeInstruction* type) {
             unsigned int count = (unsigned int)shaderCustomTypesList.size();
             for (unsigned int i = 0; i<count; ++i) if (shaderCustomTypesList[i] == type) return true;
             return false;
-        }
+        }*/
 
         void AddShaderType(ShaderTypeData* type) {
             shaderTypesList.push_back(type);

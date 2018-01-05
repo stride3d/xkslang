@@ -225,13 +225,13 @@ SpxCompiler* SpxCompiler::Clone()
                     clonedVariable->SetShaderOwner(clonedShader);
                     clonedShader->AddShaderType(clonedShaderType);
                 }
-                for (auto it = shader->shaderCustomTypesList.begin(); it != shader->shaderCustomTypesList.end(); it++)
+                /*for (auto it = shader->shaderCustomTypesList.begin(); it != shader->shaderCustomTypesList.end(); it++)
                 {
                     TypeInstruction* customType = *it;
                     TypeInstruction* clonedCustomType = clonedSpxRemapper->GetTypeById(customType->GetId());
                     clonedCustomType->SetShaderOwner(clonedShader);
                     clonedShader->AddShaderCustomType(clonedCustomType);
-                }
+                }*/
                 break;
             }
         }
@@ -694,7 +694,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
             listIdsRemoved[id] = true;
         }
 
-        unsigned int countShaderCustomTypes = (unsigned int)shaderToRemove->shaderCustomTypesList.size();
+        /*unsigned int countShaderCustomTypes = (unsigned int)shaderToRemove->shaderCustomTypesList.size();
         for (unsigned int t = 0; t < countShaderCustomTypes; ++t)
         {
             TypeInstruction* shaderCustomTypeToRemove = shaderToRemove->shaderCustomTypesList[t];
@@ -704,7 +704,7 @@ bool SpxCompiler::RemoveShaderFromBytecodeAndData(ShaderClassData* shaderToRemov
             delete listAllObjects[id];
             listAllObjects[id] = nullptr;
             listIdsRemoved[id] = true;
-        }
+        }*/
     }
 
     //remove the shader's bytecode and object
@@ -2989,16 +2989,20 @@ bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>&
             //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+            /*
             //We don't check for type collision for now (can have some side-effect to merge same structures with different names while having the same layout)
 //#ifdef XKSLANG_DEBUG_MODE
             if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
-            if (mapHashPos.find(hashval) != mapHashPos.end())
+            auto hashF = mapHashPos.find(hashval);
+            if (hashF != mapHashPos.end())
             {
                 // Warning: might cause some conflicts sometimes?
                 //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
                 id = spvUndefinedId;  //by precaution we invalidate the id: we cannot choose between them
             }
 //#endif
+            */
+
             mapHashPos[hashval] = pairIdPos(id, start);
         }
     }
@@ -3225,7 +3229,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 break;
             }
 
-            case spv::OpShaderCustomType:
+            /*case spv::OpShaderCustomType:
             {
                 //a type is defined as being a shader custom type
                 const spv::Id shaderId = asId(start + 1);
@@ -3254,7 +3258,7 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
                 }
 
                 break;
-            }
+            }*/
 
             case spv::Op::OpBelongsToShader:
             {
