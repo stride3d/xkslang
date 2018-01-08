@@ -23,7 +23,11 @@ shader ShaderMain
 	cbuffer PerDraw
 	{
 		stage float2x3 aMat23[2];  //size:48, align:16, stride: 16
-		stage row_major float2x3 aMat23_rm[2];  //size:32, align:16, stride: 16
+		
+		//Declaration not valid anymore: XKSLANG merges the type without checking if they have different alignment
+		//Such declarations wouldn't make sense anyway
+		////stage row_major float2x3 aMat23_rm[2];  //size:32, align:16, stride: 16  
+		
 		stage float4 Color[4];
 		[Color]
 		stage float4 ColorArray[2];

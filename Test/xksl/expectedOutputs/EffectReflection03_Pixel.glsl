@@ -8,7 +8,6 @@ struct PS_STREAMS
 layout(std140) uniform PerDraw
 {
     layout(row_major) mat2x3 ShaderMain_aMat23[2];
-    mat2x3 ShaderMain_aMat23_rm[2];
     vec4 ShaderMain_Color[4];
     vec4 ShaderMain_ColorArray[2];
 } PerDraw_var;

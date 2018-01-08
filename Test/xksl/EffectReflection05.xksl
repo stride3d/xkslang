@@ -35,7 +35,9 @@ shader ShaderMain
 		[Color]
 		stage float4 ColorArrayB[2];
 		stage float2x3 aMat23[2];
-		stage row_major float2x3 aMat23_rm[2];
+		
+		//row_major float2x3 aMat23_rm[2];
+		float2x3 aMat23_rm[2];
 	};
 	
 	stage StructType var1;

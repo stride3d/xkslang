@@ -160,7 +160,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge11", "TestMerge11.xkfx" },
     //{ "TestMerge12", "TestMerge12.xkfx" },
     //{ "TestMerge13", "TestMerge13.xkfx" },
-    { "TestMerge14", "TestMerge14.xkfx" },
+    //{ "TestMerge14", "TestMerge14.xkfx" },
     
     //{ "TestConsts01", "TestConsts01.xkfx" },
     //{ "TestConsts02", "TestConsts02.xkfx" },
@@ -275,7 +275,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection02", "EffectReflection02.xkfx" },
     //{ "EffectReflection03", "EffectReflection03.xkfx" },
     //{ "EffectReflection04", "EffectReflection04.xkfx" },
-    //{ "EffectReflection05", "EffectReflection05.xkfx" },
+    { "EffectReflection05", "EffectReflection05.xkfx" },
     //{ "EffectReflection06", "EffectReflection06.xkfx" },
 	//{ "EffectReflection07", "EffectReflection07.xkfx" },
     //{ "EffectReflection08", "EffectReflection08.xkfx" },
