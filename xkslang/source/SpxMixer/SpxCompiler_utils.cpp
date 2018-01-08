@@ -78,6 +78,128 @@ bool SpxCompiler::ValidateHeader()
     return true;
 }
 
+uint32_t SpxCompiler::ComputeTypeOrConstHash(uint32_t bytecodePos)
+{
+    uint32_t hash = hashType(bytecodePos);
+    if (hash == spirvbin_t::unused)
+    {
+        error("Failed to get the hash value for the type or const");
+        return 0;
+    }
+    return (hash + 1);
+}
+
+SpxCompiler::ObjectInstructionBase* SpxCompiler::FindSameObjectInHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj)
+{
+    uint32_t hashval = obj->objectHash;
+
+#ifdef XKSLANG_DEBUG_MODE
+    if (hashval == 0) { error("The object has an invalid hash value. Object Id: " + to_string(obj->GetId())); return nullptr; }
+#endif
+
+    unordered_map<std::uint32_t, HashCorrespondingObjects>& hmap = hashmap.objectsHashmap;
+    auto hashF = hmap.find(hashval);
+    if (hashF == hmap.end()) return false;
+
+    const HashCorrespondingObjects& correspondingObjects = hashF->second;
+
+#ifdef XKSLANG_DEBUG_MODE
+    if (correspondingObjects.IsStruct && obj->GetOpCode() != spv::OpTypeStruct) { error("Invalid objects hash values: 2 structs are expected"); return nullptr; }
+#endif
+
+    if (!correspondingObjects.IsStruct) return correspondingObjects.CorrespondingObject;
+
+    //We have an additionnal step for structs: since an hash value is not 100% accurate and can have collision we need to check if the 2 structs are really identical
+    if (!hashmap.bytecodeSource->CompareOpTypeConstInstructions(correspondingObjects.CorrespondingObject->GetBytecodeStartPosition(), *(obj->bytecodeSource), obj->GetBytecodeStartPosition()))
+    {
+        if (hashmap.bytecodeSource != this && hashmap.bytecodeSource->HasAnyError())
+            this->CopyErrorsMessagesFrom(hashmap.bytecodeSource->errorMessages);
+
+        return false;
+    }
+
+    return correspondingObjects.CorrespondingObject;
+}
+
+bool SpxCompiler::AddNewObjectIntoHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj)
+{
+    uint32_t hashval = obj->objectHash;
+
+#ifdef XKSLANG_DEBUG_MODE
+    if (hashval == 0) return error("The object has an invalid hash value. Object Id: " + to_string(obj->GetId()));
+    if (obj->bytecodeSource != hashmap.bytecodeSource) return error("Illegal operation: we cannot add an object from a different source into the hashmap");
+#endif
+
+    bool isStruct = (obj->GetOpCode() == spv::OpTypeStruct);
+
+    unordered_map<std::uint32_t, HashCorrespondingObjects>& hmap = hashmap.objectsHashmap;
+    auto hashF = hmap.find(hashval);
+    if (hashF != hmap.end())
+    {
+        return error("PROUT PROUT PROUT: Hash already used");
+    }    
+    hmap[hashval] = HashCorrespondingObjects(obj, isStruct);
+
+    return true;
+}
+
+//build the hashmap table for all types and consts
+bool SpxCompiler::BuildHashmapAllMergableTypesAndConsts(BytecodeObjectsHashMap& hashmap)
+{
+    //Flag the types / consts that we can merge
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr) obj->tmpFlag = 0;
+    }
+
+    for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
+    {
+        ShaderClassData* aShader = *itsh;
+
+        unsigned int countShaderTypes = (unsigned int)aShader->shaderTypesList.size();
+        for (unsigned int t = 0; t < countShaderTypes; ++t)
+        {
+            ShaderTypeData* shaderTypeToMerge = aShader->shaderTypesList[t];
+            shaderTypeToMerge->type->tmpFlag = 1;
+            shaderTypeToMerge->pointerToType->tmpFlag = 1;
+            shaderTypeToMerge->variable->tmpFlag = 1;
+        }
+    }
+
+    hashmap.Clear();
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && (obj->GetKind() == ObjectInstructionTypeEnum::Const || obj->GetKind() == ObjectInstructionTypeEnum::Type))
+        {
+            if (obj->tmpFlag != 0) continue;
+
+            if (!AddNewObjectIntoHashmap(hashmap, obj))
+                return error("Failed to add the type or const into the hashmap. Id: " + to_string(obj->GetId()));
+        }
+    }
+
+    return true;
+}
+
+bool SpxCompiler::GetListAllMethodsInfo(std::vector<MethodInfo>& vecMethodsInfo)
+{
+    vecMethodsInfo.clear();
+
+    for (auto it = vecAllFunctions.begin(); it != vecAllFunctions.end(); ++it)
+    {
+        FunctionInstruction* aFunction = *it;
+        vecMethodsInfo.push_back(MethodInfo(
+            aFunction->name,
+            aFunction->shaderOwner == nullptr? "": aFunction->shaderOwner->shaderOriginalBaseName,
+            aFunction->IsStage()
+        ));
+    }
+
+    return true;
+}
+
 bool SpxCompiler::ProcessBytecodeSanityCheck(const std::vector<uint32_t>& bytecode, std::vector<std::string>& errorMsgs)
 {
     unsigned int bytecodeSize = (unsigned int)(bytecode.size());

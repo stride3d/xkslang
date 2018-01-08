@@ -23,8 +23,9 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
     //=============================================================================================================
     //Init destination bytecode hashmap (to compare types and consts hashmap id)
-    unordered_map<uint32_t, pairIdPos> destinationBytecodeTypeHashMap;
-    if (!this->BuildTypesAndConstsHashmap(destinationBytecodeTypeHashMap)) {
+    BytecodeObjectsHashMap destinationBytecodeTypeHashMap(this);
+    BytecodeObjectsHashMap mergeBytecodeTypeHashMap(&bytecodeToMerge);
+    if (!this->BuildHashmapAllMergableTypesAndConsts(destinationBytecodeTypeHashMap)) {
         return error("Merge shaders. Error building type and const hashmap");
     }
 
@@ -371,32 +372,31 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case ObjectInstructionTypeEnum::Type:
                 {
                     mergeTypeOrConst = true;
-
-                    uint32_t typeHash = bytecodeToMerge.hashType(objectFromUnmappedId->GetBytecodeStartPosition());
-                    auto hashTypePosIt = destinationBytecodeTypeHashMap.find(typeHash);
-                    if (hashTypePosIt != destinationBytecodeTypeHashMap.end())
+                    ObjectInstructionBase* typeOcConstSimilarObject = FindSameObjectInHashmap(destinationBytecodeTypeHashMap, objectFromUnmappedId);
+                    if (typeOcConstSimilarObject != nullptr)
                     {
-                        spv::Id idOfSameTypeFromDestinationBytecode = hashTypePosIt->second.first;
-
-                        if (idOfSameTypeFromDestinationBytecode == spvUndefinedId)
-                        { 
-                            return error("Merge shaders. hashmap refers to an invalid Id");
-                        }
-                        else
+                        //The type already exists in the destination bytecode, we can simply remap to it
+                        mappingResolved = true;
+                        spv::Id idOfSameTypeFromDestinationBytecode = typeOcConstSimilarObject->GetId();
+                        finalRemapTable[unmappedId] = idOfSameTypeFromDestinationBytecode;
+                    }
+                    else
+                    {
+                        typeOcConstSimilarObject = FindSameObjectInHashmap(mergeBytecodeTypeHashMap, objectFromUnmappedId);
+                        if (typeOcConstSimilarObject != nullptr)
                         {
-                            //The type already exists in the destination bytecode, we can simply remap to it
+                            //Several copies of the same types / consts were found in the bytecode to merge
                             mappingResolved = true;
-                            finalRemapTable[unmappedId] = idOfSameTypeFromDestinationBytecode;
-
-//#ifdef XKSLANG_DEBUG_MODE
-                            //hashType function is not 100% accurate: we check that the instructions are identical
-                            if (!CompareOpTypeConstInstructions(hashTypePosIt->second.second, bytecodeToMerge, objectFromUnmappedId->GetBytecodeStartPosition()))
-                            {
-                                return error("2 types or consts have the same hashtype but different bytecode instructions");
-                            }
-//#endif
+                            spv::Id idOfTypeAlreadyMerged = typeOcConstSimilarObject->GetId();
+#ifdef XKSLANG_DEBUG_MODE
+                            if (idOfTypeAlreadyMerged >= finalRemapTable.size()) return error("Id out of bound: " + to_string(idOfTypeAlreadyMerged));
+                            if (finalRemapTable[idOfTypeAlreadyMerged] == spvUndefinedId)
+                                return error("a type already merged in destination bytecode has not been asigned a remapped id. Type Id: " + to_string(idOfTypeAlreadyMerged));
+#endif
+                            finalRemapTable[unmappedId] = finalRemapTable[idOfTypeAlreadyMerged];
                         }
                     }
+
                     break;
                 }
 
@@ -487,7 +487,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
 
                     if (typeId != spvUndefinedId) listIds.push_back(typeId);
                     listIdsLen = (unsigned int)listIds.size();
-                    bool canAddTheInstruction = true;
+                    bool canCopyTheTypeOrConst = true;
                     for (unsigned int i = 0; i < listIdsLen; ++i)
                     {
                         const spv::Id anotherId = listIds[i];
@@ -498,11 +498,11 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                         {
                             //we add anotherId to the list of Ids to process (we're depending on it)
                             listUnmappedIdsToProcess.push_back(pairIdPos(anotherId, -1));
-                            canAddTheInstruction = false;
+                            canCopyTheTypeOrConst = false;
                         }
                     }
 
-                    if (canAddTheInstruction)
+                    if (canCopyTheTypeOrConst)
                     {
                         //the instruction is not depending on another unmapped IDs anymore, we can copy it
                         finalRemapTable[unmappedId] = newId++;
@@ -510,7 +510,15 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                         bytecodeToMerge.CopyInstructionToVector(bytecodeWithExtraTypesToMerge, objectFromUnmappedId->GetBytecodeStartPosition());
 
                         listAllNewIdMerged[unmappedId] = true;
+
+                        //We add the merged type/const hash into a map (to detect duplicated types)
+                        if (!AddNewObjectIntoHashmap(mergeBytecodeTypeHashMap, objectFromUnmappedId))
+                            return error("Failed to add the merge object into the hashmap");
                     }
+                }
+                else
+                {
+                    return error("Unprocessed case");
                 }
             }
         }  //end while (listUnmappedIdsToProcess.size() > 0)

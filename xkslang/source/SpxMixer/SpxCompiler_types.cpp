@@ -64,12 +64,7 @@ bool SpxCompiler::AreTypeInstructionsIdentical(spv::Id typeId1, spv::Id typeId2)
     if (type1 == nullptr) return error("The id is not a registered type: " + to_string(typeId1));
     if (type2 == nullptr) return error("The id is not a registered type: " + to_string(typeId2));
 
-    uint32_t hashvalType1 = hashType(type1->bytecodeStartPosition);
-    uint32_t hashvalType2 = hashType(type2->bytecodeStartPosition);
-    if (hashvalType1 == spirvbin_t::unused) return error("hashType: Invalid type id: " + to_string(typeId1));
-    if (hashvalType2 == spirvbin_t::unused) return error("hashType: Invalid type id: " + to_string(typeId2));
-
-    return hashvalType1 == hashvalType2;
+    return type1->objectHash == type2->objectHash;
 }
 
 bool SpxCompiler::GetIntegerConstTypeExpressionValue(ConstInstruction* constObject, int& constValue)

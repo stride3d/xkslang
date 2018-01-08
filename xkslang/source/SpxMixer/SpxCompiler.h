@@ -163,10 +163,12 @@ public:
     public:
         ObjectInstructionBase(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId), name(name), shaderOwner(nullptr),
-            bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition), bytecodeSource(source){}
+            bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition), bytecodeSource(source), objectHash(0) {}
         virtual ~ObjectInstructionBase(){}
         virtual ObjectInstructionBase* CloneBasicData() {
-            return new ObjectInstructionBase(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
+            ObjectInstructionBase* clonedObj = new ObjectInstructionBase(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
+            clonedObj->objectHash = this->objectHash;
+            return clonedObj;
         }
 
         ObjectInstructionTypeEnum GetKind() const {return kind;}
@@ -192,6 +194,8 @@ public:
         spv::Id typeId;
         ShaderClassData* shaderOwner;  //some object can belong to a shader
         SpxCompiler* bytecodeSource;
+
+        uint32_t objectHash;
 
         //those fields can change when we mix bytecodes
         unsigned int bytecodeStartPosition;
@@ -352,6 +356,28 @@ public:
         bool isShaderCustomType;
 
         friend class SpxCompiler;
+    };
+
+    class HashCorrespondingObjects
+    {
+    public:
+        ObjectInstructionBase* CorrespondingObject;
+        bool IsStruct;
+
+        HashCorrespondingObjects(): CorrespondingObject(nullptr), IsStruct(false) {}
+        HashCorrespondingObjects(ObjectInstructionBase* obj, bool isStruct): CorrespondingObject(obj), IsStruct(isStruct) {}
+    };
+
+    class BytecodeObjectsHashMap
+    {
+    public:
+        SpxCompiler* bytecodeSource;
+        std::unordered_map<uint32_t, HashCorrespondingObjects> objectsHashmap;
+
+        BytecodeObjectsHashMap(): bytecodeSource(nullptr) {}
+        BytecodeObjectsHashMap(SpxCompiler* source) : bytecodeSource(source) {}
+
+        void Clear() { objectsHashmap.clear(); }
     };
 
     class VariableInstruction : public ObjectInstructionBase
@@ -861,6 +887,11 @@ private:
     bool SetBytecode(const std::vector<std::uint32_t>& bytecode);
     bool MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
 
+    bool AddNewObjectIntoHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj);
+    ObjectInstructionBase* FindSameObjectInHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj);
+    bool BuildHashmapAllMergableTypesAndConsts(BytecodeObjectsHashMap& hashmap);
+    uint32_t ComputeTypeOrConstHash(uint32_t bytecodePos);
+
     //validate a member name (for example Shader<8>_var will return Shader_8__var)
     std::string getRawNameFromKeyName(const std::string& keyName);
     unsigned int GetUniqueMergeOperationId();
@@ -911,7 +942,6 @@ private:
     spv::Id GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstruction* type, const std::vector<ConstInstruction*>& listAllConsts,
         std::vector<spv::Instruction>& listNewConstInstructionsToAdd, int iterationCounter = 0);
     ConstInstruction* FindConstFromList(const std::vector<ConstInstruction*>& listConsts, spv::Op opCode, spv::Id typeId, const std::vector<unsigned int>& values);
-    //std::uint32_t getBasicConstTypeHashmapValue(spv::Op opCode, TypeInstruction* constType, unsigned int wordCount, unsigned int* values);
 
     bool GetStructTypeMembersTypeIdList(TypeInstruction* structType, std::vector<spv::Id>& membersTypeList);
     bool GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& latestReturnPos, unsigned int& countReturnInstructions);
@@ -925,8 +955,6 @@ private:
     bool BuildAllMaps();
     bool UpdateAllMaps();
     bool UpdateAllObjectsPositionInTheBytecode();
-    bool BuildConstsHashmap(std::unordered_map<std::uint32_t, pairIdPos>& mapHashPos);
-    bool BuildTypesAndConstsHashmap(std::unordered_map<std::uint32_t, pairIdPos>& mapHashPos);
     bool BuildDeclarationNameMapsAndObjectsDataList(std::vector<ParsedObjectData>& listParsedObjectsData);
     ObjectInstructionBase* CreateAndAddNewObjectFor(ParsedObjectData& parsedData);
     bool DecorateObjects(std::vector<bool>& vectorIdsToDecorate);
@@ -953,6 +981,7 @@ private:
     bool InitDefaultHeader();
     bool ComputeShadersLevel();
     bool HasAnyError() { return errorMessages.size() > 0; }
+    void CopyErrorsMessagesFrom(const std::vector<std::string>& msgs) { errorMessages.insert(errorMessages.end(), msgs.begin(), msgs.end()); }
 
     void GetShaderFamilyTree(ShaderClassData* shaderFromFamily, std::vector<ShaderClassData*>& shaderFamilyTree);
     void GetShaderChildrenList(ShaderClassData* shader, std::vector<ShaderClassData*>& children);

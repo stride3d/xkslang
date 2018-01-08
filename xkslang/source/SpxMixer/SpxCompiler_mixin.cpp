@@ -2295,37 +2295,6 @@ bool SpxCompiler::GenerateBytecodeForAllStages(vector<XkslMixerOutputStage>& out
     //We keep all cbuffers, even if some are not used by the output stage (unused cbuffers have already been removed)
     vector<spv::Id> listCBufferIds;
 
-    /*
-    {
-        for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
-        {
-            ObjectInstructionBase* obj = *it;
-            if (obj == nullptr) continue;
-
-            switch (obj->GetKind())
-            {
-                case ObjectInstructionTypeEnum::Type:
-                {
-                    TypeInstruction* type = dynamic_cast<TypeInstruction*>(obj);
-                    if (type->IsCBuffer()) listCBufferIds.push_back(type->GetId());
-                    else
-                    {
-                        if (type->pointerTo != nullptr && type->pointerTo->IsCBuffer()) listCBufferIds.push_back(type->GetId());
-                    }
-                    break;
-                }
-
-                case ObjectInstructionTypeEnum::Variable:
-                {
-                    VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
-                    if (variable->variableTo != nullptr && variable->variableTo->pointerTo != nullptr && variable->variableTo->pointerTo->IsCBuffer())
-                        listCBufferIds.push_back(variable->GetId());
-                }
-            }
-        }
-    }
-    */
-
     //===================================================================================================================
     // Generate the SPIRV bytecode for all stages
     for (unsigned int i = 0; i<outputStages.size(); ++i)
@@ -2867,167 +2836,6 @@ bool SpxCompiler::SpxCompiler::InitDefaultHeader()
     return true;
 }
 
-bool SpxCompiler::BuildConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
-{
-    mapHashPos.clear();
-
-    //We build the hashmap table for all types and consts
-    //except for OpTypeXlslShaderClass types: (this type is only informational, never used as a type or result)
-    unsigned int start = header_size;
-    const unsigned int end = (unsigned int)spv.size();
-    while (start < end)
-    {
-        unsigned int wordCount = asWordCount(start);
-        spv::Op opCode = asOpCode(start);
-
-#ifdef XKSLANG_DEBUG_MODE
-        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
-#endif
-
-        spv::Id id = spvUndefinedId;
-        if (isConstOp(opCode))
-        {
-            id = asId(start + 2);
-        }
-        else if (opCode == spv::OpFunction)
-        {
-            break; //no more consts after this point
-        }
-
-        if (id != spvUndefinedId)
-        {
-            uint32_t hashval = hashType(start);
-
-#ifdef XKSLANG_DEBUG_MODE
-            if (hashval == spirvbin_t::unused) return error("Failed to get the hashval for a const. constId: " + to_string(id));
-#endif
-
-            //we don't mind if we have several candidates with the same hashType (several identical consts)
-            mapHashPos[hashval] = pairIdPos(id, start);
-        }
-
-        start += wordCount;
-    }
-
-    return true;
-}
-
-bool SpxCompiler::BuildTypesAndConstsHashmap(unordered_map<uint32_t, pairIdPos>& mapHashPos)
-{
-    mapHashPos.clear();
-
-    //We build the hashmap table for all types and consts
-    //except for OpTypeXlslShaderClass types: (this type is only informational, never used as a type or result)
-
-#ifdef BUILD_BY_PARSING_THE_BYTECODE
-    //Build the hasmmap by analysing the bytecode
-    unsigned int start = header_size;
-    const unsigned int end = (unsigned int)spv.size();
-    while (start < end)
-    {
-        unsigned int wordCount = asWordCount(start);
-        spv::Op opCode = asOpCode(start);
-
-#ifdef XKSLANG_DEBUG_MODE
-        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
-#endif
-
-        spv::Id id = spvUndefinedId;
-        if (opCode != spv::OpTypeXlslShaderClass)
-        {
-            if (isConstOp(opCode))
-            {
-                id = asId(start + 2);
-            }
-            else if (isTypeOp(opCode))
-            {
-                id = asId(start + 1);
-            }
-            else if (opCode == spv::OpFunction)
-            {
-                break; //no more type or consts after this point
-            }
-        }
-
-        if (id != spvUndefinedId)
-        {
-            uint32_t hashval = hashType(start);
-
-            //We don't check for type collision for now (can have some side-effect to merge same structures with different names while having the same layout)
-///#ifdef XKSLANG_DEBUG_MODE
-///            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
-///            if (mapHashPos.find(hashval) != mapHashPos.end())
-///            {
-///                // Warning: might cause some conflicts sometimes?
-///                //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
-///                id = spvUndefinedId;  //by precaution we invalidate the id: we cannot choose between them
-///                //hashval = hashType(start);
-///            }
-///#endif
-
-            mapHashPos[hashval] = pairIdPos(id, start);
-        }
-
-        start += wordCount;
-    }
-#else
-    //Build the hasmmap by analysing our list of pre-built objects
-    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
-    {
-        ObjectInstructionBase* obj = *it;
-        if (obj != nullptr && (obj->GetKind() == ObjectInstructionTypeEnum::Const || obj->GetKind() == ObjectInstructionTypeEnum::Type))
-        {
-            spv::Id id = obj->GetId();
-            const unsigned int start = obj->GetBytecodeStartPosition();
-            uint32_t hashval = hashType(start);
-
-            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //PROUT PROUT PROUT PROUT: REMOVE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-            /*
-            //We don't check for type collision for now (can have some side-effect to merge same structures with different names while having the same layout)
-//#ifdef XKSLANG_DEBUG_MODE
-            if (hashval == spirvbin_t::unused) error("Failed to get the hashval for a const or type. Id: " + to_string(id));
-            auto hashF = mapHashPos.find(hashval);
-            if (hashF != mapHashPos.end())
-            {
-                // Warning: might cause some conflicts sometimes?
-                //return error(string("2 types have the same hashmap value. Ids: ") + to_string(mapHashPos[hashval].first) + string(", ") + to_string(id));
-                id = spvUndefinedId;  //by precaution we invalidate the id: we cannot choose between them
-            }
-//#endif
-            */
-
-            mapHashPos[hashval] = pairIdPos(id, start);
-        }
-    }
-#endif
-
-    return true;
-}
-
-bool SpxCompiler::GetListAllMethodsInfo(std::vector<MethodInfo>& vecMethodsInfo)
-{
-    vecMethodsInfo.clear();
-
-    for (auto it = vecAllFunctions.begin(); it != vecAllFunctions.end(); ++it)
-    {
-        FunctionInstruction* aFunction = *it;
-        vecMethodsInfo.push_back(MethodInfo(
-            aFunction->name,
-            aFunction->shaderOwner == nullptr? "": aFunction->shaderOwner->shaderOriginalBaseName,
-            aFunction->IsStage()
-        ));
-    }
-
-    return true;
-}
-
 //Update the start and end position for all objects
 bool SpxCompiler::UpdateAllObjectsPositionInTheBytecode()
 {
@@ -3561,6 +3369,12 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::CreateAndAddNewObjectFor(Parsed
             }
 
             newObject = new ConstInstruction(parsedData, declarationName, this, isS32, valueS32);
+
+            newObject->objectHash = ComputeTypeOrConstHash(parsedData.bytecodeStartPosition);
+#ifdef XKSLANG_DEBUG_MODE
+            if (newObject->objectHash == 0) { error("Failed to assign a valid hash for the const id: " + to_string(parsedData.resultId)); return nullptr; }
+#endif
+
             break;
         }
         case ObjectInstructionTypeEnum::Shader:
@@ -3597,6 +3411,12 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::CreateAndAddNewObjectFor(Parsed
         {
             declarationNameRequired = false;
             TypeInstruction* type = new TypeInstruction(parsedData, declarationName, this);
+            
+            type->objectHash = ComputeTypeOrConstHash(parsedData.bytecodeStartPosition);
+#ifdef XKSLANG_DEBUG_MODE
+            if (type->objectHash == 0) { error("Failed to assign a valid hash for the type id: " + to_string(parsedData.resultId)); return nullptr; }
+#endif
+
             if (isPointerTypeOp(parsedData.opCode))
             {
                 //create the link to the type pointed by the pointer (already created at this stage)
