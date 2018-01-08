@@ -1358,7 +1358,7 @@ namespace spv {
         case spv::OpTypeVoid:         return 0;
         case spv::OpTypeBool:         return 1;
         case spv::OpTypeInt:          return 3 + (spv[typeStart+3]);
-        case spv::OpTypeFloat:        return 5;
+        case spv::OpTypeFloat:        return 5 + (spv[typeStart + 2]);
         case spv::OpTypeVector:
             return 6 + hashType(idPos(spv[typeStart+2])) * (spv[typeStart+3] - 1);
         case spv::OpTypeMatrix:
