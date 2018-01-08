@@ -1,11 +1,11 @@
-struct _44
+struct _39
 {
     int i;
     float4 f4;
     uint b;
 };
 
-struct _49
+struct _44
 {
     float4x3 aMat43;
     float2x2 aMat22;
@@ -13,8 +13,8 @@ struct _49
 
 struct ShaderMain_StructOfStruct
 {
-    _49 s0;
-    _44 s1;
+    _44 s0;
+    _39 s1;
 };
 
 struct ShaderMain_StructVector
@@ -29,18 +29,6 @@ struct ShaderMain_StructSimpleArray
     float4 ColorArray[2];
     int IntArray[3];
     float2x3 aMatArray[4];
-};
-
-struct ShaderMain_StructMatrixRowMajor
-{
-    float4x4 aMat44_rm;
-    float3x4 aMat34_rm;
-    float2x3 aMat23_rm;
-    float4x3 aMat43_rm;
-    float4x2 aMat42_rm;
-    float3x2 aMat32_rm;
-    float3x3 aMat33_rm;
-    float2x2 aMat22_rm;
 };
 
 struct ShaderMain_StructMatrix
@@ -66,12 +54,11 @@ struct ShaderMain_StructBasicType
 
 cbuffer Globals
 {
-    row_major ShaderMain_StructBasicType ShaderMain_s1;
-    row_major ShaderMain_StructVector ShaderMain_s2;
-    row_major ShaderMain_StructMatrix ShaderMain_s3;
-    row_major ShaderMain_StructMatrixRowMajor ShaderMain_s3_rm;
-    row_major ShaderMain_StructSimpleArray ShaderMain_s4;
-    row_major ShaderMain_StructOfStruct ShaderMain_s6;
+    column_major ShaderMain_StructBasicType ShaderMain_s1;
+    column_major ShaderMain_StructVector ShaderMain_s2;
+    column_major ShaderMain_StructMatrix ShaderMain_s3;
+    column_major ShaderMain_StructSimpleArray ShaderMain_s4;
+    column_major ShaderMain_StructOfStruct ShaderMain_s6;
 };
 
 void frag_main()
@@ -80,7 +67,6 @@ void frag_main()
     f += ShaderMain_s1.aFloat;
     f += ShaderMain_s2.aFloat2.x;
     f += ShaderMain_s3.aMat23[0].x;
-    f += ShaderMain_s3_rm.aMat23_rm[0].x;
     f += ShaderMain_s4.ColorArray[0].x;
     f += ShaderMain_s6.s1.f4.x;
 }

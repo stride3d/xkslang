@@ -1,11 +1,10 @@
 ***************************
 ****  ConstantBuffers  ****
 ***************************
- cbuffer Globals [size: 1248]
+ cbuffer Globals [size: 848]
 @C    ShaderMain_s1 => ShaderMain.s1
 @C    ShaderMain_s2 => ShaderMain.s2
 @C    ShaderMain_s3 => ShaderMain.s3
-@C    ShaderMain_s3_rm => ShaderMain.s3_rm
 @C    ShaderMain_s4 => ShaderMain.s4
 @C    ShaderMain_s6 => ShaderMain.s6
 
@@ -15,7 +14,7 @@
 @C    Globals => Globals [Stage=Pixel]
 
 ConstantBuffers. Count=1
- cbuffer: Name="Globals" Size=1248 MembersCount=6
+ cbuffer: Name="Globals" Size=848 MembersCount=5
   KeyName="ShaderMain.s1" RawName="ShaderMain_s1" LogicalGroup="" Offset=0
   Class=Struct Type=Void Size=32 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
    CountMembers=5
@@ -60,27 +59,7 @@ ConstantBuffers. Count=1
    Name="aMat22" Offset=336
    Class=MatrixRows Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=2
 
-  KeyName="ShaderMain.s3_rm" RawName="ShaderMain_s3_rm" LogicalGroup="" Offset=448
-  Class=Struct Type=Void Size=400 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
-   CountMembers=8
-   Name="aMat44_rm" Offset=0
-   Class=MatrixColumns Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
-   Name="aMat34_rm" Offset=64
-   Class=MatrixColumns Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=4
-   Name="aMat23_rm" Offset=112
-   Class=MatrixColumns Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=3
-   Name="aMat43_rm" Offset=144
-   Class=MatrixColumns Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=3
-   Name="aMat42_rm" Offset=208
-   Class=MatrixColumns Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=2
-   Name="aMat32_rm" Offset=272
-   Class=MatrixColumns Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=2
-   Name="aMat33_rm" Offset=320
-   Class=MatrixColumns Type=Float Size=48 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=3 Columns=3
-   Name="aMat22_rm" Offset=368
-   Class=MatrixColumns Type=Float Size=32 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=2 Columns=2
-
-  KeyName="ShaderMain.s4" RawName="ShaderMain_s4" LogicalGroup="" Offset=848
+  KeyName="ShaderMain.s4" RawName="ShaderMain_s4" LogicalGroup="" Offset=448
   Class=Struct Type=Void Size=272 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
    CountMembers=3
    Name="ColorArray" Offset=0
@@ -90,7 +69,7 @@ ConstantBuffers. Count=1
    Name="aMatArray" Offset=80
    Class=MatrixRows Type=Float Size=192 Alignment=16 ArrayStride=48 MatrixStride=16 ArrayElements=4 Rows=3 Columns=2
 
-  KeyName="ShaderMain.s6" RawName="ShaderMain_s6" LogicalGroup="" Offset=1120
+  KeyName="ShaderMain.s6" RawName="ShaderMain_s6" LogicalGroup="" Offset=720
   Class=Struct Type=Void Size=128 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
    CountMembers=2
    Name="s0" Offset=0
