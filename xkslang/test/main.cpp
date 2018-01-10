@@ -328,8 +328,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsWithStreamsVariable08", "functionsWithStreamsVariable08.xkfx" },
     //{ "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
     //{ "functionsWithStreamsVariable10", "functionsWithStreamsVariable10.xkfx" },
-////////////////////{ "functionsWithStreamsVariable11", "functionsWithStreamsVariable11.xkfx" },  put all customs type as a type belonging to a shader (and not have them to merge) ?
-////////////////////{ "functionsWithStreamsVariable12", "functionsWithStreamsVariable12.xkfx" },
+    //{ "functionsWithStreamsVariable11", "functionsWithStreamsVariable11.xkfx" },
+    { "functionsWithStreamsVariable12", "functionsWithStreamsVariable12.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
@@ -343,7 +343,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TransformationBase", "TransformationBase.xkfx" },
     //{ "TransformationWAndVP", "TransformationWAndVP.xkfx" },
     //{ "DirectLightGroupArray", "DirectLightGroupArray.xkfx" },
-    { "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
+    //{ "MaterialSurfaceStageCompositor", "MaterialSurfaceStageCompositor.xkfx" },
     //{ "NormalFromNormalMapping", "NormalFromNormalMapping.xkfx" },
     //{ "LightDirectionalGroup", "LightDirectionalGroup.xkfx" },
     //{ "DynamicTexture", "DynamicTexture.xkfx" },

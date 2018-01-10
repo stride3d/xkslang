@@ -372,7 +372,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                 case ObjectInstructionTypeEnum::Type:
                 {
                     mergeTypeOrConst = true;
-                    ObjectInstructionBase* typeOcConstSimilarObject = FindSameObjectInHashmap(destinationBytecodeTypeHashMap, objectFromUnmappedId);
+                    ObjectInstructionBase* typeOcConstSimilarObject = FindIfObjectExistInHashmap(destinationBytecodeTypeHashMap, objectFromUnmappedId);
                     if (typeOcConstSimilarObject != nullptr)
                     {
                         //The type already exists in the destination bytecode, we can simply remap to it
@@ -382,7 +382,7 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
                     }
                     else
                     {
-                        typeOcConstSimilarObject = FindSameObjectInHashmap(mergeBytecodeTypeHashMap, objectFromUnmappedId);
+                        typeOcConstSimilarObject = FindIfObjectExistInHashmap(mergeBytecodeTypeHashMap, objectFromUnmappedId);
                         if (typeOcConstSimilarObject != nullptr)
                         {
                             //Several copies of the same types / consts were found in the bytecode to merge

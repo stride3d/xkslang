@@ -6,12 +6,6 @@ struct TestIComposition_Streams
     int _unused;
 };
 
-struct TestShaderBase_Streams
-{
-    vec3 sBase;
-    int _unused;
-};
-
 struct TestShaderMain_Streams
 {
     vec3 sMain;
@@ -37,15 +31,15 @@ TestShaderMain_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
     return res;
 }
 
-TestShaderBase_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(TestShaderMain_Streams s)
+TestIComposition_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(TestShaderMain_Streams s)
 {
-    TestShaderBase_Streams r = TestShaderBase_Streams(s.sBase, s._unused);
+    TestIComposition_Streams r = TestIComposition_Streams(s.sBase, s._unused);
     return r;
 }
 
-void TestShaderBase_Compute(inout TestShaderBase_Streams s)
+void TestShaderBase_Compute(inout TestIComposition_Streams s)
 {
-    s.sBase = vec3(1.0);
+    s.sComp = vec3(1.0);
 }
 
 TestIComposition_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestICompositionStreams(TestShaderMain_Streams s)
@@ -54,16 +48,16 @@ TestIComposition_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestIComp
     return r;
 }
 
-void o0S5C0_TestIComposition_ComputeComp(inout VS_STREAMS _streams, TestShaderBase_Streams s)
+void o0S5C0_TestIComposition_ComputeComp(inout VS_STREAMS _streams, TestIComposition_Streams s)
 {
-    _streams.sComp_id0 = s.sBase;
+    _streams.sComp_id0 = s.sComp;
 }
 
 void TestShaderMain_Compute(inout VS_STREAMS _streams, inout TestShaderMain_Streams s)
 {
     s.sMain = vec3(2.0);
     TestShaderMain_Streams param = s;
-    TestShaderBase_Streams param_1 = TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(param);
+    TestIComposition_Streams param_1 = TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(param);
     TestShaderBase_Compute(param_1);
     TestShaderMain_Streams backup = TestShaderMain__getStreams(_streams);
     TestShaderMain_Streams param_2 = backup;

@@ -89,7 +89,7 @@ uint32_t SpxCompiler::ComputeTypeOrConstHash(uint32_t bytecodePos)
     return (hash + 1);
 }
 
-SpxCompiler::ObjectInstructionBase* SpxCompiler::FindSameObjectInHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj)
+SpxCompiler::ObjectInstructionBase* SpxCompiler::FindIfObjectExistInHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj)
 {
     uint32_t hashval = obj->objectHash;
 
@@ -97,28 +97,36 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::FindSameObjectInHashmap(Bytecod
     if (hashval == 0) { error("The object has an invalid hash value. Object Id: " + to_string(obj->GetId())); return nullptr; }
 #endif
 
-    unordered_map<std::uint32_t, HashCorrespondingObjects>& hmap = hashmap.objectsHashmap;
+    unordered_map<std::uint32_t, ObjectInstructionBase*>& hmap = hashmap.objectsHashmap;
     auto hashF = hmap.find(hashval);
     if (hashF == hmap.end()) return false;
 
-    const HashCorrespondingObjects& correspondingObjects = hashF->second;
+    ObjectInstructionBase* correspondingObjects = hashF->second;
 
+    while (correspondingObjects != nullptr)
+    {
 #ifdef XKSLANG_DEBUG_MODE
-    if (correspondingObjects.IsStruct && obj->GetOpCode() != spv::OpTypeStruct) { error("Invalid objects hash values: 2 structs are expected"); return nullptr; }
+        if (correspondingObjects->objectHash != hashval) { error("The object found in the hashmap has an incorrect hash value"); return nullptr; }
 #endif
 
-    if (!correspondingObjects.IsStruct) return correspondingObjects.CorrespondingObject;
+        //Since an hash value is not 100% accurate and can have collision: we also need to check if the 2 type/const are identical
+        if (!hashmap.bytecodeSource->CompareOpTypeConstInstructions(correspondingObjects->GetBytecodeStartPosition(), *(obj->bytecodeSource), obj->GetBytecodeStartPosition()))
+        {
+            if (hashmap.bytecodeSource != this && hashmap.bytecodeSource->HasAnyError()) 
+            {
+                this->CopyErrorsMessagesFrom(hashmap.bytecodeSource->errorMessages);
+                return nullptr;
+            }
+        }
+        else
+        {
+            return correspondingObjects;
+        }
 
-    //We have an additionnal step for structs: since an hash value is not 100% accurate and can have collision we need to check if the 2 structs are really identical
-    if (!hashmap.bytecodeSource->CompareOpTypeConstInstructions(correspondingObjects.CorrespondingObject->GetBytecodeStartPosition(), *(obj->bytecodeSource), obj->GetBytecodeStartPosition()))
-    {
-        if (hashmap.bytecodeSource != this && hashmap.bytecodeSource->HasAnyError())
-            this->CopyErrorsMessagesFrom(hashmap.bytecodeSource->errorMessages);
-
-        return false;
+        correspondingObjects = correspondingObjects->nextObjectInHashList;
     }
 
-    return correspondingObjects.CorrespondingObject;
+    return nullptr;
 }
 
 bool SpxCompiler::AddNewObjectIntoHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj)
@@ -127,18 +135,22 @@ bool SpxCompiler::AddNewObjectIntoHashmap(BytecodeObjectsHashMap& hashmap, Objec
 
 #ifdef XKSLANG_DEBUG_MODE
     if (hashval == 0) return error("The object has an invalid hash value. Object Id: " + to_string(obj->GetId()));
-    if (obj->bytecodeSource != hashmap.bytecodeSource) return error("Illegal operation: we cannot add an object from a different source into the hashmap");
+    if (obj->bytecodeSource != hashmap.bytecodeSource) return error("Illegal operation: we cannot add an object from a different source than the hashmap's own source");
 #endif
 
-    bool isStruct = (obj->GetOpCode() == spv::OpTypeStruct);
-
-    unordered_map<std::uint32_t, HashCorrespondingObjects>& hmap = hashmap.objectsHashmap;
+    unordered_map<std::uint32_t, ObjectInstructionBase*>& hmap = hashmap.objectsHashmap;
     auto hashF = hmap.find(hashval);
     if (hashF != hmap.end())
     {
-        return error("PROUT PROUT PROUT: Hash already used");
+        //Create the linked list of objects sharing the same hash value
+        obj->nextObjectInHashList = hashF->second;
     }    
-    hmap[hashval] = HashCorrespondingObjects(obj, isStruct);
+    else
+    {
+        obj->nextObjectInHashList = nullptr;
+    }
+
+    hmap[hashval] = obj;
 
     return true;
 }

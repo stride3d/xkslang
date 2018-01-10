@@ -163,7 +163,7 @@ public:
     public:
         ObjectInstructionBase(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
             : kind(parsedData.kind), opCode(parsedData.opCode), resultId(parsedData.resultId), typeId(parsedData.typeId), name(name), shaderOwner(nullptr),
-            bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition), bytecodeSource(source), objectHash(0) {}
+            bytecodeStartPosition(parsedData.bytecodeStartPosition), bytecodeEndPosition(parsedData.bytecodeEndPosition), bytecodeSource(source), objectHash(0), nextObjectInHashList(nullptr) {}
         virtual ~ObjectInstructionBase(){}
         virtual ObjectInstructionBase* CloneBasicData() {
             ObjectInstructionBase* clonedObj = new ObjectInstructionBase(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
@@ -196,6 +196,7 @@ public:
         SpxCompiler* bytecodeSource;
 
         uint32_t objectHash;
+        ObjectInstructionBase* nextObjectInHashList;  //pointer to the next object having the same hash value
 
         //those fields can change when we mix bytecodes
         unsigned int bytecodeStartPosition;
@@ -358,21 +359,11 @@ public:
         friend class SpxCompiler;
     };
 
-    class HashCorrespondingObjects
-    {
-    public:
-        ObjectInstructionBase* CorrespondingObject;
-        bool IsStruct;
-
-        HashCorrespondingObjects(): CorrespondingObject(nullptr), IsStruct(false) {}
-        HashCorrespondingObjects(ObjectInstructionBase* obj, bool isStruct): CorrespondingObject(obj), IsStruct(isStruct) {}
-    };
-
     class BytecodeObjectsHashMap
     {
     public:
         SpxCompiler* bytecodeSource;
-        std::unordered_map<uint32_t, HashCorrespondingObjects> objectsHashmap;
+        std::unordered_map<uint32_t, ObjectInstructionBase*> objectsHashmap;
 
         BytecodeObjectsHashMap(): bytecodeSource(nullptr) {}
         BytecodeObjectsHashMap(SpxCompiler* source) : bytecodeSource(source) {}
@@ -888,7 +879,7 @@ private:
     bool MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const std::vector<ShaderToMergeData>& listShadersToMerge, std::string allInstancesPrefixToAdd);
 
     bool AddNewObjectIntoHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj);
-    ObjectInstructionBase* FindSameObjectInHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj);
+    ObjectInstructionBase* FindIfObjectExistInHashmap(BytecodeObjectsHashMap& hashmap, ObjectInstructionBase* obj);
     bool BuildHashmapAllMergableTypesAndConsts(BytecodeObjectsHashMap& hashmap);
     uint32_t ComputeTypeOrConstHash(uint32_t bytecodePos);
 
