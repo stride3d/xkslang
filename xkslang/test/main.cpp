@@ -329,7 +329,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "functionsWithStreamsVariable09", "functionsWithStreamsVariable09.xkfx" },
     //{ "functionsWithStreamsVariable10", "functionsWithStreamsVariable10.xkfx" },
     //{ "functionsWithStreamsVariable11", "functionsWithStreamsVariable11.xkfx" },
-    { "functionsWithStreamsVariable12", "functionsWithStreamsVariable12.xkfx" },
+    //{ "functionsWithStreamsVariable12", "functionsWithStreamsVariable12.xkfx" },
 
     //{ "ShadingBase", "ShadingBase.xkfx" },
     //{ "PreviewTexture", "PreviewTexture.xkfx" },
@@ -376,7 +376,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
-/////////////////////{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
+    { "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
 };
 
 enum class ShaderLanguageEnum
