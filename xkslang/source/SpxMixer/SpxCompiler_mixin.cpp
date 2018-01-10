@@ -392,7 +392,7 @@ SpxCompiler::FunctionInstruction* SpxCompiler::DuplicateFunctionBytecode(Functio
         }
 
         //remap all result Ids from the duplicated function bytecode
-        if (!remapAllIds(duplicatedFunctionBytecode, 0, duplicatedFunctionBytecode.size(), tableRemapId))
+        if (!remapAllIds(duplicatedFunctionBytecode, (unsigned int)0, (unsigned int)duplicatedFunctionBytecode.size(), tableRemapId))
         {
             error("remapAllIds failed on duplicatedBytecode");
             return nullptr;

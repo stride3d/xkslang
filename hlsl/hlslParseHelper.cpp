@@ -141,7 +141,8 @@ bool HlslParseContext::parseXkslShaderMethodExpression(XkslShaderLibrary* shader
 
     int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
 
-    bool success = grammar.parseXKslShaderMethodDeclarationAndDefinition(shaderLibrary, currentShader);
+    TShaderClassFunction* shaderMethod = grammar.parseXKslShaderMethodDeclarationAndDefinition(shaderLibrary, currentShader);
+    bool success = (shaderMethod != nullptr);
 
     //Reset the symbol table at global level (the parser can sometimes returns without popping the symbol levels)
     while (symbolTable.getCurrentLevelCount() > symbolTableInitialLevelCount) {
