@@ -149,7 +149,7 @@ namespace glslang {
         bool checkShaderGenericValuesExpression(TVector<TString*>& listGenericValues);
         bool parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVector<TShaderClassFunction>* listMethodDeclaration);
         bool validateShaderDeclaredType(const TType& type);
-        bool addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList, TFunction& function, int tokenBodyStartIndex, int tokenBodyEndIndex);
+        bool addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList, TFunction& function, int tokenBodyStartIndex, int tokenBodyEndIndex, bool isPrototype);
         bool acceptFunctionParameters(TFunction&);
         bool acceptParameterDeclaration(TFunction&);
         bool acceptFunctionDefinition(TFunctionDeclarator&, TIntermNode*& nodeList, TVector<HlslToken>* deferredTokens);

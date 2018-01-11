@@ -3180,6 +3180,55 @@ static bool processMethodsDeclarationForMethodsOnlyGeneratedIfUsedForShader(Hlsl
     return true;
 }
 
+static bool CheckThatShaderDefineInheritedAbstractMethod(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary)
+{
+    unsigned int countParents = (unsigned int)(shader->listParents.size());
+    if (countParents == 0) return true;
+    unsigned int countMethodsInShader = (unsigned int)shader->listMethods.size();
+
+    for (unsigned int p = 0; p < countParents; p++)
+    {
+        XkslShaderDefinition* aParentShader = shader->listParents[p].parentShader;
+
+        unsigned int countMethodsInParentShader = (unsigned int)aParentShader->listMethods.size();
+        for (unsigned int i = 0; i < countMethodsInParentShader; ++i)
+        {
+            TShaderClassFunction* parentShaderMethod = &(aParentShader->listMethods[i]);
+            if (parentShaderMethod->isPrototype)
+            {
+                if (!parentShaderMethod->function->getType().getQualifier().isAbstract)
+                {
+                    error(parseContext, "A method's prototype must be declared as \"abstract\": " + parentShaderMethod->function->getMangledName());
+                    return false;
+                }
+
+                //We need to check that the shader defines the abstract method                
+                const TString& parentMethodName = parentShaderMethod->function->getDeclaredMangledName();
+
+                bool methodFound = false;
+                for (unsigned int k = 0; k < countMethodsInShader; ++k)
+                {
+                    TShaderClassFunction* shaderMethod = &(shader->listMethods[k]);
+                    const TString& methodName = shaderMethod->function->getDeclaredMangledName();
+                    if (parentMethodName == methodName)
+                    {
+                        methodFound = true;
+                        break;
+                    }
+                }
+
+                if (!methodFound)
+                {
+                    error(parseContext, "Shader \"" + shader->shaderFullName + "\" must defines the inherited abstract method: " + parentMethodName);
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TPpContext& ppContext,
     TString& unknownIdentifier, TString& streamsMissingConversionFunctionShaderOrigin, TString& streamsMissingConversionFunctionShaderTarget)
 {
@@ -3187,12 +3236,15 @@ static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslSha
     for (unsigned int i = 0; i < countMethods; ++i)
     {
         TShaderClassFunction* shaderMethod = &(shader->listMethods[i]);
-        if (shaderMethod->bodyNode == nullptr && !shaderMethod->onlyCreateFunctionBodyIfFunctionIsUsed)
+        if (!shaderMethod->isPrototype)
         {
-            //The method body has not already been parsed
-            bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext,
-                unknownIdentifier, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget);
-            if (!success) return false;
+            if (shaderMethod->bodyNode == nullptr && !shaderMethod->onlyCreateFunctionBodyIfFunctionIsUsed)
+            {
+                //The method body has not already been parsed
+                bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext,
+                    unknownIdentifier, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget);
+                if (!success) return false;
+            }
         }
     }
 
@@ -3967,6 +4019,14 @@ static bool ParseXkslShaderRecursif(
 
                 if (shader->parsingStatus == previousProcessingOperation)
                 {
+                    //if the shader innherits a class declaring an abstract method: make sure the shader defines it
+                    success = CheckThatShaderDefineInheritedAbstractMethod(parseContext, shader, &shaderLibrary);
+                    if (!success)
+                    {
+                        keepLooping = false;
+                        break;
+                    }
+
                     success = parseShaderMethodsDefinition(parseContext, shader, &shaderLibrary, ppContext,
                         unknownIdentifier, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget);
 

@@ -3586,7 +3586,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
     return true;
 }
 
-bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList, TFunction& function, int tokenBodyStartIndex, int tokenBodyEndIndex)
+bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList, TFunction& function, int tokenBodyStartIndex, int tokenBodyEndIndex, bool isPrototype)
 {
     if (shader == nullptr)
     {
@@ -3609,17 +3609,21 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader
 
     bool functionAlreadyDeclared = (index != -1);
 
-    HlslToken tokenFunctionStart = getTokenAtIndex(tokenBodyStartIndex);
-    if (tokenFunctionStart.tokenClass != EHTokLeftBrace)
+    HlslToken tokenFunctionStart;
+    if (!isPrototype)
     {
-        error("Invalid function token start");
-        return false;
+        tokenFunctionStart = getTokenAtIndex(tokenBodyStartIndex);
+        if (tokenFunctionStart.tokenClass != EHTokLeftBrace)
+        {
+            error("Invalid function token start");
+            return false;
+        }
     }
 
     //Function declaration
     if (!functionAlreadyDeclared)
     {
-        functionList.push_back(TShaderClassFunction(shader, &function, tokenFunctionStart, nullptr, tokenBodyStartIndex, tokenBodyEndIndex));
+        functionList.push_back(TShaderClassFunction(shader, &function, tokenFunctionStart, nullptr, isPrototype, tokenBodyStartIndex, tokenBodyEndIndex));
     }
 
     return true;
@@ -3893,9 +3897,12 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                     }
 
                     //only record the method declaration
+                    bool isFunctionPrototype = false;
+                    int tokenFunctionBodyStartIndex = 0;
+                    int tokenFunctionBodyEndIndex = 0;
                     if (peekTokenClass(EHTokLeftBrace)) // compound_statement (function body definition) or just a declaration?
                     {
-                        int tokenFunctionBodyStartIndex = getTokenCurrentIndex();
+                        tokenFunctionBodyStartIndex = getTokenCurrentIndex();
 
                         advanceToken();
                         if (!advanceUntilEndOfBlock(EHTokRightBrace)) {
@@ -3903,16 +3910,22 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                             return false;
                         }
 
-                        int tokenFunctionBodyEndIndex = getTokenCurrentIndex() - 1;
-
-                        //function definition: we add the function definition into our shader
-                        if (!addShaderClassFunctionDeclaration(shader, *listMethodDeclaration, *function, tokenFunctionBodyStartIndex, tokenFunctionBodyEndIndex)) return false;
+                        tokenFunctionBodyEndIndex = getTokenCurrentIndex() - 1;
                     }
                     else
                     {
-                        error("A function prototype is not allowed in a shader declaration: " + function->getName());
-                        return false;
+                        if (!acceptTokenClass(EHTokSemicolon)) {
+                            error("end of instruction (;) missing after the function prototype declaration");
+                            return false;
+                        }
+                        isFunctionPrototype = true;
+                        tokenFunctionBodyStartIndex = 0;
+                        tokenFunctionBodyEndIndex = 0;
                     }
+
+                    //function definition: we add the function definition into our shader
+                    if (!addShaderClassFunctionDeclaration(shader, *listMethodDeclaration, *function, tokenFunctionBodyStartIndex, tokenFunctionBodyEndIndex, isFunctionPrototype))
+                        return false;
                 }
                 break;
 
@@ -5513,6 +5526,7 @@ bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* s
         for (unsigned int i = 0; i < countMethods; ++i)
         {
             TShaderClassFunction* aShaderMethod = &(shader->listMethods[i]);
+            if (aShaderMethod->isPrototype) continue;
             if (aShaderMethod->function->getName().compare(methodName) == 0)
             {
                 shaderMethodsList.push_back(aShaderMethod);
@@ -5646,6 +5660,8 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
         unsigned int countMethods = (unsigned int)(shader->listMethods.size());
         for (unsigned int i = 0; i < countMethods; ++i)
         {
+            if (shader->listMethods[i].isPrototype) continue;
+
             TFunction* aFunction = shader->listMethods[i].function;
             const TString& aFunctionMangledName = aFunction->getDeclaredMangledName();
             if (aFunctionMangledName == methodCalledMangledName)

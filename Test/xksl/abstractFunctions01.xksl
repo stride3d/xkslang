@@ -1,0 +1,16 @@
+
+shader ShaderBase
+{
+    abstract stage void stageCall();
+    stage float stageMember = 1.0f;
+};
+
+shader ShaderMain : ShaderBase
+{
+	void stageCall(){}
+	
+	void VSMain()
+	{
+		stageCall();
+	}
+};

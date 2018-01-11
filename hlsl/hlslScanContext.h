@@ -79,6 +79,7 @@ public:
     TFunction* function;           //function prototype
     HlslToken tokenBodyStart;      //token where the function is declared
     TIntermNode* bodyNode;         //resulting node of the function definition
+    bool isPrototype;
 
     //Token indexes where the function body start and end (position of the "{" and "}" symbols)
     int tokenBodyStartIndex;
@@ -89,11 +90,11 @@ public:
 
 public:
     TShaderClassFunction()
-        : shader(nullptr), function(nullptr), bodyNode(nullptr), tokenBodyStartIndex(0), tokenBodyEndIndex(0),
+        : shader(nullptr), function(nullptr), bodyNode(nullptr), isPrototype(false), tokenBodyStartIndex(0), tokenBodyEndIndex(0),
             counterCountCallsToFunction(0), onlyCreateFunctionBodyIfFunctionIsUsed(false){}
 
-    TShaderClassFunction(XkslShaderDefinition* s, TFunction* f, HlslToken& token, TIntermNode* node, int startIndex, int endIndex)
-        : shader(s), function(f), tokenBodyStart(token), bodyNode(node), tokenBodyStartIndex(startIndex), tokenBodyEndIndex(endIndex),
+    TShaderClassFunction(XkslShaderDefinition* s, TFunction* f, HlslToken& token, TIntermNode* node, bool prototype, int startIndex, int endIndex)
+        : shader(s), function(f), tokenBodyStart(token), bodyNode(node), isPrototype(prototype), tokenBodyStartIndex(startIndex), tokenBodyEndIndex(endIndex),
             counterCountCallsToFunction(0), onlyCreateFunctionBodyIfFunctionIsUsed(false) {}
 };
 
