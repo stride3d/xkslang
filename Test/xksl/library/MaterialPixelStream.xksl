@@ -35,6 +35,9 @@ namespace SiliconStudio.Xenko.Rendering.Materials
         stage stream float4  matEmissive;
         stage stream float   matEmissiveIntensity;
 
+        // Scattering attributes
+        stage stream float  matScatteringStrength;
+
         // Transparent attributes
         stage stream float2  matDiffuseSpecularAlphaBlend;
         stage stream float3  matAlphaBlendColor;
@@ -83,6 +86,8 @@ namespace SiliconStudio.Xenko.Rendering.Materials
 
             streams.matEmissive = 0.0f;
             streams.matEmissiveIntensity = 0.0f;
+
+            streams.matScatteringStrength = 1.0f;
 
             streams.matDiffuseSpecularAlphaBlend = 1.0f;
             streams.matAlphaBlendColor = 1.0f;

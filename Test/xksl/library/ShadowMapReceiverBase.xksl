@@ -9,11 +9,18 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
     /// TCascadeCountBase: Number of cascades.
     /// TCascadeDebug: Flag to enable debug mode (1 color per cascade).
     /// </remarks>
-    internal shader ShadowMapReceiverBase<MemberName PerLighting, int TCascadeCountBase, int TLightCountBase> : MaterialPixelShadingStream, ShadowMapGroup<PerLighting>, ShadowMapFilterBase<PerLighting>, PositionStream4
+    internal shader ShadowMapReceiverBase<MemberName PerLighting, int TCascadeCountBase, int TLightCountBase> :
+        MaterialPixelShadingStream,
+        ShadowMapGroup<PerLighting>,
+        ShadowMapFilterBase<PerLighting>,
+        PositionStream4
     {
         cbuffer PerLighting // TODO: Use a proper cbuffer for this?
         {
             float4x4 WorldToShadowCascadeUV[TCascadeCountBase * TLightCountBase];
+            float4x4 InverseWorldToShadowCascadeUV[TCascadeCountBase * TLightCountBase];   // This is only required for SSS.
+            float4x4 ViewMatrices[TCascadeCountBase * TLightCountBase];   // This is only required for SSS.
+            float2 DepthRanges[TCascadeCountBase * TLightCountBase];   // x = z-near, y = z-far. This is only required for SSS.
             float DepthBiases[TLightCountBase];
             float OffsetScales[TLightCountBase];
         };
@@ -29,11 +36,27 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
             //float3 shadowPositionWSddx = ddx_fine(shadowPositionWS);
             //float3 shadowPositionWSddy = ddy_fine(shadowPositionWS);
 
-            float4 shadowPosition = mul(float4(shadowPositionWS, 1), WorldToShadowCascadeUV[cascadeIndex + lightIndex * TCascadeCountBase]);
+            float4 shadowPosition = mul(float4(shadowPositionWS, 1.0), WorldToShadowCascadeUV[cascadeIndex + lightIndex * TCascadeCountBase]);
             shadowPosition.z -= DepthBiases[lightIndex];
             shadowPosition.xyz /= shadowPosition.w;
 
             return FilterShadow(shadowPosition.xy, shadowPosition.z);
+        }
+
+        float ComputeThicknessFromCascade(float3 pixelPositionWS,   // TODO: This is named "compute..." and the other function is named "calculate..."!
+                                          float3 meshNormalWS, 
+                                          int cascadeIndex,
+                                          int lightIndex,
+                                          bool isOrthographic)
+        {
+            const int arrayIndex = cascadeIndex + lightIndex * TCascadeCountBase;
+            
+            return FilterThickness(pixelPositionWS,
+                                   meshNormalWS,
+                                   DepthRanges[arrayIndex],
+                                   WorldToShadowCascadeUV[arrayIndex],
+                                   InverseWorldToShadowCascadeUV[arrayIndex],
+                                   isOrthographic);
         }
     };
 }

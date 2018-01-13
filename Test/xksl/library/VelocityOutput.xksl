@@ -1,0 +1,11 @@
+﻿// Copyright (c) 2017 Silicon Studio Corp. (http://siliconstudio.co.jp)
+// This file is distributed under GPL v3. See LICENSE.md for details.
+
+// ComputeColor that just returns streams.velocity
+shader VelocityOutput : ComputeColor, VelocityStream
+{
+    override float4 Compute()
+    {
+        return float4(streams.velocity.xy, 0.0f, 0.0f);
+    }
+};

@@ -7,4 +7,5 @@
 shader ShadowStream
 {
     stage stream float3 shadowColor;
+    stage stream float thicknessWS;
 };

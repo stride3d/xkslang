@@ -9,6 +9,8 @@ shader NormalFromNormalMapping : Transformation, NormalBase, NormalStream
     {
         base.GenerateNormal_PS();
         UpdateTangentToWorld();
+        // Transform meshNormal from object space to world space:
+        streams.meshNormalWS = mul(streams.meshNormal, (float3x3)WorldInverseTranspose);    // TODO: PERFORMANCE: Normalization required?
     }
 
     override float3x3 GetTangentWorldTransform()

@@ -7,6 +7,10 @@ namespace SiliconStudio.Xenko.Rendering.Materials
     /// </summary>
     shader IMaterialSurfaceShading : MaterialPixelStream, LightStream
     {
+        void PrepareForLightingAndShading()
+        {
+        }
+
         float3 ComputeDirectLightContribution()
         {
             return 0;
@@ -15,6 +19,10 @@ namespace SiliconStudio.Xenko.Rendering.Materials
         float3 ComputeEnvironmentLightContribution()
         {
             return 0;
+        }
+
+        void AfterLightingAndShading()
+        {
         }
     };
 }

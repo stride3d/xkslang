@@ -7,6 +7,9 @@ shader NormalStream
 {
     // The normal attribute from the mesh
     stage stream float3 meshNormal : NORMAL;
+
+    // The above normal but in world space
+    stage stream float3 meshNormalWS;   // This gets set in "NormalFromNormalMapping.xksl" and "NormalFromMesh.xksl".
     
     // The tangent attribute from the mesh
     stage stream float4 meshTangent : TANGENT;

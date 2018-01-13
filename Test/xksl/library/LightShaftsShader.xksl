@@ -18,6 +18,9 @@ namespace SiliconStudio.Xenko.Rendering.Images
             ResetLightStream();
             streams.NdotL = 1;
             streams.normalWS = float3(0,1,0);
+            // Needed by thickness computation (TODO: need a way to disable ComputeTransmittance when computing light shafts)
+            streams.meshNormalWS = 0.0f;
+            streams.PositionWS = 0.0f;
 
             float atten = lightGroup.ComputeAttenuation(positionWS.xyz, 0);
             float3 shadowColor = lightGroup.ComputeShadow(positionWS.xyz, 0);

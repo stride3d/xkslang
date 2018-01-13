@@ -19,14 +19,14 @@ namespace SiliconStudio.Xenko.Rendering.Materials
                 // Fake - this gradient depends on light intensity as well
                 //streams.lightColorNdotL = celLightFunction.Compute(streams.lightColorNdotL).rgb;
 				celLight = celLightFunction.Compute(streams.lightColorNdotL * FakeNDotL);
-				streams.lightColorNdotL = streams.lightColor * streams.shadowColor * streams.lightDirectAmbientOcclusion;                
             }
             else
             {
 				// Correct
-				celLight = celLightFunction.Compute(streams.NdotL);
-				streams.lightColorNdotL = streams.lightColor * streams.shadowColor * streams.lightDirectAmbientOcclusion;                
+				celLight = celLightFunction.Compute(streams.NdotL);          
             }
+
+			streams.lightColorNdotL = streams.lightColor * streams.shadowColor * streams.lightDirectAmbientOcclusion;      
 
             var diffuseColor = streams.matDiffuseVisible;
             if (TIsEnergyConservative)

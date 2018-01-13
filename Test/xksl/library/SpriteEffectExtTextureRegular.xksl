@@ -1,0 +1,27 @@
+// Copyright (c) 2014-2017 Silicon Studio Corp. All rights reserved. (https://www.siliconstudio.co.jp)
+// See LICENSE.md for full license information.
+shader SpriteEffectExtTextureRegular : ShaderBase
+{
+    stage Texture2D TextureRegular;
+
+    stage SamplerState Sampler;
+    stage float MipLevel;
+
+    stage stream float2 TexCoord : TEXCOORD0;
+    stage stream float4 Position : POSITION;
+
+    stage override void VSMain()
+    {
+        streams.ShadingPosition = streams.Position;
+    }
+
+    stage override void PSMain()
+    {
+        streams.ColorTarget = Shading();
+    }
+
+    stage float4 Shading()
+    {
+        return TextureRegular.SampleLevel(Sampler, streams.TexCoord, MipLevel);
+    }
+};

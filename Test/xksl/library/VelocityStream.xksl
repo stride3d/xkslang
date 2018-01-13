@@ -1,0 +1,14 @@
+﻿// Copyright (c) 2017 Silicon Studio Corp. (http://siliconstudio.co.jp)
+// This file is distributed under GPL v3. See LICENSE.md for details.
+
+shader VelocityStream : ShaderBase
+{
+    // Screen space velocity
+    stage stream float2 velocity;
+
+    stage override void VSMain()
+    {
+        base.VSMain();
+        streams.velocity = float2(0,0);
+    }
+};

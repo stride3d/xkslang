@@ -1,0 +1,25 @@
+﻿// Copyright (c) 2017 Silicon Studio Corp. (http://siliconstudio.co.jp)
+// This file is distributed under GPL v3. See LICENSE.md for details.
+
+namespace SiliconStudio.Xenko.Rendering.Materials
+{
+    /// <summary>
+    /// Renders only the opaque parts for the opaque hair pass.
+    /// </summary>
+    class MaterialHairDiscardFunctionOpaquePass<LinkType THairAlphaThreshold> : IMaterialHairDiscardFunction, MaterialPixelStream
+    {
+        cbuffer PerMaterial
+        {
+            [Link("THairAlphaThreshold")]
+            stage float HairAlphaThreshold;    // Any alpha value above this value is considered opaque.
+        }
+
+        void Discard(void)
+        {
+            if(streams.matDiffuse.a < HairAlphaThreshold)
+            {
+                discard;
+            }
+        }
+    };
+}

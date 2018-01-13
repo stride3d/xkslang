@@ -14,5 +14,32 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
         {
             return ShadowMapTexture.SampleCmpLevelZero(LinearClampCompareLessEqualSampler, position, positionDepth);
         }
+        
+        float FilterThickness(float3 pixelPositionWS,
+                              float3 meshNormalWS,
+                              float2 depthRanges,
+                              float4x4 worldToShadowCascadeUV,    // Transforms from world space to shadow cascade UV.
+                              float4x4 inverseWorldToShadowCascadeUV,  // Transforms from shadow cascade UV to world space.
+                              bool isOrthographic)
+        {
+            //const float filterRadiusInPixels = 1.0;    // 1 pixel filter radius
+            const float filterRadiusInPixels = 1.5;    // 1.5 pixel filter radius
+
+            float3 adjustedPixelPositionWS;
+            float3 adjustedPixelPositionShadowSpace;
+
+            if(isOrthographic)
+            {
+                CalculateAdjustedShadowSpacePixelPosition(filterRadiusInPixels, pixelPositionWS, meshNormalWS, worldToShadowCascadeUV, inverseWorldToShadowCascadeUV,
+                                                          adjustedPixelPositionWS, adjustedPixelPositionShadowSpace);
+            }
+            else
+            {
+                CalculateAdjustedShadowSpacePixelPositionPerspective(filterRadiusInPixels, pixelPositionWS, meshNormalWS, worldToShadowCascadeUV, inverseWorldToShadowCascadeUV,
+                                                                     adjustedPixelPositionWS, adjustedPixelPositionShadowSpace);
+            }
+
+            return SampleThickness(adjustedPixelPositionShadowSpace, adjustedPixelPositionWS, depthRanges, inverseWorldToShadowCascadeUV, isOrthographic);
+        }
     };
 }

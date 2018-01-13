@@ -106,4 +106,12 @@ shader Math
     {
         return FastRandom(uint(x.x * 37 + x.y * 6007));
     }
+
+    // Transforms "vec" by "mat" and does a W-divide.
+    float4 Project(float4 vec, float4x4 mat)
+    {
+        float4 vecProjected = mul(vec, mat);
+        vecProjected.xyz /= vecProjected.w;
+        return vecProjected;
+    }
 };

@@ -52,7 +52,16 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
             }
             
             // Compare distance to light to value inside of the shadow map
-            return FilterShadow(samplePosition, distanceToLight);
+            float shadow = FilterShadow(samplePosition, distanceToLight);
+            
+            // Calculate thickness for SSS:
+            float tempThickness = 999.9;    // No scattering for now.
+
+
+
+            streams.thicknessWS = tempThickness;
+            
+            return(shadow);
         }
     };
 }

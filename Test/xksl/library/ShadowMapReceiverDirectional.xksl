@@ -9,7 +9,14 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
     /// TCascadeCount: Number of cascades.
     /// TCascadeDebug: Flag to enable debug mode (1 color per cascade).
     /// </remarks>
-    internal shader ShadowMapReceiverDirectional<int TCascadeCount, int TLightCount, bool TBlendCascades, bool TDepthRangeAuto, bool TCascadeDebug> : ShadowMapReceiverBase<PerView.Lighting, TCascadeCount, TLightCount>
+    internal shader ShadowMapReceiverDirectional<int TCascadeCount,
+                                                 int TLightCount,
+                                                 bool TBlendCascades,
+                                                 bool TDepthRangeAuto,
+                                                 bool TCascadeDebug,
+                                                 bool TComputeTransmittance> :
+        ShadowMapReceiverBase<PerView.Lighting, TCascadeCount, TLightCount>,
+        Transformation  // Required for "WorldInverseTranspose".
     {
         cbuffer PerView.Lighting // TODO: Use a proper cbuffer for this?
         {
@@ -31,7 +38,8 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
                     cascadeIndex = i + 1;
                 }
             }
-            float shadow = 1.0;
+            float3 shadow = 1.0;
+            float tempThickness = 999.0;
 
             // Offset the shadow position
             float3 shadowPosition = position.xyz;
@@ -40,6 +48,15 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
             if (cascadeIndex < TCascadeCount)
             {
                 shadow = ComputeShadowFromCascade(shadowPosition, cascadeIndex, lightIndex);
+
+                if(TComputeTransmittance)
+                {
+                    tempThickness = ComputeThicknessFromCascade(streams.PositionWS.xyz,
+                                                                streams.meshNormalWS,  // Use the vertex normal, not the normal map normal.
+                                                                cascadeIndex,
+                                                                lightIndex,
+                                                                true);
+                }
 
                 float nextSplit = CascadeDepthSplits[cascadeIndexBase + cascadeIndex];
                 float splitSize = nextSplit;
@@ -58,15 +75,33 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
                         if (!TDepthRangeAuto)
                         {
                             shadow = lerp(1.0f, shadow, lerpAmt);
+
+                            if(TComputeTransmittance)
+                            {
+                                tempThickness = lerp(0.0, tempThickness, lerpAmt);
+                            }
                         }
                     }
                     else if (TBlendCascades)
                     {
                         float nextShadow = ComputeShadowFromCascade(shadowPosition, cascadeIndex + 1, lightIndex);
                         shadow = lerp(nextShadow, shadow, lerpAmt);
+
+                        if(TComputeTransmittance)
+                        {
+                            float nextThickness = ComputeThicknessFromCascade(streams.PositionWS.xyz,
+                                                                              streams.meshNormalWS,  // Use the vertex normal, not the normal map normal.
+                                                                              cascadeIndex + 1,
+                                                                              lightIndex,
+                                                                              true);
+
+                            tempThickness = lerp(nextThickness, tempThickness, lerpAmt);
+                        }
                     }
                 }
             }
+            
+            streams.thicknessWS = tempThickness;
             
             // Output the shadow color
             if (TCascadeDebug)
@@ -76,10 +111,8 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
                 static const float3 colors[5] = { float3(0,1,0), float3(0,0,1), float3(1,0,1), float3(1,0,0), float3(1,1,1)};
                 return colors[cascadeIndex] * shadow;
             }
-            else
-            {
-                return shadow;
-            }
+
+            return shadow;
         }
     };
 }
