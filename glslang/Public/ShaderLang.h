@@ -399,6 +399,7 @@ public:
     void setResourceSetBinding(const std::vector<std::string>& base);
     void setAutoMapBindings(bool map);
     void setAutoMapLocations(bool map);
+    void setInvertY(bool invert);
     void setHlslIoMapping(bool hlslIoMap);
     void setFlattenUniformArrays(bool flatten);
     void setNoStorageFormat(bool useUnknownFormat);

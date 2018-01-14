@@ -39,19 +39,19 @@ cbuffer PerView
     column_major float4x4 Transformation_ViewProjection;
     float2 Transformation_ProjScreenRay;
     float4 Transformation_Eye;
-    float4 o0S418C0_LightDirectionalGroup__padding_PerView_Default;
-    LightDirectional_DirectionalLightData o0S418C0_LightDirectionalGroup_Lights[8];
-    int o0S418C0_DirectLightGroupPerView_LightCount;
-    float3 o1S403C0_LightSimpleAmbient_AmbientLight;
-    float4 o1S403C0_LightSimpleAmbient__padding_PerView_Lighting;
+    float4 o0S439C0_LightDirectionalGroup__padding_PerView_Default;
+    LightDirectional_DirectionalLightData o0S439C0_LightDirectionalGroup_Lights[8];
+    int o0S439C0_DirectLightGroupPerView_LightCount;
+    float3 o1S423C0_LightSimpleAmbient_AmbientLight;
+    float4 o1S423C0_LightSimpleAmbient__padding_PerView_Lighting;
 };
 cbuffer PerMaterial
 {
-    float o19S248C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat;
-    float4 o19S248C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
-    float o19S248C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
-    float2 o19S248C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
-    float2 o19S248C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
+    float o19S267C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat;
+    float4 o19S267C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
+    float o19S267C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat;
+    float2 o19S267C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
+    float2 o19S267C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
     float o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_constantFloat;
 };
 cbuffer PerFrame

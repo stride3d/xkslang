@@ -359,7 +359,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
-    //{ "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
+    { "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
     //{ "SkyboxShader", "SkyboxShader.xkfx" },
     //{ "SphericalHarmonicsBase", "SphericalHarmonicsBase.xkfx" },
     //{ "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },

@@ -1309,10 +1309,8 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
 
     bool forbidDeclarators = (peekTokenClass(EHTokCBuffer) || peekTokenClass(EHTokTBuffer));
     // fully_specified_type
-    if (!acceptFullySpecifiedType(declaredType, nodeList))
+    if (! acceptFullySpecifiedType(declaredType, nodeList, declarator.attributes, forbidDeclarators))
         return false;
-
-    parseContext.transferTypeAttributes(declarator.attributes, declaredType);
 
     // cbuffer and tbuffer end with the closing '}'.
     // No semicolon is included.
@@ -1452,6 +1450,8 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
                 if (typedefDecl)
                     parseContext.declareTypedef(idToken.loc, *fullName, variableType);
                 else if (variableType.getBasicType() == EbtBlock) {
+                    if (expressionNode)
+                        parseContext.error(idToken.loc, "buffer aliasing not yet supported", "block initializer", "");
                     parseContext.declareBlock(idToken.loc, variableType, fullName,
                                               variableType.isArray() ? &variableType.getArraySizes() : nullptr);
                     parseContext.declareStructBufferCounter(idToken.loc, variableType, *fullName);
@@ -1529,10 +1529,11 @@ bool HlslGrammar::acceptDeclaration(TIntermNode*& nodeList)
 bool HlslGrammar::acceptControlDeclaration(TIntermNode*& node)
 {
     node = nullptr;
+    TAttributeMap attributes;
 
     // fully_specified_type
     TType type;
-    if (!acceptFullySpecifiedType(type))
+    if (! acceptFullySpecifiedType(type, attributes))
         return false;
 
     // filter out type casts
@@ -1570,12 +1571,12 @@ bool HlslGrammar::acceptControlDeclaration(TIntermNode*& node)
 //      : type_specifier
 //      | type_qualifier type_specifier
 //
-bool HlslGrammar::acceptFullySpecifiedType(TType& type)
+bool HlslGrammar::acceptFullySpecifiedType(TType& type, const TAttributeMap& attributes)
 {
     TIntermNode* nodeList = nullptr;
-    return acceptFullySpecifiedType(type, nodeList);
+    return acceptFullySpecifiedType(type, nodeList, attributes);
 }
-bool HlslGrammar::acceptFullySpecifiedType(TType& type, TIntermNode*& nodeList)
+bool HlslGrammar::acceptFullySpecifiedType(TType& type, TIntermNode*& nodeList, const TAttributeMap& attributes, bool forbidDeclarators)
 {
     // type_qualifier
     TQualifier qualifier;
@@ -1599,8 +1600,14 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type, TIntermNode*& nodeList)
     if (type.getBasicType() == EbtBlock) {
         // the type was a block, which set some parts of the qualifier
         parseContext.mergeQualifiers(type.getQualifier(), qualifier);
+    
+        // merge in the attributes
+        parseContext.transferTypeAttributes(attributes, type);
+
         // further, it can create an anonymous instance of the block
-        if (peek() != EHTokIdentifier)
+        // (cbuffer and tbuffer don't consume the next identifier, and
+        // should set forbidDeclarators)
+        if (forbidDeclarators || peek() != EHTokIdentifier)
         {
             //if parsing an xksl shader, we will declare the block by ourselves
             if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::Undefined)
@@ -1627,7 +1634,10 @@ bool HlslGrammar::acceptFullySpecifiedType(TType& type, TIntermNode*& nodeList)
         if (type.isBuiltIn())
             qualifier.builtIn = type.getQualifier().builtIn;
 
-        type.getQualifier()    = qualifier;
+        type.getQualifier() = qualifier;
+
+        // merge in the attributes
+        parseContext.transferTypeAttributes(attributes, type);
     }
 
     return true;
@@ -3744,8 +3754,9 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
 
         // check the type (plus any post-declaration qualifiers)
         TType declaredType;
+        TAttributeMap attributes;
         int tokenCurrentIndex = getTokenCurrentIndex();
-        if (!acceptFullySpecifiedType(declaredType))
+        if (!acceptFullySpecifiedType(declaredType, attributes))
         {
             //Unknown type
             if (xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition)
@@ -4347,12 +4358,23 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
 
     // Now known to be one of CBUFFER, TBUFFER, CLASS, or STRUCT
 
-    // IDENTIFIER
+
+    // IDENTIFIER.  It might also be a keyword which can double as an identifier.
+    // For example:  'cbuffer ConstantBuffer' or 'struct ConstantBuffer' is legal.
+    // 'cbuffer int' is also legal, and 'struct int' appears rejected only because
+    // it attempts to redefine the 'int' type.
+    const char* idString = getTypeString(peek());
     TString structName = "";
     TString structSubpartName = "";
-    if (peekTokenClass(EHTokIdentifier)) {
-        structName = *token.string;
-        advanceToken();
+    
+    if (peekTokenClass(EHTokIdentifier) || idString != nullptr) {
+        if (idString != nullptr)
+            structName = *idString;
+        else
+        {
+            structName = *token.string;
+            advanceToken();
+        }
 
         //XKSL extensions: we can have struct name composed with a subpart (cbuffer PerLighting.subpart1)
         if (isCBuffer || isRGroupBuffer)
@@ -4660,8 +4682,8 @@ bool HlslGrammar::acceptStructBufferType(TType& type)
 //      : struct_declaration SEMI_COLON struct_declaration SEMI_COLON ...
 //
 // struct_declaration
-//      : fully_specified_type struct_declarator COMMA struct_declarator ...
-//      | fully_specified_type IDENTIFIER function_parameters post_decls compound_statement // member-function definition
+//      : attributes fully_specified_type struct_declarator COMMA struct_declarator ...
+//      | attributes fully_specified_type IDENTIFIER function_parameters post_decls compound_statement // member-function definition
 //
 // struct_declarator
 //      : IDENTIFIER post_decls
@@ -4680,19 +4702,23 @@ bool HlslGrammar::acceptStructDeclarationList(TTypeList*& typeList, TIntermNode*
             break;
 
         // struct_declaration
-    
-        bool declarator_list = false;
 
-        // xksl extensions: struct members can have attributes
+        // xksl extensions: check xksl member attributes before standard hlsl attributes
         TVector<TShaderMemberAttribute> memberAttributes;
         if (!checkForXkslStructMemberAttribute(memberAttributes)) {
             error("failed to check the struct member attribute");
             return false;
         }
 
+        // attributes
+        TAttributeMap attributes;
+        acceptAttributes(attributes);
+
+        bool declarator_list = false;
+
         // fully_specified_type
         TType memberType;
-        if (!acceptFullySpecifiedType(memberType, nodeList)) {
+        if (! acceptFullySpecifiedType(memberType, nodeList, attributes)) {
             if (this->xkslShaderParsingOperation == XkslShaderParsingOperationEnum::ParseXkslShaderNewTypesDefinition)
                 return false; //return false but it's not necessary an error (maybe the struct is using a custom type)
             expected("member type");
@@ -4917,11 +4943,9 @@ bool HlslGrammar::acceptParameterDeclaration(TFunction& function)
 
     // fully_specified_type
     TType* type = new TType;
-    if (! acceptFullySpecifiedType(*type))
+    if (! acceptFullySpecifiedType(*type, attributes))
         return false;
 
-    parseContext.transferTypeAttributes(attributes, *type);
-        
     if (type->getBasicType() == EbtUndefinedVar)
     {
         error("A function cannot define a parameter as a \"var\" type. Function: " + function.getDeclaredMangledName());
@@ -5020,6 +5044,8 @@ bool HlslGrammar::acceptFunctionBody(TFunctionDeclarator& declarator, TIntermNod
 //
 bool HlslGrammar::acceptParenExpression(TIntermTyped*& expression)
 {
+    expression = nullptr;
+
     // LEFT_PAREN
     if (! acceptTokenClass(EHTokLeftParen))
         expected("(");
@@ -6133,7 +6159,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
 
             memberName = idToken.string;
         }
-
+        
         if (!peekTokenClass(EHTokLeftParen) && !isStreamsUsedAsAType)
         {
             //we're parsing a variable
@@ -6142,6 +6168,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
             {
                 //we're not parsing a shader, normal hlsl procedure
                 node = parseContext.handleVariable(idToken.loc, memberFullName);
+                if (node == nullptr) return false;
             }
             else
             {
@@ -6352,6 +6379,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                             }
 
                             node = parseContext.handleVariable(idToken.loc, identifierLocation.symbolName);
+                            if (node == nullptr) return false;
                         }
                         else {
                             error("invalid class identifier");
@@ -6362,6 +6390,7 @@ bool HlslGrammar::acceptPostfixExpression(TIntermTyped*& node, bool hasBaseAcces
                 else
                 {
                     node = parseContext.handleVariable(idToken.loc, memberName);
+                    if (node == nullptr) return false;
                 }
             }
         }
@@ -7707,7 +7736,6 @@ bool HlslGrammar::acceptIterationStatement(TIntermNode*& statement, const TAttri
         }
 
         // LEFT_PAREN condition RIGHT_PAREN
-        TIntermTyped* condition;
         if (! acceptParenExpression(condition))
             return false;
         condition = parseContext.convertConditionalExpression(loc, condition);
@@ -7810,9 +7838,17 @@ bool HlslGrammar::acceptJumpStatement(TIntermNode*& statement)
     switch (jump) {
     case EHTokContinue:
         statement = intermediate.addBranch(EOpContinue, token.loc);
+        if (parseContext.loopNestingLevel == 0) {
+            expected("loop");
+            return false;
+        }
         break;
     case EHTokBreak:
         statement = intermediate.addBranch(EOpBreak, token.loc);
+        if (parseContext.loopNestingLevel == 0 && parseContext.switchSequenceStack.size() == 0) {
+            expected("loop or switch");
+            return false;
+        }
         break;
     case EHTokDiscard:
         statement = intermediate.addBranch(EOpKill, token.loc);
@@ -8194,6 +8230,8 @@ const char* HlslGrammar::getTypeString(EHlslTokenClass tokenClass) const
     case EHTokMin10float: return "min10float";
     case EHTokMin16int:   return "min16int";
     case EHTokMin12int:   return "min12int";
+    case EHTokConstantBuffer: return "ConstantBuffer";
+    case EHTokLayout:     return "layout";
     default:
         return nullptr;
     }

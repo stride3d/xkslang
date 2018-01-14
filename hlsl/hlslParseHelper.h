@@ -116,6 +116,7 @@ public:
     TIntermTyped* handleAssignToMatrixSwizzle(const TSourceLoc&, TOperator, TIntermTyped* left, TIntermTyped* right);
     TIntermTyped* handleFunctionCall(const TSourceLoc&, TFunction*, TIntermTyped*, bool callBaseClass = false, bool callThroughStaticShaderClassName = false, TShaderCompositionVariable* calledThroughCompositionVariable = nullptr);
     TIntermAggregate* assignClipCullDistance(const TSourceLoc&, TOperator, int semanticId, TIntermTyped* left, TIntermTyped* right);
+    TIntermTyped* assignPosition(const TSourceLoc&, TOperator, TIntermTyped* left, TIntermTyped* right);
     void decomposeIntrinsic(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeSampleMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
     void decomposeStructBufferMethods(const TSourceLoc&, TIntermTyped*& node, TIntermNode* arguments);
@@ -160,6 +161,7 @@ public:
 
     void setLayoutQualifier(const TSourceLoc&, TQualifier&, TString&);
     void setLayoutQualifier(const TSourceLoc&, TQualifier&, TString&, const TIntermTyped*);
+    void setSpecConstantId(const TSourceLoc&, TQualifier&, int value);
     void mergeObjectLayoutQualifiers(TQualifier& dest, const TQualifier& src, bool inheritOnly);
     void checkNoShaderLayouts(const TSourceLoc&, const TShaderQualifiers&);
 

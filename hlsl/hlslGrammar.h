@@ -120,8 +120,8 @@ namespace glslang {
         bool GetTypeDeclarationLabel(const TType& t, const TString& variableName, TString& typeDeclarationLabel);
         bool acceptSamplerState();
         bool acceptSamplerState(TSamplerStateDefinition*& samplerDef);
-        bool acceptFullySpecifiedType(TType&);
-        bool acceptFullySpecifiedType(TType&, TIntermNode*& nodeList);
+        bool acceptFullySpecifiedType(TType&, const TAttributeMap&);
+        bool acceptFullySpecifiedType(TType&, TIntermNode*& nodeList, const TAttributeMap&, bool forbidDeclarators = false);
         bool acceptQualifier(TQualifier&);
         bool acceptLayoutQualifierList(TQualifier&);
         bool acceptType(TType&);

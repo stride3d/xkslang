@@ -1,9 +1,10 @@
 struct PS_STREAMS
 {
     float3 meshNormal_id0;
-    float4 meshTangent_id1;
-    float3x3 tangentToWorld_id2;
-    float4 ShadingPosition_id3;
+    float3 meshNormalWS_id1;
+    float4 meshTangent_id2;
+    float3x3 tangentToWorld_id3;
+    float4 ShadingPosition_id4;
 };
 
 cbuffer PerDraw
@@ -35,8 +36,8 @@ void NormalUpdate_GenerateNormal_PS()
 float3x3 NormalUpdate_GetTangentMatrix(inout PS_STREAMS _streams)
 {
     _streams.meshNormal_id0 = normalize(_streams.meshNormal_id0);
-    float3 tangent = normalize(_streams.meshTangent_id1.xyz);
-    float3 bitangent = cross(_streams.meshNormal_id0, tangent) * _streams.meshTangent_id1.w;
+    float3 tangent = normalize(_streams.meshTangent_id2.xyz);
+    float3 bitangent = cross(_streams.meshNormal_id0, tangent) * _streams.meshTangent_id2.w;
     float3x3 tangentMatrix = float3x3(float3(tangent), float3(bitangent), float3(_streams.meshNormal_id0));
     return tangentMatrix;
 }
@@ -48,16 +49,17 @@ float3x3 NormalFromNormalMapping_GetTangentWorldTransform()
 
 void NormalUpdate_UpdateTangentToWorld(inout PS_STREAMS _streams)
 {
-    float3x3 _67 = NormalUpdate_GetTangentMatrix(_streams);
-    float3x3 tangentMatrix = _67;
+    float3x3 _86 = NormalUpdate_GetTangentMatrix(_streams);
+    float3x3 tangentMatrix = _86;
     float3x3 tangentWorldTransform = NormalFromNormalMapping_GetTangentWorldTransform();
-    _streams.tangentToWorld_id2 = mul(tangentMatrix, tangentWorldTransform);
+    _streams.tangentToWorld_id3 = mul(tangentMatrix, tangentWorldTransform);
 }
 
 void NormalFromNormalMapping_GenerateNormal_PS(inout PS_STREAMS _streams)
 {
     NormalUpdate_GenerateNormal_PS();
     NormalUpdate_UpdateTangentToWorld(_streams);
+    _streams.meshNormalWS_id1 = mul(_streams.meshNormal_id0, float3x3(float3(Transformation_WorldInverseTranspose[0].x, Transformation_WorldInverseTranspose[0].y, Transformation_WorldInverseTranspose[0].z), float3(Transformation_WorldInverseTranspose[1].x, Transformation_WorldInverseTranspose[1].y, Transformation_WorldInverseTranspose[1].z), float3(Transformation_WorldInverseTranspose[2].x, Transformation_WorldInverseTranspose[2].y, Transformation_WorldInverseTranspose[2].z)));
 }
 
 void ShaderBase_PSMain()
@@ -66,10 +68,10 @@ void ShaderBase_PSMain()
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float4(0.0f, 0.0f, 0.0f, 0.0f) };
     _streams.meshNormal_id0 = PS_IN_meshNormal;
-    _streams.meshTangent_id1 = PS_IN_meshTangent;
-    _streams.ShadingPosition_id3 = PS_IN_ShadingPosition;
+    _streams.meshTangent_id2 = PS_IN_meshTangent;
+    _streams.ShadingPosition_id4 = PS_IN_ShadingPosition;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShaderBase_PSMain();
 }

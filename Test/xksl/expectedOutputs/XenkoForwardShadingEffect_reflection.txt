@@ -18,17 +18,17 @@
 @C    Transformation_ViewProjection => Transformation.ViewProjection
 @C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
 @C    Transformation_Eye => Transformation.Eye
-@C    o0S418C0_LightDirectionalGroup__padding_PerView_Default => _padding_PerView_Default
-@C    o0S418C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups[0]
-@C    o0S418C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
-@C    o1S403C0_LightSimpleAmbient_AmbientLight => LightSimpleAmbient.AmbientLight.environmentLights[0]
-@C    o1S403C0_LightSimpleAmbient__padding_PerView_Lighting => _padding_PerView_Lighting
+@C    o0S439C0_LightDirectionalGroup__padding_PerView_Default => _padding_PerView_Default
+@C    o0S439C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups[0]
+@C    o0S439C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
+@C    o1S423C0_LightSimpleAmbient_AmbientLight => LightSimpleAmbient.AmbientLight.environmentLights[0]
+@C    o1S423C0_LightSimpleAmbient__padding_PerView_Lighting => _padding_PerView_Lighting
  cbuffer PerMaterial [size: 60]
-@C    o19S248C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat => Material.SpecularIntensityValue
-@C    o19S248C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor => Material.SpecularValue
-@C    o19S248C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat => Material.GlossinessValue
-@C    o19S248C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale => Material.TextureScale
-@C    o19S248C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset => Material.TextureOffset
+@C    o19S267C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat => Material.SpecularIntensityValue
+@C    o19S267C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor => Material.SpecularValue
+@C    o19S267C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat => Material.GlossinessValue
+@C    o19S267C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale => Material.TextureScale
+@C    o19S267C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset => Material.TextureOffset
 @C    o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_constantFloat => Material.DisplacementValue
  cbuffer PerFrame [size: 8]
 @C    Global_Time => Global.Time
@@ -98,10 +98,10 @@ ConstantBuffers. Count=4
   KeyName="Transformation.Eye" RawName="Transformation_Eye" LogicalGroup="" Offset=336
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="_padding_PerView_Default" RawName="o0S418C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="Default" Offset=352
+  KeyName="_padding_PerView_Default" RawName="o0S439C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="Default" Offset=352
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S418C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=368
+  KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S439C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=368
   Class=Struct Type=Void Size=256 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=8 Rows=1 Columns=1
    CountMembers=2
    Name="DirectionWS" Offset=0
@@ -109,29 +109,29 @@ ConstantBuffers. Count=4
    Name="Color" Offset=16
    Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
-  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0]" RawName="o0S418C0_DirectLightGroupPerView_LightCount" LogicalGroup="Lighting" Offset=624
+  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0]" RawName="o0S439C0_DirectLightGroupPerView_LightCount" LogicalGroup="Lighting" Offset=624
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0]" RawName="o1S403C0_LightSimpleAmbient_AmbientLight" LogicalGroup="Lighting" Offset=640
+  KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0]" RawName="o1S423C0_LightSimpleAmbient_AmbientLight" LogicalGroup="Lighting" Offset=640
   Class=Color Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
-  KeyName="_padding_PerView_Lighting" RawName="o1S403C0_LightSimpleAmbient__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=656
+  KeyName="_padding_PerView_Lighting" RawName="o1S423C0_LightSimpleAmbient__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=656
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
  cbuffer: Name="PerMaterial" Size=60 MembersCount=6
-  KeyName="Material.SpecularIntensityValue" RawName="o19S248C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=0
+  KeyName="Material.SpecularIntensityValue" RawName="o19S267C0_o11S2C0_o10S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Material.SpecularValue" RawName="o19S248C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=16
+  KeyName="Material.SpecularValue" RawName="o19S267C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=16
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="Material.GlossinessValue" RawName="o19S248C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=32
+  KeyName="Material.GlossinessValue" RawName="o19S267C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=32
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Material.TextureScale" RawName="o19S248C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale" LogicalGroup="" Offset=40
+  KeyName="Material.TextureScale" RawName="o19S267C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale" LogicalGroup="" Offset=40
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="Material.TextureOffset" RawName="o19S248C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset" LogicalGroup="" Offset=48
+  KeyName="Material.TextureOffset" RawName="o19S267C0_o3S2C0_o2S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset" LogicalGroup="" Offset=48
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
   KeyName="Material.DisplacementValue" RawName="o25S35C0_o23S2C0_o22S2C0_o21S2C1_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=56
