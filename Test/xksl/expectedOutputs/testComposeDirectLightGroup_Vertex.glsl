@@ -31,11 +31,12 @@ struct VS_STREAMS
     float lightDirectAmbientOcclusion_id5;
     vec3 normalWS_id6;
     vec3 shadowColor_id7;
-    vec4 PositionWS_id8;
-    uvec2 lightData_id9;
-    int lightIndex_id10;
-    vec4 ShadingPosition_id11;
-    vec4 ScreenPosition_id12;
+    float thicknessWS_id8;
+    vec4 PositionWS_id9;
+    uvec2 lightData_id10;
+    int lightIndex_id11;
+    vec4 ShadingPosition_id12;
+    vec4 ScreenPosition_id13;
 };
 
 layout(std140) uniform PerView
@@ -85,8 +86,9 @@ void o0S2C0_LightDirectionalGroup_8__PrepareDirectLightCore(inout VS_STREAMS _st
     _streams.lightDirectionWS_id1 = -PerView_var.o0S2C0_LightDirectionalGroup_Lights[lightIndex].DirectionWS;
 }
 
-vec3 o0S2C0_ShadowGroup_ComputeShadow(vec3 position, int lightIndex)
+vec3 o0S2C0_ShadowGroup_ComputeShadow(inout VS_STREAMS _streams, vec3 position, int lightIndex)
 {
+    _streams.thicknessWS_id8 = 0.0;
     return vec3(1.0);
 }
 
@@ -95,20 +97,21 @@ void o0S2C0_DirectLightGroup_PrepareDirectLight(inout VS_STREAMS _streams, int l
     int param = lightIndex;
     o0S2C0_LightDirectionalGroup_8__PrepareDirectLightCore(_streams, param);
     _streams.NdotL_id4 = max(dot(_streams.normalWS_id6, _streams.lightDirectionWS_id1), 9.9999997473787516355514526367188e-05);
-    vec3 param_1 = _streams.PositionWS_id8.xyz;
+    vec3 param_1 = _streams.PositionWS_id9.xyz;
     int param_2 = lightIndex;
-    _streams.shadowColor_id7 = o0S2C0_ShadowGroup_ComputeShadow(param_1, param_2);
+    vec3 _52 = o0S2C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
+    _streams.shadowColor_id7 = _52;
     _streams.lightColorNdotL_id3 = ((_streams.lightColor_id2 * _streams.shadowColor_id7) * _streams.NdotL_id4) * _streams.lightDirectAmbientOcclusion_id5;
 }
 
 void o1S2C0_LightClustered_PrepareLightData(inout VS_STREAMS _streams)
 {
-    float projectedDepth = _streams.ShadingPosition_id11.z;
+    float projectedDepth = _streams.ShadingPosition_id12.z;
     float depth = PerView_var.o1S2C0_Camera_ZProjection.y / (projectedDepth - PerView_var.o1S2C0_Camera_ZProjection.x);
-    vec2 texCoord = vec2(_streams.ScreenPosition_id12.x + 1.0, 1.0 - _streams.ScreenPosition_id12.y) * 0.5;
+    vec2 texCoord = vec2(_streams.ScreenPosition_id13.x + 1.0, 1.0 - _streams.ScreenPosition_id13.y) * 0.5;
     int slice = int(max(log2((depth * PerView_var.o1S2C0_LightClustered_ClusterDepthScale) + PerView_var.o1S2C0_LightClustered_ClusterDepthBias), 0.0));
-    _streams.lightData_id9 = uvec2(texelFetch(LightClustered_LightClusters, ivec4(ivec2(texCoord * PerView_var.o1S2C0_LightClustered_ClusterStride), slice, 0).xyz, ivec4(ivec2(texCoord * PerView_var.o1S2C0_LightClustered_ClusterStride), slice, 0).w).xy);
-    _streams.lightIndex_id10 = int(_streams.lightData_id9.x);
+    _streams.lightData_id10 = uvec2(texelFetch(LightClustered_LightClusters, ivec4(ivec2(texCoord * PerView_var.o1S2C0_LightClustered_ClusterStride), slice, 0).xyz, ivec4(ivec2(texCoord * PerView_var.o1S2C0_LightClustered_ClusterStride), slice, 0).w).xy);
+    _streams.lightIndex_id11 = int(_streams.lightData_id10.x);
 }
 
 void o1S2C0_LightClusteredPointGroup_PrepareDirectLights(inout VS_STREAMS _streams)
@@ -118,12 +121,12 @@ void o1S2C0_LightClusteredPointGroup_PrepareDirectLights(inout VS_STREAMS _strea
 
 int o1S2C0_LightClusteredPointGroup_GetMaxLightCount(VS_STREAMS _streams)
 {
-    return int(_streams.lightData_id9.y & 65535u);
+    return int(_streams.lightData_id10.y & 65535u);
 }
 
 int o1S2C0_LightClusteredPointGroup_GetLightCount(VS_STREAMS _streams)
 {
-    return int(_streams.lightData_id9.y & 65535u);
+    return int(_streams.lightData_id10.y & 65535u);
 }
 
 float o1S2C0_LightUtil_SmoothDistanceAttenuation(float squaredDistance, float lightInvSquareRadius)
@@ -157,12 +160,12 @@ float o1S2C0_LightPoint_ComputeAttenuation(LightPoint_PointLightDataInternal lig
 void o1S2C0_LightPoint_ProcessLight(inout VS_STREAMS _streams, LightPoint_PointLightDataInternal light)
 {
     LightPoint_PointLightDataInternal param = light;
-    vec3 param_1 = _streams.PositionWS_id8.xyz;
+    vec3 param_1 = _streams.PositionWS_id9.xyz;
     vec3 lightVectorNorm;
     vec3 param_2 = lightVectorNorm;
-    float _198 = o1S2C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
+    float _199 = o1S2C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
     lightVectorNorm = param_2;
-    float attenuation = _198;
+    float attenuation = _199;
     _streams.lightPositionWS_id0 = light.PositionWS;
     _streams.lightColor_id2 = light.Color * attenuation;
     _streams.lightDirectionWS_id1 = lightVectorNorm;
@@ -170,8 +173,8 @@ void o1S2C0_LightPoint_ProcessLight(inout VS_STREAMS _streams, LightPoint_PointL
 
 void o1S2C0_LightClusteredPointGroup_PrepareDirectLightCore(inout VS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id10).x);
-    _streams.lightIndex_id10++;
+    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id11).x);
+    _streams.lightIndex_id11++;
     vec4 pointLight1 = texelFetch(LightClusteredPointGroup_PointLights, realLightIndex * 2);
     vec4 pointLight2 = texelFetch(LightClusteredPointGroup_PointLights, (realLightIndex * 2) + 1);
     LightPoint_PointLightDataInternal pointLight;
@@ -182,8 +185,9 @@ void o1S2C0_LightClusteredPointGroup_PrepareDirectLightCore(inout VS_STREAMS _st
     o1S2C0_LightPoint_ProcessLight(_streams, param);
 }
 
-vec3 o1S2C0_ShadowGroup_ComputeShadow(vec3 position, int lightIndex)
+vec3 o1S2C0_ShadowGroup_ComputeShadow(inout VS_STREAMS _streams, vec3 position, int lightIndex)
 {
+    _streams.thicknessWS_id8 = 0.0;
     return vec3(1.0);
 }
 
@@ -192,9 +196,10 @@ void o1S2C0_DirectLightGroup_PrepareDirectLight(inout VS_STREAMS _streams, int l
     int param = lightIndex;
     o1S2C0_LightClusteredPointGroup_PrepareDirectLightCore(_streams, param);
     _streams.NdotL_id4 = max(dot(_streams.normalWS_id6, _streams.lightDirectionWS_id1), 9.9999997473787516355514526367188e-05);
-    vec3 param_1 = _streams.PositionWS_id8.xyz;
+    vec3 param_1 = _streams.PositionWS_id9.xyz;
     int param_2 = lightIndex;
-    _streams.shadowColor_id7 = o1S2C0_ShadowGroup_ComputeShadow(param_1, param_2);
+    vec3 _115 = o1S2C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
+    _streams.shadowColor_id7 = _115;
     _streams.lightColorNdotL_id3 = ((_streams.lightColor_id2 * _streams.shadowColor_id7) * _streams.NdotL_id4) * _streams.lightDirectAmbientOcclusion_id5;
 }
 
@@ -204,12 +209,12 @@ void o2S2C0_DirectLightGroup_PrepareDirectLights()
 
 int o2S2C0_LightClusteredSpotGroup_GetMaxLightCount(VS_STREAMS _streams)
 {
-    return int(_streams.lightData_id9.y >> uint(16));
+    return int(_streams.lightData_id10.y >> uint(16));
 }
 
 int o2S2C0_LightClusteredSpotGroup_GetLightCount(VS_STREAMS _streams)
 {
-    return int(_streams.lightData_id9.y >> uint(16));
+    return int(_streams.lightData_id10.y >> uint(16));
 }
 
 float o2S2C0_LightUtil_SmoothDistanceAttenuation(float squaredDistance, float lightInvSquareRadius)
@@ -261,20 +266,20 @@ float o2S2C0_LightSpot_ComputeAttenuation(LightSpot_SpotLightDataInternal light,
 void o2S2C0_LightSpot_ProcessLight(inout VS_STREAMS _streams, LightSpot_SpotLightDataInternal light)
 {
     LightSpot_SpotLightDataInternal param = light;
-    vec3 param_1 = _streams.PositionWS_id8.xyz;
+    vec3 param_1 = _streams.PositionWS_id9.xyz;
     vec3 lightVectorNorm;
     vec3 param_2 = lightVectorNorm;
-    float _480 = o2S2C0_LightSpot_ComputeAttenuation(param, param_1, param_2);
+    float _482 = o2S2C0_LightSpot_ComputeAttenuation(param, param_1, param_2);
     lightVectorNorm = param_2;
-    float attenuation = _480;
+    float attenuation = _482;
     _streams.lightColor_id2 = light.Color * attenuation;
     _streams.lightDirectionWS_id1 = lightVectorNorm;
 }
 
 void o2S2C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout VS_STREAMS _streams, int lightIndexIgnored)
 {
-    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id10).x);
-    _streams.lightIndex_id10++;
+    int realLightIndex = int(texelFetch(LightClustered_LightIndices, _streams.lightIndex_id11).x);
+    _streams.lightIndex_id11++;
     vec4 spotLight1 = texelFetch(LightClusteredSpotGroup_SpotLights, realLightIndex * 4);
     vec4 spotLight2 = texelFetch(LightClusteredSpotGroup_SpotLights, (realLightIndex * 4) + 1);
     vec4 spotLight3 = texelFetch(LightClusteredSpotGroup_SpotLights, (realLightIndex * 4) + 2);
@@ -288,8 +293,9 @@ void o2S2C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout VS_STREAMS _str
     o2S2C0_LightSpot_ProcessLight(_streams, param);
 }
 
-vec3 o2S2C0_ShadowGroup_ComputeShadow(vec3 position, int lightIndex)
+vec3 o2S2C0_ShadowGroup_ComputeShadow(inout VS_STREAMS _streams, vec3 position, int lightIndex)
 {
+    _streams.thicknessWS_id8 = 0.0;
     return vec3(1.0);
 }
 
@@ -298,20 +304,21 @@ void o2S2C0_DirectLightGroup_PrepareDirectLight(inout VS_STREAMS _streams, int l
     int param = lightIndex;
     o2S2C0_LightClusteredSpotGroup_PrepareDirectLightCore(_streams, param);
     _streams.NdotL_id4 = max(dot(_streams.normalWS_id6, _streams.lightDirectionWS_id1), 9.9999997473787516355514526367188e-05);
-    vec3 param_1 = _streams.PositionWS_id8.xyz;
+    vec3 param_1 = _streams.PositionWS_id9.xyz;
     int param_2 = lightIndex;
-    _streams.shadowColor_id7 = o2S2C0_ShadowGroup_ComputeShadow(param_1, param_2);
+    vec3 _386 = o2S2C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
+    _streams.shadowColor_id7 = _386;
     _streams.lightColorNdotL_id3 = ((_streams.lightColor_id2 * _streams.shadowColor_id7) * _streams.NdotL_id4) * _streams.lightDirectAmbientOcclusion_id5;
 }
 
 void main()
 {
-    VS_STREAMS _streams = VS_STREAMS(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), vec3(0.0), vec4(0.0), uvec2(0u), 0, vec4(0.0), vec4(0.0));
+    VS_STREAMS _streams = VS_STREAMS(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), vec3(0.0), 0.0, vec4(0.0), uvec2(0u), 0, vec4(0.0), vec4(0.0));
     _streams.lightDirectAmbientOcclusion_id5 = VS_IN_lightDirectAmbientOcclusion;
     _streams.normalWS_id6 = VS_IN_normalWS;
-    _streams.PositionWS_id8 = VS_IN_PositionWS;
-    _streams.ShadingPosition_id11 = VS_IN_ShadingPosition;
-    _streams.ScreenPosition_id12 = VS_IN_ScreenPosition;
+    _streams.PositionWS_id9 = VS_IN_PositionWS;
+    _streams.ShadingPosition_id12 = VS_IN_ShadingPosition;
+    _streams.ScreenPosition_id13 = VS_IN_ScreenPosition;
     o0S2C0_DirectLightGroup_PrepareDirectLights();
     int maxLightCount = o0S2C0_LightDirectionalGroup_8__GetMaxLightCount();
     int count = o0S2C0_DirectLightGroupPerView_GetLightCount();
@@ -352,7 +359,7 @@ void main()
         param = i;
         o2S2C0_DirectLightGroup_PrepareDirectLight(_streams, param);
     }
-    VS_OUT_ShadingPosition = _streams.ShadingPosition_id11;
-    VS_OUT_ScreenPosition = _streams.ScreenPosition_id12;
+    VS_OUT_ShadingPosition = _streams.ShadingPosition_id12;
+    VS_OUT_ScreenPosition = _streams.ScreenPosition_id13;
 }
 

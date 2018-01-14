@@ -8,12 +8,13 @@ struct VS_STREAMS
 {
     float4 ShadingPosition_id0;
     float3 meshNormal_id1;
-    float3 normalWS_id2;
-    float4 Position_id3;
-    float4 PositionWS_id4;
-    float DepthVS_id5;
-    float4 PositionH_id6;
-    float4 ScreenPosition_id7;
+    float3 meshNormalWS_id2;
+    float3 normalWS_id3;
+    float4 Position_id4;
+    float4 PositionWS_id5;
+    float DepthVS_id6;
+    float4 PositionH_id7;
+    float4 ScreenPosition_id8;
 };
 
 cbuffer PerDraw
@@ -36,19 +37,19 @@ cbuffer PerView
     column_major float4x4 Transformation_ViewProjection;
     float2 Transformation_ProjScreenRay;
     float4 Transformation_Eye;
-    float o1S429C0_Camera_NearClipPlane;
-    float o1S429C0_Camera_FarClipPlane;
-    float2 o1S429C0_Camera_ZProjection;
-    float2 o1S429C0_Camera_ViewSize;
-    float o1S429C0_Camera_AspectRatio;
-    float4 o0S429C0_LightDirectionalGroup__padding_PerView_Default;
-    LightDirectional_DirectionalLightData o0S429C0_LightDirectionalGroup_Lights[8];
-    int o0S429C0_DirectLightGroupPerView_LightCount;
-    float o1S429C0_LightClustered_ClusterDepthScale;
-    float o1S429C0_LightClustered_ClusterDepthBias;
-    float2 o1S429C0_LightClustered_ClusterStride;
-    float3 o3S414C0_LightSimpleAmbient_AmbientLight;
-    float4 o3S414C0_LightSimpleAmbient__padding_PerView_Lighting;
+    float o1S437C0_Camera_NearClipPlane;
+    float o1S437C0_Camera_FarClipPlane;
+    float2 o1S437C0_Camera_ZProjection;
+    float2 o1S437C0_Camera_ViewSize;
+    float o1S437C0_Camera_AspectRatio;
+    float4 o0S437C0_LightDirectionalGroup__padding_PerView_Default;
+    LightDirectional_DirectionalLightData o0S437C0_LightDirectionalGroup_Lights[8];
+    int o0S437C0_DirectLightGroupPerView_LightCount;
+    float o1S437C0_LightClustered_ClusterDepthScale;
+    float o1S437C0_LightClustered_ClusterDepthBias;
+    float2 o1S437C0_LightClustered_ClusterStride;
+    float3 o3S421C0_LightSimpleAmbient_AmbientLight;
+    float4 o3S421C0_LightSimpleAmbient__padding_PerView_Lighting;
 };
 
 static float3 VS_IN_meshNormal;
@@ -83,7 +84,7 @@ void TransformationBase_PreTransformPosition()
 void TransformationWAndVP_PreTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PreTransformPosition();
-    _streams.PositionWS_id4 = mul(_streams.Position_id3, Transformation_World);
+    _streams.PositionWS_id5 = mul(_streams.Position_id4, Transformation_World);
 }
 
 void TransformationBase_TransformPosition()
@@ -102,10 +103,10 @@ float4 TransformationWAndVP_ComputeShadingPosition(float4 world)
 void TransformationWAndVP_PostTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PostTransformPosition();
-    float4 param = _streams.PositionWS_id4;
+    float4 param = _streams.PositionWS_id5;
     _streams.ShadingPosition_id0 = TransformationWAndVP_ComputeShadingPosition(param);
-    _streams.PositionH_id6 = _streams.ShadingPosition_id0;
-    _streams.DepthVS_id5 = _streams.ShadingPosition_id0.w;
+    _streams.PositionH_id7 = _streams.ShadingPosition_id0;
+    _streams.DepthVS_id6 = _streams.ShadingPosition_id0.w;
 }
 
 void TransformationBase_BaseTransformVS(inout VS_STREAMS _streams)
@@ -123,7 +124,8 @@ void TransformationBase_VSMain(inout VS_STREAMS _streams)
 
 void NormalFromMesh_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
-    _streams.normalWS_id2 = mul(_streams.meshNormal_id1, float3x3(float3(Transformation_WorldInverseTranspose[0].x, Transformation_WorldInverseTranspose[0].y, Transformation_WorldInverseTranspose[0].z), float3(Transformation_WorldInverseTranspose[1].x, Transformation_WorldInverseTranspose[1].y, Transformation_WorldInverseTranspose[1].z), float3(Transformation_WorldInverseTranspose[2].x, Transformation_WorldInverseTranspose[2].y, Transformation_WorldInverseTranspose[2].z)));
+    _streams.meshNormalWS_id2 = mul(_streams.meshNormal_id1, float3x3(float3(Transformation_WorldInverseTranspose[0].x, Transformation_WorldInverseTranspose[0].y, Transformation_WorldInverseTranspose[0].z), float3(Transformation_WorldInverseTranspose[1].x, Transformation_WorldInverseTranspose[1].y, Transformation_WorldInverseTranspose[1].z), float3(Transformation_WorldInverseTranspose[2].x, Transformation_WorldInverseTranspose[2].y, Transformation_WorldInverseTranspose[2].z)));
+    _streams.normalWS_id3 = _streams.meshNormalWS_id2;
 }
 
 void NormalBase_VSMain(inout VS_STREAMS _streams)
@@ -134,15 +136,15 @@ void NormalBase_VSMain(inout VS_STREAMS _streams)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
     _streams.meshNormal_id1 = VS_IN_meshNormal;
-    _streams.Position_id3 = VS_IN_Position;
+    _streams.Position_id4 = VS_IN_Position;
     NormalBase_VSMain(_streams);
-    _streams.ScreenPosition_id7 = _streams.ShadingPosition_id0;
+    _streams.ScreenPosition_id8 = _streams.ShadingPosition_id0;
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
-    VS_OUT_normalWS = _streams.normalWS_id2;
-    VS_OUT_PositionWS = _streams.PositionWS_id4;
-    VS_OUT_ScreenPosition = _streams.ScreenPosition_id7;
+    VS_OUT_normalWS = _streams.normalWS_id3;
+    VS_OUT_PositionWS = _streams.PositionWS_id5;
+    VS_OUT_ScreenPosition = _streams.ScreenPosition_id8;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)

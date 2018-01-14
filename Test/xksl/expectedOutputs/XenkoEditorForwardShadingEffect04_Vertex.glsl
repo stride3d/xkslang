@@ -43,28 +43,28 @@ layout(std140) uniform PerView
     layout(row_major) mat4 Transformation_ViewProjection;
     vec2 Transformation_ProjScreenRay;
     vec4 Transformation_Eye;
-    float o1S418C0_Camera_NearClipPlane;
-    float o1S418C0_Camera_FarClipPlane;
-    vec2 o1S418C0_Camera_ZProjection;
-    vec2 o1S418C0_Camera_ViewSize;
-    float o1S418C0_Camera_AspectRatio;
-    vec4 o0S418C0_LightDirectionalGroup__padding_PerView_Default;
-    LightDirectional_DirectionalLightData o0S418C0_LightDirectionalGroup_Lights[8];
-    int o0S418C0_DirectLightGroupPerView_LightCount;
-    float o1S418C0_LightClustered_ClusterDepthScale;
-    float o1S418C0_LightClustered_ClusterDepthBias;
-    vec2 o1S418C0_LightClustered_ClusterStride;
-    vec3 o3S403C0_LightSimpleAmbient_AmbientLight;
-    vec4 o3S403C0_LightSimpleAmbient__padding_PerView_Lighting;
+    float o1S439C0_Camera_NearClipPlane;
+    float o1S439C0_Camera_FarClipPlane;
+    vec2 o1S439C0_Camera_ZProjection;
+    vec2 o1S439C0_Camera_ViewSize;
+    float o1S439C0_Camera_AspectRatio;
+    vec4 o0S439C0_LightDirectionalGroup__padding_PerView_Default;
+    LightDirectional_DirectionalLightData o0S439C0_LightDirectionalGroup_Lights[8];
+    int o0S439C0_DirectLightGroupPerView_LightCount;
+    float o1S439C0_LightClustered_ClusterDepthScale;
+    float o1S439C0_LightClustered_ClusterDepthBias;
+    vec2 o1S439C0_LightClustered_ClusterStride;
+    vec3 o3S423C0_LightSimpleAmbient_AmbientLight;
+    vec4 o3S423C0_LightSimpleAmbient__padding_PerView_Lighting;
 } PerView_var;
 
 layout(std140) uniform PerMaterial
 {
-    float o21S248C0_o13S2C0_o12S2C0_ComputeColorConstantFloatLink_constantFloat;
-    vec4 o21S248C0_o11S2C0_o10S2C0_ComputeColorConstantColorLink_constantColor;
-    float o21S248C0_o9S2C0_o8S2C0_ComputeColorConstantFloatLink_constantFloat;
-    vec2 o21S248C0_o5S2C0_o4S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
-    vec2 o21S248C0_o5S2C0_o4S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
+    float o21S267C0_o13S2C0_o12S2C0_ComputeColorConstantFloatLink_constantFloat;
+    vec4 o21S267C0_o11S2C0_o10S2C0_ComputeColorConstantColorLink_constantColor;
+    float o21S267C0_o9S2C0_o8S2C0_ComputeColorConstantFloatLink_constantFloat;
+    vec2 o21S267C0_o5S2C0_o4S2C0_ComputeColorTextureScaledOffsetDynamicSampler_scale;
+    vec2 o21S267C0_o5S2C0_o4S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
     float o27S35C0_o25S2C0_o24S2C0_o23S2C1_ComputeColorConstantFloatLink_constantFloat;
 } PerMaterial_var;
 

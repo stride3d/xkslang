@@ -4,12 +4,13 @@ struct VS_STREAMS
 {
     vec4 ShadingPosition_id0;
     vec3 meshNormal_id1;
-    vec3 normalWS_id2;
-    vec4 Position_id3;
-    vec4 PositionWS_id4;
-    float DepthVS_id5;
-    vec4 PositionH_id6;
-    vec2 TexCoord_id7;
+    vec3 meshNormalWS_id2;
+    vec3 normalWS_id3;
+    vec4 Position_id4;
+    vec4 PositionWS_id5;
+    float DepthVS_id6;
+    vec4 PositionH_id7;
+    vec2 TexCoord_id8;
 };
 
 layout(std140) uniform PerDraw
@@ -54,7 +55,7 @@ void TransformationBase_PreTransformPosition()
 void TransformationWAndVP_PreTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PreTransformPosition();
-    _streams.PositionWS_id4 = PerDraw_var.Transformation_World * _streams.Position_id3;
+    _streams.PositionWS_id5 = PerDraw_var.Transformation_World * _streams.Position_id4;
 }
 
 void TransformationBase_TransformPosition()
@@ -73,10 +74,10 @@ vec4 TransformationWAndVP_ComputeShadingPosition(vec4 world)
 void TransformationWAndVP_PostTransformPosition(inout VS_STREAMS _streams)
 {
     TransformationBase_PostTransformPosition();
-    vec4 param = _streams.PositionWS_id4;
+    vec4 param = _streams.PositionWS_id5;
     _streams.ShadingPosition_id0 = TransformationWAndVP_ComputeShadingPosition(param);
-    _streams.PositionH_id6 = _streams.ShadingPosition_id0;
-    _streams.DepthVS_id5 = _streams.ShadingPosition_id0.w;
+    _streams.PositionH_id7 = _streams.ShadingPosition_id0;
+    _streams.DepthVS_id6 = _streams.ShadingPosition_id0.w;
 }
 
 void TransformationBase_BaseTransformVS(inout VS_STREAMS _streams)
@@ -94,20 +95,21 @@ void TransformationBase_VSMain(inout VS_STREAMS _streams)
 
 void NormalFromMesh_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
-    _streams.normalWS_id2 = mat3(vec3(PerDraw_var.Transformation_WorldInverseTranspose[0].x, PerDraw_var.Transformation_WorldInverseTranspose[0].y, PerDraw_var.Transformation_WorldInverseTranspose[0].z), vec3(PerDraw_var.Transformation_WorldInverseTranspose[1].x, PerDraw_var.Transformation_WorldInverseTranspose[1].y, PerDraw_var.Transformation_WorldInverseTranspose[1].z), vec3(PerDraw_var.Transformation_WorldInverseTranspose[2].x, PerDraw_var.Transformation_WorldInverseTranspose[2].y, PerDraw_var.Transformation_WorldInverseTranspose[2].z)) * _streams.meshNormal_id1;
+    _streams.meshNormalWS_id2 = mat3(vec3(PerDraw_var.Transformation_WorldInverseTranspose[0].x, PerDraw_var.Transformation_WorldInverseTranspose[0].y, PerDraw_var.Transformation_WorldInverseTranspose[0].z), vec3(PerDraw_var.Transformation_WorldInverseTranspose[1].x, PerDraw_var.Transformation_WorldInverseTranspose[1].y, PerDraw_var.Transformation_WorldInverseTranspose[1].z), vec3(PerDraw_var.Transformation_WorldInverseTranspose[2].x, PerDraw_var.Transformation_WorldInverseTranspose[2].y, PerDraw_var.Transformation_WorldInverseTranspose[2].z)) * _streams.meshNormal_id1;
+    _streams.normalWS_id3 = _streams.meshNormalWS_id2;
 }
 
 void main()
 {
-    VS_STREAMS _streams = VS_STREAMS(vec4(0.0), vec3(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec4(0.0), vec2(0.0));
+    VS_STREAMS _streams = VS_STREAMS(vec4(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec4(0.0), vec2(0.0));
     _streams.meshNormal_id1 = VS_IN_meshNormal;
-    _streams.Position_id3 = VS_IN_Position;
-    _streams.TexCoord_id7 = VS_IN_TexCoord;
+    _streams.Position_id4 = VS_IN_Position;
+    _streams.TexCoord_id8 = VS_IN_TexCoord;
     TransformationBase_VSMain(_streams);
     NormalFromMesh_GenerateNormal_VS(_streams);
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
-    VS_OUT_normalWS = _streams.normalWS_id2;
-    VS_OUT_PositionWS = _streams.PositionWS_id4;
-    VS_OUT_TexCoord = _streams.TexCoord_id7;
+    VS_OUT_normalWS = _streams.normalWS_id3;
+    VS_OUT_PositionWS = _streams.PositionWS_id5;
+    VS_OUT_TexCoord = _streams.TexCoord_id8;
 }
 

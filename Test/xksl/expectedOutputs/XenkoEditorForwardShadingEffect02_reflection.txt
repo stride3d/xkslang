@@ -19,12 +19,12 @@
 @C    Transformation_ProjScreenRay => Transformation.ProjScreenRay
 @C    Transformation_Eye => Transformation.Eye
  cbuffer PerMaterial [size: 64]
-@C    o12S245C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor => Material.AlphaBlendColorValue
-@C    o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat => Material.DiffuseSpecularAlphaBlendValue
-@C    o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat => Material.EmissiveIntensity
-@C    o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale => Material.TextureScale
-@C    o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset => Material.TextureOffset
-@C    o12S245C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor => GridGizmoBase.GridColorKey
+@C    o12S251C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor => Material.AlphaBlendColorValue
+@C    o12S251C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat => Material.DiffuseSpecularAlphaBlendValue
+@C    o12S251C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat => Material.EmissiveIntensity
+@C    o12S251C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale => Material.TextureScale
+@C    o12S251C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset => Material.TextureOffset
+@C    o12S251C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor => GridGizmoBase.GridColorKey
 
 ***********************
 *****  Resources  *****
@@ -85,22 +85,22 @@ ConstantBuffers. Count=3
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
  cbuffer: Name="PerMaterial" Size=64 MembersCount=6
-  KeyName="Material.AlphaBlendColorValue" RawName="o12S245C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
+  KeyName="Material.AlphaBlendColorValue" RawName="o12S251C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=0
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="Material.DiffuseSpecularAlphaBlendValue" RawName="o12S245C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=16
+  KeyName="Material.DiffuseSpecularAlphaBlendValue" RawName="o12S251C0_o7S2C0_o6S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=16
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Material.EmissiveIntensity" RawName="o12S245C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=20
+  KeyName="Material.EmissiveIntensity" RawName="o12S251C0_o5S2C0_o4S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=20
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="Material.TextureScale" RawName="o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale" LogicalGroup="" Offset=24
+  KeyName="Material.TextureScale" RawName="o12S251C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_scale" LogicalGroup="" Offset=24
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="Material.TextureOffset" RawName="o12S245C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset" LogicalGroup="" Offset=32
+  KeyName="Material.TextureOffset" RawName="o12S251C0_o3S2C0_o2S2C0_o1S2C1_ComputeColorTextureScaledOffsetDynamicSampler_offset" LogicalGroup="" Offset=32
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="GridGizmoBase.GridColorKey" RawName="o12S245C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=48
+  KeyName="GridGizmoBase.GridColorKey" RawName="o12S251C0_o3S2C0_o2S2C0_o0S2C0_ComputeColorConstantColorLink_constantColor" LogicalGroup="" Offset=48
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 

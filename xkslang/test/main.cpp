@@ -359,7 +359,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialSurfaceArray03", "MaterialSurfaceArray03.xkfx" },
     //{ "XenkoForwardShadingEffect", "XenkoForwardShadingEffect.xkfx" },
     //{ "LightClusteredPointGroup", "LightClusteredPointGroup.xkfx" },
-    { "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
+    //{ "testComposeDirectLightGroup", "testComposeDirectLightGroup.xkfx" },
     //{ "SkyboxShader", "SkyboxShader.xkfx" },
     //{ "SphericalHarmonicsBase", "SphericalHarmonicsBase.xkfx" },
     //{ "LambertianPrefilteringSHNoComputePass1", "LambertianPrefilteringSHNoComputePass1.xkfx" },
@@ -373,13 +373,13 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "MaterialStreamLinearBlend", "MaterialStreamLinearBlend.xkfx" },
 ///////////////{ "ShadowMapFilterPcf", "ShadowMapFilterPcf.xkfx" },
 
-    //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
-    //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
-    //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
-    //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
-///////////////{ "XenkoEditorForwardShadingEffect05", "XenkoEditorForwardShadingEffect05.xkfx" },
-    //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
-    //{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
+    { "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
+    { "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
+    { "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
+    { "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
+/////////////{ "XenkoEditorForwardShadingEffect05", "XenkoEditorForwardShadingEffect05.xkfx" },
+    { "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
+    { "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
 };
 
 enum class ShaderLanguageEnum
