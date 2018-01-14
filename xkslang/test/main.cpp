@@ -281,7 +281,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection08", "EffectReflection08.xkfx" },
     //{ "EffectReflection09", "EffectReflection09.xkfx" },
     
-    { "abstractFunctions01", "abstractFunctions01.xkfx" },
+    //{ "abstractFunctions01", "abstractFunctions01.xkfx" },
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
     //{ "testTypeSize", "testTypeSize.xkfx" },
     //{ "namespaces01", "namespaces01.xkfx" },
@@ -371,11 +371,13 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "IMaterialStreamBlend", "IMaterialStreamBlend.xkfx" },
     //{ "MaterialSurfaceStreamsBlend", "MaterialSurfaceStreamsBlend.xkfx" },
     //{ "MaterialStreamLinearBlend", "MaterialStreamLinearBlend.xkfx" },
-    
+///////////////{ "ShadowMapFilterPcf", "ShadowMapFilterPcf.xkfx" },
+
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
+///////////////{ "XenkoEditorForwardShadingEffect05", "XenkoEditorForwardShadingEffect05.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
 };
