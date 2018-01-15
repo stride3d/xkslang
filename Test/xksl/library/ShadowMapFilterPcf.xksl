@@ -183,7 +183,7 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
             }
         }
 
-        float SampleAndFilter(float3 adjustedPixelPositionWS, float3 adjustedPixelPositionShadowSpace, float2 depthRanges, float4x4 inverseWorldToShadowCascadeUV, bool isOrthographic, bool isDualParaboloid = false)
+        float SampleAndFilter(float3 adjustedPixelPositionWS, float3 adjustedPixelPositionShadowSpace, float2 depthRanges, float4x4 inverseWorldToShadowCascadeUV, bool isOrthographic, bool isDualParaboloid)
         {
             float2 uv = adjustedPixelPositionShadowSpace.xy * ShadowMapTextureSize; // 1 unit - 1 texel
             
@@ -278,7 +278,7 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
             }
 
             // Now perform the actual filtering:
-            return SampleAndFilter(adjustedPixelPositionWS, adjustedPixelPositionShadowSpace, depthRanges, inverseWorldToShadowCascadeUV, isOrthographic);
+            return SampleAndFilter(adjustedPixelPositionWS, adjustedPixelPositionShadowSpace, depthRanges, inverseWorldToShadowCascadeUV, isOrthographic, false);
         }
 
     };

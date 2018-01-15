@@ -6932,6 +6932,27 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
         }
         //============================================================================
 
+        //Check that we have the correct number of parameters
+        //A number not equal is not necessary an error: for example of a function declares some parameter with defaul value: void function(bool b = false)
+        //However this case is not implemented for now with glslang and made the app to crash
+        //Likely some later updates will fix this and so we can skip this check
+        {
+            int countParametersRequired = functionToCall->getParamCount();
+            int countParamtersPassed = 0;
+            if (arguments != nullptr)
+            {
+                TIntermAggregate* aggNode = arguments->getAsAggregate();
+                if (aggNode == nullptr) countParamtersPassed = 1;
+                else countParamtersPassed = aggNode->getSequence().size();
+            }
+
+            if (countParamtersPassed != countParametersRequired)
+            {
+                error("Invalid number of parameters for calling function: " + functionToCall->getName()+ " (Calling a function using default parameters is not supported yet)");
+                return false;
+            }
+        }
+
         identifierLocation.method->counterCountCallsToFunction++;
         node = parseContext.handleFunctionCall(tokenLocation, functionToCall, arguments, callToFunctionThroughBaseAccessor, isACallThroughStaticShaderClassName, compositionTargeted);
     }

@@ -1,0 +1,14 @@
+
+shader ShaderMain
+{
+	float functionWithDefaultParam(bool aParam = false)
+	{
+		return 0.0;
+	}
+	
+	void VSMain()
+	{
+		float f1 = functionWithDefaultParam(true);
+		float f2 = functionWithDefaultParam();
+	}
+}
