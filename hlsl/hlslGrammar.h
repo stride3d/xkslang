@@ -211,7 +211,7 @@ namespace glslang {
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodCalledMangledName, bool onlyLookInParentClasses,
             bool isFunctionCalledUsingStreamTypeParameters, const TString& methodCalledMangledNameWithStreamType);
         XkslShaderDefinition::ShaderIdentifierLocation findShaderClassMethod(const TString& shaderClassName, const TString& methodName, bool alsoLookInParentsClass);
-        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassBestMatchingMethod(const TString& shaderClassName, TFunction* functionCall, bool onlyLookInParentClasses);
+        XkslShaderDefinition::ShaderIdentifierLocation findShaderClassBestMatchingMethod(const TString& shaderClassName, TFunction* functionCall, bool onlyLookInParentClasses, TIntermTyped*& args);
         bool getListShaderClassMethodsWithGivenName(XkslShaderDefinition* shader, const TString& methodName, TVector<TShaderClassFunction*>& shaderMethodsList, bool onlyLookInParentClasses, bool recursivelyLookInParents);
         TType* getTypeDefinedByTheShaderOrItsParents(const TString& shaderName, const TString& typeName, int uniqueId = 0);
         bool IsShaderEqualOrSubClassOf(XkslShaderDefinition* shader, XkslShaderDefinition* maybeParent);

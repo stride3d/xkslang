@@ -6,13 +6,18 @@ layout(location = 1) in float in_aFloat;
 layout(location = 0) out vec4 out_Color;
 layout(location = 1) out float out_Depth;
 
+float functionWithDefaultParam(bool aParam = false)
+{
+	return 0.0;
+}
+
 void main()
 {
-    vec4 aVec4 = in_aVec4;
-	float f = in_aFloat;
+	float f1 = functionWithDefaultParam(true);
+	float f2 = functionWithDefaultParam();
 	
     out_Color = aVec4;
-    out_Depth = 1.0;
+    out_Depth = f1 + f2;
 }
 
 /*

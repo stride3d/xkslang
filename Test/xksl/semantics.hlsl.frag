@@ -1,19 +1,13 @@
 
-struct VS_Input
+float functionWithDefaultParam(bool aParam = false)
 {
-    float3x3 VS_IN_tangentToWorld : TANGENTTOWORLD;
-};
+	return 0.0;
+}
 
-struct VS_Output
+void main()
 {
-    float3x3 VS_OUT_tangentToWorld : TANGENTTOWORLD;
-};
-
-VS_Output main(VS_Input input)
-{
-    VS_Output stage_output;
-    stage_output.VS_OUT_tangentToWorld = input.VS_IN_tangentToWorld;
-    return stage_output;
+    float f1 = functionWithDefaultParam(true);
+	float f2 = functionWithDefaultParam();
 }
 
 

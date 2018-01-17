@@ -5586,7 +5586,7 @@ bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* s
 }
 
 //Look for a method best-matching the function call (mangled name is not identical but we check if we can convert / cast some parameters)
-XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestMatchingMethod(const TString& shaderClassName, TFunction* functionCall, bool onlyLookInParentClasses)
+XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestMatchingMethod(const TString& shaderClassName, TFunction* functionCall, bool onlyLookInParentClasses, TIntermTyped*& args)
 {
     XkslShaderDefinition::ShaderIdentifierLocation identifierLocation;
 
@@ -5616,7 +5616,6 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
     for (unsigned int k = 0; k < countCandidates; k++) candidateList.push_back(shaderMethodsList[k]->function);
 
     //Find the best match
-    TIntermTyped* args = nullptr;
     const TFunction* bestMatch = parseContext.findBestMatchingFunctionFromCandidateList(token.loc, *functionCall, candidateList, false, args, false);
 
     if (bestMatch != nullptr)
@@ -5657,7 +5656,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassBestM
             if (parentShader->isValid == false) continue;
 
             const TString& parentName = parentShader->shaderFullName;
-            identifierLocation = findShaderClassBestMatchingMethod(parentName, functionCall, false);
+            identifierLocation = findShaderClassBestMatchingMethod(parentName, functionCall, false, args);
             if (identifierLocation.isMethod()) return identifierLocation;
         }
     }
@@ -6734,7 +6733,7 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
     if (!identifierLocation.isMethod())
     {
         //we keep looking if we can match another method by casting some of the function parameters
-        identifierLocation = findShaderClassBestMatchingMethod(nameOfShaderOwningTheFunction, functionCall, onlyLookInParentClasses);
+        identifierLocation = findShaderClassBestMatchingMethod(nameOfShaderOwningTheFunction, functionCall, onlyLookInParentClasses, arguments);
 
         if (!identifierLocation.isMethod())
         {
@@ -6931,27 +6930,6 @@ bool HlslGrammar::acceptXkslFunctionCall(TString& functionClassAccessorName, boo
             }
         }
         //============================================================================
-
-        //Check that we have the correct number of parameters
-        //A number not equal is not necessary an error: for example of a function declares some parameter with defaul value: void function(bool b = false)
-        //However this case is not implemented for now with glslang and made the app to crash
-        //Likely some later updates will fix this and so we can skip this check
-        {
-            int countParametersRequired = functionToCall->getParamCount();
-            int countParamtersPassed = 0;
-            if (arguments != nullptr)
-            {
-                TIntermAggregate* aggNode = arguments->getAsAggregate();
-                if (aggNode == nullptr) countParamtersPassed = 1;
-                else countParamtersPassed = aggNode->getSequence().size();
-            }
-
-            if (countParamtersPassed != countParametersRequired)
-            {
-                error("Invalid number of parameters for calling function: " + functionToCall->getName()+ " (Calling a function using default parameters is not supported yet)");
-                return false;
-            }
-        }
 
         identifierLocation.method->counterCountCallsToFunction++;
         node = parseContext.handleFunctionCall(tokenLocation, functionToCall, arguments, callToFunctionThroughBaseAccessor, isACallThroughStaticShaderClassName, compositionTargeted);
