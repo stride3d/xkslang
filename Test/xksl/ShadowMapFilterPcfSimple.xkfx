@@ -1,0 +1,6 @@
+convertAndLoad "ShadowMapFilterPcfSimple.xksl" ShadowMapFilterPcf<5>
+
+mixer m
+m.mixin( ShadowMapFilterPcf<5> )
+
+m.compile

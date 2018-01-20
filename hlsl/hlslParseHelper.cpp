@@ -3492,12 +3492,15 @@ TIntermAggregate* HlslParseContext::handleSamplerTextureCombine(const TSourceLoc
 
         if (textureShadowEntry != textureShadowVariant.end())
         {
-            //XKSL extensions
-            //This will make the AST to create another symbol for the sampler, then it will make some conflicts later on in the mixer
-            //We likely don't need this if we're parsing a XKSL shader.... so we just pretend the sampler is a non-shadow one
+            newId = textureShadowEntry->second->get(shadowMode);
 
-            //newId = textureShadowEntry->second->get(shadowMode);
-            newId = textureShadowEntry->second->get(false);
+            //XKSL extensions
+            //If a same resources is used in both shadow and not shadow mode. 2 different variables (symbols) will be created for this resource
+            //This will mess up with XKSLANG mixer, so we deactivate the feature
+            if (newId == -1)
+            {
+                newId = textureShadowEntry->second->get(!shadowMode);
+            }
         }
         else
             textureShadowVariant[texSymbol->getId()] = new tShadowTextureSymbols;

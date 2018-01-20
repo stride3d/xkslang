@@ -1,0 +1,42 @@
+
+shader ShadowMapCommon
+{
+	stage SamplerState LinearBorderSampler
+    {
+        Filter = MIN_MAG_MIP_LINEAR;
+        AddressU = Border;
+        AddressV = Border;
+    };
+
+    stage SamplerComparisonState LinearClampCompareLessEqualSampler
+    {
+        Filter = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+        AddressU = Clamp;
+        AddressV = Clamp;
+        ComparisonFunc = LessEqual;
+    };
+	
+	rgroup PerLighting
+	{
+		[Link("ShadowMap.Texture")]
+		Texture2D ShadowMapTexture;
+	}
+
+	float SampleTextureAndCompare(float2 position, float positionDepth)
+	{
+		return ShadowMapTexture.SampleCmpLevelZero(LinearClampCompareLessEqualSampler, position, positionDepth);
+	}
+	
+	float SampleThickness()
+	{
+		const float shadowMapDepth = ShadowMapTexture.SampleLevel(LinearBorderSampler, float2(0.5, 0.5), 0).r;
+		return shadowMapDepth;
+	}
+	
+	void VSMain()
+	{
+		float f1 = SampleTextureAndCompare(float2(0.5, 0.5), 1.0);
+		float f2 = SampleThickness();
+	}
+};
+

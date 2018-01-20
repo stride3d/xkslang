@@ -8,5 +8,3 @@ addResourcesLibrary "library"
 
 mixer _m
 _m.mixin( ShadowMapFilterPcf<PerView.Lighting,5>)
-
-_m.compile()

@@ -1,0 +1,5 @@
+convertAndLoad "ShadowMapCommonSimple.xksl"
+
+mixer m
+m.mixin( ShadowMapCommon )
+m.compile()
