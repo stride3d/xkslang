@@ -10,13 +10,13 @@ float ShadowMapCommon_SampleTextureAndCompare(float2 position, float positionDep
 
 float ShadowMapCommon_SampleThickness()
 {
-    float shadowMapDepth = ShadowMapCommon_ShadowMapTexture.SampleLevel(ShadowMapCommon_LinearBorderSampler, float2(0.5f, 0.5f), 0.0f).x;
+    float shadowMapDepth = ShadowMapCommon_ShadowMapTexture.SampleLevel(ShadowMapCommon_LinearBorderSampler, 0.5f.xx, 0.0f).x;
     return shadowMapDepth;
 }
 
 void vert_main()
 {
-    float2 param = float2(0.5f, 0.5f);
+    float2 param = 0.5f.xx;
     float param_1 = 1.0f;
     float f1 = ShadowMapCommon_SampleTextureAndCompare(param, param_1);
     float f2 = ShadowMapCommon_SampleThickness();

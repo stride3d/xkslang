@@ -69,7 +69,7 @@ float4 SpriteBatchShader_false__Shading(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xx };
     _streams.Color_id0 = PS_IN_Color;
     _streams.ColorAdd_id1 = PS_IN_ColorAdd;
     _streams.Swizzle_id2 = PS_IN_Swizzle;

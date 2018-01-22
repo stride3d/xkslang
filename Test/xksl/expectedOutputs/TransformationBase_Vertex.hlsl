@@ -41,7 +41,7 @@ void TransformationBase_BaseTransformVS()
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx };
     _streams.ShadingPosition_id0 = VS_IN_ShadingPosition;
     ShaderBase_VSMain();
     TransformationBase_BaseTransformVS();

@@ -22,13 +22,13 @@ struct SPIRV_Cross_Input
 
 ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
 {
-    ShaderMain_Streams res = { _streams.s1_id0, _streams.b1_id1, 0 };
+    ShaderMain_Streams res = ShaderMain_Streams{ _streams.s1_id0, _streams.b1_id1, 0 };
     return res;
 }
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx };
     _streams.s1_id0 = VS_IN_s1;
     _streams.b1_id1 = VS_IN_b1;
     ShaderMain_Streams s1 = ShaderMain__getStreams(_streams);

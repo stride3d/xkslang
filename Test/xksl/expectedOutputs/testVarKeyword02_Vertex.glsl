@@ -3,7 +3,9 @@
 vec2 ShaderTest_GetSamplePlane(int k, int samplesCount)
 {
     float u = 0.0;
-    for (float p = 0.5, kk = k; kk != int(0u); p *= 0.5, kk = kk >> 1)
+    float p = 0.5;
+    int kk = k;
+    for (; kk != int(0u); p *= 0.5, kk = kk >> 1)
     {
         if ((kk & 1) != int(0u))
         {

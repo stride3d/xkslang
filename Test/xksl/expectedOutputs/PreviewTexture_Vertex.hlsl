@@ -55,7 +55,7 @@ float4 ColorUtility_ToLinear(float4 sRGBa)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xx };
     _streams.Color_id0 = VS_IN_Color;
     _streams.ColorAdd_id1 = VS_IN_ColorAdd;
     _streams.Swizzle_id2 = VS_IN_Swizzle;

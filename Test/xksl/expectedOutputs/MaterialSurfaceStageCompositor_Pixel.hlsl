@@ -51,7 +51,7 @@ void o2S41C0_IMaterialSurface_Compute()
 float4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 {
     _streams.viewWS_id2 = normalize(Transformation_Eye.xyz - _streams.PositionWS_id3.xyz);
-    _streams.shadingColor_id4 = float3(0.0f, 0.0f, 0.0f);
+    _streams.shadingColor_id4 = 0.0f.xxx;
     o3S41C1_IStreamInitializer_ResetStream();
     o2S41C0_IMaterialSurface_Compute();
     return float4(_streams.shadingColor_id4, _streams.shadingColorAlpha_id5);
@@ -59,7 +59,7 @@ float4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.PositionWS_id3 = PS_IN_PositionWS;
     _streams.shadingColorAlpha_id5 = PS_IN_shadingColorAlpha;

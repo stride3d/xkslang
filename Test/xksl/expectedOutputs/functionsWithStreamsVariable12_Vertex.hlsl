@@ -37,24 +37,24 @@ struct SPIRV_Cross_Output
 
 TestShaderMain_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
 {
-    TestShaderMain_Streams res = { _streams.sMain_id1, _streams.sBase_id2, 0 };
+    TestShaderMain_Streams res = TestShaderMain_Streams{ _streams.sMain_id1, _streams.sBase_id2, 0 };
     return res;
 }
 
 TestIComposition_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(TestShaderMain_Streams s)
 {
-    TestIComposition_Streams r = { s.sBase, s._unused };
+    TestIComposition_Streams r = TestIComposition_Streams{ s.sBase, s._unused };
     return r;
 }
 
 void TestShaderBase_Compute(inout TestIComposition_Streams s)
 {
-    s.sComp = float3(1.0f, 1.0f, 1.0f);
+    s.sComp = 1.0f.xxx;
 }
 
 TestIComposition_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestICompositionStreams(TestShaderMain_Streams s)
 {
-    TestIComposition_Streams r = { float3(0.0f, 0.0f, 0.0f), s._unused };
+    TestIComposition_Streams r = TestIComposition_Streams{ 0.0f.xxx, s._unused };
     return r;
 }
 
@@ -65,7 +65,7 @@ void o0S5C0_TestIComposition_ComputeComp(inout VS_STREAMS _streams, TestIComposi
 
 void TestShaderMain_Compute(inout VS_STREAMS _streams, inout TestShaderMain_Streams s)
 {
-    s.sMain = float3(2.0f, 2.0f, 2.0f);
+    s.sMain = 2.0f.xxx;
     TestShaderMain_Streams param = s;
     TestIComposition_Streams param_1 = TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(param);
     TestShaderBase_Compute(param_1);
@@ -77,7 +77,7 @@ void TestShaderMain_Compute(inout VS_STREAMS _streams, inout TestShaderMain_Stre
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxx };
     _streams.sMain_id1 = VS_IN_sMain;
     _streams.sBase_id2 = VS_IN_sBase;
     TestShaderMain_Streams param = TestShaderMain__getStreams(_streams);

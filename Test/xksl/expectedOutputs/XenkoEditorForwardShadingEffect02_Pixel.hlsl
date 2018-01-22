@@ -100,11 +100,11 @@ void o13S251C1_MaterialPixelStream_ResetStream(inout PS_STREAMS _streams)
 {
     o13S251C1_MaterialStream_ResetStream(_streams);
     _streams.matNormal_id5 = float3(0.0f, 0.0f, 1.0f);
-    _streams.matColorBase_id6 = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    _streams.matDiffuse_id7 = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    _streams.matDiffuseVisible_id23 = float3(0.0f, 0.0f, 0.0f);
-    _streams.matSpecular_id9 = float3(0.0f, 0.0f, 0.0f);
-    _streams.matSpecularVisible_id25 = float3(0.0f, 0.0f, 0.0f);
+    _streams.matColorBase_id6 = 0.0f.xxxx;
+    _streams.matDiffuse_id7 = 0.0f.xxxx;
+    _streams.matDiffuseVisible_id23 = 0.0f.xxx;
+    _streams.matSpecular_id9 = 0.0f.xxx;
+    _streams.matSpecularVisible_id25 = 0.0f.xxx;
     _streams.matSpecularIntensity_id10 = 1.0f;
     _streams.matGlossiness_id8 = 0.0f;
     _streams.alphaRoughness_id24 = 1.0f;
@@ -113,11 +113,11 @@ void o13S251C1_MaterialPixelStream_ResetStream(inout PS_STREAMS _streams)
     _streams.matCavity_id13 = 1.0f;
     _streams.matCavityDiffuse_id14 = 0.0f;
     _streams.matCavitySpecular_id15 = 0.0f;
-    _streams.matEmissive_id16 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    _streams.matEmissive_id16 = 0.0f.xxxx;
     _streams.matEmissiveIntensity_id17 = 0.0f;
     _streams.matScatteringStrength_id18 = 1.0f;
-    _streams.matDiffuseSpecularAlphaBlend_id19 = float2(1.0f, 1.0f);
-    _streams.matAlphaBlendColor_id20 = float3(1.0f, 1.0f, 1.0f);
+    _streams.matDiffuseSpecularAlphaBlend_id19 = 1.0f.xx;
+    _streams.matAlphaBlendColor_id20 = 1.0f.xxx;
     _streams.matAlphaDiscard_id21 = 0.100000001490116119384765625f;
 }
 
@@ -207,7 +207,7 @@ void o12S251C0_MaterialSurfaceArray_Compute(inout PS_STREAMS _streams)
 float4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 {
     _streams.viewWS_id22 = normalize(Transformation_Eye.xyz - _streams.PositionWS_id4.xyz);
-    _streams.shadingColor_id26 = float3(0.0f, 0.0f, 0.0f);
+    _streams.shadingColor_id26 = 0.0f.xxx;
     o13S251C1_MaterialPixelShadingStream_ResetStream(_streams);
     o12S251C0_MaterialSurfaceArray_Compute(_streams);
     return float4(_streams.shadingColor_id26, _streams.shadingColorAlpha_id27);
@@ -222,7 +222,7 @@ void ShadingBase_PSMain(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, 0.0f, float2(0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, float2(0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f.xx };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.normalWS_id3 = PS_IN_normalWS;
     _streams.PositionWS_id4 = PS_IN_PositionWS;

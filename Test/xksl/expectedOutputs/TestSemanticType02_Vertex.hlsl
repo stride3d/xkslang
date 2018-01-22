@@ -22,7 +22,7 @@ float4 ShaderMain_wxyz_abgr_UPDATED_SEMANTIC__Compute(VS_STREAMS _streams)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx };
     _streams.LocalColor_id0 = VS_IN_LocalColor;
     float4 color = ShaderMain_wxyz_abgr_UPDATED_SEMANTIC__Compute(_streams);
 }

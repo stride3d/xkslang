@@ -42,7 +42,7 @@ struct SPIRV_Cross_Output
 
 ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
 {
-    ShaderMain_Streams res = { _streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0 };
+    ShaderMain_Streams res = ShaderMain_Streams{ _streams.s1_id0, _streams.s2_id1, _streams.b1_id2, _streams.b2_id3, 0 };
     return res;
 }
 
@@ -56,7 +56,7 @@ void ShaderMain__setStreams(inout VS_STREAMS _streams, ShaderMain_Streams _s)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0, 0.0f };
+    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0, 0.0f };
     _streams.s1_id0 = VS_IN_s1;
     _streams.s2_id1 = VS_IN_s2;
     _streams.b1_id2 = VS_IN_b1;

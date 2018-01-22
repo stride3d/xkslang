@@ -33,12 +33,12 @@ void ShaderBase_VSMain()
 
 void NormalUpdate_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
-    _streams.normalWS_id2 = float3(0.0f, 0.0f, 0.0f);
+    _streams.normalWS_id2 = 0.0f.xxx;
 }
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx };
     _streams.meshNormal_id0 = VS_IN_meshNormal;
     _streams.meshTangent_id1 = VS_IN_meshTangent;
     _streams.ShadingPosition_id3 = VS_IN_ShadingPosition;

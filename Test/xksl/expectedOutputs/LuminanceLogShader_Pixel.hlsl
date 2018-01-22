@@ -44,7 +44,7 @@ float4 LuminanceLogShader_Shading(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xx, 0.0f.xxxx, 0.0f.xxxx };
     _streams.TexCoord_id0 = PS_IN_TexCoord;
     _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
     _streams.ColorTarget_id2 = LuminanceLogShader_Shading(_streams);

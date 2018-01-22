@@ -26,7 +26,7 @@ void ShaderBase_PSMain()
 
 float4 o0S2C0_ComputeColor_Compute()
 {
-    return float4(0.0f, 0.0f, 0.0f, 0.0f);
+    return 0.0f.xxxx;
 }
 
 float4 ShadingBase_Shading()
@@ -36,12 +36,12 @@ float4 ShadingBase_Shading()
 
 float4 o1S2C1_ComputeColor_Compute()
 {
-    return float4(0.0f, 0.0f, 0.0f, 0.0f);
+    return 0.0f.xxxx;
 }
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     ShaderBase_PSMain();
     _streams.ColorTarget_id1 = ShadingBase_Shading();

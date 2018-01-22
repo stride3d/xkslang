@@ -25,13 +25,13 @@ struct SPIRV_Cross_Output
 
 TestIComposition_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
 {
-    TestIComposition_Streams res = { _streams.sMain_id1, 0 };
+    TestIComposition_Streams res = TestIComposition_Streams{ _streams.sMain_id1, 0 };
     return res;
 }
 
 TestIComposition_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestICompositionStreams(TestIComposition_Streams s)
 {
-    TestIComposition_Streams r = { float3(0.0f, 0.0f, 0.0f), s._unused };
+    TestIComposition_Streams r = TestIComposition_Streams{ 0.0f.xxx, s._unused };
     return r;
 }
 
@@ -42,7 +42,7 @@ void o0S5C0_TestIComposition_ComputeComp(inout VS_STREAMS _streams, TestIComposi
 
 void TestShaderMain_Compute(inout VS_STREAMS _streams, inout TestIComposition_Streams s)
 {
-    s.sComp = float3(2.0f, 2.0f, 2.0f);
+    s.sComp = 2.0f.xxx;
     TestIComposition_Streams backup = TestShaderMain__getStreams(_streams);
     TestIComposition_Streams param = backup;
     TestIComposition_Streams param_1 = TestShaderMain__ConvertTestShaderMainStreamsToTestICompositionStreams(param);
@@ -51,7 +51,7 @@ void TestShaderMain_Compute(inout VS_STREAMS _streams, inout TestIComposition_St
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx };
     _streams.sMain_id1 = VS_IN_sMain;
     TestIComposition_Streams param = TestShaderMain__getStreams(_streams);
     TestShaderMain_Compute(_streams, param);

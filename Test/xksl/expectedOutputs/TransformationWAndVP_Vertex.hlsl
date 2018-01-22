@@ -86,7 +86,7 @@ void TransformationBase_BaseTransformVS(inout VS_STREAMS _streams)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xxxx };
     _streams.Position_id0 = VS_IN_Position;
     ShaderBase_VSMain();
     TransformationBase_BaseTransformVS(_streams);

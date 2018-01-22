@@ -51,7 +51,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xx, 0.0f.xxxx };
     _streams.Position_id0 = VS_IN_Position;
     _streams.TexCoord_id4 = VS_IN_TexCoord;
     _streams.LocalColor_id5 = VS_IN_LocalColor;

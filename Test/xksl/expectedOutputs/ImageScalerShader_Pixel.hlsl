@@ -45,7 +45,7 @@ float4 ImageScalerShader_Shading(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xx };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.TexCoord_id2 = PS_IN_TexCoord;
     _streams.ColorTarget_id1 = ImageScalerShader_Shading(_streams);

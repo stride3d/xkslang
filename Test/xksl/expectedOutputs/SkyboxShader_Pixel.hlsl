@@ -39,7 +39,7 @@ float4 SkyboxShader_Shading(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxx };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.skyboxViewDirection_id2 = PS_IN_skyboxViewDirection;
     _streams.ColorTarget_id1 = SkyboxShader_Shading(_streams);

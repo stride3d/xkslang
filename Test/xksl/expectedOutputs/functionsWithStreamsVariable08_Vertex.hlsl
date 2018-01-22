@@ -28,13 +28,13 @@ struct SPIRV_Cross_Input
 
 ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
 {
-    ShaderMain_Streams res = { _streams.matColor_id1, _streams.matBlend_id0, 0 };
+    ShaderMain_Streams res = ShaderMain_Streams{ _streams.matColor_id1, _streams.matBlend_id0, 0 };
     return res;
 }
 
 IMaterialStreamBlend_Streams ShaderMain__ConvertShaderMainStreamsToIMaterialStreamBlendStreams(ShaderMain_Streams s)
 {
-    IMaterialStreamBlend_Streams r = { s.matBlend, s._unused };
+    IMaterialStreamBlend_Streams r = IMaterialStreamBlend_Streams{ s.matBlend, s._unused };
     return r;
 }
 
@@ -53,7 +53,7 @@ void ShaderMain_Compute(inout VS_STREAMS _streams, ShaderMain_Streams fromStream
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f, float3(0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f, 0.0f.xxx };
     _streams.matBlend_id0 = VS_IN_matBlend;
     _streams.matColor_id1 = VS_IN_matColor;
     ShaderMain_Streams param = ShaderMain__getStreams(_streams);

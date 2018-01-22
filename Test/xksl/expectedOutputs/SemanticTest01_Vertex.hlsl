@@ -24,7 +24,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx };
     _streams.Position_id0 = VS_IN_Position;
     _streams.ShadingPosition_id1 = mul(_streams.Position_id0, ShaderMain_MatrixTransform);
     VS_OUT_ShadingPosition = _streams.ShadingPosition_id1;

@@ -18,7 +18,7 @@ float3x3 ShaderTest_GetTangentMatrix()
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx };
     _streams.meshTangent_id0 = VS_IN_meshTangent;
     float3x3 f3x3 = ShaderTest_GetTangentMatrix();
     float3 f3 = _streams.meshTangent_id0.xyz;

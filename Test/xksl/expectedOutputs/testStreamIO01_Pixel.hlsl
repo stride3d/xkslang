@@ -12,7 +12,7 @@ struct SPIRV_Cross_Input
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)) };
+    PS_STREAMS _streams = { float3x3(0.0f.xxx, 0.0f.xxx, 0.0f.xxx) };
     _streams.tangentToWorld_id0 = PS_IN_tangentToWorld;
     float3x3 v2 = _streams.tangentToWorld_id0;
 }

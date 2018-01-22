@@ -138,7 +138,7 @@ void TransformationBase_VSMain(inout VS_STREAMS _streams)
 
 void NormalUpdate_GenerateNormal_VS(inout VS_STREAMS _streams)
 {
-    _streams.normalWS_id3 = float3(0.0f, 0.0f, 0.0f);
+    _streams.normalWS_id3 = 0.0f.xxx;
 }
 
 void NormalBase_VSMain(inout VS_STREAMS _streams)
@@ -149,7 +149,7 @@ void NormalBase_VSMain(inout VS_STREAMS _streams)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xx, 0.0f.xxxx };
     _streams.meshNormal_id1 = VS_IN_meshNormal;
     _streams.meshTangent_id2 = VS_IN_meshTangent;
     _streams.Position_id4 = VS_IN_Position;

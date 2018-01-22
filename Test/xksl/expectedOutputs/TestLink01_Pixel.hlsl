@@ -19,7 +19,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx };
     _streams.s_int_id0 = PS_IN_s_int;
     _streams.s_out_id1 = _streams.s_int_id0;
     PS_OUT_s_out = _streams.s_out_id1;

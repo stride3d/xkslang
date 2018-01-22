@@ -409,24 +409,24 @@ float4 FXAAShader_Shading(PS_STREAMS _streams)
     float2 texCoord = _streams.TexCoord_id0;
     float2 screenPixelRatio = Texturing_Texture0TexelSize;
     float2 param = texCoord;
-    float4 param_1 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float4 param_1 = 0.0f.xxxx;
     float2 param_2 = screenPixelRatio;
-    float4 param_3 = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    float4 param_4 = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    float4 param_5 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float4 param_3 = 0.0f.xxxx;
+    float4 param_4 = 0.0f.xxxx;
+    float4 param_5 = 0.0f.xxxx;
     float param_6 = 0.75f;
     float param_7 = 0.063000001013278961181640625f;
     float param_8 = 0.031199999153614044189453125f;
     float param_9 = 8.0f;
     float param_10 = 0.125f;
     float param_11 = 0.0500000007450580596923828125f;
-    float4 param_12 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float4 param_12 = 0.0f.xxxx;
     return FXAAShader_FxaaPixelShader(param, param_1, Texturing_Texture0, Texturing_Texture0, Texturing_Texture0, param_2, param_3, param_4, param_5, param_6, param_7, param_8, param_9, param_10, param_11, param_12);
 }
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xx, 0.0f.xxxx, 0.0f.xxxx };
     _streams.TexCoord_id0 = PS_IN_TexCoord;
     _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
     _streams.ColorTarget_id2 = FXAAShader_Shading(_streams);

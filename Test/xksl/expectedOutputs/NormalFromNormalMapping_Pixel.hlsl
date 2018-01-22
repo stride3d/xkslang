@@ -68,7 +68,7 @@ void ShaderBase_PSMain()
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, float3x3(0.0f.xxx, 0.0f.xxx, 0.0f.xxx), 0.0f.xxxx };
     _streams.meshNormal_id0 = PS_IN_meshNormal;
     _streams.meshTangent_id2 = PS_IN_meshTangent;
     _streams.ShadingPosition_id4 = PS_IN_ShadingPosition;

@@ -24,7 +24,7 @@ float4 ComputeColorWave_1_2_3_645541__Compute(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float2(0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xx };
     _streams.TexCoord_id0 = PS_IN_TexCoord;
 }
 

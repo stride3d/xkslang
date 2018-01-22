@@ -39,30 +39,30 @@ struct SPIRV_Cross_Input
 
 TestShaderMain_Streams TestShaderMain__getStreams_PS(PS_STREAMS _streams)
 {
-    TestShaderMain_Streams res = { _streams.sMain_id0, _streams.sBaseB_id1, _streams.sBaseA_id2, 0 };
+    TestShaderMain_Streams res = TestShaderMain_Streams{ _streams.sMain_id0, _streams.sBaseB_id1, _streams.sBaseA_id2, 0 };
     return res;
 }
 
 TestShaderBaseB_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseBStreams(TestShaderMain_Streams s)
 {
-    TestShaderBaseB_Streams r = { s.sBaseB, s.sBaseA, s._unused };
+    TestShaderBaseB_Streams r = TestShaderBaseB_Streams{ s.sBaseB, s.sBaseA, s._unused };
     return r;
 }
 
 TestShaderBaseA_Streams TestShaderBaseB__ConvertTestShaderBaseBStreamsToTestShaderBaseAStreams(TestShaderBaseB_Streams s)
 {
-    TestShaderBaseA_Streams r = { s.sBaseA, s._unused };
+    TestShaderBaseA_Streams r = TestShaderBaseA_Streams{ s.sBaseA, s._unused };
     return r;
 }
 
 void TestShaderBaseA_Compute(inout TestShaderBaseA_Streams s)
 {
-    s.sBaseA = float3(1.0f, 1.0f, 1.0f);
+    s.sBaseA = 1.0f.xxx;
 }
 
 void TestShaderBaseB_Compute(inout TestShaderBaseB_Streams s)
 {
-    s.sBaseB = float3(2.0f, 2.0f, 2.0f);
+    s.sBaseB = 2.0f.xxx;
     TestShaderBaseB_Streams param = s;
     TestShaderBaseA_Streams param_1 = TestShaderBaseB__ConvertTestShaderBaseBStreamsToTestShaderBaseAStreams(param);
     TestShaderBaseA_Compute(param_1);
@@ -70,7 +70,7 @@ void TestShaderBaseB_Compute(inout TestShaderBaseB_Streams s)
 
 void TestShaderMain_Compute(inout TestShaderMain_Streams s)
 {
-    s.sMain = float3(1.0f, 1.0f, 1.0f);
+    s.sMain = 1.0f.xxx;
     TestShaderMain_Streams param = s;
     TestShaderBaseB_Streams param_1 = TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseBStreams(param);
     TestShaderBaseB_Compute(param_1);
@@ -78,7 +78,7 @@ void TestShaderMain_Compute(inout TestShaderMain_Streams s)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxx };
     _streams.sMain_id0 = PS_IN_sMain;
     _streams.sBaseB_id1 = PS_IN_sBaseB;
     _streams.sBaseA_id2 = PS_IN_sBaseA;

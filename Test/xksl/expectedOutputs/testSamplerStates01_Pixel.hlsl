@@ -15,7 +15,7 @@ struct SPIRV_Cross_Input
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float2(0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xx };
     _streams.aStream_id0 = PS_IN_aStream;
     float2 uv2 = _streams.aStream_id0;
     float4 color = ShaderMain_Texture0.Sample(ShaderMain_SamplerDefault, uv2);

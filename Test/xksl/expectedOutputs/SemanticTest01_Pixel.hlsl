@@ -23,7 +23,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, 0.0f };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.CustomStream_id3 = 1.0f;
     _streams.Depth_id2 = 0.0f;

@@ -18,7 +18,7 @@ struct SPIRV_Cross_Input
 
 ShaderMain_Streams ShaderMain__getStreams_PS(PS_STREAMS _streams)
 {
-    ShaderMain_Streams res = { _streams.matBlend_id0, 0 };
+    ShaderMain_Streams res = ShaderMain_Streams{ _streams.matBlend_id0, 0 };
     return res;
 }
 

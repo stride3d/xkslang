@@ -230,11 +230,11 @@ void o43S247C1_MaterialPixelStream_ResetStream(inout PS_STREAMS _streams)
 {
     o43S247C1_MaterialStream_ResetStream(_streams);
     _streams.matNormal_id10 = float3(0.0f, 0.0f, 1.0f);
-    _streams.matColorBase_id11 = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    _streams.matDiffuse_id12 = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    _streams.matDiffuseVisible_id28 = float3(0.0f, 0.0f, 0.0f);
-    _streams.matSpecular_id14 = float3(0.0f, 0.0f, 0.0f);
-    _streams.matSpecularVisible_id30 = float3(0.0f, 0.0f, 0.0f);
+    _streams.matColorBase_id11 = 0.0f.xxxx;
+    _streams.matDiffuse_id12 = 0.0f.xxxx;
+    _streams.matDiffuseVisible_id28 = 0.0f.xxx;
+    _streams.matSpecular_id14 = 0.0f.xxx;
+    _streams.matSpecularVisible_id30 = 0.0f.xxx;
     _streams.matSpecularIntensity_id15 = 1.0f;
     _streams.matGlossiness_id13 = 0.0f;
     _streams.alphaRoughness_id29 = 1.0f;
@@ -243,11 +243,11 @@ void o43S247C1_MaterialPixelStream_ResetStream(inout PS_STREAMS _streams)
     _streams.matCavity_id18 = 1.0f;
     _streams.matCavityDiffuse_id19 = 0.0f;
     _streams.matCavitySpecular_id20 = 0.0f;
-    _streams.matEmissive_id21 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    _streams.matEmissive_id21 = 0.0f.xxxx;
     _streams.matEmissiveIntensity_id22 = 0.0f;
     _streams.matScatteringStrength_id23 = 1.0f;
-    _streams.matDiffuseSpecularAlphaBlend_id24 = float2(1.0f, 1.0f);
-    _streams.matAlphaBlendColor_id25 = float3(1.0f, 1.0f, 1.0f);
+    _streams.matDiffuseSpecularAlphaBlend_id24 = 1.0f.xx;
+    _streams.matAlphaBlendColor_id25 = 1.0f.xxx;
     _streams.matAlphaDiscard_id26 = 0.100000001490116119384765625f;
 }
 
@@ -413,12 +413,12 @@ void NormalUpdate_UpdateNormalFromTangentSpace(inout PS_STREAMS _streams, float3
 
 void o42S247C0_o40S2C0_LightStream_ResetLightStream(inout PS_STREAMS _streams)
 {
-    _streams.lightPositionWS_id38 = float3(0.0f, 0.0f, 0.0f);
-    _streams.lightDirectionWS_id39 = float3(0.0f, 0.0f, 0.0f);
-    _streams.lightColor_id40 = float3(0.0f, 0.0f, 0.0f);
-    _streams.lightColorNdotL_id41 = float3(0.0f, 0.0f, 0.0f);
-    _streams.envLightDiffuseColor_id42 = float3(0.0f, 0.0f, 0.0f);
-    _streams.envLightSpecularColor_id43 = float3(0.0f, 0.0f, 0.0f);
+    _streams.lightPositionWS_id38 = 0.0f.xxx;
+    _streams.lightDirectionWS_id39 = 0.0f.xxx;
+    _streams.lightColor_id40 = 0.0f.xxx;
+    _streams.lightColorNdotL_id41 = 0.0f.xxx;
+    _streams.envLightDiffuseColor_id42 = 0.0f.xxx;
+    _streams.envLightSpecularColor_id43 = 0.0f.xxx;
     _streams.lightDirectAmbientOcclusion_id45 = 1.0f;
     _streams.NdotL_id44 = 0.0f;
 }
@@ -513,7 +513,7 @@ float3 o0S433C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeS
             cascadeIndex = i + 1;
         }
     }
-    shadow = float3(1.0f, 1.0f, 1.0f);
+    shadow = 1.0f.xxx;
     tempThickness = 999.0f;
     float3 shadowPosition = position;
     float param = o0S433C0_ShadowMapReceiverBase_OffsetScales[lightIndex];
@@ -551,7 +551,7 @@ float3 o0S433C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeS
             {
                 if (false)
                 {
-                    shadow = lerp(float3(1.0f, 1.0f, 1.0f), shadow, lerpAmt.xxx);
+                    shadow = lerp(1.0f.xxx, shadow, lerpAmt.xxx);
                     if (false)
                     {
                         tempThickness = lerp(0.0f, tempThickness, lerpAmt);
@@ -584,7 +584,7 @@ float3 o0S433C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeS
     _streams.thicknessWS_id48 = tempThickness;
     if (false)
     {
-        float3 indexable[5] = { float3(0.0f, 1.0f, 0.0f), float3(0.0f, 0.0f, 1.0f), float3(1.0f, 0.0f, 1.0f), float3(1.0f, 0.0f, 0.0f), float3(1.0f, 1.0f, 1.0f) };
+        float3 indexable[5] = { float3(0.0f, 1.0f, 0.0f), float3(0.0f, 0.0f, 1.0f), float3(1.0f, 0.0f, 1.0f), float3(1.0f, 0.0f, 0.0f), 1.0f.xxx };
         return indexable[cascadeIndex] * shadow;
     }
     return shadow;
@@ -628,7 +628,7 @@ float3 o42S247C0_o40S2C0_o39S2C0_o36S2C0_BRDFMicrofacet_FresnelSchlick(float3 f0
 float3 o42S247C0_o40S2C0_o39S2C0_o36S2C0_BRDFMicrofacet_FresnelSchlick(float3 f0, float lOrVDotH)
 {
     float3 param = f0;
-    float3 param_1 = float3(1.0f, 1.0f, 1.0f);
+    float3 param_1 = 1.0f.xxx;
     float param_2 = lOrVDotH;
     return o42S247C0_o40S2C0_o39S2C0_o36S2C0_BRDFMicrofacet_FresnelSchlick(param, param_1, param_2);
 }
@@ -772,7 +772,7 @@ void o1S433C0_LightClusteredPointGroup_PrepareDirectLightCore(inout PS_STREAMS _
 float3 o1S433C0_ShadowGroup_ComputeShadow(inout PS_STREAMS _streams, float3 position, int lightIndex)
 {
     _streams.thicknessWS_id48 = 0.0f;
-    return float3(1.0f, 1.0f, 1.0f);
+    return 1.0f.xxx;
 }
 
 void o1S433C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int lightIndex)
@@ -880,7 +880,7 @@ void o2S433C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout PS_STREAMS _s
 float3 o2S433C0_ShadowGroup_ComputeShadow(inout PS_STREAMS _streams, float3 position, int lightIndex)
 {
     _streams.thicknessWS_id48 = 0.0f;
-    return float3(1.0f, 1.0f, 1.0f);
+    return 1.0f.xxx;
 }
 
 void o2S433C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int lightIndex)
@@ -897,8 +897,8 @@ void o2S433C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int
 
 void o3S417C0_EnvironmentLight_PrepareEnvironmentLight(inout PS_STREAMS _streams)
 {
-    _streams.envLightDiffuseColor_id42 = float3(0.0f, 0.0f, 0.0f);
-    _streams.envLightSpecularColor_id43 = float3(0.0f, 0.0f, 0.0f);
+    _streams.envLightDiffuseColor_id42 = 0.0f.xxx;
+    _streams.envLightSpecularColor_id43 = 0.0f.xxx;
 }
 
 void o3S417C0_LightSimpleAmbient_PrepareEnvironmentLight(inout PS_STREAMS _streams)
@@ -937,18 +937,18 @@ float3 o42S247C0_o40S2C0_o39S2C0_MaterialSurfaceShadingSpecularMicrofacet_Comput
 
 void o6S417C0_EnvironmentLight_PrepareEnvironmentLight(inout PS_STREAMS _streams)
 {
-    _streams.envLightDiffuseColor_id42 = float3(0.0f, 0.0f, 0.0f);
-    _streams.envLightSpecularColor_id43 = float3(0.0f, 0.0f, 0.0f);
+    _streams.envLightDiffuseColor_id42 = 0.0f.xxx;
+    _streams.envLightSpecularColor_id43 = 0.0f.xxx;
 }
 
 float4 o6S417C0_o4S5C0_IComputeEnvironmentColor_Compute(float3 direction)
 {
-    return float4(0.0f, 0.0f, 0.0f, 0.0f);
+    return 0.0f.xxxx;
 }
 
 float4 o6S417C0_o5S5C1_IComputeEnvironmentColor_Compute(float3 direction)
 {
-    return float4(0.0f, 0.0f, 0.0f, 0.0f);
+    return 0.0f.xxxx;
 }
 
 void o6S417C0_LightSkyboxShader_PrepareEnvironmentLight(inout PS_STREAMS _streams)
@@ -968,8 +968,8 @@ void o6S417C0_LightSkyboxShader_PrepareEnvironmentLight(inout PS_STREAMS _stream
 
 void o7S417C0_EnvironmentLight_PrepareEnvironmentLight(inout PS_STREAMS _streams)
 {
-    _streams.envLightDiffuseColor_id42 = float3(0.0f, 0.0f, 0.0f);
-    _streams.envLightSpecularColor_id43 = float3(0.0f, 0.0f, 0.0f);
+    _streams.envLightDiffuseColor_id42 = 0.0f.xxx;
+    _streams.envLightSpecularColor_id43 = 0.0f.xxx;
 }
 
 void o42S247C0_o40S2C0_o34S2C0_IMaterialSurfaceShading_AfterLightingAndShading()
@@ -992,7 +992,7 @@ void o42S247C0_o40S2C0_MaterialSurfaceLightingAndShading_Compute(inout PS_STREAM
     o42S247C0_o40S2C0_MaterialPixelStream_PrepareMaterialForLightingAndShading(_streams);
     o42S247C0_o40S2C0_o34S2C0_IMaterialSurfaceShading_PrepareForLightingAndShading();
     o42S247C0_o40S2C0_o39S2C0_IMaterialSurfaceShading_PrepareForLightingAndShading();
-    float3 directLightingContribution = float3(0.0f, 0.0f, 0.0f);
+    float3 directLightingContribution = 0.0f.xxx;
     o0S433C0_DirectLightGroup_PrepareDirectLights();
     int maxLightCount = o0S433C0_LightDirectionalGroup_1__GetMaxLightCount();
     int count = o0S433C0_DirectLightGroupPerView_GetLightCount();
@@ -1042,7 +1042,7 @@ void o42S247C0_o40S2C0_MaterialSurfaceLightingAndShading_Compute(inout PS_STREAM
         directLightingContribution += o42S247C0_o40S2C0_o34S2C0_MaterialSurfaceShadingDiffuseLambert_true__ComputeDirectLightContribution(_streams);
         directLightingContribution += o42S247C0_o40S2C0_o39S2C0_MaterialSurfaceShadingSpecularMicrofacet_ComputeDirectLightContribution(_streams);
     }
-    float3 environmentLightingContribution = float3(0.0f, 0.0f, 0.0f);
+    float3 environmentLightingContribution = 0.0f.xxx;
     o3S417C0_LightSimpleAmbient_PrepareEnvironmentLight(_streams);
     environmentLightingContribution += o42S247C0_o40S2C0_o34S2C0_MaterialSurfaceShadingDiffuseLambert_true__ComputeEnvironmentLightContribution(_streams);
     environmentLightingContribution += o42S247C0_o40S2C0_o39S2C0_MaterialSurfaceShadingSpecularMicrofacet_ComputeEnvironmentLightContribution(_streams);
@@ -1088,7 +1088,7 @@ void o42S247C0_MaterialSurfaceArray_Compute(inout PS_STREAMS _streams)
 float4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 {
     _streams.viewWS_id27 = normalize(Transformation_Eye.xyz - _streams.PositionWS_id8.xyz);
-    _streams.shadingColor_id32 = float3(0.0f, 0.0f, 0.0f);
+    _streams.shadingColor_id32 = 0.0f.xxx;
     o43S247C1_MaterialPixelShadingStream_ResetStream(_streams);
     o42S247C0_MaterialSurfaceArray_Compute(_streams);
     return float4(_streams.shadingColor_id32, _streams.shadingColorAlpha_id33);
@@ -1109,7 +1109,7 @@ void NormalBase_PSMain(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), false, float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, 0.0f, float2(0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), 0.0f, float2(0.0f, 0.0f), uint2(0u, 0u), 0, float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, false, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, float3x3(0.0f.xxx, 0.0f.xxx, 0.0f.xxx), 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xx, uint2(0u, 0u), 0, 0.0f.xxxx };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.meshNormal_id3 = PS_IN_meshNormal;
     _streams.meshTangent_id5 = PS_IN_meshTangent;

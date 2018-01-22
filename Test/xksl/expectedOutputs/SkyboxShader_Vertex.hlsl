@@ -39,7 +39,7 @@ void SpriteBase_VSMain(inout VS_STREAMS _streams)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx };
     _streams.Position_id2 = VS_IN_Position;
     SpriteBase_VSMain(_streams);
     float4 screenPosition = _streams.ShadingPosition_id0 / _streams.ShadingPosition_id0.w.xxxx;

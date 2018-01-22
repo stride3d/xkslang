@@ -102,7 +102,7 @@ void o0S2C0_LightDirectionalGroup_8__PrepareDirectLightCore(inout VS_STREAMS _st
 float3 o0S2C0_ShadowGroup_ComputeShadow(inout VS_STREAMS _streams, float3 position, int lightIndex)
 {
     _streams.thicknessWS_id8 = 0.0f;
-    return float3(1.0f, 1.0f, 1.0f);
+    return 1.0f.xxx;
 }
 
 void o0S2C0_DirectLightGroup_PrepareDirectLight(inout VS_STREAMS _streams, int lightIndex)
@@ -201,7 +201,7 @@ void o1S2C0_LightClusteredPointGroup_PrepareDirectLightCore(inout VS_STREAMS _st
 float3 o1S2C0_ShadowGroup_ComputeShadow(inout VS_STREAMS _streams, float3 position, int lightIndex)
 {
     _streams.thicknessWS_id8 = 0.0f;
-    return float3(1.0f, 1.0f, 1.0f);
+    return 1.0f.xxx;
 }
 
 void o1S2C0_DirectLightGroup_PrepareDirectLight(inout VS_STREAMS _streams, int lightIndex)
@@ -309,7 +309,7 @@ void o2S2C0_LightClusteredSpotGroup_PrepareDirectLightCore(inout VS_STREAMS _str
 float3 o2S2C0_ShadowGroup_ComputeShadow(inout VS_STREAMS _streams, float3 position, int lightIndex)
 {
     _streams.thicknessWS_id8 = 0.0f;
-    return float3(1.0f, 1.0f, 1.0f);
+    return 1.0f.xxx;
 }
 
 void o2S2C0_DirectLightGroup_PrepareDirectLight(inout VS_STREAMS _streams, int lightIndex)
@@ -326,7 +326,7 @@ void o2S2C0_DirectLightGroup_PrepareDirectLight(inout VS_STREAMS _streams, int l
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), uint2(0u, 0u), 0, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxxx, uint2(0u, 0u), 0, 0.0f.xxxx, 0.0f.xxxx };
     _streams.lightDirectAmbientOcclusion_id5 = VS_IN_lightDirectAmbientOcclusion;
     _streams.normalWS_id6 = VS_IN_normalWS;
     _streams.PositionWS_id9 = VS_IN_PositionWS;

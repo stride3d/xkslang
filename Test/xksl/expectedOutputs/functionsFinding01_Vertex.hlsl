@@ -5,7 +5,7 @@ float3 ShaderMain_compute(float3 f)
 
 void vert_main()
 {
-    float3 param = float3(1.0f, 1.0f, 1.0f);
+    float3 param = 1.0f.xxx;
     float3 f3 = ShaderMain_compute(param);
 }
 

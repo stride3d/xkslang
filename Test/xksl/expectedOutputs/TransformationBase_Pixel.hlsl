@@ -12,7 +12,7 @@ struct SPIRV_Cross_Input
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
 }
 

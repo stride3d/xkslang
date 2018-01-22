@@ -57,13 +57,15 @@ float3 CubemapUtils_ConvertTexcoordsNoFlip(float2 inputTexcoord, int viewIndex)
     {
         return float3(-position.x, -position.y, -1.0f);
     }
-    return float3(0.0f, 0.0f, 0.0f);
+    return 0.0f.xxx;
 }
 
 float2 Hammersley_GetSamplePlane(int k, int samplesCount)
 {
     float u = 0.0f;
-    for (float p = 0.5f, kk = k; kk != int(0u); p *= 0.5f, kk = kk >> 1)
+    float p = 0.5f;
+    int kk = k;
+    for (; kk != int(0u); p *= 0.5f, kk = kk >> 1)
     {
         if ((kk & 1) != int(0u))
         {
@@ -103,7 +105,7 @@ float4 RadiancePrefilteringGGXNoComputeShader_4__Shading(PS_STREAMS _streams)
     float2 param = _streams.TexCoord_id0;
     int param_1 = RadiancePrefilteringGGXNoComputeShader_Face;
     float3 R = normalize(CubemapUtils_ConvertTexcoordsNoFlip(param, param_1));
-    float4 prefilteredSample = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float4 prefilteredSample = 0.0f.xxxx;
     float3 prefilteredColor;
     float weight;
     for (int sampleIndex = 0; sampleIndex < 4; sampleIndex++)
@@ -123,7 +125,7 @@ float4 RadiancePrefilteringGGXNoComputeShader_4__Shading(PS_STREAMS _streams)
         float omegaS = 1.0f / (4.0f * pdf);
         float omegaP = 12.56637096405029296875f / ((6.0f * float(RadiancePrefilteringGGXNoComputeShader_RadianceMapSize)) * float(RadiancePrefilteringGGXNoComputeShader_RadianceMapSize));
         float mipLevel = clamp(0.5f * log2(omegaS / omegaP), 0.0f, RadiancePrefilteringGGXNoComputeShader_MipmapCount);
-        prefilteredColor = float3(0.0f, 0.0f, 0.0f);
+        prefilteredColor = 0.0f.xxx;
         weight = 0.0f;
         if (NoL > 0.0f)
         {
@@ -137,7 +139,7 @@ float4 RadiancePrefilteringGGXNoComputeShader_4__Shading(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xx, 0.0f.xxxx, 0.0f.xxxx };
     _streams.TexCoord_id0 = PS_IN_TexCoord;
     _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
     _streams.ColorTarget_id2 = RadiancePrefilteringGGXNoComputeShader_4__Shading(_streams);

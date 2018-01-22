@@ -19,7 +19,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float2(0.0f, 0.0f), float2(0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xx, 0.0f.xx };
     _streams.TexCoord_id0 = VS_IN_TexCoord;
     _streams.aStream_id1 = _streams.TexCoord_id0;
     VS_OUT_aStream = _streams.aStream_id1;

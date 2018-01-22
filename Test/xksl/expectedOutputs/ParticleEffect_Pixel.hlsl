@@ -59,9 +59,9 @@ float4 o2S302C0_o0S2C0_ComputeColorFromStream_COLOR0_rgba__Compute(PS_STREAMS _s
 
 float4 o2S302C0_o1S2C1_ComputeColorRadial_float4(PS_STREAMS _streams)
 {
-    float radialDistance = length(_streams.TexCoord_id4 - float2(0.5f, 0.5f)) * 2.0f;
+    float radialDistance = length(_streams.TexCoord_id4 - 0.5f.xx) * 2.0f;
     float4 unclamped = lerp(float4(1.5f, 0.0f, 1.5f, 1.0f), float4(1.5f, 1.5f, 0.0f, 0.0f), radialDistance.xxxx);
-    float4 clamped = clamp(unclamped, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(1000.0f, 1000.0f, 1000.0f, 1.0f));
+    float4 clamped = clamp(unclamped, 0.0f.xxxx, float4(1000.0f, 1000.0f, 1000.0f, 1.0f));
     float3 _163 = clamped.xyz * clamped.w;
     clamped = float4(_163.x, _163.y, _163.z, clamped.w);
     return clamped;
@@ -90,7 +90,7 @@ float ParticleUtilities_GetLinearDepth(float z)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xx, 0.0f.xxxx };
     _streams.ScreenPosition_id0 = PS_IN_ScreenPosition;
     _streams.ZDepth_id1 = PS_IN_ZDepth;
     _streams.ShadingPosition_id2 = PS_IN_ShadingPosition;
@@ -101,7 +101,7 @@ void frag_main()
     {
         float screenWidth = ParticleUtilities_ViewFrustum.x;
         float screenHeight = ParticleUtilities_ViewFrustum.y;
-        float2 screenCoords = ((_streams.ScreenPosition_id0.xy / _streams.ScreenPosition_id0.ww) * float2(0.5f, 0.5f)) + float2(0.5f, 0.5f);
+        float2 screenCoords = ((_streams.ScreenPosition_id0.xy / _streams.ScreenPosition_id0.ww) * 0.5f.xx) + 0.5f.xx;
         screenCoords.y = 1.0f - screenCoords.y;
         screenCoords = ParticleUtilities_Viewport.xy + (screenCoords * ParticleUtilities_Viewport.zw);
         float linearZOwn = -_streams.ZDepth_id1;

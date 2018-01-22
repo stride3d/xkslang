@@ -26,7 +26,7 @@ struct SPIRV_Cross_Input
 
 ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
 {
-    ShaderMain_Streams res = { _streams.matColor_id2, _streams.matBlend_id0, _streams.matNormal_id1, 0 };
+    ShaderMain_Streams res = ShaderMain_Streams{ _streams.matColor_id2, _streams.matBlend_id0, _streams.matNormal_id1, 0 };
     return res;
 }
 
@@ -47,7 +47,7 @@ void ShaderMain_Compute(inout VS_STREAMS _streams, ShaderMain_Streams fromStream
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f, 0.0f.xxx, 0.0f.xxx };
     _streams.matBlend_id0 = VS_IN_matBlend;
     _streams.matNormal_id1 = VS_IN_matNormal;
     _streams.matColor_id2 = VS_IN_matColor;

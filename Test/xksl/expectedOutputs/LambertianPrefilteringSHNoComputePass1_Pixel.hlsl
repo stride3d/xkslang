@@ -54,7 +54,7 @@ float3 LambertianPrefilteringSHNoComputePass1_2__uvToDirectionVS(float u, float 
     {
         return float3(-u, -v, -1.0f);
     }
-    return float3(0.0f, 0.0f, 0.0f);
+    return 0.0f.xxx;
 }
 
 void SphericalHarmonicsBase_2__EvaluateSHBases(inout PS_STREAMS _streams, float3 direction)
@@ -110,7 +110,7 @@ void SphericalHarmonicsBase_2__EvaluateSHBases(inout PS_STREAMS _streams, float3
 
 float4 LambertianPrefilteringSHNoComputePass1_2__Shading(inout PS_STREAMS _streams)
 {
-    float3 result = float3(0.0f, 0.0f, 0.0f);
+    float3 result = 0.0f.xxx;
     float2 uv = (_streams.TexCoord_id0 * 2.0f) - 1.0f.xx;
     float dist = 1.0f + dot(uv, uv);
     float weight = 4.0f / (sqrt(dist) * dist);
@@ -131,7 +131,7 @@ float4 LambertianPrefilteringSHNoComputePass1_2__Shading(inout PS_STREAMS _strea
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float2(0.0f, 0.0f), { 0.0f, 0.0f, 0.0f, 0.0f }, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xx, { 0.0f, 0.0f, 0.0f, 0.0f }, 0.0f.xxxx, 0.0f.xxxx };
     _streams.TexCoord_id0 = PS_IN_TexCoord;
     _streams.ShadingPosition_id2 = PS_IN_ShadingPosition;
     float4 _345 = LambertianPrefilteringSHNoComputePass1_2__Shading(_streams);

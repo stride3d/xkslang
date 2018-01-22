@@ -23,7 +23,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { { float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f) } };
+    VS_STREAMS _streams = { { 0.0f.xxx, 0.0f.xxx } };
     _streams.aStreamVar_id0.Color = ShaderMain_toto[0].Color;
     VS_OUT_aStreamVar = _streams.aStreamVar_id0;
 }

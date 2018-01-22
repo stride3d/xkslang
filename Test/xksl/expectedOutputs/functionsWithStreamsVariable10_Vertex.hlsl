@@ -36,13 +36,13 @@ struct SPIRV_Cross_Output
 
 TestShaderMain_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
 {
-    TestShaderMain_Streams res = { _streams.sMain_id0, _streams.sBase_id1, 0 };
+    TestShaderMain_Streams res = TestShaderMain_Streams{ _streams.sMain_id0, _streams.sBase_id1, 0 };
     return res;
 }
 
 TestShaderBase_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(TestShaderMain_Streams s)
 {
-    TestShaderBase_Streams r = { s.sBase, s._unused };
+    TestShaderBase_Streams r = TestShaderBase_Streams{ s.sBase, s._unused };
     return r;
 }
 
@@ -53,7 +53,7 @@ void TestShaderBase_Compute(inout TestShaderBase_Streams s)
 
 void TestShaderMain_Compute(inout TestShaderMain_Streams s)
 {
-    s.sMain = float3(2.0f, 2.0f, 2.0f);
+    s.sMain = 2.0f.xxx;
     TestShaderMain_Streams param = s;
     TestShaderBase_Streams param_1 = TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(param);
     TestShaderBase_Compute(param_1);
@@ -66,7 +66,7 @@ void TestShaderBase_Compute(int i, inout TestShaderBase_Streams s)
 
 void TestShaderMain_Compute(int i, inout TestShaderMain_Streams s)
 {
-    s.sMain = float3(3.0f, 3.0f, 3.0f);
+    s.sMain = 3.0f.xxx;
     TestShaderMain_Streams param = s;
     int param_1 = i;
     TestShaderBase_Streams param_2 = TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(param);
@@ -80,7 +80,7 @@ void TestShaderBase_Compute(inout TestShaderBase_Streams s1, TestShaderBase_Stre
 
 void TestShaderMain_Compute(inout TestShaderMain_Streams s1, TestShaderMain_Streams s2)
 {
-    s1.sMain = float3(4.0f, 4.0f, 4.0f);
+    s1.sMain = 4.0f.xxx;
     TestShaderMain_Streams param = s1;
     TestShaderMain_Streams param_1 = s2;
     TestShaderBase_Streams param_2 = TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(param);
@@ -90,7 +90,7 @@ void TestShaderMain_Compute(inout TestShaderMain_Streams s1, TestShaderMain_Stre
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float3(0.0f, 0.0f, 0.0f), 0 };
+    VS_STREAMS _streams = { 0.0f.xxx, 0 };
     _streams.sMain_id0 = VS_IN_sMain;
     _streams.sBase_id1 = VS_IN_sBase;
     TestShaderMain_Streams backup = TestShaderMain__getStreams(_streams);

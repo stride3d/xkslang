@@ -19,7 +19,7 @@ void o1S2C0_ShaderBase_PSMain()
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.ScreenPosition_id1 = PS_IN_ScreenPosition;
     _streams.ScreenPosition_id1 /= _streams.ScreenPosition_id1.w.xxxx;
