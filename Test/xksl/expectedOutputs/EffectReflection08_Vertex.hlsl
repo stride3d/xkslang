@@ -6,7 +6,7 @@ cbuffer Globals
 
 float4 ShaderMain_Shading()
 {
-    float4 color = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float4 color = 0.0f.xxxx;
     if (ShaderMain_IsOnlyChannelRed != 0.0f)
     {
         color = float4(color.xxx, 1.0f);

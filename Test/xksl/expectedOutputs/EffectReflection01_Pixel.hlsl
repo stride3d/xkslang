@@ -27,7 +27,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f };
     _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
     _streams.Depth_id2 = _streams.ShadingPosition_id0.w + ShaderMain_depthOffset;
     _streams.ColorTarget_id1 = float4(_streams.ShadingPosition_id0.x, _streams.ShadingPosition_id0.y, 1.0f, ShaderMain_depthOffset);

@@ -15,8 +15,8 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f) };
-    _streams.aStream_id0 = ShaderMain_Texture0.SampleLevel(ShaderMain_Sampler0, float2(0.4000000059604644775390625f, 0.4000000059604644775390625f), 0.0f);
+    VS_STREAMS _streams = { 0.0f.xxxx };
+    _streams.aStream_id0 = ShaderMain_Texture0.SampleLevel(ShaderMain_Sampler0, 0.4000000059604644775390625f.xx, 0.0f);
     VS_OUT_aStream = _streams.aStream_id0;
 }
 

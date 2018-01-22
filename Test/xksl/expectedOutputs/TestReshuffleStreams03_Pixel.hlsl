@@ -15,13 +15,13 @@ struct SPIRV_Cross_Output
 
 float4 ShaderMain_Compute(inout PS_STREAMS _streams)
 {
-    _streams.Position_id0 = float2(1.0f, 1.0f);
+    _streams.Position_id0 = 1.0f.xx;
     return float4(_streams.Position_id0, 0.0f, 0.0f);
 }
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xx, 0.0f.xxxx };
     float4 _12 = ShaderMain_Compute(_streams);
     _streams.ColorTarget_id1 = _12 + float4(_streams.Position_id0, 0.0f, 1.0f);
     PS_OUT_Position = _streams.Position_id0;

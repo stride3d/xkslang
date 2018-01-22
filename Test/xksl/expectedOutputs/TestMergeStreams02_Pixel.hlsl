@@ -12,17 +12,17 @@ struct SPIRV_Cross_Output
 
 void ShaderA_computeA(inout PS_STREAMS _streams)
 {
-    _streams.outStreamA_id0 = float4(2.0f, 2.0f, 2.0f, 2.0f);
+    _streams.outStreamA_id0 = 2.0f.xxxx;
 }
 
 void ShaderB_computeB(inout PS_STREAMS _streams)
 {
-    _streams.outStreamA_id0 = float4(2.0f, 2.0f, 2.0f, 2.0f);
+    _streams.outStreamA_id0 = 2.0f.xxxx;
 }
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx };
     ShaderA_computeA(_streams);
     ShaderB_computeB(_streams);
     PS_OUT_outStreamA = _streams.outStreamA_id0;

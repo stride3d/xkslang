@@ -22,9 +22,9 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx };
     _streams.aStream_id0 = PS_IN_aStream;
-    _streams.ColorTarget_id1 = ShaderMain_Texture0.Sample(ShaderMain_Sampler0, float2(0.5f, 0.5f)) + _streams.aStream_id0;
+    _streams.ColorTarget_id1 = ShaderMain_Texture0.Sample(ShaderMain_Sampler0, 0.5f.xx) + _streams.aStream_id0;
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;
 }
 

@@ -5,8 +5,8 @@ struct VS_STREAMS
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f) };
-    _streams.outStreamA_id0 = float4(5.0f, 5.0f, 5.0f, 5.0f);
+    VS_STREAMS _streams = { 0.0f.xxxx };
+    _streams.outStreamA_id0 = 5.0f.xxxx;
 }
 
 void main()

@@ -19,7 +19,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0.0f.xx, 0.0f.xxxx };
     _streams.Position_id0 = PS_IN_Position;
     _streams.ColorTarget_id1 = float4(_streams.Position_id0, 0.0f, 1.0f);
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;

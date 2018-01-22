@@ -18,7 +18,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float2x3(float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 0.0f)) };
+    VS_STREAMS _streams = { float2x3(0.0f.xxx, 0.0f.xxx) };
     _streams.aMat23_id0 = VS_IN_aMat23;
     VS_OUT_aMat23 = _streams.aMat23_id0;
 }

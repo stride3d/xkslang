@@ -37,7 +37,7 @@ int o1S5C0_Color_Compute(inout PS_STREAMS _streams, int i)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0, 0, float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { 0, 0, 0.0f.xxxx, 0.0f.xxxx };
     _streams.aStream2_id1 = PS_IN_aStream2;
     _streams.aStream3_id2 = PS_IN_aStream3;
     int res = 0;

@@ -40,7 +40,7 @@ void ShaderMain_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndex
 
 void frag_main()
 {
-    PS_STREAMS _streams = { uint2(0u, 0u), 0, float4(0.0f, 0.0f, 0.0f, 0.0f) };
+    PS_STREAMS _streams = { uint2(0u, 0u), 0, 0.0f.xxxx };
     _streams.lightIndex_id1 = PS_IN_lightIndex;
     _streams.lightData_id0 = uint2(0u, 0u);
     _streams.screenPosition_id2 = float4(1.0f, 2.0f, 3.0f, 4.0f);

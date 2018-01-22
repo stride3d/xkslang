@@ -59,7 +59,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0, 0, { float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f) }, float2(0.0f, 0.0f), float2(0.0f, 0.0f), 0.0f, { float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), { 0, 0 } }, { { float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), { 0, 0 } }, { float2(0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), { 0, 0 } } }, float4x4(float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f), float4(0.0f, 0.0f, 0.0f, 0.0f)) };
+    VS_STREAMS _streams = { 0.0, 0, { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx }, 0.0f.xx, 0.0f.xx, 0.0f, { 0.0f.xx, 0.0f.xxxx, { 0, 0 } }, { { 0.0f.xx, 0.0f.xxxx, { 0, 0 } }, { 0.0f.xx, 0.0f.xxxx, { 0, 0 } } }, float4x4(0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx) };
     _streams.aDouble_id0 = VS_IN_aDouble;
     _streams.aBool_id1 = VS_IN_aBool;
     _streams.aF4Tab_id2 = VS_IN_aF4Tab;

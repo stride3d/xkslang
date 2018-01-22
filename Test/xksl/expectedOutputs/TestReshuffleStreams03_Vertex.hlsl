@@ -5,7 +5,7 @@ struct VS_STREAMS
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float2(0.0f, 0.0f) };
+    VS_STREAMS _streams = { 0.0f.xx };
     _streams.Position_id0 = float2(0.0f, 1.0f);
 }
 

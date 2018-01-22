@@ -12,8 +12,8 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    PS_STREAMS _streams = { float4(0.0f, 0.0f, 0.0f, 0.0f) };
-    _streams.outStreamA_id0 = float4(2.0f, 2.0f, 2.0f, 2.0f);
+    PS_STREAMS _streams = { 0.0f.xxxx };
+    _streams.outStreamA_id0 = 2.0f.xxxx;
     PS_OUT_outStreamA = _streams.outStreamA_id0;
 }
 

@@ -5,7 +5,7 @@ float Base_ComputeBase(float distance)
 
 float frag_main()
 {
-    float4 aVec4 = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    float4 aVec4 = 1.0f.xxxx;
     float distance = length(aVec4);
     float param = distance;
     return Base_ComputeBase(param);

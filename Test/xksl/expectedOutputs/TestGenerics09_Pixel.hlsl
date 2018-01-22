@@ -6,7 +6,7 @@ cbuffer PerMaterial
 
 float2 ShaderBase_Compute()
 {
-    return float2(1.0f, 1.0f);
+    return 1.0f.xx;
 }
 
 float2 ComputeColorTextureScaledOffsetDynamicSampler_Material_DiffuseMap_TEXCOORD0_Material_Sampler_i0_rgba_Material_TextureScale_Material_TextureOffset_1__Compute()

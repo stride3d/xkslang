@@ -22,7 +22,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { float2(0.0f, 0.0f), float2(0.0f, 0.0f), 0.0f };
+    VS_STREAMS _streams = { 0.0f.xx, 0.0f.xx, 0.0f };
     _streams.VertexPosition_id1 = VS_IN_VertexPosition;
     _streams.aFloat_id2 = VS_IN_aFloat;
     _streams.Position_id0 = float2(0.0f, 1.0f + _streams.aFloat_id2) + _streams.VertexPosition_id1;
