@@ -135,7 +135,7 @@ static bool xkfxOptions_processSampleWithXkfxLibrary = false;  //if true, we als
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
 static bool processEffectWithDllApi = false;
-static bool processEffectWithXkfxProcessorApi = true;
+static bool processEffectWithXkfxProcessorApi = true;  //we need to set both this bool and xkfxOptions_processSampleWithXkfxLibrary to true
 
 vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMixin01", "TestMixin01.xkfx" },
@@ -375,7 +375,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShadowMapCommonSimple", "ShadowMapCommonSimple.xkfx" },
     //{ "ShadowMapFilterPcfSimple", "ShadowMapFilterPcfSimple.xkfx" },
     //{ "ShadowMapFilterPcf", "ShadowMapFilterPcf.xkfx" },
-    { "RadiancePrefilteringGGXNoComputeShader", "RadiancePrefilteringGGXNoComputeShader.xkfx" },
+    //{ "RadiancePrefilteringGGXNoComputeShader", "RadiancePrefilteringGGXNoComputeShader.xkfx" },
 
     //{ "XenkoEditorForwardShadingEffect01", "XenkoEditorForwardShadingEffect01.xkfx" },
     //{ "XenkoEditorForwardShadingEffect02", "XenkoEditorForwardShadingEffect02.xkfx" },
@@ -384,6 +384,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoEditorForwardShadingEffect05", "XenkoEditorForwardShadingEffect05.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
+    { "XenkoEditorMaterialPreviewEffect03", "XenkoEditorMaterialPreviewEffect03.xkfx" },
 };
 
 enum class ShaderLanguageEnum
@@ -2781,15 +2782,18 @@ void main(int argc, char** argv)
     {
         for (unsigned int n = 0; n < vecXkfxEffectToProcess.size(); ++n)
         {
-            XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
-            countEffectsProcessed++;
+            //for (unsigned int iii = 0; iii < 10; ++iii)
+            {
+                XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
+                countEffectsProcessed++;
 
-            bool success = ProcessEffect(&parser, effect);
+                bool success = ProcessEffect(&parser, effect);
 
-            if (success) countEffectsSuccessful++;
-            else listEffectsFailed.push_back(effect.effectName);
+                if (success) countEffectsSuccessful++;
+                else listEffectsFailed.push_back(effect.effectName);
 
-            std::cout << endl;
+                std::cout << endl;
+            }
         }
     }
 
