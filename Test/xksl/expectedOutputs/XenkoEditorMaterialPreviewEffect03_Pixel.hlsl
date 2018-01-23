@@ -428,7 +428,8 @@ void o66S247C0_o23S2C0_MaterialSurfaceSetStreamFromComputeColor_matCavitySpecula
 
 MaterialSurfaceStreamsBlend_Streams o66S247C0_o58S2C0_MaterialSurfaceStreamsBlend__getStreams(PS_STREAMS _streams)
 {
-    MaterialSurfaceStreamsBlend_Streams res = MaterialSurfaceStreamsBlend_Streams{ _streams.matBlend_id45, 0 };
+    MaterialSurfaceStreamsBlend_Streams _1185 = { _streams.matBlend_id45, 0 };
+    MaterialSurfaceStreamsBlend_Streams res = _1185;
     return res;
 }
 
@@ -575,7 +576,8 @@ void o66S247C0_o58S2C0_o57S2C0_MaterialSurfaceArray_Compute(inout PS_STREAMS _st
 
 IMaterialStreamBlend_Streams o66S247C0_o58S2C0_MaterialSurfaceStreamsBlend__ConvertMaterialSurfaceStreamsBlendStreamsToIMaterialStreamBlendStreams(MaterialSurfaceStreamsBlend_Streams s)
 {
-    IMaterialStreamBlend_Streams r = IMaterialStreamBlend_Streams{ s.matBlend, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, float3x3(0.0f.xxx, 0.0f.xxx, 0.0f.xxx), 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, s._unused };
+    IMaterialStreamBlend_Streams _1195 = { s.matBlend, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, float3x3(0.0f.xxx, 0.0f.xxx, 0.0f.xxx), 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, s._unused };
+    IMaterialStreamBlend_Streams r = _1195;
     return r;
 }
 

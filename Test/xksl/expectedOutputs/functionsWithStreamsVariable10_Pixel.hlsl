@@ -28,13 +28,15 @@ struct SPIRV_Cross_Input
 
 TestShaderMain_Streams TestShaderMain__getStreams_PS(PS_STREAMS _streams)
 {
-    TestShaderMain_Streams res = TestShaderMain_Streams{ _streams.sMain_id0, _streams.sBase_id1, 0 };
+    TestShaderMain_Streams _114 = { _streams.sMain_id0, _streams.sBase_id1, 0 };
+    TestShaderMain_Streams res = _114;
     return res;
 }
 
 TestShaderBase_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(TestShaderMain_Streams s)
 {
-    TestShaderBase_Streams r = TestShaderBase_Streams{ s.sBase, s._unused };
+    TestShaderBase_Streams _61 = { s.sBase, s._unused };
+    TestShaderBase_Streams r = _61;
     return r;
 }
 

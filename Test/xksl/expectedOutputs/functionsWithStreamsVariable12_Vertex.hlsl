@@ -37,13 +37,15 @@ struct SPIRV_Cross_Output
 
 TestShaderMain_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
 {
-    TestShaderMain_Streams res = TestShaderMain_Streams{ _streams.sMain_id1, _streams.sBase_id2, 0 };
+    TestShaderMain_Streams _27 = { _streams.sMain_id1, _streams.sBase_id2, 0 };
+    TestShaderMain_Streams res = _27;
     return res;
 }
 
 TestIComposition_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestShaderBaseStreams(TestShaderMain_Streams s)
 {
-    TestIComposition_Streams r = TestIComposition_Streams{ s.sBase, s._unused };
+    TestIComposition_Streams _37 = { s.sBase, s._unused };
+    TestIComposition_Streams r = _37;
     return r;
 }
 
@@ -54,7 +56,8 @@ void TestShaderBase_Compute(inout TestIComposition_Streams s)
 
 TestIComposition_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestICompositionStreams(TestShaderMain_Streams s)
 {
-    TestIComposition_Streams r = TestIComposition_Streams{ 0.0f.xxx, s._unused };
+    TestIComposition_Streams _45 = { 0.0f.xxx, s._unused };
+    TestIComposition_Streams r = _45;
     return r;
 }
 

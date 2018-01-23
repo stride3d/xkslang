@@ -25,8 +25,10 @@ void ShaderBase_ComputeBase(inout VS_STREAMS _streams, ShaderBase_sBase2 s1, Sha
 
 void ShaderA_Compute(inout VS_STREAMS _streams, ShaderBase_sBase2 s)
 {
-    ShaderBase_sBase2 sb1 = ShaderBase_sBase2{ s.i };
-    ShaderBase_sBase2 sb2 = ShaderBase_sBase2{ s.i };
+    ShaderBase_sBase2 _27 = { s.i };
+    ShaderBase_sBase2 sb1 = _27;
+    ShaderBase_sBase2 _30 = { s.i };
+    ShaderBase_sBase2 sb2 = _30;
     ShaderBase_sBase2 param = sb1;
     ShaderBase_sBase2 param_1 = sb2;
     ShaderBase_ComputeBase(_streams, param, param_1);

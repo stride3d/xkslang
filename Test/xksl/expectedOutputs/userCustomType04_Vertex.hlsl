@@ -43,7 +43,8 @@ void ShaderMain_aFunctionTakingBaseStruct(ShaderBase_CustomStruct c)
 
 ShaderBase_CustomStruct ShaderMain_ConvertStreamsToShaderBaseStreams(ShaderMain_CustomStruct c)
 {
-    ShaderBase_CustomStruct c1 = ShaderBase_CustomStruct{ c.DirectionWS };
+    ShaderBase_CustomStruct _30 = { c.DirectionWS };
+    ShaderBase_CustomStruct c1 = _30;
     return c1;
 }
 

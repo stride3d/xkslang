@@ -25,13 +25,15 @@ struct SPIRV_Cross_Output
 
 TestIComposition_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
 {
-    TestIComposition_Streams res = TestIComposition_Streams{ _streams.sMain_id1, 0 };
+    TestIComposition_Streams _20 = { _streams.sMain_id1, 0 };
+    TestIComposition_Streams res = _20;
     return res;
 }
 
 TestIComposition_Streams TestShaderMain__ConvertTestShaderMainStreamsToTestICompositionStreams(TestIComposition_Streams s)
 {
-    TestIComposition_Streams r = TestIComposition_Streams{ 0.0f.xxx, s._unused };
+    TestIComposition_Streams _28 = { 0.0f.xxx, s._unused };
+    TestIComposition_Streams r = _28;
     return r;
 }
 
