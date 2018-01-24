@@ -3,11 +3,11 @@
 ***************************
  cbuffer Globals [size: 32]
 @C    o2S2C0_Comp_varA => Comp.varA.color[0]
-@C    o2S2C0_o1S5C0_SubComp2_var2 => SubComp2.var2.color[0].sb[1]
-@C    o2S2C0_o0S5C0_SubComp1_var1 => SubComp1.var1.color[0].sb[0]
+@C    o2S2C0_o1S5C0_SubComp2_var2 => SubComp2.var2.sb[1].color[0]
+@C    o2S2C0_o0S5C0_SubComp1_var1 => SubComp1.var1.sb[0].color[0]
 @C    o3S2C0_Comp_varA => Comp.varA.color[1]
-@C    o3S2C0_o1S5C0_SubComp2_var2 => SubComp2.var2.color[1].sb[1]
-@C    o3S2C0_o0S5C0_SubComp1_var1 => SubComp1.var1.color[1].sb[0]
+@C    o3S2C0_o1S5C0_SubComp2_var2 => SubComp2.var2.sb[1].color[1]
+@C    o3S2C0_o0S5C0_SubComp1_var1 => SubComp1.var1.sb[0].color[1]
 @C    o4S2C1_SubComp3_var3 => SubComp3.var3.sb[0]
 @C    o5S2C1_SubComp4_var4 => SubComp4.var4.sb[1]
 
@@ -21,19 +21,19 @@ ConstantBuffers. Count=1
   KeyName="Comp.varA.color[0]" RawName="o2S2C0_Comp_varA" LogicalGroup="" Offset=0
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="SubComp2.var2.color[0].sb[1]" RawName="o2S2C0_o1S5C0_SubComp2_var2" LogicalGroup="" Offset=4
+  KeyName="SubComp2.var2.sb[1].color[0]" RawName="o2S2C0_o1S5C0_SubComp2_var2" LogicalGroup="" Offset=4
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="SubComp1.var1.color[0].sb[0]" RawName="o2S2C0_o0S5C0_SubComp1_var1" LogicalGroup="" Offset=8
+  KeyName="SubComp1.var1.sb[0].color[0]" RawName="o2S2C0_o0S5C0_SubComp1_var1" LogicalGroup="" Offset=8
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
   KeyName="Comp.varA.color[1]" RawName="o3S2C0_Comp_varA" LogicalGroup="" Offset=12
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="SubComp2.var2.color[1].sb[1]" RawName="o3S2C0_o1S5C0_SubComp2_var2" LogicalGroup="" Offset=16
+  KeyName="SubComp2.var2.sb[1].color[1]" RawName="o3S2C0_o1S5C0_SubComp2_var2" LogicalGroup="" Offset=16
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="SubComp1.var1.color[1].sb[0]" RawName="o3S2C0_o0S5C0_SubComp1_var1" LogicalGroup="" Offset=20
+  KeyName="SubComp1.var1.sb[0].color[1]" RawName="o3S2C0_o0S5C0_SubComp1_var1" LogicalGroup="" Offset=20
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
   KeyName="SubComp3.var3.sb[0]" RawName="o4S2C1_SubComp3_var3" LogicalGroup="" Offset=24

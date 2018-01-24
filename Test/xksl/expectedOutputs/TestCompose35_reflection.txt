@@ -3,7 +3,7 @@
 ***************************
  cbuffer PerView [size: 176]
 @C    o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor__padding_PerView_Default => _padding_PerView_Default
-@C    o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor_SphericalColors => SphericalHarmonicsEnvironmentColor.SphericalColors.environmentLights[0].lightDiffuseColor
+@C    o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor_SphericalColors => SphericalHarmonicsEnvironmentColor.SphericalColors.lightDiffuseColor.environmentLights[0]
 @C    o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor__padding_PerView_Lighting => _padding_PerView_Lighting
 
 ***********************
@@ -16,7 +16,7 @@ ConstantBuffers. Count=1
   KeyName="_padding_PerView_Default" RawName="o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor__padding_PerView_Default" LogicalGroup="Default" Offset=0
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
-  KeyName="SphericalHarmonicsEnvironmentColor.SphericalColors.environmentLights[0].lightDiffuseColor" RawName="o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor_SphericalColors" LogicalGroup="Lighting" Offset=16
+  KeyName="SphericalHarmonicsEnvironmentColor.SphericalColors.lightDiffuseColor.environmentLights[0]" RawName="o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor_SphericalColors" LogicalGroup="Lighting" Offset=16
   Class=Color Type=Float Size=144 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=9 Rows=1 Columns=3
 
   KeyName="_padding_PerView_Lighting" RawName="o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=160

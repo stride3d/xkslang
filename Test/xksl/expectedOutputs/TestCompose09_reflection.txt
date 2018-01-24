@@ -3,7 +3,7 @@
 ***************************
  cbuffer Globals [size: 12]
 @C    o1S2C0_Comp_var1 => Comp.var1.color
-@C    o1S2C0_o0S8C0_SubComp_var1 => SubComp.var1.color.sb
+@C    o1S2C0_o0S8C0_SubComp_var1 => SubComp.var1.sb.color
 @C    o2S2C1_SubComp_var1 => SubComp.var1.sb
 
 ***********************
@@ -16,7 +16,7 @@ ConstantBuffers. Count=1
   KeyName="Comp.var1.color" RawName="o1S2C0_Comp_var1" LogicalGroup="" Offset=0
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="SubComp.var1.color.sb" RawName="o1S2C0_o0S8C0_SubComp_var1" LogicalGroup="" Offset=4
+  KeyName="SubComp.var1.sb.color" RawName="o1S2C0_o0S8C0_SubComp_var1" LogicalGroup="" Offset=4
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
   KeyName="SubComp.var1.sb" RawName="o2S2C1_SubComp_var1" LogicalGroup="" Offset=8

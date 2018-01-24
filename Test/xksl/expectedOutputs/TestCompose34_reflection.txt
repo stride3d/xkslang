@@ -6,7 +6,7 @@
 @C    o1S5C1_ShaderComp_varC => ShaderComp.varC.colorA2
 @C    o2S39C0_ShaderComp_varC => ShaderComp.varC.colorB1
 @C    o4S39C1_ShaderComp_varC => ShaderComp.varC.colorB2
-@C    o4S39C1_o3S15C0_ShaderComp_varC => ShaderComp.varC.colorB2.aComp
+@C    o4S39C1_o3S15C0_ShaderComp_varC => ShaderComp.varC.aComp.colorB2
 
 ***********************
 *****  Resources  *****
@@ -28,7 +28,7 @@ ConstantBuffers. Count=1
   KeyName="ShaderComp.varC.colorB2" RawName="o4S39C1_ShaderComp_varC" LogicalGroup="" Offset=12
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="ShaderComp.varC.colorB2.aComp" RawName="o4S39C1_o3S15C0_ShaderComp_varC" LogicalGroup="" Offset=16
+  KeyName="ShaderComp.varC.aComp.colorB2" RawName="o4S39C1_o3S15C0_ShaderComp_varC" LogicalGroup="" Offset=16
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
 

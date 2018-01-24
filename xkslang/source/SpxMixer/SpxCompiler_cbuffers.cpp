@@ -1132,11 +1132,11 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             {
                                 //shader has been instanciated through a composition: find back the compositions path to update its name
                                 unsigned int countPaths = (unsigned int)(shaderOwner->listInstancingPathItems.size());
-                                for (int pathLevel = countPaths - 1; pathLevel >= 0; pathLevel--)
+                                //for (int pathLevel = countPaths - 1; pathLevel >= 0; pathLevel--)
+                                for (int pathLevel = 0; pathLevel < countPaths; pathLevel++)
                                 {
                                     //look for the item matching the pathLevel
                                     const ShaderInstancingPathItem* instancingPathItem = nullptr;
-                                    //for (int k = countPaths - 1; k >= 0; k--) //go backward because we're likely to have inserted the highest level at the beginning
                                     for (unsigned int k = 0; k < countPaths ; k++)
                                     {
                                         if (shaderOwner->listInstancingPathItems[k].instancePathLevel == pathLevel)
