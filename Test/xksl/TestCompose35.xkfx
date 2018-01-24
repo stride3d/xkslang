@@ -1,0 +1,16 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+//setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+//setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+convertAndLoad "TestCompose35.xksl"
+
+mixer _m
+_m.mixin( ShaderMain )
+
+_m.addComposition( environmentLights = [
+  mixin(LightSkyboxShader[lightDiffuseColor=mixin(SphericalHarmonicsEnvironmentColor)])
+])
+
+_m.compile()

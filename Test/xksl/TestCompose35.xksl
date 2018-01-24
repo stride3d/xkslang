@@ -1,0 +1,57 @@
+shader EnvironmentLight
+{
+	void PrepareEnvironmentLight()
+	{
+	}
+};
+
+shader IComputeEnvironmentColor
+{
+	float4 Compute(float3 direction)
+	{
+		return 0;
+	}
+};
+
+shader SphericalHarmonicsEnvironmentColor : IComputeEnvironmentColor
+{
+	cbuffer PerView.Lighting
+	{
+		[Color]
+		float3 SphericalColors[9];
+	}
+	
+	float4 EvaluateSphericalHarmonics(float3 sphericalColors[9], float3 direction)
+	{
+		return float4(sphericalColors[0], 1);
+	}
+	
+	override float4 Compute(float3 direction)
+	{
+		return EvaluateSphericalHarmonics(SphericalColors, direction);
+	}
+}
+
+shader LightSkyboxShader : EnvironmentLight
+{
+	compose IComputeEnvironmentColor lightDiffuseColor;
+	
+	override void PrepareEnvironmentLight()
+	{
+		base.PrepareEnvironmentLight();
+		lightDiffuseColor.Compute(float3(0,0,0));
+	}
+}
+
+shader ShaderMain
+{
+	stage compose EnvironmentLight environmentLights[];
+	
+	void VSMain()
+	{
+		foreach(var environmentLight in environmentLights)
+		{
+			environmentLight.PrepareEnvironmentLight();
+		}
+	}
+}
