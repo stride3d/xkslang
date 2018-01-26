@@ -418,6 +418,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                             cbufferData->cbufferMembersData->members[m].memberAlignment = typeReflectionData->Alignment;
                             cbufferData->cbufferMembersData->members[m].matrixStride = typeReflectionData->MatrixStride;
                             cbufferData->cbufferMembersData->members[m].arrayStride = typeReflectionData->ArrayStride;
+
                             delete typeReflectionData;
                         }
                     }
@@ -454,6 +455,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                         if (member.matrixLayoutDecoration != -1) { error("got a defined matrix layout for a non-matrix member"); }
                         if (member.matrixStride != 0) { error("got a defined matrix stride for a non-matrix member"); }
                     }
+                    
                     if (IsArrayType(member.memberType))
                     {
                         //It could happen if someday we change type layout settings (to be different from glslang layouts), but we should then update all arrayStride decorate)

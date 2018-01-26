@@ -120,7 +120,29 @@ SpxCompiler::ObjectInstructionBase* SpxCompiler::FindIfObjectExistInHashmap(Byte
         }
         else
         {
-            return correspondingObjects;
+            //Some objects might have additionnal conditions before we can merge them
+            bool identicalObjects = true;
+
+            if (IsArrayType(obj->opCode))
+            {
+                //We check if the array Type have the same arrayStride
+                TypeInstruction* objType = dynamic_cast<TypeInstruction*>(obj);
+                TypeInstruction* correspondingObjectType = dynamic_cast<TypeInstruction*>(correspondingObjects);
+
+#ifdef XKSLANG_DEBUG_MODE
+                if (objType == nullptr || correspondingObjectType == nullptr) { error("An array type object could not be casted into a TypeInstruction"); return nullptr; }
+#endif
+
+                if (objType->arrayStride != correspondingObjectType->arrayStride)
+                {
+                    identicalObjects = false;
+                }
+            }
+
+            if (identicalObjects)
+            {
+                return correspondingObjects;
+            }
         }
 
         correspondingObjects = correspondingObjects->nextObjectInHashList;
@@ -165,6 +187,7 @@ bool SpxCompiler::BuildHashmapAllMergableTypesAndConsts(BytecodeObjectsHashMap& 
         if (obj != nullptr) obj->tmpFlag = 0;
     }
 
+    //We don't merge the shaders' specific types (cbuffer, stream buffers, ...)
     for (auto itsh = vecAllShaders.begin(); itsh != vecAllShaders.end(); itsh++)
     {
         ShaderClassData* aShader = *itsh;

@@ -517,6 +517,10 @@ bool SpxCompiler::GetTypeReflectionDescription(TypeInstruction* type, bool isRow
             countCols = subElementReflection.ColumnCount;
             countElementsInArray = arrayCountElems;
 
+#ifdef XKSLANG_DEBUG_MODE
+            if (arrayStride <= 0) return error("Invalid arrayStride value");
+#endif
+
             if (subElementReflection.Members != nullptr && subElementReflection.CountMembers > 0)
             {
                 //Array of struct: we recover the struct information

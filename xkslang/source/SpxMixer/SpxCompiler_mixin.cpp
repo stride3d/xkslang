@@ -3304,6 +3304,25 @@ bool SpxCompiler::DecorateObjects(vector<bool>& vectorIdsToDecorate)
         }
     }
 
+//#ifdef XKSLANG_DEBUG_MODE
+//    //Some sanity checks: make sure all objects received the mandatory decorations
+//    unsigned int countIds = (unsigned int)vectorIdsToDecorate.size();
+//    for (unsigned int id = 0; id < countIds; id++)
+//    {
+//        if (vectorIdsToDecorate[id])
+//        {
+//            TypeInstruction* type = GetTypeById(id);
+//            if (type != nullptr)
+//            {
+//                if (IsArrayType(type) && type->arrayStride <= 0)
+//                {
+//                    return error("An array type is missing its arrayStride value. Type id: " + to_string(id));
+//                }
+//            }
+//        }
+//    }
+//#endif
+
     if (errorMessages.size() > 0) return false;
     return true;
 }

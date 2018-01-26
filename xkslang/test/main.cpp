@@ -202,7 +202,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose32", "TestCompose32.xkfx" },
     //{ "TestCompose33", "TestCompose33.xkfx" },
     //{ "TestCompose34", "TestCompose34.xkfx" },
-    { "TestCompose35", "TestCompose35.xkfx" },
+    //{ "TestCompose35", "TestCompose35.xkfx" },
     
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
@@ -383,7 +383,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoEditorForwardShadingEffect03", "XenkoEditorForwardShadingEffect03.xkfx" },
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
     //{ "XenkoEditorForwardShadingEffect05", "XenkoEditorForwardShadingEffect05.xkfx" },
-/////////////////{ "XenkoEditorForwardShadingEffect06", "XenkoEditorForwardShadingEffect06.xkfx" },
+    { "XenkoEditorForwardShadingEffect06", "XenkoEditorForwardShadingEffect06.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect03", "XenkoEditorMaterialPreviewEffect03.xkfx" },
