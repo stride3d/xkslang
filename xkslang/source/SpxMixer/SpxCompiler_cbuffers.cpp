@@ -566,6 +566,12 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
     if (success && anyCBufferUsed)
     {
+        //The compositions instancing path will be needed to compute the cbuffer members and variables keyname
+        if (!GetAllShaderInstancingPathItems()) 
+        {
+            error("Failed to get all shaders instancing path items");
+        }
+
         //=========================================================================================================================
         //=========================================================================================================================
         //merge all USED cbuffers having an undefined name, or sharing the same declaration name
@@ -1102,87 +1108,81 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
     if (success)
     {
         //get all shader instancing path data
-        if (!GetAllShaderInstancingPathItems()) {
-            error("Failed to get all shaders instancing path items");
-        }
-        else
+        map<string, bool> membersUsedRawName;
+        map<string, bool> membersUsedKeyName;
+
+        for (unsigned int icb = 0; icb < listNewCbuffers.size(); icb++)
         {
-            map<string, bool> membersUsedRawName;
-            map<string, bool> membersUsedKeyName;
+            TypeStructMemberArray* cbuffer = listNewCbuffers[icb];
+            //string cbufferId = string("_id") + to_string(icb);
 
-            for (unsigned int icb = 0; icb < listNewCbuffers.size(); icb++)
+            //update the new member's name
+            for (unsigned int pm = 0; pm < cbuffer->members.size(); pm++)
             {
-                TypeStructMemberArray* cbuffer = listNewCbuffers[icb];
-                //string cbufferId = string("_id") + to_string(icb);
+                TypeStructMember& aMember = cbuffer->members[pm];
 
-                //update the new member's name
-                for (unsigned int pm = 0; pm < cbuffer->members.size(); pm++)
-                {
-                    TypeStructMember& aMember = cbuffer->members[pm];
-
-                    ShaderClassData* shaderOwner = aMember.cbufferShaderOwner;
-                    string shaderOriginalBaseName = shaderOwner->GetShaderOriginalBaseName();
-                    string shaderFullNameWithoutGenerics = shaderOwner->GetShaderFullNameWithoutGenerics();
-                    string shaderFullName = shaderOwner->GetShaderFullName();
+                ShaderClassData* shaderOwner = aMember.cbufferShaderOwner;
+                string shaderOriginalBaseName = shaderOwner->GetShaderOriginalBaseName();
+                string shaderFullNameWithoutGenerics = shaderOwner->GetShaderFullNameWithoutGenerics();
+                string shaderFullName = shaderOwner->GetShaderFullName();
                 
-                    const string memberOriginalDeclarationName = aMember.declarationName;
+                const string memberOriginalDeclarationName = aMember.declarationName;
 
-                    //==========================================
-                    //string memberDeclarationName = (shaderOwner->countGenerics > 0? (shaderFullNameWithoutGenerics + cbufferId) : shaderFullNameWithoutGenerics) + "." + memberOriginalDeclarationName;
-                    string memberDeclarationName = shaderFullNameWithoutGenerics + "." + memberOriginalDeclarationName;
-                    aMember.declarationName = getRawNameFromKeyName(memberDeclarationName);
+                //==========================================
+                //string memberDeclarationName = (shaderOwner->countGenerics > 0? (shaderFullNameWithoutGenerics + cbufferId) : shaderFullNameWithoutGenerics) + "." + memberOriginalDeclarationName;
+                string memberDeclarationName = shaderFullNameWithoutGenerics + "." + memberOriginalDeclarationName;
+                aMember.declarationName = getRawNameFromKeyName(memberDeclarationName);
 
-                    //==========================================
-                    //member keyName
-                    if (aMember.HasLinkName())
+                //==========================================
+                //member keyName
+                if (aMember.HasLinkName())
+                {
+                    //nothing to do: the linkname is set by the user
+                }
+                else
+                {
+                    if (aMember.isStage)
                     {
-                        //nothing to do: the linkname is set by the user
+                        //stage member
+                        aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
                     }
                     else
                     {
-                        if (aMember.isStage)
-                        {
-                            //stage member
-                            aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
-                        }
-                        else
-                        {
-                            //unstage member (we use the shader original base name as well (even if this could make name conflicts))
-                            aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
+                        //unstage member (we use the shader original base name as well (even if this could make name conflicts))
+                        aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
 
-                            if (shaderOwner->listInstancingPathItems.size() > 0)
+                        if (shaderOwner->listInstancingPathItems.size() > 0)
+                        {
+                            //the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
+                            string suffix;
+                            if (!GetKeyNameCompositionPathSuffixForShader(shaderOwner, suffix))
                             {
-                                //the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
-                                string suffix;
-                                if (!GetKeyNameCompositionPathSuffixForShader(shaderOwner, suffix))
-                                {
-                                    error("Failed to get the keyname suffix for the shader: " + shaderOwner->GetShaderFullName());
-                                    break;
-                                }
-
-                                aMember.linkName = aMember.linkName + suffix;
+                                error("Failed to get the keyname suffix for the shader: " + shaderOwner->GetShaderFullName());
+                                break;
                             }
+
+                            aMember.linkName = aMember.linkName + suffix;
                         }
                     }
-
-                    //Check that the names are not conflicting
-                    if (membersUsedRawName.find(aMember.declarationName) != membersUsedRawName.end())
-                    {
-                        error("2 cbuffer members have been assigned the same RawName: " + aMember.declarationName);
-                        break;
-                    }
-                    membersUsedRawName[aMember.declarationName] = true;
-
-                    if (membersUsedKeyName.find(aMember.linkName) != membersUsedKeyName.end())
-                    {
-                        error("2 cbuffer members have been assigned the same KeyName: " + aMember.linkName);
-                        break;
-                    }
-                    membersUsedKeyName[aMember.linkName] = true;
                 }
 
-                if (errorMessages.size() > 0) break;
+                //Check that the names are not conflicting
+                if (membersUsedRawName.find(aMember.declarationName) != membersUsedRawName.end())
+                {
+                    error("2 cbuffer members have been assigned the same RawName: " + aMember.declarationName);
+                    break;
+                }
+                membersUsedRawName[aMember.declarationName] = true;
+
+                if (membersUsedKeyName.find(aMember.linkName) != membersUsedKeyName.end())
+                {
+                    error("2 cbuffer members have been assigned the same KeyName: " + aMember.linkName);
+                    break;
+                }
+                membersUsedKeyName[aMember.linkName] = true;
             }
+
+            if (errorMessages.size() > 0) break;
         }
 
         if (errorMessages.size() > 0) success = false;

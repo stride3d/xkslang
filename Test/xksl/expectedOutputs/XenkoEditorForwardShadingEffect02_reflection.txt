@@ -33,8 +33,8 @@
 @C    PerView => PerView [Stage=Vertex]
 @C    PerView => PerView [Stage=Pixel]
 @C    PerMaterial => PerMaterial [Stage=Pixel]
-@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage=Pixel]
-@C    DynamicTexture_Texture => Texturing.Texture0 [Stage=Pixel]
+@C    DynamicSampler_Sampler => Material.Sampler.i0.color2.computeColorSource.layers[0].materialPixelStage [Stage=Pixel]
+@C    DynamicTexture_Texture => Texturing.Texture0.color2.computeColorSource.layers[0].materialPixelStage [Stage=Pixel]
 
 ConstantBuffers. Count=3
  cbuffer: Name="PerDraw" Size=416 MembersCount=8
@@ -109,8 +109,8 @@ ResourceBindings. Count=6
  Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
  Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
  Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
- Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler GroupName="PerMaterial" LogicalGroup=""
- Stage=Pixel KeyName="Texturing.Texture0" RawName="DynamicTexture_Texture" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="Material.Sampler.i0.color2.computeColorSource.layers[0].materialPixelStage" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.Texture0.color2.computeColorSource.layers[0].materialPixelStage" RawName="DynamicTexture_Texture" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D GroupName="PerMaterial" LogicalGroup=""
 
 InputAttributes. Count=3
  SemanticName="NORMAL" SemanticIndex=0
