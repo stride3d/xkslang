@@ -276,6 +276,49 @@ std::pair<std::string, int> SpxCompiler::ParseSemanticNameAndIndex(const std::st
     return std::pair<std::string, int>(semanticName, index);
 }
 
+bool SpxCompiler::GetKeyNameCompositionPathSuffixForShader(ShaderClassData* shader, string& keyNameSuffix)
+{
+    unsigned int countPaths = (unsigned int)(shader->listInstancingPathItems.size());
+    if (countPaths == 0) return error("The shader has not been instanciated from a composition");
+
+    keyNameSuffix = "";
+    for (unsigned int pathLevel = 0; pathLevel < countPaths; pathLevel++) //careful: the order is important
+    {
+        //look for the item matching the pathLevel
+        const ShaderInstancingPathItem* instancingPathItem = nullptr;
+        for (unsigned int k = 0; k < countPaths; k++)
+        {
+            if (shader->listInstancingPathItems[k].instancePathLevel == pathLevel)
+            {
+                instancingPathItem = &(shader->listInstancingPathItems[k]);
+                break;
+            }
+        }
+
+        if (instancingPathItem == nullptr) {
+            return error("cannot find the shader instancing pathItem for level: " + to_string(pathLevel));
+        }
+
+        ShaderCompositionDeclaration* compositionInstantiated = GetCompositionDeclaration(instancingPathItem->compositionShaderOwnerId, instancingPathItem->compositionNum);
+        if (compositionInstantiated == nullptr) {
+            return error("Composition not found for ShaderId: " + to_string(instancingPathItem->compositionShaderOwnerId) + " with composition num: " + to_string(instancingPathItem->compositionNum));
+        }
+
+        if (instancingPathItem->instanceNum >= compositionInstantiated->countInstances) {
+            return error("ShaderInstancingPathItem has an invalid instance num");
+        }
+
+        string suffix = "." + compositionInstantiated->variableName;
+        if (compositionInstantiated->isArray) {
+            suffix = suffix + "[" + to_string(instancingPathItem->instanceNum) + "]";
+        }
+
+        keyNameSuffix = keyNameSuffix + suffix;
+    }
+
+    return true;
+}
+
 bool SpxCompiler::GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, vector<OutputStageEntryPoint>& listEntryPoints)
 {
     bool success = true;

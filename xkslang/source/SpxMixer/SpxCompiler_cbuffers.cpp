@@ -814,14 +814,34 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                             if (mergeResourceWithResourceId != -1)
                             {
+                                //the resource is merged with an existing one
                                 memberToMerge.variableAccessTypeId = mergeResourceWithResourceId;
                                 memberToMerge.isResourceMergedWithAnotherMember = true;
                             }
                             else
                             {
+                                //We will create a new resource variable
                                 if (cbufferToMerge->isDefine) memberToMerge.resourceGroupName = cbufferToMerge->cbufferName;
                                 memberToMerge.variableAccessTypeId = newBoundId++; //id of the new variable we'll create
                                 memberToMerge.isResourceMergedWithAnotherMember = false;
+
+                                if (cbufferToMerge->shaderOwner->listInstancingPathItems.size() > 0)
+                                {
+                                    //the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
+                                    string suffix;
+                                    if (!GetKeyNameCompositionPathSuffixForShader(cbufferToMerge->shaderOwner, suffix))
+                                    {
+                                        error("Failed to get the keyname suffix for the shader: " + cbufferToMerge->shaderOwner->GetShaderFullName());
+                                        break;
+                                    }
+
+                                    //Default variable name is its declaration name, unless a link name was specified
+                                    string variableName = memberToMerge.declarationName;
+                                    if (memberToMerge.HasLinkName()) variableName = memberToMerge.linkName;
+
+                                    //We then add the suffix to its name
+                                    memberToMerge.linkName = variableName + suffix;
+                                }
                             }
 
                             listResourcesNewAccessVariables.push_back(memberToMerge);
@@ -1132,44 +1152,15 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                             if (shaderOwner->listInstancingPathItems.size() > 0)
                             {
-                                //shader has been instanciated through a composition: find back the compositions path to update its name
-                                unsigned int countPaths = (unsigned int)(shaderOwner->listInstancingPathItems.size());
-                                //for (int pathLevel = countPaths - 1; pathLevel >= 0; pathLevel--)
-                                for (int pathLevel = 0; pathLevel < countPaths; pathLevel++)
+                                //the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
+                                string suffix;
+                                if (!GetKeyNameCompositionPathSuffixForShader(shaderOwner, suffix))
                                 {
-                                    //look for the item matching the pathLevel
-                                    const ShaderInstancingPathItem* instancingPathItem = nullptr;
-                                    for (unsigned int k = 0; k < countPaths ; k++)
-                                    {
-                                        if (shaderOwner->listInstancingPathItems[k].instancePathLevel == pathLevel)
-                                        {
-                                            instancingPathItem = &(shaderOwner->listInstancingPathItems[k]);
-                                            break;
-                                        }
-                                    }
-                                    if (instancingPathItem == nullptr) {
-                                        error("cannot find the shader instancing pathItem for level: " + to_string(pathLevel));
-                                        break;
-                                    }
-
-                                    ShaderCompositionDeclaration* compositionInstantiated = GetCompositionDeclaration(instancingPathItem->compositionShaderOwnerId, instancingPathItem->compositionNum);
-                                    if (compositionInstantiated == nullptr) {
-                                        error("Composition not found for ShaderId: " + to_string(instancingPathItem->compositionShaderOwnerId) + " with composition num: " + to_string(instancingPathItem->compositionNum));
-                                        break;
-                                    }
-
-                                    if (instancingPathItem->instanceNum >= compositionInstantiated->countInstances) {
-                                        error("ShaderInstancingPathItem has an invalid instance num");
-                                        break;
-                                    }
-
-                                    string suffix = "." + compositionInstantiated->variableName;
-                                    if (compositionInstantiated->isArray) {
-                                        suffix = suffix + "[" + to_string(instancingPathItem->instanceNum) + "]";
-                                    }
-
-                                    aMember.linkName = aMember.linkName + suffix;
+                                    error("Failed to get the keyname suffix for the shader: " + shaderOwner->GetShaderFullName());
+                                    break;
                                 }
+
+                                aMember.linkName = aMember.linkName + suffix;
                             }
                         }
                     }

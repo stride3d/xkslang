@@ -899,6 +899,7 @@ private:
 	bool GetAllCBufferAndResourcesBindingsReflectionDataFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
 	bool GetInputAttributesFromBytecode(EffectReflection& effectReflection, std::vector<OutputStageEntryPoint>& listEntryPoints);
     std::pair<std::string, int> ParseSemanticNameAndIndex(const std::string& semanticBaseName);
+    bool GetKeyNameCompositionPathSuffixForShader(ShaderClassData* shader, std::string& keyNameSuffix);
 
     bool ApplyCompositionInstancesToBytecode();
     bool InitializeCompilationProcess(std::vector<XkslMixerOutputStage>& outputStages);
