@@ -401,6 +401,39 @@ bool HlslParseContext::parseXkslShaderMethodsDeclaration(XkslShaderDefinition* s
     return numErrors == 0;
 }
 
+//XKSL extension: An abstract method has no body but we still want to add an empty function in the AST and then in the SPV bytecode (otherwise instructions calling this abstract method would throw an exception)
+//The function will be flagged as abstract in the SPV decoration and it will have to be dealt with later during the mixin & compiling steps
+bool HlslParseContext::AddXkslShaderAbstractMethodDeclaration(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TShaderClassFunction* shaderMethod, TPpContext& ppContext)
+{
+    TFunctionDeclarator declarator;
+    declarator.function = shaderMethod->function;
+    handleFunctionDeclarator(shaderMethod->tokenBodyStart.loc, *declarator.function, false /* not prototype */);
+
+    TIntermNode* entryPointNode = nullptr;
+    // This does a pushScope()
+    TIntermNode* functionNode = handleFunctionDefinition(declarator.loc, *declarator.function, declarator.attributes, entryPointNode);
+    
+    if (functionNode == nullptr) {
+        popScope();
+        return false;
+    }
+
+    gfdgdfgfdg;
+    //TODO
+    //Compilation must fail if any abstract method is being called
+    //Mixin: abstract methods must not override anything
+
+    TIntermNode* functionBody = nullptr;
+    // this does a popScope()
+    handleFunctionBody(declarator.loc, *declarator.function, functionBody, functionNode);
+
+    TIntermNode* nodeList = nullptr;
+    nodeList = intermediate.growAggregate(nodeList, functionNode);
+    shaderMethod->bodyNode = nodeList;
+
+    return true;
+}
+
 bool HlslParseContext::parseXkslShaderMethodDefinition(XkslShaderDefinition* shader, XkslShaderLibrary* shaderLibrary, TShaderClassFunction* shaderMethod, TPpContext& ppContext,
     TString& unknownIdentifier, TString& streamsMissingConversionFunctionShaderOrigin, TString& streamsMissingConversionFunctionShaderTarget)
 {
@@ -2551,6 +2584,9 @@ void HlslParseContext::handleFunctionBody(const TSourceLoc& loc, TFunction& func
     popScope();
     if (function.hasImplicitThis())
         popImplicitThis();
+
+    //XKSL extension: we can have function with no body (when declaring an abstract method), but we still want to add a function node in the AST and have their declaration set in the SPV
+    if (functionBody == nullptr) return;
 
     if (function.getType().getBasicType() != EbtVoid && ! functionReturnsValue)
         error(loc, "function does not return a value:", "", function.getName().c_str());

@@ -3216,7 +3216,7 @@ static bool CheckThatShaderDefineInheritedAbstractMethod(HlslParseContext* parse
         for (unsigned int i = 0; i < countMethodsInParentShader; ++i)
         {
             TShaderClassFunction* parentShaderMethod = &(aParentShader->listMethods[i]);
-            if (parentShaderMethod->isPrototype)
+            if (parentShaderMethod->isAbstract)
             {
                 if (!parentShaderMethod->function->getType().getQualifier().isAbstract)
                 {
@@ -3258,13 +3258,22 @@ static bool parseShaderMethodsDefinition(HlslParseContext* parseContext, XkslSha
     for (unsigned int i = 0; i < countMethods; ++i)
     {
         TShaderClassFunction* shaderMethod = &(shader->listMethods[i]);
-        if (!shaderMethod->isPrototype)
+        if (!shaderMethod->isAbstract)
         {
             if (shaderMethod->bodyNode == nullptr && !shaderMethod->onlyCreateFunctionBodyIfFunctionIsUsed)
             {
                 //The method body has not already been parsed
                 bool success = parseContext->parseXkslShaderMethodDefinition(shader, shaderLibrary, shaderMethod, ppContext,
                     unknownIdentifier, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget);
+                if (!success) return false;
+            }
+        }
+        else
+        {
+            //We add the function declaration node, but leave the body empty
+            if (shaderMethod->bodyNode == nullptr)
+            {
+                bool success = parseContext->AddXkslShaderAbstractMethodDeclaration(shader, shaderLibrary, shaderMethod, ppContext);
                 if (!success) return false;
             }
         }
@@ -3998,7 +4007,8 @@ static bool ParseXkslShaderRecursif(
                         shaderFunction.onlyCreateFunctionBodyIfFunctionIsUsed = true;
                     }
 
-                    parseContext->handleFunctionDeclarator(shaderFunction.tokenBodyStart.loc, *(shaderFunction.function), true /*prototype*/);
+                    bool isPrototype = true;
+                    parseContext->handleFunctionDeclarator(shaderFunction.tokenBodyStart.loc, *(shaderFunction.function), isPrototype);
                 }
                 if (countGeneratedMethodsFound != countGeneratedMethods)
                 {
@@ -4041,13 +4051,13 @@ static bool ParseXkslShaderRecursif(
 
                 if (shader->parsingStatus == previousProcessingOperation)
                 {
-                    //if the shader innherits a class declaring an abstract method: make sure the shader defines it
-                    success = CheckThatShaderDefineInheritedAbstractMethod(parseContext, shader, &shaderLibrary);
-                    if (!success)
-                    {
-                        keepLooping = false;
-                        break;
-                    }
+                    ////if the shader innherits a class declaring an abstract method: make sure the shader defines it
+                    //success = CheckThatShaderDefineInheritedAbstractMethod(parseContext, shader, &shaderLibrary);
+                    //if (!success)
+                    //{
+                    //    keepLooping = false;
+                    //    break;
+                    //}
 
                     success = parseShaderMethodsDefinition(parseContext, shader, &shaderLibrary, ppContext,
                         unknownIdentifier, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget);

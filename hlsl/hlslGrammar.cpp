@@ -3596,7 +3596,7 @@ bool HlslGrammar::acceptShaderClass(TType& type)
     return true;
 }
 
-bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList, TFunction& function, int tokenBodyStartIndex, int tokenBodyEndIndex, bool isPrototype)
+bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader, TVector<TShaderClassFunction>& functionList, TFunction& function, int tokenBodyStartIndex, int tokenBodyEndIndex, bool isAbstract)
 {
     if (shader == nullptr)
     {
@@ -3620,7 +3620,7 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader
     bool functionAlreadyDeclared = (index != -1);
 
     HlslToken tokenFunctionStart;
-    if (!isPrototype)
+    if (!isAbstract)
     {
         tokenFunctionStart = getTokenAtIndex(tokenBodyStartIndex);
         if (tokenFunctionStart.tokenClass != EHTokLeftBrace)
@@ -3633,7 +3633,7 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader
     //Function declaration
     if (!functionAlreadyDeclared)
     {
-        functionList.push_back(TShaderClassFunction(shader, &function, tokenFunctionStart, nullptr, isPrototype, tokenBodyStartIndex, tokenBodyEndIndex));
+        functionList.push_back(TShaderClassFunction(shader, &function, tokenFunctionStart, nullptr, isAbstract, tokenBodyStartIndex, tokenBodyEndIndex));
     }
 
     return true;
@@ -5547,12 +5547,11 @@ bool HlslGrammar::getListShaderClassMethodsWithGivenName(XkslShaderDefinition* s
 
     if (!onlyLookInParentClasses)
     {
-        //look if the shader declared some method with 
         unsigned int countMethods = (unsigned int)(shader->listMethods.size());
         for (unsigned int i = 0; i < countMethods; ++i)
         {
             TShaderClassFunction* aShaderMethod = &(shader->listMethods[i]);
-            if (aShaderMethod->isPrototype) continue;
+            if (aShaderMethod->isAbstract) continue;
             if (aShaderMethod->function->getName().compare(methodName) == 0)
             {
                 shaderMethodsList.push_back(aShaderMethod);
@@ -5685,7 +5684,7 @@ XkslShaderDefinition::ShaderIdentifierLocation HlslGrammar::findShaderClassMetho
         unsigned int countMethods = (unsigned int)(shader->listMethods.size());
         for (unsigned int i = 0; i < countMethods; ++i)
         {
-            if (shader->listMethods[i].isPrototype) continue;
+            //if (shader->listMethods[i].isAbstract) continue;
 
             TFunction* aFunction = shader->listMethods[i].function;
             const TString& aFunctionMangledName = aFunction->getDeclaredMangledName();
