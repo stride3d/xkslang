@@ -831,22 +831,24 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                 memberToMerge.variableAccessTypeId = newBoundId++; //id of the new variable we'll create
                                 memberToMerge.isResourceMergedWithAnotherMember = false;
 
-                                if (cbufferToMerge->shaderOwner->listInstancingPathItems.size() > 0)
+                                if (!memberToMerge.HasLinkName())
                                 {
-                                    //the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
-                                    string suffix;
-                                    if (!GetKeyNameCompositionPathSuffixForShader(cbufferToMerge->shaderOwner, suffix))
+                                    if (cbufferToMerge->shaderOwner->listInstancingPathItems.size() > 0)
                                     {
-                                        error("Failed to get the keyname suffix for the shader: " + cbufferToMerge->shaderOwner->GetShaderFullName());
-                                        break;
+                                        //the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
+                                        string suffix;
+                                        if (!GetKeyNameCompositionPathSuffixForShader(cbufferToMerge->shaderOwner, suffix))
+                                        {
+                                            error("Failed to get the keyname suffix for the shader: " + cbufferToMerge->shaderOwner->GetShaderFullName());
+                                            break;
+                                        }
+
+                                        //Default variable name is its declaration name
+                                        string variableName = memberToMerge.declarationName;
+
+                                        //We then add the composition path suffix to its name
+                                        memberToMerge.linkName = variableName + suffix;
                                     }
-
-                                    //Default variable name is its declaration name, unless a link name was specified
-                                    string variableName = memberToMerge.declarationName;
-                                    if (memberToMerge.HasLinkName()) variableName = memberToMerge.linkName;
-
-                                    //We then add the suffix to its name
-                                    memberToMerge.linkName = variableName + suffix;
                                 }
                             }
 

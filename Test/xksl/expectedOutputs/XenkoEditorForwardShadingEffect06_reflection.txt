@@ -79,8 +79,8 @@
 @C    RoughnessCubeMapEnvironmentColor_CubeMap => RoughnessCubeMapEnvironmentColor.CubeMap.lightSpecularColor.environmentLights[1] [Stage=Pixel]
 @C    Texturing_LinearSampler => Texturing.LinearSampler.lightSpecularColor.environmentLights[1] [Stage=Pixel]
 @C    MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT => MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT.environmentFunction.surfaces[1].layers[12].materialPixelStage [Stage=Pixel]
-@C    DynamicSampler_Sampler => Material.Sampler.i0.color1.computeColorSource.layers[10].materialPixelStage [Stage=Pixel]
-@C    DynamicTexture_Texture => Material.EmissiveMap.color1.computeColorSource.layers[10].materialPixelStage [Stage=Pixel]
+@C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage=Pixel]
+@C    DynamicTexture_Texture => Material.EmissiveMap [Stage=Pixel]
 
 ConstantBuffers. Count=4
  cbuffer: Name="PerDraw" Size=416 MembersCount=8
@@ -278,8 +278,8 @@ ResourceBindings. Count=15
  Stage=Pixel KeyName="RoughnessCubeMapEnvironmentColor.CubeMap.lightSpecularColor.environmentLights[1]" RawName="RoughnessCubeMapEnvironmentColor_CubeMap" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureCube GroupName="PerView" LogicalGroup="Lighting"
  Stage=Pixel KeyName="Texturing.LinearSampler.lightSpecularColor.environmentLights[1]" RawName="Texturing_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
  Stage=Pixel KeyName="MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT.environmentFunction.surfaces[1].layers[12].materialPixelStage" RawName="MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D GroupName="PerMaterial" LogicalGroup=""
- Stage=Pixel KeyName="Material.Sampler.i0.color1.computeColorSource.layers[10].materialPixelStage" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler GroupName="PerMaterial" LogicalGroup=""
- Stage=Pixel KeyName="Material.EmissiveMap.color1.computeColorSource.layers[10].materialPixelStage" RawName="DynamicTexture_Texture" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="Material.EmissiveMap" RawName="DynamicTexture_Texture" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D GroupName="PerMaterial" LogicalGroup=""
 
 InputAttributes. Count=4
  SemanticName="NORMAL" SemanticIndex=0
