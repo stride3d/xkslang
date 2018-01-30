@@ -131,6 +131,7 @@ struct XkfxEffectsToProcess {
 //Can be parameterized from the xkfx file
 static bool xkfxOptions_automaticallyTryToLoadAndConvertUnknownMixinShader = false;  //if true, when we mix an unknown shader, we will try to find, load and parse/convert this shader from our library
 static bool xkfxOptions_processSampleWithXkfxLibrary = false;  //if true, we also send the xkfx file into XkfxParser library
+static bool xkfxOptions_compilationExpectedToFail = false;  //if true, we expect the compilation to fail
 
 static bool buildEffectReflection = true;
 static bool processEffectWithDirectCallToXkslang = true;
@@ -2134,6 +2135,13 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
                 if (parameterValue.compare("true") == 0) xkfxOptions_processSampleWithXkfxLibrary = true;
                 else xkfxOptions_processSampleWithXkfxLibrary = false;
             }
+            else if (parameterName.compare("compilationExpectedToFail") == 0)
+            {
+                string parameterValue;
+                if (!XkfxParser::GetNextInstruction(remainingLine, parameterValue, remainingLine)) { error("set: failed to get the parameter value"); success = false; break; }
+                if (parameterValue.compare("true") == 0) xkfxOptions_compilationExpectedToFail = true;
+                else xkfxOptions_compilationExpectedToFail = false;
+            }
             else
             {
                 error("set: unknown parameter name: " + parameterName);
@@ -2537,6 +2545,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
 
                     success = CompileMixer(effectName, mixerTarget->mixer, outputStages, errorMsgs);
                     if (!success) error("Failed to compile the effect: " + effectName);
+                    if (xkfxOptions_compilationExpectedToFail) success = !success;
                 }
             }
             else {
@@ -2658,6 +2667,7 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         std::cout << "Process XKSL File through Xkslang Dll API" << endl;
 
         success2 = ProcessEffectCommandLine(parser, effectName, effectCmdLines, true, updatedEffectCommandLines);
+        if (xkfxOptions_compilationExpectedToFail) success2 = !success2;
         if (success2) std::cout << "Effect successfully processed." << endl;
         else error("Failed to process the effect");
     }
@@ -2670,6 +2680,7 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
         std::cout << "Process XKSL File through Xkfx Parser classes" << endl;
 
         success3 = ProcessEffectCommandLineThroughXkfxParserApi(parser, effectName, effectCmdLines, callbackRequestDataForShader_XkfxParser);
+        if (xkfxOptions_compilationExpectedToFail) success3 = !success3;
         if (success3) std::cout << "Effect successfully processed." << endl;
         else error("Failed to process the effect");
     }

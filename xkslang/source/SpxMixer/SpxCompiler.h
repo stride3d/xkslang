@@ -407,7 +407,7 @@ public:
         };
 
         FunctionInstruction(const ParsedObjectData& parsedData, std::string name, SpxCompiler* source)
-            : ObjectInstructionBase(parsedData, name, source), isStatic(false), isStage(false),
+            : ObjectInstructionBase(parsedData, name, source), isStatic(false), isStage(false), isAbstract(false),
             overrideAttributeState(OverrideAttributeStateEnum::Undefined), overridenBy(nullptr), fullName(name),
             isEntryPointFunctionForStage(ShadingStageEnum::Undefined),
             flag1(0), currentPosInBytecode(0), calledByTheStage(ShadingStageEnum::Undefined), isProcessingSomeStreamvariables(false),
@@ -417,6 +417,7 @@ public:
             FunctionInstruction* obj = new FunctionInstruction(ParsedObjectData(kind, opCode, resultId, typeId, bytecodeStartPosition, bytecodeEndPosition), name, nullptr);
             obj->isStatic = isStatic;
             obj->isStage = isStage;
+            obj->isAbstract = isAbstract;
             obj->overrideAttributeState = overrideAttributeState;
             obj->fullName = fullName;
             obj->isEntryPointFunctionForStage = isEntryPointFunctionForStage;
@@ -433,6 +434,9 @@ public:
         void ParsedStaticAttribute(){isStatic = true;}
         bool IsStatic(){return isStatic;}
 
+        void ParsedAbstractAttribute() { isAbstract = true; }
+        bool IsAbstract() { return isAbstract; }
+
         void ParsedStageAttribute() { isStage = true; }
         bool IsStage() { return isStage; }
 
@@ -444,6 +448,7 @@ public:
     private:
         bool isStatic;
         bool isStage;
+        bool isAbstract;
         OverrideAttributeStateEnum overrideAttributeState;
         FunctionInstruction* overridenBy;  //the function is being overriden by another function
         std::string fullName;  //name only use for debug purpose

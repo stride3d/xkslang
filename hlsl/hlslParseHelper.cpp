@@ -418,11 +418,6 @@ bool HlslParseContext::AddXkslShaderAbstractMethodDeclaration(XkslShaderDefiniti
         return false;
     }
 
-    gfdgdfgfdg;
-    //TODO
-    //Compilation must fail if any abstract method is being called
-    //Mixin: abstract methods must not override anything
-
     TIntermNode* functionBody = nullptr;
     // this does a popScope()
     handleFunctionBody(declarator.loc, *declarator.function, functionBody, functionNode);

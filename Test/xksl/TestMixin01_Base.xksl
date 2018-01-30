@@ -3,7 +3,7 @@
 
 shader Base
 {
-    abstract int Compute()
+    int Compute()
     {
         return 1;
     }

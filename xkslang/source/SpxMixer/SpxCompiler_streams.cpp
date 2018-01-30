@@ -1075,6 +1075,11 @@ bool SpxCompiler::InitializeStreamsAndCBuffersAccessesForOutputStages(vector<Xks
                         {
                             spv::Id functionCalledId = asId(start + 3);
                             FunctionInstruction* anotherFunctionCalled = GetFunctionById(functionCalledId);
+
+#ifdef XKSLANG_DEBUG_MODE
+                            if (anotherFunctionCalled == nullptr) return error("Function called is not found: " + to_string(functionCalledId));
+#endif
+
                             if (anotherFunctionCalled->flag1 == 0)
                             {
                                 aFunctionCalled->currentPosInBytecode = start + wordCount;  //we will start again at the next function instruction

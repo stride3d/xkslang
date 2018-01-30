@@ -1,3 +1,9 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions processSampleWithXkfxLibrary true
+setSampleTestOptions compilationExpectedToFail true
+//============================================
+
 convertAndLoad "abstractFunctions02.xksl"
 
 mixer m

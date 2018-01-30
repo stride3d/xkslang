@@ -58,22 +58,5 @@ namespace SiliconStudio.Xenko.Rendering.Shadows
                                    InverseWorldToShadowCascadeUV[arrayIndex],
                                    isOrthographic);
         }
-		
-		//Implement the inherited abstract function
-		float FilterShadow(float2 position, float positionDepth)
-		{
-			return 0.0;
-		}
-		
-		//Implement the inherited abstract function
-		float FilterThickness(float3 pixelPositionWS,
-                                       float3 meshNormalWS,
-                                       float2 depthRanges,
-                                       float4x4 worldToShadowCascadeUV,    // Transforms from world space to shadow cascade UV.
-                                       float4x4 inverseWorldToShadowCascadeUV,  // Transforms from shadow cascade UV to world space.
-                                       bool isOrthographic)
-		{
-			return 0.0;
-		}
     };
 }
