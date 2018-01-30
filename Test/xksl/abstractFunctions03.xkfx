@@ -1,0 +1,5 @@
+convertAndLoad "abstractFunctions03.xksl"
+
+mixer m
+m.mixin( ShaderMain, ShaderMainB )
+m.compile

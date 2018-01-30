@@ -3618,6 +3618,11 @@ bool HlslGrammar::addShaderClassFunctionDeclaration(XkslShaderDefinition* shader
     }
 
     bool functionAlreadyDeclared = (index != -1);
+    if (functionAlreadyDeclared)
+    {
+        error("The function has already been declared: " + newFunctionMangledName);
+        return false;
+    }
 
     HlslToken tokenFunctionStart;
     if (!isAbstract)
@@ -3934,8 +3939,19 @@ bool HlslGrammar::parseShaderMembersAndMethods(XkslShaderDefinition* shader, TVe
                         tokenFunctionBodyEndIndex = 0;
                     }
 
+                    bool isAbstractFunction = false;
+                    if (isFunctionPrototype)
+                    {
+                        if (!declaredType.getQualifier().isAbstract)
+                        {
+                            error("A method without body is only accepted if it's defined as abstract: " + function->getName());
+                            return false;
+                        }
+                        isAbstractFunction = true;
+                    }
+
                     //function definition: we add the function definition into our shader
-                    if (!addShaderClassFunctionDeclaration(shader, *listMethodDeclaration, *function, tokenFunctionBodyStartIndex, tokenFunctionBodyEndIndex, isFunctionPrototype))
+                    if (!addShaderClassFunctionDeclaration(shader, *listMethodDeclaration, *function, tokenFunctionBodyStartIndex, tokenFunctionBodyEndIndex, isAbstractFunction))
                         return false;
                 }
                 break;

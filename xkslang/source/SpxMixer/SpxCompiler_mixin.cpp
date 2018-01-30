@@ -2199,6 +2199,13 @@ bool SpxCompiler::FinalizeCompilation(vector<XkslMixerOutputStage>& outputStages
             case spv::OpFunctionCallBaseResolved:
             case spv::OpFunctionCallThroughStaticShaderClassCall:
             {
+                spv::Id functionCalledId = asId(start + 3);
+                FunctionInstruction* aFunctionCalled = GetFunctionById(functionCalledId);
+                if (aFunctionCalled->IsAbstract())
+                {
+                    return error("An abstract method is still being called at compilation time: " + aFunctionCalled->GetFullName());
+                }
+
                 //change OpCode to OpFunctionCall
                 setOpCode(start, spv::OpFunctionCall);
                 break;

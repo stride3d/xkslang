@@ -1,0 +1,21 @@
+shader ShaderBase
+{
+    abstract stage float stageCall();
+};
+
+//ShaderMain doesn't implement the abstract function: parsing is OK but mixin will fails
+shader ShaderMain : ShaderBase
+{
+	void VSMain()
+	{
+		float f = stageCall();
+	}
+};
+
+shader ShaderMainB : ShaderMain
+{
+	override stage float stageCall()
+	{
+		return 0.0;
+	}
+};
