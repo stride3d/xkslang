@@ -2632,6 +2632,7 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     //reset processing options
     xkfxOptions_automaticallyTryToLoadAndConvertUnknownMixinShader = false;
     xkfxOptions_processSampleWithXkfxLibrary = false;
+    xkfxOptions_compilationExpectedToFail = false;
 
     //reset some fields set by the xkfx commands
     libraryResourcesFolders.clear();

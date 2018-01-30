@@ -592,3 +592,650 @@ void SpxCompiler::GetShaderFamilyTree(ShaderClassData* shaderFromFamily, vector<
             listShaderToValidate.push_back(*itsh);
     }
 }
+
+SpxCompiler::FunctionInstruction* SpxCompiler::GetShaderFunctionForEntryPoint(string entryPointName)
+{
+    // Search for the entry point function (assume the first function with the name is the one)
+    FunctionInstruction* entryPointFunction = nullptr;
+    for (auto it = vecAllFunctions.begin(); it != vecAllFunctions.end(); it++)
+    {
+        FunctionInstruction* func = *it;
+        if (func->shaderOwner == nullptr) continue;  //we're looking for a function owned by a shader
+
+        string mangledFunctionName = func->GetMangledName();
+        string unmangledFunctionName = mangledFunctionName.substr(0, mangledFunctionName.find('('));
+        if (unmangledFunctionName == entryPointName)
+        {
+            entryPointFunction = func;
+            //has the function been overriden?
+            if (entryPointFunction->GetOverridingFunction() != nullptr) entryPointFunction = entryPointFunction->GetOverridingFunction();
+            break;
+        }
+    }
+
+    return entryPointFunction;
+}
+
+bool SpxCompiler::GetFunctionLabelAndReturnInstructionsPosition(FunctionInstruction* function, unsigned int& labelPos, unsigned int& latestReturnPos, unsigned int& countReturnInstructions)
+{
+    labelPos = 0;
+    latestReturnPos = 0;
+    countReturnInstructions = 0;
+
+    int countInstructions = 0;
+    unsigned int start = function->bytecodeStartPosition;
+    const unsigned int end = function->bytecodeEndPosition;
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
+        countInstructions++;
+        switch (opCode)
+        {
+            case spv::OpLabel:
+            {
+                //The first instruction of a function (after OpFunction) is OpLabel
+                if (countInstructions == 2) labelPos = start;
+                break;
+            }
+            case spv::OpReturn:
+            case spv::OpReturnValue:
+            {
+                countReturnInstructions++;
+                latestReturnPos = start;
+                break;
+            }
+        }
+
+        start += wordCount;
+    }
+
+    if (labelPos == 0) return error("Failed to find the function OpLabel instruction");
+    return true;
+}
+
+bool SpxCompiler::GetFunctionLabelInstructionPosition(FunctionInstruction* function, unsigned int& labelPos)
+{
+    unsigned int start = function->bytecodeStartPosition;
+    const unsigned int end = function->bytecodeEndPosition;
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
+        switch (opCode)
+        {
+            case spv::OpLabel:
+            {
+                labelPos = start;
+                return true;
+            }
+        }
+
+        start += wordCount;
+    }
+
+    return false;
+}
+
+//===========================================================================================================================//
+//===========================================================================================================================//
+string SpxCompiler::GetDeclarationNameForId(spv::Id id)
+{
+    auto it = mapDeclarationName.find(id);
+    if (it == mapDeclarationName.end())
+    {
+        error(string("Id: ") + to_string(id) + string(" has no declaration name"));
+        return string("");
+    }
+    return it->second;
+}
+
+bool SpxCompiler::GetDeclarationNameForId(spv::Id id, string& name)
+{
+    auto it = mapDeclarationName.find(id);
+    if (it == mapDeclarationName.end())
+        return false;
+
+    name = it->second;
+    return true;
+}
+
+SpxCompiler::HeaderPropertyInstruction* SpxCompiler::GetHeaderPropertyInstructionByOpCodeAndName(const spv::Op opCode, const string& name)
+{
+    if (name.size() == 0) return nullptr;
+
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::HeaderProperty && obj->GetOpCode() == opCode && obj->GetName() == name)
+        {
+            HeaderPropertyInstruction* headerProp = dynamic_cast<HeaderPropertyInstruction*>(obj);
+            return headerProp;
+        }
+    }
+    return nullptr;
+}
+
+SpxCompiler::FunctionInstruction* SpxCompiler::GetTargetedFunctionByNameWithinShaderAndItsFamily(ShaderClassData* shader, const string& name)
+{
+    FunctionInstruction* function = shader->GetFunctionByName(name);
+    if (function != nullptr) {
+        if (function->GetOverridingFunction() != nullptr) return function->GetOverridingFunction();
+        return function;
+    }
+
+    //Look for the function within the shader parents
+    for (unsigned int i = 0; i < shader->parentsList.size(); ++i)
+    {
+        function = GetTargetedFunctionByNameWithinShaderAndItsFamily(shader->parentsList[i], name);
+        if (function != nullptr) return function;
+    }
+    return nullptr;
+}
+
+int SpxCompiler::GetCountShaders()
+{
+    return (int)(vecAllShaders.size());
+}
+
+string SpxCompiler::GetShaderUniqueId()
+{
+    int uniqueId = (this->GetCountShaders() + 1);
+    return "_id" + to_string(uniqueId);
+}
+
+SpxCompiler::ShaderClassData* SpxCompiler::GetShaderByName(const string& name)
+{
+    if (name.size() == 0) return nullptr;
+
+    for (auto it = vecAllShaders.begin(); it != vecAllShaders.end(); ++it)
+    {
+        ShaderClassData* shader = *it;
+        if (shader->GetName() == name)
+        {
+            return shader;
+        }
+    }
+    return nullptr;
+}
+
+bool SpxCompiler::GetStartPositionOfAllMemberDecorateInstructions(vector<unsigned int>& listStartPositionOfAllMemberDecorateInstructions)
+{
+    listStartPositionOfAllMemberDecorateInstructions.clear();
+
+    unsigned int start = header_size;
+    const unsigned int end = (unsigned int)spv.size();
+    while (start < end)
+    {
+        unsigned int wordCount = asWordCount(start);
+        spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
+        switch (opCode)
+        {
+            case spv::OpMemberDecorate:
+            {
+                listStartPositionOfAllMemberDecorateInstructions.push_back(start);
+                break;
+            }
+
+            case spv::OpFunction:
+            case spv::OpTypeFunction:
+            {
+                //all information retrieved at this point: can safely stop here
+                start = end;
+                break;
+            }
+        }
+        start += wordCount;
+    }
+    return true;
+}
+
+bool SpxCompiler::GetListAllFunctionCallInstructions(vector<FunctionCallInstructionData>& listFunctionCallInstructions)
+{
+    listFunctionCallInstructions.clear();
+    for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++)
+    {
+        FunctionInstruction* functionCalling = *itf;
+        functionCalling->bytecodeStartPosition;
+
+        unsigned int start = functionCalling->GetBytecodeStartPosition();
+        const unsigned int end = functionCalling->GetBytecodeEndPosition();
+        while (start < end)
+        {
+            unsigned int wordCount = asWordCount(start);
+            spv::Op opCode = asOpCode(start);
+
+#ifdef XKSLANG_DEBUG_MODE
+            if (wordCount == 0) return error("Corrupted bytecode: wordCount is equals to 0");
+#endif
+
+            switch (opCode)
+            {
+                case spv::OpFunctionCall:
+                case spv::OpFunctionCallBaseResolved:
+                case spv::OpFunctionCallBaseUnresolved:
+                case spv::OpFunctionCallThroughStaticShaderClassCall:
+                case spv::OpFunctionCallThroughCompositionVariable:
+                {
+                    spv::Id functionCalledId = asId(start + 3);
+                    FunctionInstruction* functionCalled = GetFunctionById(functionCalledId);
+                    if (functionCalled == nullptr) return error(string("Failed to retrieve the function for Id: ") + to_string(functionCalledId));
+
+                    listFunctionCallInstructions.push_back(FunctionCallInstructionData(functionCalling, functionCalled, opCode, start));
+                    
+                    break;
+                }
+            }
+
+            start += wordCount;
+        }
+    }
+
+    return true;
+}
+
+SpxCompiler::ShaderClassData* SpxCompiler::GetShaderById(spv::Id id)
+{
+    if (id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+
+    if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Shader)
+    {
+        ShaderClassData* shader = dynamic_cast<ShaderClassData*>(obj);
+        return shader;
+    }
+    return nullptr;
+}
+
+SpxCompiler::VariableInstruction* SpxCompiler::GetVariableByName(const string& name)
+{
+    if (name.size() == 0) return nullptr;
+
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable && obj->GetName() == name)
+        {
+            VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+            return variable;
+        }
+    }
+    return nullptr;
+}
+
+SpxCompiler::ObjectInstructionBase* SpxCompiler::GetObjectById(spv::Id id)
+{
+    if (id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+    return obj;
+}
+
+SpxCompiler::FunctionInstruction* SpxCompiler::GetFunctionById(spv::Id id)
+{
+    if (id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+
+    if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Function)
+    {
+        FunctionInstruction* function = dynamic_cast<FunctionInstruction*>(obj);
+        return function;
+    }
+    return nullptr;
+}
+
+SpxCompiler::ConstInstruction* SpxCompiler::GetConstById(spv::Id id)
+{
+    if (id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+
+    if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Const)
+    {
+        ConstInstruction* constInstr = dynamic_cast<ConstInstruction*>(obj);
+        return constInstr;
+    }
+    return nullptr;
+}
+
+SpxCompiler::TypeInstruction* SpxCompiler::GetTypeById(spv::Id id)
+{
+    if (id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+
+    if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Type)
+    {
+        TypeInstruction* type = dynamic_cast<TypeInstruction*>(obj);
+        return type;
+    }
+    return nullptr;
+}
+
+SpxCompiler::VariableInstruction* SpxCompiler::GetVariableById(spv::Id id)
+{
+    if (id >= listAllObjects.size()) return nullptr;
+    ObjectInstructionBase* obj = listAllObjects[id];
+
+    if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable)
+    {
+        VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+        return variable;
+    }
+    return nullptr;
+}
+
+SpxCompiler::TypeInstruction* SpxCompiler::GetTypePointerPointingTo(spv::StorageClass storageType, TypeInstruction* targetType)
+{
+    if (targetType == nullptr) return nullptr;
+
+    TypeInstruction* res = nullptr;
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Type)
+        {
+            TypeInstruction* aType = dynamic_cast<TypeInstruction*>(obj);
+            if (aType->GetTypePointed() == targetType)
+            {
+#ifdef XKSLANG_DEBUG_MODE
+                if (aType->opCode != spv::OpTypePointer) error("A type pointing to another type must have an OpTypePointer opCode");
+#endif
+
+                spv::StorageClass pointerStorageClass = (spv::StorageClass)asLiteralValue(aType->GetBytecodeStartPosition() + 2);
+                if (pointerStorageClass == storageType)
+                {
+                    if (res != nullptr) error("found 2 types pointing to the same type");
+                    res = aType;
+
+#ifndef XKSLANG_DEBUG_MODE
+                    //in release: immediatly return without checking for duplicata
+                    return res;
+#endif
+                }
+            }
+        }
+    }
+    return res;
+}
+
+SpxCompiler::TypeInstruction* SpxCompiler::GetTypePointerPointingTo(TypeInstruction* targetType)
+{
+    if (targetType == nullptr) return nullptr;
+
+    TypeInstruction* res = nullptr;
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Type)
+        {
+            TypeInstruction* aType = dynamic_cast<TypeInstruction*>(obj);
+            if (aType->GetTypePointed() == targetType)
+            {
+#ifdef XKSLANG_DEBUG_MODE
+                if (aType->opCode != spv::OpTypePointer) error("A type pointing to another type must have an OpTypePointer opCode");
+#endif
+
+                if (res != nullptr) error("found 2 types pointing to the same type");
+                res = aType;
+
+#ifndef XKSLANG_DEBUG_MODE
+                //in release: immediatly return without checking for duplicata
+                return res;
+#endif
+            }
+        }
+    }
+    return res;
+}
+
+SpxCompiler::VariableInstruction* SpxCompiler::GetVariablePointingTo(spv::StorageClass storageType, TypeInstruction* targetType)
+{
+    if (targetType == nullptr) return nullptr;
+
+    VariableInstruction* res = nullptr;
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable)
+        {
+            VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+            if (variable->GetTypePointed() == targetType)
+            {
+                spv::StorageClass pointerStorageClass = (spv::StorageClass)asLiteralValue(variable->GetBytecodeStartPosition() + 3);
+                if (pointerStorageClass == storageType)
+                {
+                    if (res != nullptr) error("found 2 variables pointing to the same type");
+                    res = variable;
+
+#ifndef XKSLANG_DEBUG_MODE
+                    //in release: immediatly return without checking for duplicata
+                    return res;
+#endif
+                }
+            }
+        }
+    }
+    return res;
+}
+
+SpxCompiler::VariableInstruction* SpxCompiler::GetVariablePointingTo(TypeInstruction* targetType)
+{
+    if (targetType == nullptr) return nullptr;
+
+    VariableInstruction* res = nullptr;
+    for (auto it = listAllObjects.begin(); it != listAllObjects.end(); ++it)
+    {
+        ObjectInstructionBase* obj = *it;
+        if (obj != nullptr && obj->GetKind() == ObjectInstructionTypeEnum::Variable)
+        {
+            VariableInstruction* variable = dynamic_cast<VariableInstruction*>(obj);
+            if (variable->GetTypePointed() == targetType)
+            {
+                if (res != nullptr) error("found 2 variables pointing to the same type");
+                res = variable;
+
+#ifndef XKSLANG_DEBUG_MODE
+                //in release: immediatly return without checking for duplicata
+                return res;
+#endif
+            }
+        }
+    }
+    return res;
+}
+
+//=====================================================================================================================================
+//=====================================================================================================================================
+bool SpxCompiler::SetNewAtomicValueUpdate(BytecodeUpdateController& bytecodeUpdateController, unsigned int pos, uint32_t value)
+{
+    bytecodeUpdateController.listAtomicUpdates.push_back(BytecodeValueToReplace(pos, value));
+    return true;
+}
+
+BytecodePortionToReplace* SpxCompiler::SetNewPortionToReplace(BytecodeUpdateController& bytecodeUpdateController, unsigned int pos)
+{
+    bytecodeUpdateController.listPortionsToUpdates.push_back(BytecodePortionToReplace(pos));
+    return &(bytecodeUpdateController.listPortionsToUpdates.back());
+}
+
+BytecodePortionToRemove* SpxCompiler::AddPortionToRemove(BytecodeUpdateController& bytecodeUpdateController, unsigned int position, unsigned int count)
+{
+    if (count == 0) return nullptr;
+
+    auto itListPos = bytecodeUpdateController.listSortedPortionsToRemove.begin();
+    while (itListPos != bytecodeUpdateController.listSortedPortionsToRemove.end())
+    {
+        if (position == itListPos->position) return nullptr;
+        if (position > itListPos->position) break; //we sort the list from higher to smaller position
+
+        if (position + count > itListPos->position) return nullptr; //we're overlapping
+        itListPos++;
+    }
+
+    itListPos = bytecodeUpdateController.listSortedPortionsToRemove.insert(itListPos, BytecodePortionToRemove(position, count));
+    return &(*itListPos);
+}
+
+BytecodeChunk* SpxCompiler::GetOrCreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType, unsigned int offset)
+{
+    return CreateNewBytecodeChunckToInsert(bytecodeUpdateController, instructionPos, insertionType, offset, true);
+}
+
+BytecodeChunk* SpxCompiler::CreateNewBytecodeChunckToInsert(BytecodeUpdateController& bytecodeUpdateController, unsigned int instructionPos, BytecodeChunkInsertionTypeEnum insertionType,
+    unsigned int offset, bool returnExisintChunkInCaseOfConflict)
+{
+    if (instructionPos == 0 || instructionPos > spv.size())
+    {
+        error("Invalid instruction position for creating a new Bytecode Chunck");
+        return nullptr;
+    }
+
+    //get the position where to insert the new bytecode chunck
+    unsigned int instructionWordCount = instructionPos == spv.size()? 0: asWordCount(instructionPos);
+    unsigned int insertionPos;
+    switch (insertionType)
+    {
+        case BytecodeChunkInsertionTypeEnum::InsertBeforeInstruction:
+            insertionPos = instructionPos;
+            break;
+        case BytecodeChunkInsertionTypeEnum::InsertWithinInstruction:
+            if (offset > instructionWordCount) {
+                error("Invalid offset to insert a bytecode chunck within the instruction");
+                return nullptr;
+            }
+            insertionPos = instructionPos + offset;
+            break;
+        case BytecodeChunkInsertionTypeEnum::InsertAfterInstruction:
+            insertionPos = instructionPos + instructionWordCount;
+            break;
+        default:
+            error("Invalid insertionType enum");
+            return nullptr;
+    }
+
+    //insert and sort the bytecode chunck
+    std::list<BytecodeChunk>& listSortedChunks = bytecodeUpdateController.listSortedChunksToInsert;
+    auto itListPos = listSortedChunks.begin();
+    while (itListPos != listSortedChunks.end())
+    {
+        if (insertionPos > itListPos->insertionPos) break; //we sort the list from higher to smaller position
+        else if (insertionPos == itListPos->insertionPos)
+        {
+            //In case of conflict, we look which instruction get inserted first
+            if (instructionPos == itListPos->instructionPos)
+            {
+                //same instruction updated: we then look at which position within the instruction
+                if (insertionType == itListPos->insertionType)
+                {
+                    if (returnExisintChunkInCaseOfConflict) return &(*itListPos);
+
+                    error("conflict: We're adding 2 chuncks with the same insertion type and at same position");
+                    return nullptr;
+                }
+                else
+                {
+                    if ((int)insertionType > (int)(itListPos->insertionType)) break;
+                }
+            }
+            else
+            {
+                if (instructionPos > itListPos->instructionPos) break;
+                //else //do nothing
+            }
+        }
+        
+        itListPos++;
+    }
+
+    itListPos = listSortedChunks.insert(itListPos, BytecodeChunk(instructionPos, insertionType, insertionPos));
+    return &(*itListPos);
+}
+
+bool SpxCompiler::ApplyBytecodeUpdateController(BytecodeUpdateController& bytecodeUpdateController)
+{
+    unsigned int bytecodeOriginalSize = (unsigned int)spv.size();
+
+    //first : update all values and portions
+    for (auto itau = bytecodeUpdateController.listAtomicUpdates.begin(); itau != bytecodeUpdateController.listAtomicUpdates.end(); itau++)
+    {
+        const BytecodeValueToReplace& atomicValueUpdate = *itau;
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (atomicValueUpdate.pos >= bytecodeOriginalSize) { error("pos is out of bound"); break; }
+#endif
+
+        spv[atomicValueUpdate.pos] = atomicValueUpdate.value;
+    }
+    for (auto itau = bytecodeUpdateController.listPortionsToUpdates.begin(); itau != bytecodeUpdateController.listPortionsToUpdates.end(); itau++)
+    {
+        const BytecodePortionToReplace& portionUpdate = *itau;
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (portionUpdate.pos + portionUpdate.values.size() >= bytecodeOriginalSize) { error("portion to update is out of bound"); break; }
+#endif
+
+        auto itdest = spv.begin() + portionUpdate.pos;
+        for (auto itp = portionUpdate.values.begin(); itp != portionUpdate.values.end(); itp++)
+        {
+            *itdest++ = *itp;
+        }
+    }
+
+    //Insert all new chuncks in the bytecode, update positions accordingly of chuncks to remove
+    for (auto itbc = bytecodeUpdateController.listSortedChunksToInsert.begin(); itbc != bytecodeUpdateController.listSortedChunksToInsert.end(); itbc++)
+    {
+        const BytecodeChunk& bytecodeChunck = *itbc;
+        if (bytecodeChunck.bytecode.size() == 0) continue;
+
+        int countBytesInserted = 0;
+
+#ifdef XKSLANG_DEBUG_MODE
+        if (bytecodeChunck.insertionPos > bytecodeOriginalSize) { error("bytecode chunck is out of bound"); break; }
+#endif
+
+        spv.insert(spv.begin() + bytecodeChunck.insertionPos, bytecodeChunck.bytecode.begin(), bytecodeChunck.bytecode.end());
+        countBytesInserted = (unsigned int)bytecodeChunck.bytecode.size();
+
+        if (countBytesInserted > 0)
+        {
+            //for all portions to remove coming AFTER the position we just inserted into, we update their position
+            for (auto itpr = bytecodeUpdateController.listSortedPortionsToRemove.begin(); itpr != bytecodeUpdateController.listSortedPortionsToRemove.end(); itpr++)
+            {
+                BytecodePortionToRemove& portionToRemove = *itpr;
+
+                if (portionToRemove.position >= bytecodeChunck.insertionPos)
+                {
+                    portionToRemove.position += countBytesInserted;
+                }
+                else
+                {
+                    if (portionToRemove.position + portionToRemove.count > bytecodeChunck.insertionPos){ error("A portion to remove overlap an insertion chunck"); }
+                    break;
+                }
+            }
+        }
+    }
+
+    //Remove all portions to remove
+    for (auto itpr = bytecodeUpdateController.listSortedPortionsToRemove.begin(); itpr != bytecodeUpdateController.listSortedPortionsToRemove.end(); itpr++)
+    {
+        BytecodePortionToRemove& portionToRemove = *itpr;
+        spv.erase(spv.begin() + portionToRemove.position, spv.begin() + (portionToRemove.position + portionToRemove.count));
+    }
+
+    if (errorMessages.size() > 0) return false;
+    return true;
+}
