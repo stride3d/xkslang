@@ -286,7 +286,10 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     
     //{ "abstractFunctions01", "abstractFunctions01.xkfx" },
     //{ "abstractFunctions02", "abstractFunctions02.xkfx" },
-    { "abstractFunctions03", "abstractFunctions03.xkfx" },
+    //{ "abstractFunctions03", "abstractFunctions03.xkfx" },
+    //{ "abstractFunctions04", "abstractFunctions04.xkfx" },
+    //{ "abstractFunctions05", "abstractFunctions05.xkfx" },
+    { "abstractFunctions06", "abstractFunctions06.xkfx" },
 
     //{ "SemanticTest01", "SemanticTest01.xkfx" },
     //{ "testTypeSize", "testTypeSize.xkfx" },

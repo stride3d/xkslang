@@ -2039,12 +2039,6 @@ bool SpxCompiler::UpdateOverridingFunctions(vector<ShaderClassData*>& listShader
                             else return error("An unstage method is overriding a stage method: " + overringFunctionName);
                         }
 
-                        //No need to override an abstract method
-                        if (aFunction->isAbstract)
-                        {
-                            return error("Overriding an abstract method is not permitted: " + overringFunctionName);
-                        }
-
                         aFunction->SetOverridingFunction(overridingFunction);
                     }
                 }

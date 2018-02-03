@@ -1,0 +1,31 @@
+shader ShaderBase
+{
+    float varBase;
+
+    abstract stage float Compute();
+};
+
+shader ShaderMain : ShaderBase
+{
+	float varMain;
+
+    stage float Compute()
+	{
+        return varMain;
+	}
+
+	stage void VSMain()
+	{
+		float f = Compute();
+	}
+};
+
+shader ShaderMainB : ShaderBase
+{
+	float varMaterialSurface;
+
+	override stage float Compute()
+	{
+        return varMaterialSurface;
+	}
+};
