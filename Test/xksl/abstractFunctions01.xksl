@@ -7,7 +7,7 @@ shader ShaderBase
 
 shader ShaderMain : ShaderBase
 {
-	void stageCall(){}
+	stage void stageCall(){}
 	
 	void VSMain()
 	{

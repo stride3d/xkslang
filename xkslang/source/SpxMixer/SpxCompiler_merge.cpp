@@ -815,6 +815,51 @@ bool SpxCompiler::MergeShadersIntoBytecode(SpxCompiler& bytecodeToMerge, const v
         return error("Fail to override or conflicts detected with new compositions");
     }
 
+    //check if any abstract methods as been implemented
+    if (!CheckIfAnyNewMethodsImplementsAnAbstractMethod(listMergedShaders))
+    {
+        return error("Fail to check if abstract methods get implemented by merged shaders");
+    }
+
     if (errorMessages.size() > 0) return false;
+    return true;
+}
+
+bool SpxCompiler::CheckIfAnyNewMethodsImplementsAnAbstractMethod(vector<ShaderClassData*>& listMergedShaders)
+{
+    //Get the list of all abstract methods
+    vector<FunctionInstruction*> listAbstractMethods;
+    for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++)
+    {
+        FunctionInstruction* aFunction = *itf;
+        if (aFunction->IsAbstract()) listAbstractMethods.push_back(aFunction);
+    }
+
+    //Check if a merged shader implement any of the abstract method
+    unsigned int countAbstractMethods = (unsigned int)listAbstractMethods.size();
+    unsigned int countMergedShaders = (unsigned int)listMergedShaders.size();
+    for (unsigned int m = 0; m < countAbstractMethods; m++)
+    {
+        FunctionInstruction* anAbstractMethod = listAbstractMethods[m];
+        const string& abstractMethodMangledName = anAbstractMethod->GetMangledName();
+
+        for (unsigned int s = 0; s < countMergedShaders; s++)
+        {
+            ShaderClassData* aMergedShader = listMergedShaders[s];
+
+            unsigned int countMethodsInShader = (unsigned int)aMergedShader->functionsList.size();
+            for (unsigned int sm = 0; sm < countMethodsInShader; ++sm)
+            {
+                FunctionInstruction* functionToMerge = aMergedShader->functionsList[sm];
+
+                if (functionToMerge->IsAbstract()) continue;
+                if (functionToMerge->GetMangledName() == abstractMethodMangledName)
+                {
+                    anAbstractMethod->SetOverridingFunction(functionToMerge);
+                }
+            }
+        }
+    }
+
     return true;
 }

@@ -864,6 +864,7 @@ public:
     ShaderCompositionDeclaration* GetShaderCompositionDeclarationForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders);
     bool GetAllCompositionsForVariableName(ShaderClassData* shader, const std::string& variableName, bool lookInParentShaders, std::vector<ShaderCompositionDeclaration*>& listCompositions);
     bool CheckIfAnyNewCompositionGetOverridenOrConflictsWithExistingOnes(std::vector<ShaderClassData*>& listMergedShaders);
+    bool CheckIfAnyNewMethodsImplementsAnAbstractMethod(std::vector<ShaderClassData*>& listMergedShaders);
     bool CheckIfTheCompositionGetOverridenByAnExistingStageComposition(ShaderCompositionDeclaration* newStagedComposition, std::vector<ShaderCompositionDeclaration*>& listStagedCompositionsPotentiallyOverriding);
     bool GetAllShaderInstancesForComposition(const ShaderCompositionDeclaration* composition, std::vector<ShaderClassData*>& instances);
     bool GetAllCompositionForEachLoops(std::vector<CompositionForEachLoopData>& vecForEachLoops, int& maxForEachLoopsNestedLevel);

@@ -297,7 +297,8 @@ bool SpxCompiler::MergeStageMethodsAndRemapBaseCallForInstantiatedShaders(const 
         }
     }
 
-    for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++) (*itf)->flag1 = 0;
+    for (auto itf = vecAllFunctions.begin(); itf != vecAllFunctions.end(); itf++)
+        (*itf)->flag1 = 0;
 
     //========================================================================================
     //========================================================================================

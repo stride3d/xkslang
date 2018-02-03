@@ -4024,6 +4024,38 @@ static bool ParseXkslShaderRecursif(
 
     //==================================================================================================================
     //==================================================================================================================
+    //Some checkups
+    if (success)
+    {
+        previousProcessingOperation = currentProcessingOperation;
+        currentProcessingOperation = XkslShaderDefinition::ShaderParsingStatusEnum::MethodsAndShadersDeclarationValidated;
+
+        TVector<XkslShaderDefinition*>& listShaderParsed = shaderLibrary.listShaders;
+        for (unsigned int s = 0; s < listShaderParsed.size(); s++)
+        {
+            XkslShaderDefinition* shader = listShaderParsed[s];
+            if (shader->isValid == false) continue;
+
+            if (shader->parsingStatus == previousProcessingOperation)
+            {
+                shader->parsingStatus = currentProcessingOperation;
+
+                //Obsolete: a shader is not required to implement an inherited abstract method (this will be checked after mixin and compilation are done)
+                ////if the shader innherits a class declaring an abstract method: make sure the shader defines it
+                //success = CheckThatShaderDefineInheritedAbstractMethod(parseContext, shader, &shaderLibrary);
+                //if (!success)
+                //{
+                //    keepLooping = false;
+                //    break;
+                //}
+            }
+        }
+
+        if (processUntilOperation == currentProcessingOperation) return success;
+    }
+
+    //==================================================================================================================
+    //==================================================================================================================
     //we can now parse the shader methods' definition!
     if (success)
     {
@@ -4051,14 +4083,6 @@ static bool ParseXkslShaderRecursif(
 
                 if (shader->parsingStatus == previousProcessingOperation)
                 {
-                    ////if the shader innherits a class declaring an abstract method: make sure the shader defines it
-                    //success = CheckThatShaderDefineInheritedAbstractMethod(parseContext, shader, &shaderLibrary);
-                    //if (!success)
-                    //{
-                    //    keepLooping = false;
-                    //    break;
-                    //}
-
                     success = parseShaderMethodsDefinition(parseContext, shader, &shaderLibrary, ppContext,
                         unknownIdentifier, streamsMissingConversionFunctionShaderOrigin, streamsMissingConversionFunctionShaderTarget);
 
@@ -4118,7 +4142,7 @@ static bool ParseXkslShaderRecursif(
                             shaderNameToParse,
                             shaderData,
                             shaderMissingADependency,
-                            XkslShaderDefinition::ShaderParsingStatusEnum::MethodsDeclarationParsed, //have new shaders catch up until this process,
+                            XkslShaderDefinition::ShaderParsingStatusEnum::MethodsAndShadersDeclarationValidated, //have new shaders catch up until this process,
                             parseContext,
                             ppContext,
                             infoSink,
