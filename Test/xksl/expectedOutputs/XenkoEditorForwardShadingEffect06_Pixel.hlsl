@@ -150,6 +150,9 @@ Texture3D<uint4> LightClustered_LightClusters;
 Buffer<uint4> LightClustered_LightIndices;
 Buffer<float4> LightClusteredSpotGroup_SpotLights;
 TextureCube<float4> RoughnessCubeMapEnvironmentColor_CubeMap;
+Texture2D<float4> ShadowMapCommon_ShadowMapTexture;
+SamplerState Texturing_LinearBorderSampler;
+SamplerComparisonState Texturing_LinearClampCompareLessEqualSampler;
 SamplerState Texturing_LinearSampler;
 Texture2D<float4> MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT;
 SamplerState DynamicSampler_Sampler;
@@ -181,6 +184,8 @@ struct SPIRV_Cross_Output
 {
     float4 PS_OUT_ColorTarget : SV_Target0;
 };
+
+float _1509;
 
 void NormalUpdate_GenerateNormal_PS()
 {
@@ -470,9 +475,147 @@ float3 o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__GetShadowPositionOff
     return normal * (((2.0f * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize.x) * offsetScale) * normalOffsetScale);
 }
 
-float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__FilterShadow(float2 position, float positionDepth)
+void o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__CalculatePCFKernelParameters(float2 position, inout float2 base_uv, out float2 st)
 {
-    return 0.0f;
+    float2 uv = position * o0S433C0_ShadowMapCommon_ShadowMapTextureSize;
+    base_uv = floor(uv + 0.5f.xx);
+    st = (uv + 0.5f.xx) - base_uv;
+    base_uv -= 0.5f.xx;
+    base_uv *= o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get3x3FilterKernel(float2 base_uv, float2 st, inout float3 kernel[4])
+{
+    float2 uvW0 = 3.0f.xx - (st * 2.0f);
+    float2 uvW1 = 1.0f.xx + (st * 2.0f);
+    float2 uv0 = ((2.0f.xx - st) / uvW0) - 1.0f.xx;
+    float2 uv1 = (st / uvW1) + 1.0f.xx;
+    kernel[0] = float3(base_uv + (uv0 * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW0.y);
+    kernel[1] = float3(base_uv + (float2(uv1.x, uv0.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW0.y);
+    kernel[2] = float3(base_uv + (float2(uv0.x, uv1.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW1.y);
+    kernel[3] = float3(base_uv + (uv1 * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW1.y);
+    return 16.0f;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleTextureAndCompare(float2 position, float positionDepth)
+{
+    float3 _1367 = float3(position, positionDepth);
+    return ShadowMapCommon_ShadowMapTexture.SampleCmpLevelZero(Texturing_LinearClampCompareLessEqualSampler, _1367.xy, _1367.z);
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get5x5FilterKernel(float2 base_uv, float2 st, inout float3 kernel[9])
+{
+    float2 uvW0 = 4.0f.xx - (st * 3.0f);
+    float2 uvW1 = 7.0f.xx;
+    float2 uvW2 = 1.0f.xx + (st * 3.0f);
+    float2 uv0 = ((3.0f.xx - (st * 2.0f)) / uvW0) - 2.0f.xx;
+    float2 uv1 = (3.0f.xx + st) / uvW1;
+    float2 uv2 = (st / uvW2) + 2.0f.xx;
+    kernel[0] = float3(base_uv + (uv0 * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW0.y);
+    kernel[1] = float3(base_uv + (float2(uv1.x, uv0.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW0.y);
+    kernel[2] = float3(base_uv + (float2(uv2.x, uv0.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW0.y);
+    kernel[3] = float3(base_uv + (float2(uv0.x, uv1.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW1.y);
+    kernel[4] = float3(base_uv + (uv1 * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW1.y);
+    kernel[5] = float3(base_uv + (float2(uv2.x, uv1.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW1.y);
+    kernel[6] = float3(base_uv + (float2(uv0.x, uv2.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW2.y);
+    kernel[7] = float3(base_uv + (float2(uv1.x, uv2.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW2.y);
+    kernel[8] = float3(base_uv + (uv2 * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW2.y);
+    return 144.0f;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get7x7FilterKernel(float2 base_uv, float2 st, inout float3 kernel[16])
+{
+    float2 uvW0 = (st * 5.0f) - 6.0f.xx;
+    float2 uvW1 = (st * 11.0f) - 28.0f.xx;
+    float2 uvW2 = -((st * 11.0f) + 17.0f.xx);
+    float2 uvW3 = -((st * 5.0f) + 1.0f.xx);
+    float2 uv0 = (((st * 4.0f) - 5.0f.xx) / uvW0) - 3.0f.xx;
+    float2 uv1 = (((st * 4.0f) - 16.0f.xx) / uvW1) - 1.0f.xx;
+    float2 uv2 = ((-((st * 7.0f) + 5.0f.xx)) / uvW2) + 1.0f.xx;
+    float2 uv3 = ((-st) / uvW3) + 3.0f.xx;
+    kernel[0] = float3(base_uv + (uv0 * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW0.y);
+    kernel[1] = float3(base_uv + (float2(uv1.x, uv0.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW0.y);
+    kernel[2] = float3(base_uv + (float2(uv2.x, uv0.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW0.y);
+    kernel[3] = float3(base_uv + (float2(uv3.x, uv0.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW3.x * uvW0.y);
+    kernel[4] = float3(base_uv + (float2(uv0.x, uv1.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW1.y);
+    kernel[5] = float3(base_uv + (uv1 * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW1.y);
+    kernel[6] = float3(base_uv + (float2(uv2.x, uv1.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW1.y);
+    kernel[7] = float3(base_uv + (float2(uv3.x, uv1.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW3.x * uvW1.y);
+    kernel[8] = float3(base_uv + (float2(uv0.x, uv2.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW2.y);
+    kernel[9] = float3(base_uv + (float2(uv1.x, uv2.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW2.y);
+    kernel[10] = float3(base_uv + (uv2 * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW2.y);
+    kernel[11] = float3(base_uv + (float2(uv3.x, uv2.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW3.x * uvW2.y);
+    kernel[12] = float3(base_uv + (float2(uv0.x, uv3.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW3.y);
+    kernel[13] = float3(base_uv + (float2(uv1.x, uv3.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW3.y);
+    kernel[14] = float3(base_uv + (float2(uv2.x, uv3.y) * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW3.y);
+    kernel[15] = float3(base_uv + (uv3 * o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW3.x * uvW3.y);
+    return 2704.0f;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__FilterShadow(float2 position, float positionDepth)
+{
+    float shadow = 0.0f;
+    float2 param = position;
+    float2 param_1;
+    float2 param_2;
+    o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__CalculatePCFKernelParameters(param, param_1, param_2);
+    float2 base_uv = param_1;
+    float2 st = param_2;
+    if (false)
+    {
+        float2 param_3 = base_uv;
+        float2 param_4 = st;
+        float3 param_5[4];
+        float _1411 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get3x3FilterKernel(param_3, param_4, param_5);
+        float3 kernel[4] = param_5;
+        float normalizationFactor = _1411;
+        for (int i = 0; i < 4; i++)
+        {
+            float2 param_6 = kernel[i].xy;
+            float param_7 = positionDepth;
+            shadow += (kernel[i].z * o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleTextureAndCompare(param_6, param_7));
+        }
+        shadow /= normalizationFactor;
+    }
+    else
+    {
+        if (true)
+        {
+            float2 param_8 = base_uv;
+            float2 param_9 = st;
+            float3 param_10[9];
+            float _1441 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get5x5FilterKernel(param_8, param_9, param_10);
+            float3 kernel_1[9] = param_10;
+            float normalizationFactor_1 = _1441;
+            for (int i_1 = 0; i_1 < 9; i_1++)
+            {
+                float2 param_11 = kernel_1[i_1].xy;
+                float param_12 = positionDepth;
+                shadow += (kernel_1[i_1].z * o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleTextureAndCompare(param_11, param_12));
+            }
+            shadow /= normalizationFactor_1;
+        }
+        else
+        {
+            if (false)
+            {
+                float2 param_13 = base_uv;
+                float2 param_14 = st;
+                float3 param_15[16];
+                float _1471 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get7x7FilterKernel(param_13, param_14, param_15);
+                float3 kernel_2[16] = param_15;
+                float normalizationFactor_2 = _1471;
+                for (int i_2 = 0; i_2 < 16; i_2++)
+                {
+                    float2 param_16 = kernel_2[i_2].xy;
+                    float param_17 = positionDepth;
+                    shadow += (kernel_2[i_2].z * o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleTextureAndCompare(param_16, param_17));
+                }
+                shadow /= normalizationFactor_2;
+            }
+        }
+    }
+    return shadow;
 }
 
 float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeShadowFromCascade(float3 shadowPositionWS, int cascadeIndex, int lightIndex)
@@ -483,12 +626,196 @@ float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeShadowFromCasc
     shadowPosition = float4(_476.x, _476.y, _476.z, shadowPosition.w);
     float2 param = shadowPosition.xy;
     float param_1 = shadowPosition.z;
-    return o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__FilterShadow(param, param_1);
+    return o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__FilterShadow(param, param_1);
 }
 
-float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__FilterThickness(float3 pixelPositionWS, float3 meshNormalWS, float2 depthRanges, float4x4 worldToShadowCascadeUV, float4x4 inverseWorldToShadowCascadeUV, bool isOrthographic)
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__GetFilterRadiusInPixels()
 {
-    return 0.0f;
+    if (false)
+    {
+        return 2.5f;
+    }
+    else
+    {
+        if (true)
+        {
+            return 3.5f;
+        }
+        else
+        {
+            return 4.5f;
+        }
+    }
+}
+
+float4 o0S433C0_Math_Project(float4 vec, float4x4 mat)
+{
+    float4 vecProjected = mul(vec, mat);
+    float3 _683 = vecProjected.xyz / vecProjected.w.xxx;
+    vecProjected = float4(_683.x, _683.y, _683.z, vecProjected.w);
+    return vecProjected;
+}
+
+void o0S433C0_ShadowMapFilterBase_PerView_Lighting__CalculateAdjustedShadowSpacePixelPosition(float filterRadiusInPixels, float3 pixelPositionWS, float3 meshNormalWS, float4x4 worldToShadowCascadeUV, float4x4 inverseWorldToShadowCascadeUV, inout float3 adjustedPixelPositionWS, out float3 adjustedPixelPositionShadowSpace)
+{
+    float4 param = float4(0.0f, 0.0f, 0.0f, 1.0f);
+    float4x4 param_1 = inverseWorldToShadowCascadeUV;
+    float4 bottomLeftTexelWS = o0S433C0_Math_Project(param, param_1);
+    float4 param_2 = float4(o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize * filterRadiusInPixels, 0.0f, 1.0f);
+    float4x4 param_3 = inverseWorldToShadowCascadeUV;
+    float4 topRightTexelWS = o0S433C0_Math_Project(param_2, param_3);
+    float texelDiagonalLength = distance(topRightTexelWS.xyz, bottomLeftTexelWS.xyz);
+    float3 positionOffsetWS = meshNormalWS * texelDiagonalLength;
+    adjustedPixelPositionWS = pixelPositionWS - positionOffsetWS;
+    float4 param_4 = float4(adjustedPixelPositionWS, 1.0f);
+    float4x4 param_5 = worldToShadowCascadeUV;
+    float4 shadowMapCoordinate = o0S433C0_Math_Project(param_4, param_5);
+    adjustedPixelPositionShadowSpace = shadowMapCoordinate.xyz;
+}
+
+void o0S433C0_ShadowMapFilterBase_PerView_Lighting__CalculateAdjustedShadowSpacePixelPositionPerspective(float filterRadiusInPixels, float3 pixelPositionWS, float3 meshNormalWS, float4x4 worldToShadowCascadeUV, float4x4 inverseWorldToShadowCascadeUV, inout float3 adjustedPixelPositionWS, out float3 adjustedPixelPositionShadowSpace)
+{
+    float4 param = float4(pixelPositionWS, 1.0f);
+    float4x4 param_1 = worldToShadowCascadeUV;
+    float4 shadowMapCoordinate = o0S433C0_Math_Project(param, param_1);
+    float4 param_2 = float4(shadowMapCoordinate.xy + (o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize * filterRadiusInPixels), shadowMapCoordinate.z, 1.0f);
+    float4x4 param_3 = inverseWorldToShadowCascadeUV;
+    float4 topRightTexelWS = o0S433C0_Math_Project(param_2, param_3);
+    float texelDiagonalLength = distance(topRightTexelWS.xyz, pixelPositionWS);
+    float3 positionOffsetWS = meshNormalWS * texelDiagonalLength;
+    adjustedPixelPositionWS = pixelPositionWS - positionOffsetWS;
+    float4 param_4 = float4(adjustedPixelPositionWS, 1.0f);
+    float4x4 param_5 = worldToShadowCascadeUV;
+    float4 adjustedShadowMapCoordinate = o0S433C0_Math_Project(param_4, param_5);
+    adjustedPixelPositionShadowSpace = adjustedShadowMapCoordinate.xyz;
+}
+
+float o0S433C0_ShadowMapFilterBase_PerView_Lighting__SampleThickness(float3 shadowSpaceCoordinate, float3 pixelPositionWS, float2 depthRanges, float4x4 inverseWorldToShadowCascadeUV, bool isOrthographic)
+{
+    float shadowMapDepth = ShadowMapCommon_ShadowMapTexture.SampleLevel(Texturing_LinearBorderSampler, shadowSpaceCoordinate.xy, 0.0f).x;
+    float thickness;
+    if (isOrthographic)
+    {
+        thickness = abs(shadowMapDepth - shadowSpaceCoordinate.z) * depthRanges.y;
+    }
+    else
+    {
+        float4 param = float4(shadowSpaceCoordinate.xy, shadowMapDepth, 1.0f);
+        float4x4 param_1 = inverseWorldToShadowCascadeUV;
+        float4 shadowmapPositionWorldSpace = o0S433C0_Math_Project(param, param_1);
+        thickness = distance(shadowmapPositionWorldSpace.xyz, pixelPositionWS);
+    }
+    return thickness;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleAndFilter(float3 adjustedPixelPositionWS, float3 adjustedPixelPositionShadowSpace, float2 depthRanges, float4x4 inverseWorldToShadowCascadeUV, bool isOrthographic, bool isDualParaboloid)
+{
+    float2 uv = adjustedPixelPositionShadowSpace.xy * o0S433C0_ShadowMapCommon_ShadowMapTextureSize;
+    float2 base_uv = floor(uv + 0.5f.xx);
+    float2 st = (uv + 0.5f.xx) - base_uv;
+    base_uv *= o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize;
+    float thickness = 0.0f;
+    float normalizationFactor = 1.0f;
+    if (false)
+    {
+        float2 param = base_uv;
+        float2 param_1 = st;
+        float3 param_2[4];
+        float _1574 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get3x3FilterKernel(param, param_1, param_2);
+        float3 kernel[4] = param_2;
+        normalizationFactor = _1574;
+        for (int i = 0; i < 4; i++)
+        {
+            float3 param_3 = float3(kernel[i].xy, adjustedPixelPositionShadowSpace.z);
+            float3 param_4 = adjustedPixelPositionWS;
+            float2 param_5 = depthRanges;
+            float4x4 param_6 = inverseWorldToShadowCascadeUV;
+            bool param_7 = isOrthographic;
+            thickness += (kernel[i].z * o0S433C0_ShadowMapFilterBase_PerView_Lighting__SampleThickness(param_3, param_4, param_5, param_6, param_7));
+        }
+    }
+    else
+    {
+        if (true)
+        {
+            float2 param_8 = base_uv;
+            float2 param_9 = st;
+            float3 param_10[9];
+            float _1609 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get5x5FilterKernel(param_8, param_9, param_10);
+            float3 kernel_1[9] = param_10;
+            normalizationFactor = _1609;
+            for (int i_1 = 0; i_1 < 9; i_1++)
+            {
+                float3 param_11 = float3(kernel_1[i_1].xy, adjustedPixelPositionShadowSpace.z);
+                float3 param_12 = adjustedPixelPositionWS;
+                float2 param_13 = depthRanges;
+                float4x4 param_14 = inverseWorldToShadowCascadeUV;
+                bool param_15 = isOrthographic;
+                thickness += (kernel_1[i_1].z * o0S433C0_ShadowMapFilterBase_PerView_Lighting__SampleThickness(param_11, param_12, param_13, param_14, param_15));
+            }
+        }
+        else
+        {
+            if (false)
+            {
+                float2 param_16 = base_uv;
+                float2 param_17 = st;
+                float3 param_18[16];
+                float _1644 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get7x7FilterKernel(param_16, param_17, param_18);
+                float3 kernel_2[16] = param_18;
+                normalizationFactor = _1644;
+                for (int i_2 = 0; i_2 < 16; i_2++)
+                {
+                    float3 param_19 = float3(kernel_2[i_2].xy, adjustedPixelPositionShadowSpace.z);
+                    float3 param_20 = adjustedPixelPositionWS;
+                    float2 param_21 = depthRanges;
+                    float4x4 param_22 = inverseWorldToShadowCascadeUV;
+                    bool param_23 = isOrthographic;
+                    thickness += (kernel_2[i_2].z * o0S433C0_ShadowMapFilterBase_PerView_Lighting__SampleThickness(param_19, param_20, param_21, param_22, param_23));
+                }
+            }
+        }
+    }
+    return thickness / normalizationFactor;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__FilterThickness(float3 pixelPositionWS, float3 meshNormalWS, float2 depthRanges, float4x4 worldToShadowCascadeUV, float4x4 inverseWorldToShadowCascadeUV, bool isOrthographic)
+{
+    float3 adjustedPixelPositionWS;
+    float3 adjustedPixelPositionShadowSpace;
+    if (isOrthographic)
+    {
+        float param = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__GetFilterRadiusInPixels();
+        float3 param_1 = pixelPositionWS;
+        float3 param_2 = meshNormalWS;
+        float4x4 param_3 = worldToShadowCascadeUV;
+        float4x4 param_4 = inverseWorldToShadowCascadeUV;
+        float3 param_5;
+        float3 param_6;
+        o0S433C0_ShadowMapFilterBase_PerView_Lighting__CalculateAdjustedShadowSpacePixelPosition(param, param_1, param_2, param_3, param_4, param_5, param_6);
+        adjustedPixelPositionWS = param_5;
+        adjustedPixelPositionShadowSpace = param_6;
+    }
+    else
+    {
+        float param_7 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__GetFilterRadiusInPixels();
+        float3 param_8 = pixelPositionWS;
+        float3 param_9 = meshNormalWS;
+        float4x4 param_10 = worldToShadowCascadeUV;
+        float4x4 param_11 = inverseWorldToShadowCascadeUV;
+        float3 param_12;
+        float3 param_13;
+        o0S433C0_ShadowMapFilterBase_PerView_Lighting__CalculateAdjustedShadowSpacePixelPositionPerspective(param_7, param_8, param_9, param_10, param_11, param_12, param_13);
+        adjustedPixelPositionWS = param_12;
+        adjustedPixelPositionShadowSpace = param_13;
+    }
+    float3 param_14 = adjustedPixelPositionWS;
+    float3 param_15 = adjustedPixelPositionShadowSpace;
+    float2 param_16 = depthRanges;
+    float4x4 param_17 = inverseWorldToShadowCascadeUV;
+    bool param_18 = isOrthographic;
+    bool param_19 = false;
+    return o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleAndFilter(param_14, param_15, param_16, param_17, param_18, param_19);
 }
 
 float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeThicknessFromCascade(float3 pixelPositionWS, float3 meshNormalWS, int cascadeIndex, int lightIndex, bool isOrthographic)
@@ -500,7 +827,7 @@ float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeThicknessFromC
     float4x4 param_3 = o0S433C0_ShadowMapReceiverBase_WorldToShadowCascadeUV[arrayIndex];
     float4x4 param_4 = o0S433C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV[arrayIndex];
     bool param_5 = isOrthographic;
-    return o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__FilterThickness(param, param_1, param_2, param_3, param_4, param_5);
+    return o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__FilterThickness(param, param_1, param_2, param_3, param_4, param_5);
 }
 
 float3 o0S433C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeShadow(inout PS_STREAMS _streams, float3 position, int lightIndex)
@@ -750,9 +1077,9 @@ void o1S433C0_LightPoint_ProcessLight(inout PS_STREAMS _streams, LightPoint_Poin
     float3 param_1 = _streams.PositionWS_id8.xyz;
     float3 lightVectorNorm;
     float3 param_2 = lightVectorNorm;
-    float _686 = o1S433C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
+    float _1931 = o1S433C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
     lightVectorNorm = param_2;
-    float attenuation = _686;
+    float attenuation = _1931;
     _streams.lightPositionWS_id38 = light.PositionWS;
     _streams.lightColor_id40 = light.Color * attenuation;
     _streams.lightDirectionWS_id39 = lightVectorNorm;
@@ -785,8 +1112,8 @@ void o1S433C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int
     _streams.NdotL_id44 = max(dot(_streams.normalWS_id6, _streams.lightDirectionWS_id39), 9.9999997473787516355514526367188e-05f);
     float3 param_1 = _streams.PositionWS_id8.xyz;
     int param_2 = lightIndex;
-    float3 _602 = o1S433C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
-    _streams.shadowColor_id47 = _602;
+    float3 _1847 = o1S433C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
+    _streams.shadowColor_id47 = _1847;
     _streams.lightColorNdotL_id41 = ((_streams.lightColor_id40 * _streams.shadowColor_id47) * _streams.NdotL_id44) * _streams.lightDirectAmbientOcclusion_id45;
 }
 
@@ -856,9 +1183,9 @@ void o2S433C0_LightSpot_ProcessLight(inout PS_STREAMS _streams, LightSpot_SpotLi
     float3 param_1 = _streams.PositionWS_id8.xyz;
     float3 lightVectorNorm;
     float3 param_2 = lightVectorNorm;
-    float _969 = o2S433C0_LightSpot_ComputeAttenuation(param, param_1, param_2);
+    float _2213 = o2S433C0_LightSpot_ComputeAttenuation(param, param_1, param_2);
     lightVectorNorm = param_2;
-    float attenuation = _969;
+    float attenuation = _2213;
     _streams.lightColor_id40 = light.Color * attenuation;
     _streams.lightDirectionWS_id39 = lightVectorNorm;
 }
@@ -893,8 +1220,8 @@ void o2S433C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int
     _streams.NdotL_id44 = max(dot(_streams.normalWS_id6, _streams.lightDirectionWS_id39), 9.9999997473787516355514526367188e-05f);
     float3 param_1 = _streams.PositionWS_id8.xyz;
     int param_2 = lightIndex;
-    float3 _873 = o2S433C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
-    _streams.shadowColor_id47 = _873;
+    float3 _2117 = o2S433C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
+    _streams.shadowColor_id47 = _2117;
     _streams.lightColorNdotL_id41 = ((_streams.lightColor_id40 * _streams.shadowColor_id47) * _streams.NdotL_id44) * _streams.lightDirectAmbientOcclusion_id45;
 }
 

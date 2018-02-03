@@ -77,6 +77,9 @@
 @C    LightClustered_LightIndices => LightClustered.LightIndices.directLightGroups[1] [Stage=Pixel]
 @C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights.directLightGroups[2] [Stage=Pixel]
 @C    RoughnessCubeMapEnvironmentColor_CubeMap => RoughnessCubeMapEnvironmentColor.CubeMap.lightSpecularColor.environmentLights[1] [Stage=Pixel]
+@C    ShadowMapCommon_ShadowMapTexture => ShadowMap.Texture [Stage=Pixel]
+@C    Texturing_LinearBorderSampler => Texturing.LinearBorderSampler.directLightGroups[0] [Stage=Pixel]
+@C    Texturing_LinearClampCompareLessEqualSampler => Texturing.LinearClampCompareLessEqualSampler.directLightGroups[0] [Stage=Pixel]
 @C    Texturing_LinearSampler => Texturing.LinearSampler.lightSpecularColor.environmentLights[1] [Stage=Pixel]
 @C    MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT => MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT.environmentFunction.surfaces[1].layers[12].materialPixelStage [Stage=Pixel]
 @C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage=Pixel]
@@ -264,7 +267,7 @@ ConstantBuffers. Count=4
   Class=Color Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 
-ResourceBindings. Count=15
+ResourceBindings. Count=18
  Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
  Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
  Stage=Pixel KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
@@ -276,6 +279,9 @@ ResourceBindings. Count=15
  Stage=Pixel KeyName="LightClustered.LightIndices.directLightGroups[1]" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
  Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights.directLightGroups[2]" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
  Stage=Pixel KeyName="RoughnessCubeMapEnvironmentColor.CubeMap.lightSpecularColor.environmentLights[1]" RawName="RoughnessCubeMapEnvironmentColor_CubeMap" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureCube GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="ShadowMap.Texture" RawName="ShadowMapCommon_ShadowMapTexture" ResourceGroupName="PerView.Lighting" Class=ShaderResourceView Type=Texture2D GroupName="PerView.Lighting" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.LinearBorderSampler.directLightGroups[0]" RawName="Texturing_LinearBorderSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
+ Stage=Pixel KeyName="Texturing.LinearClampCompareLessEqualSampler.directLightGroups[0]" RawName="Texturing_LinearClampCompareLessEqualSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
  Stage=Pixel KeyName="Texturing.LinearSampler.lightSpecularColor.environmentLights[1]" RawName="Texturing_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
  Stage=Pixel KeyName="MaterialSpecularMicrofacetEnvironmentGGXLUT.EnvironmentLightingDFG_LUT.environmentFunction.surfaces[1].layers[12].materialPixelStage" RawName="MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUT" ResourceGroupName="PerMaterial" Class=ShaderResourceView Type=Texture2D GroupName="PerMaterial" LogicalGroup=""
  Stage=Pixel KeyName="Material.Sampler.i0" RawName="DynamicSampler_Sampler" ResourceGroupName="PerMaterial" Class=Sampler Type=Sampler GroupName="PerMaterial" LogicalGroup=""
@@ -287,5 +293,7 @@ InputAttributes. Count=4
  SemanticName="POSITION" SemanticIndex=0
  SemanticName="TEXCOORD" SemanticIndex=0
 
-SamplerStates. Count=1
+SamplerStates. Count=3
+ KeyName="Texturing.LinearBorderSampler.directLightGroups[0]" Filter=Linear Compare=Never AddressU=Border AddressV=Border AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
+ KeyName="Texturing.LinearClampCompareLessEqualSampler.directLightGroups[0]" Filter=ComparisonMinMagLinearMipPoint Compare=LessEqual AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)
  KeyName="Texturing.LinearSampler.lightSpecularColor.environmentLights[1]" Filter=Linear Compare=Never AddressU=Clamp AddressV=Clamp AddressW=Clamp MaxAnisotropy=16 MinMipLevel=-3.40282e+38 MaxMipLevel=3.40282e+38 MipMapLevelOfDetailBias=0 BorderColor=(0, 0, 0, 0)

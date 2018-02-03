@@ -153,6 +153,8 @@ uniform samplerBuffer LightClusteredPointGroup_PointLights;
 uniform usamplerBuffer LightClustered_LightIndices;
 uniform samplerBuffer LightClusteredSpotGroup_SpotLights;
 uniform sampler2D SPIRV_Cross_CombinedDynamicTexture_TextureDynamicSampler_Sampler;
+uniform sampler2DShadow SPIRV_Cross_CombinedShadowMapCommon_ShadowMapTextureTexturing_LinearClampCompareLessEqualSampler;
+uniform sampler2D SPIRV_Cross_CombinedShadowMapCommon_ShadowMapTextureTexturing_LinearBorderSampler;
 uniform sampler2D SPIRV_Cross_CombinedMaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUTTexturing_LinearSampler;
 
 layout(location = 0) in vec4 PS_IN_ShadingPosition;
@@ -164,6 +166,8 @@ layout(location = 5) in vec2 PS_IN_TexCoord;
 layout(location = 6) in vec4 PS_IN_ScreenPosition;
 layout(location = 7) in bool PS_IN_IsFrontFace;
 layout(location = 0) out vec4 PS_OUT_ColorTarget;
+
+float _1509;
 
 void NormalUpdate_GenerateNormal_PS()
 {
@@ -453,9 +457,147 @@ vec3 o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__GetShadowPositionOffse
     return normal * (((2.0 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize.x) * offsetScale) * normalOffsetScale);
 }
 
-float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__FilterShadow(vec2 position, float positionDepth)
+void o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__CalculatePCFKernelParameters(vec2 position, inout vec2 base_uv, out vec2 st)
 {
-    return 0.0;
+    vec2 uv = position * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureSize;
+    base_uv = floor(uv + vec2(0.5));
+    st = (uv + vec2(0.5)) - base_uv;
+    base_uv -= vec2(0.5);
+    base_uv *= PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get3x3FilterKernel(vec2 base_uv, vec2 st, inout vec3 kernel[4])
+{
+    vec2 uvW0 = vec2(3.0) - (st * 2.0);
+    vec2 uvW1 = vec2(1.0) + (st * 2.0);
+    vec2 uv0 = ((vec2(2.0) - st) / uvW0) - vec2(1.0);
+    vec2 uv1 = (st / uvW1) + vec2(1.0);
+    kernel[0] = vec3(base_uv + (uv0 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW0.y);
+    kernel[1] = vec3(base_uv + (vec2(uv1.x, uv0.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW0.y);
+    kernel[2] = vec3(base_uv + (vec2(uv0.x, uv1.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW1.y);
+    kernel[3] = vec3(base_uv + (uv1 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW1.y);
+    return 16.0;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleTextureAndCompare(vec2 position, float positionDepth)
+{
+    vec3 _1367 = vec3(position, positionDepth);
+    return textureLod(SPIRV_Cross_CombinedShadowMapCommon_ShadowMapTextureTexturing_LinearClampCompareLessEqualSampler, vec3(_1367.xy, _1367.z), 0.0);
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get5x5FilterKernel(vec2 base_uv, vec2 st, inout vec3 kernel[9])
+{
+    vec2 uvW0 = vec2(4.0) - (st * 3.0);
+    vec2 uvW1 = vec2(7.0);
+    vec2 uvW2 = vec2(1.0) + (st * 3.0);
+    vec2 uv0 = ((vec2(3.0) - (st * 2.0)) / uvW0) - vec2(2.0);
+    vec2 uv1 = (vec2(3.0) + st) / uvW1;
+    vec2 uv2 = (st / uvW2) + vec2(2.0);
+    kernel[0] = vec3(base_uv + (uv0 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW0.y);
+    kernel[1] = vec3(base_uv + (vec2(uv1.x, uv0.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW0.y);
+    kernel[2] = vec3(base_uv + (vec2(uv2.x, uv0.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW0.y);
+    kernel[3] = vec3(base_uv + (vec2(uv0.x, uv1.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW1.y);
+    kernel[4] = vec3(base_uv + (uv1 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW1.y);
+    kernel[5] = vec3(base_uv + (vec2(uv2.x, uv1.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW1.y);
+    kernel[6] = vec3(base_uv + (vec2(uv0.x, uv2.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW2.y);
+    kernel[7] = vec3(base_uv + (vec2(uv1.x, uv2.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW2.y);
+    kernel[8] = vec3(base_uv + (uv2 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW2.y);
+    return 144.0;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get7x7FilterKernel(vec2 base_uv, vec2 st, inout vec3 kernel[16])
+{
+    vec2 uvW0 = (st * 5.0) - vec2(6.0);
+    vec2 uvW1 = (st * 11.0) - vec2(28.0);
+    vec2 uvW2 = -((st * 11.0) + vec2(17.0));
+    vec2 uvW3 = -((st * 5.0) + vec2(1.0));
+    vec2 uv0 = (((st * 4.0) - vec2(5.0)) / uvW0) - vec2(3.0);
+    vec2 uv1 = (((st * 4.0) - vec2(16.0)) / uvW1) - vec2(1.0);
+    vec2 uv2 = ((-((st * 7.0) + vec2(5.0))) / uvW2) + vec2(1.0);
+    vec2 uv3 = ((-st) / uvW3) + vec2(3.0);
+    kernel[0] = vec3(base_uv + (uv0 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW0.y);
+    kernel[1] = vec3(base_uv + (vec2(uv1.x, uv0.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW0.y);
+    kernel[2] = vec3(base_uv + (vec2(uv2.x, uv0.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW0.y);
+    kernel[3] = vec3(base_uv + (vec2(uv3.x, uv0.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW3.x * uvW0.y);
+    kernel[4] = vec3(base_uv + (vec2(uv0.x, uv1.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW1.y);
+    kernel[5] = vec3(base_uv + (uv1 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW1.y);
+    kernel[6] = vec3(base_uv + (vec2(uv2.x, uv1.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW1.y);
+    kernel[7] = vec3(base_uv + (vec2(uv3.x, uv1.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW3.x * uvW1.y);
+    kernel[8] = vec3(base_uv + (vec2(uv0.x, uv2.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW2.y);
+    kernel[9] = vec3(base_uv + (vec2(uv1.x, uv2.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW2.y);
+    kernel[10] = vec3(base_uv + (uv2 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW2.y);
+    kernel[11] = vec3(base_uv + (vec2(uv3.x, uv2.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW3.x * uvW2.y);
+    kernel[12] = vec3(base_uv + (vec2(uv0.x, uv3.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW0.x * uvW3.y);
+    kernel[13] = vec3(base_uv + (vec2(uv1.x, uv3.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW1.x * uvW3.y);
+    kernel[14] = vec3(base_uv + (vec2(uv2.x, uv3.y) * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW2.x * uvW3.y);
+    kernel[15] = vec3(base_uv + (uv3 * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize), uvW3.x * uvW3.y);
+    return 2704.0;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__FilterShadow(vec2 position, float positionDepth)
+{
+    float shadow = 0.0;
+    vec2 param = position;
+    vec2 param_1;
+    vec2 param_2;
+    o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__CalculatePCFKernelParameters(param, param_1, param_2);
+    vec2 base_uv = param_1;
+    vec2 st = param_2;
+    if (false)
+    {
+        vec2 param_3 = base_uv;
+        vec2 param_4 = st;
+        vec3 param_5[4];
+        float _1411 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get3x3FilterKernel(param_3, param_4, param_5);
+        vec3 kernel[4] = param_5;
+        float normalizationFactor = _1411;
+        for (int i = 0; i < 4; i++)
+        {
+            vec2 param_6 = kernel[i].xy;
+            float param_7 = positionDepth;
+            shadow += (kernel[i].z * o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleTextureAndCompare(param_6, param_7));
+        }
+        shadow /= normalizationFactor;
+    }
+    else
+    {
+        if (true)
+        {
+            vec2 param_8 = base_uv;
+            vec2 param_9 = st;
+            vec3 param_10[9];
+            float _1441 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get5x5FilterKernel(param_8, param_9, param_10);
+            vec3 kernel_1[9] = param_10;
+            float normalizationFactor_1 = _1441;
+            for (int i_1 = 0; i_1 < 9; i_1++)
+            {
+                vec2 param_11 = kernel_1[i_1].xy;
+                float param_12 = positionDepth;
+                shadow += (kernel_1[i_1].z * o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleTextureAndCompare(param_11, param_12));
+            }
+            shadow /= normalizationFactor_1;
+        }
+        else
+        {
+            if (false)
+            {
+                vec2 param_13 = base_uv;
+                vec2 param_14 = st;
+                vec3 param_15[16];
+                float _1471 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get7x7FilterKernel(param_13, param_14, param_15);
+                vec3 kernel_2[16] = param_15;
+                float normalizationFactor_2 = _1471;
+                for (int i_2 = 0; i_2 < 16; i_2++)
+                {
+                    vec2 param_16 = kernel_2[i_2].xy;
+                    float param_17 = positionDepth;
+                    shadow += (kernel_2[i_2].z * o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleTextureAndCompare(param_16, param_17));
+                }
+                shadow /= normalizationFactor_2;
+            }
+        }
+    }
+    return shadow;
 }
 
 float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeShadowFromCascade(vec3 shadowPositionWS, int cascadeIndex, int lightIndex)
@@ -466,12 +608,196 @@ float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeShadowFromCasc
     shadowPosition = vec4(_476.x, _476.y, _476.z, shadowPosition.w);
     vec2 param = shadowPosition.xy;
     float param_1 = shadowPosition.z;
-    return o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__FilterShadow(param, param_1);
+    return o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__FilterShadow(param, param_1);
 }
 
-float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__FilterThickness(vec3 pixelPositionWS, vec3 meshNormalWS, vec2 depthRanges, mat4 worldToShadowCascadeUV, mat4 inverseWorldToShadowCascadeUV, bool isOrthographic)
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__GetFilterRadiusInPixels()
 {
-    return 0.0;
+    if (false)
+    {
+        return 2.5;
+    }
+    else
+    {
+        if (true)
+        {
+            return 3.5;
+        }
+        else
+        {
+            return 4.5;
+        }
+    }
+}
+
+vec4 o0S433C0_Math_Project(vec4 vec, mat4 mat)
+{
+    vec4 vecProjected = mat * vec;
+    vec3 _683 = vecProjected.xyz / vec3(vecProjected.w);
+    vecProjected = vec4(_683.x, _683.y, _683.z, vecProjected.w);
+    return vecProjected;
+}
+
+void o0S433C0_ShadowMapFilterBase_PerView_Lighting__CalculateAdjustedShadowSpacePixelPosition(float filterRadiusInPixels, vec3 pixelPositionWS, vec3 meshNormalWS, mat4 worldToShadowCascadeUV, mat4 inverseWorldToShadowCascadeUV, inout vec3 adjustedPixelPositionWS, out vec3 adjustedPixelPositionShadowSpace)
+{
+    vec4 param = vec4(0.0, 0.0, 0.0, 1.0);
+    mat4 param_1 = inverseWorldToShadowCascadeUV;
+    vec4 bottomLeftTexelWS = o0S433C0_Math_Project(param, param_1);
+    vec4 param_2 = vec4(PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize * filterRadiusInPixels, 0.0, 1.0);
+    mat4 param_3 = inverseWorldToShadowCascadeUV;
+    vec4 topRightTexelWS = o0S433C0_Math_Project(param_2, param_3);
+    float texelDiagonalLength = distance(topRightTexelWS.xyz, bottomLeftTexelWS.xyz);
+    vec3 positionOffsetWS = meshNormalWS * texelDiagonalLength;
+    adjustedPixelPositionWS = pixelPositionWS - positionOffsetWS;
+    vec4 param_4 = vec4(adjustedPixelPositionWS, 1.0);
+    mat4 param_5 = worldToShadowCascadeUV;
+    vec4 shadowMapCoordinate = o0S433C0_Math_Project(param_4, param_5);
+    adjustedPixelPositionShadowSpace = shadowMapCoordinate.xyz;
+}
+
+void o0S433C0_ShadowMapFilterBase_PerView_Lighting__CalculateAdjustedShadowSpacePixelPositionPerspective(float filterRadiusInPixels, vec3 pixelPositionWS, vec3 meshNormalWS, mat4 worldToShadowCascadeUV, mat4 inverseWorldToShadowCascadeUV, inout vec3 adjustedPixelPositionWS, out vec3 adjustedPixelPositionShadowSpace)
+{
+    vec4 param = vec4(pixelPositionWS, 1.0);
+    mat4 param_1 = worldToShadowCascadeUV;
+    vec4 shadowMapCoordinate = o0S433C0_Math_Project(param, param_1);
+    vec4 param_2 = vec4(shadowMapCoordinate.xy + (PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize * filterRadiusInPixels), shadowMapCoordinate.z, 1.0);
+    mat4 param_3 = inverseWorldToShadowCascadeUV;
+    vec4 topRightTexelWS = o0S433C0_Math_Project(param_2, param_3);
+    float texelDiagonalLength = distance(topRightTexelWS.xyz, pixelPositionWS);
+    vec3 positionOffsetWS = meshNormalWS * texelDiagonalLength;
+    adjustedPixelPositionWS = pixelPositionWS - positionOffsetWS;
+    vec4 param_4 = vec4(adjustedPixelPositionWS, 1.0);
+    mat4 param_5 = worldToShadowCascadeUV;
+    vec4 adjustedShadowMapCoordinate = o0S433C0_Math_Project(param_4, param_5);
+    adjustedPixelPositionShadowSpace = adjustedShadowMapCoordinate.xyz;
+}
+
+float o0S433C0_ShadowMapFilterBase_PerView_Lighting__SampleThickness(vec3 shadowSpaceCoordinate, vec3 pixelPositionWS, vec2 depthRanges, mat4 inverseWorldToShadowCascadeUV, bool isOrthographic)
+{
+    float shadowMapDepth = textureLod(SPIRV_Cross_CombinedShadowMapCommon_ShadowMapTextureTexturing_LinearBorderSampler, shadowSpaceCoordinate.xy, 0.0).x;
+    float thickness;
+    if (isOrthographic)
+    {
+        thickness = abs(shadowMapDepth - shadowSpaceCoordinate.z) * depthRanges.y;
+    }
+    else
+    {
+        vec4 param = vec4(shadowSpaceCoordinate.xy, shadowMapDepth, 1.0);
+        mat4 param_1 = inverseWorldToShadowCascadeUV;
+        vec4 shadowmapPositionWorldSpace = o0S433C0_Math_Project(param, param_1);
+        thickness = distance(shadowmapPositionWorldSpace.xyz, pixelPositionWS);
+    }
+    return thickness;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleAndFilter(vec3 adjustedPixelPositionWS, vec3 adjustedPixelPositionShadowSpace, vec2 depthRanges, mat4 inverseWorldToShadowCascadeUV, bool isOrthographic, bool isDualParaboloid)
+{
+    vec2 uv = adjustedPixelPositionShadowSpace.xy * PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureSize;
+    vec2 base_uv = floor(uv + vec2(0.5));
+    vec2 st = (uv + vec2(0.5)) - base_uv;
+    base_uv *= PerView_Lighting_var.o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize;
+    float thickness = 0.0;
+    float normalizationFactor = 1.0;
+    if (false)
+    {
+        vec2 param = base_uv;
+        vec2 param_1 = st;
+        vec3 param_2[4];
+        float _1574 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get3x3FilterKernel(param, param_1, param_2);
+        vec3 kernel[4] = param_2;
+        normalizationFactor = _1574;
+        for (int i = 0; i < 4; i++)
+        {
+            vec3 param_3 = vec3(kernel[i].xy, adjustedPixelPositionShadowSpace.z);
+            vec3 param_4 = adjustedPixelPositionWS;
+            vec2 param_5 = depthRanges;
+            mat4 param_6 = inverseWorldToShadowCascadeUV;
+            bool param_7 = isOrthographic;
+            thickness += (kernel[i].z * o0S433C0_ShadowMapFilterBase_PerView_Lighting__SampleThickness(param_3, param_4, param_5, param_6, param_7));
+        }
+    }
+    else
+    {
+        if (true)
+        {
+            vec2 param_8 = base_uv;
+            vec2 param_9 = st;
+            vec3 param_10[9];
+            float _1609 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get5x5FilterKernel(param_8, param_9, param_10);
+            vec3 kernel_1[9] = param_10;
+            normalizationFactor = _1609;
+            for (int i_1 = 0; i_1 < 9; i_1++)
+            {
+                vec3 param_11 = vec3(kernel_1[i_1].xy, adjustedPixelPositionShadowSpace.z);
+                vec3 param_12 = adjustedPixelPositionWS;
+                vec2 param_13 = depthRanges;
+                mat4 param_14 = inverseWorldToShadowCascadeUV;
+                bool param_15 = isOrthographic;
+                thickness += (kernel_1[i_1].z * o0S433C0_ShadowMapFilterBase_PerView_Lighting__SampleThickness(param_11, param_12, param_13, param_14, param_15));
+            }
+        }
+        else
+        {
+            if (false)
+            {
+                vec2 param_16 = base_uv;
+                vec2 param_17 = st;
+                vec3 param_18[16];
+                float _1644 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__Get7x7FilterKernel(param_16, param_17, param_18);
+                vec3 kernel_2[16] = param_18;
+                normalizationFactor = _1644;
+                for (int i_2 = 0; i_2 < 16; i_2++)
+                {
+                    vec3 param_19 = vec3(kernel_2[i_2].xy, adjustedPixelPositionShadowSpace.z);
+                    vec3 param_20 = adjustedPixelPositionWS;
+                    vec2 param_21 = depthRanges;
+                    mat4 param_22 = inverseWorldToShadowCascadeUV;
+                    bool param_23 = isOrthographic;
+                    thickness += (kernel_2[i_2].z * o0S433C0_ShadowMapFilterBase_PerView_Lighting__SampleThickness(param_19, param_20, param_21, param_22, param_23));
+                }
+            }
+        }
+    }
+    return thickness / normalizationFactor;
+}
+
+float o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__FilterThickness(vec3 pixelPositionWS, vec3 meshNormalWS, vec2 depthRanges, mat4 worldToShadowCascadeUV, mat4 inverseWorldToShadowCascadeUV, bool isOrthographic)
+{
+    vec3 adjustedPixelPositionWS;
+    vec3 adjustedPixelPositionShadowSpace;
+    if (isOrthographic)
+    {
+        float param = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__GetFilterRadiusInPixels();
+        vec3 param_1 = pixelPositionWS;
+        vec3 param_2 = meshNormalWS;
+        mat4 param_3 = worldToShadowCascadeUV;
+        mat4 param_4 = inverseWorldToShadowCascadeUV;
+        vec3 param_5;
+        vec3 param_6;
+        o0S433C0_ShadowMapFilterBase_PerView_Lighting__CalculateAdjustedShadowSpacePixelPosition(param, param_1, param_2, param_3, param_4, param_5, param_6);
+        adjustedPixelPositionWS = param_5;
+        adjustedPixelPositionShadowSpace = param_6;
+    }
+    else
+    {
+        float param_7 = o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__GetFilterRadiusInPixels();
+        vec3 param_8 = pixelPositionWS;
+        vec3 param_9 = meshNormalWS;
+        mat4 param_10 = worldToShadowCascadeUV;
+        mat4 param_11 = inverseWorldToShadowCascadeUV;
+        vec3 param_12;
+        vec3 param_13;
+        o0S433C0_ShadowMapFilterBase_PerView_Lighting__CalculateAdjustedShadowSpacePixelPositionPerspective(param_7, param_8, param_9, param_10, param_11, param_12, param_13);
+        adjustedPixelPositionWS = param_12;
+        adjustedPixelPositionShadowSpace = param_13;
+    }
+    vec3 param_14 = adjustedPixelPositionWS;
+    vec3 param_15 = adjustedPixelPositionShadowSpace;
+    vec2 param_16 = depthRanges;
+    mat4 param_17 = inverseWorldToShadowCascadeUV;
+    bool param_18 = isOrthographic;
+    bool param_19 = false;
+    return o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__SampleAndFilter(param_14, param_15, param_16, param_17, param_18, param_19);
 }
 
 float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeThicknessFromCascade(vec3 pixelPositionWS, vec3 meshNormalWS, int cascadeIndex, int lightIndex, bool isOrthographic)
@@ -483,7 +809,7 @@ float o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeThicknessFromC
     mat4 param_3 = PerView_Lighting_var.o0S433C0_ShadowMapReceiverBase_WorldToShadowCascadeUV[arrayIndex];
     mat4 param_4 = PerView_Lighting_var.o0S433C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV[arrayIndex];
     bool param_5 = isOrthographic;
-    return o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__FilterThickness(param, param_1, param_2, param_3, param_4, param_5);
+    return o0S433C0_ShadowMapFilterPcf_PerView_Lighting_5__FilterThickness(param, param_1, param_2, param_3, param_4, param_5);
 }
 
 vec3 o0S433C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeShadow(inout PS_STREAMS _streams, vec3 position, int lightIndex)
@@ -733,9 +1059,9 @@ void o1S433C0_LightPoint_ProcessLight(inout PS_STREAMS _streams, LightPoint_Poin
     vec3 param_1 = _streams.PositionWS_id8.xyz;
     vec3 lightVectorNorm;
     vec3 param_2 = lightVectorNorm;
-    float _683 = o1S433C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
+    float _1930 = o1S433C0_LightPoint_ComputeAttenuation(param, param_1, param_2);
     lightVectorNorm = param_2;
-    float attenuation = _683;
+    float attenuation = _1930;
     _streams.lightPositionWS_id38 = light.PositionWS;
     _streams.lightColor_id40 = light.Color * attenuation;
     _streams.lightDirectionWS_id39 = lightVectorNorm;
@@ -768,8 +1094,8 @@ void o1S433C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int
     _streams.NdotL_id44 = max(dot(_streams.normalWS_id6, _streams.lightDirectionWS_id39), 9.9999997473787516355514526367188e-05);
     vec3 param_1 = _streams.PositionWS_id8.xyz;
     int param_2 = lightIndex;
-    vec3 _599 = o1S433C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
-    _streams.shadowColor_id47 = _599;
+    vec3 _1846 = o1S433C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
+    _streams.shadowColor_id47 = _1846;
     _streams.lightColorNdotL_id41 = ((_streams.lightColor_id40 * _streams.shadowColor_id47) * _streams.NdotL_id44) * _streams.lightDirectAmbientOcclusion_id45;
 }
 
@@ -839,9 +1165,9 @@ void o2S433C0_LightSpot_ProcessLight(inout PS_STREAMS _streams, LightSpot_SpotLi
     vec3 param_1 = _streams.PositionWS_id8.xyz;
     vec3 lightVectorNorm;
     vec3 param_2 = lightVectorNorm;
-    float _966 = o2S433C0_LightSpot_ComputeAttenuation(param, param_1, param_2);
+    float _2212 = o2S433C0_LightSpot_ComputeAttenuation(param, param_1, param_2);
     lightVectorNorm = param_2;
-    float attenuation = _966;
+    float attenuation = _2212;
     _streams.lightColor_id40 = light.Color * attenuation;
     _streams.lightDirectionWS_id39 = lightVectorNorm;
 }
@@ -876,8 +1202,8 @@ void o2S433C0_DirectLightGroup_PrepareDirectLight(inout PS_STREAMS _streams, int
     _streams.NdotL_id44 = max(dot(_streams.normalWS_id6, _streams.lightDirectionWS_id39), 9.9999997473787516355514526367188e-05);
     vec3 param_1 = _streams.PositionWS_id8.xyz;
     int param_2 = lightIndex;
-    vec3 _870 = o2S433C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
-    _streams.shadowColor_id47 = _870;
+    vec3 _2116 = o2S433C0_ShadowGroup_ComputeShadow(_streams, param_1, param_2);
+    _streams.shadowColor_id47 = _2116;
     _streams.lightColorNdotL_id41 = ((_streams.lightColor_id40 * _streams.shadowColor_id47) * _streams.NdotL_id44) * _streams.lightDirectAmbientOcclusion_id45;
 }
 
