@@ -48,6 +48,14 @@ layout(std140) uniform PerView
     float o1S437C0_Camera_AspectRatio;
     vec4 o0S437C0_ShadowMapReceiverDirectional__padding_PerView_Default;
     float o0S437C0_ShadowMapReceiverDirectional_CascadeDepthSplits[4];
+    layout(row_major) mat4 o0S437C0_ShadowMapReceiverBase_WorldToShadowCascadeUV[4];
+    layout(row_major) mat4 o0S437C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV[4];
+    layout(row_major) mat4 o0S437C0_ShadowMapReceiverBase_ViewMatrices[4];
+    vec2 o0S437C0_ShadowMapReceiverBase_DepthRanges[4];
+    float o0S437C0_ShadowMapReceiverBase_DepthBiases[1];
+    float o0S437C0_ShadowMapReceiverBase_OffsetScales[1];
+    vec2 o0S437C0_ShadowMapCommon_ShadowMapTextureSize;
+    vec2 o0S437C0_ShadowMapCommon_ShadowMapTextureTexelSize;
     LightDirectional_DirectionalLightData o0S437C0_LightDirectionalGroup_Lights[1];
     int o0S437C0_DirectLightGroupPerView_LightCount;
     float o1S437C0_LightClustered_ClusterDepthScale;

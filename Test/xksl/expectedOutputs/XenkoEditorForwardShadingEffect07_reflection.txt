@@ -10,7 +10,7 @@
 @C    Transformation_WorldViewProjection => Transformation.WorldViewProjection
 @C    Transformation_WorldScale => Transformation.WorldScale
 @C    Transformation_EyeMS => Transformation.EyeMS
- cbuffer PerView [size: 640]
+ cbuffer PerView [size: 1520]
 @C    Transformation_View => Transformation.View
 @C    Transformation_ViewInverse => Transformation.ViewInverse
 @C    Transformation_Projection => Transformation.Projection
@@ -25,6 +25,14 @@
 @C    o1S437C0_Camera_AspectRatio => Camera.AspectRatio
 @C    o0S437C0_ShadowMapReceiverDirectional__padding_PerView_Default => _padding_PerView_Default
 @C    o0S437C0_ShadowMapReceiverDirectional_CascadeDepthSplits => ShadowMapReceiverDirectional.CascadeDepthSplits.directLightGroups[0]
+@C    o0S437C0_ShadowMapReceiverBase_WorldToShadowCascadeUV => ShadowMapReceiverBase.WorldToShadowCascadeUV.directLightGroups[0]
+@C    o0S437C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV => ShadowMapReceiverBase.InverseWorldToShadowCascadeUV.directLightGroups[0]
+@C    o0S437C0_ShadowMapReceiverBase_ViewMatrices => ShadowMapReceiverBase.ViewMatrices.directLightGroups[0]
+@C    o0S437C0_ShadowMapReceiverBase_DepthRanges => ShadowMapReceiverBase.DepthRanges.directLightGroups[0]
+@C    o0S437C0_ShadowMapReceiverBase_DepthBiases => ShadowMapReceiverBase.DepthBiases.directLightGroups[0]
+@C    o0S437C0_ShadowMapReceiverBase_OffsetScales => ShadowMapReceiverBase.OffsetScales.directLightGroups[0]
+@C    o0S437C0_ShadowMapCommon_ShadowMapTextureSize => ShadowMap.TextureSize
+@C    o0S437C0_ShadowMapCommon_ShadowMapTextureTexelSize => ShadowMap.TextureTexelSize
 @C    o0S437C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups[0]
 @C    o0S437C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
 @C    o1S437C0_LightClustered_ClusterDepthScale => LightClustered.ClusterDepthScale
@@ -34,15 +42,6 @@
 @C    o6S421C0_LightSkyboxShader_SkyMatrix => LightSkyboxShader.SkyMatrix.environmentLights[1]
 @C    o6S421C0_LightSkyboxShader_Intensity => LightSkyboxShader.Intensity.environmentLights[1]
 @C    o6S421C0_LightSkyboxShader__padding_PerView_Lighting => _padding_PerView_Lighting
- cbuffer PerView.Lighting [size: 880]
-@C    o0S437C0_ShadowMapReceiverBase_WorldToShadowCascadeUV => ShadowMapReceiverBase.WorldToShadowCascadeUV.directLightGroups[0]
-@C    o0S437C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV => ShadowMapReceiverBase.InverseWorldToShadowCascadeUV.directLightGroups[0]
-@C    o0S437C0_ShadowMapReceiverBase_ViewMatrices => ShadowMapReceiverBase.ViewMatrices.directLightGroups[0]
-@C    o0S437C0_ShadowMapReceiverBase_DepthRanges => ShadowMapReceiverBase.DepthRanges.directLightGroups[0]
-@C    o0S437C0_ShadowMapReceiverBase_DepthBiases => ShadowMapReceiverBase.DepthBiases.directLightGroups[0]
-@C    o0S437C0_ShadowMapReceiverBase_OffsetScales => ShadowMapReceiverBase.OffsetScales.directLightGroups[0]
-@C    o0S437C0_ShadowMapCommon_ShadowMapTextureSize => ShadowMap.TextureSize
-@C    o0S437C0_ShadowMapCommon_ShadowMapTextureTexelSize => ShadowMap.TextureTexelSize
  cbuffer PerMaterial [size: 48]
 @C    o23S251C0_o15S2C0_o14S2C0_ComputeColorConstantFloatLink_constantFloat => Material.MetalnessValue
 @C    o23S251C0_o13S2C0_o12S2C0_ComputeColorConstantFloatLink_constantFloat => Material.GlossinessValue
@@ -56,13 +55,12 @@
 @C    PerDraw => PerDraw [Stage=Vertex]
 @C    PerView => PerView [Stage=Vertex]
 @C    PerView => PerView [Stage=Pixel]
-@C    PerView_Lighting => PerView.Lighting [Stage=Pixel]
 @C    PerMaterial => PerMaterial [Stage=Pixel]
+@C    ShadowMapCommon_ShadowMapTexture => ShadowMap.Texture [Stage=Pixel]
 @C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights.directLightGroups[1] [Stage=Pixel]
 @C    LightClustered_LightClusters => LightClustered.LightClusters.directLightGroups[1] [Stage=Pixel]
 @C    LightClustered_LightIndices => LightClustered.LightIndices.directLightGroups[1] [Stage=Pixel]
 @C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights.directLightGroups[2] [Stage=Pixel]
-@C    ShadowMapCommon_ShadowMapTexture => ShadowMap.Texture [Stage=Pixel]
 @C    Texturing_LinearBorderSampler => Texturing.LinearBorderSampler.directLightGroups[0] [Stage=Pixel]
 @C    Texturing_LinearClampCompareLessEqualSampler => Texturing.LinearClampCompareLessEqualSampler.directLightGroups[0] [Stage=Pixel]
 @C    Texturing_LinearSampler => Texturing.LinearSampler.environmentFunction.surfaces[1].layers[3].materialPixelStage [Stage=Pixel]
@@ -70,7 +68,7 @@
 @C    DynamicSampler_Sampler => Material.Sampler.i0 [Stage=Pixel]
 @C    DynamicTexture_Texture => Material.DiffuseMap [Stage=Pixel]
 
-ConstantBuffers. Count=4
+ConstantBuffers. Count=3
  cbuffer: Name="PerDraw" Size=416 MembersCount=8
   KeyName="Transformation.World" RawName="Transformation_World" LogicalGroup="" Offset=0
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
@@ -96,7 +94,7 @@ ConstantBuffers. Count=4
   KeyName="Transformation.EyeMS" RawName="Transformation_EyeMS" LogicalGroup="" Offset=400
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
- cbuffer: Name="PerView" Size=640 MembersCount=23
+ cbuffer: Name="PerView" Size=1520 MembersCount=31
   KeyName="Transformation.View" RawName="Transformation_View" LogicalGroup="" Offset=0
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
@@ -139,7 +137,31 @@ ConstantBuffers. Count=4
   KeyName="ShadowMapReceiverDirectional.CascadeDepthSplits.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverDirectional_CascadeDepthSplits" LogicalGroup="Lighting" Offset=400
   Class=Scalar Type=Float Size=64 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=4 Rows=1 Columns=1
 
-  KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S437C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=464
+  KeyName="ShadowMapReceiverBase.WorldToShadowCascadeUV.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_WorldToShadowCascadeUV" LogicalGroup="Lighting" Offset=464
+  Class=MatrixRows Type=Float Size=256 Alignment=16 ArrayStride=64 MatrixStride=16 ArrayElements=4 Rows=4 Columns=4
+
+  KeyName="ShadowMapReceiverBase.InverseWorldToShadowCascadeUV.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV" LogicalGroup="Lighting" Offset=720
+  Class=MatrixRows Type=Float Size=256 Alignment=16 ArrayStride=64 MatrixStride=16 ArrayElements=4 Rows=4 Columns=4
+
+  KeyName="ShadowMapReceiverBase.ViewMatrices.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_ViewMatrices" LogicalGroup="Lighting" Offset=976
+  Class=MatrixRows Type=Float Size=256 Alignment=16 ArrayStride=64 MatrixStride=16 ArrayElements=4 Rows=4 Columns=4
+
+  KeyName="ShadowMapReceiverBase.DepthRanges.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_DepthRanges" LogicalGroup="Lighting" Offset=1232
+  Class=Vector Type=Float Size=64 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=4 Rows=1 Columns=2
+
+  KeyName="ShadowMapReceiverBase.DepthBiases.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_DepthBiases" LogicalGroup="Lighting" Offset=1296
+  Class=Scalar Type=Float Size=16 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=1 Rows=1 Columns=1
+
+  KeyName="ShadowMapReceiverBase.OffsetScales.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_OffsetScales" LogicalGroup="Lighting" Offset=1312
+  Class=Scalar Type=Float Size=16 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=1 Rows=1 Columns=1
+
+  KeyName="ShadowMap.TextureSize" RawName="o0S437C0_ShadowMapCommon_ShadowMapTextureSize" LogicalGroup="Lighting" Offset=1328
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="ShadowMap.TextureTexelSize" RawName="o0S437C0_ShadowMapCommon_ShadowMapTextureTexelSize" LogicalGroup="Lighting" Offset=1336
+  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
+
+  KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S437C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=1344
   Class=Struct Type=Void Size=32 Alignment=16 ArrayStride=32 MatrixStride=0 ArrayElements=1 Rows=1 Columns=1
    CountMembers=2
    Name="DirectionWS" Offset=0
@@ -147,54 +169,29 @@ ConstantBuffers. Count=4
    Name="Color" Offset=16
    Class=Vector Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
-  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0]" RawName="o0S437C0_DirectLightGroupPerView_LightCount" LogicalGroup="Lighting" Offset=496
+  KeyName="DirectLightGroupPerView.LightCount.directLightGroups[0]" RawName="o0S437C0_DirectLightGroupPerView_LightCount" LogicalGroup="Lighting" Offset=1376
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="LightClustered.ClusterDepthScale" RawName="o1S437C0_LightClustered_ClusterDepthScale" LogicalGroup="Lighting" Offset=500
+  KeyName="LightClustered.ClusterDepthScale" RawName="o1S437C0_LightClustered_ClusterDepthScale" LogicalGroup="Lighting" Offset=1380
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="LightClustered.ClusterDepthBias" RawName="o1S437C0_LightClustered_ClusterDepthBias" LogicalGroup="Lighting" Offset=504
+  KeyName="LightClustered.ClusterDepthBias" RawName="o1S437C0_LightClustered_ClusterDepthBias" LogicalGroup="Lighting" Offset=1384
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="LightClustered.ClusterStride" RawName="o1S437C0_LightClustered_ClusterStride" LogicalGroup="Lighting" Offset=512
+  KeyName="LightClustered.ClusterStride" RawName="o1S437C0_LightClustered_ClusterStride" LogicalGroup="Lighting" Offset=1392
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
-  KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0]" RawName="o3S421C0_LightSimpleAmbient_AmbientLight" LogicalGroup="Lighting" Offset=528
+  KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0]" RawName="o3S421C0_LightSimpleAmbient_AmbientLight" LogicalGroup="Lighting" Offset=1408
   Class=Color Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
-  KeyName="LightSkyboxShader.SkyMatrix.environmentLights[1]" RawName="o6S421C0_LightSkyboxShader_SkyMatrix" LogicalGroup="Lighting" Offset=544
+  KeyName="LightSkyboxShader.SkyMatrix.environmentLights[1]" RawName="o6S421C0_LightSkyboxShader_SkyMatrix" LogicalGroup="Lighting" Offset=1424
   Class=MatrixRows Type=Float Size=64 Alignment=16 ArrayStride=0 MatrixStride=16 ArrayElements=0 Rows=4 Columns=4
 
-  KeyName="LightSkyboxShader.Intensity.environmentLights[1]" RawName="o6S421C0_LightSkyboxShader_Intensity" LogicalGroup="Lighting" Offset=608
+  KeyName="LightSkyboxShader.Intensity.environmentLights[1]" RawName="o6S421C0_LightSkyboxShader_Intensity" LogicalGroup="Lighting" Offset=1488
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="_padding_PerView_Lighting" RawName="o6S421C0_LightSkyboxShader__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=624
+  KeyName="_padding_PerView_Lighting" RawName="o6S421C0_LightSkyboxShader__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=1504
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
-
- cbuffer: Name="PerView.Lighting" Size=880 MembersCount=8
-  KeyName="ShadowMapReceiverBase.WorldToShadowCascadeUV.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_WorldToShadowCascadeUV" LogicalGroup="" Offset=0
-  Class=MatrixRows Type=Float Size=256 Alignment=16 ArrayStride=64 MatrixStride=16 ArrayElements=4 Rows=4 Columns=4
-
-  KeyName="ShadowMapReceiverBase.InverseWorldToShadowCascadeUV.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV" LogicalGroup="" Offset=256
-  Class=MatrixRows Type=Float Size=256 Alignment=16 ArrayStride=64 MatrixStride=16 ArrayElements=4 Rows=4 Columns=4
-
-  KeyName="ShadowMapReceiverBase.ViewMatrices.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_ViewMatrices" LogicalGroup="" Offset=512
-  Class=MatrixRows Type=Float Size=256 Alignment=16 ArrayStride=64 MatrixStride=16 ArrayElements=4 Rows=4 Columns=4
-
-  KeyName="ShadowMapReceiverBase.DepthRanges.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_DepthRanges" LogicalGroup="" Offset=768
-  Class=Vector Type=Float Size=64 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=4 Rows=1 Columns=2
-
-  KeyName="ShadowMapReceiverBase.DepthBiases.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_DepthBiases" LogicalGroup="" Offset=832
-  Class=Scalar Type=Float Size=16 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=1 Rows=1 Columns=1
-
-  KeyName="ShadowMapReceiverBase.OffsetScales.directLightGroups[0]" RawName="o0S437C0_ShadowMapReceiverBase_OffsetScales" LogicalGroup="" Offset=848
-  Class=Scalar Type=Float Size=16 Alignment=16 ArrayStride=16 MatrixStride=0 ArrayElements=1 Rows=1 Columns=1
-
-  KeyName="ShadowMap.TextureSize" RawName="o0S437C0_ShadowMapCommon_ShadowMapTextureSize" LogicalGroup="" Offset=864
-  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
-
-  KeyName="ShadowMap.TextureTexelSize" RawName="o0S437C0_ShadowMapCommon_ShadowMapTextureTexelSize" LogicalGroup="" Offset=872
-  Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
  cbuffer: Name="PerMaterial" Size=48 MembersCount=5
   KeyName="Material.MetalnessValue" RawName="o23S251C0_o15S2C0_o14S2C0_ComputeColorConstantFloatLink_constantFloat" LogicalGroup="" Offset=0
@@ -213,17 +210,16 @@ ConstantBuffers. Count=4
   Class=Vector Type=Float Size=8 Alignment=8 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=2
 
 
-ResourceBindings. Count=16
+ResourceBindings. Count=15
  Stage=Vertex KeyName="PerDraw" RawName="PerDraw" ResourceGroupName="PerDraw" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerDraw" LogicalGroup=""
  Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
  Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
- Stage=Pixel KeyName="PerView.Lighting" RawName="PerView_Lighting" ResourceGroupName="PerView_Lighting" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView_Lighting" LogicalGroup=""
  Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
+ Stage=Pixel KeyName="ShadowMap.Texture" RawName="ShadowMapCommon_ShadowMapTexture" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture2D GroupName="PerView" LogicalGroup="Lighting"
  Stage=Pixel KeyName="LightClusteredPointGroup.PointLights.directLightGroups[1]" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
  Stage=Pixel KeyName="LightClustered.LightClusters.directLightGroups[1]" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D GroupName="PerView" LogicalGroup="Lighting"
  Stage=Pixel KeyName="LightClustered.LightIndices.directLightGroups[1]" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
  Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights.directLightGroups[2]" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
- Stage=Pixel KeyName="ShadowMap.Texture" RawName="ShadowMapCommon_ShadowMapTexture" ResourceGroupName="PerView.Lighting" Class=ShaderResourceView Type=Texture2D GroupName="PerView.Lighting" LogicalGroup=""
  Stage=Pixel KeyName="Texturing.LinearBorderSampler.directLightGroups[0]" RawName="Texturing_LinearBorderSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
  Stage=Pixel KeyName="Texturing.LinearClampCompareLessEqualSampler.directLightGroups[0]" RawName="Texturing_LinearClampCompareLessEqualSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""
  Stage=Pixel KeyName="Texturing.LinearSampler.environmentFunction.surfaces[1].layers[3].materialPixelStage" RawName="Texturing_LinearSampler" ResourceGroupName="" Class=Sampler Type=Sampler GroupName="" LogicalGroup=""

@@ -103,6 +103,14 @@ cbuffer PerView
     float o1S433C0_Camera_AspectRatio;
     float4 o0S433C0_ShadowMapReceiverDirectional__padding_PerView_Default;
     float o0S433C0_ShadowMapReceiverDirectional_CascadeDepthSplits[4];
+    column_major float4x4 o0S433C0_ShadowMapReceiverBase_WorldToShadowCascadeUV[4];
+    column_major float4x4 o0S433C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV[4];
+    column_major float4x4 o0S433C0_ShadowMapReceiverBase_ViewMatrices[4];
+    float2 o0S433C0_ShadowMapReceiverBase_DepthRanges[4];
+    float o0S433C0_ShadowMapReceiverBase_DepthBiases[1];
+    float o0S433C0_ShadowMapReceiverBase_OffsetScales[1];
+    float2 o0S433C0_ShadowMapCommon_ShadowMapTextureSize;
+    float2 o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize;
     LightDirectional_DirectionalLightData o0S433C0_LightDirectionalGroup_Lights[1];
     int o0S433C0_DirectLightGroupPerView_LightCount;
     float o1S433C0_LightClustered_ClusterDepthScale;
@@ -114,17 +122,6 @@ cbuffer PerView
     float o6S417C0_o5S5C1_RoughnessCubeMapEnvironmentColor_MipCount;
     float3 o6S417C0_o4S5C0_SphericalHarmonicsEnvironmentColor_SphericalColors[9];
     float4 o6S417C0_o4S5C0_SphericalHarmonicsEnvironmentColor__padding_PerView_Lighting;
-};
-cbuffer PerView_Lighting
-{
-    column_major float4x4 o0S433C0_ShadowMapReceiverBase_WorldToShadowCascadeUV[4];
-    column_major float4x4 o0S433C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV[4];
-    column_major float4x4 o0S433C0_ShadowMapReceiverBase_ViewMatrices[4];
-    float2 o0S433C0_ShadowMapReceiverBase_DepthRanges[4];
-    float o0S433C0_ShadowMapReceiverBase_DepthBiases[1];
-    float o0S433C0_ShadowMapReceiverBase_OffsetScales[1];
-    float2 o0S433C0_ShadowMapCommon_ShadowMapTextureSize;
-    float2 o0S433C0_ShadowMapCommon_ShadowMapTextureTexelSize;
 };
 cbuffer PerMaterial
 {
@@ -145,12 +142,12 @@ cbuffer PerMaterial
     float2 o42S247C0_o11S2C0_o10S2C0_ComputeColorTextureScaledOffsetDynamicSampler_offset;
     float4 o42S247C0_o9S2C0_o8S2C0_ComputeColorConstantColorLink_constantColor;
 };
+Texture2D<float4> ShadowMapCommon_ShadowMapTexture;
 Buffer<float4> LightClusteredPointGroup_PointLights;
 Texture3D<uint4> LightClustered_LightClusters;
 Buffer<uint4> LightClustered_LightIndices;
 Buffer<float4> LightClusteredSpotGroup_SpotLights;
 TextureCube<float4> RoughnessCubeMapEnvironmentColor_CubeMap;
-Texture2D<float4> ShadowMapCommon_ShadowMapTexture;
 SamplerState Texturing_LinearBorderSampler;
 SamplerComparisonState Texturing_LinearClampCompareLessEqualSampler;
 SamplerState Texturing_LinearSampler;
