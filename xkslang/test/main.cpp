@@ -253,6 +253,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer10", "CBuffer10.xkfx" },
     //{ "CBuffer11", "CBuffer11.xkfx" },
     //{ "CBufferSubpart01", "CBufferSubpart01.xkfx" },
+    { "CBufferSubpart02", "CBufferSubpart02.xkfx" },
     
     //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
     //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
@@ -392,7 +393,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoEditorForwardShadingEffect04", "XenkoEditorForwardShadingEffect04.xkfx" },
     //{ "XenkoEditorForwardShadingEffect05", "XenkoEditorForwardShadingEffect05.xkfx" },
     //{ "XenkoEditorForwardShadingEffect06", "XenkoEditorForwardShadingEffect06.xkfx" },
-    { "XenkoEditorForwardShadingEffect07", "XenkoEditorForwardShadingEffect07.xkfx" },
+    //{ "XenkoEditorForwardShadingEffect07", "XenkoEditorForwardShadingEffect07.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect03", "XenkoEditorMaterialPreviewEffect03.xkfx" },

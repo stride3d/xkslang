@@ -4408,17 +4408,33 @@ bool HlslGrammar::acceptStruct(TType& type, TIntermNode*& nodeList)
     //XKSL extensions: a shader can override struct or rgroup name with "MemberName" generic
     if (this->xkslShaderCurrentlyParsed != nullptr)
     {
-        unsigned int countGenerics = (unsigned int)(this->xkslShaderCurrentlyParsed->listGenerics.size());
-        for (unsigned int c = 0; c < countGenerics; c++)
+        if (structSubpartName.size() == 0)
         {
-            const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
-            if (aGeneric.type->getBasicType() == EbtMemberNameType)
+            unsigned int countGenerics = (unsigned int)(this->xkslShaderCurrentlyParsed->listGenerics.size());
+            for (unsigned int c = 0; c < countGenerics; c++)
             {
-                const TString& genericName = *(aGeneric.type->getUserIdentifierName());
-                if (genericName == structName)
+                const ShaderGenericAttribute& aGeneric = this->xkslShaderCurrentlyParsed->listGenerics[c];
+                if (aGeneric.type->getBasicType() == EbtMemberNameType)
                 {
-                    structName = aGeneric.expressionConstValue;
-                    break;
+                    const TString& genericName = *(aGeneric.type->getUserIdentifierName());
+                    if (genericName == structName)
+                    {
+                        TString newStructName = aGeneric.expressionConstValue;
+
+                        //The generic value can be composed of a name and a subpart (eg. ShaderMain<PerView.Lighting>)
+                        size_t dotPos = newStructName.find_first_of('.');
+                        if (dotPos != std::string::npos)
+                        {
+                            structName = newStructName.substr(0, dotPos);
+                            structSubpartName = newStructName.substr(dotPos + 1);
+                        }
+                        else
+                        {
+                            structName = newStructName;
+                        }
+
+                        break;
+                    }
                 }
             }
         }

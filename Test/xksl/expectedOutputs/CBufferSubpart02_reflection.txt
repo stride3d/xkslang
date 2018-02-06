@@ -1,0 +1,43 @@
+***************************
+****  ConstantBuffers  ****
+***************************
+ cbuffer PerView [size: 64]
+@C    ShaderBase_var1 => ShaderBase.var1
+@C    ShaderBase_var2 => ShaderBase.var2
+@C    ShaderMain__padding_PerView_Default => _padding_PerView_Default
+@C    ShaderMain_var3 => ShaderMain.var3
+@C    ShaderMain_var4 => ShaderMain.var4
+@C    ShaderMain__padding_PerView_Lighting => _padding_PerView_Lighting
+
+***********************
+*****  Resources  *****
+***********************
+@C    PerView => PerView [Stage=Vertex]
+
+ConstantBuffers. Count=1
+ cbuffer: Name="PerView" Size=64 MembersCount=6
+  KeyName="ShaderBase.var1" RawName="ShaderBase_var1" LogicalGroup="" Offset=0
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderBase.var2" RawName="ShaderBase_var2" LogicalGroup="" Offset=4
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="_padding_PerView_Default" RawName="ShaderMain__padding_PerView_Default" LogicalGroup="Default" Offset=16
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+  KeyName="ShaderMain.var3" RawName="ShaderMain_var3" LogicalGroup="Lighting" Offset=32
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderMain.var4" RawName="ShaderMain_var4" LogicalGroup="Lighting" Offset=36
+  Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="_padding_PerView_Lighting" RawName="ShaderMain__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=48
+  Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
+
+
+ResourceBindings. Count=1
+ Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
+
+InputAttributes. Count=0
+
+SamplerStates. Count=0

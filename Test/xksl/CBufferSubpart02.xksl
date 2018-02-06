@@ -1,0 +1,24 @@
+shader ShaderBase
+{
+	cbuffer PerView
+    {
+        int var1;
+        int var2;
+    }
+}
+
+shader ShaderMain<MemberName PerLighting>: ShaderBase
+{
+	stage stream int aStream: ASTREAM;
+
+	cbuffer PerLighting
+    {
+        int var3;
+        int var4;
+    }
+
+	stage void VSMain() 
+    {
+        streams.aStream = var1 + var3;
+    }
+};

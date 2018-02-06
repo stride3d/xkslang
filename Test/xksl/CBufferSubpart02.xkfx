@@ -1,0 +1,6 @@
+//Test parsing cbuffer subpart
+convertAndLoad "CBufferSubpart02.xksl" ShaderMain<PerView.Lighting>
+
+mixer m
+m.mixin( ShaderMain )
+m.compile
