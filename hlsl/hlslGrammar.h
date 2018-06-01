@@ -43,7 +43,6 @@
 
 namespace glslang {
 
-    class TAttributeMap;
     class TFunctionDeclarator;
     
     enum class XkslShaderParsingOperationEnum {
@@ -120,8 +119,8 @@ namespace glslang {
         bool GetTypeDeclarationLabel(const TType& t, const TString& variableName, TString& typeDeclarationLabel);
         bool acceptSamplerState();
         bool acceptSamplerState(TSamplerStateDefinition*& samplerDef);
-        bool acceptFullySpecifiedType(TType&, const TAttributeMap&);
-        bool acceptFullySpecifiedType(TType&, TIntermNode*& nodeList, const TAttributeMap&, bool forbidDeclarators = false);
+        bool acceptFullySpecifiedType(TType&, const TAttributes&);
+        bool acceptFullySpecifiedType(TType&, TIntermNode*& nodeList, const TAttributes&, bool forbidDeclarators = false);
         bool acceptQualifier(TQualifier&);
         bool acceptLayoutQualifierList(TQualifier&);
         bool acceptType(TType&);
@@ -181,10 +180,10 @@ namespace glslang {
         bool acceptScopedCompoundStatement(TIntermNode*&);
         bool acceptStatement(TIntermNode*&);
         bool acceptNestedStatement(TIntermNode*&);
-        void acceptAttributes(TAttributeMap&);
-        bool acceptSelectionStatement(TIntermNode*&, const TAttributeMap&);
-        bool acceptSwitchStatement(TIntermNode*&, const TAttributeMap&);
-        bool acceptIterationStatement(TIntermNode*&, const TAttributeMap&);
+        void acceptAttributes(TAttributes&);
+        bool acceptSelectionStatement(TIntermNode*&, const TAttributes&);
+        bool acceptSwitchStatement(TIntermNode*&, const TAttributes&);
+        bool acceptIterationStatement(TIntermNode*&, const TAttributes&);
         bool acceptJumpStatement(TIntermNode*&);
         bool acceptCaseLabel(TIntermNode*&);
         bool acceptDefaultLabel(TIntermNode*&);

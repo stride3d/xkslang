@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 The Khronos Group Inc.
+// Copyright (c) 2014-2018 The Khronos Group Inc.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and/or associated documentation files (the "Materials"),
@@ -46,12 +46,12 @@ namespace spv {
 
 typedef unsigned int Id;
 
-#define SPV_VERSION 0x10000
-#define SPV_REVISION 12
+#define SPV_VERSION 0x10300
+#define SPV_REVISION 1
 
 static const unsigned int MagicNumber = 0x07230203;
-static const unsigned int Version = 0x00010000;
-static const unsigned int Revision = 12;
+static const unsigned int Version = 0x00010300;
+static const unsigned int Revision = 1;
 static const unsigned int OpCodeMask = 0xffff;
 static const unsigned int WordCountShift = 16;
 
@@ -122,6 +122,13 @@ enum ExecutionMode {
     ExecutionModeOutputTriangleStrip = 29,
     ExecutionModeVecTypeHint = 30,
     ExecutionModeContractionOff = 31,
+    ExecutionModeInitializer = 33,
+    ExecutionModeFinalizer = 34,
+    ExecutionModeSubgroupSize = 35,
+    ExecutionModeSubgroupsPerWorkgroup = 36,
+    ExecutionModeSubgroupsPerWorkgroupId = 37,
+    ExecutionModeLocalSizeId = 38,
+    ExecutionModeLocalSizeHintId = 39,
     ExecutionModePostDepthCoverage = 4446,
     ExecutionModeStencilRefReplacingEXT = 5027,
     ExecutionModeMax = 0x7fffffff,
@@ -378,11 +385,17 @@ enum Decoration {
     DecorationNoContraction = 42,
     DecorationInputAttachmentIndex = 43,
     DecorationAlignment = 44,
+    DecorationMaxByteOffset = 45,
+    DecorationAlignmentId = 46,
+    DecorationMaxByteOffsetId = 47,
     DecorationExplicitInterpAMD = 4999,
     DecorationOverrideCoverageNV = 5248,
     DecorationPassthroughNV = 5250,
     DecorationViewportRelativeNV = 5252,
     DecorationSecondaryViewportRelativeNV = 5256,
+    DecorationNonUniformEXT = 5300,
+    DecorationHlslCounterBufferGOOGLE = 5634,
+    DecorationHlslSemanticGOOGLE = 5635,
     DecorationMax = 0x7fffffff,
 };
 
@@ -428,10 +441,15 @@ enum BuiltIn {
     BuiltInSubgroupLocalInvocationId = 41,
     BuiltInVertexIndex = 42,
     BuiltInInstanceIndex = 43,
+    BuiltInSubgroupEqMask = 4416,
     BuiltInSubgroupEqMaskKHR = 4416,
+    BuiltInSubgroupGeMask = 4417,
     BuiltInSubgroupGeMaskKHR = 4417,
+    BuiltInSubgroupGtMask = 4418,
     BuiltInSubgroupGtMaskKHR = 4418,
+    BuiltInSubgroupLeMask = 4419,
     BuiltInSubgroupLeMaskKHR = 4419,
+    BuiltInSubgroupLtMask = 4420,
     BuiltInSubgroupLtMaskKHR = 4420,
     BuiltInBaseVertex = 4424,
     BuiltInBaseInstance = 4425,
@@ -470,6 +488,8 @@ enum SelectionControlMask {
 enum LoopControlShift {
     LoopControlUnrollShift = 0,
     LoopControlDontUnrollShift = 1,
+    LoopControlDependencyInfiniteShift = 2,
+    LoopControlDependencyLengthShift = 3,
     LoopControlMax = 0x7fffffff,
 };
 
@@ -477,6 +497,8 @@ enum LoopControlMask {
     LoopControlMaskNone = 0,
     LoopControlUnrollMask = 0x00000001,
     LoopControlDontUnrollMask = 0x00000002,
+    LoopControlDependencyInfiniteMask = 0x00000004,
+    LoopControlDependencyLengthMask = 0x00000008,
 };
 
 enum FunctionControlShift {
@@ -550,6 +572,10 @@ enum GroupOperation {
     GroupOperationReduce = 0,
     GroupOperationInclusiveScan = 1,
     GroupOperationExclusiveScan = 2,
+    GroupOperationClusteredReduce = 3,
+    GroupOperationPartitionedReduceNV = 6,
+    GroupOperationPartitionedInclusiveScanNV = 7,
+    GroupOperationPartitionedExclusiveScanNV = 8,
     GroupOperationMax = 0x7fffffff,
 };
 
@@ -627,6 +653,17 @@ enum Capability {
     CapabilityStorageImageReadWithoutFormat = 55,
     CapabilityStorageImageWriteWithoutFormat = 56,
     CapabilityMultiViewport = 57,
+    CapabilitySubgroupDispatch = 58,
+    CapabilityNamedBarrier = 59,
+    CapabilityPipeStorage = 60,
+    CapabilityGroupNonUniform = 61,
+    CapabilityGroupNonUniformVote = 62,
+    CapabilityGroupNonUniformArithmetic = 63,
+    CapabilityGroupNonUniformBallot = 64,
+    CapabilityGroupNonUniformShuffle = 65,
+    CapabilityGroupNonUniformShuffleRelative = 66,
+    CapabilityGroupNonUniformClustered = 67,
+    CapabilityGroupNonUniformQuad = 68,
     CapabilitySubgroupBallotKHR = 4423,
     CapabilityDrawParameters = 4427,
     CapabilitySubgroupVoteKHR = 4431,
@@ -642,6 +679,7 @@ enum Capability {
     CapabilityVariablePointers = 4442,
     CapabilityAtomicStorageOps = 4445,
     CapabilitySampleMaskPostDepthCoverage = 4447,
+    CapabilityFloat16ImageAMD = 5008,
     CapabilityImageGatherBiasLodAMD = 5009,
     CapabilityFragmentMaskAMD = 5010,
     CapabilityStencilExportEXT = 5013,
@@ -654,6 +692,19 @@ enum Capability {
     CapabilityShaderStereoViewNV = 5259,
     CapabilityPerViewAttributesNV = 5260,
     CapabilityFragmentFullyCoveredEXT = 5265,
+    CapabilityGroupNonUniformPartitionedNV = 5297,
+    CapabilityShaderNonUniformEXT = 5301,
+    CapabilityRuntimeDescriptorArrayEXT = 5302,
+    CapabilityInputAttachmentArrayDynamicIndexingEXT = 5303,
+    CapabilityUniformTexelBufferArrayDynamicIndexingEXT = 5304,
+    CapabilityStorageTexelBufferArrayDynamicIndexingEXT = 5305,
+    CapabilityUniformBufferArrayNonUniformIndexingEXT = 5306,
+    CapabilitySampledImageArrayNonUniformIndexingEXT = 5307,
+    CapabilityStorageBufferArrayNonUniformIndexingEXT = 5308,
+    CapabilityStorageImageArrayNonUniformIndexingEXT = 5309,
+    CapabilityInputAttachmentArrayNonUniformIndexingEXT = 5310,
+    CapabilityUniformTexelBufferArrayNonUniformIndexingEXT = 5311,
+    CapabilityStorageTexelBufferArrayNonUniformIndexingEXT = 5312,
     CapabilitySubgroupShuffleINTEL = 5568,
     CapabilitySubgroupBufferBlockIOINTEL = 5569,
     CapabilitySubgroupImageBlockIOINTEL = 5570,
@@ -1016,6 +1067,52 @@ enum Op {
     OpAtomicFlagTestAndSet = 318,
     OpAtomicFlagClear = 319,
     OpImageSparseRead = 320,
+    OpSizeOf = 321,
+    OpTypePipeStorage = 322,
+    OpConstantPipeStorage = 323,
+    OpCreatePipeFromPipeStorage = 324,
+    OpGetKernelLocalSizeForSubgroupCount = 325,
+    OpGetKernelMaxNumSubgroups = 326,
+    OpTypeNamedBarrier = 327,
+    OpNamedBarrierInitialize = 328,
+    OpMemoryNamedBarrier = 329,
+    OpModuleProcessed = 330,
+    OpExecutionModeId = 331,
+    OpDecorateId = 332,
+    OpGroupNonUniformElect = 333,
+    OpGroupNonUniformAll = 334,
+    OpGroupNonUniformAny = 335,
+    OpGroupNonUniformAllEqual = 336,
+    OpGroupNonUniformBroadcast = 337,
+    OpGroupNonUniformBroadcastFirst = 338,
+    OpGroupNonUniformBallot = 339,
+    OpGroupNonUniformInverseBallot = 340,
+    OpGroupNonUniformBallotBitExtract = 341,
+    OpGroupNonUniformBallotBitCount = 342,
+    OpGroupNonUniformBallotFindLSB = 343,
+    OpGroupNonUniformBallotFindMSB = 344,
+    OpGroupNonUniformShuffle = 345,
+    OpGroupNonUniformShuffleXor = 346,
+    OpGroupNonUniformShuffleUp = 347,
+    OpGroupNonUniformShuffleDown = 348,
+    OpGroupNonUniformIAdd = 349,
+    OpGroupNonUniformFAdd = 350,
+    OpGroupNonUniformIMul = 351,
+    OpGroupNonUniformFMul = 352,
+    OpGroupNonUniformSMin = 353,
+    OpGroupNonUniformUMin = 354,
+    OpGroupNonUniformFMin = 355,
+    OpGroupNonUniformSMax = 356,
+    OpGroupNonUniformUMax = 357,
+    OpGroupNonUniformFMax = 358,
+    OpGroupNonUniformBitwiseAnd = 359,
+    OpGroupNonUniformBitwiseOr = 360,
+    OpGroupNonUniformBitwiseXor = 361,
+    OpGroupNonUniformLogicalAnd = 362,
+    OpGroupNonUniformLogicalOr = 363,
+    OpGroupNonUniformLogicalXor = 364,
+    OpGroupNonUniformQuadBroadcast = 365,
+    OpGroupNonUniformQuadSwap = 366,
     OpSubgroupBallotKHR = 4421,
     OpSubgroupFirstInvocationKHR = 4422,
     OpSubgroupAllKHR = 4428,
@@ -1033,6 +1130,7 @@ enum Op {
     OpGroupSMaxNonUniformAMD = 5007,
     OpFragmentMaskFetchAMD = 5011,
     OpFragmentFetchAMD = 5012,
+    OpGroupNonUniformPartitionNV = 5296,
     OpSubgroupShuffleINTEL = 5571,
     OpSubgroupShuffleDownINTEL = 5572,
     OpSubgroupShuffleUpINTEL = 5573,
@@ -1041,40 +1139,42 @@ enum Op {
     OpSubgroupBlockWriteINTEL = 5576,
     OpSubgroupImageBlockReadINTEL = 5577,
     OpSubgroupImageBlockWriteINTEL = 5578,
+    OpDecorateStringGOOGLE = 5632,
+    OpMemberDecorateStringGOOGLE = 5633,
     
     
     //================================================================================================
     //XKSL extensions
     // WARNING: changing the IDs here requires to duplicate into SPIRV-Cross IDs (OpSemanticName for instance)
-    OpDeclarationName = 5600,                //declaration name for shader, shaders' functions and shaders' block types
-    OpMemberLinkName = 5601,                 //Used when user specified a linkName (KeyName) attribute for a cbuffer/rgroup member
-    OpLinkName = 5602,                       //Used when user specified a linkName (KeyName) attribute for a variable
-    OpMemberLogicalGroup = 5603,             //Used when we have a member with a logical group
-    OpResourceGroupName = 5604,              //Used when a resource has a resourceGroupName
-    OpLogicalGroupName = 5605,               //Used when a resource has a logicalGroupName
-    OpShaderInheritance = 5606,              //List of a shader inheritance
-    OpBelongsToShader = 5607,                //Link the functions and types with the shader that created them
-    OpShaderCompositionDeclaration = 5608,   //Declare a composition within a shader. [OpShaderCompositionDeclaration shaderOwnerId compositionNum compositionShaderTypeId isArray countInstance name]
-    OpShaderCompositionInstance = 5609,      //Declare a composition instance. [OpShaderCompositionInstance shaderOwnerId compositionNum instanceNum instanceShaderId]
-    OpShaderInstancingPathItem = 5610,       //Data recording a path item for a shader instanciated through a composition. [OpShaderInstancingPath shaderId instanceLevel shaderCompositionOwnerId compositionNum instanceId]
-    OpMethodProperties = 5611,               //Add XKSL properties to a method: cf XkslPropertyEnum
-    OpMemberProperties = 5612,               //Add XKSL properties to a member: cf XkslPropertyEnum
-    OpMemberAttribute = 5613,                //Add an attribute to a member
-    OpMemberSemanticName = 5614,             //Record the semantic name of a struct member, as declared by the user
-    OpSemanticName = 5615,                   //Record the semantic name of a type, as declared by the user
-    OpCBufferProperties = 5616,              //Data defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts
-    OpGSMethodProperties = 5617,             //Additonnal data for GS methods. GSInputType GSOuputType
-    OpMemberSamplerStateDef = 5618,          //Defines a member samplerState
-    OpSamplerStateDef = 5619,                //Defines a type samplerState
+    OpDeclarationName = 20000,                //declaration name for shader, shaders' functions and shaders' block types
+    OpMemberLinkName = 20001,                 //Used when user specified a linkName (KeyName) attribute for a cbuffer/rgroup member
+    OpLinkName = 20002,                       //Used when user specified a linkName (KeyName) attribute for a variable
+    OpMemberLogicalGroup = 20003,             //Used when we have a member with a logical group
+    OpResourceGroupName = 20004,              //Used when a resource has a resourceGroupName
+    OpLogicalGroupName = 20005,               //Used when a resource has a logicalGroupName
+    OpShaderInheritance = 20006,              //List of a shader inheritance
+    OpBelongsToShader = 20007,                //Link the functions and types with the shader that created them
+    OpShaderCompositionDeclaration = 20008,   //Declare a composition within a shader. [OpShaderCompositionDeclaration shaderOwnerId compositionNum compositionShaderTypeId isArray countInstance name]
+    OpShaderCompositionInstance = 20009,      //Declare a composition instance. [OpShaderCompositionInstance shaderOwnerId compositionNum instanceNum instanceShaderId]
+    OpShaderInstancingPathItem = 20010,       //Data recording a path item for a shader instanciated through a composition. [OpShaderInstancingPath shaderId instanceLevel shaderCompositionOwnerId compositionNum instanceId]
+    OpMethodProperties = 20011,               //Add XKSL properties to a method: cf XkslPropertyEnum
+    OpMemberProperties = 20012,               //Add XKSL properties to a member: cf XkslPropertyEnum
+    OpMemberAttribute = 20013,                //Add an attribute to a member
+    OpMemberSemanticName = 20014,             //Record the semantic name of a struct member, as declared by the user
+    OpSemanticName = 20015,                   //Record the semantic name of a type, as declared by the user
+    OpCBufferProperties = 20016,              //Data defining a cbuffer. cbufferType (cf XkslPropertyEnum), cbufferStage (cf XkslPropertyEnum), member counts
+    OpGSMethodProperties = 20017,             //Additonnal data for GS methods. GSInputType GSOuputType
+    OpMemberSamplerStateDef = 20018,          //Defines a member samplerState
+    OpSamplerStateDef = 20019,                //Defines a type samplerState
 
-    OpForEachCompositionStartLoop = 5620,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
-    OpForEachCompositionEndLoop = 56021,
-    OpShaderCustomType = 56022,              //Defines a shader custom type
+    OpForEachCompositionStartLoop = 20020,    //start a foreach loop: 2 first params define the array composition targeted (shaderId then compositionId)
+    OpForEachCompositionEndLoop = 20021,
+    OpShaderCustomType = 20022,              //Defines a shader custom type
 
-    OpFunctionCallBaseUnresolved = 5630,                 //an unresolved function call with base accessor
-    OpFunctionCallBaseResolved = 5631,                   //a resolved function call with base accessor
-    OpFunctionCallThroughCompositionVariable = 5632,     //a function is called through a composition variable
-    OpFunctionCallThroughStaticShaderClassCall = 5633,   //a function is called through a static shader class (ShaderA.compute()), this kind of function call will never get overriden
+    OpFunctionCallBaseUnresolved = 20030,                 //an unresolved function call with base accessor
+    OpFunctionCallBaseResolved = 20031,                   //a resolved function call with base accessor
+    OpFunctionCallThroughCompositionVariable = 20032,     //a function is called through a composition variable
+    OpFunctionCallThroughStaticShaderClassCall = 20033,   //a function is called through a static shader class (ShaderA.compute()), this kind of function call will never get overriden
     //================================================================================================
 
     OpMax = 0x7fffffff,
