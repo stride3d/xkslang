@@ -833,22 +833,25 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
 
                                 if (!memberToMerge.HasLinkName())
                                 {
+                                    //Default variable name is its declaration name
+                                    memberToMerge.linkName = memberToMerge.declarationName;
+                                }
+
+								if (!memberToMerge.isStage)
+                                {
                                     if (cbufferToMerge->shaderOwner->listInstancingPathItems.size() > 0)
-                                    {
-                                        //the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
-                                        string suffix;
-                                        if (!GetKeyNameCompositionPathSuffixForShader(cbufferToMerge->shaderOwner, suffix))
-                                        {
-                                            error("Failed to get the keyname suffix for the shader: " + cbufferToMerge->shaderOwner->GetShaderFullName());
-                                            break;
-                                        }
+									{
+										//the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
+										string suffix;
+										if (!GetKeyNameCompositionPathSuffixForShader(cbufferToMerge->shaderOwner, suffix))
+										{
+											error("Failed to get the keyname suffix for the shader: " + cbufferToMerge->shaderOwner->GetShaderFullName());
+											break;
+										}
 
-                                        //Default variable name is its declaration name
-                                        string variableName = memberToMerge.declarationName;
-
-                                        //We then add the composition path suffix to its name
-                                        memberToMerge.linkName = variableName + suffix;
-                                    }
+										//We then add the composition path suffix to its name
+										memberToMerge.linkName = memberToMerge.linkName + suffix;
+									}
                                 }
                             }
 
@@ -1136,35 +1139,25 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                 aMember.declarationName = getRawNameFromKeyName(memberDeclarationName);
 
                 //==========================================
-                //member keyName
-                if (aMember.HasLinkName())
+                //member keyName (if not set by user)
+                if (!aMember.HasLinkName())
                 {
-                    //nothing to do: the linkname is set by the user
+                    aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
                 }
-                else
+                if (!aMember.isStage)
                 {
-                    if (aMember.isStage)
+                    if (shaderOwner->listInstancingPathItems.size() > 0)
                     {
-                        //stage member
-                        aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
-                    }
-                    else
-                    {
-                        //unstage member (we use the shader original base name as well (even if this could make name conflicts))
-                        aMember.linkName = shaderOriginalBaseName + "." + memberOriginalDeclarationName;
-
-                        if (shaderOwner->listInstancingPathItems.size() > 0)
+                        //the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
+                        string suffix;
+                        if (!GetKeyNameCompositionPathSuffixForShader(shaderOwner, suffix))
                         {
-                            //the shader has been instanciated through a composition: we update the member keyname with a suffix depending on the composition path
-                            string suffix;
-                            if (!GetKeyNameCompositionPathSuffixForShader(shaderOwner, suffix))
-                            {
-                                error("Failed to get the keyname suffix for the shader: " + shaderOwner->GetShaderFullName());
-                                break;
-                            }
-
-                            aMember.linkName = aMember.linkName + suffix;
+                            error("Failed to get the keyname suffix for the shader: " +
+                                  shaderOwner->GetShaderFullName());
+                            break;
                         }
+
+                        aMember.linkName = aMember.linkName + suffix;
                     }
                 }
 
