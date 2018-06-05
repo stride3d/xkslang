@@ -19,7 +19,7 @@ public:
 
     static bool ConvertBytecodeToHlsl(const std::vector<uint32_t>& bytecode, int shaderModel, std::string& hlslShader);
 
-    static bool ConvertBytecodeToGlsl(const std::vector<uint32_t>& bytecode, std::string& glslShader);
+    static bool ConvertBytecodeToGlsl(const std::vector<uint32_t>& bytecode, bool es, int version, std::string& glslShader);
 };
 
 }  // namespace xkslang

@@ -200,7 +200,7 @@ namespace xkslangDll
     //Utility function to help converting a bytecode to a human-readable ascii file
     extern "C" __declspec(dllexport) char* ConvertBytecodeToAsciiText(uint32_t* bytecode, int32_t bytecodeSize, int32_t* asciiBufferSize);
 
-    extern "C" __declspec(dllexport) char* ConvertBytecodeToGlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t* asciiBufferSize);
+    extern "C" __declspec(dllexport) char* ConvertBytecodeToGlsl(uint32_t* bytecode, int32_t bytecodeSize, bool es, int version, int32_t* asciiBufferSize);
 
     extern "C" __declspec(dllexport) char* ConvertBytecodeToHlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t shaderModel, int32_t* asciiBufferSize);
 

@@ -441,7 +441,7 @@ static bool ConvertAndWriteBytecodeToGlsl(const string& spvFile, const  string& 
     const vector<uint32_t>& bytecode = result.second;
     string glslShader;
 
-    bool res = Converter::ConvertBytecodeToGlsl(bytecode, glslShader);
+    bool res = Converter::ConvertBytecodeToGlsl(bytecode, false, 410, glslShader);
     if (res)
     {
         xkslangtest::Utils::WriteFile(outputFile, glslShader);

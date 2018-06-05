@@ -32,8 +32,8 @@ bool Converter::ConvertBytecodeToHlsl(const vector<uint32_t>& bytecode, int shad
     return (res == 0);
 }
 
-bool Converter::ConvertBytecodeToGlsl(const vector<uint32_t>& bytecode, string& glslShader)
+bool Converter::ConvertBytecodeToGlsl(const vector<uint32_t>& bytecode, bool es, int version, string& glslShader)
 {
-    int res = spirv_cross::SPIRV_CROSS::convertSpvBytecodeToGlsl(bytecode, glslShader);
+    int res = spirv_cross::SPIRV_CROSS::convertSpvBytecodeToGlsl(bytecode, es, version, glslShader);
     return (res == 0);
 }

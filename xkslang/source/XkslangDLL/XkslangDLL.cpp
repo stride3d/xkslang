@@ -90,7 +90,7 @@ namespace xkslangDll
         return asciiBuffer;
     }
 
-    char* ConvertBytecodeToGlsl(uint32_t* bytecode, int32_t bytecodeSize, int32_t* asciiBufferSize)
+    char* ConvertBytecodeToGlsl(uint32_t* bytecode, int32_t bytecodeSize, bool es, int version, int32_t* asciiBufferSize)
     {
         errorMessages.clear();
         if (bytecode == nullptr || asciiBufferSize == nullptr) { error("some parameters are null"); return nullptr; }
@@ -102,7 +102,7 @@ namespace xkslangDll
         std::vector<uint32_t> vecBytecode;
         vecBytecode.assign(bytecode, bytecode + bytecodeSize);
 
-        if (!Converter::ConvertBytecodeToGlsl(vecBytecode, bytecodeText)) {
+        if (!Converter::ConvertBytecodeToGlsl(vecBytecode, es, version, bytecodeText)) {
             error("Failed to convert the bytecode to GLSL");
             return nullptr;
         }
