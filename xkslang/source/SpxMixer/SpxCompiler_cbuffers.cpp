@@ -866,7 +866,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                 {
                                     defaultPaddingAlreadyAdded = true;
 
-                                    string paddingMemberName = "_padding_" + combinedCbuffer->cbufferDeclarationName + "_Default";
+                                    string paddingMemberName = "padding_" + combinedCbuffer->cbufferDeclarationName + "_Default";
                                     int memberIndex = (unsigned int)combinedCbuffer->members.size();
                                     combinedCbuffer->members.push_back(TypeStructMember());
                                     TypeStructMember& defaultPaddingStructMember = combinedCbuffer->members.back();
@@ -980,7 +980,7 @@ bool SpxCompiler::ProcessCBuffers(vector<XkslMixerOutputStage>& outputStages)
                                 if (canAddEndingPadding)
                                 {
                                     //we have a cbuffer with a subpart name: add the padding at the end
-                                    string paddingMemberName = "_padding_" + combinedCbuffer->cbufferDeclarationName + "_" + cbufferToMerge->cbufferSubpartName;
+                                    string paddingMemberName = "padding_" + combinedCbuffer->cbufferDeclarationName + "_" + cbufferToMerge->cbufferSubpartName;
                                     int memberIndex = (unsigned int)combinedCbuffer->members.size();
                                     combinedCbuffer->members.push_back(TypeStructMember());
                                     TypeStructMember& defaultPaddingStructMember = combinedCbuffer->members.back();
