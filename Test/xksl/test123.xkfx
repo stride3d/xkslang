@@ -1,0 +1,5 @@
+convertAndLoad "test123.xksl"
+
+mixer m
+m.mixin( test123 )
+m.compile

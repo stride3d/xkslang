@@ -1803,6 +1803,25 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                     inputVariableLocation.addIdOperand(stageVariable.spvVariableId);
                     inputVariableLocation.addStringOperand(stageVariable.semanticName.c_str());
                     inputVariableLocation.dump(bytecodeNames->bytecode);
+
+	                std:string semanticUpperCase = stageVariable.semanticName;
+                    std::transform(semanticUpperCase.begin(), semanticUpperCase.end(), semanticUpperCase.begin(), ::toupper);
+					spv::BuiltIn builtin = spv::BuiltInMax;
+					switch (glslang::HlslScanContext::mapSemantic(semanticUpperCase.c_str()))
+					{
+                        case glslang::EbvPosition:
+							builtin = spv::BuiltInPosition;
+                            break;
+					}
+
+                    if (builtin != spv::BuiltInMax)
+					{
+						spv::Instruction inputVariableLocation(spv::OpDecorate);
+						inputVariableLocation.addIdOperand(stageVariable.spvVariableId);
+						inputVariableLocation.addImmediateOperand(spv::Decoration::DecorationBuiltIn);
+						inputVariableLocation.addImmediateOperand(builtin);
+						inputVariableLocation.dump(bytecodeNames->bytecode);
+					}
                 }
                 else
                 {

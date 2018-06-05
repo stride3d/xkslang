@@ -1,7 +1,6 @@
 //
 // Copyright (C)
 
-#include <windows.h>
 #include <stdio.h>
 #include <tchar.h>
 #include <iostream>
@@ -253,7 +252,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer10", "CBuffer10.xkfx" },
     //{ "CBuffer11", "CBuffer11.xkfx" },
     //{ "CBufferSubpart01", "CBufferSubpart01.xkfx" },
-    { "CBufferSubpart02", "CBufferSubpart02.xkfx" },
+    //{ "CBufferSubpart02", "CBufferSubpart02.xkfx" },
     
     //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
     //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
@@ -397,6 +396,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
     //{ "XenkoEditorMaterialPreviewEffect03", "XenkoEditorMaterialPreviewEffect03.xkfx" },
+
+{"test123", "test123.xkfx"},
 };
 
 enum class ShaderLanguageEnum
@@ -442,7 +443,7 @@ static bool ConvertAndWriteBytecodeToGlsl(const string& spvFile, const  string& 
     const vector<uint32_t>& bytecode = result.second;
     string glslShader;
 
-    bool res = Converter::ConvertBytecodeToGlsl(bytecode, glslShader);
+    bool res = Converter::ConvertBytecodeToGlsl(bytecode, false, 410, glslShader);
     if (res)
     {
         xkslangtest::Utils::WriteFile(outputFile, glslShader);

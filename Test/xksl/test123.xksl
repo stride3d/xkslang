@@ -1,0 +1,11 @@
+shader test123
+{
+	stage stream float4 stream1: SV_Position;
+    stage stream float4 stream2: POS2;
+
+	stage void VSMain() 
+    {
+        streams.stream1 = 0.2f;
+		streams.stream2 = 0.3f;
+    }
+};
