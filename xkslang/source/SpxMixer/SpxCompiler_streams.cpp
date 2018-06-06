@@ -7,6 +7,7 @@
 #include <string>
 
 #include "SpxCompiler.h"
+#include "../../../hlsl/hlslScanContext.h"
 
 using namespace std;
 using namespace xkslang;
@@ -1705,17 +1706,15 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 XkslMixerOutputStage::OutputStageIOVariable stageVariable(stageVariableId, index, k, streamMember.declarationName, streamMember.semantic);
                 stage.listStageInputVariableInfo.push_back(stageVariable);
 
-#ifdef XKSLANG_ADD_NAMES_AND_DEBUG_DATA_INTO_BYTECODE
-                string inputVariableName = shadingStageLabelStr + "_IN_" + streamMember.GetDeclarationNameOrSemantic();
+                string inputVariableName = shadingStageLabelStr + "_IN_" + streamMember.GetSemanticOrDeclarationName();
                 spv::Instruction inputVariableNameInstr(spv::OpName);
                 inputVariableNameInstr.addIdOperand(memberInputVariableInstr.getResultId());
                 inputVariableNameInstr.addStringOperand(inputVariableName.c_str());
                 inputVariableNameInstr.dump(bytecodeNames->bytecode);
-#endif
             }
 
             //add input variable location decorate
-            for (unsigned int k = 0; k < stage.listStageInputVariableInfo.size(); ++k)
+            /*for (unsigned int k = 0; k < stage.listStageInputVariableInfo.size(); ++k)
             {
                 const XkslMixerOutputStage::OutputStageIOVariable& stageVariable = stage.listStageInputVariableInfo[k];
 
@@ -1724,7 +1723,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 inputVariableLocation.addImmediateOperand(spv::Decoration::DecorationLocation);
                 inputVariableLocation.addImmediateOperand(stageVariable.locationNum);
                 inputVariableLocation.dump(bytecodeNames->bytecode);
-            }
+            }*/
 
             //add the variable semantic name
             for (unsigned int k = 0; k < stage.listStageInputVariableInfo.size(); ++k)
@@ -1781,7 +1780,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
             }
 
             //Add output variables location decorate
-            for (unsigned int k = 0; k < stage.listStageOutputVariableInfo.size(); ++k)
+            /*for (unsigned int k = 0; k < stage.listStageOutputVariableInfo.size(); ++k)
             {
                 const XkslMixerOutputStage::OutputStageIOVariable& stageVariable = stage.listStageOutputVariableInfo[k];
 
@@ -1790,7 +1789,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                 inputVariableLocation.addImmediateOperand(spv::Decoration::DecorationLocation);
                 inputVariableLocation.addImmediateOperand(stageVariable.locationNum);
                 inputVariableLocation.dump(bytecodeNames->bytecode);
-            }
+            }*/
 
             //add the variable semantic name
             for (unsigned int k = 0; k < stage.listStageOutputVariableInfo.size(); ++k)
@@ -1803,6 +1802,31 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                     inputVariableLocation.addIdOperand(stageVariable.spvVariableId);
                     inputVariableLocation.addStringOperand(stageVariable.semanticName.c_str());
                     inputVariableLocation.dump(bytecodeNames->bytecode);
+
+                    std:string semanticUpperCase = stageVariable.semanticName;
+                    std::transform(semanticUpperCase.begin(), semanticUpperCase.end(), semanticUpperCase.begin(), ::toupper);
+                    spv::BuiltIn builtin = spv::BuiltInMax;
+                    switch (glslang::HlslScanContext::mapSemantic(semanticUpperCase.c_str()))
+                    {
+                        case glslang::EbvPosition:
+                            builtin = spv::BuiltInPosition;
+                            break;
+                        case glslang::EbvFragDepth:
+                            builtin = spv::BuiltInFragDepth;
+                            break;
+                        case glslang::EbvFace:
+                            builtin = spv::BuiltInFrontFacing;
+                            break;
+                    }
+
+                    if (builtin != spv::BuiltInMax)
+                    {
+                        spv::Instruction inputVariableLocation(spv::OpDecorate);
+                        inputVariableLocation.addIdOperand(stageVariable.spvVariableId);
+                        inputVariableLocation.addImmediateOperand(spv::Decoration::DecorationBuiltIn);
+                        inputVariableLocation.addImmediateOperand(builtin);
+                        inputVariableLocation.dump(bytecodeNames->bytecode);
+                    }
                 }
                 else
                 {

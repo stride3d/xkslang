@@ -325,7 +325,7 @@ public:
     static void deleteKeywordMap();
 
     void tokenize(HlslToken&);
-    glslang::TBuiltInVariable mapSemantic(const char*);
+    static glslang::TBuiltInVariable mapSemantic(const char*);
     
     TString convertTokenToString(const HlslToken& token);
     void tokenizeExpression(const TString& expression, TVector<HlslToken>& listTokens);
