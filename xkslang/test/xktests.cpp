@@ -9,6 +9,8 @@
 #include <sstream>
 #include <fstream>
 
+#include <gtest/gtest.h>
+
 #include "SPIRV/doc.h"
 #include "SPIRV/disassemble.h"
 #include "SPIRV/GlslangToSpv.h"
@@ -47,8 +49,13 @@ using namespace xkslang;
 using namespace xkfxProcessor;
 
 //To test single file parsing and convertion
-struct XkslFilesToParseAndConvert {
+struct XkslFileToParseAndConvert {
     const char* fileName;
+
+    friend std::ostream& operator<<(std::ostream& os, const XkslFileToParseAndConvert& bar)
+    {
+        return os << bar.fileName;
+    }
 };
 
 struct XkslShaderToRecursivelyParse {
@@ -77,54 +84,59 @@ static string finalResultOutputDir;
 static string expectedOutputDir;
 static string invalidOutputDir;
 
-vector<XkslFilesToParseAndConvert> vecXkslFilesToConvert = {
-    //{ "shaderOnly.xksl" },
-    //{ "shaderWithVariable.xksl" },
-    //{ "shaderWithManyVariables.xksl" },
-    //{ "manySimpleShaders.xksl" },
-    //{ "simpleShaderWithFunction.xksl" },
-    //{ "declarationMixOfFunctionsAndVariables.xksl" },
-    //{ "2ShaderWithSameFunctionNames.xksl" },
-    //{ "shaderInheritance.xksl" },
-    //{ "postDeclaration.xksl" },
-    //{ "classAccessor.xksl" },
-    //{ "typeDeclarationOnly.xksl" },
-    //{ "streamsSimple.xksl" },
-    //{ "streamsWithClassAccessor.xksl" },
-    //{ "shaderWithDefinedConsts.xksl" },
-    //{ "shaderWithUnresolvedConsts.xksl" },
-    //{ "intrisicsHlslFunctions.xksl" },
-    //{ "rulesWhenCallingShaderFunctions.xksl" },
-    //{ "rulesWhenCallingShaderVariables.xksl" },
-    //{ "methodReferingToShaderVariable.xksl" },
-    //{ "methodsWithSimpleClassAccessor.xksl" },
-    //{ "testParsingCbuffers.xksl" },
-    //{ "shaderWithForLoop.xksl" },
-    //{ "shaderWithLoops.xksl" },
-    //{ "TestComposeSimple.xksl" },
-    //{ "shaderDefiningAStruct.xksl" },
-    //{ "TestForEach01.xksl" },
-    //{ "TestStreamSemantics.xksl" },
-    //{ "testParsingResources.xksl" },
-    //{ "parseShaderWithStructs01.xksl" },
-    //{ "parseShaderWithStructs02.xksl" },
-    //{ "parseShaderWithStructs03.xksl" },
-    //{ "parseShaderWithStructs04.xksl" },
-    //{ "textureAndSampler.xksl" },
+vector<XkslFileToParseAndConvert> vecXkslFilesToConvert = {
+    { "shaderOnly.xksl" },
+    { "shaderWithVariable.xksl" },
+    { "shaderWithManyVariables.xksl" },
+    { "manySimpleShaders.xksl" },
+    { "simpleShaderWithFunction.xksl" },
+    { "declarationMixOfFunctionsAndVariables.xksl" },
+    { "2ShaderWithSameFunctionNames.xksl" },
+    { "shaderInheritance.xksl" },
+    { "postDeclaration.xksl" },
+    { "classAccessor.xksl" },
+    { "typeDeclarationOnly.xksl" },
+    { "streamsSimple.xksl" },
+    { "streamsWithClassAccessor.xksl" },
+    { "shaderWithDefinedConsts.xksl" },
+    { "shaderWithUnresolvedConsts.xksl" },
+    { "intrisicsHlslFunctions.xksl" },
+    { "rulesWhenCallingShaderFunctions.xksl" },
+    { "rulesWhenCallingShaderVariables.xksl" },
+    { "methodReferingToShaderVariable.xksl" },
+    { "methodsWithSimpleClassAccessor.xksl" },
+    { "testParsingCbuffers.xksl" },
+    { "shaderWithForLoop.xksl" },
+    { "shaderWithLoops.xksl" },
+    { "TestComposeSimple.xksl" },
+    { "shaderDefiningAStruct.xksl" },
+    { "TestForEach01.xksl" },
+    { "TestStreamSemantics.xksl" },
+    { "testParsingResources.xksl" },
+    { "parseShaderWithStructs01.xksl" },
+    { "parseShaderWithStructs02.xksl" },
+    { "parseShaderWithStructs03.xksl" },
+    { "parseShaderWithStructs04.xksl" },
+    { "textureAndSampler.xksl" },
 
-    ////{ "parseGeomShader01.xksl" },
-    ////{ "parseGeomShader02.xksl" },
-    ////{{"shaderTexturing.xksl"}, {"", nullptr}},
-    ////{{"shaderBase.xksl"}, {"", nullptr}},
-    ////{{"shaderSimple.xksl"}, {"", nullptr}},
-    ////{ "functionsWithIOStruct01.xksl" },
-    ////{{"shaderCustomEffect.xksl"}, {"", nullptr}},
-    ////{{"methodsPrototypes.xksl"}, {"", nullptr}},
+    //{ "parseGeomShader01.xksl" },
+    //{ "parseGeomShader02.xksl" },
+    //{{"shaderTexturing.xksl"}, {"", nullptr}},
+    //{{"shaderBase.xksl"}, {"", nullptr}},
+    //{{"shaderSimple.xksl"}, {"", nullptr}},
+    //{ "functionsWithIOStruct01.xksl" },
+    //{{"shaderCustomEffect.xksl"}, {"", nullptr}},
+    //{{"methodsPrototypes.xksl"}, {"", nullptr}},
 };
 
-struct XkfxEffectsToProcess {
+struct XkfxEffectToProcess {
     string effectName;
     string inputFileName;
+
+	friend std::ostream& operator<<(std::ostream& os, const XkfxEffectToProcess& bar)
+    {
+        return os << bar.inputFileName;
+    }
 };
 
 //Can be parameterized from the xkfx file
@@ -137,97 +149,99 @@ static bool processEffectWithDirectCallToXkslang = true;
 static bool processEffectWithDllApi = false;
 static bool processEffectWithXkfxProcessorApi = true;  //we need to set both this bool and xkfxOptions_processSampleWithXkfxLibrary to true
 
-vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
-    //{ "TestMixin01", "TestMixin01.xkfx" },
-    //{ "TestMixin02", "TestMixin02.xkfx" },
-    //{ "TestMixin03", "TestMixin03.xkfx" },
-    //{ "TestMixin04", "TestMixin04.xkfx" },
-    //{ "TestMixin05", "TestMixin05.xkfx" },
-    //{ "TestMixin06", "TestMixin06.xkfx" },
-    //{ "TestMixin07", "TestMixin07.xkfx" },
-    //{ "TestMixin08", "TestMixin08.xkfx" },
+vector<XkfxEffectToProcess> vecXkfxEffectToProcess = {
+    { "TestMixin01", "TestMixin01.xkfx" },
+    { "TestMixin02", "TestMixin02.xkfx" },
+    { "TestMixin03", "TestMixin03.xkfx" },
+    { "TestMixin04", "TestMixin04.xkfx" },
+    { "TestMixin05", "TestMixin05.xkfx" },
+    { "TestMixin06", "TestMixin06.xkfx" },
+    { "TestMixin07", "TestMixin07.xkfx" },
+    { "TestMixin08", "TestMixin08.xkfx" },
 
-    //{ "TestMerge01", "TestMerge01.xkfx" },
-    //{ "TestMerge02", "TestMerge02.xkfx" },
-    //{ "TestMerge03", "TestMerge03.xkfx" },
-    //{ "TestMerge04", "TestMerge04.xkfx" },
-    //{ "TestMerge05", "TestMerge05.xkfx" },
-    //{ "TestMerge06", "TestMerge06.xkfx" },
-    //{ "TestMerge07", "TestMerge07.xkfx" },
-    //{ "TestMerge08", "TestMerge08.xkfx" },
-    //{ "TestMerge09", "TestMerge09.xkfx" },
-    //{ "TestMerge10", "TestMerge10.xkfx" },
-    //{ "TestMerge11", "TestMerge11.xkfx" },
-    //{ "TestMerge12", "TestMerge12.xkfx" },
-    //{ "TestMerge13", "TestMerge13.xkfx" },
-    //{ "TestMerge14", "TestMerge14.xkfx" },
+    { "TestMerge01", "TestMerge01.xkfx" },
+    { "TestMerge02", "TestMerge02.xkfx" },
+    { "TestMerge03", "TestMerge03.xkfx" },
+    { "TestMerge04", "TestMerge04.xkfx" },
+    { "TestMerge05", "TestMerge05.xkfx" },
+    { "TestMerge06", "TestMerge06.xkfx" },
+    { "TestMerge07", "TestMerge07.xkfx" },
+    { "TestMerge08", "TestMerge08.xkfx" },
+    { "TestMerge09", "TestMerge09.xkfx" },
+    { "TestMerge10", "TestMerge10.xkfx" },
+    { "TestMerge11", "TestMerge11.xkfx" },
+    { "TestMerge12", "TestMerge12.xkfx" },
+    { "TestMerge13", "TestMerge13.xkfx" },
+    { "TestMerge14", "TestMerge14.xkfx" },
 
+    // TODO check crash
     //{ "TestConsts01", "TestConsts01.xkfx" },
     //{ "TestConsts02", "TestConsts02.xkfx" },
     //{ "TestConsts03", "TestConsts03.xkfx" },
     //{ "TestConsts04", "TestConsts04.xkfx" },
     //{ "TestConsts05", "TestConsts05.xkfx" },
 
-    //{ "TestCompose02", "TestCompose02.xkfx" },
-    //{ "TestCompose03", "TestCompose03.xkfx" },
-    //{ "TestCompose04", "TestCompose04.xkfx" },
-    //{ "TestCompose05", "TestCompose05.xkfx" },
-    //{ "TestCompose06", "TestCompose06.xkfx" },
-    //{ "TestCompose07", "TestCompose07.xkfx" },
-    //{ "TestCompose08", "TestCompose08.xkfx" },
-    //{ "TestCompose09", "TestCompose09.xkfx" },
-    //{ "TestCompose09a", "TestCompose09a.xkfx" },
-    //{ "TestCompose10", "TestCompose10.xkfx" },
-    //{ "TestCompose11", "TestCompose11.xkfx" },
-    //{ "TestCompose12", "TestCompose12.xkfx" },
-    //{ "TestCompose13", "TestCompose13.xkfx" },
-    //{ "TestCompose14", "TestCompose14.xkfx" },
-    //{ "TestCompose15", "TestCompose15.xkfx" },
-    //{ "TestCompose16", "TestCompose16.xkfx" },
-    //{ "TestCompose17", "TestCompose17.xkfx" },
-    //{ "TestCompose18", "TestCompose18.xkfx" },
-    //{ "TestCompose19", "TestCompose19.xkfx" },
-    //{ "TestCompose20", "TestCompose20.xkfx" },
-    //{ "TestCompose21", "TestCompose21.xkfx" },
-    //{ "TestCompose22", "TestCompose22.xkfx" },
-    //{ "TestCompose23", "TestCompose23.xkfx" },
-    //{ "TestCompose24", "TestCompose24.xkfx" },
-    //{ "TestCompose25", "TestCompose25.xkfx" },
-    //{ "TestCompose26", "TestCompose26.xkfx" },
-    //{ "TestCompose27", "TestCompose27.xkfx" },
-    //{ "TestCompose28", "TestCompose28.xkfx" },
-    //{ "TestCompose29", "TestCompose29.xkfx" },
-    //{ "TestCompose30", "TestCompose30.xkfx" },
-    //{ "TestCompose31", "TestCompose31.xkfx" },
-    //{ "TestCompose32", "TestCompose32.xkfx" },
-    //{ "TestCompose33", "TestCompose33.xkfx" },
-    //{ "TestCompose34", "TestCompose34.xkfx" },
-    //{ "TestCompose35", "TestCompose35.xkfx" },
+    { "TestCompose02", "TestCompose02.xkfx" },
+    { "TestCompose03", "TestCompose03.xkfx" },
+    { "TestCompose04", "TestCompose04.xkfx" },
+    { "TestCompose05", "TestCompose05.xkfx" },
+    { "TestCompose06", "TestCompose06.xkfx" },
+    { "TestCompose07", "TestCompose07.xkfx" },
+    { "TestCompose08", "TestCompose08.xkfx" },
+    { "TestCompose09", "TestCompose09.xkfx" },
+    { "TestCompose09a", "TestCompose09a.xkfx" },
+    { "TestCompose10", "TestCompose10.xkfx" },
+    { "TestCompose11", "TestCompose11.xkfx" },
+    { "TestCompose12", "TestCompose12.xkfx" },
+    { "TestCompose13", "TestCompose13.xkfx" },
+    { "TestCompose14", "TestCompose14.xkfx" },
+    { "TestCompose15", "TestCompose15.xkfx" },
+    { "TestCompose16", "TestCompose16.xkfx" },
+    { "TestCompose17", "TestCompose17.xkfx" },
+    { "TestCompose18", "TestCompose18.xkfx" },
+    { "TestCompose19", "TestCompose19.xkfx" },
+    { "TestCompose20", "TestCompose20.xkfx" },
+    { "TestCompose21", "TestCompose21.xkfx" },
+    { "TestCompose22", "TestCompose22.xkfx" },
+    { "TestCompose23", "TestCompose23.xkfx" },
+    { "TestCompose24", "TestCompose24.xkfx" },
+    { "TestCompose25", "TestCompose25.xkfx" },
+    { "TestCompose26", "TestCompose26.xkfx" },
+    //{ "TestCompose27", "TestCompose27.xkfx" }, // TODO check crash
+    { "TestCompose28", "TestCompose28.xkfx" },
+    { "TestCompose29", "TestCompose29.xkfx" },
+    { "TestCompose30", "TestCompose30.xkfx" },
+    { "TestCompose31", "TestCompose31.xkfx" },
+    { "TestCompose32", "TestCompose32.xkfx" },
+    { "TestCompose33", "TestCompose33.xkfx" },
+    { "TestCompose34", "TestCompose34.xkfx" },
+    { "TestCompose35", "TestCompose35.xkfx" },
 
-    //{ "TestForLoop", "TestForLoop.xkfx" },
-    //{ "TestForEach01", "TestForEach01.xkfx" },
-    //{ "TestForEach02", "TestForEach02.xkfx" },
-    //{ "TestForEach03", "TestForEach03.xkfx" },
-    //{ "TestForEach04", "TestForEach04.xkfx" },
-    //{ "TestForEach05", "TestForEach05.xkfx" },
-    //{ "TestForEachCompose01", "TestForEachCompose01.xkfx" },
-    //{ "TestForEachCompose02", "TestForEachCompose02.xkfx" },
-    //{ "TestForEachCompose03", "TestForEachCompose03.xkfx" },
-    //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
-    //{ "TestMergeStreams02", "TestMergeStreams02.xkfx" },
-    //{ "TestMergeStreams03", "TestMergeStreams03.xkfx" },
+    { "TestForLoop", "TestForLoop.xkfx" },
+    { "TestForEach01", "TestForEach01.xkfx" },
+    { "TestForEach02", "TestForEach02.xkfx" },
+    { "TestForEach03", "TestForEach03.xkfx" },
+    { "TestForEach04", "TestForEach04.xkfx" },
+    { "TestForEach05", "TestForEach05.xkfx" },
+    { "TestForEachCompose01", "TestForEachCompose01.xkfx" },
+    { "TestForEachCompose02", "TestForEachCompose02.xkfx" },
+    { "TestForEachCompose03", "TestForEachCompose03.xkfx" },
+    { "TestMergeStreams01", "TestMergeStreams01.xkfx" },
+    { "TestMergeStreams02", "TestMergeStreams02.xkfx" },
+    { "TestMergeStreams03", "TestMergeStreams03.xkfx" },
 
-    //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
-    //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
-    //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
-    //{ "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
-    //{ "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
-    //{ "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" },
-    //{ "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
-    //{ "TestReshuffleStreams08", "TestReshuffleStreams08.xkfx" },
-    //{ "TestReshuffleStreams09", "TestReshuffleStreams09.xkfx" },
+    { "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
+    { "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
+    { "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
+    { "TestReshuffleStreams04", "TestReshuffleStreams04.xkfx" },
+    { "TestReshuffleStreams05", "TestReshuffleStreams05.xkfx" },
+    //{ "TestReshuffleStreams06", "TestReshuffleStreams06.xkfx" }, // TODO check crash
+    { "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
+    { "TestReshuffleStreams08", "TestReshuffleStreams08.xkfx" },
+    { "TestReshuffleStreams09", "TestReshuffleStreams09.xkfx" },
 ///////////////{ "TestReshuffleStreams10", "TestReshuffleStreams10.xkfx" },  calling recursive function crash with SPIRV-Cross
 
+    // TODO check crash
     //{ "TestGenerics01", "TestGenerics01.xkfx" },
     //{ "TestGenerics02", "TestGenerics02.xkfx" },
     //{ "TestGenerics03", "TestGenerics03.xkfx" },
@@ -240,40 +254,41 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics10", "TestGenerics10.xkfx" },
     //{ "TestGenerics11", "TestGenerics11.xkfx" },
 
-    //{ "CBuffer01", "CBuffer01.xkfx" },
-    //{ "CBuffer02", "CBuffer02.xkfx" },
-    //{ "CBuffer03", "CBuffer03.xkfx" },
-    //{ "CBuffer04", "CBuffer04.xkfx" },
-    //{ "CBuffer05", "CBuffer05.xkfx" },
-    //{ "CBuffer06", "CBuffer06.xkfx" },
-    //{ "CBuffer07", "CBuffer07.xkfx" },
-    //{ "CBuffer08", "CBuffer08.xkfx" },
-    //{ "CBuffer09", "CBuffer09.xkfx" },
-    //{ "CBuffer10", "CBuffer10.xkfx" },
-    //{ "CBuffer11", "CBuffer11.xkfx" },
-    //{ "CBufferSubpart01", "CBufferSubpart01.xkfx" },
-    //{ "CBufferSubpart02", "CBufferSubpart02.xkfx" },
+    { "CBuffer01", "CBuffer01.xkfx" },
+    { "CBuffer02", "CBuffer02.xkfx" },
+    { "CBuffer03", "CBuffer03.xkfx" },
+    { "CBuffer04", "CBuffer04.xkfx" },
+    { "CBuffer05", "CBuffer05.xkfx" },
+    { "CBuffer06", "CBuffer06.xkfx" },
+    { "CBuffer07", "CBuffer07.xkfx" },
+    { "CBuffer08", "CBuffer08.xkfx" },
+    { "CBuffer09", "CBuffer09.xkfx" },
+    { "CBuffer10", "CBuffer10.xkfx" },
+    { "CBuffer11", "CBuffer11.xkfx" },
+    { "CBufferSubpart01", "CBufferSubpart01.xkfx" },
+    { "CBufferSubpart02", "CBufferSubpart02.xkfx" },
 
-    //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
-    //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
-    //{ "ShaderWithResources03", "ShaderWithResources03.xkfx" },
-    //{ "ShaderWithResources04", "ShaderWithResources04.xkfx" },
-    //{ "ShaderWithResources05", "ShaderWithResources05.xkfx" },
-    //{ "ShaderWithResources06", "ShaderWithResources06.xkfx" },
-    //{ "ShaderWithResources07", "ShaderWithResources07.xkfx" },
-    //{ "ShaderWithResources08", "ShaderWithResources08.xkfx" },
-    //{ "ShaderWithResources09", "ShaderWithResources09.xkfx" },
-    //{ "ShaderWithResources09b", "ShaderWithResources09b.xkfx" },
-    //{ "ShaderWithResources10", "ShaderWithResources10.xkfx" },
+    { "ShaderWithResources01", "ShaderWithResources01.xkfx" },
+    { "ShaderWithResources02", "ShaderWithResources02.xkfx" },
+    { "ShaderWithResources03", "ShaderWithResources03.xkfx" },
+    { "ShaderWithResources04", "ShaderWithResources04.xkfx" },
+    { "ShaderWithResources05", "ShaderWithResources05.xkfx" },
+    { "ShaderWithResources06", "ShaderWithResources06.xkfx" },
+    { "ShaderWithResources07", "ShaderWithResources07.xkfx" },
+    { "ShaderWithResources08", "ShaderWithResources08.xkfx" },
+    { "ShaderWithResources09", "ShaderWithResources09.xkfx" },
+    { "ShaderWithResources09b", "ShaderWithResources09b.xkfx" },
+    { "ShaderWithResources10", "ShaderWithResources10.xkfx" },
 
-    //{ "testDependency01", "testDependency01.xkfx" },
-    //{ "testDependency02", "testDependency02.xkfx" },
-    //{ "testDependency03", "testDependency03.xkfx" },
-    //{ "testDependency04", "testDependency04.xkfx" },
-    //{ "testDependency05", "testDependency05.xkfx" },
-    //{ "testDependency06", "testDependency06.xkfx" },
-    //{ "testDependency07", "testDependency07.xkfx" },
+    { "testDependency01", "testDependency01.xkfx" },
+    { "testDependency02", "testDependency02.xkfx" },
+    { "testDependency03", "testDependency03.xkfx" },
+    { "testDependency04", "testDependency04.xkfx" },
+    { "testDependency05", "testDependency05.xkfx" },
+    { "testDependency06", "testDependency06.xkfx" },
+    { "testDependency07", "testDependency07.xkfx" },
 
+    // TODO check crash
     //{ "EffectReflection01", "EffectReflection01.xkfx" },
     //{ "EffectReflection02", "EffectReflection02.xkfx" },
     //{ "EffectReflection03", "EffectReflection03.xkfx" },
@@ -284,52 +299,53 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "EffectReflection08", "EffectReflection08.xkfx" },
     //{ "EffectReflection09", "EffectReflection09.xkfx" },
 
-    //{ "abstractFunctions01", "abstractFunctions01.xkfx" },
-    //{ "abstractFunctions02", "abstractFunctions02.xkfx" },
-    //{ "abstractFunctions03", "abstractFunctions03.xkfx" },
-    //{ "abstractFunctions04", "abstractFunctions04.xkfx" },
-    //{ "abstractFunctions05", "abstractFunctions05.xkfx" },
-    //{ "abstractFunctions06", "abstractFunctions06.xkfx" },
+    { "abstractFunctions01", "abstractFunctions01.xkfx" },
+    { "abstractFunctions02", "abstractFunctions02.xkfx" },
+    { "abstractFunctions03", "abstractFunctions03.xkfx" },
+    { "abstractFunctions04", "abstractFunctions04.xkfx" },
+    { "abstractFunctions05", "abstractFunctions05.xkfx" },
+    { "abstractFunctions06", "abstractFunctions06.xkfx" },
 
-    //{ "SemanticTest01", "SemanticTest01.xkfx" },
-    //{ "testTypeSize", "testTypeSize.xkfx" },
-    //{ "namespaces01", "namespaces01.xkfx" },
-    //{ "testMacro01", "testMacro01.xkfx" },
-    //{ "testVarKeyword01", "testVarKeyword01.xkfx" },
-    //{ "testVarKeyword02", "testVarKeyword02.xkfx" },
+    { "SemanticTest01", "SemanticTest01.xkfx" },
+    { "testTypeSize", "testTypeSize.xkfx" },
+    { "namespaces01", "namespaces01.xkfx" },
+    { "testMacro01", "testMacro01.xkfx" },
+    { "testVarKeyword01", "testVarKeyword01.xkfx" },
+    { "testVarKeyword02", "testVarKeyword02.xkfx" },
+    // TODO check crash
     //{ "userCustomType01", "userCustomType01.xkfx" },
     //{ "userCustomType02", "userCustomType02.xkfx" },
     //{ "userCustomType03", "userCustomType03.xkfx" },
     //{ "userCustomType04", "userCustomType04.xkfx" },
-    //{ "TestLink01", "TestLink01.xkfx" },
-    //{ "TestLink02", "TestLink02.xkfx" },
-    //{ "TestLink03", "TestLink03.xkfx" },
-    //{ "TestMemberName01", "TestMemberName01.xkfx" },
-    //{ "TestMemberName02", "TestMemberName02.xkfx" },
-    //{ "TestMemberName03", "TestMemberName03.xkfx" },
-    //{ "TestMemberName04", "TestMemberName04.xkfx" },
-    //{ "TestMemberName05", "TestMemberName05.xkfx" },
-    //{ "TestSemanticType01", "TestSemanticType01.xkfx" },
-    //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
-    //{ "functionsFinding01", "functionsFinding01.xkfx" },
-    //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
+    { "TestLink01", "TestLink01.xkfx" },
+    { "TestLink02", "TestLink02.xkfx" },
+    { "TestLink03", "TestLink03.xkfx" },
+    { "TestMemberName01", "TestMemberName01.xkfx" },
+    { "TestMemberName02", "TestMemberName02.xkfx" },
+    { "TestMemberName03", "TestMemberName03.xkfx" },
+    { "TestMemberName04", "TestMemberName04.xkfx" },
+    { "TestMemberName05", "TestMemberName05.xkfx" },
+    { "TestSemanticType01", "TestSemanticType01.xkfx" },
+    { "TestSemanticType02", "TestSemanticType02.xkfx" },
+    { "functionsFinding01", "functionsFinding01.xkfx" },
+    //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" }, // TODO check crash
     {"cbufferMembersNaming00", "cbufferMembersNaming00.xkfx"},
-    //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
-    //{ "testStreamIO01", "testStreamIO01.xkfx"},
-    //{ "methodOverride01", "methodOverride01.xkfx" },
-    //{ "methodOverride02", "methodOverride02.xkfx" },
-    //{ "methodOverride03", "methodOverride03.xkfx" },
-    //{ "methodOverride04", "methodOverride04.xkfx" },
-    //{ "methodOverride05", "methodOverride05.xkfx" },
-    //{ "methodOverride06", "methodOverride06.xkfx" },
-    //{ "methodOverride07", "methodOverride07.xkfx" },
+    //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" }, // TODO check crash
+    { "testStreamIO01", "testStreamIO01.xkfx"},
+    { "methodOverride01", "methodOverride01.xkfx" },
+    { "methodOverride02", "methodOverride02.xkfx" },
+    { "methodOverride03", "methodOverride03.xkfx" },
+    { "methodOverride04", "methodOverride04.xkfx" },
+    { "methodOverride05", "methodOverride05.xkfx" },
+    { "methodOverride06", "methodOverride06.xkfx" },
+    { "methodOverride07", "methodOverride07.xkfx" },
 
-    //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
-    //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
-    //{ "testSamplerStates03", "testSamplerStates03.xkfx" },
-    //{ "testSamplerStates04", "testSamplerStates04.xkfx" },
+    { "testSamplerStates01", "testSamplerStates01.xkfx"},
+    { "testSamplerStates02", "testSamplerStates02.xkfx" },
+    { "testSamplerStates03", "testSamplerStates03.xkfx" },
+    { "testSamplerStates04", "testSamplerStates04.xkfx" },
 
-    //{ "functionsWithDefaultParameterValue01", "functionsWithDefaultParameterValue01.xkfx" },
+    { "functionsWithDefaultParameterValue01", "functionsWithDefaultParameterValue01.xkfx" },
     //{ "functionsWithStreamsVariable01", "functionsWithStreamsVariable01.xkfx" },
     //{ "functionsWithStreamsVariable02", "functionsWithStreamsVariable02.xkfx" },
     //{ "functionsWithStreamsVariable03", "functionsWithStreamsVariable03.xkfx" },
@@ -498,6 +514,41 @@ static bool SetupTestDirectories()
 
     return true;
 }
+
+class XkslEnvironment : public ::testing::Environment {
+public:
+    virtual ~XkslEnvironment() {}
+
+    void SetUp()
+	{
+        if (!SetupTestDirectories()) {
+            error("Failed to setup the directories");
+            return;
+        }
+
+		if (processEffectWithDllApi)
+        {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
+            xkslangDll::InitializeParser();
+#else
+            error("Unauthorized access to DLL functions");
+#endif
+        }
+    }
+
+    void TearDown()
+    {
+        if (processEffectWithDllApi) {
+#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
+            xkslangDll::ReleaseParser();
+#else
+            error("Unauthorized access to DLL functions");
+#endif
+        }
+    }
+};
+
+::testing::Environment* const xksl_env = ::testing::AddGlobalTestEnvironment(new XkslEnvironment);
 
 enum class BytecodeFileFormat
 {
@@ -2615,7 +2666,7 @@ static bool ProcessEffectCommandLine(XkslParser* parser, string effectName, stri
     return success;
 }
 
-static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
+static bool ProcessEffect(XkslParser* parser, XkfxEffectToProcess& effect)
 {
     string effectName = effect.effectName;
 
@@ -2697,31 +2748,57 @@ static bool ProcessEffect(XkslParser* parser, XkfxEffectsToProcess& effect)
     return success;
 }
 
-void main(int argc, char** argv)
-{
-#ifdef _DEBUG
-    std::cout << "DEBUG mode" << endl << endl;
-#else
-    std::cout << "RELEASE mode" << endl << endl;
-#endif
+class XkslTest : public ::testing::TestWithParam<XkslFileToParseAndConvert> {
 
-    if (!SetupTestDirectories())
-    {
-        error("Failed to setup the directories");
-        return;
-    }
+};
+
+class XkfxTest : public ::testing::TestWithParam<XkfxEffectToProcess> {
+};
+
+TEST_P(XkslTest, ParseAndConvert)
+{
+    string xkslShaderInputFile = GetParam().fileName;
+    vector<ShaderGenericValues> listGenericsValue;
+    vector<XkslUserDefinedMacro> listUserDefinedMacros;
 
     //Init parser
     XkslParser parser;
-    if (!parser.InitialiseXkslang())
-    {
+    if (!parser.InitialiseXkslang()) {
         error("Failed to initialize the XkslParser");
         return;
     }
 
+    // parse and convert all xksl files
+    SpxBytecode spirXBytecode;
+    ASSERT_TRUE(ParseAndConvertXkslFile(&parser, xkslShaderInputFile, listGenericsValue, listUserDefinedMacros, spirXBytecode));
+
+	parser.Finalize();
+}
+
+TEST_P(XkfxTest, Process)
+{
+    auto effect = GetParam();
+
+    //Init parser
+    XkslParser parser;
+    if (!parser.InitialiseXkslang()) {
+        error("Failed to initialize the XkslParser");
+        return;
+    }
+
+	ASSERT_TRUE(ProcessEffect(&parser, effect));
+
+	parser.Finalize();
+}
+
+INSTANTIATE_TEST_CASE_P(XkslParse, XkslTest, ::testing::ValuesIn(vecXkslFilesToConvert));
+INSTANTIATE_TEST_CASE_P(XkfxProcess, XkfxTest, ::testing::ValuesIn(vecXkfxEffectToProcess));
+
+void old_tests_to_convert(int argc, char** argv)
+{
     /*{
         //To test XkfxParser before anything else
-        XkfxEffectsToProcess effect = vecXkfxEffectToProcess[0];
+        XkfxEffectToProcess effect = vecXkfxEffectToProcess[0];
         const string inputFname = inputDir + effect.inputFileName;
         string effectCmdLines;
         if (!Utils::ReadFile(inputFname, effectCmdLines))
@@ -2752,107 +2829,4 @@ void main(int argc, char** argv)
             }
         }
     }*/
-
-    //====================================================================================================================
-    //====================================================================================================================
-    std::cout << "___________________________________________________________________________________" << endl;
-    std::cout << "Parse and convert XKSL Files:" << endl << endl;
-    int countParsingProcessed = 0;
-    int countParsingSuccessful = 0;
-    vector<string> listXkslParsingFailed;
-    //Parse the xksl files using XkslParser library
-    {
-        for (unsigned int n = 0; n < vecXkslFilesToConvert.size(); ++n)
-        {
-            countParsingProcessed++;
-            bool success = true;
-
-            XkslFilesToParseAndConvert& xkslFilesToParseAndConvert = vecXkslFilesToConvert[n];
-            string xkslShaderInputFile = xkslFilesToParseAndConvert.fileName;
-            vector<ShaderGenericValues> listGenericsValue;
-            vector<XkslUserDefinedMacro> listUserDefinedMacros;
-
-            // parse and convert all xksl files
-            SpxBytecode spirXBytecode;
-            success = ParseAndConvertXkslFile(&parser, xkslShaderInputFile, listGenericsValue, listUserDefinedMacros, spirXBytecode);
-
-            if (success) countParsingSuccessful++;
-            else listXkslParsingFailed.push_back(xkslShaderInputFile);
-
-            std::cout << endl;
-        }
-    }
-
-    //====================================================================================================================
-    //====================================================================================================================
-    std::cout << endl;
-    std::cout << "___________________________________________________________________________________" << endl;
-    std::cout << "Process XKFX Effect  Files:" << endl << endl;
-
-    if (processEffectWithDllApi)
-    {
-#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
-        xkslangDll::InitializeParser();
-#else
-        error("Unauthorized access to DLL functions");
-#endif
-    }
-
-    int countEffectsProcessed = 0;
-    int countEffectsSuccessful = 0;
-    vector<string> listEffectsFailed;
-    //Parse the effects
-    {
-        for (unsigned int n = 0; n < vecXkfxEffectToProcess.size(); ++n)
-        {
-            //for (unsigned int iii = 0; iii < 10; ++iii)
-            {
-                XkfxEffectsToProcess effect = vecXkfxEffectToProcess[n];
-                countEffectsProcessed++;
-
-                bool success = ProcessEffect(&parser, effect);
-
-                if (success) countEffectsSuccessful++;
-                else listEffectsFailed.push_back(effect.effectName);
-
-                std::cout << endl;
-            }
-        }
-    }
-
-    if (processEffectWithDllApi)
-    {
-#ifdef ALLOW_ACCESS_TO_XKSLANG_DLL
-        xkslangDll::ReleaseParser();
-#else
-        error("Unauthorized access to DLL functions");
-#endif
-    }
-
-    std::cout << endl;
-    std::cout << "___________________________________________________________________________________" << endl;
-    std::cout << "Results:" << endl << endl;
-
-    //==========================================================
-    std::cout << "Count XKSL files parsed: " << countParsingProcessed << endl;
-    std::cout << "Count XKSL files successful: " << countParsingSuccessful << endl;
-    if (listXkslParsingFailed.size() > 0)
-    {
-        std::cout << "  Failed XKSL Files:" << endl;
-        for (unsigned int i = 0; i<listXkslParsingFailed.size(); ++i) std::cout << listXkslParsingFailed[i] << endl;
-    }
-    std::cout << endl;
-
-    //==========================================================
-    std::cout << "Count Effects processed: " << countEffectsProcessed << endl;
-    std::cout << "Count Effects successful: " << countEffectsSuccessful << endl;
-    if (listEffectsFailed.size() > 0)
-    {
-        std::cout << "  Failed Effects:" << endl;
-        for (unsigned int i = 0; i<listEffectsFailed.size(); ++i) std::cout << listEffectsFailed[i] << endl;
-    }
-    std::cout << endl;
-
-    parser.Finalize();
-
 }

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xkslangtests", "xkslangtests\xkslangtests.vcxproj", "{6B9C4A9C-542D-4E01-B825-38D2402B701F}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -282,5 +282,8 @@ Global
 		{DB306F19-9D8A-43B8-B557-8C01BD096671} = {5AD3FBFA-FE80-465A-A982-11F5EB8B6A73}
 		{4687EE14-BB59-4949-B5A6-4ACC8BB69E68} = {5AD3FBFA-FE80-465A-A982-11F5EB8B6A73}
 		{07D80919-57D7-498F-97AC-B69D16050672} = {5AD3FBFA-FE80-465A-A982-11F5EB8B6A73}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5F0A725B-A8C9-487F-8809-A93CE031921D}
 	EndGlobalSection
 EndGlobal
