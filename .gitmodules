@@ -1,3 +1,4 @@
 [submodule "SPIRV-Cross"]
 	path = SPIRV-Cross
-	url = https://eris.xenko.com/bitbucket/scm/xk/spirv-cross.git
+	url = https://github.com/xenko3d/SPIRV-Cross.git
+		  
