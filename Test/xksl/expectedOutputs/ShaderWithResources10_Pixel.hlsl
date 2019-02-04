@@ -13,14 +13,16 @@ struct PS_STREAMS
     float4 screenPosition_id2;
 };
 
+static const PS_STREAMS _94 = { uint2(0u, 0u), 0, 0.0f.xxxx };
+
 Buffer<uint4> ShaderMain_LightIndices;
 Buffer<float4> ShaderMain_SpotLights;
 
-static int PS_IN_lightIndex;
+static int PS_IN_LIGHTINDEX;
 
 struct SPIRV_Cross_Input
 {
-    int PS_IN_lightIndex : LIGHTINDEX;
+    int PS_IN_LIGHTINDEX : LIGHTINDEX;
 };
 
 void ShaderMain_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndexIgnored)
@@ -40,8 +42,8 @@ void ShaderMain_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndex
 
 void frag_main()
 {
-    PS_STREAMS _streams = { uint2(0u, 0u), 0, 0.0f.xxxx };
-    _streams.lightIndex_id1 = PS_IN_lightIndex;
+    PS_STREAMS _streams = _94;
+    _streams.lightIndex_id1 = PS_IN_LIGHTINDEX;
     _streams.lightData_id0 = uint2(0u, 0u);
     _streams.screenPosition_id2 = float4(1.0f, 2.0f, 3.0f, 4.0f);
     int param = 0;
@@ -50,6 +52,6 @@ void frag_main()
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_lightIndex = stage_input.PS_IN_lightIndex;
+    PS_IN_LIGHTINDEX = stage_input.PS_IN_LIGHTINDEX;
     frag_main();
 }

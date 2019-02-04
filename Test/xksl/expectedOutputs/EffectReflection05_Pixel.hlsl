@@ -13,6 +13,8 @@ struct PS_STREAMS
     float4 ColorTarget_id0;
 };
 
+static const PS_STREAMS _32 = { 0.0f.xxxx };
+
 cbuffer Globals
 {
     ShaderMain_StructType ShaderMain_var1;
@@ -28,7 +30,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx };
+    PS_STREAMS _streams = _32;
     _streams.ColorTarget_id0 = ShaderMain_aCol + ShaderMain_var1.aF4;
     PS_OUT_ColorTarget = _streams.ColorTarget_id0;
 }

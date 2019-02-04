@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct TestShaderBase_Streams
 {
@@ -19,10 +22,10 @@ struct VS_STREAMS
     int sBase_id1;
 };
 
-layout(location = 0) in vec3 VS_IN_sMain;
-layout(location = 1) in int VS_IN_sBase;
-layout(location = 0) out vec3 VS_OUT_sMain;
-layout(location = 1) out int VS_OUT_sBase;
+in vec3 VS_IN_SMAIN;
+in int VS_IN_SBASE;
+out vec3 VS_OUT_sMain;
+out int VS_OUT_sBase;
 
 TestShaderMain_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
 {
@@ -81,8 +84,8 @@ void TestShaderMain_Compute(inout TestShaderMain_Streams s1, TestShaderMain_Stre
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(vec3(0.0), 0);
-    _streams.sMain_id0 = VS_IN_sMain;
-    _streams.sBase_id1 = VS_IN_sBase;
+    _streams.sMain_id0 = VS_IN_SMAIN;
+    _streams.sBase_id1 = VS_IN_SBASE;
     TestShaderMain_Streams backup = TestShaderMain__getStreams(_streams);
     TestShaderMain_Streams param = TestShaderMain__getStreams(_streams);
     TestShaderMain_Compute(param);
@@ -94,5 +97,7 @@ void main()
     TestShaderMain_Compute(param_3, param_4);
     VS_OUT_sMain = _streams.sMain_id0;
     VS_OUT_sBase = _streams.sBase_id1;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

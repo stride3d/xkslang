@@ -17,13 +17,15 @@ struct PS_STREAMS
     int sBase_id1;
 };
 
-static float3 PS_IN_sMain;
-static int PS_IN_sBase;
+static const PS_STREAMS _124 = { 0.0f.xxx, 0 };
+
+static float3 PS_IN_SMAIN;
+static int PS_IN_SBASE;
 
 struct SPIRV_Cross_Input
 {
-    float3 PS_IN_sMain : SMAIN;
-    int PS_IN_sBase : SBASE;
+    int PS_IN_SBASE : SBASE;
+    float3 PS_IN_SMAIN : SMAIN;
 };
 
 TestShaderMain_Streams TestShaderMain__getStreams_PS(PS_STREAMS _streams)
@@ -84,9 +86,9 @@ void TestShaderMain_Compute(inout TestShaderMain_Streams s1, TestShaderMain_Stre
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxx, 0 };
-    _streams.sMain_id0 = PS_IN_sMain;
-    _streams.sBase_id1 = PS_IN_sBase;
+    PS_STREAMS _streams = _124;
+    _streams.sMain_id0 = PS_IN_SMAIN;
+    _streams.sBase_id1 = PS_IN_SBASE;
     TestShaderMain_Streams backup = TestShaderMain__getStreams_PS(_streams);
     TestShaderMain_Streams param = TestShaderMain__getStreams_PS(_streams);
     TestShaderMain_Compute(param);
@@ -100,7 +102,7 @@ void frag_main()
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_sMain = stage_input.PS_IN_sMain;
-    PS_IN_sBase = stage_input.PS_IN_sBase;
+    PS_IN_SMAIN = stage_input.PS_IN_SMAIN;
+    PS_IN_SBASE = stage_input.PS_IN_SBASE;
     frag_main();
 }

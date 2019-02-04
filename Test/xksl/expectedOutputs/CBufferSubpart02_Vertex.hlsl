@@ -3,14 +3,16 @@ struct VS_STREAMS
     int aStream_id0;
 };
 
+static const VS_STREAMS _20 = { 0 };
+
 cbuffer PerView
 {
     int ShaderBase_var1;
     int ShaderBase_var2;
-    float4 ShaderMain__padding_PerView_Default;
+    float4 ShaderMain_padding_PerView_Default;
     int ShaderMain_var3;
     int ShaderMain_var4;
-    float4 ShaderMain__padding_PerView_Lighting;
+    float4 ShaderMain_padding_PerView_Lighting;
 };
 
 static int VS_OUT_aStream;
@@ -22,7 +24,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0 };
+    VS_STREAMS _streams = _20;
     _streams.aStream_id0 = ShaderBase_var1 + ShaderMain_var3;
     VS_OUT_aStream = _streams.aStream_id0;
 }

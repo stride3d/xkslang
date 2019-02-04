@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct ShaderMain_SpotLightDataInternal
 {
@@ -18,7 +21,7 @@ struct PS_STREAMS
 uniform usamplerBuffer ShaderMain_LightIndices;
 uniform samplerBuffer ShaderMain_SpotLights;
 
-layout(location = 0) in int PS_IN_lightIndex;
+in int PS_IN_LIGHTINDEX;
 
 void ShaderMain_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndexIgnored)
 {
@@ -38,7 +41,7 @@ void ShaderMain_PrepareDirectLightCore(inout PS_STREAMS _streams, int lightIndex
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(uvec2(0u), 0, vec4(0.0));
-    _streams.lightIndex_id1 = PS_IN_lightIndex;
+    _streams.lightIndex_id1 = PS_IN_LIGHTINDEX;
     _streams.lightData_id0 = uvec2(0u);
     _streams.screenPosition_id2 = vec4(1.0, 2.0, 3.0, 4.0);
     int param = 0;

@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct TestShaderBase_Streams
 {
@@ -19,8 +22,8 @@ struct PS_STREAMS
     int sBase_id1;
 };
 
-layout(location = 0) in vec3 PS_IN_sMain;
-layout(location = 1) in int PS_IN_sBase;
+in vec3 PS_IN_SMAIN;
+in int PS_IN_SBASE;
 
 TestShaderMain_Streams TestShaderMain__getStreams_PS(PS_STREAMS _streams)
 {
@@ -79,8 +82,8 @@ void TestShaderMain_Compute(inout TestShaderMain_Streams s1, TestShaderMain_Stre
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec3(0.0), 0);
-    _streams.sMain_id0 = PS_IN_sMain;
-    _streams.sBase_id1 = PS_IN_sBase;
+    _streams.sMain_id0 = PS_IN_SMAIN;
+    _streams.sBase_id1 = PS_IN_SBASE;
     TestShaderMain_Streams backup = TestShaderMain__getStreams_PS(_streams);
     TestShaderMain_Streams param = TestShaderMain__getStreams_PS(_streams);
     TestShaderMain_Compute(param);

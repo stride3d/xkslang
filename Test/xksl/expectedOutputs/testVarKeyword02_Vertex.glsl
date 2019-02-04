@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 vec2 ShaderTest_GetSamplePlane(int k, int samplesCount)
 {
@@ -21,5 +24,7 @@ void main()
     int param = 5;
     int param_1 = 10;
     vec2 toto = ShaderTest_GetSamplePlane(param, param_1);
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

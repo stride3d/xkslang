@@ -5,12 +5,12 @@
 ***********************
 *****  Resources  *****
 ***********************
-@C    ShaderComp_LightClusters => ShaderComp.LightClusters.comp1 [Stage=Vertex]
+@C    ShaderComp_LightClusters => ShaderComp.LightClusters [Stage=Vertex]
 
 ConstantBuffers. Count=0
 
 ResourceBindings. Count=1
- Stage=Vertex KeyName="ShaderComp.LightClusters.comp1" RawName="ShaderComp_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Vertex KeyName="ShaderComp.LightClusters" RawName="ShaderComp_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D GroupName="PerView" LogicalGroup="Lighting"
 
 InputAttributes. Count=0
 

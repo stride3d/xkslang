@@ -17,13 +17,15 @@ struct VS_STREAMS
     float3 matColor_id1;
 };
 
-static float VS_IN_matBlend;
-static float3 VS_IN_matColor;
+static const VS_STREAMS _66 = { 0.0f, 0.0f.xxx };
+
+static float VS_IN_MATBLEND;
+static float3 VS_IN_MATCOLOR;
 
 struct SPIRV_Cross_Input
 {
-    float VS_IN_matBlend : MATBLEND;
-    float3 VS_IN_matColor : MATCOLOR;
+    float VS_IN_MATBLEND : MATBLEND;
+    float3 VS_IN_MATCOLOR : MATCOLOR;
 };
 
 ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
@@ -55,16 +57,16 @@ void ShaderMain_Compute(inout VS_STREAMS _streams, ShaderMain_Streams fromStream
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f, 0.0f.xxx };
-    _streams.matBlend_id0 = VS_IN_matBlend;
-    _streams.matColor_id1 = VS_IN_matColor;
+    VS_STREAMS _streams = _66;
+    _streams.matBlend_id0 = VS_IN_MATBLEND;
+    _streams.matColor_id1 = VS_IN_MATCOLOR;
     ShaderMain_Streams param = ShaderMain__getStreams(_streams);
     ShaderMain_Compute(_streams, param);
 }
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_matBlend = stage_input.VS_IN_matBlend;
-    VS_IN_matColor = stage_input.VS_IN_matColor;
+    VS_IN_MATBLEND = stage_input.VS_IN_MATBLEND;
+    VS_IN_MATCOLOR = stage_input.VS_IN_MATCOLOR;
     vert_main();
 }

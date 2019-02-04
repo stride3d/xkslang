@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct ShaderMain_Streams
 {
@@ -15,9 +18,9 @@ struct VS_STREAMS
     vec3 matColor_id2;
 };
 
-layout(location = 0) in float VS_IN_matBlend;
-layout(location = 1) in vec3 VS_IN_matNormal;
-layout(location = 2) in vec3 VS_IN_matColor;
+in float VS_IN_MATBLEND;
+in vec3 VS_IN_MATNORMAL;
+in vec3 VS_IN_MATCOLOR;
 
 ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
 {
@@ -28,25 +31,21 @@ ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
 void ShaderMain_Compute(inout VS_STREAMS _streams, ShaderMain_Streams fromStream)
 {
     vec3 middleNormal = (fromStream.matNormal + _streams.matNormal_id1) + _streams.matColor_id2;
-    vec3 _6;
-    if (_streams.matBlend_id0 < 0.5)
-    {
-        _6 = mix(fromStream.matNormal, middleNormal, vec3(_streams.matBlend_id0 / 0.5));
-    }
-    else
-    {
-        _6 = mix(middleNormal, _streams.matNormal_id1, vec3((_streams.matBlend_id0 - 0.5) * 2.0));
-    }
-    _streams.matNormal_id1 = _6;
+    vec3 _24 = mix(fromStream.matNormal, middleNormal, vec3(_streams.matBlend_id0 / 0.5));
+    vec3 _33 = mix(middleNormal, _streams.matNormal_id1, vec3((_streams.matBlend_id0 - 0.5) * 2.0));
+    bvec3 _34 = bvec3(_streams.matBlend_id0 < 0.5);
+    _streams.matNormal_id1 = vec3(_34.x ? _24.x : _33.x, _34.y ? _24.y : _33.y, _34.z ? _24.z : _33.z);
 }
 
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(0.0, vec3(0.0), vec3(0.0));
-    _streams.matBlend_id0 = VS_IN_matBlend;
-    _streams.matNormal_id1 = VS_IN_matNormal;
-    _streams.matColor_id2 = VS_IN_matColor;
+    _streams.matBlend_id0 = VS_IN_MATBLEND;
+    _streams.matNormal_id1 = VS_IN_MATNORMAL;
+    _streams.matColor_id2 = VS_IN_MATCOLOR;
     ShaderMain_Streams param = ShaderMain__getStreams(_streams);
     ShaderMain_Compute(_streams, param);
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

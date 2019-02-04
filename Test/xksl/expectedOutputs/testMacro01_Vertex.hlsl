@@ -3,6 +3,9 @@ struct VS_STREAMS
     int tabStream01_id0[2];
 };
 
+static const int _30[2] = { 0, 0 };
+static const VS_STREAMS _34 = { { 0, 0 } };
+
 static int VS_OUT_tabStream01[2];
 
 struct SPIRV_Cross_Output
@@ -12,7 +15,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { { 0, 0 } };
+    VS_STREAMS _streams = _34;
     for (int i = 0; i < 2; i++)
     {
         _streams.tabStream01_id0[i] = i;

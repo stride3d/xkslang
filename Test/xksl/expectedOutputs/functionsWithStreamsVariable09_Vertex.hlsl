@@ -26,25 +26,27 @@ struct VS_STREAMS
     float3 sBaseA_id2;
 };
 
-static float3 VS_IN_sMain;
-static float3 VS_IN_sBaseB;
-static float3 VS_IN_sBaseA;
+static const VS_STREAMS _100 = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxx };
+
+static float3 VS_IN_SMAIN;
+static float3 VS_IN_SBASEB;
+static float3 VS_IN_SBASEA;
 static float3 VS_OUT_sMain;
 static float3 VS_OUT_sBaseB;
 static float3 VS_OUT_sBaseA;
 
 struct SPIRV_Cross_Input
 {
-    float3 VS_IN_sMain : SMAIN;
-    float3 VS_IN_sBaseB : SBASEB;
-    float3 VS_IN_sBaseA : SBASEA;
+    float3 VS_IN_SBASEA : SBASEA;
+    float3 VS_IN_SBASEB : SBASEB;
+    float3 VS_IN_SMAIN : SMAIN;
 };
 
 struct SPIRV_Cross_Output
 {
-    float3 VS_OUT_sMain : SMAIN;
-    float3 VS_OUT_sBaseB : SBASEB;
     float3 VS_OUT_sBaseA : SBASEA;
+    float3 VS_OUT_sBaseB : SBASEB;
+    float3 VS_OUT_sMain : SMAIN;
 };
 
 TestShaderMain_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
@@ -91,10 +93,10 @@ void TestShaderMain_Compute(inout TestShaderMain_Streams s)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxx };
-    _streams.sMain_id0 = VS_IN_sMain;
-    _streams.sBaseB_id1 = VS_IN_sBaseB;
-    _streams.sBaseA_id2 = VS_IN_sBaseA;
+    VS_STREAMS _streams = _100;
+    _streams.sMain_id0 = VS_IN_SMAIN;
+    _streams.sBaseB_id1 = VS_IN_SBASEB;
+    _streams.sBaseA_id2 = VS_IN_SBASEA;
     TestShaderMain_Streams param = TestShaderMain__getStreams(_streams);
     TestShaderMain_Compute(param);
     VS_OUT_sMain = _streams.sMain_id0;
@@ -104,9 +106,9 @@ void vert_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_sMain = stage_input.VS_IN_sMain;
-    VS_IN_sBaseB = stage_input.VS_IN_sBaseB;
-    VS_IN_sBaseA = stage_input.VS_IN_sBaseA;
+    VS_IN_SMAIN = stage_input.VS_IN_SMAIN;
+    VS_IN_SBASEB = stage_input.VS_IN_SBASEB;
+    VS_IN_SBASEA = stage_input.VS_IN_SBASEA;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_sMain = VS_OUT_sMain;

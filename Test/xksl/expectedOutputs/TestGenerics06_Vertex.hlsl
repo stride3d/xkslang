@@ -3,6 +3,8 @@ struct VS_STREAMS
     int aStream_id0;
 };
 
+static const VS_STREAMS _28 = { 0 };
+
 cbuffer PreDraw
 {
     int ShaderBase_aVar;
@@ -27,7 +29,7 @@ int ShaderMain_7_4__compute()
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0 };
+    VS_STREAMS _streams = _28;
     _streams.aStream_id0 = ShaderMain_7_4__compute() + 11;
     VS_OUT_aStream = _streams.aStream_id0;
 }

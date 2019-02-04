@@ -3,11 +3,13 @@ struct VS_STREAMS
     float4 LocalColor_id0;
 };
 
-static float4 VS_IN_LocalColor;
+static const VS_STREAMS _24 = { 0.0f.xxxx };
+
+static float4 VS_IN_TStream;
 
 struct SPIRV_Cross_Input
 {
-    float4 VS_IN_LocalColor : TStream;
+    float4 VS_IN_TStream : TStream;
 };
 
 float4 ShaderMain_wxyz__Compute(VS_STREAMS _streams)
@@ -17,13 +19,13 @@ float4 ShaderMain_wxyz__Compute(VS_STREAMS _streams)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxxx };
-    _streams.LocalColor_id0 = VS_IN_LocalColor;
+    VS_STREAMS _streams = _24;
+    _streams.LocalColor_id0 = VS_IN_TStream;
     float4 color = ShaderMain_wxyz__Compute(_streams);
 }
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_LocalColor = stage_input.VS_IN_LocalColor;
+    VS_IN_TStream = stage_input.VS_IN_TStream;
     vert_main();
 }

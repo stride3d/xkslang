@@ -3,11 +3,13 @@ struct VS_STREAMS
     float4 meshTangent_id0;
 };
 
-static float4 VS_IN_meshTangent;
+static const VS_STREAMS _45 = { 0.0f.xxxx };
+
+static float4 VS_IN_TANGENT;
 
 struct SPIRV_Cross_Input
 {
-    float4 VS_IN_meshTangent : TANGENT;
+    float4 VS_IN_TANGENT : TANGENT;
 };
 
 float3x3 ShaderTest_GetTangentMatrix()
@@ -18,8 +20,8 @@ float3x3 ShaderTest_GetTangentMatrix()
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxxx };
-    _streams.meshTangent_id0 = VS_IN_meshTangent;
+    VS_STREAMS _streams = _45;
+    _streams.meshTangent_id0 = VS_IN_TANGENT;
     float3x3 f3x3 = ShaderTest_GetTangentMatrix();
     float3 f3 = _streams.meshTangent_id0.xyz;
     int k = 10;
@@ -28,6 +30,6 @@ void vert_main()
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_meshTangent = stage_input.VS_IN_meshTangent;
+    VS_IN_TANGENT = stage_input.VS_IN_TANGENT;
     vert_main();
 }

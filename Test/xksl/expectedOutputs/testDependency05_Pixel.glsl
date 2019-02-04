@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 int UtilsA_compute()
 {
@@ -84,16 +87,7 @@ int main()
 {
     int res = 0;
     res += (ShaderMain_function() + (5 * UtilsB_compute()));
-    int _8;
-    if (UtilsC_compute() == 4)
-    {
-        _8 = UtilsD_compute();
-    }
-    else
-    {
-        _8 = UtilsE_compute();
-    }
-    res += _8;
+    res += ((UtilsC_compute() == 4) ? UtilsD_compute() : UtilsE_compute());
     if (UtilsF_compute() != int(0u))
     {
         res += UtilsG_compute();
@@ -111,11 +105,11 @@ int main()
     int k = 0;
     for (;;)
     {
-        int _61 = k;
-        int _62 = _61 + 1;
-        k = _62;
-        int _63 = UtilsN_compute();
-        if (_61 < _63)
+        int _57 = k;
+        int _58 = _57 + 1;
+        k = _58;
+        int _59 = UtilsN_compute();
+        if (_57 < _59)
         {
             res += UtilsO_compute();
             continue;

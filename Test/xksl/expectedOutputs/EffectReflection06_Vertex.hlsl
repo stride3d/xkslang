@@ -3,6 +3,8 @@ struct VS_STREAMS
     float4 aStream_id0;
 };
 
+static const VS_STREAMS _30 = { 0.0f.xxxx };
+
 SamplerState ShaderMain_Sampler0;
 Texture2D<float4> ShaderMain_Texture0;
 
@@ -15,7 +17,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxxx };
+    VS_STREAMS _streams = _30;
     _streams.aStream_id0 = ShaderMain_Texture0.SampleLevel(ShaderMain_Sampler0, 0.4000000059604644775390625f.xx, 0.0f);
     VS_OUT_aStream = _streams.aStream_id0;
 }

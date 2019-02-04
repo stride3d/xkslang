@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct IMaterialStreamBlend_Streams
 {
@@ -19,8 +22,8 @@ struct VS_STREAMS
     vec3 matColor_id1;
 };
 
-layout(location = 0) in float VS_IN_matBlend;
-layout(location = 1) in vec3 VS_IN_matColor;
+in float VS_IN_MATBLEND;
+in vec3 VS_IN_MATCOLOR;
 
 ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
 {
@@ -50,9 +53,11 @@ void ShaderMain_Compute(inout VS_STREAMS _streams, ShaderMain_Streams fromStream
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(0.0, vec3(0.0));
-    _streams.matBlend_id0 = VS_IN_matBlend;
-    _streams.matColor_id1 = VS_IN_matColor;
+    _streams.matBlend_id0 = VS_IN_MATBLEND;
+    _streams.matColor_id1 = VS_IN_MATCOLOR;
     ShaderMain_Streams param = ShaderMain__getStreams(_streams);
     ShaderMain_Compute(_streams, param);
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

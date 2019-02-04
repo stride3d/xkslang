@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -12,7 +15,7 @@ layout(std140) uniform PerDraw
     vec4 ShaderMain_ColorArray[2];
 } PerDraw_var;
 
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+out vec4 PS_OUT_ColorTarget;
 
 void main()
 {

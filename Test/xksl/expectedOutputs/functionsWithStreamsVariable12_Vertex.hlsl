@@ -18,21 +18,23 @@ struct VS_STREAMS
     float3 sBase_id2;
 };
 
-static float3 VS_IN_sMain;
-static float3 VS_IN_sBase;
+static const VS_STREAMS _90 = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxx };
+
+static float3 VS_IN_SMAIN;
+static float3 VS_IN_SBASE;
 static float3 VS_OUT_sMain;
 static float3 VS_OUT_sBase;
 
 struct SPIRV_Cross_Input
 {
-    float3 VS_IN_sMain : SMAIN;
-    float3 VS_IN_sBase : SBASE;
+    float3 VS_IN_SBASE : SBASE;
+    float3 VS_IN_SMAIN : SMAIN;
 };
 
 struct SPIRV_Cross_Output
 {
-    float3 VS_OUT_sMain : SMAIN;
     float3 VS_OUT_sBase : SBASE;
+    float3 VS_OUT_sMain : SMAIN;
 };
 
 TestShaderMain_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
@@ -80,9 +82,9 @@ void TestShaderMain_Compute(inout VS_STREAMS _streams, inout TestShaderMain_Stre
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxx };
-    _streams.sMain_id1 = VS_IN_sMain;
-    _streams.sBase_id2 = VS_IN_sBase;
+    VS_STREAMS _streams = _90;
+    _streams.sMain_id1 = VS_IN_SMAIN;
+    _streams.sBase_id2 = VS_IN_SBASE;
     TestShaderMain_Streams param = TestShaderMain__getStreams(_streams);
     TestShaderMain_Compute(_streams, param);
     VS_OUT_sMain = _streams.sMain_id1;
@@ -91,8 +93,8 @@ void vert_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_sMain = stage_input.VS_IN_sMain;
-    VS_IN_sBase = stage_input.VS_IN_sBase;
+    VS_IN_SMAIN = stage_input.VS_IN_SMAIN;
+    VS_IN_SBASE = stage_input.VS_IN_SBASE;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_sMain = VS_OUT_sMain;

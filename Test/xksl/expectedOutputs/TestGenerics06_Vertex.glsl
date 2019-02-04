@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct VS_STREAMS
 {
@@ -10,7 +13,7 @@ layout(std140) uniform PreDraw
     int ShaderBase_aVar;
 } PreDraw_var;
 
-layout(location = 0) out int VS_OUT_aStream;
+out int VS_OUT_aStream;
 
 int ShaderBase_4_1__compute()
 {
@@ -27,5 +30,7 @@ void main()
     VS_STREAMS _streams = VS_STREAMS(0);
     _streams.aStream_id0 = ShaderMain_7_4__compute() + 11;
     VS_OUT_aStream = _streams.aStream_id0;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

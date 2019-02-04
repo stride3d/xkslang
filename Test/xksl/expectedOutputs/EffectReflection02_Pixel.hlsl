@@ -3,6 +3,8 @@ struct PS_STREAMS
     float4 ColorTarget_id0;
 };
 
+static const PS_STREAMS _24 = { 0.0f.xxxx };
+
 cbuffer PerDraw
 {
     column_major float2x3 ShaderMain_aMat23;
@@ -19,7 +21,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx };
+    PS_STREAMS _streams = _24;
     _streams.ColorTarget_id0 = ShaderMain_Color;
     PS_OUT_ColorTarget = _streams.ColorTarget_id0;
 }

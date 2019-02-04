@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 layout(std140) uniform PerDraw
 {
@@ -50,5 +53,7 @@ void main()
 {
     vec4 _10 = vec4(float(ReferenceCBuffer_var.ShaderMain__aInt));
     mat4 f44 = mat4(PerDraw_var.ShaderMain_arrayA[0][0] + _10, PerDraw_var.ShaderMain_arrayA[0][1] + _10, PerDraw_var.ShaderMain_arrayA[0][2] + _10, PerDraw_var.ShaderMain_arrayA[0][3] + _10);
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

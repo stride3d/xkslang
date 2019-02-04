@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct ShaderMain_StructType
 {
@@ -18,7 +21,7 @@ layout(std140) uniform Globals
     ShaderMain_StructType ShaderMain_var2;
 } Globals_var;
 
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+out vec4 PS_OUT_ColorTarget;
 
 void main()
 {

@@ -9,6 +9,9 @@ struct VS_STREAMS
     ShaderMain_DirectionalLightData aStreamVar_id0;
 };
 
+static const ShaderMain_DirectionalLightData _23 = { 0.0f.xxx, 0.0f.xxx };
+static const VS_STREAMS _27 = { { 0.0f.xxx, 0.0f.xxx } };
+
 cbuffer aCBuffer
 {
     ShaderMain_DirectionalLightData ShaderMain_toto[8];
@@ -23,7 +26,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { { 0.0f.xxx, 0.0f.xxx } };
+    VS_STREAMS _streams = _27;
     _streams.aStreamVar_id0.Color = ShaderMain_toto[0].Color;
     VS_OUT_aStreamVar = _streams.aStreamVar_id0;
 }

@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct ShaderMain_Streams
 {
@@ -11,7 +14,7 @@ struct PS_STREAMS
     float matBlend_id0;
 };
 
-layout(location = 0) in float PS_IN_matBlend;
+in float PS_IN_MATBLEND;
 
 ShaderMain_Streams ShaderMain__getStreams_PS(PS_STREAMS _streams)
 {
@@ -27,7 +30,7 @@ float ShaderMain_Compute(ShaderMain_Streams fromStream)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(0.0);
-    _streams.matBlend_id0 = PS_IN_matBlend;
+    _streams.matBlend_id0 = PS_IN_MATBLEND;
     ShaderMain_Streams backup = ShaderMain__getStreams_PS(_streams);
     ShaderMain_Streams param = backup;
     float f = ShaderMain_Compute(param);

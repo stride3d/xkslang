@@ -3,6 +3,8 @@ struct PS_STREAMS
     float2 aStream_id0;
 };
 
+static const PS_STREAMS _91 = { 0.0f.xx };
+
 Texture2D<float4> ShaderMain_Texture0;
 SamplerState ShaderMain_Sampler;
 SamplerState ShaderMain_PointSampler;
@@ -15,17 +17,17 @@ SamplerState ShaderMain_PointRepeatSampler;
 SamplerState ShaderMain_LinearRepeatSampler;
 SamplerState ShaderMain_RepeatSampler;
 
-static float2 PS_IN_aStream;
+static float2 PS_IN_ASTREAM;
 
 struct SPIRV_Cross_Input
 {
-    float2 PS_IN_aStream : ASTREAM;
+    float2 PS_IN_ASTREAM : ASTREAM;
 };
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xx };
-    _streams.aStream_id0 = PS_IN_aStream;
+    PS_STREAMS _streams = _91;
+    _streams.aStream_id0 = PS_IN_ASTREAM;
     float2 uv2 = _streams.aStream_id0;
     float4 f_noSampler = ShaderMain_Texture0.Sample(ShaderMain_Sampler, uv2);
     float4 f_pointSampler = ShaderMain_Texture0.Sample(ShaderMain_PointSampler, uv2);
@@ -41,6 +43,6 @@ void frag_main()
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_aStream = stage_input.PS_IN_aStream;
+    PS_IN_ASTREAM = stage_input.PS_IN_ASTREAM;
     frag_main();
 }

@@ -15,17 +15,19 @@ struct PS_STREAMS
     float b2_id3;
 };
 
-static float4 PS_IN_s1;
-static float4 PS_IN_s2;
-static int PS_IN_b1;
-static float PS_IN_b2;
+static const PS_STREAMS _70 = { 0.0f.xxxx, 0.0f.xxxx, 0, 0.0f };
+
+static float4 PS_IN_S1;
+static float4 PS_IN_S2;
+static int PS_IN_B1;
+static float PS_IN_B2;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_s1 : S1;
-    float4 PS_IN_s2 : S2;
-    int PS_IN_b1 : B1;
-    float PS_IN_b2 : B2;
+    int PS_IN_B1 : B1;
+    float PS_IN_B2 : B2;
+    float4 PS_IN_S1 : S1;
+    float4 PS_IN_S2 : S2;
 };
 
 ShaderMain_Streams ShaderMain__getStreams_PS(PS_STREAMS _streams)
@@ -45,11 +47,11 @@ void ShaderMain__setStreams_PS(inout PS_STREAMS _streams, ShaderMain_Streams _s)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0, 0.0f };
-    _streams.s1_id0 = PS_IN_s1;
-    _streams.s2_id1 = PS_IN_s2;
-    _streams.b1_id2 = PS_IN_b1;
-    _streams.b2_id3 = PS_IN_b2;
+    PS_STREAMS _streams = _70;
+    _streams.s1_id0 = PS_IN_S1;
+    _streams.s2_id1 = PS_IN_S2;
+    _streams.b1_id2 = PS_IN_B1;
+    _streams.b2_id3 = PS_IN_B2;
     ShaderMain_Streams s1 = ShaderMain__getStreams_PS(_streams);
     ShaderMain_Streams s3 = s1;
     ShaderMain_Streams s6 = ShaderMain__getStreams_PS(_streams);
@@ -61,9 +63,9 @@ void frag_main()
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_s1 = stage_input.PS_IN_s1;
-    PS_IN_s2 = stage_input.PS_IN_s2;
-    PS_IN_b1 = stage_input.PS_IN_b1;
-    PS_IN_b2 = stage_input.PS_IN_b2;
+    PS_IN_S1 = stage_input.PS_IN_S1;
+    PS_IN_S2 = stage_input.PS_IN_S2;
+    PS_IN_B1 = stage_input.PS_IN_B1;
+    PS_IN_B2 = stage_input.PS_IN_B2;
     frag_main();
 }

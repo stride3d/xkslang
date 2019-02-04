@@ -15,10 +15,12 @@ struct VS_STREAMS
     float b2_id3;
 };
 
-static float4 VS_IN_s1;
-static float4 VS_IN_s2;
-static int VS_IN_b1;
-static float VS_IN_b2;
+static const VS_STREAMS _91 = { 0.0f.xxxx, 0.0f.xxxx, 0, 0.0f };
+
+static float4 VS_IN_S1;
+static float4 VS_IN_S2;
+static int VS_IN_B1;
+static float VS_IN_B2;
 static float4 VS_OUT_s1;
 static float4 VS_OUT_s2;
 static int VS_OUT_b1;
@@ -26,18 +28,18 @@ static float VS_OUT_b2;
 
 struct SPIRV_Cross_Input
 {
-    float4 VS_IN_s1 : S1;
-    float4 VS_IN_s2 : S2;
-    int VS_IN_b1 : B1;
-    float VS_IN_b2 : B2;
+    int VS_IN_B1 : B1;
+    float VS_IN_B2 : B2;
+    float4 VS_IN_S1 : S1;
+    float4 VS_IN_S2 : S2;
 };
 
 struct SPIRV_Cross_Output
 {
-    float4 VS_OUT_s1 : S1;
-    float4 VS_OUT_s2 : S2;
     int VS_OUT_b1 : B1;
     float VS_OUT_b2 : B2;
+    float4 VS_OUT_s1 : S1;
+    float4 VS_OUT_s2 : S2;
 };
 
 ShaderMain_Streams ShaderMain__getStreams(VS_STREAMS _streams)
@@ -57,11 +59,11 @@ void ShaderMain__setStreams(inout VS_STREAMS _streams, ShaderMain_Streams _s)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0, 0.0f };
-    _streams.s1_id0 = VS_IN_s1;
-    _streams.s2_id1 = VS_IN_s2;
-    _streams.b1_id2 = VS_IN_b1;
-    _streams.b2_id3 = VS_IN_b2;
+    VS_STREAMS _streams = _91;
+    _streams.s1_id0 = VS_IN_S1;
+    _streams.s2_id1 = VS_IN_S2;
+    _streams.b1_id2 = VS_IN_B1;
+    _streams.b2_id3 = VS_IN_B2;
     ShaderMain_Streams s1 = ShaderMain__getStreams(_streams);
     ShaderMain_Streams s3 = s1;
     ShaderMain_Streams s6 = ShaderMain__getStreams(_streams);
@@ -86,10 +88,10 @@ void vert_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_s1 = stage_input.VS_IN_s1;
-    VS_IN_s2 = stage_input.VS_IN_s2;
-    VS_IN_b1 = stage_input.VS_IN_b1;
-    VS_IN_b2 = stage_input.VS_IN_b2;
+    VS_IN_S1 = stage_input.VS_IN_S1;
+    VS_IN_S2 = stage_input.VS_IN_S2;
+    VS_IN_B1 = stage_input.VS_IN_B1;
+    VS_IN_B2 = stage_input.VS_IN_B2;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_s1 = VS_OUT_s1;

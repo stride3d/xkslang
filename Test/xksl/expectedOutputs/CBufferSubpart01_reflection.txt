@@ -4,18 +4,18 @@
  cbuffer PerLighting [size: 128]
 @C    ShaderMain_var7 => ShaderMain.var7
 @C    ShaderMain_var8 => ShaderMain.var8
-@C    ShaderMain__padding_PerLighting_Default => _padding_PerLighting_Default
+@C    ShaderMain_padding_PerLighting_Default => padding_PerLighting_Default
 @C    ShaderMain_var3 => ShaderMain.var3
 @C    ShaderMain_var4 => ShaderMain.var4
-@C    ShaderMain__padding_PerLighting_subpart2 => _padding_PerLighting_subpart2
+@C    ShaderMain_padding_PerLighting_subpart2 => padding_PerLighting_subpart2
 @C    ShaderMain_var1 => ShaderMain.var1
 @C    ShaderMain_var2 => ShaderMain.var2
-@C    ShaderMain__padding_PerLighting_subpart1 => _padding_PerLighting_subpart1
+@C    ShaderMain_padding_PerLighting_subpart1 => padding_PerLighting_subpart1
 @C    ShaderMain_var9 => ShaderMain.var9
 @C    ShaderMain_var10 => ShaderMain.var10
 @C    ShaderMain_var5 => ShaderMain.var5
 @C    ShaderMain_var6 => ShaderMain.var6
-@C    ShaderMain__padding_PerLighting_subpart3 => _padding_PerLighting_subpart3
+@C    ShaderMain_padding_PerLighting_subpart3 => padding_PerLighting_subpart3
 
 ***********************
 *****  Resources  *****
@@ -30,7 +30,7 @@ ConstantBuffers. Count=1
   KeyName="ShaderMain.var8" RawName="ShaderMain_var8" LogicalGroup="" Offset=4
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="_padding_PerLighting_Default" RawName="ShaderMain__padding_PerLighting_Default" LogicalGroup="Default" Offset=16
+  KeyName="padding_PerLighting_Default" RawName="ShaderMain_padding_PerLighting_Default" LogicalGroup="Default" Offset=16
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
   KeyName="ShaderMain.var3" RawName="ShaderMain_var3" LogicalGroup="subpart2" Offset=32
@@ -39,7 +39,7 @@ ConstantBuffers. Count=1
   KeyName="ShaderMain.var4" RawName="ShaderMain_var4" LogicalGroup="subpart2" Offset=36
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="_padding_PerLighting_subpart2" RawName="ShaderMain__padding_PerLighting_subpart2" LogicalGroup="subpart2" Offset=48
+  KeyName="padding_PerLighting_subpart2" RawName="ShaderMain_padding_PerLighting_subpart2" LogicalGroup="subpart2" Offset=48
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
   KeyName="ShaderMain.var1" RawName="ShaderMain_var1" LogicalGroup="subpart1" Offset=64
@@ -48,7 +48,7 @@ ConstantBuffers. Count=1
   KeyName="ShaderMain.var2" RawName="ShaderMain_var2" LogicalGroup="subpart1" Offset=68
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="_padding_PerLighting_subpart1" RawName="ShaderMain__padding_PerLighting_subpart1" LogicalGroup="subpart1" Offset=80
+  KeyName="padding_PerLighting_subpart1" RawName="ShaderMain_padding_PerLighting_subpart1" LogicalGroup="subpart1" Offset=80
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
   KeyName="ShaderMain.var9" RawName="ShaderMain_var9" LogicalGroup="subpart3" Offset=96
@@ -63,7 +63,7 @@ ConstantBuffers. Count=1
   KeyName="ShaderMain.var6" RawName="ShaderMain_var6" LogicalGroup="subpart3" Offset=108
   Class=Scalar Type=Int Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="_padding_PerLighting_subpart3" RawName="ShaderMain__padding_PerLighting_subpart3" LogicalGroup="subpart3" Offset=112
+  KeyName="padding_PerLighting_subpart3" RawName="ShaderMain_padding_PerLighting_subpart3" LogicalGroup="subpart3" Offset=112
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
 

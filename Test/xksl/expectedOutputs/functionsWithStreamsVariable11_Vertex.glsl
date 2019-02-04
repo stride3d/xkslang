@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct TestIComposition_Streams
 {
@@ -12,8 +15,8 @@ struct VS_STREAMS
     vec3 sMain_id1;
 };
 
-layout(location = 0) in vec3 VS_IN_sMain;
-layout(location = 0) out vec3 VS_OUT_sComp;
+in vec3 VS_IN_SMAIN;
+out vec3 VS_OUT_sComp;
 
 TestIComposition_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
 {
@@ -44,9 +47,11 @@ void TestShaderMain_Compute(inout VS_STREAMS _streams, inout TestIComposition_St
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(vec3(0.0), vec3(0.0));
-    _streams.sMain_id1 = VS_IN_sMain;
+    _streams.sMain_id1 = VS_IN_SMAIN;
     TestIComposition_Streams param = TestShaderMain__getStreams(_streams);
     TestShaderMain_Compute(_streams, param);
     VS_OUT_sComp = _streams.sComp_id0;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

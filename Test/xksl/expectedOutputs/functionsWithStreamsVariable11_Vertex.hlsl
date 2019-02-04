@@ -10,12 +10,14 @@ struct VS_STREAMS
     float3 sMain_id1;
 };
 
-static float3 VS_IN_sMain;
+static const VS_STREAMS _61 = { 0.0f.xxx, 0.0f.xxx };
+
+static float3 VS_IN_SMAIN;
 static float3 VS_OUT_sComp;
 
 struct SPIRV_Cross_Input
 {
-    float3 VS_IN_sMain : SMAIN;
+    float3 VS_IN_SMAIN : SMAIN;
 };
 
 struct SPIRV_Cross_Output
@@ -53,8 +55,8 @@ void TestShaderMain_Compute(inout VS_STREAMS _streams, inout TestIComposition_St
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx };
-    _streams.sMain_id1 = VS_IN_sMain;
+    VS_STREAMS _streams = _61;
+    _streams.sMain_id1 = VS_IN_SMAIN;
     TestIComposition_Streams param = TestShaderMain__getStreams(_streams);
     TestShaderMain_Compute(_streams, param);
     VS_OUT_sComp = _streams.sComp_id0;
@@ -62,7 +64,7 @@ void vert_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_sMain = stage_input.VS_IN_sMain;
+    VS_IN_SMAIN = stage_input.VS_IN_SMAIN;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_sComp = VS_OUT_sComp;

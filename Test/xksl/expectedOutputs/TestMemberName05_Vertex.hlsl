@@ -4,6 +4,8 @@ struct VS_STREAMS
     float4 outputStream_id1;
 };
 
+static const VS_STREAMS _29 = { 0.0f.xxxx, 0.0f.xxxx };
+
 cbuffer Globals
 {
     float4 ShaderMain_aCol;
@@ -25,7 +27,7 @@ void ShaderMain_aStream1__Compute(inout VS_STREAMS _streams)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx };
+    VS_STREAMS _streams = _29;
     ShaderMain_aStream1__Compute(_streams);
     _streams.outputStream_id1 = _streams.aStream1_id0;
     VS_OUT_aStream1 = _streams.aStream1_id0;

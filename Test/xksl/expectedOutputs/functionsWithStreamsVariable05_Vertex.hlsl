@@ -9,12 +9,14 @@ struct VS_STREAMS
     float matBlend_id0;
 };
 
-static float VS_IN_matBlend;
+static const VS_STREAMS _42 = { 0.0f };
+
+static float VS_IN_MATBLEND;
 static float VS_OUT_matBlend;
 
 struct SPIRV_Cross_Input
 {
-    float VS_IN_matBlend : MATBLEND;
+    float VS_IN_MATBLEND : MATBLEND;
 };
 
 struct SPIRV_Cross_Output
@@ -36,8 +38,8 @@ float ShaderMain_Compute(ShaderMain_Streams fromStream)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f };
-    _streams.matBlend_id0 = VS_IN_matBlend;
+    VS_STREAMS _streams = _42;
+    _streams.matBlend_id0 = VS_IN_MATBLEND;
     ShaderMain_Streams backup = ShaderMain__getStreams(_streams);
     ShaderMain_Streams param = backup;
     float f = ShaderMain_Compute(param);
@@ -48,7 +50,7 @@ void vert_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_matBlend = stage_input.VS_IN_matBlend;
+    VS_IN_MATBLEND = stage_input.VS_IN_MATBLEND;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_matBlend = VS_OUT_matBlend;

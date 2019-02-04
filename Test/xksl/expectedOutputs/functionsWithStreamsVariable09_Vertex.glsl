@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct TestShaderBaseA_Streams
 {
@@ -28,12 +31,12 @@ struct VS_STREAMS
     vec3 sBaseA_id2;
 };
 
-layout(location = 0) in vec3 VS_IN_sMain;
-layout(location = 1) in vec3 VS_IN_sBaseB;
-layout(location = 2) in vec3 VS_IN_sBaseA;
-layout(location = 0) out vec3 VS_OUT_sMain;
-layout(location = 1) out vec3 VS_OUT_sBaseB;
-layout(location = 2) out vec3 VS_OUT_sBaseA;
+in vec3 VS_IN_SMAIN;
+in vec3 VS_IN_SBASEB;
+in vec3 VS_IN_SBASEA;
+out vec3 VS_OUT_sMain;
+out vec3 VS_OUT_sBaseB;
+out vec3 VS_OUT_sBaseA;
 
 TestShaderMain_Streams TestShaderMain__getStreams(VS_STREAMS _streams)
 {
@@ -77,13 +80,15 @@ void TestShaderMain_Compute(inout TestShaderMain_Streams s)
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(vec3(0.0), vec3(0.0), vec3(0.0));
-    _streams.sMain_id0 = VS_IN_sMain;
-    _streams.sBaseB_id1 = VS_IN_sBaseB;
-    _streams.sBaseA_id2 = VS_IN_sBaseA;
+    _streams.sMain_id0 = VS_IN_SMAIN;
+    _streams.sBaseB_id1 = VS_IN_SBASEB;
+    _streams.sBaseA_id2 = VS_IN_SBASEA;
     TestShaderMain_Streams param = TestShaderMain__getStreams(_streams);
     TestShaderMain_Compute(param);
     VS_OUT_sMain = _streams.sMain_id0;
     VS_OUT_sBaseB = _streams.sBaseB_id1;
     VS_OUT_sBaseA = _streams.sBaseA_id2;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 
