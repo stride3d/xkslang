@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct VS_STREAMS
 {
@@ -13,7 +16,7 @@ layout(std140) uniform Globals
     float o3S55C1_ShaderComp_varC;
 } Globals_var;
 
-layout(location = 0) out float VS_OUT_totoA;
+out float VS_OUT_totoA;
 
 float ShaderA_Compute()
 {
@@ -36,5 +39,7 @@ void main()
     float f = ShaderA_Compute();
     _streams.totoA_id0 = (f + o0S5C0_ShaderComp_Compute()) + o1S5C1_ShaderComp_Compute();
     VS_OUT_totoA = _streams.totoA_id0;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

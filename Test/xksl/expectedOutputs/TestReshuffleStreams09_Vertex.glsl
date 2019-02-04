@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct VS_STREAMS
 {
@@ -7,8 +10,8 @@ struct VS_STREAMS
     float s4_id2;
 };
 
-layout(location = 0) in float VS_IN_s4;
-layout(location = 0) out float VS_OUT_s4;
+in float VS_IN_S4;
+out float VS_OUT_s4;
 
 void ShaderMain_AnotherFunctionNotDoingAnything()
 {
@@ -35,11 +38,13 @@ void ShaderMain_CommonFunctionUsingStreams(inout VS_STREAMS _streams, float f, i
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(0.0, 0.0, 0.0);
-    _streams.s4_id2 = VS_IN_s4;
+    _streams.s4_id2 = VS_IN_S4;
     _streams.s1_id0 = 0.0;
     float param = 1.0;
     int param_1 = 0;
     ShaderMain_CommonFunctionUsingStreams(_streams, param, param_1);
     VS_OUT_s4 = _streams.s4_id2;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

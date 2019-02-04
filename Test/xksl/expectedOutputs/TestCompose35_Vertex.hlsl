@@ -1,8 +1,8 @@
 cbuffer PerView
 {
-    float4 o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor__padding_PerView_Default;
+    float4 o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor_padding_PerView_Default;
     float3 o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor_SphericalColors[9];
-    float4 o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor__padding_PerView_Lighting;
+    float4 o1S2C0_o0S2C0_SphericalHarmonicsEnvironmentColor_padding_PerView_Lighting;
 };
 
 void o1S2C0_EnvironmentLight_PrepareEnvironmentLight()

@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -6,8 +9,8 @@ struct PS_STREAMS
     vec4 ColorTarget_id1;
 };
 
-layout(location = 0) in vec2 PS_IN_Position;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec2 PS_IN_POSITION;
+out vec4 PS_OUT_ColorTarget;
 
 vec4 ShaderMain_Compute(PS_STREAMS _streams, float p)
 {
@@ -23,7 +26,7 @@ vec4 ShaderMain_Compute(PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec2(0.0), vec4(0.0));
-    _streams.Position_id0 = PS_IN_Position;
+    _streams.Position_id0 = PS_IN_POSITION;
     _streams.ColorTarget_id1 = ShaderMain_Compute(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;
 }

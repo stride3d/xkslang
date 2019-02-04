@@ -4,13 +4,15 @@ struct PS_STREAMS
     float4 ColorTarget_id1;
 };
 
+static const PS_STREAMS _41 = { 0.0f.xx, 0.0f.xxxx };
+
 static float2 PS_OUT_Position;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Output
 {
-    float2 PS_OUT_Position : SV_Target1;
     float4 PS_OUT_ColorTarget : SV_Target0;
+    float2 PS_OUT_Position : SV_Target1;
 };
 
 float4 ShaderMain_Compute(inout PS_STREAMS _streams)
@@ -21,7 +23,7 @@ float4 ShaderMain_Compute(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xx, 0.0f.xxxx };
+    PS_STREAMS _streams = _41;
     float4 _12 = ShaderMain_Compute(_streams);
     _streams.ColorTarget_id1 = _12 + float4(_streams.Position_id0, 0.0f, 1.0f);
     PS_OUT_Position = _streams.Position_id0;

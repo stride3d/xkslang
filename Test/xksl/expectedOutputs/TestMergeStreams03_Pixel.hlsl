@@ -3,6 +3,8 @@ struct PS_STREAMS
     float4 outStreamA_id0;
 };
 
+static const PS_STREAMS _20 = { 0.0f.xxxx };
+
 static float4 PS_OUT_outStreamA;
 
 struct SPIRV_Cross_Output
@@ -12,7 +14,7 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx };
+    PS_STREAMS _streams = _20;
     _streams.outStreamA_id0 = 2.0f.xxxx;
     PS_OUT_outStreamA = _streams.outStreamA_id0;
 }

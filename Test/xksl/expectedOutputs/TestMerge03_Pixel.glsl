@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -11,12 +14,12 @@ layout(std140) uniform Globals
     float Base_Var2;
 } Globals_var;
 
-layout(location = 0) in float PS_IN_sbase1;
+in float PS_IN_SBASE1;
 
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(0.0);
-    _streams.sbase1_id0 = PS_IN_sbase1;
+    _streams.sbase1_id0 = PS_IN_SBASE1;
     int i = int(((_streams.sbase1_id0 + float(Globals_var.Base_Var1)) + Globals_var.Base_Var2) + 2.0);
 }
 

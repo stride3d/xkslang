@@ -3,6 +3,8 @@ struct PS_STREAMS
     float4 outStreamA_id0;
 };
 
+static const PS_STREAMS _27 = { 0.0f.xxxx };
+
 static float4 PS_OUT_outStreamA;
 
 struct SPIRV_Cross_Output
@@ -22,7 +24,7 @@ void ShaderB_computeB(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx };
+    PS_STREAMS _streams = _27;
     ShaderA_computeA(_streams);
     ShaderB_computeB(_streams);
     PS_OUT_outStreamA = _streams.outStreamA_id0;

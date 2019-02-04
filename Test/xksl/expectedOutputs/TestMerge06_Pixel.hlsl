@@ -3,16 +3,18 @@ struct PS_STREAMS
     int sbase1_id0;
 };
 
+static const PS_STREAMS _33 = { 0 };
+
 cbuffer Globals
 {
     int Base_Var1;
 };
 
-static int PS_IN_sbase1;
+static int PS_IN_SBASE1;
 
 struct SPIRV_Cross_Input
 {
-    int PS_IN_sbase1 : SBASE1;
+    int PS_IN_SBASE1 : SBASE1;
 };
 
 int Base_ComputeBase(PS_STREAMS _streams)
@@ -27,13 +29,13 @@ int shaderA_f1(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0 };
-    _streams.sbase1_id0 = PS_IN_sbase1;
+    PS_STREAMS _streams = _33;
+    _streams.sbase1_id0 = PS_IN_SBASE1;
     int i = ((Base_ComputeBase(_streams) + Base_Var1) + Base_ComputeBase(_streams)) + shaderA_f1(_streams);
 }
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_sbase1 = stage_input.PS_IN_sbase1;
+    PS_IN_SBASE1 = stage_input.PS_IN_SBASE1;
     frag_main();
 }

@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct ShaderBase_sBase2
 {
@@ -11,8 +14,8 @@ struct VS_STREAMS
     int streamA_id1;
 };
 
-layout(location = 0) out int VS_OUT_streamBase;
-layout(location = 1) out int VS_OUT_streamA;
+out int VS_OUT_streamBase;
+out int VS_OUT_streamA;
 
 void ShaderBase_ComputeBase(inout VS_STREAMS _streams, ShaderBase_sBase2 s1, ShaderBase_sBase2 s2)
 {
@@ -37,5 +40,7 @@ void main()
     ShaderA_Compute(_streams, param);
     VS_OUT_streamBase = _streams.streamBase_id0;
     VS_OUT_streamA = _streams.streamA_id1;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

@@ -18,14 +18,20 @@ struct VS_STREAMS
     float4x4 aMat44_id8;
 };
 
-static double VS_IN_aDouble;
-static int VS_IN_aBool;
-static float4 VS_IN_aF4Tab[4];
-static float2 VS_IN_aF2b;
-static float VS_IN_aFloat;
-static ShaderMain_Toto VS_IN_aToto1;
-static ShaderMain_Toto VS_IN_aTotoTab[2];
-static float4x4 VS_IN_aMat44;
+static const float4 _63[4] = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx };
+static const int _65[2] = { 0, 0 };
+static const ShaderMain_Toto _66 = { 0.0f.xx, 0.0f.xxxx, { 0, 0 } };
+static const ShaderMain_Toto _67[2] = { { 0.0f.xx, 0.0f.xxxx, { 0, 0 } }, { 0.0f.xx, 0.0f.xxxx, { 0, 0 } } };
+static const VS_STREAMS _86 = { 0.0, 0, { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx }, 0.0f.xx, 0.0f.xx, 0.0f, { 0.0f.xx, 0.0f.xxxx, { 0, 0 } }, { { 0.0f.xx, 0.0f.xxxx, { 0, 0 } }, { 0.0f.xx, 0.0f.xxxx, { 0, 0 } } }, float4x4(0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx) };
+
+static double VS_IN_ADOUBLE;
+static int VS_IN_ABOOL;
+static float4 VS_IN_AF4Tab[4];
+static float2 VS_IN_AF2b;
+static float VS_IN_AF;
+static ShaderMain_Toto VS_IN_ATOTO;
+static ShaderMain_Toto VS_IN_ATOTOTAB[2];
+static float4x4 VS_IN_AMAT44;
 static double VS_OUT_aDouble;
 static int VS_OUT_aBool;
 static float4 VS_OUT_aF4Tab[4];
@@ -36,38 +42,38 @@ static float4x4 VS_OUT_aMat44;
 
 struct SPIRV_Cross_Input
 {
-    double VS_IN_aDouble : ADOUBLE;
-    int VS_IN_aBool : ABOOL;
-    float4 VS_IN_aF4Tab[4] : AF4Tab;
-    float2 VS_IN_aF2b : AF2b;
-    float VS_IN_aFloat : AF;
-    ShaderMain_Toto VS_IN_aToto1 : ATOTO;
-    ShaderMain_Toto VS_IN_aTotoTab[2] : ATOTOTAB;
-    float4x4 VS_IN_aMat44 : AMAT44;
+    int VS_IN_ABOOL : ABOOL;
+    double VS_IN_ADOUBLE : ADOUBLE;
+    float VS_IN_AF : AF;
+    float2 VS_IN_AF2b : AF2b;
+    float4 VS_IN_AF4Tab[4] : AF4Tab;
+    float4x4 VS_IN_AMAT44 : AMAT44;
+    ShaderMain_Toto VS_IN_ATOTO : ATOTO;
+    ShaderMain_Toto VS_IN_ATOTOTAB[2] : ATOTOTAB;
 };
 
 struct SPIRV_Cross_Output
 {
-    double VS_OUT_aDouble : ADOUBLE;
     int VS_OUT_aBool : ABOOL;
-    float4 VS_OUT_aF4Tab[4] : AF4Tab;
+    double VS_OUT_aDouble : ADOUBLE;
     float2 VS_OUT_aF2 : AF2;
+    float4 VS_OUT_aF4Tab[4] : AF4Tab;
+    float4x4 VS_OUT_aMat44 : AMAT44;
     ShaderMain_Toto VS_OUT_aToto1 : ATOTO;
     ShaderMain_Toto VS_OUT_aTotoTab[2] : ATOTOTAB;
-    float4x4 VS_OUT_aMat44 : AMAT44;
 };
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0, 0, { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx }, 0.0f.xx, 0.0f.xx, 0.0f, { 0.0f.xx, 0.0f.xxxx, { 0, 0 } }, { { 0.0f.xx, 0.0f.xxxx, { 0, 0 } }, { 0.0f.xx, 0.0f.xxxx, { 0, 0 } } }, float4x4(0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx) };
-    _streams.aDouble_id0 = VS_IN_aDouble;
-    _streams.aBool_id1 = VS_IN_aBool;
-    _streams.aF4Tab_id2 = VS_IN_aF4Tab;
-    _streams.aF2b_id4 = VS_IN_aF2b;
-    _streams.aFloat_id5 = VS_IN_aFloat;
-    _streams.aToto1_id6 = VS_IN_aToto1;
-    _streams.aTotoTab_id7 = VS_IN_aTotoTab;
-    _streams.aMat44_id8 = VS_IN_aMat44;
+    VS_STREAMS _streams = _86;
+    _streams.aDouble_id0 = VS_IN_ADOUBLE;
+    _streams.aBool_id1 = VS_IN_ABOOL;
+    _streams.aF4Tab_id2 = VS_IN_AF4Tab;
+    _streams.aF2b_id4 = VS_IN_AF2b;
+    _streams.aFloat_id5 = VS_IN_AF;
+    _streams.aToto1_id6 = VS_IN_ATOTO;
+    _streams.aTotoTab_id7 = VS_IN_ATOTOTAB;
+    _streams.aMat44_id8 = VS_IN_AMAT44;
     _streams.aF2_id3 = float2(0.0f, 1.0f + _streams.aFloat_id5) + _streams.aF2b_id4;
     VS_OUT_aDouble = _streams.aDouble_id0;
     VS_OUT_aBool = _streams.aBool_id1;
@@ -80,17 +86,17 @@ void vert_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_aDouble = stage_input.VS_IN_aDouble;
-    VS_IN_aBool = stage_input.VS_IN_aBool;
-    VS_IN_aF4Tab = stage_input.VS_IN_aF4Tab;
-    VS_IN_aF2b = stage_input.VS_IN_aF2b;
-    VS_IN_aFloat = stage_input.VS_IN_aFloat;
-    VS_IN_aToto1 = stage_input.VS_IN_aToto1;
-    VS_IN_aTotoTab = stage_input.VS_IN_aTotoTab;
-    VS_IN_aMat44[0] = stage_input.VS_IN_aMat44_0;
-    VS_IN_aMat44[1] = stage_input.VS_IN_aMat44_1;
-    VS_IN_aMat44[2] = stage_input.VS_IN_aMat44_2;
-    VS_IN_aMat44[3] = stage_input.VS_IN_aMat44_3;
+    VS_IN_ADOUBLE = stage_input.VS_IN_ADOUBLE;
+    VS_IN_ABOOL = stage_input.VS_IN_ABOOL;
+    VS_IN_AF4Tab = stage_input.VS_IN_AF4Tab;
+    VS_IN_AF2b = stage_input.VS_IN_AF2b;
+    VS_IN_AF = stage_input.VS_IN_AF;
+    VS_IN_ATOTO = stage_input.VS_IN_ATOTO;
+    VS_IN_ATOTOTAB = stage_input.VS_IN_ATOTOTAB;
+    VS_IN_AMAT44[0] = stage_input.VS_IN_AMAT44_0;
+    VS_IN_AMAT44[1] = stage_input.VS_IN_AMAT44_1;
+    VS_IN_AMAT44[2] = stage_input.VS_IN_AMAT44_2;
+    VS_IN_AMAT44[3] = stage_input.VS_IN_AMAT44_3;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_aDouble = VS_OUT_aDouble;

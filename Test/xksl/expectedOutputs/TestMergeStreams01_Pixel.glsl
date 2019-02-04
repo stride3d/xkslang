@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -8,9 +11,9 @@ struct PS_STREAMS
     vec4 aStreamBis_id3;
 };
 
-layout(location = 0) in int PS_IN_aStream2;
-layout(location = 1) in vec4 PS_IN_aStream3;
-layout(location = 0) out vec4 PS_OUT_aStreamBis;
+in int PS_IN_ASTREAM2;
+in vec4 PS_IN_SV_SEMANTIC;
+out vec4 PS_OUT_aStreamBis;
 
 int o0S5C0_Color_Compute(inout PS_STREAMS _streams, int i)
 {
@@ -29,8 +32,8 @@ int o1S5C0_Color_Compute(inout PS_STREAMS _streams, int i)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(0, 0, vec4(0.0), vec4(0.0));
-    _streams.aStream2_id1 = PS_IN_aStream2;
-    _streams.aStream3_id2 = PS_IN_aStream3;
+    _streams.aStream2_id1 = PS_IN_ASTREAM2;
+    _streams.aStream3_id2 = PS_IN_SV_SEMANTIC;
     int res = 0;
     int param = 1;
     int _69 = o0S5C0_Color_Compute(_streams, param);

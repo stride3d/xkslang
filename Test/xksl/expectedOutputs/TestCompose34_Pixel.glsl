@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -15,8 +18,8 @@ layout(std140) uniform Globals
     float o4S39C1_o3S15C0_ShaderComp_varC;
 } Globals_var;
 
-layout(location = 0) in float PS_IN_totoA;
-layout(location = 0) out float PS_OUT_totoB;
+in float PS_IN_TOTOA;
+out float PS_OUT_totoB;
 
 float ShaderMain_Compute()
 {
@@ -51,7 +54,7 @@ float o4S39C1_ShaderCompBis_Compute()
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(0.0, 0.0);
-    _streams.totoA_id0 = PS_IN_totoA;
+    _streams.totoA_id0 = PS_IN_TOTOA;
     float f = ShaderB_Compute();
     _streams.totoB_id1 = ((f + o2S39C0_ShaderComp_Compute()) + o4S39C1_ShaderCompBis_Compute()) + _streams.totoA_id0;
     PS_OUT_totoB = _streams.totoB_id1;

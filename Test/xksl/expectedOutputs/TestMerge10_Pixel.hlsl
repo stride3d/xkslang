@@ -3,6 +3,8 @@ struct PS_STREAMS
     int ColorTarget_id0;
 };
 
+static const PS_STREAMS _29 = { 0 };
+
 static int PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Output
@@ -27,7 +29,7 @@ int ShaderB_Compute()
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0 };
+    PS_STREAMS _streams = _29;
     _streams.ColorTarget_id0 = ShaderB_Compute();
     PS_OUT_ColorTarget = _streams.ColorTarget_id0;
 }

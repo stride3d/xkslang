@@ -5,12 +5,14 @@ struct VS_STREAMS
     float s4_id2;
 };
 
-static float VS_IN_s4;
+static const VS_STREAMS _46 = { 0.0f, 0.0f, 0.0f };
+
+static float VS_IN_S4;
 static float VS_OUT_s4;
 
 struct SPIRV_Cross_Input
 {
-    float VS_IN_s4 : S4;
+    float VS_IN_S4 : S4;
 };
 
 struct SPIRV_Cross_Output
@@ -42,8 +44,8 @@ void ShaderMain_CommonFunctionUsingStreams(inout VS_STREAMS _streams, float f, i
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f, 0.0f, 0.0f };
-    _streams.s4_id2 = VS_IN_s4;
+    VS_STREAMS _streams = _46;
+    _streams.s4_id2 = VS_IN_S4;
     _streams.s1_id0 = 0.0f;
     float param = 1.0f;
     int param_1 = 0;
@@ -53,7 +55,7 @@ void vert_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_s4 = stage_input.VS_IN_s4;
+    VS_IN_S4 = stage_input.VS_IN_S4;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.VS_OUT_s4 = VS_OUT_s4;

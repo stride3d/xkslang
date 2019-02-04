@@ -3,6 +3,9 @@ struct VS_STREAMS
     float SHBaseValues_id0[4];
 };
 
+static const float _152[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+static const VS_STREAMS _156 = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+
 static float VS_OUT_SHBaseValues[4];
 
 struct SPIRV_Cross_Output
@@ -12,7 +15,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+    VS_STREAMS _streams = _156;
     int k = 0;
     int _5 = k;
     k = _5 + 1;

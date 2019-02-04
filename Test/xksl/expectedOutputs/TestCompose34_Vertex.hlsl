@@ -3,6 +3,8 @@ struct VS_STREAMS
     float totoA_id0;
 };
 
+static const VS_STREAMS _42 = { 0.0f };
+
 cbuffer Globals
 {
     float o0S5C0_ShaderComp_varC;
@@ -41,7 +43,7 @@ float o1S5C1_ShaderComp_Compute()
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f };
+    VS_STREAMS _streams = _42;
     float f = ShaderB_Compute();
     _streams.totoA_id0 = (f + o0S5C0_ShaderComp_Compute()) + o1S5C1_ShaderComp_Compute();
     VS_OUT_totoA = _streams.totoA_id0;

@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -7,7 +10,7 @@ struct PS_STREAMS
     float s4_id2;
 };
 
-layout(location = 0) in float PS_IN_s4;
+in float PS_IN_S4;
 
 void ShaderMain_AnotherFunctionNotDoingAnything()
 {
@@ -34,7 +37,7 @@ void ShaderMain_CommonFunctionUsingStreams_PS(inout PS_STREAMS _streams, float f
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(0.0, 0.0, 0.0);
-    _streams.s4_id2 = PS_IN_s4;
+    _streams.s4_id2 = PS_IN_S4;
     _streams.s2_id0 = 0.0;
     float param = 2.0;
     int param_1 = 1;

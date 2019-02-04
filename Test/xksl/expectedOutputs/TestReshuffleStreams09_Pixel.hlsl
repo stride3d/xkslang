@@ -5,11 +5,13 @@ struct PS_STREAMS
     float s4_id2;
 };
 
-static float PS_IN_s4;
+static const PS_STREAMS _44 = { 0.0f, 0.0f, 0.0f };
+
+static float PS_IN_S4;
 
 struct SPIRV_Cross_Input
 {
-    float PS_IN_s4 : S4;
+    float PS_IN_S4 : S4;
 };
 
 void ShaderMain_AnotherFunctionNotDoingAnything()
@@ -36,8 +38,8 @@ void ShaderMain_CommonFunctionUsingStreams_PS(inout PS_STREAMS _streams, float f
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f, 0.0f, 0.0f };
-    _streams.s4_id2 = PS_IN_s4;
+    PS_STREAMS _streams = _44;
+    _streams.s4_id2 = PS_IN_S4;
     _streams.s2_id0 = 0.0f;
     float param = 2.0f;
     int param_1 = 1;
@@ -46,6 +48,6 @@ void frag_main()
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_s4 = stage_input.PS_IN_s4;
+    PS_IN_S4 = stage_input.PS_IN_S4;
     frag_main();
 }

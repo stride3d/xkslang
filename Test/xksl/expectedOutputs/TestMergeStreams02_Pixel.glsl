@@ -1,11 +1,14 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
     vec4 outStreamA_id0;
 };
 
-layout(location = 0) out vec4 PS_OUT_outStreamA;
+out vec4 PS_OUT_outStreamA;
 
 void ShaderA_computeA(inout PS_STREAMS _streams)
 {

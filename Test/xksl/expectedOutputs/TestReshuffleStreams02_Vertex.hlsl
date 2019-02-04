@@ -3,6 +3,8 @@ struct VS_STREAMS
     float2 Position_id0;
 };
 
+static const VS_STREAMS _20 = { 0.0f.xx };
+
 static float2 VS_OUT_Position;
 
 struct SPIRV_Cross_Output
@@ -12,7 +14,7 @@ struct SPIRV_Cross_Output
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xx };
+    VS_STREAMS _streams = _20;
     _streams.Position_id0 = float2(0.0f, 1.0f);
     VS_OUT_Position = _streams.Position_id0;
 }
