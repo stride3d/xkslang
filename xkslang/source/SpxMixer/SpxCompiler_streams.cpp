@@ -1803,7 +1803,7 @@ bool SpxCompiler::ReshuffleStreamVariables(vector<XkslMixerOutputStage>& outputS
                     inputVariableLocation.addStringOperand(stageVariable.semanticName.c_str());
                     inputVariableLocation.dump(bytecodeNames->bytecode);
 
-                    std:string semanticUpperCase = stageVariable.semanticName;
+                    std::string semanticUpperCase = stageVariable.semanticName;
                     std::transform(semanticUpperCase.begin(), semanticUpperCase.end(), semanticUpperCase.begin(), ::toupper);
                     spv::BuiltIn builtin = spv::BuiltInMax;
                     switch (glslang::HlslScanContext::mapSemantic(semanticUpperCase.c_str()))
