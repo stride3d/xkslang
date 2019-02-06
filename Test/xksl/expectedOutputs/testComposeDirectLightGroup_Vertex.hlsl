@@ -37,6 +37,8 @@ struct VS_STREAMS
     float4 ScreenPosition_id13;
 };
 
+static const VS_STREAMS _686 = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxxx, uint2(0u, 0u), 0, 0.0f.xxxx, 0.0f.xxxx };
+
 cbuffer PerView
 {
     float o1S2C0_Camera_NearClipPlane;
@@ -44,7 +46,7 @@ cbuffer PerView
     float2 o1S2C0_Camera_ZProjection;
     float2 o1S2C0_Camera_ViewSize;
     float o1S2C0_Camera_AspectRatio;
-    float4 o0S2C0_LightDirectionalGroup__padding_PerView_Default;
+    float4 o0S2C0_LightDirectionalGroup_padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S2C0_LightDirectionalGroup_Lights[8];
     int o0S2C0_DirectLightGroupPerView_LightCount;
     float o1S2C0_LightClustered_ClusterDepthScale;
@@ -56,27 +58,27 @@ Texture3D<uint4> LightClustered_LightClusters;
 Buffer<uint4> LightClustered_LightIndices;
 Buffer<float4> LightClusteredSpotGroup_SpotLights;
 
-static float VS_IN_lightDirectAmbientOcclusion;
-static float3 VS_IN_normalWS;
-static float4 VS_IN_PositionWS;
-static float4 VS_IN_ShadingPosition;
-static float4 VS_IN_ScreenPosition;
-static float4 VS_OUT_ShadingPosition;
+static float4 gl_Position;
+static float VS_IN_LIGHTDIRECTAMBIENTOCCLUSION;
+static float3 VS_IN_NORMALWS;
+static float4 VS_IN_POSITION_WS;
+static float4 VS_IN_SV_Position;
+static float4 VS_IN_SCREENPOSITION;
 static float4 VS_OUT_ScreenPosition;
 
 struct SPIRV_Cross_Input
 {
-    float VS_IN_lightDirectAmbientOcclusion : LIGHTDIRECTAMBIENTOCCLUSION;
-    float3 VS_IN_normalWS : NORMALWS;
-    float4 VS_IN_PositionWS : POSITION_WS;
-    float4 VS_IN_ShadingPosition : SV_Position;
-    float4 VS_IN_ScreenPosition : SCREENPOSITION;
+    float VS_IN_LIGHTDIRECTAMBIENTOCCLUSION : LIGHTDIRECTAMBIENTOCCLUSION;
+    float3 VS_IN_NORMALWS : NORMALWS;
+    float4 VS_IN_POSITION_WS : POSITION_WS;
+    float4 VS_IN_SCREENPOSITION : SCREENPOSITION;
+    float4 VS_IN_SV_Position : SV_Position;
 };
 
 struct SPIRV_Cross_Output
 {
-    float4 VS_OUT_ShadingPosition : SV_Position;
     float4 VS_OUT_ScreenPosition : SCREENPOSITION;
+    float4 gl_Position : SV_Position;
 };
 
 void o0S2C0_DirectLightGroup_PrepareDirectLights()
@@ -326,12 +328,12 @@ void o2S2C0_DirectLightGroup_PrepareDirectLight(inout VS_STREAMS _streams, int l
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxxx, uint2(0u, 0u), 0, 0.0f.xxxx, 0.0f.xxxx };
-    _streams.lightDirectAmbientOcclusion_id5 = VS_IN_lightDirectAmbientOcclusion;
-    _streams.normalWS_id6 = VS_IN_normalWS;
-    _streams.PositionWS_id9 = VS_IN_PositionWS;
-    _streams.ShadingPosition_id12 = VS_IN_ShadingPosition;
-    _streams.ScreenPosition_id13 = VS_IN_ScreenPosition;
+    VS_STREAMS _streams = _686;
+    _streams.lightDirectAmbientOcclusion_id5 = VS_IN_LIGHTDIRECTAMBIENTOCCLUSION;
+    _streams.normalWS_id6 = VS_IN_NORMALWS;
+    _streams.PositionWS_id9 = VS_IN_POSITION_WS;
+    _streams.ShadingPosition_id12 = VS_IN_SV_Position;
+    _streams.ScreenPosition_id13 = VS_IN_SCREENPOSITION;
     o0S2C0_DirectLightGroup_PrepareDirectLights();
     int maxLightCount = o0S2C0_LightDirectionalGroup_8__GetMaxLightCount();
     int count = o0S2C0_DirectLightGroupPerView_GetLightCount();
@@ -372,20 +374,20 @@ void vert_main()
         param = i;
         o2S2C0_DirectLightGroup_PrepareDirectLight(_streams, param);
     }
-    VS_OUT_ShadingPosition = _streams.ShadingPosition_id12;
+    gl_Position = _streams.ShadingPosition_id12;
     VS_OUT_ScreenPosition = _streams.ScreenPosition_id13;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_lightDirectAmbientOcclusion = stage_input.VS_IN_lightDirectAmbientOcclusion;
-    VS_IN_normalWS = stage_input.VS_IN_normalWS;
-    VS_IN_PositionWS = stage_input.VS_IN_PositionWS;
-    VS_IN_ShadingPosition = stage_input.VS_IN_ShadingPosition;
-    VS_IN_ScreenPosition = stage_input.VS_IN_ScreenPosition;
+    VS_IN_LIGHTDIRECTAMBIENTOCCLUSION = stage_input.VS_IN_LIGHTDIRECTAMBIENTOCCLUSION;
+    VS_IN_NORMALWS = stage_input.VS_IN_NORMALWS;
+    VS_IN_POSITION_WS = stage_input.VS_IN_POSITION_WS;
+    VS_IN_SV_Position = stage_input.VS_IN_SV_Position;
+    VS_IN_SCREENPOSITION = stage_input.VS_IN_SCREENPOSITION;
     vert_main();
     SPIRV_Cross_Output stage_output;
-    stage_output.VS_OUT_ShadingPosition = VS_OUT_ShadingPosition;
+    stage_output.gl_Position = gl_Position;
     stage_output.VS_OUT_ScreenPosition = VS_OUT_ScreenPosition;
     return stage_output;
 }

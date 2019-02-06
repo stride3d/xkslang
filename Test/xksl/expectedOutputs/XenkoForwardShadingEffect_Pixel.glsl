@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct LightDirectional_DirectionalLightData
 {
@@ -80,11 +83,11 @@ layout(std140) uniform PerView
     layout(row_major) mat4 Transformation_ViewProjection;
     vec2 Transformation_ProjScreenRay;
     vec4 Transformation_Eye;
-    vec4 o0S439C0_LightDirectionalGroup__padding_PerView_Default;
+    vec4 o0S439C0_LightDirectionalGroup_padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S439C0_LightDirectionalGroup_Lights[8];
     int o0S439C0_DirectLightGroupPerView_LightCount;
     vec3 o1S423C0_LightSimpleAmbient_AmbientLight;
-    vec4 o1S423C0_LightSimpleAmbient__padding_PerView_Lighting;
+    vec4 o1S423C0_LightSimpleAmbient_padding_PerView_Lighting;
 } PerView_var;
 
 layout(std140) uniform PerMaterial
@@ -106,13 +109,13 @@ layout(std140) uniform PerFrame
 uniform sampler2D SPIRV_Cross_CombinedDynamicTexture_TextureDynamicSampler_Sampler;
 uniform sampler2D SPIRV_Cross_CombinedMaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUTTexturing_LinearSampler;
 
-layout(location = 0) in vec4 PS_IN_ShadingPosition;
-layout(location = 1) in vec3 PS_IN_meshNormal;
-layout(location = 2) in vec4 PS_IN_meshTangent;
-layout(location = 3) in vec4 PS_IN_PositionWS;
-layout(location = 4) in vec2 PS_IN_TexCoord;
-layout(location = 5) in bool PS_IN_IsFrontFace;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec4 PS_IN_SV_Position;
+in vec3 PS_IN_NORMAL;
+in vec4 PS_IN_TANGENT;
+in vec4 PS_IN_POSITION_WS;
+in vec2 PS_IN_TEXCOORD0;
+in bool PS_IN_SV_IsFrontFace;
+out vec4 PS_OUT_ColorTarget;
 
 void NormalUpdate_GenerateNormal_PS()
 {
@@ -548,12 +551,12 @@ void ShadingBase_PSMain(inout PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0), false, vec4(0.0), 0.0, vec3(0.0), vec3(0.0), vec4(0.0), vec3(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec4(0.0), 0.0, 0.0, vec2(0.0), vec3(0.0), 0.0, vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), 0.0, vec2(0.0));
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.meshNormal_id4 = PS_IN_meshNormal;
-    _streams.meshTangent_id6 = PS_IN_meshTangent;
-    _streams.PositionWS_id9 = PS_IN_PositionWS;
-    _streams.TexCoord_id48 = PS_IN_TexCoord;
-    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.meshNormal_id4 = PS_IN_NORMAL;
+    _streams.meshTangent_id6 = PS_IN_TANGENT;
+    _streams.PositionWS_id9 = PS_IN_POSITION_WS;
+    _streams.TexCoord_id48 = PS_IN_TEXCOORD0;
+    _streams.IsFrontFace_id1 = PS_IN_SV_IsFrontFace;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShadingBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;

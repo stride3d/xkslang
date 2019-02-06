@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct LightDirectional_DirectionalLightData
 {
@@ -46,7 +49,7 @@ layout(std140) uniform PerView
     vec2 o1S2C0_Camera_ZProjection;
     vec2 o1S2C0_Camera_ViewSize;
     float o1S2C0_Camera_AspectRatio;
-    vec4 o0S2C0_LightDirectionalGroup__padding_PerView_Default;
+    vec4 o0S2C0_LightDirectionalGroup_padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S2C0_LightDirectionalGroup_Lights[8];
     int o0S2C0_DirectLightGroupPerView_LightCount;
     float o1S2C0_LightClustered_ClusterDepthScale;
@@ -57,14 +60,14 @@ layout(std140) uniform PerView
 uniform samplerBuffer LightClusteredPointGroup_PointLights;
 uniform usamplerBuffer LightClustered_LightIndices;
 uniform samplerBuffer LightClusteredSpotGroup_SpotLights;
+uniform usampler3D SPIRV_Cross_CombinedLightClustered_LightClustersSPIRV_Cross_DummySampler;
 
-layout(location = 0) in float VS_IN_lightDirectAmbientOcclusion;
-layout(location = 1) in vec3 VS_IN_normalWS;
-layout(location = 2) in vec4 VS_IN_PositionWS;
-layout(location = 3) in vec4 VS_IN_ShadingPosition;
-layout(location = 4) in vec4 VS_IN_ScreenPosition;
-layout(location = 0) out vec4 VS_OUT_ShadingPosition;
-layout(location = 1) out vec4 VS_OUT_ScreenPosition;
+in float VS_IN_LIGHTDIRECTAMBIENTOCCLUSION;
+in vec3 VS_IN_NORMALWS;
+in vec4 VS_IN_POSITION_WS;
+in vec4 VS_IN_SV_Position;
+in vec4 VS_IN_SCREENPOSITION;
+out vec4 VS_OUT_ScreenPosition;
 
 void o0S2C0_DirectLightGroup_PrepareDirectLights()
 {
@@ -110,7 +113,7 @@ void o1S2C0_LightClustered_PrepareLightData(inout VS_STREAMS _streams)
     float depth = PerView_var.o1S2C0_Camera_ZProjection.y / (projectedDepth - PerView_var.o1S2C0_Camera_ZProjection.x);
     vec2 texCoord = vec2(_streams.ScreenPosition_id13.x + 1.0, 1.0 - _streams.ScreenPosition_id13.y) * 0.5;
     int slice = int(max(log2((depth * PerView_var.o1S2C0_LightClustered_ClusterDepthScale) + PerView_var.o1S2C0_LightClustered_ClusterDepthBias), 0.0));
-    _streams.lightData_id10 = uvec2(texelFetch(LightClustered_LightClusters, ivec4(ivec2(texCoord * PerView_var.o1S2C0_LightClustered_ClusterStride), slice, 0).xyz, ivec4(ivec2(texCoord * PerView_var.o1S2C0_LightClustered_ClusterStride), slice, 0).w).xy);
+    _streams.lightData_id10 = uvec2(texelFetch(SPIRV_Cross_CombinedLightClustered_LightClustersSPIRV_Cross_DummySampler, ivec4(ivec2(texCoord * PerView_var.o1S2C0_LightClustered_ClusterStride), slice, 0).xyz, ivec4(ivec2(texCoord * PerView_var.o1S2C0_LightClustered_ClusterStride), slice, 0).w).xy);
     _streams.lightIndex_id11 = int(_streams.lightData_id10.x);
 }
 
@@ -314,11 +317,11 @@ void o2S2C0_DirectLightGroup_PrepareDirectLight(inout VS_STREAMS _streams, int l
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, vec3(0.0), vec3(0.0), 0.0, vec4(0.0), uvec2(0u), 0, vec4(0.0), vec4(0.0));
-    _streams.lightDirectAmbientOcclusion_id5 = VS_IN_lightDirectAmbientOcclusion;
-    _streams.normalWS_id6 = VS_IN_normalWS;
-    _streams.PositionWS_id9 = VS_IN_PositionWS;
-    _streams.ShadingPosition_id12 = VS_IN_ShadingPosition;
-    _streams.ScreenPosition_id13 = VS_IN_ScreenPosition;
+    _streams.lightDirectAmbientOcclusion_id5 = VS_IN_LIGHTDIRECTAMBIENTOCCLUSION;
+    _streams.normalWS_id6 = VS_IN_NORMALWS;
+    _streams.PositionWS_id9 = VS_IN_POSITION_WS;
+    _streams.ShadingPosition_id12 = VS_IN_SV_Position;
+    _streams.ScreenPosition_id13 = VS_IN_SCREENPOSITION;
     o0S2C0_DirectLightGroup_PrepareDirectLights();
     int maxLightCount = o0S2C0_LightDirectionalGroup_8__GetMaxLightCount();
     int count = o0S2C0_DirectLightGroupPerView_GetLightCount();
@@ -359,7 +362,9 @@ void main()
         param = i;
         o2S2C0_DirectLightGroup_PrepareDirectLight(_streams, param);
     }
-    VS_OUT_ShadingPosition = _streams.ShadingPosition_id12;
+    gl_Position = _streams.ShadingPosition_id12;
     VS_OUT_ScreenPosition = _streams.ScreenPosition_id13;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

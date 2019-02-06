@@ -7,7 +7,7 @@
 @C    o1S2C0_Camera_ZProjection => Camera.ZProjection
 @C    o1S2C0_Camera_ViewSize => Camera.ViewSize
 @C    o1S2C0_Camera_AspectRatio => Camera.AspectRatio
-@C    o0S2C0_LightDirectionalGroup__padding_PerView_Default => _padding_PerView_Default
+@C    o0S2C0_LightDirectionalGroup_padding_PerView_Default => padding_PerView_Default.directLightGroups[0]
 @C    o0S2C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups[0]
 @C    o0S2C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
 @C    o1S2C0_LightClustered_ClusterDepthScale => LightClustered.ClusterDepthScale
@@ -18,10 +18,10 @@
 *****  Resources  *****
 ***********************
 @C    PerView => PerView [Stage=Vertex]
-@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights.directLightGroups[1] [Stage=Vertex]
-@C    LightClustered_LightClusters => LightClustered.LightClusters.directLightGroups[1] [Stage=Vertex]
-@C    LightClustered_LightIndices => LightClustered.LightIndices.directLightGroups[1] [Stage=Vertex]
-@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights.directLightGroups[2] [Stage=Vertex]
+@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights [Stage=Vertex]
+@C    LightClustered_LightClusters => LightClustered.LightClusters [Stage=Vertex]
+@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage=Vertex]
+@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage=Vertex]
 
 ConstantBuffers. Count=1
  cbuffer: Name="PerView" Size=328 MembersCount=11
@@ -40,7 +40,7 @@ ConstantBuffers. Count=1
   KeyName="Camera.AspectRatio" RawName="o1S2C0_Camera_AspectRatio" LogicalGroup="" Offset=24
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="_padding_PerView_Default" RawName="o0S2C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="Default" Offset=32
+  KeyName="padding_PerView_Default.directLightGroups[0]" RawName="o0S2C0_LightDirectionalGroup_padding_PerView_Default" LogicalGroup="Default" Offset=32
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
   KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S2C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=48
@@ -66,10 +66,10 @@ ConstantBuffers. Count=1
 
 ResourceBindings. Count=5
  Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
- Stage=Vertex KeyName="LightClusteredPointGroup.PointLights.directLightGroups[1]" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
- Stage=Vertex KeyName="LightClustered.LightClusters.directLightGroups[1]" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D GroupName="PerView" LogicalGroup="Lighting"
- Stage=Vertex KeyName="LightClustered.LightIndices.directLightGroups[1]" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
- Stage=Vertex KeyName="LightClusteredSpotGroup.SpotLights.directLightGroups[2]" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Vertex KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Vertex KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Vertex KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Vertex KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
 
 InputAttributes. Count=5
  SemanticName="LIGHTDIRECTAMBIENTOCCLUSION" SemanticIndex=0
