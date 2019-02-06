@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -17,9 +20,9 @@ layout(std140) uniform Globals
 
 uniform samplerCube SPIRV_Cross_CombinedRadiancePrefilteringGGXNoComputeShader_RadianceMapTexturing_LinearSampler;
 
-layout(location = 0) in vec2 PS_IN_TexCoord;
-layout(location = 1) in vec4 PS_IN_ShadingPosition;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec2 PS_IN_TEXCOORD0;
+in vec4 PS_IN_SV_Position;
+out vec4 PS_OUT_ColorTarget;
 
 vec3 CubemapUtils_ConvertTexcoordsNoFlip(vec2 inputTexcoord, int viewIndex)
 {
@@ -77,7 +80,8 @@ vec3 ImportanceSamplingGGX_GetSample(vec2 xi, float roughness, vec3 N)
     H.x = SinTheta * cos(phi);
     H.y = SinTheta * sin(phi);
     H.z = CosTheta;
-    vec3 UpVector = mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), bvec3(abs(N.z) < 0.999000012874603271484375));
+    bvec3 _191 = bvec3(abs(N.z) < 0.999000012874603271484375);
+    vec3 UpVector = vec3(_191.x ? vec3(0.0, 0.0, 1.0).x : vec3(1.0, 0.0, 0.0).x, _191.y ? vec3(0.0, 0.0, 1.0).y : vec3(1.0, 0.0, 0.0).y, _191.z ? vec3(0.0, 0.0, 1.0).z : vec3(1.0, 0.0, 0.0).z);
     vec3 TangentX = normalize(cross(UpVector, N));
     vec3 TangentY = cross(N, TangentX);
     return ((TangentX * H.x) + (TangentY * H.y)) + (N * H.z);
@@ -96,8 +100,6 @@ vec4 RadiancePrefilteringGGXNoComputeShader_4__Shading(PS_STREAMS _streams)
     int param_1 = Globals_var.RadiancePrefilteringGGXNoComputeShader_Face;
     vec3 R = normalize(CubemapUtils_ConvertTexcoordsNoFlip(param, param_1));
     vec4 prefilteredSample = vec4(0.0);
-    vec3 prefilteredColor;
-    float weight;
     for (int sampleIndex = 0; sampleIndex < 4; sampleIndex++)
     {
         int param_2 = sampleIndex;
@@ -115,8 +117,8 @@ vec4 RadiancePrefilteringGGXNoComputeShader_4__Shading(PS_STREAMS _streams)
         float omegaS = 1.0 / (4.0 * pdf);
         float omegaP = 12.56637096405029296875 / ((6.0 * float(Globals_var.RadiancePrefilteringGGXNoComputeShader_RadianceMapSize)) * float(Globals_var.RadiancePrefilteringGGXNoComputeShader_RadianceMapSize));
         float mipLevel = clamp(0.5 * log2(omegaS / omegaP), 0.0, Globals_var.RadiancePrefilteringGGXNoComputeShader_MipmapCount);
-        prefilteredColor = vec3(0.0);
-        weight = 0.0;
+        vec3 prefilteredColor = vec3(0.0);
+        float weight = 0.0;
         if (NoL > 0.0)
         {
             weight = NoL;
@@ -130,8 +132,8 @@ vec4 RadiancePrefilteringGGXNoComputeShader_4__Shading(PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec2(0.0), vec4(0.0), vec4(0.0));
-    _streams.TexCoord_id0 = PS_IN_TexCoord;
-    _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
+    _streams.TexCoord_id0 = PS_IN_TEXCOORD0;
+    _streams.ShadingPosition_id1 = PS_IN_SV_Position;
     _streams.ColorTarget_id2 = RadiancePrefilteringGGXNoComputeShader_4__Shading(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
 }

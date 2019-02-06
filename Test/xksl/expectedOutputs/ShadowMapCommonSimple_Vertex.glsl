@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 uniform sampler2DShadow SPIRV_Cross_CombinedShadowMapCommon_ShadowMapTextureShadowMapCommon_LinearClampCompareLessEqualSampler;
 uniform sampler2D SPIRV_Cross_CombinedShadowMapCommon_ShadowMapTextureShadowMapCommon_LinearBorderSampler;
@@ -21,5 +24,7 @@ void main()
     float param_1 = 1.0;
     float f1 = ShadowMapCommon_SampleTextureAndCompare(param, param_1);
     float f2 = ShadowMapCommon_SampleThickness();
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

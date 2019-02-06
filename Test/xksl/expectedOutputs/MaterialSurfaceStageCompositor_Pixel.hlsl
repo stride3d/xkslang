@@ -8,6 +8,8 @@ struct PS_STREAMS
     float shadingColorAlpha_id5;
 };
 
+static const PS_STREAMS _66 = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f };
+
 cbuffer PerView
 {
     column_major float4x4 Transformation_View;
@@ -19,16 +21,16 @@ cbuffer PerView
     float4 Transformation_Eye;
 };
 
-static float4 PS_IN_ShadingPosition;
-static float4 PS_IN_PositionWS;
-static float PS_IN_shadingColorAlpha;
+static float4 PS_IN_SV_Position;
+static float4 PS_IN_POSITION_WS;
+static float PS_IN_SHADINGCOLORALPHA;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_ShadingPosition : SV_Position;
-    float4 PS_IN_PositionWS : POSITION_WS;
-    float PS_IN_shadingColorAlpha : SHADINGCOLORALPHA;
+    float4 PS_IN_POSITION_WS : POSITION_WS;
+    float PS_IN_SHADINGCOLORALPHA : SHADINGCOLORALPHA;
+    float4 PS_IN_SV_Position : SV_Position;
 };
 
 struct SPIRV_Cross_Output
@@ -59,10 +61,10 @@ float4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f };
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.PositionWS_id3 = PS_IN_PositionWS;
-    _streams.shadingColorAlpha_id5 = PS_IN_shadingColorAlpha;
+    PS_STREAMS _streams = _66;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.PositionWS_id3 = PS_IN_POSITION_WS;
+    _streams.shadingColorAlpha_id5 = PS_IN_SHADINGCOLORALPHA;
     ShaderBase_PSMain();
     float4 _36 = MaterialSurfacePixelStageCompositor_Shading(_streams);
     _streams.ColorTarget_id1 = _36;
@@ -71,9 +73,9 @@ void frag_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
-    PS_IN_PositionWS = stage_input.PS_IN_PositionWS;
-    PS_IN_shadingColorAlpha = stage_input.PS_IN_shadingColorAlpha;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
+    PS_IN_POSITION_WS = stage_input.PS_IN_POSITION_WS;
+    PS_IN_SHADINGCOLORALPHA = stage_input.PS_IN_SHADINGCOLORALPHA;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

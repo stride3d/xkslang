@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -15,9 +18,9 @@ layout(std140) uniform globalRGroup
 
 uniform samplerCube SPIRV_Cross_CombinedLambertianPrefilteringSHNoComputePass1_RadianceMapTexturing_PointSampler;
 
-layout(location = 0) in vec2 PS_IN_TexCoord;
-layout(location = 1) in vec4 PS_IN_ShadingPosition;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec2 PS_IN_TEXCOORD0;
+in vec4 PS_IN_SV_Position;
+out vec4 PS_OUT_ColorTarget;
 
 vec3 LambertianPrefilteringSHNoComputePass1_2__uvToDirectionVS(float u, float v, int viewIndex)
 {
@@ -123,8 +126,8 @@ vec4 LambertianPrefilteringSHNoComputePass1_2__Shading(inout PS_STREAMS _streams
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec2(0.0), float[](0.0, 0.0, 0.0, 0.0), vec4(0.0), vec4(0.0));
-    _streams.TexCoord_id0 = PS_IN_TexCoord;
-    _streams.ShadingPosition_id2 = PS_IN_ShadingPosition;
+    _streams.TexCoord_id0 = PS_IN_TEXCOORD0;
+    _streams.ShadingPosition_id2 = PS_IN_SV_Position;
     vec4 _345 = LambertianPrefilteringSHNoComputePass1_2__Shading(_streams);
     _streams.ColorTarget_id3 = _345;
     PS_OUT_ColorTarget = _streams.ColorTarget_id3;

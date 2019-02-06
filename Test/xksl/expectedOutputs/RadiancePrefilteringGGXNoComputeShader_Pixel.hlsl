@@ -5,6 +5,8 @@ struct PS_STREAMS
     float4 ColorTarget_id2;
 };
 
+static const PS_STREAMS _388 = { 0.0f.xx, 0.0f.xxxx, 0.0f.xxxx };
+
 cbuffer Globals
 {
     float RadiancePrefilteringGGXNoComputeShader_MipmapCount;
@@ -15,14 +17,14 @@ cbuffer Globals
 TextureCube<float4> RadiancePrefilteringGGXNoComputeShader_RadianceMap;
 SamplerState Texturing_LinearSampler;
 
-static float2 PS_IN_TexCoord;
-static float4 PS_IN_ShadingPosition;
+static float2 PS_IN_TEXCOORD0;
+static float4 PS_IN_SV_Position;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float2 PS_IN_TexCoord : TEXCOORD0;
-    float4 PS_IN_ShadingPosition : SV_Position;
+    float4 PS_IN_SV_Position : SV_Position;
+    float2 PS_IN_TEXCOORD0 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -106,8 +108,6 @@ float4 RadiancePrefilteringGGXNoComputeShader_1024__Shading(PS_STREAMS _streams)
     int param_1 = RadiancePrefilteringGGXNoComputeShader_Face;
     float3 R = normalize(CubemapUtils_ConvertTexcoordsNoFlip(param, param_1));
     float4 prefilteredSample = 0.0f.xxxx;
-    float3 prefilteredColor;
-    float weight;
     for (int sampleIndex = 0; sampleIndex < 1024; sampleIndex++)
     {
         int param_2 = sampleIndex;
@@ -125,8 +125,8 @@ float4 RadiancePrefilteringGGXNoComputeShader_1024__Shading(PS_STREAMS _streams)
         float omegaS = 1.0f / (1024.0f * pdf);
         float omegaP = 12.56637096405029296875f / ((6.0f * float(RadiancePrefilteringGGXNoComputeShader_RadianceMapSize)) * float(RadiancePrefilteringGGXNoComputeShader_RadianceMapSize));
         float mipLevel = clamp(0.5f * log2(omegaS / omegaP), 0.0f, RadiancePrefilteringGGXNoComputeShader_MipmapCount);
-        prefilteredColor = 0.0f.xxx;
-        weight = 0.0f;
+        float3 prefilteredColor = 0.0f.xxx;
+        float weight = 0.0f;
         if (NoL > 0.0f)
         {
             weight = NoL;
@@ -139,17 +139,17 @@ float4 RadiancePrefilteringGGXNoComputeShader_1024__Shading(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xx, 0.0f.xxxx, 0.0f.xxxx };
-    _streams.TexCoord_id0 = PS_IN_TexCoord;
-    _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
+    PS_STREAMS _streams = _388;
+    _streams.TexCoord_id0 = PS_IN_TEXCOORD0;
+    _streams.ShadingPosition_id1 = PS_IN_SV_Position;
     _streams.ColorTarget_id2 = RadiancePrefilteringGGXNoComputeShader_1024__Shading(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
+    PS_IN_TEXCOORD0 = stage_input.PS_IN_TEXCOORD0;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

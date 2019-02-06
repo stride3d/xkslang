@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -20,9 +23,9 @@ layout(std140) uniform PerDraw
     vec4 Transformation_EyeMS;
 } PerDraw_var;
 
-layout(location = 0) in vec3 PS_IN_meshNormal;
-layout(location = 1) in vec4 PS_IN_meshTangent;
-layout(location = 2) in vec4 PS_IN_ShadingPosition;
+in vec3 PS_IN_NORMAL;
+in vec4 PS_IN_TANGENT;
+in vec4 PS_IN_SV_Position;
 
 void NormalUpdate_GenerateNormal_PS()
 {
@@ -64,9 +67,9 @@ void ShaderBase_PSMain()
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec3(0.0), vec3(0.0), vec4(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec4(0.0));
-    _streams.meshNormal_id0 = PS_IN_meshNormal;
-    _streams.meshTangent_id2 = PS_IN_meshTangent;
-    _streams.ShadingPosition_id4 = PS_IN_ShadingPosition;
+    _streams.meshNormal_id0 = PS_IN_NORMAL;
+    _streams.meshTangent_id2 = PS_IN_TANGENT;
+    _streams.ShadingPosition_id4 = PS_IN_SV_Position;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShaderBase_PSMain();
 }

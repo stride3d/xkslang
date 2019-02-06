@@ -5,6 +5,8 @@ struct PS_STREAMS
     float4 ColorTarget_id2;
 };
 
+static const PS_STREAMS _130 = { 0.0f.xx, 0.0f.xxxx, 0.0f.xxxx };
+
 cbuffer Globals
 {
     float2 Effect_Center;
@@ -17,14 +19,14 @@ cbuffer Globals
 Texture2D<float4> Texturing_Texture0;
 SamplerState Texturing_Sampler;
 
-static float2 PS_IN_TexCoord;
-static float4 PS_IN_ShadingPosition;
+static float2 PS_IN_TEXCOORD0;
+static float4 PS_IN_SV_Position;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float2 PS_IN_TexCoord : TEXCOORD0;
-    float4 PS_IN_ShadingPosition : SV_Position;
+    float4 PS_IN_SV_Position : SV_Position;
+    float2 PS_IN_TEXCOORD0 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -35,12 +37,12 @@ struct SPIRV_Cross_Output
 float4 Effect_Shading(PS_STREAMS _streams)
 {
     float2 toPixel = (_streams.TexCoord_id0 - Effect_Center) * float2(1.0f, Effect_InvAspectRatio);
-    float distance = length(toPixel);
+    float _distance = length(toPixel);
     float2 direction = normalize(toPixel);
     float2 wave;
-    wave.x = sin((Effect_Frequency * distance) + Effect_Phase);
-    wave.y = cos((Effect_Frequency * distance) + Effect_Phase);
-    float falloff = clamp(1.0f - distance, 0.0f, 1.0f);
+    wave.x = sin((Effect_Frequency * _distance) + Effect_Phase);
+    wave.y = cos((Effect_Frequency * _distance) + Effect_Phase);
+    float falloff = clamp(1.0f - _distance, 0.0f, 1.0f);
     falloff = pow(falloff, 1.0f / Effect_Spread);
     float2 uv2 = _streams.TexCoord_id0 + (direction * ((wave.x * falloff) * Effect_Amplitude));
     float lighting = lerp(1.0f, 1.0f + ((wave.x * falloff) * 0.20000000298023223876953125f), clamp(Effect_Amplitude / 0.014999999664723873138427734375f, 0.0f, 1.0f));
@@ -52,17 +54,17 @@ float4 Effect_Shading(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xx, 0.0f.xxxx, 0.0f.xxxx };
-    _streams.TexCoord_id0 = PS_IN_TexCoord;
-    _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
+    PS_STREAMS _streams = _130;
+    _streams.TexCoord_id0 = PS_IN_TEXCOORD0;
+    _streams.ShadingPosition_id1 = PS_IN_SV_Position;
     _streams.ColorTarget_id2 = Effect_Shading(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
+    PS_IN_TEXCOORD0 = stage_input.PS_IN_TEXCOORD0;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

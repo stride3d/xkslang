@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -14,9 +17,9 @@ layout(std140) uniform Globals
 
 uniform sampler2D SPIRV_Cross_CombinedTexturing_Texture0Texturing_Sampler;
 
-layout(location = 0) in vec4 PS_IN_ShadingPosition;
-layout(location = 1) in vec2 PS_IN_TexCoord;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec4 PS_IN_SV_Position;
+in vec2 PS_IN_TEXCOORD0;
+out vec4 PS_OUT_ColorTarget;
 
 vec4 SpriteBase_Shading(PS_STREAMS _streams)
 {
@@ -31,8 +34,8 @@ vec4 BackgroundShader_Shading(PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0), vec4(0.0), vec2(0.0));
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.TexCoord_id2 = PS_IN_TexCoord;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.TexCoord_id2 = PS_IN_TEXCOORD0;
     _streams.ColorTarget_id1 = BackgroundShader_Shading(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;
 }

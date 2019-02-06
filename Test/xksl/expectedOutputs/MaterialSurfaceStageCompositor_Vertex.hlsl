@@ -5,25 +5,27 @@ struct VS_STREAMS
     float shadingColorAlpha_id2;
 };
 
-static float4 VS_IN_ShadingPosition;
-static float4 VS_IN_PositionWS;
-static float VS_IN_shadingColorAlpha;
-static float4 VS_OUT_ShadingPosition;
+static const VS_STREAMS _37 = { 0.0f.xxxx, 0.0f.xxxx, 0.0f };
+
+static float4 gl_Position;
+static float4 VS_IN_SV_Position;
+static float4 VS_IN_POSITION_WS;
+static float VS_IN_SHADINGCOLORALPHA;
 static float4 VS_OUT_PositionWS;
 static float VS_OUT_shadingColorAlpha;
 
 struct SPIRV_Cross_Input
 {
-    float4 VS_IN_ShadingPosition : SV_Position;
-    float4 VS_IN_PositionWS : POSITION_WS;
-    float VS_IN_shadingColorAlpha : SHADINGCOLORALPHA;
+    float4 VS_IN_POSITION_WS : POSITION_WS;
+    float VS_IN_SHADINGCOLORALPHA : SHADINGCOLORALPHA;
+    float4 VS_IN_SV_Position : SV_Position;
 };
 
 struct SPIRV_Cross_Output
 {
-    float4 VS_OUT_ShadingPosition : SV_Position;
     float4 VS_OUT_PositionWS : POSITION_WS;
     float VS_OUT_shadingColorAlpha : SHADINGCOLORALPHA;
+    float4 gl_Position : SV_Position;
 };
 
 void ShaderBase_VSMain()
@@ -40,26 +42,26 @@ void o0S2C0_IMaterialSurface_Compute()
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f };
-    _streams.ShadingPosition_id0 = VS_IN_ShadingPosition;
-    _streams.PositionWS_id1 = VS_IN_PositionWS;
-    _streams.shadingColorAlpha_id2 = VS_IN_shadingColorAlpha;
+    VS_STREAMS _streams = _37;
+    _streams.ShadingPosition_id0 = VS_IN_SV_Position;
+    _streams.PositionWS_id1 = VS_IN_POSITION_WS;
+    _streams.shadingColorAlpha_id2 = VS_IN_SHADINGCOLORALPHA;
     ShaderBase_VSMain();
     o1S2C1_IStreamInitializer_ResetStream();
     o0S2C0_IMaterialSurface_Compute();
-    VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
+    gl_Position = _streams.ShadingPosition_id0;
     VS_OUT_PositionWS = _streams.PositionWS_id1;
     VS_OUT_shadingColorAlpha = _streams.shadingColorAlpha_id2;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_ShadingPosition = stage_input.VS_IN_ShadingPosition;
-    VS_IN_PositionWS = stage_input.VS_IN_PositionWS;
-    VS_IN_shadingColorAlpha = stage_input.VS_IN_shadingColorAlpha;
+    VS_IN_SV_Position = stage_input.VS_IN_SV_Position;
+    VS_IN_POSITION_WS = stage_input.VS_IN_POSITION_WS;
+    VS_IN_SHADINGCOLORALPHA = stage_input.VS_IN_SHADINGCOLORALPHA;
     vert_main();
     SPIRV_Cross_Output stage_output;
-    stage_output.VS_OUT_ShadingPosition = VS_OUT_ShadingPosition;
+    stage_output.gl_Position = gl_Position;
     stage_output.VS_OUT_PositionWS = VS_OUT_PositionWS;
     stage_output.VS_OUT_shadingColorAlpha = VS_OUT_shadingColorAlpha;
     return stage_output;

@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct VS_STREAMS
 {
@@ -25,11 +28,10 @@ layout(std140) uniform PerView
     vec4 Transformation_Eye;
 } PerView_var;
 
-layout(location = 0) in vec4 VS_IN_Position;
-layout(location = 0) out vec4 VS_OUT_PositionWS;
-layout(location = 1) out float VS_OUT_DepthVS;
-layout(location = 2) out vec4 VS_OUT_ShadingPosition;
-layout(location = 3) out vec4 VS_OUT_PositionH;
+in vec4 VS_IN_POSITION;
+out vec4 VS_OUT_PositionWS;
+out float VS_OUT_DepthVS;
+out vec4 VS_OUT_PositionH;
 
 void ShaderBase_VSMain()
 {
@@ -77,12 +79,14 @@ void TransformationBase_BaseTransformVS(inout VS_STREAMS _streams)
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(vec4(0.0), vec4(0.0), 0.0, vec4(0.0), vec4(0.0));
-    _streams.Position_id0 = VS_IN_Position;
+    _streams.Position_id0 = VS_IN_POSITION;
     ShaderBase_VSMain();
     TransformationBase_BaseTransformVS(_streams);
     VS_OUT_PositionWS = _streams.PositionWS_id1;
     VS_OUT_DepthVS = _streams.DepthVS_id2;
-    VS_OUT_ShadingPosition = _streams.ShadingPosition_id3;
+    gl_Position = _streams.ShadingPosition_id3;
     VS_OUT_PositionH = _streams.PositionH_id4;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

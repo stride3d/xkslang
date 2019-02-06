@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -14,9 +17,9 @@ layout(std140) uniform globalRGroup
 
 uniform sampler2D SPIRV_Cross_CombinedparamTexturing_LinearSampler;
 
-layout(location = 0) in vec2 PS_IN_TexCoord;
-layout(location = 1) in vec4 PS_IN_ShadingPosition;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec2 PS_IN_TEXCOORD0;
+in vec4 PS_IN_SV_Position;
+out vec4 PS_OUT_ColorTarget;
 
 float FXAAShader_FxaaLuma(vec4 rgba)
 {
@@ -49,15 +52,6 @@ vec4 FXAAShader_FxaaPixelShader(vec2 pos, vec4 fxaaConsolePosPos, vec2 fxaaQuali
     float range = rangeMax - rangeMin;
     float rangeMaxClamped = max(fxaaQualityEdgeThresholdMin, rangeMaxScaled);
     bool earlyExit = range < rangeMaxClamped;
-    float subpixRcpRange;
-    float lengthSign;
-    bool horzSpan;
-    float subpixA;
-    float subpixB;
-    float lumaNN;
-    float lumaSS;
-    bool pairN;
-    float gradient;
     if (earlyExit)
     {
         return rgbyM;
@@ -72,7 +66,7 @@ vec4 FXAAShader_FxaaPixelShader(vec2 pos, vec4 fxaaConsolePosPos, vec2 fxaaQuali
     float lumaSW = FXAAShader_FxaaLuma(param_7);
     float lumaNS = lumaN + lumaS;
     float lumaWE = lumaW + lumaE;
-    subpixRcpRange = 1.0 / range;
+    float subpixRcpRange = 1.0 / range;
     float subpixNSWE = lumaNS + lumaWE;
     float edgeHorz1 = ((-2.0) * rgbyM.w) + lumaNS;
     float edgeVert1 = ((-2.0) * rgbyM.w) + lumaWE;
@@ -89,9 +83,9 @@ vec4 FXAAShader_FxaaPixelShader(vec2 pos, vec4 fxaaConsolePosPos, vec2 fxaaQuali
     float edgeHorz = abs(edgeHorz3) + edgeHorz4;
     float edgeVert = abs(edgeVert3) + edgeVert4;
     float subpixNWSWNESE = lumaNWSW + lumaNESE;
-    lengthSign = fxaaQualityRcpFrame.x;
-    horzSpan = edgeHorz >= edgeVert;
-    subpixA = (subpixNSWE * 2.0) + subpixNWSWNESE;
+    float lengthSign = fxaaQualityRcpFrame.x;
+    bool horzSpan = edgeHorz >= edgeVert;
+    float subpixA = (subpixNSWE * 2.0) + subpixNWSWNESE;
     if (!horzSpan)
     {
         lumaN = lumaW;
@@ -104,13 +98,13 @@ vec4 FXAAShader_FxaaPixelShader(vec2 pos, vec4 fxaaConsolePosPos, vec2 fxaaQuali
     {
         lengthSign = fxaaQualityRcpFrame.y;
     }
-    subpixB = (subpixA * 0.083333335816860198974609375) - rgbyM.w;
+    float subpixB = (subpixA * 0.083333335816860198974609375) - rgbyM.w;
     float gradientN = lumaN - rgbyM.w;
     float gradientS = lumaS - rgbyM.w;
-    lumaNN = lumaN + rgbyM.w;
-    lumaSS = lumaS + rgbyM.w;
-    pairN = abs(gradientN) >= abs(gradientS);
-    gradient = max(abs(gradientN), abs(gradientS));
+    float lumaNN = lumaN + rgbyM.w;
+    float lumaSS = lumaS + rgbyM.w;
+    bool pairN = abs(gradientN) >= abs(gradientS);
+    float gradient = max(abs(gradientN), abs(gradientS));
     if (pairN)
     {
         lengthSign = -lengthSign;
@@ -119,42 +113,9 @@ vec4 FXAAShader_FxaaPixelShader(vec2 pos, vec4 fxaaConsolePosPos, vec2 fxaaQuali
     vec2 posB;
     posB.x = posM.x;
     posB.y = posM.y;
-    float _87;
-    if (!horzSpan)
-    {
-        _87 = 0.0;
-    }
-    else
-    {
-        _87 = fxaaQualityRcpFrame.x;
-    }
     vec2 offNP;
-    offNP.x = _87;
-    float _88;
-    vec2 posN;
-    vec2 posP;
-    float subpixD;
-    float lumaEndN;
-    float subpixE;
-    float lumaEndP;
-    float gradientScaled;
-    float subpixF;
-    bool lumaMLTZero;
-    bool doneN;
-    bool doneP;
-    bool doneNP;
-    float dstN;
-    float dstP;
-    float pixelOffsetSubpix;
-    if (horzSpan)
-    {
-        _88 = 0.0;
-    }
-    else
-    {
-        _88 = fxaaQualityRcpFrame.y;
-    }
-    offNP.y = _88;
+    offNP.x = (!horzSpan) ? 0.0 : fxaaQualityRcpFrame.x;
+    offNP.y = horzSpan ? 0.0 : fxaaQualityRcpFrame.y;
     if (!horzSpan)
     {
         posB.x += (lengthSign * 0.5);
@@ -163,28 +124,30 @@ vec4 FXAAShader_FxaaPixelShader(vec2 pos, vec4 fxaaConsolePosPos, vec2 fxaaQuali
     {
         posB.y += (lengthSign * 0.5);
     }
+    vec2 posN;
     posN.x = posB.x - (offNP.x * 1.0);
     posN.y = posB.y - (offNP.y * 1.0);
+    vec2 posP;
     posP.x = posB.x + (offNP.x * 1.0);
     posP.y = posB.y + (offNP.y * 1.0);
-    subpixD = ((-2.0) * subpixC) + 3.0;
+    float subpixD = ((-2.0) * subpixC) + 3.0;
     vec4 param_8 = textureLod(SPIRV_Cross_CombinedtexTexturing_LinearSampler, posN, 0.0);
-    lumaEndN = FXAAShader_FxaaLuma(param_8);
-    subpixE = subpixC * subpixC;
+    float lumaEndN = FXAAShader_FxaaLuma(param_8);
+    float subpixE = subpixC * subpixC;
     vec4 param_9 = textureLod(SPIRV_Cross_CombinedtexTexturing_LinearSampler, posP, 0.0);
-    lumaEndP = FXAAShader_FxaaLuma(param_9);
+    float lumaEndP = FXAAShader_FxaaLuma(param_9);
     if (!pairN)
     {
         lumaNN = lumaSS;
     }
-    gradientScaled = (gradient * 1.0) / 4.0;
+    float gradientScaled = (gradient * 1.0) / 4.0;
     float lumaMM = rgbyM.w - (lumaNN * 0.5);
-    subpixF = subpixD * subpixE;
-    lumaMLTZero = lumaMM < 0.0;
+    float subpixF = subpixD * subpixE;
+    bool lumaMLTZero = lumaMM < 0.0;
     lumaEndN -= (lumaNN * 0.5);
     lumaEndP -= (lumaNN * 0.5);
-    doneN = abs(lumaEndN) >= gradientScaled;
-    doneP = abs(lumaEndP) >= gradientScaled;
+    bool doneN = abs(lumaEndN) >= gradientScaled;
+    bool doneP = abs(lumaEndP) >= gradientScaled;
     if (!doneN)
     {
         posN.x -= (offNP.x * 1.5);
@@ -193,7 +156,7 @@ vec4 FXAAShader_FxaaPixelShader(vec2 pos, vec4 fxaaConsolePosPos, vec2 fxaaQuali
     {
         posN.y -= (offNP.y * 1.5);
     }
-    doneNP = (!doneN) || (!doneP);
+    bool doneNP = (!doneN) || (!doneP);
     if (!doneP)
     {
         posP.x += (offNP.x * 1.5);
@@ -362,8 +325,8 @@ vec4 FXAAShader_FxaaPixelShader(vec2 pos, vec4 fxaaConsolePosPos, vec2 fxaaQuali
             }
         }
     }
-    dstN = posM.x - posN.x;
-    dstP = posP.x - posM.x;
+    float dstN = posM.x - posN.x;
+    float dstP = posP.x - posM.x;
     if (!horzSpan)
     {
         dstN = posM.y - posN.y;
@@ -383,7 +346,7 @@ vec4 FXAAShader_FxaaPixelShader(vec2 pos, vec4 fxaaConsolePosPos, vec2 fxaaQuali
     float pixelOffset = (dst * (-spanLengthRcp)) + 0.5;
     float subpixH = subpixG * fxaaQualitySubpix;
     float pixelOffsetGood = goodSpan ? pixelOffset : 0.0;
-    pixelOffsetSubpix = max(pixelOffsetGood, subpixH);
+    float pixelOffsetSubpix = max(pixelOffsetGood, subpixH);
     if (!horzSpan)
     {
         posM.x += (pixelOffsetSubpix * lengthSign);
@@ -418,8 +381,8 @@ vec4 FXAAShader_Shading(PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec2(0.0), vec4(0.0), vec4(0.0));
-    _streams.TexCoord_id0 = PS_IN_TexCoord;
-    _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
+    _streams.TexCoord_id0 = PS_IN_TEXCOORD0;
+    _streams.ShadingPosition_id1 = PS_IN_SV_Position;
     _streams.ColorTarget_id2 = FXAAShader_Shading(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
 }

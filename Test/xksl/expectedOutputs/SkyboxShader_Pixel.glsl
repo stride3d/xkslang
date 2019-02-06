@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -17,9 +20,9 @@ layout(std140) uniform Globals
 
 uniform samplerCube SPIRV_Cross_CombinedSkyboxShader_CubeMapTexturing_LinearSampler;
 
-layout(location = 0) in vec4 PS_IN_ShadingPosition;
-layout(location = 1) in vec3 PS_IN_skyboxViewDirection;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec4 PS_IN_SV_Position;
+in vec3 PS_IN_SKYBOXVIEWDIRECTION;
+out vec4 PS_OUT_ColorTarget;
 
 vec4 SkyboxShader_Shading(PS_STREAMS _streams)
 {
@@ -31,8 +34,8 @@ vec4 SkyboxShader_Shading(PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0), vec4(0.0), vec3(0.0));
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.skyboxViewDirection_id2 = PS_IN_skyboxViewDirection;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.skyboxViewDirection_id2 = PS_IN_SKYBOXVIEWDIRECTION;
     _streams.ColorTarget_id1 = SkyboxShader_Shading(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;
 }

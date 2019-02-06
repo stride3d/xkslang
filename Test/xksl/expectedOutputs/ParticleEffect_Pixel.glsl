@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -29,12 +32,12 @@ layout(std140) uniform PerView
 
 uniform sampler2D SPIRV_Cross_CombinedDepthBase_DepthStencilTexturing_PointSampler;
 
-layout(location = 0) in vec4 PS_IN_ScreenPosition;
-layout(location = 1) in float PS_IN_ZDepth;
-layout(location = 2) in vec4 PS_IN_ShadingPosition;
-layout(location = 3) in vec2 PS_IN_TexCoord;
-layout(location = 4) in vec4 PS_IN_LocalColor;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec4 PS_IN_SCREEN_POSITION;
+in float PS_IN_Z_DEPTH_VALUE;
+in vec4 PS_IN_SV_Position;
+in vec2 PS_IN_TEXCOORD0;
+in vec4 PS_IN_COLOR0;
+out vec4 PS_OUT_ColorTarget;
 
 vec4 ParticleBase_Shading()
 {
@@ -80,11 +83,11 @@ float ParticleUtilities_GetLinearDepth(float z)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0), 0.0, vec4(0.0), vec4(0.0), vec2(0.0), vec4(0.0));
-    _streams.ScreenPosition_id0 = PS_IN_ScreenPosition;
-    _streams.ZDepth_id1 = PS_IN_ZDepth;
-    _streams.ShadingPosition_id2 = PS_IN_ShadingPosition;
-    _streams.TexCoord_id4 = PS_IN_TexCoord;
-    _streams.LocalColor_id5 = PS_IN_LocalColor;
+    _streams.ScreenPosition_id0 = PS_IN_SCREEN_POSITION;
+    _streams.ZDepth_id1 = PS_IN_Z_DEPTH_VALUE;
+    _streams.ShadingPosition_id2 = PS_IN_SV_Position;
+    _streams.TexCoord_id4 = PS_IN_TEXCOORD0;
+    _streams.LocalColor_id5 = PS_IN_COLOR0;
     vec4 colorTarget = ParticleComputeColorShader_Shading(_streams);
     if (false)
     {

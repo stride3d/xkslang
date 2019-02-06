@@ -6,6 +6,10 @@ struct PS_STREAMS
     float4 ColorTarget_id3;
 };
 
+static const float _434[25] = { 1.0f, 0.666666686534881591796875f, 0.666666686534881591796875f, 0.666666686534881591796875f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f };
+static const float _446[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+static const PS_STREAMS _453 = { 0.0f.xx, { 0.0f, 0.0f, 0.0f, 0.0f }, 0.0f.xxxx, 0.0f.xxxx };
+
 cbuffer globalRGroup
 {
     int LambertianPrefilteringSHNoComputePass1_CoefficientIndex;
@@ -13,14 +17,14 @@ cbuffer globalRGroup
 TextureCube<float4> LambertianPrefilteringSHNoComputePass1_RadianceMap;
 SamplerState Texturing_PointSampler;
 
-static float2 PS_IN_TexCoord;
-static float4 PS_IN_ShadingPosition;
+static float2 PS_IN_TEXCOORD0;
+static float4 PS_IN_SV_Position;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float2 PS_IN_TexCoord : TEXCOORD0;
-    float4 PS_IN_ShadingPosition : SV_Position;
+    float4 PS_IN_SV_Position : SV_Position;
+    float2 PS_IN_TEXCOORD0 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -123,7 +127,7 @@ float4 LambertianPrefilteringSHNoComputePass1_2__Shading(inout PS_STREAMS _strea
         float3 param_3 = dirVS;
         SphericalHarmonicsBase_2__EvaluateSHBases(_streams, param_3);
         float3 radiance = LambertianPrefilteringSHNoComputePass1_RadianceMap.Sample(Texturing_PointSampler, dirVS).xyz;
-        float indexable[25] = { 1.0f, 0.666666686534881591796875f, 0.666666686534881591796875f, 0.666666686534881591796875f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f, -0.0416666679084300994873046875f };
+        float indexable[25] = _434;
         result += ((radiance * (indexable[LambertianPrefilteringSHNoComputePass1_CoefficientIndex] * _streams.SHBaseValues_id1[LambertianPrefilteringSHNoComputePass1_CoefficientIndex])) * weight);
     }
     return float4(result, weight * 6.0f);
@@ -131,9 +135,9 @@ float4 LambertianPrefilteringSHNoComputePass1_2__Shading(inout PS_STREAMS _strea
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xx, { 0.0f, 0.0f, 0.0f, 0.0f }, 0.0f.xxxx, 0.0f.xxxx };
-    _streams.TexCoord_id0 = PS_IN_TexCoord;
-    _streams.ShadingPosition_id2 = PS_IN_ShadingPosition;
+    PS_STREAMS _streams = _453;
+    _streams.TexCoord_id0 = PS_IN_TEXCOORD0;
+    _streams.ShadingPosition_id2 = PS_IN_SV_Position;
     float4 _345 = LambertianPrefilteringSHNoComputePass1_2__Shading(_streams);
     _streams.ColorTarget_id3 = _345;
     PS_OUT_ColorTarget = _streams.ColorTarget_id3;
@@ -141,8 +145,8 @@ void frag_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
+    PS_IN_TEXCOORD0 = stage_input.PS_IN_TEXCOORD0;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

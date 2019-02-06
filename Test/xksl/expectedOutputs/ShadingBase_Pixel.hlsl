@@ -5,13 +5,15 @@ struct PS_STREAMS
     float4 ColorTarget1_id2;
 };
 
-static float4 PS_IN_ShadingPosition;
+static const PS_STREAMS _37 = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx };
+
+static float4 PS_IN_SV_Position;
 static float4 PS_OUT_ColorTarget;
 static float4 PS_OUT_ColorTarget1;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_ShadingPosition : SV_Position;
+    float4 PS_IN_SV_Position : SV_Position;
 };
 
 struct SPIRV_Cross_Output
@@ -41,8 +43,8 @@ float4 o1S2C1_ComputeColor_Compute()
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxxx };
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
+    PS_STREAMS _streams = _37;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
     ShaderBase_PSMain();
     _streams.ColorTarget_id1 = ShadingBase_Shading();
     _streams.ColorTarget1_id2 = o1S2C1_ComputeColor_Compute();
@@ -52,7 +54,7 @@ void frag_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

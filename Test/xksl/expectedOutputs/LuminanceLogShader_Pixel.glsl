@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -9,9 +12,9 @@ struct PS_STREAMS
 
 uniform sampler2D SPIRV_Cross_CombinedTexturing_Texture0Texturing_PointSampler;
 
-layout(location = 0) in vec2 PS_IN_TexCoord;
-layout(location = 1) in vec4 PS_IN_ShadingPosition;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec2 PS_IN_TEXCOORD0;
+in vec4 PS_IN_SV_Position;
+out vec4 PS_OUT_ColorTarget;
 
 float LuminanceUtils_Luma(vec3 color)
 {
@@ -35,8 +38,8 @@ vec4 LuminanceLogShader_Shading(PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec2(0.0), vec4(0.0), vec4(0.0));
-    _streams.TexCoord_id0 = PS_IN_TexCoord;
-    _streams.ShadingPosition_id1 = PS_IN_ShadingPosition;
+    _streams.TexCoord_id0 = PS_IN_TEXCOORD0;
+    _streams.ShadingPosition_id1 = PS_IN_SV_Position;
     _streams.ColorTarget_id2 = LuminanceLogShader_Shading(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
 }

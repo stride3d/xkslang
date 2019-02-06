@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -11,7 +14,7 @@ layout(std140) uniform PerFrame
     float Global_TimeStep;
 } PerFrame_var;
 
-layout(location = 0) in vec2 PS_IN_TexCoord;
+in vec2 PS_IN_TEXCOORD0;
 
 vec4 ComputeColorWave_1_2_3_645541__Compute(PS_STREAMS _streams)
 {
@@ -22,6 +25,6 @@ vec4 ComputeColorWave_1_2_3_645541__Compute(PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec2(0.0));
-    _streams.TexCoord_id0 = PS_IN_TexCoord;
+    _streams.TexCoord_id0 = PS_IN_TEXCOORD0;
 }
 

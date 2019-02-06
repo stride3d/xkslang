@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -21,10 +24,10 @@ layout(std140) uniform PerView
     vec4 Transformation_Eye;
 } PerView_var;
 
-layout(location = 0) in vec4 PS_IN_ShadingPosition;
-layout(location = 1) in vec4 PS_IN_PositionWS;
-layout(location = 2) in float PS_IN_shadingColorAlpha;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec4 PS_IN_SV_Position;
+in vec4 PS_IN_POSITION_WS;
+in float PS_IN_SHADINGCOLORALPHA;
+out vec4 PS_OUT_ColorTarget;
 
 void ShaderBase_PSMain()
 {
@@ -50,9 +53,9 @@ vec4 MaterialSurfacePixelStageCompositor_Shading(inout PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0), vec4(0.0), vec3(0.0), vec4(0.0), vec3(0.0), 0.0);
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.PositionWS_id3 = PS_IN_PositionWS;
-    _streams.shadingColorAlpha_id5 = PS_IN_shadingColorAlpha;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.PositionWS_id3 = PS_IN_POSITION_WS;
+    _streams.shadingColorAlpha_id5 = PS_IN_SHADINGCOLORALPHA;
     ShaderBase_PSMain();
     vec4 _36 = MaterialSurfacePixelStageCompositor_Shading(_streams);
     _streams.ColorTarget_id1 = _36;

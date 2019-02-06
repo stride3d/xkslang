@@ -8,6 +8,8 @@ struct PS_STREAMS
     float4 LocalColor_id5;
 };
 
+static const PS_STREAMS _195 = { 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xx, 0.0f.xxxx };
+
 cbuffer PerMaterial
 {
     float4 ParticleBase_ColorScale;
@@ -26,20 +28,20 @@ cbuffer PerView
 Texture2D<float4> DepthBase_DepthStencil;
 SamplerState Texturing_PointSampler;
 
-static float4 PS_IN_ScreenPosition;
-static float PS_IN_ZDepth;
-static float4 PS_IN_ShadingPosition;
-static float2 PS_IN_TexCoord;
-static float4 PS_IN_LocalColor;
+static float4 PS_IN_SCREEN_POSITION;
+static float PS_IN_Z_DEPTH_VALUE;
+static float4 PS_IN_SV_Position;
+static float2 PS_IN_TEXCOORD0;
+static float4 PS_IN_COLOR0;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_ScreenPosition : SCREEN_POSITION;
-    float PS_IN_ZDepth : Z_DEPTH_VALUE;
-    float4 PS_IN_ShadingPosition : SV_Position;
-    float2 PS_IN_TexCoord : TEXCOORD0;
-    float4 PS_IN_LocalColor : COLOR0;
+    float4 PS_IN_COLOR0 : COLOR0;
+    float4 PS_IN_SCREEN_POSITION : SCREEN_POSITION;
+    float4 PS_IN_SV_Position : SV_Position;
+    float2 PS_IN_TEXCOORD0 : TEXCOORD0;
+    float PS_IN_Z_DEPTH_VALUE : Z_DEPTH_VALUE;
 };
 
 struct SPIRV_Cross_Output
@@ -90,12 +92,12 @@ float ParticleUtilities_GetLinearDepth(float z)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xx, 0.0f.xxxx };
-    _streams.ScreenPosition_id0 = PS_IN_ScreenPosition;
-    _streams.ZDepth_id1 = PS_IN_ZDepth;
-    _streams.ShadingPosition_id2 = PS_IN_ShadingPosition;
-    _streams.TexCoord_id4 = PS_IN_TexCoord;
-    _streams.LocalColor_id5 = PS_IN_LocalColor;
+    PS_STREAMS _streams = _195;
+    _streams.ScreenPosition_id0 = PS_IN_SCREEN_POSITION;
+    _streams.ZDepth_id1 = PS_IN_Z_DEPTH_VALUE;
+    _streams.ShadingPosition_id2 = PS_IN_SV_Position;
+    _streams.TexCoord_id4 = PS_IN_TEXCOORD0;
+    _streams.LocalColor_id5 = PS_IN_COLOR0;
     float4 colorTarget = ParticleComputeColorShader_Shading(_streams);
     if (false)
     {
@@ -118,11 +120,11 @@ void frag_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_ScreenPosition = stage_input.PS_IN_ScreenPosition;
-    PS_IN_ZDepth = stage_input.PS_IN_ZDepth;
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
-    PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
-    PS_IN_LocalColor = stage_input.PS_IN_LocalColor;
+    PS_IN_SCREEN_POSITION = stage_input.PS_IN_SCREEN_POSITION;
+    PS_IN_Z_DEPTH_VALUE = stage_input.PS_IN_Z_DEPTH_VALUE;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
+    PS_IN_TEXCOORD0 = stage_input.PS_IN_TEXCOORD0;
+    PS_IN_COLOR0 = stage_input.PS_IN_COLOR0;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

@@ -7,6 +7,8 @@ struct PS_STREAMS
     float4 ShadingPosition_id4;
 };
 
+static const PS_STREAMS _129 = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, float3x3(0.0f.xxx, 0.0f.xxx, 0.0f.xxx), 0.0f.xxxx };
+
 cbuffer PerDraw
 {
     column_major float4x4 Transformation_WorldInverse;
@@ -18,15 +20,15 @@ cbuffer PerDraw
     float4 Transformation_EyeMS;
 };
 
-static float3 PS_IN_meshNormal;
-static float4 PS_IN_meshTangent;
-static float4 PS_IN_ShadingPosition;
+static float3 PS_IN_NORMAL;
+static float4 PS_IN_TANGENT;
+static float4 PS_IN_SV_Position;
 
 struct SPIRV_Cross_Input
 {
-    float3 PS_IN_meshNormal : NORMAL;
-    float4 PS_IN_meshTangent : TANGENT;
-    float4 PS_IN_ShadingPosition : SV_Position;
+    float3 PS_IN_NORMAL : NORMAL;
+    float4 PS_IN_SV_Position : SV_Position;
+    float4 PS_IN_TANGENT : TANGENT;
 };
 
 void NormalUpdate_GenerateNormal_PS()
@@ -68,18 +70,18 @@ void ShaderBase_PSMain()
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, float3x3(0.0f.xxx, 0.0f.xxx, 0.0f.xxx), 0.0f.xxxx };
-    _streams.meshNormal_id0 = PS_IN_meshNormal;
-    _streams.meshTangent_id2 = PS_IN_meshTangent;
-    _streams.ShadingPosition_id4 = PS_IN_ShadingPosition;
+    PS_STREAMS _streams = _129;
+    _streams.meshNormal_id0 = PS_IN_NORMAL;
+    _streams.meshTangent_id2 = PS_IN_TANGENT;
+    _streams.ShadingPosition_id4 = PS_IN_SV_Position;
     NormalFromNormalMapping_GenerateNormal_PS(_streams);
     ShaderBase_PSMain();
 }
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_meshNormal = stage_input.PS_IN_meshNormal;
-    PS_IN_meshTangent = stage_input.PS_IN_meshTangent;
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
+    PS_IN_NORMAL = stage_input.PS_IN_NORMAL;
+    PS_IN_TANGENT = stage_input.PS_IN_TANGENT;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
     frag_main();
 }

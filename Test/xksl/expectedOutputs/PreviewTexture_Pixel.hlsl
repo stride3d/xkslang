@@ -8,23 +8,25 @@ struct PS_STREAMS
     float2 TexCoord_id5;
 };
 
+static const PS_STREAMS _128 = { 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xx };
+
 Texture2D<float4> Texturing_Texture0;
 SamplerState Texturing_Sampler;
 
-static float4 PS_IN_Color;
-static float4 PS_IN_ColorAdd;
-static float PS_IN_Swizzle;
-static float4 PS_IN_ShadingPosition;
-static float2 PS_IN_TexCoord;
+static float4 PS_IN_COLOR;
+static float4 PS_IN_COLOR1;
+static float PS_IN_BATCH_SWIZZLE;
+static float4 PS_IN_SV_Position;
+static float2 PS_IN_TEXCOORD0;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_Color : COLOR;
-    float4 PS_IN_ColorAdd : COLOR1;
-    float PS_IN_Swizzle : BATCH_SWIZZLE;
-    float4 PS_IN_ShadingPosition : SV_Position;
-    float2 PS_IN_TexCoord : TEXCOORD0;
+    float PS_IN_BATCH_SWIZZLE : BATCH_SWIZZLE;
+    float4 PS_IN_COLOR : COLOR;
+    float4 PS_IN_COLOR1 : COLOR1;
+    float4 PS_IN_SV_Position : SV_Position;
+    float2 PS_IN_TEXCOORD0 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -39,17 +41,10 @@ float4 SpriteBase_Shading(PS_STREAMS _streams)
 
 float4 SpriteBatchShader_false__Shading(PS_STREAMS _streams)
 {
-    float4 swizzleColor;
-    float4 _5;
-    if (abs(_streams.Swizzle_id2 - 1.0f) <= 0.100000001490116119384765625f)
-    {
-        _5 = SpriteBase_Shading(_streams).xxxx;
-    }
-    else
-    {
-        _5 = SpriteBase_Shading(_streams);
-    }
-    swizzleColor = _5;
+    float4 _15 = SpriteBase_Shading(_streams).xxxx;
+    float4 _16 = SpriteBase_Shading(_streams);
+    bool4 _17 = (abs(_streams.Swizzle_id2 - 1.0f) <= 0.100000001490116119384765625f).xxxx;
+    float4 swizzleColor = float4(_17.x ? _15.x : _16.x, _17.y ? _15.y : _16.y, _17.z ? _15.z : _16.z, _17.w ? _15.w : _16.w);
     if (abs(_streams.Swizzle_id2 - 2.0f) <= 0.100000001490116119384765625f)
     {
         float nX = (swizzleColor.x * 2.0f) - 1.0f;
@@ -69,23 +64,23 @@ float4 SpriteBatchShader_false__Shading(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xxxx, 0.0f.xx };
-    _streams.Color_id0 = PS_IN_Color;
-    _streams.ColorAdd_id1 = PS_IN_ColorAdd;
-    _streams.Swizzle_id2 = PS_IN_Swizzle;
-    _streams.ShadingPosition_id3 = PS_IN_ShadingPosition;
-    _streams.TexCoord_id5 = PS_IN_TexCoord;
+    PS_STREAMS _streams = _128;
+    _streams.Color_id0 = PS_IN_COLOR;
+    _streams.ColorAdd_id1 = PS_IN_COLOR1;
+    _streams.Swizzle_id2 = PS_IN_BATCH_SWIZZLE;
+    _streams.ShadingPosition_id3 = PS_IN_SV_Position;
+    _streams.TexCoord_id5 = PS_IN_TEXCOORD0;
     _streams.ColorTarget_id4 = SpriteBatchShader_false__Shading(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id4;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_Color = stage_input.PS_IN_Color;
-    PS_IN_ColorAdd = stage_input.PS_IN_ColorAdd;
-    PS_IN_Swizzle = stage_input.PS_IN_Swizzle;
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
-    PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
+    PS_IN_COLOR = stage_input.PS_IN_COLOR;
+    PS_IN_COLOR1 = stage_input.PS_IN_COLOR1;
+    PS_IN_BATCH_SWIZZLE = stage_input.PS_IN_BATCH_SWIZZLE;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
+    PS_IN_TEXCOORD0 = stage_input.PS_IN_TEXCOORD0;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

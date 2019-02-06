@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct VS_STREAMS
 {
@@ -7,12 +10,11 @@ struct VS_STREAMS
     float shadingColorAlpha_id2;
 };
 
-layout(location = 0) in vec4 VS_IN_ShadingPosition;
-layout(location = 1) in vec4 VS_IN_PositionWS;
-layout(location = 2) in float VS_IN_shadingColorAlpha;
-layout(location = 0) out vec4 VS_OUT_ShadingPosition;
-layout(location = 1) out vec4 VS_OUT_PositionWS;
-layout(location = 2) out float VS_OUT_shadingColorAlpha;
+in vec4 VS_IN_SV_Position;
+in vec4 VS_IN_POSITION_WS;
+in float VS_IN_SHADINGCOLORALPHA;
+out vec4 VS_OUT_PositionWS;
+out float VS_OUT_shadingColorAlpha;
 
 void ShaderBase_VSMain()
 {
@@ -29,14 +31,16 @@ void o0S2C0_IMaterialSurface_Compute()
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(vec4(0.0), vec4(0.0), 0.0);
-    _streams.ShadingPosition_id0 = VS_IN_ShadingPosition;
-    _streams.PositionWS_id1 = VS_IN_PositionWS;
-    _streams.shadingColorAlpha_id2 = VS_IN_shadingColorAlpha;
+    _streams.ShadingPosition_id0 = VS_IN_SV_Position;
+    _streams.PositionWS_id1 = VS_IN_POSITION_WS;
+    _streams.shadingColorAlpha_id2 = VS_IN_SHADINGCOLORALPHA;
     ShaderBase_VSMain();
     o1S2C1_IStreamInitializer_ResetStream();
     o0S2C0_IMaterialSurface_Compute();
-    VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
+    gl_Position = _streams.ShadingPosition_id0;
     VS_OUT_PositionWS = _streams.PositionWS_id1;
     VS_OUT_shadingColorAlpha = _streams.shadingColorAlpha_id2;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

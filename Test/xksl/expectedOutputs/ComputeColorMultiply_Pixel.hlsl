@@ -3,6 +3,8 @@ struct PS_STREAMS
     float2 TexCoord_id0;
 };
 
+static const PS_STREAMS _70 = { 0.0f.xx };
+
 cbuffer PerFrame
 {
     float Global_Time;
@@ -13,11 +15,11 @@ cbuffer PerMaterial
     float o1S2C1_ComputeColorConstantFloatLink_constantFloat;
 };
 
-static float2 PS_IN_TexCoord;
+static float2 PS_IN_TEXCOORD0;
 
 struct SPIRV_Cross_Input
 {
-    float2 PS_IN_TexCoord : TEXCOORD0;
+    float2 PS_IN_TEXCOORD0 : TEXCOORD0;
 };
 
 float4 o0S2C0_ComputeColorWave_5_0_01__0_03__Compute(PS_STREAMS _streams)
@@ -41,12 +43,12 @@ float4 ComputeColorMultiply_Compute(PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xx };
-    _streams.TexCoord_id0 = PS_IN_TexCoord;
+    PS_STREAMS _streams = _70;
+    _streams.TexCoord_id0 = PS_IN_TEXCOORD0;
 }
 
 void main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
+    PS_IN_TEXCOORD0 = stage_input.PS_IN_TEXCOORD0;
     frag_main();
 }
