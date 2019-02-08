@@ -1,0 +1,31 @@
+shader ShaderMain
+{
+	compose ShaderCompositionWithLink composition02;
+	
+	stage void VSMain()
+	{
+		float f = 0;
+		f += composition02.Compute();
+	}
+}
+
+shader ShaderCompositionWithLink
+{
+	cbuffer cbUnstageCompositionLink
+	{
+		[Link("linkVar11")]
+		float var11;
+	}
+	
+	stage cbuffer cbStageCompositionLink
+	{
+		[Link("linkVar12")]
+		float var12;
+	}
+	
+	float Compute()
+	{
+		return var11 + var12;
+	}
+}
+

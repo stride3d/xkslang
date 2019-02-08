@@ -1,0 +1,16 @@
+//Activate some additionnal options with xkslang main test program
+//============================================
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+//============================================
+
+convertAndLoadRecursif "cbufferMembersNaming00" ShaderMain
+
+mixer m
+m.mixin( ShaderMain )
+m.addComposition(
+  ShaderMain.composition02 = mixin(ShaderCompositionWithLink)
+)
+
+m.setStageEntryPoint( Vertex="VSMain" )
+m.compile

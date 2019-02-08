@@ -252,7 +252,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer10", "CBuffer10.xkfx" },
     //{ "CBuffer11", "CBuffer11.xkfx" },
     //{ "CBufferSubpart01", "CBufferSubpart01.xkfx" },
-    { "CBufferSubpart02", "CBufferSubpart02.xkfx" },
+    //{ "CBufferSubpart02", "CBufferSubpart02.xkfx" },
     
     //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
     //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
@@ -313,6 +313,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
+    {"cbufferMembersNaming00", "cbufferMembersNaming00.xkfx"},
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
     //{ "testStreamIO01", "testStreamIO01.xkfx"},
     //{ "methodOverride01", "methodOverride01.xkfx" },
@@ -322,7 +323,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "methodOverride05", "methodOverride05.xkfx" },
     //{ "methodOverride06", "methodOverride06.xkfx" },
     //{ "methodOverride07", "methodOverride07.xkfx" },
-    
+
     //{ "testSamplerStates01", "testSamplerStates01.xkfx"},
     //{ "testSamplerStates02", "testSamplerStates02.xkfx" },
     //{ "testSamplerStates03", "testSamplerStates03.xkfx" },
