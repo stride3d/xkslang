@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct LightDirectional_DirectionalLightData
 {
@@ -45,22 +48,21 @@ layout(std140) uniform PerView
     vec2 o1S437C0_Camera_ZProjection;
     vec2 o1S437C0_Camera_ViewSize;
     float o1S437C0_Camera_AspectRatio;
-    vec4 o0S437C0_LightDirectionalGroup__padding_PerView_Default;
+    vec4 o0S437C0_LightDirectionalGroup_padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S437C0_LightDirectionalGroup_Lights[8];
     int o0S437C0_DirectLightGroupPerView_LightCount;
     float o1S437C0_LightClustered_ClusterDepthScale;
     float o1S437C0_LightClustered_ClusterDepthBias;
     vec2 o1S437C0_LightClustered_ClusterStride;
     vec3 o3S421C0_LightSimpleAmbient_AmbientLight;
-    vec4 o3S421C0_LightSimpleAmbient__padding_PerView_Lighting;
+    vec4 o3S421C0_LightSimpleAmbient_padding_PerView_Lighting;
 } PerView_var;
 
-layout(location = 0) in vec3 VS_IN_meshNormal;
-layout(location = 1) in vec4 VS_IN_Position;
-layout(location = 0) out vec4 VS_OUT_ShadingPosition;
-layout(location = 1) out vec3 VS_OUT_normalWS;
-layout(location = 2) out vec4 VS_OUT_PositionWS;
-layout(location = 3) out vec4 VS_OUT_ScreenPosition;
+in vec3 VS_IN_NORMAL;
+in vec4 VS_IN_POSITION;
+out vec3 VS_OUT_normalWS;
+out vec4 VS_OUT_PositionWS;
+out vec4 VS_OUT_ScreenPosition;
 
 void ShaderBase_VSMain()
 {
@@ -126,13 +128,15 @@ void NormalBase_VSMain(inout VS_STREAMS _streams)
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(vec4(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec4(0.0), vec4(0.0));
-    _streams.meshNormal_id1 = VS_IN_meshNormal;
-    _streams.Position_id4 = VS_IN_Position;
+    _streams.meshNormal_id1 = VS_IN_NORMAL;
+    _streams.Position_id4 = VS_IN_POSITION;
     NormalBase_VSMain(_streams);
     _streams.ScreenPosition_id8 = _streams.ShadingPosition_id0;
-    VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
+    gl_Position = _streams.ShadingPosition_id0;
     VS_OUT_normalWS = _streams.normalWS_id3;
     VS_OUT_PositionWS = _streams.PositionWS_id5;
     VS_OUT_ScreenPosition = _streams.ScreenPosition_id8;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

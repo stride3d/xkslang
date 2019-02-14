@@ -32,6 +32,8 @@ struct PS_STREAMS
     float2 TexCoord_id29;
 };
 
+static const PS_STREAMS _269 = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f.xx };
+
 cbuffer PerView
 {
     column_major float4x4 Transformation_View;
@@ -54,18 +56,18 @@ cbuffer PerMaterial
 SamplerState DynamicSampler_Sampler;
 Texture2D<float4> DynamicTexture_Texture;
 
-static float4 PS_IN_ShadingPosition;
-static float3 PS_IN_normalWS;
-static float4 PS_IN_PositionWS;
-static float2 PS_IN_TexCoord;
+static float4 PS_IN_SV_Position;
+static float3 PS_IN_NORMALWS;
+static float4 PS_IN_POSITION_WS;
+static float2 PS_IN_TEXCOORD0;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_ShadingPosition : SV_Position;
-    float3 PS_IN_normalWS : NORMALWS;
-    float4 PS_IN_PositionWS : POSITION_WS;
-    float2 PS_IN_TexCoord : TEXCOORD0;
+    float3 PS_IN_NORMALWS : NORMALWS;
+    float4 PS_IN_POSITION_WS : POSITION_WS;
+    float4 PS_IN_SV_Position : SV_Position;
+    float2 PS_IN_TEXCOORD0 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -222,11 +224,11 @@ void ShadingBase_PSMain(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f.xx };
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.normalWS_id3 = PS_IN_normalWS;
-    _streams.PositionWS_id4 = PS_IN_PositionWS;
-    _streams.TexCoord_id29 = PS_IN_TexCoord;
+    PS_STREAMS _streams = _269;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.normalWS_id3 = PS_IN_NORMALWS;
+    _streams.PositionWS_id4 = PS_IN_POSITION_WS;
+    _streams.TexCoord_id29 = PS_IN_TEXCOORD0;
     NormalFromMesh_GenerateNormal_PS(_streams);
     ShadingBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id1;
@@ -234,10 +236,10 @@ void frag_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
-    PS_IN_normalWS = stage_input.PS_IN_normalWS;
-    PS_IN_PositionWS = stage_input.PS_IN_PositionWS;
-    PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
+    PS_IN_NORMALWS = stage_input.PS_IN_NORMALWS;
+    PS_IN_POSITION_WS = stage_input.PS_IN_POSITION_WS;
+    PS_IN_TEXCOORD0 = stage_input.PS_IN_TEXCOORD0;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

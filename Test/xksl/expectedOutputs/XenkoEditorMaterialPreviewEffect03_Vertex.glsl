@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct LightDirectional_DirectionalLightData
 {
@@ -46,26 +49,25 @@ layout(std140) uniform PerView
     vec2 o1S433C0_Camera_ZProjection;
     vec2 o1S433C0_Camera_ViewSize;
     float o1S433C0_Camera_AspectRatio;
-    vec4 o0S433C0_LightDirectionalGroup__padding_PerView_Default;
+    vec4 o0S433C0_LightDirectionalGroup_padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S433C0_LightDirectionalGroup_Lights[8];
     int o0S433C0_DirectLightGroupPerView_LightCount;
     float o1S433C0_LightClustered_ClusterDepthScale;
     float o1S433C0_LightClustered_ClusterDepthBias;
     vec2 o1S433C0_LightClustered_ClusterStride;
     vec3 o3S417C0_LightSimpleAmbient_AmbientLight;
-    vec4 o3S417C0_LightSimpleAmbient__padding_PerView_Lighting;
+    vec4 o3S417C0_LightSimpleAmbient_padding_PerView_Lighting;
 } PerView_var;
 
-layout(location = 0) in vec3 VS_IN_meshNormal;
-layout(location = 1) in vec4 VS_IN_meshTangent;
-layout(location = 2) in vec4 VS_IN_Position;
-layout(location = 3) in vec2 VS_IN_TexCoord;
-layout(location = 0) out vec4 VS_OUT_ShadingPosition;
-layout(location = 1) out vec3 VS_OUT_meshNormal;
-layout(location = 2) out vec4 VS_OUT_meshTangent;
-layout(location = 3) out vec4 VS_OUT_PositionWS;
-layout(location = 4) out vec2 VS_OUT_TexCoord;
-layout(location = 5) out vec4 VS_OUT_ScreenPosition;
+in vec3 VS_IN_NORMAL;
+in vec4 VS_IN_TANGENT;
+in vec4 VS_IN_POSITION;
+in vec2 VS_IN_TEXCOORD0;
+out vec3 VS_OUT_meshNormal;
+out vec4 VS_OUT_meshTangent;
+out vec4 VS_OUT_PositionWS;
+out vec2 VS_OUT_TexCoord;
+out vec4 VS_OUT_ScreenPosition;
 
 void ShaderBase_VSMain()
 {
@@ -135,17 +137,19 @@ void SharedTextureCoordinate_VSMain(inout VS_STREAMS _streams)
 void main()
 {
     VS_STREAMS _streams = VS_STREAMS(vec4(0.0), vec3(0.0), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec4(0.0), vec2(0.0), vec4(0.0));
-    _streams.meshNormal_id1 = VS_IN_meshNormal;
-    _streams.meshTangent_id2 = VS_IN_meshTangent;
-    _streams.Position_id4 = VS_IN_Position;
-    _streams.TexCoord_id8 = VS_IN_TexCoord;
+    _streams.meshNormal_id1 = VS_IN_NORMAL;
+    _streams.meshTangent_id2 = VS_IN_TANGENT;
+    _streams.Position_id4 = VS_IN_POSITION;
+    _streams.TexCoord_id8 = VS_IN_TEXCOORD0;
     SharedTextureCoordinate_VSMain(_streams);
     _streams.ScreenPosition_id9 = _streams.ShadingPosition_id0;
-    VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
+    gl_Position = _streams.ShadingPosition_id0;
     VS_OUT_meshNormal = _streams.meshNormal_id1;
     VS_OUT_meshTangent = _streams.meshTangent_id2;
     VS_OUT_PositionWS = _streams.PositionWS_id5;
     VS_OUT_TexCoord = _streams.TexCoord_id8;
     VS_OUT_ScreenPosition = _streams.ScreenPosition_id9;
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+    gl_Position.y = -gl_Position.y;
 }
 

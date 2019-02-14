@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct PS_STREAMS
 {
@@ -65,11 +68,11 @@ layout(std140) uniform PerMaterial
     vec4 o5S251C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor;
 } PerMaterial_var;
 
-layout(location = 0) in vec4 PS_IN_ShadingPosition;
-layout(location = 1) in vec3 PS_IN_normalWS;
-layout(location = 2) in vec4 PS_IN_PositionWS;
-layout(location = 3) in bool PS_IN_IsFrontFace;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec4 PS_IN_SV_Position;
+in vec3 PS_IN_NORMALWS;
+in vec4 PS_IN_POSITION_WS;
+in bool PS_IN_SV_IsFrontFace;
+out vec4 PS_OUT_ColorTarget;
 
 void NormalFromMesh_GenerateNormal_PS(inout PS_STREAMS _streams)
 {
@@ -247,10 +250,10 @@ void ShadingBase_PSMain(inout PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0), false, vec4(0.0), vec3(0.0), vec3(0.0), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec4(0.0), 0.0, 0.0, vec2(0.0), vec3(0.0), 0.0, vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, 0.0);
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.normalWS_id4 = PS_IN_normalWS;
-    _streams.PositionWS_id5 = PS_IN_PositionWS;
-    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.normalWS_id4 = PS_IN_NORMALWS;
+    _streams.PositionWS_id5 = PS_IN_POSITION_WS;
+    _streams.IsFrontFace_id1 = PS_IN_SV_IsFrontFace;
     NormalFromMesh_GenerateNormal_PS(_streams);
     ShadingBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;

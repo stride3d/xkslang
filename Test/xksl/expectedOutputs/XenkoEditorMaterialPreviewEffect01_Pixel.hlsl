@@ -84,6 +84,8 @@ struct PS_STREAMS
     float4 ScreenPosition_id60;
 };
 
+static const PS_STREAMS _1547 = { 0.0f.xxxx, false, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, float3x3(0.0f.xxx, 0.0f.xxx, 0.0f.xxx), 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, uint2(0u, 0u), 0, 0.0f.xxxx };
+
 cbuffer PerDraw
 {
     column_major float4x4 Transformation_World;
@@ -109,14 +111,14 @@ cbuffer PerView
     float2 o1S439C0_Camera_ZProjection;
     float2 o1S439C0_Camera_ViewSize;
     float o1S439C0_Camera_AspectRatio;
-    float4 o0S439C0_LightDirectionalGroup__padding_PerView_Default;
+    float4 o0S439C0_LightDirectionalGroup_padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S439C0_LightDirectionalGroup_Lights[8];
     int o0S439C0_DirectLightGroupPerView_LightCount;
     float o1S439C0_LightClustered_ClusterDepthScale;
     float o1S439C0_LightClustered_ClusterDepthBias;
     float2 o1S439C0_LightClustered_ClusterStride;
     float3 o3S423C0_LightSimpleAmbient_AmbientLight;
-    float4 o3S423C0_LightSimpleAmbient__padding_PerView_Lighting;
+    float4 o3S423C0_LightSimpleAmbient_padding_PerView_Lighting;
 };
 cbuffer PerMaterial
 {
@@ -141,24 +143,24 @@ SamplerState DynamicSampler_Sampler;
 Texture2D<float4> DynamicTexture_Texture;
 SamplerState Texturing_LinearSampler;
 
-static float4 PS_IN_ShadingPosition;
-static float3 PS_IN_meshNormal;
-static float4 PS_IN_meshTangent;
-static float4 PS_IN_PositionWS;
-static float2 PS_IN_TexCoord;
-static float4 PS_IN_ScreenPosition;
-static bool PS_IN_IsFrontFace;
+static float4 PS_IN_SV_Position;
+static float3 PS_IN_NORMAL;
+static float4 PS_IN_TANGENT;
+static float4 PS_IN_POSITION_WS;
+static float2 PS_IN_TEXCOORD0;
+static float4 PS_IN_SCREENPOSITION;
+static bool PS_IN_SV_IsFrontFace;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_ShadingPosition : SV_Position;
-    float3 PS_IN_meshNormal : NORMAL;
-    float4 PS_IN_meshTangent : TANGENT;
-    float4 PS_IN_PositionWS : POSITION_WS;
-    float2 PS_IN_TexCoord : TEXCOORD0;
-    float4 PS_IN_ScreenPosition : SCREENPOSITION;
-    bool PS_IN_IsFrontFace : SV_IsFrontFace;
+    float3 PS_IN_NORMAL : NORMAL;
+    float4 PS_IN_POSITION_WS : POSITION_WS;
+    float4 PS_IN_SCREENPOSITION : SCREENPOSITION;
+    bool PS_IN_SV_IsFrontFace : SV_IsFrontFace;
+    float4 PS_IN_SV_Position : SV_Position;
+    float4 PS_IN_TANGENT : TANGENT;
+    float2 PS_IN_TEXCOORD0 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -860,14 +862,14 @@ void SharedTextureCoordinate_PSMain(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx, false, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, float3x3(0.0f.xxx, 0.0f.xxx, 0.0f.xxx), 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, 0.0f.xx, uint2(0u, 0u), 0, 0.0f.xxxx };
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.meshNormal_id4 = PS_IN_meshNormal;
-    _streams.meshTangent_id6 = PS_IN_meshTangent;
-    _streams.PositionWS_id9 = PS_IN_PositionWS;
-    _streams.TexCoord_id48 = PS_IN_TexCoord;
-    _streams.ScreenPosition_id60 = PS_IN_ScreenPosition;
-    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
+    PS_STREAMS _streams = _1547;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.meshNormal_id4 = PS_IN_NORMAL;
+    _streams.meshTangent_id6 = PS_IN_TANGENT;
+    _streams.PositionWS_id9 = PS_IN_POSITION_WS;
+    _streams.TexCoord_id48 = PS_IN_TEXCOORD0;
+    _streams.ScreenPosition_id60 = PS_IN_SCREENPOSITION;
+    _streams.IsFrontFace_id1 = PS_IN_SV_IsFrontFace;
     _streams.ScreenPosition_id60 /= _streams.ScreenPosition_id60.w.xxxx;
     SharedTextureCoordinate_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
@@ -875,13 +877,13 @@ void frag_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
-    PS_IN_meshNormal = stage_input.PS_IN_meshNormal;
-    PS_IN_meshTangent = stage_input.PS_IN_meshTangent;
-    PS_IN_PositionWS = stage_input.PS_IN_PositionWS;
-    PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
-    PS_IN_ScreenPosition = stage_input.PS_IN_ScreenPosition;
-    PS_IN_IsFrontFace = stage_input.PS_IN_IsFrontFace;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
+    PS_IN_NORMAL = stage_input.PS_IN_NORMAL;
+    PS_IN_TANGENT = stage_input.PS_IN_TANGENT;
+    PS_IN_POSITION_WS = stage_input.PS_IN_POSITION_WS;
+    PS_IN_TEXCOORD0 = stage_input.PS_IN_TEXCOORD0;
+    PS_IN_SCREENPOSITION = stage_input.PS_IN_SCREENPOSITION;
+    PS_IN_SV_IsFrontFace = stage_input.PS_IN_SV_IsFrontFace;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

@@ -20,6 +20,8 @@ struct VS_STREAMS
     float matDisplacement_id11;
 };
 
+static const VS_STREAMS _220 = { 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xx, 0.0f.xxxx, 0.0f };
+
 cbuffer PerDraw
 {
     column_major float4x4 Transformation_World;
@@ -45,14 +47,14 @@ cbuffer PerView
     float2 o1S439C0_Camera_ZProjection;
     float2 o1S439C0_Camera_ViewSize;
     float o1S439C0_Camera_AspectRatio;
-    float4 o0S439C0_LightDirectionalGroup__padding_PerView_Default;
+    float4 o0S439C0_LightDirectionalGroup_padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S439C0_LightDirectionalGroup_Lights[8];
     int o0S439C0_DirectLightGroupPerView_LightCount;
     float o1S439C0_LightClustered_ClusterDepthScale;
     float o1S439C0_LightClustered_ClusterDepthBias;
     float2 o1S439C0_LightClustered_ClusterStride;
     float3 o3S423C0_LightSimpleAmbient_AmbientLight;
-    float4 o3S423C0_LightSimpleAmbient__padding_PerView_Lighting;
+    float4 o3S423C0_LightSimpleAmbient_padding_PerView_Lighting;
 };
 cbuffer PerMaterial
 {
@@ -69,11 +71,11 @@ cbuffer PerFrame
     float Global_TimeStep;
 };
 
-static float3 VS_IN_meshNormal;
-static float4 VS_IN_meshTangent;
-static float4 VS_IN_Position;
-static float2 VS_IN_TexCoord;
-static float4 VS_OUT_ShadingPosition;
+static float4 gl_Position;
+static float3 VS_IN_NORMAL;
+static float4 VS_IN_TANGENT;
+static float4 VS_IN_POSITION;
+static float2 VS_IN_TEXCOORD0;
 static float3 VS_OUT_meshNormal;
 static float4 VS_OUT_meshTangent;
 static float4 VS_OUT_PositionWS;
@@ -82,20 +84,20 @@ static float4 VS_OUT_ScreenPosition;
 
 struct SPIRV_Cross_Input
 {
-    float3 VS_IN_meshNormal : NORMAL;
-    float4 VS_IN_meshTangent : TANGENT;
-    float4 VS_IN_Position : POSITION;
-    float2 VS_IN_TexCoord : TEXCOORD0;
+    float3 VS_IN_NORMAL : NORMAL;
+    float4 VS_IN_POSITION : POSITION;
+    float4 VS_IN_TANGENT : TANGENT;
+    float2 VS_IN_TEXCOORD0 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
 {
-    float4 VS_OUT_ShadingPosition : SV_Position;
+    float4 VS_OUT_PositionWS : POSITION_WS;
+    float4 VS_OUT_ScreenPosition : SCREENPOSITION;
+    float2 VS_OUT_TexCoord : TEXCOORD0;
     float3 VS_OUT_meshNormal : NORMAL;
     float4 VS_OUT_meshTangent : TANGENT;
-    float4 VS_OUT_PositionWS : POSITION_WS;
-    float2 VS_OUT_TexCoord : TEXCOORD0;
-    float4 VS_OUT_ScreenPosition : SCREENPOSITION;
+    float4 gl_Position : SV_Position;
 };
 
 void ShaderBase_VSMain()
@@ -228,14 +230,14 @@ void SharedTextureCoordinate_VSMain(inout VS_STREAMS _streams)
 
 void vert_main()
 {
-    VS_STREAMS _streams = { 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxxx, 0.0f.xx, 0.0f.xxxx, 0.0f };
-    _streams.meshNormal_id2 = VS_IN_meshNormal;
-    _streams.meshTangent_id3 = VS_IN_meshTangent;
-    _streams.Position_id5 = VS_IN_Position;
-    _streams.TexCoord_id9 = VS_IN_TexCoord;
+    VS_STREAMS _streams = _220;
+    _streams.meshNormal_id2 = VS_IN_NORMAL;
+    _streams.meshTangent_id3 = VS_IN_TANGENT;
+    _streams.Position_id5 = VS_IN_POSITION;
+    _streams.TexCoord_id9 = VS_IN_TEXCOORD0;
     SharedTextureCoordinate_VSMain(_streams);
     _streams.ScreenPosition_id10 = _streams.ShadingPosition_id0;
-    VS_OUT_ShadingPosition = _streams.ShadingPosition_id0;
+    gl_Position = _streams.ShadingPosition_id0;
     VS_OUT_meshNormal = _streams.meshNormal_id2;
     VS_OUT_meshTangent = _streams.meshTangent_id3;
     VS_OUT_PositionWS = _streams.PositionWS_id6;
@@ -245,13 +247,13 @@ void vert_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    VS_IN_meshNormal = stage_input.VS_IN_meshNormal;
-    VS_IN_meshTangent = stage_input.VS_IN_meshTangent;
-    VS_IN_Position = stage_input.VS_IN_Position;
-    VS_IN_TexCoord = stage_input.VS_IN_TexCoord;
+    VS_IN_NORMAL = stage_input.VS_IN_NORMAL;
+    VS_IN_TANGENT = stage_input.VS_IN_TANGENT;
+    VS_IN_POSITION = stage_input.VS_IN_POSITION;
+    VS_IN_TEXCOORD0 = stage_input.VS_IN_TEXCOORD0;
     vert_main();
     SPIRV_Cross_Output stage_output;
-    stage_output.VS_OUT_ShadingPosition = VS_OUT_ShadingPosition;
+    stage_output.gl_Position = gl_Position;
     stage_output.VS_OUT_meshNormal = VS_OUT_meshNormal;
     stage_output.VS_OUT_meshTangent = VS_OUT_meshTangent;
     stage_output.VS_OUT_PositionWS = VS_OUT_PositionWS;

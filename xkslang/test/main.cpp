@@ -313,7 +313,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
-    {"cbufferMembersNaming00", "cbufferMembersNaming00.xkfx"},
+    //{"cbufferMembersNaming00", "cbufferMembersNaming00.xkfx"},
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
     //{ "testStreamIO01", "testStreamIO01.xkfx"},
     //{ "methodOverride01", "methodOverride01.xkfx" },

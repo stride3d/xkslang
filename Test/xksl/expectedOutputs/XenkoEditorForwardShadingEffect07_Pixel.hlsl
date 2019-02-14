@@ -73,6 +73,9 @@ struct PS_STREAMS
     float4 ScreenPosition_id49;
 };
 
+static const float3 _1737[5] = { float3(0.0f, 1.0f, 0.0f), float3(0.0f, 0.0f, 1.0f), float3(1.0f, 0.0f, 1.0f), float3(1.0f, 0.0f, 0.0f), 1.0f.xxx };
+static const PS_STREAMS _3046 = { 0.0f.xxxx, false, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xx, uint2(0u, 0u), 0, 0.0f.xxxx };
+
 cbuffer PerView
 {
     column_major float4x4 Transformation_View;
@@ -87,7 +90,7 @@ cbuffer PerView
     float2 o1S437C0_Camera_ZProjection;
     float2 o1S437C0_Camera_ViewSize;
     float o1S437C0_Camera_AspectRatio;
-    float4 o0S437C0_ShadowMapReceiverDirectional__padding_PerView_Default;
+    float4 o0S437C0_ShadowMapReceiverDirectional_padding_PerView_Default;
     float o0S437C0_ShadowMapReceiverDirectional_CascadeDepthSplits[4];
     column_major float4x4 o0S437C0_ShadowMapReceiverBase_WorldToShadowCascadeUV[4];
     column_major float4x4 o0S437C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV[4];
@@ -105,7 +108,7 @@ cbuffer PerView
     float3 o3S421C0_LightSimpleAmbient_AmbientLight;
     column_major float4x4 o6S421C0_LightSkyboxShader_SkyMatrix;
     float o6S421C0_LightSkyboxShader_Intensity;
-    float4 o6S421C0_LightSkyboxShader__padding_PerView_Lighting;
+    float4 o6S421C0_LightSkyboxShader_padding_PerView_Lighting;
 };
 cbuffer PerMaterial
 {
@@ -127,24 +130,24 @@ Texture2D<float4> MaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightin
 SamplerState DynamicSampler_Sampler;
 Texture2D<float4> DynamicTexture_Texture;
 
-static float4 PS_IN_ShadingPosition;
-static float3 PS_IN_normalWS;
-static float4 PS_IN_PositionWS;
-static float PS_IN_DepthVS;
-static float2 PS_IN_TexCoord;
-static float4 PS_IN_ScreenPosition;
-static bool PS_IN_IsFrontFace;
+static float4 PS_IN_SV_Position;
+static float3 PS_IN_NORMALWS;
+static float4 PS_IN_POSITION_WS;
+static float PS_IN_DEPTH_VS;
+static float2 PS_IN_TEXCOORD0;
+static float4 PS_IN_SCREENPOSITION;
+static bool PS_IN_SV_IsFrontFace;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_ShadingPosition : SV_Position;
-    float3 PS_IN_normalWS : NORMALWS;
-    float4 PS_IN_PositionWS : POSITION_WS;
-    float PS_IN_DepthVS : DEPTH_VS;
-    float2 PS_IN_TexCoord : TEXCOORD0;
-    float4 PS_IN_ScreenPosition : SCREENPOSITION;
-    bool PS_IN_IsFrontFace : SV_IsFrontFace;
+    float PS_IN_DEPTH_VS : DEPTH_VS;
+    float3 PS_IN_NORMALWS : NORMALWS;
+    float4 PS_IN_POSITION_WS : POSITION_WS;
+    float4 PS_IN_SCREENPOSITION : SCREENPOSITION;
+    bool PS_IN_SV_IsFrontFace : SV_IsFrontFace;
+    float4 PS_IN_SV_Position : SV_Position;
+    float2 PS_IN_TEXCOORD0 : TEXCOORD0;
 };
 
 struct SPIRV_Cross_Output
@@ -688,8 +691,6 @@ float3 o0S437C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeS
 {
     int cascadeIndexBase = lightIndex * 4;
     int cascadeIndex = 0;
-    float3 shadow;
-    float tempThickness;
     for (int i = 0; i < 3; i++)
     {
         if (_streams.DepthVS_id6 > (o0S437C0_ShadowMapReceiverDirectional_CascadeDepthSplits[cascadeIndexBase + i]))
@@ -697,15 +698,13 @@ float3 o0S437C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeS
             cascadeIndex = i + 1;
         }
     }
-    shadow = 1.0f.xxx;
-    tempThickness = 999.0f;
+    float3 shadow = 1.0f.xxx;
+    float tempThickness = 999.0f;
     float3 shadowPosition = position;
     float param = o0S437C0_ShadowMapReceiverBase_OffsetScales[lightIndex];
     float param_1 = _streams.NdotL_id41;
     float3 param_2 = _streams.normalWS_id4;
     shadowPosition += o0S437C0_ShadowMapReceiverBase_PerView_Lighting_4_1__GetShadowPositionOffset(param, param_1, param_2);
-    float nextSplit;
-    float splitSize;
     if (cascadeIndex < 4)
     {
         float3 param_3 = shadowPosition;
@@ -721,8 +720,8 @@ float3 o0S437C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeS
             bool param_10 = true;
             tempThickness = o0S437C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeThicknessFromCascade(param_6, param_7, param_8, param_9, param_10);
         }
-        nextSplit = o0S437C0_ShadowMapReceiverDirectional_CascadeDepthSplits[cascadeIndexBase + cascadeIndex];
-        splitSize = nextSplit;
+        float nextSplit = o0S437C0_ShadowMapReceiverDirectional_CascadeDepthSplits[cascadeIndexBase + cascadeIndex];
+        float splitSize = nextSplit;
         if (cascadeIndex > 0)
         {
             splitSize = nextSplit - (o0S437C0_ShadowMapReceiverDirectional_CascadeDepthSplits[(cascadeIndexBase + cascadeIndex) - 1]);
@@ -768,7 +767,7 @@ float3 o0S437C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeS
     _streams.thicknessWS_id45 = tempThickness;
     if (false)
     {
-        float3 indexable[5] = { float3(0.0f, 1.0f, 0.0f), float3(0.0f, 0.0f, 1.0f), float3(1.0f, 0.0f, 1.0f), float3(1.0f, 0.0f, 0.0f), 1.0f.xxx };
+        float3 indexable[5] = _1737;
         return indexable[cascadeIndex] * shadow;
     }
     return shadow;
@@ -1274,14 +1273,14 @@ void NormalBase_PSMain(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx, false, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xx, uint2(0u, 0u), 0, 0.0f.xxxx };
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.normalWS_id4 = PS_IN_normalWS;
-    _streams.PositionWS_id5 = PS_IN_PositionWS;
-    _streams.DepthVS_id6 = PS_IN_DepthVS;
-    _streams.TexCoord_id46 = PS_IN_TexCoord;
-    _streams.ScreenPosition_id49 = PS_IN_ScreenPosition;
-    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
+    PS_STREAMS _streams = _3046;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.normalWS_id4 = PS_IN_NORMALWS;
+    _streams.PositionWS_id5 = PS_IN_POSITION_WS;
+    _streams.DepthVS_id6 = PS_IN_DEPTH_VS;
+    _streams.TexCoord_id46 = PS_IN_TEXCOORD0;
+    _streams.ScreenPosition_id49 = PS_IN_SCREENPOSITION;
+    _streams.IsFrontFace_id1 = PS_IN_SV_IsFrontFace;
     _streams.ScreenPosition_id49 /= _streams.ScreenPosition_id49.w.xxxx;
     NormalBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
@@ -1289,13 +1288,13 @@ void frag_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
-    PS_IN_normalWS = stage_input.PS_IN_normalWS;
-    PS_IN_PositionWS = stage_input.PS_IN_PositionWS;
-    PS_IN_DepthVS = stage_input.PS_IN_DepthVS;
-    PS_IN_TexCoord = stage_input.PS_IN_TexCoord;
-    PS_IN_ScreenPosition = stage_input.PS_IN_ScreenPosition;
-    PS_IN_IsFrontFace = stage_input.PS_IN_IsFrontFace;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
+    PS_IN_NORMALWS = stage_input.PS_IN_NORMALWS;
+    PS_IN_POSITION_WS = stage_input.PS_IN_POSITION_WS;
+    PS_IN_DEPTH_VS = stage_input.PS_IN_DEPTH_VS;
+    PS_IN_TEXCOORD0 = stage_input.PS_IN_TEXCOORD0;
+    PS_IN_SCREENPOSITION = stage_input.PS_IN_SCREENPOSITION;
+    PS_IN_SV_IsFrontFace = stage_input.PS_IN_SV_IsFrontFace;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;

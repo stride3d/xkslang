@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct LightDirectional_DirectionalLightData
 {
@@ -87,14 +90,14 @@ layout(std140) uniform PerView
     vec2 o1S437C0_Camera_ZProjection;
     vec2 o1S437C0_Camera_ViewSize;
     float o1S437C0_Camera_AspectRatio;
-    vec4 o0S437C0_LightDirectionalGroup__padding_PerView_Default;
+    vec4 o0S437C0_LightDirectionalGroup_padding_PerView_Default;
     LightDirectional_DirectionalLightData o0S437C0_LightDirectionalGroup_Lights[8];
     int o0S437C0_DirectLightGroupPerView_LightCount;
     float o1S437C0_LightClustered_ClusterDepthScale;
     float o1S437C0_LightClustered_ClusterDepthBias;
     vec2 o1S437C0_LightClustered_ClusterStride;
     vec3 o3S421C0_LightSimpleAmbient_AmbientLight;
-    vec4 o3S421C0_LightSimpleAmbient__padding_PerView_Lighting;
+    vec4 o3S421C0_LightSimpleAmbient_padding_PerView_Lighting;
 } PerView_var;
 
 layout(std140) uniform PerMaterial
@@ -105,13 +108,14 @@ layout(std140) uniform PerMaterial
 uniform samplerBuffer LightClusteredPointGroup_PointLights;
 uniform usamplerBuffer LightClustered_LightIndices;
 uniform samplerBuffer LightClusteredSpotGroup_SpotLights;
+uniform usampler3D SPIRV_Cross_CombinedLightClustered_LightClustersSPIRV_Cross_DummySampler;
 
-layout(location = 0) in vec4 PS_IN_ShadingPosition;
-layout(location = 1) in vec3 PS_IN_normalWS;
-layout(location = 2) in vec4 PS_IN_PositionWS;
-layout(location = 3) in vec4 PS_IN_ScreenPosition;
-layout(location = 4) in bool PS_IN_IsFrontFace;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec4 PS_IN_SV_Position;
+in vec3 PS_IN_NORMALWS;
+in vec4 PS_IN_POSITION_WS;
+in vec4 PS_IN_SCREENPOSITION;
+in bool PS_IN_SV_IsFrontFace;
+out vec4 PS_OUT_ColorTarget;
 
 void NormalFromMesh_GenerateNormal_PS(inout PS_STREAMS _streams)
 {
@@ -271,7 +275,7 @@ void o1S437C0_LightClustered_PrepareLightData(inout PS_STREAMS _streams)
     float depth = PerView_var.o1S437C0_Camera_ZProjection.y / (projectedDepth - PerView_var.o1S437C0_Camera_ZProjection.x);
     vec2 texCoord = vec2(_streams.ScreenPosition_id47.x + 1.0, 1.0 - _streams.ScreenPosition_id47.y) * 0.5;
     int slice = int(max(log2((depth * PerView_var.o1S437C0_LightClustered_ClusterDepthScale) + PerView_var.o1S437C0_LightClustered_ClusterDepthBias), 0.0));
-    _streams.lightData_id45 = uvec2(texelFetch(LightClustered_LightClusters, ivec4(ivec2(texCoord * PerView_var.o1S437C0_LightClustered_ClusterStride), slice, 0).xyz, ivec4(ivec2(texCoord * PerView_var.o1S437C0_LightClustered_ClusterStride), slice, 0).w).xy);
+    _streams.lightData_id45 = uvec2(texelFetch(SPIRV_Cross_CombinedLightClustered_LightClustersSPIRV_Cross_DummySampler, ivec4(ivec2(texCoord * PerView_var.o1S437C0_LightClustered_ClusterStride), slice, 0).xyz, ivec4(ivec2(texCoord * PerView_var.o1S437C0_LightClustered_ClusterStride), slice, 0).w).xy);
     _streams.lightIndex_id46 = int(_streams.lightData_id45.x);
 }
 
@@ -597,11 +601,11 @@ void NormalBase_PSMain(inout PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0), false, vec4(0.0), vec3(0.0), vec3(0.0), vec4(0.0), vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec4(0.0), 0.0, 0.0, vec2(0.0), vec3(0.0), 0.0, vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), 0.0, uvec2(0u), 0, vec4(0.0));
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.normalWS_id4 = PS_IN_normalWS;
-    _streams.PositionWS_id5 = PS_IN_PositionWS;
-    _streams.ScreenPosition_id47 = PS_IN_ScreenPosition;
-    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.normalWS_id4 = PS_IN_NORMALWS;
+    _streams.PositionWS_id5 = PS_IN_POSITION_WS;
+    _streams.ScreenPosition_id47 = PS_IN_SCREENPOSITION;
+    _streams.IsFrontFace_id1 = PS_IN_SV_IsFrontFace;
     _streams.ScreenPosition_id47 /= vec4(_streams.ScreenPosition_id47.w);
     NormalBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;

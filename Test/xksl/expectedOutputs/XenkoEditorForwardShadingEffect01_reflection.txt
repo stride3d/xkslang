@@ -23,14 +23,14 @@
 @C    o1S437C0_Camera_ZProjection => Camera.ZProjection
 @C    o1S437C0_Camera_ViewSize => Camera.ViewSize
 @C    o1S437C0_Camera_AspectRatio => Camera.AspectRatio
-@C    o0S437C0_LightDirectionalGroup__padding_PerView_Default => _padding_PerView_Default
+@C    o0S437C0_LightDirectionalGroup_padding_PerView_Default => padding_PerView_Default.directLightGroups[0]
 @C    o0S437C0_LightDirectionalGroup_Lights => LightDirectionalGroup.Lights.directLightGroups[0]
 @C    o0S437C0_DirectLightGroupPerView_LightCount => DirectLightGroupPerView.LightCount.directLightGroups[0]
 @C    o1S437C0_LightClustered_ClusterDepthScale => LightClustered.ClusterDepthScale
 @C    o1S437C0_LightClustered_ClusterDepthBias => LightClustered.ClusterDepthBias
 @C    o1S437C0_LightClustered_ClusterStride => LightClustered.ClusterStride
 @C    o3S421C0_LightSimpleAmbient_AmbientLight => LightSimpleAmbient.AmbientLight.environmentLights[0]
-@C    o3S421C0_LightSimpleAmbient__padding_PerView_Lighting => _padding_PerView_Lighting
+@C    o3S421C0_LightSimpleAmbient_padding_PerView_Lighting => padding_PerView_Lighting.environmentLights[0]
  cbuffer PerMaterial [size: 16]
 @C    o8S251C0_o5S2C0_o4S2C0_ComputeColorConstantColorLink_constantColor => GizmoUniformColorMaterial.GizmoColorKey
 
@@ -41,10 +41,10 @@
 @C    PerView => PerView [Stage=Vertex]
 @C    PerView => PerView [Stage=Pixel]
 @C    PerMaterial => PerMaterial [Stage=Pixel]
-@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights.directLightGroups[1] [Stage=Pixel]
-@C    LightClustered_LightClusters => LightClustered.LightClusters.directLightGroups[1] [Stage=Pixel]
-@C    LightClustered_LightIndices => LightClustered.LightIndices.directLightGroups[1] [Stage=Pixel]
-@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights.directLightGroups[2] [Stage=Pixel]
+@C    LightClusteredPointGroup_PointLights => LightClusteredPointGroup.PointLights [Stage=Pixel]
+@C    LightClustered_LightClusters => LightClustered.LightClusters [Stage=Pixel]
+@C    LightClustered_LightIndices => LightClustered.LightIndices [Stage=Pixel]
+@C    LightClusteredSpotGroup_SpotLights => LightClusteredSpotGroup.SpotLights [Stage=Pixel]
 
 ConstantBuffers. Count=3
  cbuffer: Name="PerDraw" Size=416 MembersCount=8
@@ -109,7 +109,7 @@ ConstantBuffers. Count=3
   KeyName="Camera.AspectRatio" RawName="o1S437C0_Camera_AspectRatio" LogicalGroup="" Offset=376
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
-  KeyName="_padding_PerView_Default" RawName="o0S437C0_LightDirectionalGroup__padding_PerView_Default" LogicalGroup="Default" Offset=384
+  KeyName="padding_PerView_Default.directLightGroups[0]" RawName="o0S437C0_LightDirectionalGroup_padding_PerView_Default" LogicalGroup="Default" Offset=384
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
   KeyName="LightDirectionalGroup.Lights.directLightGroups[0]" RawName="o0S437C0_LightDirectionalGroup_Lights" LogicalGroup="Lighting" Offset=400
@@ -135,7 +135,7 @@ ConstantBuffers. Count=3
   KeyName="LightSimpleAmbient.AmbientLight.environmentLights[0]" RawName="o3S421C0_LightSimpleAmbient_AmbientLight" LogicalGroup="Lighting" Offset=688
   Class=Color Type=Float Size=12 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=3
 
-  KeyName="_padding_PerView_Lighting" RawName="o3S421C0_LightSimpleAmbient__padding_PerView_Lighting" LogicalGroup="Lighting" Offset=704
+  KeyName="padding_PerView_Lighting.environmentLights[0]" RawName="o3S421C0_LightSimpleAmbient_padding_PerView_Lighting" LogicalGroup="Lighting" Offset=704
   Class=Vector Type=Float Size=16 Alignment=16 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=4
 
  cbuffer: Name="PerMaterial" Size=16 MembersCount=1
@@ -148,10 +148,10 @@ ResourceBindings. Count=8
  Stage=Vertex KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
  Stage=Pixel KeyName="PerView" RawName="PerView" ResourceGroupName="PerView" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerView" LogicalGroup=""
  Stage=Pixel KeyName="PerMaterial" RawName="PerMaterial" ResourceGroupName="PerMaterial" Class=ConstantBuffer Type=ConstantBuffer GroupName="PerMaterial" LogicalGroup=""
- Stage=Pixel KeyName="LightClusteredPointGroup.PointLights.directLightGroups[1]" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
- Stage=Pixel KeyName="LightClustered.LightClusters.directLightGroups[1]" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D GroupName="PerView" LogicalGroup="Lighting"
- Stage=Pixel KeyName="LightClustered.LightIndices.directLightGroups[1]" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
- Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights.directLightGroups[2]" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClusteredPointGroup.PointLights" RawName="LightClusteredPointGroup_PointLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClustered.LightClusters" RawName="LightClustered_LightClusters" ResourceGroupName="PerView" Class=ShaderResourceView Type=Texture3D GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClustered.LightIndices" RawName="LightClustered_LightIndices" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
+ Stage=Pixel KeyName="LightClusteredSpotGroup.SpotLights" RawName="LightClusteredSpotGroup_SpotLights" ResourceGroupName="PerView" Class=ShaderResourceView Type=TextureBuffer GroupName="PerView" LogicalGroup="Lighting"
 
 InputAttributes. Count=2
  SemanticName="NORMAL" SemanticIndex=0

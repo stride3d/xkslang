@@ -1,4 +1,7 @@
-#version 450
+#version 410
+#ifdef GL_ARB_shading_language_420pack
+#extension GL_ARB_shading_language_420pack : require
+#endif
 
 struct LightDirectional_DirectionalLightData
 {
@@ -104,7 +107,7 @@ layout(std140) uniform PerView
     vec2 o1S433C0_Camera_ZProjection;
     vec2 o1S433C0_Camera_ViewSize;
     float o1S433C0_Camera_AspectRatio;
-    vec4 o0S433C0_ShadowMapReceiverDirectional__padding_PerView_Default;
+    vec4 o0S433C0_ShadowMapReceiverDirectional_padding_PerView_Default;
     float o0S433C0_ShadowMapReceiverDirectional_CascadeDepthSplits[4];
     layout(row_major) mat4 o0S433C0_ShadowMapReceiverBase_WorldToShadowCascadeUV[4];
     layout(row_major) mat4 o0S433C0_ShadowMapReceiverBase_InverseWorldToShadowCascadeUV[4];
@@ -124,7 +127,7 @@ layout(std140) uniform PerView
     float o6S417C0_LightSkyboxShader_Intensity;
     float o6S417C0_o5S5C1_RoughnessCubeMapEnvironmentColor_MipCount;
     vec3 o6S417C0_o4S5C0_SphericalHarmonicsEnvironmentColor_SphericalColors[9];
-    vec4 o6S417C0_o4S5C0_SphericalHarmonicsEnvironmentColor__padding_PerView_Lighting;
+    vec4 o6S417C0_o4S5C0_SphericalHarmonicsEnvironmentColor_padding_PerView_Lighting;
 } PerView_var;
 
 layout(std140) uniform PerMaterial
@@ -153,18 +156,19 @@ uniform samplerBuffer LightClusteredSpotGroup_SpotLights;
 uniform sampler2D SPIRV_Cross_CombinedDynamicTexture_TextureDynamicSampler_Sampler;
 uniform sampler2DShadow SPIRV_Cross_CombinedShadowMapCommon_ShadowMapTextureTexturing_LinearClampCompareLessEqualSampler;
 uniform sampler2D SPIRV_Cross_CombinedShadowMapCommon_ShadowMapTextureTexturing_LinearBorderSampler;
+uniform usampler3D SPIRV_Cross_CombinedLightClustered_LightClustersSPIRV_Cross_DummySampler;
 uniform sampler2D SPIRV_Cross_CombinedMaterialSpecularMicrofacetEnvironmentGGXLUT_EnvironmentLightingDFG_LUTTexturing_LinearSampler;
 uniform samplerCube SPIRV_Cross_CombinedRoughnessCubeMapEnvironmentColor_CubeMapTexturing_LinearSampler;
 
-layout(location = 0) in vec4 PS_IN_ShadingPosition;
-layout(location = 1) in vec3 PS_IN_meshNormal;
-layout(location = 2) in vec4 PS_IN_meshTangent;
-layout(location = 3) in vec4 PS_IN_PositionWS;
-layout(location = 4) in float PS_IN_DepthVS;
-layout(location = 5) in vec2 PS_IN_TexCoord;
-layout(location = 6) in vec4 PS_IN_ScreenPosition;
-layout(location = 7) in bool PS_IN_IsFrontFace;
-layout(location = 0) out vec4 PS_OUT_ColorTarget;
+in vec4 PS_IN_SV_Position;
+in vec3 PS_IN_NORMAL;
+in vec4 PS_IN_TANGENT;
+in vec4 PS_IN_POSITION_WS;
+in float PS_IN_DEPTH_VS;
+in vec2 PS_IN_TEXCOORD0;
+in vec4 PS_IN_SCREENPOSITION;
+in bool PS_IN_SV_IsFrontFace;
+out vec4 PS_OUT_ColorTarget;
 
 float _1509;
 
@@ -815,8 +819,6 @@ vec3 o0S433C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeSha
 {
     int cascadeIndexBase = lightIndex * 4;
     int cascadeIndex = 0;
-    vec3 shadow;
-    float tempThickness;
     for (int i = 0; i < 3; i++)
     {
         if (_streams.DepthVS_id9 > (PerView_var.o0S433C0_ShadowMapReceiverDirectional_CascadeDepthSplits[cascadeIndexBase + i]))
@@ -824,15 +826,13 @@ vec3 o0S433C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeSha
             cascadeIndex = i + 1;
         }
     }
-    shadow = vec3(1.0);
-    tempThickness = 999.0;
+    vec3 shadow = vec3(1.0);
+    float tempThickness = 999.0;
     vec3 shadowPosition = position;
     float param = PerView_var.o0S433C0_ShadowMapReceiverBase_OffsetScales[lightIndex];
     float param_1 = _streams.NdotL_id44;
     vec3 param_2 = _streams.normalWS_id6;
     shadowPosition += o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__GetShadowPositionOffset(param, param_1, param_2);
-    float nextSplit;
-    float splitSize;
     if (cascadeIndex < 4)
     {
         vec3 param_3 = shadowPosition;
@@ -848,8 +848,8 @@ vec3 o0S433C0_ShadowMapReceiverDirectional_4_1_true_true_false_false__ComputeSha
             bool param_10 = true;
             tempThickness = o0S433C0_ShadowMapReceiverBase_PerView_Lighting_4_1__ComputeThicknessFromCascade(param_6, param_7, param_8, param_9, param_10);
         }
-        nextSplit = PerView_var.o0S433C0_ShadowMapReceiverDirectional_CascadeDepthSplits[cascadeIndexBase + cascadeIndex];
-        splitSize = nextSplit;
+        float nextSplit = PerView_var.o0S433C0_ShadowMapReceiverDirectional_CascadeDepthSplits[cascadeIndexBase + cascadeIndex];
+        float splitSize = nextSplit;
         if (cascadeIndex > 0)
         {
             splitSize = nextSplit - (PerView_var.o0S433C0_ShadowMapReceiverDirectional_CascadeDepthSplits[(cascadeIndexBase + cascadeIndex) - 1]);
@@ -1005,7 +1005,7 @@ void o1S433C0_LightClustered_PrepareLightData(inout PS_STREAMS _streams)
     float depth = PerView_var.o1S433C0_Camera_ZProjection.y / (projectedDepth - PerView_var.o1S433C0_Camera_ZProjection.x);
     vec2 texCoord = vec2(_streams.ScreenPosition_id52.x + 1.0, 1.0 - _streams.ScreenPosition_id52.y) * 0.5;
     int slice = int(max(log2((depth * PerView_var.o1S433C0_LightClustered_ClusterDepthScale) + PerView_var.o1S433C0_LightClustered_ClusterDepthBias), 0.0));
-    _streams.lightData_id50 = uvec2(texelFetch(LightClustered_LightClusters, ivec4(ivec2(texCoord * PerView_var.o1S433C0_LightClustered_ClusterStride), slice, 0).xyz, ivec4(ivec2(texCoord * PerView_var.o1S433C0_LightClustered_ClusterStride), slice, 0).w).xy);
+    _streams.lightData_id50 = uvec2(texelFetch(SPIRV_Cross_CombinedLightClustered_LightClustersSPIRV_Cross_DummySampler, ivec4(ivec2(texCoord * PerView_var.o1S433C0_LightClustered_ClusterStride), slice, 0).xyz, ivec4(ivec2(texCoord * PerView_var.o1S433C0_LightClustered_ClusterStride), slice, 0).w).xy);
     _streams.lightIndex_id51 = int(_streams.lightData_id50.x);
 }
 
@@ -1486,14 +1486,14 @@ void NormalBase_PSMain(inout PS_STREAMS _streams)
 void main()
 {
     PS_STREAMS _streams = PS_STREAMS(vec4(0.0), false, vec4(0.0), vec3(0.0), vec3(0.0), vec4(0.0), vec3(0.0), mat3(vec3(0.0), vec3(0.0), vec3(0.0)), vec4(0.0), 0.0, vec3(0.0), vec4(0.0), vec4(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, vec4(0.0), 0.0, 0.0, vec2(0.0), vec3(0.0), 0.0, vec3(0.0), vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), 0.0, 0.0, 0.0, vec3(0.0), 0.0, vec2(0.0), uvec2(0u), 0, vec4(0.0));
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.meshNormal_id3 = PS_IN_meshNormal;
-    _streams.meshTangent_id5 = PS_IN_meshTangent;
-    _streams.PositionWS_id8 = PS_IN_PositionWS;
-    _streams.DepthVS_id9 = PS_IN_DepthVS;
-    _streams.TexCoord_id49 = PS_IN_TexCoord;
-    _streams.ScreenPosition_id52 = PS_IN_ScreenPosition;
-    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.meshNormal_id3 = PS_IN_NORMAL;
+    _streams.meshTangent_id5 = PS_IN_TANGENT;
+    _streams.PositionWS_id8 = PS_IN_POSITION_WS;
+    _streams.DepthVS_id9 = PS_IN_DEPTH_VS;
+    _streams.TexCoord_id49 = PS_IN_TEXCOORD0;
+    _streams.ScreenPosition_id52 = PS_IN_SCREENPOSITION;
+    _streams.IsFrontFace_id1 = PS_IN_SV_IsFrontFace;
     _streams.ScreenPosition_id52 /= vec4(_streams.ScreenPosition_id52.w);
     NormalBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;

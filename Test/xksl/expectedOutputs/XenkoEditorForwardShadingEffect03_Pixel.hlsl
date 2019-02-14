@@ -41,6 +41,8 @@ struct PS_STREAMS
     float matBlend_id38;
 };
 
+static const PS_STREAMS _347 = { 0.0f.xxxx, false, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f };
+
 cbuffer PerView
 {
     column_major float4x4 Transformation_View;
@@ -61,18 +63,18 @@ cbuffer PerMaterial
     float4 o5S251C0_o2S2C0_o1S2C0_ComputeColorConstantColorLink_constantColor;
 };
 
-static float4 PS_IN_ShadingPosition;
-static float3 PS_IN_normalWS;
-static float4 PS_IN_PositionWS;
-static bool PS_IN_IsFrontFace;
+static float4 PS_IN_SV_Position;
+static float3 PS_IN_NORMALWS;
+static float4 PS_IN_POSITION_WS;
+static bool PS_IN_SV_IsFrontFace;
 static float4 PS_OUT_ColorTarget;
 
 struct SPIRV_Cross_Input
 {
-    float4 PS_IN_ShadingPosition : SV_Position;
-    float3 PS_IN_normalWS : NORMALWS;
-    float4 PS_IN_PositionWS : POSITION_WS;
-    bool PS_IN_IsFrontFace : SV_IsFrontFace;
+    float3 PS_IN_NORMALWS : NORMALWS;
+    float4 PS_IN_POSITION_WS : POSITION_WS;
+    bool PS_IN_SV_IsFrontFace : SV_IsFrontFace;
+    float4 PS_IN_SV_Position : SV_Position;
 };
 
 struct SPIRV_Cross_Output
@@ -255,11 +257,11 @@ void ShadingBase_PSMain(inout PS_STREAMS _streams)
 
 void frag_main()
 {
-    PS_STREAMS _streams = { 0.0f.xxxx, false, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxx, 0.0f.xxxx, 0.0f.xxxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f.xxxx, 0.0f, 0.0f, 0.0f.xx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f.xxx, 0.0f, 0.0f, 0.0f };
-    _streams.ShadingPosition_id0 = PS_IN_ShadingPosition;
-    _streams.normalWS_id4 = PS_IN_normalWS;
-    _streams.PositionWS_id5 = PS_IN_PositionWS;
-    _streams.IsFrontFace_id1 = PS_IN_IsFrontFace;
+    PS_STREAMS _streams = _347;
+    _streams.ShadingPosition_id0 = PS_IN_SV_Position;
+    _streams.normalWS_id4 = PS_IN_NORMALWS;
+    _streams.PositionWS_id5 = PS_IN_POSITION_WS;
+    _streams.IsFrontFace_id1 = PS_IN_SV_IsFrontFace;
     NormalFromMesh_GenerateNormal_PS(_streams);
     ShadingBase_PSMain(_streams);
     PS_OUT_ColorTarget = _streams.ColorTarget_id2;
@@ -267,10 +269,10 @@ void frag_main()
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
-    PS_IN_ShadingPosition = stage_input.PS_IN_ShadingPosition;
-    PS_IN_normalWS = stage_input.PS_IN_normalWS;
-    PS_IN_PositionWS = stage_input.PS_IN_PositionWS;
-    PS_IN_IsFrontFace = stage_input.PS_IN_IsFrontFace;
+    PS_IN_SV_Position = stage_input.PS_IN_SV_Position;
+    PS_IN_NORMALWS = stage_input.PS_IN_NORMALWS;
+    PS_IN_POSITION_WS = stage_input.PS_IN_POSITION_WS;
+    PS_IN_SV_IsFrontFace = stage_input.PS_IN_SV_IsFrontFace;
     frag_main();
     SPIRV_Cross_Output stage_output;
     stage_output.PS_OUT_ColorTarget = PS_OUT_ColorTarget;
