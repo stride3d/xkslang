@@ -1,15 +1,17 @@
 cbuffer cbUnstageCompositionLink
 {
-    float o0S2C0_ShaderCompositionWithLink_var11;
+    float o0S2C0_ShaderCompositionWithLink_vara1;
+    float o0S2C0_ShaderCompositionWithLink_vara2;
 };
 cbuffer cbStageCompositionLink
 {
-    float o0S2C0_ShaderCompositionWithLink_var12;
+    float o0S2C0_ShaderCompositionWithLink_varb1;
+    float o0S2C0_ShaderCompositionWithLink_varb2;
 };
 
 float o0S2C0_ShaderCompositionWithLink_Compute()
 {
-    return o0S2C0_ShaderCompositionWithLink_var11 + o0S2C0_ShaderCompositionWithLink_var12;
+    return o0S2C0_ShaderCompositionWithLink_vara1 + o0S2C0_ShaderCompositionWithLink_varb1;
 }
 
 void vert_main()

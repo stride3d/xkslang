@@ -5,17 +5,19 @@
 
 layout(std140) uniform cbUnstageCompositionLink
 {
-    float o0S2C0_ShaderCompositionWithLink_var11;
+    float o0S2C0_ShaderCompositionWithLink_vara1;
+    float o0S2C0_ShaderCompositionWithLink_vara2;
 } cbUnstageCompositionLink_var;
 
 layout(std140) uniform cbStageCompositionLink
 {
-    float o0S2C0_ShaderCompositionWithLink_var12;
+    float o0S2C0_ShaderCompositionWithLink_varb1;
+    float o0S2C0_ShaderCompositionWithLink_varb2;
 } cbStageCompositionLink_var;
 
 float o0S2C0_ShaderCompositionWithLink_Compute()
 {
-    return cbUnstageCompositionLink_var.o0S2C0_ShaderCompositionWithLink_var11 + cbStageCompositionLink_var.o0S2C0_ShaderCompositionWithLink_var12;
+    return cbUnstageCompositionLink_var.o0S2C0_ShaderCompositionWithLink_vara1 + cbStageCompositionLink_var.o0S2C0_ShaderCompositionWithLink_varb1;
 }
 
 void main()

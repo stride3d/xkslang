@@ -1,10 +1,12 @@
 ***************************
 ****  ConstantBuffers  ****
 ***************************
- cbuffer cbUnstageCompositionLink [size: 4]
-@C    o0S2C0_ShaderCompositionWithLink_var11 => linkVar11.composition02
- cbuffer cbStageCompositionLink [size: 4]
-@C    o0S2C0_ShaderCompositionWithLink_var12 => linkVar12
+ cbuffer cbUnstageCompositionLink [size: 8]
+@C    o0S2C0_ShaderCompositionWithLink_vara1 => linkVar11.composition02
+@C    o0S2C0_ShaderCompositionWithLink_vara2 => ShaderCompositionWithLink.vara2.composition02
+ cbuffer cbStageCompositionLink [size: 8]
+@C    o0S2C0_ShaderCompositionWithLink_varb1 => linkVar12
+@C    o0S2C0_ShaderCompositionWithLink_varb2 => ShaderCompositionWithLink.varb2
 
 ***********************
 *****  Resources  *****
@@ -13,12 +15,18 @@
 @C    cbStageCompositionLink => cbStageCompositionLink [Stage=Vertex]
 
 ConstantBuffers. Count=2
- cbuffer: Name="cbUnstageCompositionLink" Size=4 MembersCount=1
-  KeyName="linkVar11.composition02" RawName="o0S2C0_ShaderCompositionWithLink_var11" LogicalGroup="" Offset=0
+ cbuffer: Name="cbUnstageCompositionLink" Size=8 MembersCount=2
+  KeyName="linkVar11.composition02" RawName="o0S2C0_ShaderCompositionWithLink_vara1" LogicalGroup="" Offset=0
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
- cbuffer: Name="cbStageCompositionLink" Size=4 MembersCount=1
-  KeyName="linkVar12" RawName="o0S2C0_ShaderCompositionWithLink_var12" LogicalGroup="" Offset=0
+  KeyName="ShaderCompositionWithLink.vara2.composition02" RawName="o0S2C0_ShaderCompositionWithLink_vara2" LogicalGroup="" Offset=4
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+ cbuffer: Name="cbStageCompositionLink" Size=8 MembersCount=2
+  KeyName="linkVar12" RawName="o0S2C0_ShaderCompositionWithLink_varb1" LogicalGroup="" Offset=0
+  Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
+
+  KeyName="ShaderCompositionWithLink.varb2" RawName="o0S2C0_ShaderCompositionWithLink_varb2" LogicalGroup="" Offset=4
   Class=Scalar Type=Float Size=4 Alignment=4 ArrayStride=0 MatrixStride=0 ArrayElements=0 Rows=1 Columns=1
 
 

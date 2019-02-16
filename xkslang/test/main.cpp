@@ -161,13 +161,13 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMerge12", "TestMerge12.xkfx" },
     //{ "TestMerge13", "TestMerge13.xkfx" },
     //{ "TestMerge14", "TestMerge14.xkfx" },
-    
+
     //{ "TestConsts01", "TestConsts01.xkfx" },
     //{ "TestConsts02", "TestConsts02.xkfx" },
     //{ "TestConsts03", "TestConsts03.xkfx" },
     //{ "TestConsts04", "TestConsts04.xkfx" },
     //{ "TestConsts05", "TestConsts05.xkfx" },
-    
+
     //{ "TestCompose02", "TestCompose02.xkfx" },
     //{ "TestCompose03", "TestCompose03.xkfx" },
     //{ "TestCompose04", "TestCompose04.xkfx" },
@@ -203,7 +203,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestCompose33", "TestCompose33.xkfx" },
     //{ "TestCompose34", "TestCompose34.xkfx" },
     //{ "TestCompose35", "TestCompose35.xkfx" },
-    
+
     //{ "TestForLoop", "TestForLoop.xkfx" },
     //{ "TestForEach01", "TestForEach01.xkfx" },
     //{ "TestForEach02", "TestForEach02.xkfx" },
@@ -216,7 +216,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestMergeStreams01", "TestMergeStreams01.xkfx" },
     //{ "TestMergeStreams02", "TestMergeStreams02.xkfx" },
     //{ "TestMergeStreams03", "TestMergeStreams03.xkfx" },
-    
+
     //{ "TestReshuffleStreams01", "TestReshuffleStreams01.xkfx" },
     //{ "TestReshuffleStreams02", "TestReshuffleStreams02.xkfx" },
     //{ "TestReshuffleStreams03", "TestReshuffleStreams03.xkfx" },
@@ -226,8 +226,8 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestReshuffleStreams07", "TestReshuffleStreams07.xkfx" },
     //{ "TestReshuffleStreams08", "TestReshuffleStreams08.xkfx" },
     //{ "TestReshuffleStreams09", "TestReshuffleStreams09.xkfx" },
-/////////////////{ "TestReshuffleStreams10", "TestReshuffleStreams10.xkfx" },  calling recursive function crash with SPIRV-Cross
-    
+///////////////{ "TestReshuffleStreams10", "TestReshuffleStreams10.xkfx" },  calling recursive function crash with SPIRV-Cross
+
     //{ "TestGenerics01", "TestGenerics01.xkfx" },
     //{ "TestGenerics02", "TestGenerics02.xkfx" },
     //{ "TestGenerics03", "TestGenerics03.xkfx" },
@@ -239,7 +239,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestGenerics09", "TestGenerics09.xkfx" },
     //{ "TestGenerics10", "TestGenerics10.xkfx" },
     //{ "TestGenerics11", "TestGenerics11.xkfx" },
-    
+
     //{ "CBuffer01", "CBuffer01.xkfx" },
     //{ "CBuffer02", "CBuffer02.xkfx" },
     //{ "CBuffer03", "CBuffer03.xkfx" },
@@ -253,7 +253,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "CBuffer11", "CBuffer11.xkfx" },
     //{ "CBufferSubpart01", "CBufferSubpart01.xkfx" },
     //{ "CBufferSubpart02", "CBufferSubpart02.xkfx" },
-    
+
     //{ "ShaderWithResources01", "ShaderWithResources01.xkfx" },
     //{ "ShaderWithResources02", "ShaderWithResources02.xkfx" },
     //{ "ShaderWithResources03", "ShaderWithResources03.xkfx" },
@@ -265,7 +265,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "ShaderWithResources09", "ShaderWithResources09.xkfx" },
     //{ "ShaderWithResources09b", "ShaderWithResources09b.xkfx" },
     //{ "ShaderWithResources10", "ShaderWithResources10.xkfx" },
-    
+
     //{ "testDependency01", "testDependency01.xkfx" },
     //{ "testDependency02", "testDependency02.xkfx" },
     //{ "testDependency03", "testDependency03.xkfx" },
@@ -273,7 +273,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "testDependency05", "testDependency05.xkfx" },
     //{ "testDependency06", "testDependency06.xkfx" },
     //{ "testDependency07", "testDependency07.xkfx" },
-    
+
     //{ "EffectReflection01", "EffectReflection01.xkfx" },
     //{ "EffectReflection02", "EffectReflection02.xkfx" },
     //{ "EffectReflection03", "EffectReflection03.xkfx" },
@@ -283,7 +283,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
 	//{ "EffectReflection07", "EffectReflection07.xkfx" },
     //{ "EffectReflection08", "EffectReflection08.xkfx" },
     //{ "EffectReflection09", "EffectReflection09.xkfx" },
-    
+
     //{ "abstractFunctions01", "abstractFunctions01.xkfx" },
     //{ "abstractFunctions02", "abstractFunctions02.xkfx" },
     //{ "abstractFunctions03", "abstractFunctions03.xkfx" },
@@ -313,7 +313,7 @@ vector<XkfxEffectsToProcess> vecXkfxEffectToProcess = {
     //{ "TestSemanticType02", "TestSemanticType02.xkfx" },
     //{ "functionsFinding01", "functionsFinding01.xkfx" },
     //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
-    //{"cbufferMembersNaming00", "cbufferMembersNaming00.xkfx"},
+    {"cbufferMembersNaming00", "cbufferMembersNaming00.xkfx"},
     //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
     //{ "testStreamIO01", "testStreamIO01.xkfx"},
     //{ "methodOverride01", "methodOverride01.xkfx" },
