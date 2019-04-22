@@ -102,6 +102,7 @@
     <ClCompile Include="..\..\..\..\..\glslang\MachineIndependent\preprocessor\PpTokens.cpp">
       <Filter>MachineIndependent\Preprocessor</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\glslang\MachineIndependent\attribute.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\glslang\Include\Types.h">
@@ -194,6 +195,7 @@
     <ClInclude Include="..\..\..\..\..\glslang\MachineIndependent\preprocessor\PpTokens.h">
       <Filter>MachineIndependent\Preprocessor</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\..\glslang\MachineIndependent\attribute.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\..\glslang\MachineIndependent\glslang.y">

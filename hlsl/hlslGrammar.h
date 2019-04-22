@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2016 Google, Inc.
+// Copyright (C) 2016-2018 Google, Inc.
 // Copyright (C) 2016 LunarG, Inc.
 //
 // All rights reserved.
@@ -63,11 +63,12 @@ namespace glslang {
     public:
         HlslGrammar(HlslScanContext& scanner, HlslParseContext& parseContext)
             : HlslTokenStream(scanner), parseContext(parseContext), intermediate(parseContext.intermediate),
+              typeIdentifiers(false), unitNode(nullptr),
             xkslShaderParsingOperation(XkslShaderParsingOperationEnum::Undefined),
             xkslShaderToParse(nullptr), xkslShaderCurrentlyParsed(nullptr), xkslShaderLibrary(nullptr), functionCurrentlyParsed(nullptr), shaderMethodOrMemberTypeCurrentlyParsed(nullptr),
             dependencyUniqueCounter(0), unknownIdentifierToProcessAtTheTop(nullptr), throwErrorWhenParsingUnidentifiedSymbol(true), shaderWhereMembersCanBeFound(nullptr),
             parseShaderSingleMethod(false), streamsMissingConversionFunctionShaderOrigin(nullptr), streamsMissingConversionFunctionShaderTarget(nullptr),
-            typeIdentifiers(false), uniqueIndex(0) { }
+            uniqueIndex(0) { }
         virtual ~HlslGrammar() { }
 
         bool parse();
@@ -133,6 +134,7 @@ namespace glslang {
         bool acceptStreamOutTemplateType(TType&, TLayoutGeometry&);
         bool acceptOutputPrimitiveGeometry(TLayoutGeometry&);
         bool acceptAnnotations(TQualifier&);
+        bool acceptSamplerTypeDX9(TType &);
         bool acceptSamplerType(TType&);
         bool acceptTextureType(TType&);
         bool acceptSubpassInputType(TType&);
@@ -222,6 +224,7 @@ namespace glslang {
         HlslParseContext& parseContext;  // state of parsing and helper functions for building the intermediate
         TIntermediate& intermediate;     // the final product, the intermediate representation, includes the AST
         bool typeIdentifiers;            // shader uses some types as identifiers
+        TIntermNode* unitNode;
         
         //XKSL extensions
         TString getLabelForTokenType(EHlslTokenClass tokenType);

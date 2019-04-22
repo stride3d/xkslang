@@ -43,6 +43,7 @@
 #else
 #include <cmath>
 #endif
+#include <cstdint>
 
 namespace {
 
@@ -172,8 +173,12 @@ bool TOutputTraverser::visitBinary(TVisit /* visit */, TIntermBinary* node)
     case EOpIndexDirect:   out.debug << "direct index";   break;
     case EOpIndexIndirect: out.debug << "indirect index"; break;
     case EOpIndexDirectStruct:
-        out.debug << (*node->getLeft()->getType().getStruct())[node->getRight()->getAsConstantUnion()->getConstArray()[0].getIConst()].type->getFieldName();
-        out.debug << ": direct index for structure";      break;
+        {
+            bool reference = node->getLeft()->getType().getBasicType() == EbtReference;
+            const TTypeList *members = reference ? node->getLeft()->getType().getReferentType()->getStruct() : node->getLeft()->getType().getStruct();
+            out.debug << (*members)[node->getRight()->getAsConstantUnion()->getConstArray()[0].getIConst()].type->getFieldName();
+            out.debug << ": direct index for structure";      break;
+        }
     case EOpVectorSwizzle: out.debug << "vector swizzle"; break;
     case EOpMatrixSwizzle: out.debug << "matrix swizzle"; break;
 
@@ -419,6 +424,8 @@ bool TOutputTraverser::visitUnary(TVisit /* visit */, TIntermUnary* node)
     case EOpConvDoubleToUint:   out.debug << "Convert double to uint"; break;
     case EOpConvDoubleToUint64: out.debug << "Convert double to uint64"; break;
 
+    case EOpConvUint64ToPtr:  out.debug << "Convert uint64_t to pointer";   break;
+    case EOpConvPtrToUint64:  out.debug << "Convert pointer to uint64_t";   break;
 
     case EOpRadians:        out.debug << "radians";              break;
     case EOpDegrees:        out.debug << "degrees";              break;
@@ -674,6 +681,8 @@ bool TOutputTraverser::visitUnary(TVisit /* visit */, TIntermUnary* node)
     case EOpSubpassLoad:   out.debug << "subpassLoad";   break;
     case EOpSubpassLoadMS: out.debug << "subpassLoadMS"; break;
 
+    case EOpConstructReference: out.debug << "Construct reference type"; break;
+
     default: out.debug.message(EPrefixError, "Bad unary op");
     }
 
@@ -808,6 +817,8 @@ bool TOutputTraverser::visitAggregate(TVisit /* visit */, TIntermAggregate* node
     case EOpConstructF16Mat4x4: out.debug << "Construct f16mat4";   break;
     case EOpConstructStruct:  out.debug << "Construct structure";  break;
     case EOpConstructTextureSampler: out.debug << "Construct combined texture-sampler"; break;
+    case EOpConstructReference:  out.debug << "Construct reference";  break;
+    case EOpConstructCooperativeMatrix:  out.debug << "Construct cooperative matrix";  break;
 
     case EOpLessThan:         out.debug << "Compare Less Than";             break;
     case EOpGreaterThan:      out.debug << "Compare Greater Than";          break;
@@ -871,6 +882,8 @@ bool TOutputTraverser::visitAggregate(TVisit /* visit */, TIntermAggregate* node
     case EOpAtomicXor:                  out.debug << "AtomicXor";             break;
     case EOpAtomicExchange:             out.debug << "AtomicExchange";        break;
     case EOpAtomicCompSwap:             out.debug << "AtomicCompSwap";        break;
+    case EOpAtomicLoad:                 out.debug << "AtomicLoad";            break;
+    case EOpAtomicStore:                out.debug << "AtomicStore";           break;
 
     case EOpAtomicCounterAdd:           out.debug << "AtomicCounterAdd";      break;
     case EOpAtomicCounterSubtract:      out.debug << "AtomicCounterSubtract"; break;
@@ -894,6 +907,8 @@ bool TOutputTraverser::visitAggregate(TVisit /* visit */, TIntermAggregate* node
     case EOpImageAtomicXor:             out.debug << "imageAtomicXor";        break;
     case EOpImageAtomicExchange:        out.debug << "imageAtomicExchange";   break;
     case EOpImageAtomicCompSwap:        out.debug << "imageAtomicCompSwap";   break;
+    case EOpImageAtomicLoad:            out.debug << "imageAtomicLoad";       break;
+    case EOpImageAtomicStore:           out.debug << "imageAtomicStore";      break;
 #ifdef AMD_EXTENSIONS
     case EOpImageLoadLod:               out.debug << "imageLoadLod";          break;
     case EOpImageStoreLod:              out.debug << "imageStoreLod";         break;
@@ -952,7 +967,13 @@ bool TOutputTraverser::visitAggregate(TVisit /* visit */, TIntermAggregate* node
     case EOpSparseTextureGatherLodOffsets:  out.debug << "sparseTextureGatherLodOffsets";   break;
     case EOpSparseImageLoadLod:             out.debug << "sparseImageLoadLod";              break;
 #endif
-
+#ifdef NV_EXTENSIONS
+    case EOpImageSampleFootprintNV:             out.debug << "imageSampleFootprintNV";          break;
+    case EOpImageSampleFootprintClampNV:        out.debug << "imageSampleFootprintClampNV";     break;
+    case EOpImageSampleFootprintLodNV:          out.debug << "imageSampleFootprintLodNV";       break;
+    case EOpImageSampleFootprintGradNV:         out.debug << "imageSampleFootprintGradNV";      break;
+    case EOpImageSampleFootprintGradClampNV:    out.debug << "mageSampleFootprintGradClampNV";  break;
+#endif
     case EOpAddCarry:                   out.debug << "addCarry";              break;
     case EOpSubBorrow:                  out.debug << "subBorrow";             break;
     case EOpUMulExtended:               out.debug << "uMulExtended";          break;
@@ -1037,6 +1058,19 @@ bool TOutputTraverser::visitAggregate(TVisit /* visit */, TIntermAggregate* node
 
     case EOpSubpassLoad:   out.debug << "subpassLoad";   break;
     case EOpSubpassLoadMS: out.debug << "subpassLoadMS"; break;
+
+#ifdef NV_EXTENSIONS
+    case EOpTraceNV:                          out.debug << "traceNV"; break;
+    case EOpReportIntersectionNV:             out.debug << "reportIntersectionNV"; break;
+    case EOpIgnoreIntersectionNV:             out.debug << "ignoreIntersectionNV"; break;
+    case EOpTerminateRayNV:                   out.debug << "terminateRayNV"; break;
+    case EOpExecuteCallableNV:                out.debug << "executeCallableNV"; break;
+    case EOpWritePackedPrimitiveIndices4x8NV: out.debug << "writePackedPrimitiveIndices4x8NV"; break;
+#endif
+
+    case EOpCooperativeMatrixLoad:  out.debug << "Load cooperative matrix";  break;
+    case EOpCooperativeMatrixStore:  out.debug << "Store cooperative matrix";  break;
+    case EOpCooperativeMatrixMulAdd: out.debug << "MulAdd cooperative matrices"; break;
 
     default: out.debug.message(EPrefixError, "Bad aggregation op");
     }
@@ -1129,9 +1163,12 @@ static void OutputDouble(TInfoSink& out, double value, TOutputTraverser::EExtraO
         switch (extra) {
         case TOutputTraverser::BinaryDoubleOutput:
         {
+            uint64_t b;
+            static_assert(sizeof(b) == sizeof(value), "sizeof(uint64_t) != sizeof(double)");
+            memcpy(&b, &value, sizeof(b));
+
             out.debug << " : ";
-            long long b = *reinterpret_cast<long long*>(&value);
-            for (int i = 0; i < 8 * sizeof(value); ++i, ++b) {
+            for (size_t i = 0; i < 8 * sizeof(value); ++i, ++b) {
                 out.debug << ((b & 0x8000000000000000) != 0 ? "1" : "0");
                 b <<= 1;
             }
@@ -1441,6 +1478,16 @@ void TIntermediate::output(TInfoSink& infoSink, bool tree)
         }
         break;
 
+#ifdef NV_EXTENSIONS
+    case EShLangMeshNV:
+        infoSink.debug << "max_vertices = " << vertices << "\n";
+        infoSink.debug << "max_primitives = " << primitives << "\n";
+        infoSink.debug << "output primitive = " << TQualifier::getGeometryString(outputPrimitive) << "\n";
+        // Fall through
+
+    case EShLangTaskNV:
+        // Fall through
+#endif
     case EShLangCompute:
         infoSink.debug << "local_size = (" << localSize[0] << ", " << localSize[1] << ", " << localSize[2] << ")\n";
         {

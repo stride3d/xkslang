@@ -66,5 +66,8 @@
     <ClCompile Include="..\..\..\..\..\SPIRV\doc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\SPIRV\SpvPostProcess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

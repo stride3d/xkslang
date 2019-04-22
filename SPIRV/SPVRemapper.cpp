@@ -239,11 +239,11 @@ namespace spv {
     bool spirvbin_t::isConstOp(spv::Op opCode)
     {
         switch (opCode) {
-        //case spv::OpConstantNull:
         //case spv::OpConstantSampler:
         //    error("unimplemented constant type");
         //    return true;
 
+        case spv::OpConstantNull:
         case spv::OpConstantTrue:
         case spv::OpConstantFalse:
         case spv::OpConstantComposite:
@@ -1401,10 +1401,6 @@ namespace spv {
         case spv::OpTypeReserveId:       return 300002;
         case spv::OpTypeQueue:           return 300003;
         case spv::OpTypePipe:            return 300004;
-
-        case spv::OpConstantNull:        return 300005;
-        case spv::OpConstantSampler:     return 300006;
-
         case spv::OpConstantTrue:        return 300007;
         case spv::OpConstantFalse:       return 300008;
         case spv::OpConstantComposite:
@@ -1417,6 +1413,18 @@ namespace spv {
         case spv::OpConstant:
             {
                 std::uint32_t hash = 400011 + hashType(idPos(spv[typeStart+1]));
+                for (unsigned w=3; w < wordCount; ++w)
+                    hash += w * spv[typeStart+w];
+                return hash;
+            }
+        case spv::OpConstantNull:
+            {
+                std::uint32_t hash = 500009 + hashType(idPos(spv[typeStart+1]));
+                return hash;
+            }
+        case spv::OpConstantSampler:
+            {
+                std::uint32_t hash = 600011 + hashType(idPos(spv[typeStart+1]));
                 for (unsigned w=3; w < wordCount; ++w)
                     hash += w * spv[typeStart+w];
                 return hash;
