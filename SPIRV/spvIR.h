@@ -99,6 +99,7 @@ public:
         typeId         = instr.typeId;
         opCode         = instr.opCode;
         operands       = instr.operands;
+        idOperand      = instr.idOperand;
         block          = instr.block;
     }
 
@@ -162,6 +163,7 @@ public:
         return operands[op];
     }
     const std::vector<Id>& GetOperands() const {return operands;}
+    const std::vector<bool>& GetIdOperands() const { return idOperand; }
 
     void SetOpCode(Op op){ opCode = op; }
     void SetResultId(Id rid) { resultId = rid; }

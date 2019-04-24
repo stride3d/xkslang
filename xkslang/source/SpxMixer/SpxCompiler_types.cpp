@@ -211,18 +211,8 @@ spv::Id SpxCompiler::GetOrCreateTypeDefaultConstValue(spv::Id& newId, TypeInstru
             const spv::Instruction& anInstruction = listNewConstInstructionsToAdd[n];
             if (anInstruction.getOpCode() == newConstInstruction.getOpCode() && anInstruction.getTypeId() == newConstInstruction.getTypeId())
             {
-                bool sameInstruction = true;
-                unsigned int numOperands = newConstInstruction.getNumOperands();
-                if (anInstruction.getNumOperands() == numOperands)
-                {
-                    for (unsigned int op = 0; op < numOperands; ++op)
-                    {
-                        if (anInstruction.getImmediateOperand(op) != newConstInstruction.getImmediateOperand(op)) {
-                            sameInstruction = false;
-                            break;
-                        }
-                    }
-                }
+                bool sameInstruction = anInstruction.GetOperands() == newConstInstruction.GetOperands() &&
+                                       anInstruction.GetIdOperands() == newConstInstruction.GetIdOperands();
 
                 if (sameInstruction)
                 {
