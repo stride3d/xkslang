@@ -3032,7 +3032,7 @@ static bool XkslResolveGenericsForShader(XkslShaderLibrary& shaderLibrary, XkslS
             {
                 const TType& constType = expressionNodeConstantUnion->getType();
                 const TConstUnionArray& consts = expressionNodeConstantUnion->getConstArray();
-                if (constType.isArray() || constType.isMatrix() || constType.getStruct()) {
+                if (constType.isArray() || constType.isMatrix() || constType.isStruct()) {
                     return error(parseContext, "Unprocessed generic const type");
                 }
                 else if (consts.size() != 1 && !constType.isVector()) {

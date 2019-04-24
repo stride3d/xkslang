@@ -174,12 +174,11 @@ vector<XkfxEffectToProcess> vecXkfxEffectToProcess = {
     { "TestMerge13", "TestMerge13.xkfx" },
     { "TestMerge14", "TestMerge14.xkfx" },
 
-    // TODO check crash
-    //{ "TestConsts01", "TestConsts01.xkfx" },
-    //{ "TestConsts02", "TestConsts02.xkfx" },
-    //{ "TestConsts03", "TestConsts03.xkfx" },
-    //{ "TestConsts04", "TestConsts04.xkfx" },
-    //{ "TestConsts05", "TestConsts05.xkfx" },
+    { "TestConsts01", "TestConsts01.xkfx" },
+    { "TestConsts02", "TestConsts02.xkfx" },
+    { "TestConsts03", "TestConsts03.xkfx" },
+    { "TestConsts04", "TestConsts04.xkfx" },
+    { "TestConsts05", "TestConsts05.xkfx" },
 
     { "TestCompose02", "TestCompose02.xkfx" },
     { "TestCompose03", "TestCompose03.xkfx" },
@@ -207,7 +206,7 @@ vector<XkfxEffectToProcess> vecXkfxEffectToProcess = {
     { "TestCompose24", "TestCompose24.xkfx" },
     { "TestCompose25", "TestCompose25.xkfx" },
     { "TestCompose26", "TestCompose26.xkfx" },
-    //{ "TestCompose27", "TestCompose27.xkfx" }, // TODO check crash
+    { "TestCompose27", "TestCompose27.xkfx" },
     { "TestCompose28", "TestCompose28.xkfx" },
     { "TestCompose29", "TestCompose29.xkfx" },
     { "TestCompose30", "TestCompose30.xkfx" },
@@ -241,18 +240,17 @@ vector<XkfxEffectToProcess> vecXkfxEffectToProcess = {
     { "TestReshuffleStreams09", "TestReshuffleStreams09.xkfx" },
 ///////////////{ "TestReshuffleStreams10", "TestReshuffleStreams10.xkfx" },  calling recursive function crash with SPIRV-Cross
 
-    // TODO check crash
-    //{ "TestGenerics01", "TestGenerics01.xkfx" },
-    //{ "TestGenerics02", "TestGenerics02.xkfx" },
-    //{ "TestGenerics03", "TestGenerics03.xkfx" },
-    //{ "TestGenerics04", "TestGenerics04.xkfx" },
-    //{ "TestGenerics05", "TestGenerics05.xkfx" },
-    //{ "TestGenerics06", "TestGenerics06.xkfx" },
-    //{ "TestGenerics07", "TestGenerics07.xkfx" },
-    //{ "TestGenerics08", "TestGenerics08.xkfx" },
-    //{ "TestGenerics09", "TestGenerics09.xkfx" },
-    //{ "TestGenerics10", "TestGenerics10.xkfx" },
-    //{ "TestGenerics11", "TestGenerics11.xkfx" },
+    { "TestGenerics01", "TestGenerics01.xkfx" },
+    { "TestGenerics02", "TestGenerics02.xkfx" },
+    { "TestGenerics03", "TestGenerics03.xkfx" },
+    { "TestGenerics04", "TestGenerics04.xkfx" },
+    { "TestGenerics05", "TestGenerics05.xkfx" },
+    { "TestGenerics06", "TestGenerics06.xkfx" },
+    { "TestGenerics07", "TestGenerics07.xkfx" },
+    { "TestGenerics08", "TestGenerics08.xkfx" },
+    { "TestGenerics09", "TestGenerics09.xkfx" },
+    { "TestGenerics10", "TestGenerics10.xkfx" },
+    { "TestGenerics11", "TestGenerics11.xkfx" },
 
     { "CBuffer01", "CBuffer01.xkfx" },
     { "CBuffer02", "CBuffer02.xkfx" },
@@ -328,9 +326,9 @@ vector<XkfxEffectToProcess> vecXkfxEffectToProcess = {
     { "TestSemanticType01", "TestSemanticType01.xkfx" },
     { "TestSemanticType02", "TestSemanticType02.xkfx" },
     { "functionsFinding01", "functionsFinding01.xkfx" },
-    //{ "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" }, // TODO check crash
+    { "mixCustomTypeAndCompose01", "mixCustomTypeAndCompose01.xkfx" },
     {"cbufferMembersNaming00", "cbufferMembersNaming00.xkfx"},
-    //{ "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" }, // TODO check crash
+    { "cbufferMembersNaming01", "cbufferMembersNaming01.xkfx" },
     { "testStreamIO01", "testStreamIO01.xkfx"},
     { "methodOverride01", "methodOverride01.xkfx" },
     { "methodOverride02", "methodOverride02.xkfx" },
