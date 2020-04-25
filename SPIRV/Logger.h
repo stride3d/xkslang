@@ -46,6 +46,14 @@ class SpvBuildLogger {
 public:
     SpvBuildLogger() {}
 
+#ifdef GLSLANG_WEB
+    void tbdFunctionality(const std::string& f) { }
+    void missingFunctionality(const std::string& f) { }
+    void warning(const std::string& w) { }
+    void error(const std::string& e) { errors.push_back(e); }
+    std::string getAllMessages() { return ""; }
+#else
+
     // Registers a TBD functionality.
     void tbdFunctionality(const std::string& f);
     // Registers a missing functionality.
@@ -62,6 +70,7 @@ public:
     // TBD functionalities, missing functionalities, warnings, errors.
     std::string getAllMessages() const;
     void getAllMessages(std::vector<std::string>& msgs) const;
+#endif
 
 private:
     SpvBuildLogger(const SpvBuildLogger&);

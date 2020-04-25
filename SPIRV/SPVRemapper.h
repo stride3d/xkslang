@@ -231,7 +231,7 @@ private:
    // Header access & set methods
    spirword_t  magic()    const       { return spv[0]; } // return magic number
    spirword_t  bound()    const       { return spv[3]; } // return Id bound from header
-   spirword_t  bound(spirword_t b)    { return spv[3] = b; };
+   spirword_t  bound(spirword_t b)    { return spv[3] = b; }
    spirword_t  setBound(spirword_t b) { return spv[3] = b; };
    static spirword_t  bound(const std::vector<spirword_t>& bytecode) { return bytecode[3]; } // return Id bound from header
    static spirword_t  setBound(std::vector<spirword_t>& bytecode, spirword_t b) { return bytecode[3] = b; };
