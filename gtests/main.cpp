@@ -35,13 +35,37 @@
 #include <memory>
 #include <string>
 
+#ifdef _MSC_VER
+#define VC_EXTRALEAN 1
+#include <windows.h>
+#endif
+
 #include <gtest/gtest.h>
 
 #include "Initializer.h"
 #include "Settings.h"
 
+#ifdef _MSC_VER
+class dbg_stream_for_cout : public std::stringbuf {
+public:
+    ~dbg_stream_for_cout() { sync(); }
+    int sync()
+    {
+        ::OutputDebugStringA(str().c_str());
+        str(std::string()); // Clear the string buffer
+        return 0;
+    }
+};
+dbg_stream_for_cout g_DebugStreamFor_cout;
+#endif
+
 int main(int argc, char** argv)
 {
+#ifdef _MSC_VER
+    // Redirect cout to debug
+    std::cout.rdbuf(&g_DebugStreamFor_cout);
+#endif
+
     ::testing::InitGoogleTest(&argc, argv);
 
     std::unique_ptr<glslangtest::GlslangInitializer> initializer(
