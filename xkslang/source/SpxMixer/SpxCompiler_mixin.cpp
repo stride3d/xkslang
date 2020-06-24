@@ -37,7 +37,7 @@ bool SpxCompiler::error(vector<std::string>& errorMsgs, const string& txt)
 //static const auto spx_inst_fn_nop = [](spv::Op, unsigned) { return false; };
 //static const auto spx_op_fn_nop = [](spv::Id&) {};
 
-unsigned int SpxCompiler::currentMergeOperationId = 0;
+thread_local unsigned int SpxCompiler::currentMergeOperationId = 0;
 
 unsigned int SpxCompiler::GetUniqueMergeOperationId()
 {

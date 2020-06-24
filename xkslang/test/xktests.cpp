@@ -409,6 +409,8 @@ vector<XkfxEffectToProcess> vecXkfxEffectToProcess = {
     { "XenkoEditorMaterialPreviewEffect01", "XenkoEditorMaterialPreviewEffect01.xkfx" },
     { "XenkoEditorMaterialPreviewEffect02", "XenkoEditorMaterialPreviewEffect02.xkfx" },
     { "XenkoEditorMaterialPreviewEffect03", "XenkoEditorMaterialPreviewEffect03.xkfx" },
+
+    { "TestCache", "TestCache.xkfx" },
 };
 
 enum class ShaderLanguageEnum

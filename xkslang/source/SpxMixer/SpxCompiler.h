@@ -996,7 +996,7 @@ private:
     
 private:
     //static variable share between all SpxCompiler instances
-    static unsigned int currentMergeOperationId;
+    thread_local static unsigned int currentMergeOperationId;
 
     SpxRemapperStatusEnum status;
 

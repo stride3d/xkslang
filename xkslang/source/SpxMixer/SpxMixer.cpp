@@ -8,6 +8,9 @@
 
 #include "SpxMixer.h"
 #include "SpxCompiler.h"
+#include "glslang/Include/PoolAlloc.h"
+#include "glslang/Public/ShaderLang.h"
+#include "../../../hlsl/hlslScanContext.h"
 
 using namespace std;
 using namespace xkslang;
@@ -28,11 +31,13 @@ static void warning(vector<string>& msgs, string msg)
 void SpxMixer::StartMixinEffect()
 {
     SpxCompiler::ResetMergeOperationId();
+
+    glslang::StartShaderScope();
 }
 
 void SpxMixer::StopMixinEffect()
 {
-
+    glslang::EndShaderScope();
 }
 
 SpxMixer::SpxMixer()

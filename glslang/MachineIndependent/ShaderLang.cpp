@@ -4435,6 +4435,33 @@ static bool ParseXkslShaderRecursif(
     return success;
 }
 
+thread_local static XkslShaderLibrary* currentShaderLibrary = nullptr;
+thread_local static TPoolAllocator* pool;
+thread_local static TSymbolTable* currentSymbolTable = nullptr;
+
+void StartShaderScope()
+{
+    pool = new TPoolAllocator();
+    SetThreadPoolAllocator(pool);
+
+    currentShaderLibrary = new XkslShaderLibrary();
+}
+
+void EndShaderScope()
+{
+    if (currentSymbolTable != nullptr)
+    {
+        delete currentSymbolTable;
+        currentSymbolTable = nullptr;
+    }
+
+    delete currentShaderLibrary;
+    currentShaderLibrary = nullptr;
+
+    delete pool;
+    pool = nullptr;
+}
+
 //Parse an xksl shader file. The shader file has to be complete (ie contains all shader dependencies)
 static bool ParseXkslShaderFile(
     const std::string& xkslShaderFileName,
@@ -4464,26 +4491,28 @@ static bool ParseXkslShaderFile(
     intermediate->setSpv(spvVersion);
     if (spvVersion.vulkan >= 100) intermediate->setOriginUpperLeft();
 
-    //=====================================================================================
-    // Setup symbol tables (this is only done the first time a thread call it)
-    SetupBuiltinSymbolTable(version, profile, spvVersion, source);
+    if (currentSymbolTable == nullptr)
+    {
+        //=====================================================================================
+        // Setup symbol tables (this is only done the first time a thread call it)
+        SetupBuiltinSymbolTable(version, profile, spvVersion, source);
 
-    TSymbolTable* cachedTable = SharedSymbolTables[MapVersionToIndex(version)]
-                                                  [MapSpvVersionToIndex(spvVersion)]
-                                                  [MapProfileToIndex(profile)]
-                                                  [MapSourceToIndex(source)]
-                                                  [stage];
-    // Dynamically allocate the symbol table so we can control when it is deallocated WRT the pool.
-    TSymbolTable* symbolTableMemory = new TSymbolTable;
-    TSymbolTable& symbolTable = *symbolTableMemory;
-    if (cachedTable) symbolTable.adoptLevels(*cachedTable);
+        TSymbolTable* cachedTable = SharedSymbolTables[MapVersionToIndex(version)]
+                                                      [MapSpvVersionToIndex(spvVersion)]
+                                                      [MapProfileToIndex(profile)]
+                                                      [MapSourceToIndex(source)]
+                                                      [stage];
+        // Dynamically allocate the symbol table so we can control when it is deallocated WRT the pool.
+        currentSymbolTable = new TSymbolTable;
+        if (cachedTable) currentSymbolTable->adoptLevels(*cachedTable);
 
-    // Add built-in symbols that are potentially context dependent; they get popped again further down.
-    AddContextSpecificSymbols(resources, infoSink, symbolTable, version, profile, spvVersion, stage, source);
+        // Add built-in symbols that are potentially context dependent; they get popped again further down.
+        AddContextSpecificSymbols(resources, infoSink, *currentSymbolTable, version, profile, spvVersion, stage, source);
+    }
 
     //=====================================================================================
     // Create ParseContext and ppContext
-    HlslParseContext* parseContext = new HlslParseContext(symbolTable, *intermediate, parsingBuiltIns, version, profile, spvVersion, stage, infoSink, "", forwardCompatible, options);
+    HlslParseContext* parseContext = new HlslParseContext(*currentSymbolTable, *intermediate, parsingBuiltIns, version, profile, spvVersion, stage, infoSink, "", forwardCompatible, options);
     parseContext->parseXkslShaders = true;
 
     TShader::ForbidIncluder includer;
@@ -4494,12 +4523,8 @@ static bool ParseXkslShaderFile(
     parseContext->setLimits(*resources);
     parseContext->initializeExtensionBehavior();
 
-    // Push a new symbol allocation scope that will get used for the shader's globals.
-    int symbolTableInitialLevelCount = symbolTable.getCurrentLevelCount();
-    symbolTable.push();
-
     //List of all declared shader
-    XkslShaderLibrary shaderLibrary;
+    XkslShaderLibrary& shaderLibrary = *currentShaderLibrary;
 
     //==================================================================================================================
     //can finally parse !!!!
@@ -4523,16 +4548,6 @@ static bool ParseXkslShaderFile(
     //parsing completed
     parseContext->parseXkslShaderFinalize();
 
-    symbolTable.pop(nullptr);
-    if (symbolTable.getCurrentLevelCount() != symbolTableInitialLevelCount) {
-        infoSink.info.message(EPrefixInternalError, "symbol table has an invalid number of levels");
-        return false;
-    }
-    ////Reset the symbol table at global level (when recursively parsing, the parser can returns without popping the symbol levels)
-    //while (symbolTable.getCurrentLevelCount() > symbolTable.getGlobalLevel()) {
-    //    symbolTable.pop(nullptr);
-    //}
-
     if (success)
     {
         //finalize the AST
@@ -4542,12 +4557,8 @@ static bool ParseXkslShaderFile(
     }
 
     //=====================================================================================
-    // Clean up the symbol table. The AST is self-sufficient now.
-    delete symbolTableMemory;
+    // Clean up parseContext
     delete parseContext;
-
-    //delete shader library
-    ClearShaderLibrary(shaderLibrary);
 
     return success;
 }
@@ -4573,10 +4584,6 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
         if (infoMsgs != nullptr) infoMsgs->push_back("Fails to query data for shader: " + shaderName);
         return false;
     }
-
-    if (!InitThread()) return false;
-    TPoolAllocator* pool = new TPoolAllocator();
-    SetThreadPoolAllocator(pool);
 
     TInfoSink* infoSink = new TInfoSink;
     TIntermediate* ast = new TIntermediate(EShLangFragment);  //glslang needs to know the stage but it won't be used (set fragment by default)
@@ -4606,8 +4613,7 @@ bool ConvertXkslShaderToSpx(const std::string& shaderName, CallbackRequestDataFo
     }
 
     delete infoSink;
-    delete ast;
-    delete pool;
+    //delete ast;
 
     return success;
 }
@@ -4622,10 +4628,6 @@ bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& xkslFi
         if (infoMsgs != nullptr) infoMsgs->push_back("xksl file is empty");
         return false;
     }
-
-    if (!InitThread()) return false;
-    TPoolAllocator* pool = new TPoolAllocator();
-    SetThreadPoolAllocator(pool);
 
     TInfoSink* infoSink = new TInfoSink;
     TIntermediate* ast = new TIntermediate(EShLangFragment);  //glslang needs to know the stage but it won't be used (set fragment by default)
@@ -4656,7 +4658,6 @@ bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& xkslFi
 
     delete infoSink;
     delete ast;
-    delete pool;
 
     return success;
 }

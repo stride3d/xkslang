@@ -432,6 +432,9 @@ enum TResourceType {
 //XKSL extensions
 typedef bool(*CallbackRequestDataForShader)(const std::string&, std::string&);
 
+void StartShaderScope();
+void EndShaderScope();
+
 bool ConvertXkslFileToSpx(const std::string& fileName, const std::string& shaderString,
     const std::vector<ClassGenericValues>& listGenericValues, std::vector<UserDefinedMacro>& listUserDefinedMacros,
     const TBuiltInResource* builtInResources, EShMessages options, std::vector<uint32_t>& spxBytecode, std::vector<std::string>* infoMsgs, std::vector<std::string>* astMsgs);

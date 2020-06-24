@@ -1,0 +1,15 @@
+setSampleTestOptions automaticallyTryToLoadAndConvertUnknownMixinShader true
+setSampleTestOptions processSampleWithXkfxLibrary true
+
+addResourcesLibrary "library"
+
+setDefine SILICON_STUDIO_RENDER_TARGET_COUNT "2"
+setDefine SILICON_STUDIO_MULTISAMPLE_COUNT "2"
+
+mixer m
+m.mixin( ShaderBase )
+m.mixin( ShadingBase[ShadingColor0 = mixin(ComputeColor, ComputeColorOverrideBase),
+                     ShadingColor1 = mixin(ComputeColorOne, ComputeColorOverrideBase)] )
+
+m.setStageEntryPoint( Pixel="PSMain" )
+m.compile
